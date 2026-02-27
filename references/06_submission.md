@@ -9,6 +9,8 @@
 6. [Validate Submission](#6-validate-submission)
 7. [Save Submission](#7-save-submission)
 8. [Report to User](#8-report-to-user)
+9. [Document Competition Status](#9-document-competition-status)
+10. [Update Project-Level Status](#10-update-project-level-status)
 
 ## Objective
 Generate a valid, competition-ready submission file from the best model(s).
@@ -118,8 +120,63 @@ Present:
   - If public LB << CV: possible train-test distribution shift
   - If public LB ~ CV: validation strategy is working well
 
+### 9. Document Competition Status
+After each submission, create or update a `STATUS.md` file in the competition workspace (`competitions/<name>/STATUS.md`). This serves as a persistent summary of all work done on the competition.
+
+The STATUS.md should include:
+
+```markdown
+# <Competition Name> — Competition Status
+
+## Competition Info
+- URL, problem description, metric, data size, train/test split details
+
+## Current Best Score
+- CV score and Public LB score (table format)
+
+## Pipeline Summary
+### Features
+- Number of features, key engineered features, dropped features with reasons
+
+### Models
+- Table of all models trained with CV scores, ranked best to worst
+
+### Submission
+- Method used (single model / ensemble), post-processing, submission filename
+
+## Key Observations
+- Important patterns found during EDA and modeling
+- CV vs. LB gap analysis
+
+## Potential Improvements
+- Ideas not yet tried that could improve the score
+
+## Files
+- Directory tree of all files in the competition workspace
+```
+
+**Rules:**
+- Create `STATUS.md` after the first submission to Kaggle
+- Update it after each subsequent submission with new scores and findings
+- Keep it concise but complete enough to resume work in a new session
+
+### 10. Update Project-Level Status
+After updating the competition-level `STATUS.md`, also update the **project-level** `STATUS.md` in the project root (`kaggle/STATUS.md`).
+
+This file tracks all competitions across sessions. Update it with:
+- Add the new competition to the **All Competitions Summary** table (with Public LB, Private LB, status)
+- Add a session entry or append to the current session with competition details (type, metric, CV score, Public LB, key notes)
+- Update the session file list with the new competition workspace
+
+**Rules:**
+- Always update the project-level `STATUS.md` after every Kaggle submission
+- Follow the existing format and table structure already in the file
+- If a new session section is needed (first competition of the day), create one with the next session number
+
 ## Completion Criteria
 - Submission file has been generated and saved
 - All validation checks have passed
 - Submission metadata has been logged
 - User has been informed of the file location and model details
+- STATUS.md has been created or updated in the competition workspace
+- Project-level STATUS.md has been updated with the new competition entry

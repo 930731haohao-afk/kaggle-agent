@@ -39,6 +39,7 @@ kaggle/                              # Project root
 └── competitions/                    # Per-competition workspaces
     └── <competition-name>/
         ├── config.yaml              # Competition metadata
+        ├── STATUS.md                # Competition status doc (created after first submission)
         ├── data/                    # Raw and processed data
         ├── scripts/                 # Generated Python scripts
         ├── submissions/             # Generated submission files
