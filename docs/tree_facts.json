@@ -1,0 +1,570 @@
+{
+  "generated_by": "docs/scripts/build_tree_facts.py",
+  "sources": [
+    "tree_search/harness.py",
+    "competitions/playground-series-s3e9/experiments_tree.json",
+    "competitions/playground-series-s3e14/experiments_tree.json",
+    "competitions/playground-series-s3e5/experiments_tree.json",
+    "competitions/playground-series-s3e9/STATUS.md (Phase C-2a appendix)",
+    "competitions/playground-series-s3e14/STATUS.md (Phase C-2b appendix)",
+    "competitions/playground-series-s3e5/STATUS.md (Phase C-2c appendix)"
+  ],
+  "harness_constants": {
+    "MAX_CHILDREN_PER_NODE": 3,
+    "PLATEAU_STREAK": 3
+  },
+  "s3e9": {
+    "comp": "s3e9",
+    "n_nodes_total": 20,
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "n_first_gen_lineages": 5,
+    "root_id": 0,
+    "root_score": 12.11061,
+    "root_wall_s": 5.2,
+    "global_best_id": 1,
+    "global_best_score": 12.07459,
+    "global_best_mutation": "[CAT] model-type switch: CatBoost solo (depth6,l2=6) -- known strongest single learner on this data (STATUS.md 12.07459 vs LGB 12.11061/XGB 12.12086); ordered-boosting regularization resists the 56%-dup-row label noise best",
+    "total_wall_s": 125.4,
+    "wall_s_min_all": 2.0,
+    "wall_s_max_all": 17.0,
+    "wall_by_kind": {
+      "solo": {
+        "min": 2.0,
+        "max": 17.0,
+        "n": 20
+      }
+    },
+    "kind_counts": {},
+    "n_backtracks": 4,
+    "n_reopen_events": 0,
+    "backtrack_log": [
+      {
+        "at_node_id": 8,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 12.07459"
+      },
+      {
+        "at_node_id": 11,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 12.07459"
+      },
+      {
+        "at_node_id": 14,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 12.07459"
+      },
+      {
+        "at_node_id": 17,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 12.07459"
+      }
+    ],
+    "tie_groups_5dp": {
+      "12.07459": [
+        1,
+        8
+      ]
+    }
+  },
+  "s3e14": {
+    "comp": "s3e14",
+    "n_nodes_total": 20,
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "n_first_gen_lineages": 7,
+    "root_id": 0,
+    "root_score": 342.02154,
+    "root_wall_s": 52.1,
+    "global_best_id": 11,
+    "global_best_score": 340.52635,
+    "global_best_mutation": "[BLEND] BLEND: add FEAT solo member (#5) -> 6-way, dirichlet weight search + snap (parent=#9)",
+    "total_wall_s": 593.4,
+    "wall_s_min_all": 0.5,
+    "wall_s_max_all": 81.4,
+    "wall_by_kind": {
+      "solo": {
+        "min": 19.8,
+        "max": 81.4,
+        "n": 12
+      },
+      "blend": {
+        "min": 0.5,
+        "max": 0.8,
+        "n": 8
+      }
+    },
+    "kind_counts": {
+      "solo": 12,
+      "blend": 8
+    },
+    "n_backtracks": 2,
+    "n_reopen_events": 0,
+    "backtrack_log": [
+      {
+        "at_node_id": 14,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 340.52635"
+      },
+      {
+        "at_node_id": 17,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 340.52635"
+      }
+    ],
+    "tie_groups_5dp": {
+      "340.60446": [
+        13,
+        14
+      ]
+    }
+  },
+  "s3e5": {
+    "comp": "s3e5",
+    "n_nodes_total": 40,
+    "n_evaluated": 40,
+    "n_failed": 0,
+    "n_first_gen_lineages": 8,
+    "root_id": 0,
+    "root_score": -0.56244,
+    "root_wall_s": 1.4,
+    "global_best_id": 11,
+    "global_best_score": -0.56766,
+    "global_best_mutation": "[BLEND] BLEND: add FEAT solo member (#5) -> 4-way, dirichlet weight search + OptimizedRounder (parent=#8)",
+    "total_wall_s": 696.9,
+    "wall_s_min_all": 0.6,
+    "wall_s_max_all": 46.5,
+    "wall_by_kind": {
+      "solo": {
+        "min": 0.6,
+        "max": 27.1,
+        "n": 30
+      },
+      "blend": {
+        "min": 45.0,
+        "max": 46.5,
+        "n": 10
+      }
+    },
+    "kind_counts": {
+      "solo": 30,
+      "blend": 10
+    },
+    "n_backtracks": 11,
+    "n_reopen_events": 1,
+    "backtrack_log": [
+      {
+        "at_node_id": 14,
+        "plateaued_lineage": 8,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 17,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 20,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 23,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 26,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 29,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 32,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 35,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": null,
+        "reason": "all lineages plateaued -> reopened once (fallback so the search can keep going toward the node budget)"
+      },
+      {
+        "at_node_id": 36,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 39,
+        "plateaued_lineage": 8,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      }
+    ],
+    "tie_groups_5dp": {
+      "-0.56466": [
+        2,
+        15
+      ],
+      "-0.56664": [
+        12,
+        14
+      ],
+      "-0.56065": [
+        21,
+        22
+      ],
+      "-0.56725": [
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  "s3e14_beat_linear_first_eval": {
+    "node_id": 8,
+    "evaluation_number": 9,
+    "score": 340.59485
+  },
+  "s3e14_node11": {
+    "id": 11,
+    "score": 340.52635,
+    "wall_s": 0.8,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        2,
+        1,
+        3,
+        4,
+        5
+      ],
+      "weight_search": "dirichlet",
+      "postprocess": {
+        "snap": true
+      },
+      "result": {
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          4,
+          5
+        ],
+        "names": [
+          "node0",
+          "node2",
+          "node1",
+          "node3",
+          "node4",
+          "node5"
+        ],
+        "weights": [
+          0.1071360201485377,
+          0.1869922758772767,
+          0.23839054585504074,
+          0.14210919975549427,
+          0.17517810525049846,
+          0.1501938531131522
+        ],
+        "method": "dirichlet",
+        "raw_score": 340.64596,
+        "snap_score": 340.52635,
+        "used_snap": true
+      }
+    },
+    "mutation": "[BLEND] BLEND: add FEAT solo member (#5) -> 6-way, dirichlet weight search + snap (parent=#9)"
+  },
+  "s3e14_node10_sanity_anchor": {
+    "id": 10,
+    "score": 340.59891,
+    "wall_s": 0.5,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        2,
+        1,
+        3,
+        4
+      ],
+      "weight_search": "grid_simplex",
+      "postprocess": {
+        "snap": true
+      },
+      "result": {
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          4
+        ],
+        "names": [
+          "node0",
+          "node2",
+          "node1",
+          "node3",
+          "node4"
+        ],
+        "weights": [
+          0.2,
+          0.2,
+          0.25,
+          0.15000000000000002,
+          0.19999999999999996
+        ],
+        "method": "grid_simplex",
+        "raw_score": 340.65207,
+        "snap_score": 340.59891,
+        "used_snap": true
+      }
+    },
+    "mutation": "[BLEND] BLEND: weight-search method comparison dirichlet->grid_simplex on the same 5 members (same pool, different search strategy) (parent=#9)"
+  },
+  "s3e14_node8": {
+    "id": 8,
+    "score": 340.59485,
+    "wall_s": 0.8,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        2,
+        1,
+        3
+      ],
+      "weight_search": "dirichlet",
+      "postprocess": {
+        "snap": true
+      },
+      "result": {
+        "members": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "names": [
+          "node0",
+          "node2",
+          "node1",
+          "node3"
+        ],
+        "weights": [
+          0.35373718294749357,
+          0.2231517879847823,
+          0.23335017011334652,
+          0.18976085895437753
+        ],
+        "method": "dirichlet",
+        "raw_score": 340.69716,
+        "snap_score": 340.59485,
+        "used_snap": true
+      }
+    },
+    "mutation": "[BLEND] BLEND: add LGBTUNED solo member (#3) -> 4-way, dirichlet weight search + snap (parent=#7)"
+  },
+  "s3e14_node5": {
+    "id": 5,
+    "score": 342.02283,
+    "wall_s": 45.2,
+    "config": {
+      "kind": "solo",
+      "model": "lgb",
+      "params": {
+        "objective": "regression_l1",
+        "metric": "mae",
+        "n_estimators": 3000,
+        "learning_rate": 0.02,
+        "num_leaves": 63,
+        "min_child_samples": 30,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.7,
+        "reg_alpha": 1.0,
+        "reg_lambda": 2.0,
+        "random_state": 42,
+        "early_stopping_rounds": 150
+      },
+      "features": {
+        "drop": [
+          "temp_avg",
+          "log_clonesize",
+          "rain_intensity",
+          "MinOfLowerTRange",
+          "AverageOfLowerTRange",
+          "AverageOfUpperTRange",
+          "MaxOfUpperTRange",
+          "MinOfUpperTRange",
+          "MaxOfLowerTRange"
+        ]
+      },
+      "postprocess": {
+        "snap": false
+      },
+      "result": {
+        "n_feats": 18
+      }
+    },
+    "mutation": "[FEAT] feature-subset SUBTRACTION beyond the already-pruned 21: drop the 3 remaining raw temp-range columns (MaxOfUpperTRange/MinOfUpperTRange/MaxOfLowerTRange) now that temp_spread already condenses them (computed before the drop, so still valid) -- 18-feature test, UNTESTED in the linear-iteration run (which stopped pruning at 21); doubles as a differently-featured blend-diversity member if it holds up"
+  },
+  "s3e14_node9": {
+    "id": 9,
+    "score": 340.54904,
+    "wall_s": 0.8,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        2,
+        1,
+        3,
+        4
+      ],
+      "weight_search": "dirichlet",
+      "postprocess": {
+        "snap": true
+      },
+      "result": {
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          4
+        ],
+        "names": [
+          "node0",
+          "node2",
+          "node1",
+          "node3",
+          "node4"
+        ],
+        "weights": [
+          0.20537140572494297,
+          0.1889789659194993,
+          0.25105642245596466,
+          0.13775526086518683,
+          0.21683794503440615
+        ],
+        "method": "dirichlet",
+        "raw_score": 340.6516,
+        "snap_score": 340.54904,
+        "used_snap": true
+      }
+    },
+    "mutation": "[BLEND] BLEND: add SEEDBAG solo member (#4) -> 5-way, dirichlet weight search + snap (parent=#8)"
+  },
+  "s3e5_node11": {
+    "id": 11,
+    "score": -0.56766,
+    "wall_s": 45.4,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        2,
+        3,
+        5
+      ],
+      "weight_search": "dirichlet",
+      "result": {
+        "members": [
+          0,
+          2,
+          3,
+          5
+        ],
+        "names": [
+          "node0",
+          "node2",
+          "node3",
+          "node5"
+        ],
+        "weights": {
+          "0": 0.12862423487871072,
+          "2": 0.6453769516592723,
+          "3": 0.018333756880970126,
+          "5": 0.20766505658104686
+        },
+        "method": "dirichlet",
+        "cutpoints": [
+          3.5902,
+          4.6087,
+          5.6139,
+          6.16,
+          7.5966
+        ],
+        "qwk": 0.56766
+      }
+    },
+    "mutation": "[BLEND] BLEND: add FEAT solo member (#5) -> 4-way, dirichlet weight search + OptimizedRounder (parent=#8)"
+  },
+  "s3e9_node1": {
+    "id": 1,
+    "score": 12.07459,
+    "wall_s": 2.7,
+    "config": {
+      "model": "cat",
+      "params": {
+        "depth": 6,
+        "l2_leaf_reg": 6.0,
+        "iterations": 4000,
+        "learning_rate": 0.03,
+        "early_stopping_rounds": 200
+      },
+      "features": {
+        "drop": []
+      },
+      "postprocess": {
+        "clip_min": 0,
+        "clip_max": null,
+        "clip_oof": false
+      }
+    },
+    "mutation": "[CAT] model-type switch: CatBoost solo (depth6,l2=6) -- known strongest single learner on this data (STATUS.md 12.07459 vs LGB 12.11061/XGB 12.12086); ordered-boosting regularization resists the 56%-dup-row label noise best"
+  },
+  "linear_reference": {
+    "s3e9": {
+      "best_score": 12.07003,
+      "label": "7-way seed-bagged blend, exp #8",
+      "source": "competitions/playground-series-s3e9/STATUS.md line ~225"
+    },
+    "s3e14": {
+      "best_score": 340.59891,
+      "label": "5-way blend, exp #7",
+      "source": "competitions/playground-series-s3e14/STATUS.md line ~136"
+    },
+    "s3e5": {
+      "best_score": 0.56769,
+      "label": "6-way blend, exp #8",
+      "source": "competitions/playground-series-s3e5/STATUS.md line ~177"
+    }
+  },
+  "derived_diffs": {
+    "s3e9_tree_minus_linear": 0.00456,
+    "s3e14_linear_minus_tree": 0.07256,
+    "s3e5_linear_minus_tree": 3e-05
+  },
+  "s3e5_qwk_positive": {
+    "root_qwk": 0.56244,
+    "global_best_qwk": 0.56766,
+    "tie_group_qwks": [
+      0.56065,
+      0.56466,
+      0.56664,
+      0.56725
+    ]
+  }
+}
