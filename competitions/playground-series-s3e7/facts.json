@@ -1,0 +1,430 @@
+{
+  "competition": {
+    "name": "playground-series-s3e7",
+    "url": "https://www.kaggle.com/competitions/playground-series-s3e7",
+    "description": "Predict hotel reservation cancellation",
+    "problem_type": "classification",
+    "evaluation_metric": "roc_auc",
+    "optimization_direction": "maximize",
+    "target_column": "booking_status",
+    "id_column": "id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false,
+      "daily_submission_limit": 5
+    },
+    "notes": "Aygun et al. Nature 2026 Kaggle Playground benchmark (Season 3 Episode 7)."
+  },
+  "material_level": "full",
+  "status_md_present": true,
+  "experiments": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:05:42",
+      "source_format": "generic_batch",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "generic LGB+XGB+CAT blend",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.89536
+        },
+        {
+          "name": "XGB",
+          "score": 0.89821
+        },
+        {
+          "name": "CAT",
+          "score": 0.89668
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.1,
+          "XGB": 0.6,
+          "CAT": 0.3
+        },
+        "score": 0.89882
+      },
+      "score": 0.89882,
+      "n_features": 17,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5
+      },
+      "submission": "sub_generic_0.89882_20260703_120542.csv"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T18:59:38",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "LGB+XGB+CAT weight-searched blend",
+      "score": 0.89788,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold(booking_status)"
+      },
+      "features": [
+        "no_of_adults",
+        "no_of_children",
+        "no_of_weekend_nights",
+        "no_of_week_nights",
+        "type_of_meal_plan",
+        "required_car_parking_space",
+        "room_type_reserved",
+        "lead_time",
+        "arrival_year",
+        "arrival_month",
+        "arrival_date",
+        "market_segment_type",
+        "repeated_guest",
+        "no_of_previous_cancellations",
+        "no_of_previous_bookings_not_canceled",
+        "avg_price_per_room",
+        "no_of_special_requests",
+        "total_nights",
+        "total_guests",
+        "has_children",
+        "weekend_ratio",
+        "price_per_person",
+        "price_per_night",
+        "lead_time_log",
+        "prior_cancel_rate",
+        "has_prior_history",
+        "month_sin",
+        "month_cos",
+        "date_sin",
+        "date_cos",
+        "no_special_and_price"
+      ],
+      "n_features": 31,
+      "base_models": [
+        {
+          "model": "LGB",
+          "params": {
+            "objective": "binary",
+            "metric": "auc",
+            "n_estimators": "3000",
+            "learning_rate": "0.03",
+            "num_leaves": "63",
+            "min_child_samples": "30",
+            "subsample": "0.8",
+            "subsample_freq": "1",
+            "colsample_bytree": "0.8",
+            "reg_alpha": "0.5",
+            "reg_lambda": "1.0",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "verbose": "-1"
+          },
+          "oof_auc": 0.897306,
+          "time_s": 24.3
+        },
+        {
+          "model": "XGB",
+          "params": {
+            "objective": "binary:logistic",
+            "n_estimators": "3000",
+            "learning_rate": "0.03",
+            "max_depth": "6",
+            "min_child_weight": "5",
+            "subsample": "0.8",
+            "colsample_bytree": "0.8",
+            "reg_alpha": "0.5",
+            "reg_lambda": "1.0",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "eval_metric": "auc",
+            "early_stopping_rounds": "150"
+          },
+          "oof_auc": 0.897346,
+          "time_s": 26.8
+        },
+        {
+          "model": "CAT",
+          "params": {
+            "loss_function": "Logloss",
+            "eval_metric": "AUC",
+            "iterations": "4000",
+            "learning_rate": "0.03",
+            "depth": "7",
+            "l2_leaf_reg": "5.0",
+            "random_seed": "42",
+            "thread_count": "-1",
+            "verbose": "False"
+          },
+          "oof_auc": 0.895213,
+          "time_s": 40.8
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.45,
+          "XGB": 0.45,
+          "CAT": 0.1
+        },
+        "score": 0.89788
+      },
+      "submission": "sub_blend_0.89788_20260703_185938.csv",
+      "notes": "Delta vs generic baseline 0.89882: -0.00094. 14 engineered features on top of 17 raw (lead_time_log, prior_cancel_rate, price_per_person, cyclical month/date, etc.)."
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T19:02:23",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "LGB+XGB+CAT weight-searched blend (trimmed features, iter2)",
+      "score": 0.899395,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold(booking_status)"
+      },
+      "features": [
+        "no_of_adults",
+        "no_of_children",
+        "no_of_weekend_nights",
+        "no_of_week_nights",
+        "type_of_meal_plan",
+        "required_car_parking_space",
+        "room_type_reserved",
+        "lead_time",
+        "arrival_year",
+        "arrival_month",
+        "arrival_date",
+        "market_segment_type",
+        "repeated_guest",
+        "no_of_previous_cancellations",
+        "no_of_previous_bookings_not_canceled",
+        "avg_price_per_room",
+        "no_of_special_requests",
+        "total_nights",
+        "total_guests",
+        "has_children",
+        "weekend_ratio",
+        "price_per_person",
+        "lead_time_log",
+        "prior_cancel_rate",
+        "has_prior_history"
+      ],
+      "n_features": 25,
+      "base_models": [
+        {
+          "model": "LGB",
+          "params": {
+            "objective": "binary",
+            "metric": "auc",
+            "n_estimators": "3000",
+            "learning_rate": "0.03",
+            "num_leaves": "63",
+            "min_child_samples": "30",
+            "subsample": "0.8",
+            "subsample_freq": "1",
+            "colsample_bytree": "0.8",
+            "reg_alpha": "0.5",
+            "reg_lambda": "1.0",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "verbose": "-1"
+          },
+          "oof_auc": 0.898824,
+          "time_s": 30.3
+        },
+        {
+          "model": "XGB",
+          "params": {
+            "objective": "binary:logistic",
+            "n_estimators": "3000",
+            "learning_rate": "0.03",
+            "max_depth": "6",
+            "min_child_weight": "5",
+            "subsample": "0.8",
+            "colsample_bytree": "0.8",
+            "reg_alpha": "0.5",
+            "reg_lambda": "1.0",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "eval_metric": "auc",
+            "early_stopping_rounds": "150"
+          },
+          "oof_auc": 0.898765,
+          "time_s": 31.2
+        },
+        {
+          "model": "CAT",
+          "params": {
+            "loss_function": "Logloss",
+            "eval_metric": "AUC",
+            "iterations": "4000",
+            "learning_rate": "0.03",
+            "depth": "7",
+            "l2_leaf_reg": "5.0",
+            "random_seed": "42",
+            "thread_count": "-1",
+            "verbose": "False"
+          },
+          "oof_auc": 0.896709,
+          "time_s": 47.1
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.5,
+          "XGB": 0.4,
+          "CAT": 0.1
+        },
+        "score": 0.899395
+      },
+      "submission": "sub_blend_0.89939_20260703_190223.csv",
+      "notes": "Delta vs generic baseline 0.89882: +0.00057. Iter2/reflexion: trimmed to 8 engineered features (dropped cyclical month/date, price_per_night, special*price interaction) after iter1's 14-feature set (17 raw + 14 engineered) scored 0.89788, below baseline."
+    }
+  ],
+  "best": {
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T19:02:23",
+    "source_format": "v2",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "model": "LGB+XGB+CAT weight-searched blend (trimmed features, iter2)",
+    "score": 0.899395,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42,
+      "strategy": "StratifiedKFold(booking_status)"
+    },
+    "features": [
+      "no_of_adults",
+      "no_of_children",
+      "no_of_weekend_nights",
+      "no_of_week_nights",
+      "type_of_meal_plan",
+      "required_car_parking_space",
+      "room_type_reserved",
+      "lead_time",
+      "arrival_year",
+      "arrival_month",
+      "arrival_date",
+      "market_segment_type",
+      "repeated_guest",
+      "no_of_previous_cancellations",
+      "no_of_previous_bookings_not_canceled",
+      "avg_price_per_room",
+      "no_of_special_requests",
+      "total_nights",
+      "total_guests",
+      "has_children",
+      "weekend_ratio",
+      "price_per_person",
+      "lead_time_log",
+      "prior_cancel_rate",
+      "has_prior_history"
+    ],
+    "n_features": 25,
+    "base_models": [
+      {
+        "model": "LGB",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": "3000",
+          "learning_rate": "0.03",
+          "num_leaves": "63",
+          "min_child_samples": "30",
+          "subsample": "0.8",
+          "subsample_freq": "1",
+          "colsample_bytree": "0.8",
+          "reg_alpha": "0.5",
+          "reg_lambda": "1.0",
+          "random_state": "42",
+          "n_jobs": "-1",
+          "verbose": "-1"
+        },
+        "oof_auc": 0.898824,
+        "time_s": 30.3
+      },
+      {
+        "model": "XGB",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": "3000",
+          "learning_rate": "0.03",
+          "max_depth": "6",
+          "min_child_weight": "5",
+          "subsample": "0.8",
+          "colsample_bytree": "0.8",
+          "reg_alpha": "0.5",
+          "reg_lambda": "1.0",
+          "random_state": "42",
+          "n_jobs": "-1",
+          "eval_metric": "auc",
+          "early_stopping_rounds": "150"
+        },
+        "oof_auc": 0.898765,
+        "time_s": 31.2
+      },
+      {
+        "model": "CAT",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": "4000",
+          "learning_rate": "0.03",
+          "depth": "7",
+          "l2_leaf_reg": "5.0",
+          "random_seed": "42",
+          "thread_count": "-1",
+          "verbose": "False"
+        },
+        "oof_auc": 0.896709,
+        "time_s": 47.1
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.5,
+        "XGB": 0.4,
+        "CAT": 0.1
+      },
+      "score": 0.899395
+    },
+    "submission": "sub_blend_0.89939_20260703_190223.csv",
+    "notes": "Delta vs generic baseline 0.89882: +0.00057. Iter2/reflexion: trimmed to 8 engineered features (dropped cyclical month/date, price_per_night, special*price interaction) after iter1's 14-feature set (17 raw + 14 engineered) scored 0.89788, below baseline."
+  },
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:05:42",
+      "score": 0.89882,
+      "source_format": "generic_batch"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T18:59:38",
+      "score": 0.89788,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T19:02:23",
+      "score": 0.899395,
+      "source_format": "v2"
+    }
+  ],
+  "leaderboard": null,
+  "missing": [
+    "leaderboard"
+  ],
+  "unparsed": []
+}
