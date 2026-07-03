@@ -13,6 +13,7 @@
 - [x] Phase B self-improvement iteration (4 rounds, exp #4–#7) — new best 0.83814
 - [x] Stage 5 Submission generated — `submissions/sub_blend_0.83814_20260703_233303.csv`
 - [ ] Not submitted to Kaggle leaderboard (unattended run — submission generation only, per instructions)
+- [x] Phase D-2 tree-search v2 sweep (`tree_search/run_s3e3.py`) — new best **0.841442**, beats linear 0.838140
 
 ## Experiment trajectory (Verifiable Rewards)
 | exp | model | OOF ROC-AUC | Δ vs baseline (0.81624) |
@@ -147,3 +148,100 @@ uv run python3 competitions/playground-series-s3e3/scripts/iterate_round2_pool_s
 uv run python3 competitions/playground-series-s3e3/scripts/iterate_round3_catboost_native.py         # exp #6, 0.81426 (diagnostic)
 uv run python3 competitions/playground-series-s3e3/scripts/iterate_round4_add_catnative_blend.py     # exp #7, 0.83814 (best)
 ```
+
+## Appendix: Phase D-2 tree-search v2 sweep (2026-07-04)
+
+**Sweep question**: can harness v2 (ensemble-default node space + experience-library
+priors + adaptive plateau + child dedup) match or beat the linear-iteration best
+(0.83814) in fewer evaluations than linear iteration took rounds (7 experiments,
+exp #1–#7)? **Answer for s3e3: yes — matched/beat it in the same 7 evaluations, then
+kept improving to a new best 0.841442 by evaluation #12, in 33.9s wall-clock.**
+
+Built: `tree_search/eval_s3e3.py` (solo: LGB/XGB/CAT, StratifiedKFold(5, seed=42) —
+byte-identical reproduction verified for all 5 known configs before searching: root
+LGB_tuned 0.837305, LGB_orig 0.832925, XGB 0.807634≈0.80763, CAT_orig 0.762684≈0.76268,
+CAT_native 0.814259, all exact; blend: harness_v2.eval_blend for prob-space, small local
+dirichlet re-implementation for rank-space) + `tree_search/run_s3e3.py` (harness_v2
+driver). Root = linear winner's tuned-LGB config (exp #4 Optuna direct-full-CV-AUC
+objective). OOF cache: `tree_search/cache_s3e3/` (gitignored, via
+`harness_v2.cache_oof`/`load_oof`).
+
+### Node/backtrack/dedup summary
+- **22 evaluated nodes** (18 solo / 4 blend), 22 total (0 failed), wall=33.9s.
+- **4 backtracks** (all genuine plateaus, 3 non-improving children each, tie_rate=0.000
+  throughout — AUC is continuous, so the adaptive-plateau discretization branch never
+  fired, as expected/predicted by the harness_v2 docstring): BLEND lineage plateaued at
+  node #10, FEAT at #14, XGBTUNED at #17, SEEDBAG at #20 — `select_next_parent` correctly
+  re-picked the next-best non-plateaued lineage each time (BLEND→FEAT→XGBTUNED→SEEDBAG→
+  LGBORIG) without ever needing the "all plateaued, reopen" fallback.
+- **0 dedup rejections** — the hand-authored mutation queues never proposed a
+  byte-identical duplicate config this run (the dedup code path itself, including the
+  result-stripped-hash fix needed because `eval_and_add` merges `result` into the stored
+  config, is exercised on every non-root `add_node` call via `find_dup`, just never
+  actually triggered a rejection here).
+
+### Best vs linear, evaluations-to-match/beat
+| | AUC | evaluations |
+|---|---|---|
+| Linear-iteration best (exp #7, 6-way rank-avg blend) | 0.838140 | 7 experiments |
+| Tree v2: node #6 ([FEAT] seed) | 0.838903 | **7** (tied with linear's round count) |
+| Tree v2: node #7 ([BLEND] seed, 3-way) | 0.839540 | 8 |
+| Tree v2: node #11 ([FEAT] mutation, global best) | **0.841442** | **12** |
+
+Harness v2 matched/beat the linear best at the SAME evaluation count linear needed
+rounds (7), then kept improving for another 5 evaluations to a real +0.0033 gain over
+the linear ceiling, all in well under a minute of wall-clock.
+
+### The winning direction was a genuine new finding, not just re-derivation
+The global best (#11) traces to the **FEAT lineage** (seed #6 → mutation #11): dropping
+the 5 raw tenure columns (`YearsAtCompany`, `YearsInCurrentRole`, `YearsWithCurrManager`,
+`YearsSinceLastPromotion`, `TotalWorkingYears` — already condensed into
+`role_tenure_ratio`/`mgr_tenure_ratio`/`promo_ratio`/`company_tenure_ratio`/
+`income_per_year_worked`/`age_at_join` upstream) plus further dropping
+`income_per_year_worked`, on top of the tuned-LGB hyperparams: 0.837305 → 0.838903 →
+0.841442. This was flagged in this file's own "Next ideas" as an **untested hypothesis**
+("drop redundant raw tenure columns … untested, flagged as a hypothesis in EDA but not
+verified") — it is now **verified**: real, additive, +0.0041 over the tuned-LGB root.
+Promote to a durable lesson: on this 1,677-row dataset with a shallow, heavily
+regularized LGB (num_leaves=3), the raw tenure columns the engineered ratios were
+derived from are pure redundant noise once the ratios exist — pruning them is a real,
+if modest, win (candidate line for knowledge/experience.md's 高共線性特徵 section on a
+future distillation pass).
+
+### Prior-usage log (idea-injection experiment)
+`harness_v2.suggest_priors({"metric": "auc", "tags": ["10k", "small_sample"]})` returned
+7 bullets (P0–P6, verbatim from knowledge/experience.md's ROC-AUC/小樣本 sections — all
+of them, unsurprisingly, sourced from this very comp's own earlier rounds). Every
+mutation-queue entry in `run_s3e3.py` is tagged `[PRIOR Pk]` or `[PRIOR none]`; counting
+only search-LOOP-proposed mutations (excluding the 6 hand-authored first-gen seeds,
+which don't have an in-lineage parent to compare against):
+
+- **7 prior-informed mutations, win rate 1/7 (14.3%)** — P2 (seed-bag) fired 3×, P5
+  (regularize further) fired 3×, P3 (CatBoost-in-blend, expected-zero) fired 1×.
+- **7 uninformed mutations, win rate 1/7 (14.3%)** — identical raw win rate.
+- **Caveat that matters more than the tie**: 2 of the informed mutations (P3/P4-tagged,
+  "add CATORIG"/"add CATNATIVE" to the blend) were deliberately-structured confirmations
+  that a closed direction is STILL zero-value, not attempts to win — by design they
+  can't "win" in the naive sense, so the raw win-rate comparison undersells how correct
+  the priors were (both confirmed exactly as predicted: CATORIG/CATNATIVE additions
+  moved the blend AUC by <0.0001, noise-level). The actual global-best-producing
+  mutation (#11, FEAT further-trim, +0.0025 over its parent) was **not** prior-informed
+  — it came from this comp's own STATUS.md "Next ideas" list, not the cross-comp
+  experience library. Honest read: priors were directionally correct (0 wasted full
+  hyperparam searches down dead ends like re-tuning CatBoost) but the single biggest
+  lever this run was a comp-local hypothesis, not a transferred one.
+
+### Sweep-question answer for s3e3
+**Yes.** Harness v2 matched the linear-iteration best at the same evaluation count
+(7) linear needed *rounds* (each round itself costing several model trainings, not
+one), then surpassed it by evaluation #12 (+0.0033), using 22 total evaluations in
+33.9s wall-clock — well inside the ~25 min budget. Ensemble-default node space,
+adaptive plateau, and child dedup all behaved as designed (plateau/backtrack fired 4×
+correctly, tie_rate stayed 0 throughout as expected for a continuous metric, dedup
+path is wired in though not empirically triggered this run). The experience-library
+prior-injection mechanism worked mechanically (7/7 bullets matched, correctly shaped
+3 solo lineages' mutation queues) but did not out-win uninformed mutations on raw
+win-rate this run — its real value here was preventing wasted searches (no CatBoost
+re-tuning attempts), while the actual score-moving discovery came from the comp's own
+already-logged open item.
+
