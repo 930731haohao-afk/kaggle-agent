@@ -156,3 +156,67 @@ uv run python3 competitions/playground-series-s3e5/scripts/iterate.py nested_cut
 uv run python3 competitions/playground-series-s3e5/scripts/iterate.py r3_multiclass
 uv run python3 competitions/playground-series-s3e5/scripts/iterate.py submit
 ```
+
+## Appendix — 樹搜尋泛化驗證(Phase C-2c,2026-07-04)
+
+第三個樹搜尋競賽、也是第一個**離散化指標**(QWK-after-OptimizedRounder)的泛化測試。
+Harness 邏輯零改動(`tree_search/harness.py`);評估器 `tree_search/eval_s3e5.py`(solo +
+blend 雙節點型,沿用 s3e14 模式),驅動 `tree_search/run_s3e5.py`,樹狀態
+`experiments_tree.json`,OOF 快取 `tree_search/cache_s3e5/`(gitignored)。
+
+**離散化指標的關鍵設計**:rounder 內建在評估器裡,不是節點型別——**每個**節點(solo 與
+blend)的分數一律 = 該節點自身 OOF 上擬合 OptimizedRounder 後的最終 QWK;任何節點都不可能
+以 raw 迴歸分數被比較(experience.md s3e16/s3e5 教訓)。QWK 為 maximize,故餵給 harness
+的分數取 `-QWK`(harness 假設 lower-is-better)。CV 與線性迭代完全相同:5-fold
+StratifiedKFold(quality, shuffle, seed=42);root 節點精確重現 iterate.py 的 tuned-LGB
+0.56244、CAT seed 重現 tuned-CAT 0.56466,分數直接可比。
+
+### 結果
+| | 分數 (OOF QWK, post-rounder) |
+|-|-|
+| 線性迭代最佳(exp #8,6-way blend) | **0.56769** |
+| 樹搜尋最佳(node #11,4-way blend) | 0.56766 |
+
+**樹搜尋未擊敗線性迭代**,差距 0.00003(單一樣本的切點歸屬即可翻轉的量級)。最佳節點
+#11 = blend(root tuned-LGB #0 + tuned-CAT #2 + XGB #3 + FEAT-17特徵-LGB #5),權重
+0.129/0.645/0.018/0.208,cutpoints [3.590, 4.609, 5.614, 6.160, 7.597]——本質上以 4 名成員
+重新發現了線性迭代 6-way champion 的同一個最適區(線性 champion 有效成員也只有 2 個:
+CAT_tuned 0.95 + LGB 0.05)。
+
+### 搜尋統計
+- **40 個評估節點**(30 solo / 10 blend),0 失敗;評估總時 697s(~11.6 分),三段執行
+  (26→34→40 節點,resume 機制驗證通過)。
+- **11 次 backtrack 事件**:8 條 lineage 全部以「連續 3 子代未破全域最佳」正常 plateau
+  (BLEND→CAT→LGBNUDGE→ROOTQ→FEAT→CATORIG→XGB→LGBORIG,嚴格按分數優先序輪替),之後
+  **reopen-once 規則首次實戰觸發**——重開後 BLEND lineage 以 fallback 吃進新出爐的 solo
+  池成員(#15),得 0.56725,仍未破 #11。
+- solo 突變全數未破 root:tuned 參數已是 Optuna 直接 QWK 目標的產物,局部擾動
+  (depth/lr/正則化/特徵刪減)最好僅追平(#15 = #2 = 0.56466)。**增益全部來自 blend
+  組合**,與 s3e14 的結論一致。
+
+### 離散化指標特有觀察(本次泛化測試的核心產出)
+1. **rounder-inside-evaluator 運作正常**:root/seed 分數與線性迭代逐位吻合,決策永遠在
+   最終 post-rounder QWK 上,無一節點洩漏 raw 分數。
+2. **分數面呈階梯狀,平手極常見**:40 節點中出現 4 組完全同分(至小數 5 位)——
+   0.56725×3、0.56664×2、0.56466×2、0.56065×2。連續指標(s3e9 RMSE、s3e14 MAE)幾乎不
+   會同分;離散化讓「改進事件」更稀疏,plateau streak 更快觸發,8/8 lineage 全數 plateau
+   是三次樹搜尋中最徹底的一次。對 QWK 類指標,PLATEAU_STREAK=3 實質上比連續指標更嚴格。
+3. **blend 節點不再近乎免費**:每個候選權重都要跑一次 Nelder-Mead rounder 擬合,單一
+   blend 節點 ~45s(s3e14 的 MAE blend 節點 <1s)。離散化指標下 blend/solo 成本比反轉
+   (45s vs 1-5s),「blend 節點廉價所以多開」的 s3e14 經驗不能直接遷移。
+4. **fallback 的一個小缺陷被離散面放大**:同一 parent 的 blend fallback 因 parent config
+   不變而重複產出同一組成員(#37/#38/#39 同為 0.56725),在同分頻繁的離散面下浪費了
+   plateau 額度——未來可讓 fallback 檢查兄弟節點已試過的 member 集合。
+
+### 泛化判定
+樹搜尋在離散化指標上**機制全部成立**(rounder 內建、sign 翻轉、plateau/backtrack/reopen、
+resume),分數與線性迭代**統計上打平**(-0.00003)但未超越:線性迭代的 Optuna-direct-QWK
+成員已把單模天花板抬到位,樹的 blend 組合只能重新發現同一最適區。連同 s3e9(未達)與
+s3e14(擊敗),三綜資料點的模式:**樹搜尋的價值集中在 blend 組合空間,且在線性迭代已充分
+開採該空間時只能追平**。
+
+### 重現
+```bash
+cd /home/tjyen/ai_agents/kaggle
+uv run python3 tree_search/run_s3e5.py   # 可中斷/續跑;樹狀態存 experiments_tree.json
+```

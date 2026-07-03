@@ -1,0 +1,1640 @@
+{
+  "comp": "playground-series-s3e5",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: s3e5 current-best single learner -- Optuna direct-post-rounder-QWK-tuned LGB from scripts/iterate.py's tune_lgb step (STATUS.md exp #5 origin), solo QWK ~0.56244; the fair single-model reference point for this tree-search run and the biggest linear-iteration lever (Optuna objective = post-rounder QWK directly, not RMSE)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.016850482169027743,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.7955110174517752,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 345,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56244,
+          "cutpoints": [
+            3.5228,
+            4.5141,
+            5.6471,
+            6.1228,
+            7.6123
+          ]
+        }
+      },
+      "score": -0.56244,
+      "status": "evaluated",
+      "wall_s": 1.4
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[ROOTQ] first ROOTQ-lineage child: reg_alpha 0.80->0.40, probe less L1 regularization around the Optuna optimum (parent=#0)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.016850482169027743,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.4,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 345,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.55956,
+          "cutpoints": [
+            3.6253,
+            4.5224,
+            5.6602,
+            6.1293,
+            7.5841
+          ]
+        }
+      },
+      "score": -0.55956,
+      "status": "evaluated",
+      "wall_s": 3.1
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[CAT] Optuna-tuned CatBoost (scripts/iterate.py's tune_cat step, STATUS.md exp #8 origin) -- solo QWK ~0.56466, second-strongest single learner; key blend-diversity source (ordered boosting differs structurally from LGB)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 4,
+          "learning_rate": 0.023711050140388417,
+          "l2_leaf_reg": 6.458015909315451,
+          "iterations": 333,
+          "random_strength": 1.2907627214036907,
+          "min_data_in_leaf": 27,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56466,
+          "cutpoints": [
+            3.5641,
+            4.5582,
+            5.6187,
+            6.1771,
+            7.6296
+          ]
+        }
+      },
+      "score": -0.56466,
+      "status": "evaluated",
+      "wall_s": 0.8
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[XGB] vanilla/untuned XGB (STATUS.md exp #3 unchanged config, solo QWK ~0.50847) -- UNTESTED tuning direction: the linear-iteration run only Optuna-tuned LGB and CAT, never XGB, so this lineage's hyperparam mutations are genuinely new ground for the tree search",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "reg:squarederror",
+          "n_estimators": 1500,
+          "learning_rate": 0.03,
+          "max_depth": 5,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_lambda": 1.0,
+          "min_child_weight": 5,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.50847,
+          "cutpoints": [
+            3.4886,
+            4.74,
+            5.7287,
+            6.0328,
+            7.4288
+          ]
+        }
+      },
+      "score": -0.50847,
+      "status": "evaluated",
+      "wall_s": 21.2
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[LGBNUDGE] second, independent LGB-tuned exploration lineage off the same Optuna-found hyperparams (n_estimators 345->500, lr 0.0169->0.012 -- slower/longer pace) -- distinct from the root lineage so two different local-search paths exist around the tuned optimum",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.012,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.7955110174517752,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 500,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56027,
+          "cutpoints": [
+            3.6274,
+            4.6128,
+            5.6664,
+            6.1091,
+            7.4536
+          ]
+        }
+      },
+      "score": -0.56027,
+      "status": "evaluated",
+      "wall_s": 3.4
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[FEAT] feature-subset SUBTRACTION on the root's tuned-LGB hyperparams: drop the 4 weakest-correlation engineered ratios (fixed/citric_to_volatile_acid, sugar_to_alcohol, acid_ph_ratio) -> 17-feature test, UNTESTED in the linear run (which only ever added features, 11->21, never pruned)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.016850482169027743,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.7955110174517752,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 345,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "fixed_to_volatile_acid",
+            "citric_to_volatile_acid",
+            "sugar_to_alcohol",
+            "acid_ph_ratio"
+          ]
+        },
+        "result": {
+          "n_feats": 17,
+          "qwk": 0.5566,
+          "cutpoints": [
+            3.6491,
+            4.505,
+            5.7521,
+            6.1324,
+            7.3682
+          ]
+        }
+      },
+      "score": -0.5566,
+      "status": "evaluated",
+      "wall_s": 1.6
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[CATORIG] vanilla/untuned CatBoost (STATUS.md exp #3 unchanged config, solo QWK ~0.52517) -- cheap diversity source, known (5%-weighted) blend contributor in the linear-iteration champion",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.52517,
+          "cutpoints": [
+            3.5061,
+            4.7404,
+            5.6231,
+            6.2028,
+            7.3765
+          ]
+        }
+      },
+      "score": -0.52517,
+      "status": "evaluated",
+      "wall_s": 5.2
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[LGBORIG] vanilla/untuned LGB (STATUS.md exp #3 unchanged config, solo QWK ~0.50547) -- cheap diversity source, the ~5%-weighted member that survives in the linear-iteration champion blend",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.50547,
+          "cutpoints": [
+            3.575,
+            4.6518,
+            5.6319,
+            6.1374,
+            7.4131
+          ]
+        }
+      },
+      "score": -0.50547,
+      "status": "evaluated",
+      "wall_s": 24.6
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: 3-way blend of root LGBTUNED(#0) + CAT_tuned(#2) + XGB(#3) CACHED OOF, dirichlet weight search + OptimizedRounder -- this tree-search's entry point into ensemble space; no retraining, evaluates in a fraction of a second",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            3
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node3"
+          ],
+          "weights": {
+            "0": 0.0,
+            "2": 0.9539264794856214,
+            "3": 0.04607352051437861
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.563,
+            4.6286,
+            5.614,
+            6.1695,
+            7.5444
+          ],
+          "qwk": 0.567
+        }
+      },
+      "score": -0.567,
+      "status": "evaluated",
+      "wall_s": 45.9
+    },
+    {
+      "id": 9,
+      "parent_id": 8,
+      "mutation": "[BLEND] BLEND: add CATORIG solo member (#6) -> 4-way, dirichlet weight search + OptimizedRounder (parent=#8)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          6
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            6
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node3",
+            "node6"
+          ],
+          "weights": {
+            "0": 0.13069347927136987,
+            "2": 0.8560860774866124,
+            "3": 0.006687441597070915,
+            "6": 0.006533001644946785
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5189,
+            4.5519,
+            5.6209,
+            6.1534,
+            7.5807
+          ],
+          "qwk": 0.56551
+        }
+      },
+      "score": -0.56551,
+      "status": "evaluated",
+      "wall_s": 45.0
+    },
+    {
+      "id": 10,
+      "parent_id": 8,
+      "mutation": "[BLEND] BLEND: add LGBORIG solo member (#7) -> 4-way, dirichlet weight search + OptimizedRounder (parent=#8)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            7
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node3",
+            "node7"
+          ],
+          "weights": {
+            "0": 0.3949407129162019,
+            "2": 0.5922363751276989,
+            "3": 0.011504765988698002,
+            "7": 0.0013181459674011687
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5882,
+            4.5384,
+            5.6165,
+            6.1486,
+            7.5591
+          ],
+          "qwk": 0.56539
+        }
+      },
+      "score": -0.56539,
+      "status": "evaluated",
+      "wall_s": 45.0
+    },
+    {
+      "id": 11,
+      "parent_id": 8,
+      "mutation": "[BLEND] BLEND: add FEAT solo member (#5) -> 4-way, dirichlet weight search + OptimizedRounder (parent=#8)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          5
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            5
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node3",
+            "node5"
+          ],
+          "weights": {
+            "0": 0.12862423487871072,
+            "2": 0.6453769516592723,
+            "3": 0.018333756880970126,
+            "5": 0.20766505658104686
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5902,
+            4.6087,
+            5.6139,
+            6.16,
+            7.5966
+          ],
+          "qwk": 0.56766
+        }
+      },
+      "score": -0.56766,
+      "status": "evaluated",
+      "wall_s": 45.4
+    },
+    {
+      "id": 12,
+      "parent_id": 11,
+      "mutation": "[BLEND] BLEND: add LGBNUDGE solo member (#4) -> 5-way, dirichlet weight search + OptimizedRounder (parent=#11)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          5,
+          4
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            5,
+            4
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node3",
+            "node5",
+            "node4"
+          ],
+          "weights": {
+            "0": 0.07145940490413505,
+            "2": 0.6492230853805567,
+            "3": 0.0213854552421652,
+            "5": 0.2089435779473626,
+            "4": 0.048988476525780485
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5272,
+            4.6768,
+            5.6131,
+            6.1651,
+            7.4929
+          ],
+          "qwk": 0.56664
+        }
+      },
+      "score": -0.56664,
+      "status": "evaluated",
+      "wall_s": 45.8
+    },
+    {
+      "id": 13,
+      "parent_id": 11,
+      "mutation": "[BLEND] BLEND: remove lowest-weight member #3 -> leaner 3-way, test whether it was truly adding value or just being tolerated by the weight search (parent=#11)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          5
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            5
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node5"
+          ],
+          "weights": {
+            "0": 0.10692711875969256,
+            "2": 0.6497672825171957,
+            "5": 0.24330559872311178
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5888,
+            4.4865,
+            5.6155,
+            6.154,
+            7.5306
+          ],
+          "qwk": 0.56733
+        }
+      },
+      "score": -0.56733,
+      "status": "evaluated",
+      "wall_s": 45.1
+    },
+    {
+      "id": 14,
+      "parent_id": 11,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #4 -> 5-way (parent=#11)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          5,
+          4
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            5,
+            4
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node3",
+            "node5",
+            "node4"
+          ],
+          "weights": {
+            "0": 0.07145940490413505,
+            "2": 0.6492230853805567,
+            "3": 0.0213854552421652,
+            "5": 0.2089435779473626,
+            "4": 0.048988476525780485
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5272,
+            4.6768,
+            5.6131,
+            6.1651,
+            7.4929
+          ],
+          "qwk": 0.56664
+        }
+      },
+      "score": -0.56664,
+      "status": "evaluated",
+      "wall_s": 46.5
+    },
+    {
+      "id": 15,
+      "parent_id": 2,
+      "mutation": "[CAT] CAT: add bagging_temperature=1.0 (Bayesian-bootstrap row weighting) -- untested regularization axis for the tuned CatBoost on this data (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 4,
+          "learning_rate": 0.023711050140388417,
+          "l2_leaf_reg": 6.458015909315451,
+          "iterations": 333,
+          "random_strength": 1.2907627214036907,
+          "min_data_in_leaf": 27,
+          "random_seed": 42,
+          "bagging_temperature": 1.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56466,
+          "cutpoints": [
+            3.5641,
+            4.5582,
+            5.6187,
+            6.1771,
+            7.6296
+          ]
+        }
+      },
+      "score": -0.56466,
+      "status": "evaluated",
+      "wall_s": 0.7
+    },
+    {
+      "id": 16,
+      "parent_id": 2,
+      "mutation": "[CAT] CAT: depth 4->5, probe slightly more capacity around the Optuna optimum (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 5,
+          "learning_rate": 0.023711050140388417,
+          "l2_leaf_reg": 6.458015909315451,
+          "iterations": 333,
+          "random_strength": 1.2907627214036907,
+          "min_data_in_leaf": 27,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56143,
+          "cutpoints": [
+            3.5275,
+            4.5614,
+            5.6213,
+            6.158,
+            7.6673
+          ]
+        }
+      },
+      "score": -0.56143,
+      "status": "evaluated",
+      "wall_s": 0.9
+    },
+    {
+      "id": 17,
+      "parent_id": 2,
+      "mutation": "[CAT] CAT: l2_leaf_reg 6.46->10.0, push regularization further along the tuned direction (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 4,
+          "learning_rate": 0.023711050140388417,
+          "l2_leaf_reg": 10.0,
+          "iterations": 333,
+          "random_strength": 1.2907627214036907,
+          "min_data_in_leaf": 27,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56118,
+          "cutpoints": [
+            3.5845,
+            4.5887,
+            5.6361,
+            6.1394,
+            7.5559
+          ]
+        }
+      },
+      "score": -0.56118,
+      "status": "evaluated",
+      "wall_s": 0.6
+    },
+    {
+      "id": 18,
+      "parent_id": 4,
+      "mutation": "[LGBNUDGE] LGBNUDGE: num_leaves 57->45, min_child_samples 40->30 -- probe slightly less-regularized capacity around the Optuna optimum (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 45,
+          "max_depth": 3,
+          "learning_rate": 0.012,
+          "min_child_samples": 30,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.7955110174517752,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 500,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.55909,
+          "cutpoints": [
+            3.5753,
+            4.5206,
+            5.6875,
+            6.1085,
+            7.4665
+          ]
+        }
+      },
+      "score": -0.55909,
+      "status": "evaluated",
+      "wall_s": 3.9
+    },
+    {
+      "id": 19,
+      "parent_id": 4,
+      "mutation": "[LGBNUDGE] LGBNUDGE: push L1/L2 regularization further along the Optuna-found direction (reg_alpha 0.80->1.5, reg_lambda 0.001->0.01) (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.012,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 1.5,
+          "reg_lambda": 0.01,
+          "n_estimators": 500,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56184,
+          "cutpoints": [
+            3.5777,
+            4.6241,
+            5.6947,
+            6.1154,
+            7.3811
+          ]
+        }
+      },
+      "score": -0.56184,
+      "status": "evaluated",
+      "wall_s": 3.6
+    },
+    {
+      "id": 20,
+      "parent_id": 19,
+      "mutation": "[LGBNUDGE] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 (NOTE: seed variants are a known dead end per experience.md -- only used as a last-resort filler once every authored mutation is exhausted, never counted on for a win) (parent=#19)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.012,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 1.5,
+          "reg_lambda": 0.01,
+          "n_estimators": 500,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56419,
+          "cutpoints": [
+            3.5885,
+            4.6334,
+            5.677,
+            6.136,
+            7.4572
+          ]
+        }
+      },
+      "score": -0.56419,
+      "status": "evaluated",
+      "wall_s": 3.1
+    },
+    {
+      "id": 21,
+      "parent_id": 1,
+      "mutation": "[ROOTQ] ROOT: slower/longer pace (n_estimators 345->600, lr 0.0169->0.01) around the Optuna optimum (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.01,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.4,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 600,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56065,
+          "cutpoints": [
+            3.659,
+            4.5954,
+            5.6722,
+            6.1235,
+            7.3629
+          ]
+        }
+      },
+      "score": -0.56065,
+      "status": "evaluated",
+      "wall_s": 3.8
+    },
+    {
+      "id": 22,
+      "parent_id": 21,
+      "mutation": "[ROOTQ] ROOT: num_leaves 57->45, probe less capacity around the Optuna optimum (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 45,
+          "max_depth": 3,
+          "learning_rate": 0.01,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.4,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 600,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56065,
+          "cutpoints": [
+            3.659,
+            4.5954,
+            5.6722,
+            6.1235,
+            7.3629
+          ]
+        }
+      },
+      "score": -0.56065,
+      "status": "evaluated",
+      "wall_s": 4.0
+    },
+    {
+      "id": 23,
+      "parent_id": 21,
+      "mutation": "[ROOTQ] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 (NOTE: seed variants are a known dead end per experience.md -- only used as a last-resort filler once every authored mutation is exhausted, never counted on for a win) (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.01,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.4,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 600,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.56181,
+          "cutpoints": [
+            3.6539,
+            4.4773,
+            5.6714,
+            6.1159,
+            7.5905
+          ]
+        }
+      },
+      "score": -0.56181,
+      "status": "evaluated",
+      "wall_s": 4.0
+    },
+    {
+      "id": 24,
+      "parent_id": 5,
+      "mutation": "[FEAT] FEAT: further trim bound_so2 (redundant with free_so2_ratio + the two raw SO2 columns already present) -> 16 feats (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.016850482169027743,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.7955110174517752,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 345,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "fixed_to_volatile_acid",
+            "citric_to_volatile_acid",
+            "sugar_to_alcohol",
+            "acid_ph_ratio",
+            "bound_so2"
+          ]
+        },
+        "result": {
+          "n_feats": 16,
+          "qwk": 0.56058,
+          "cutpoints": [
+            3.6162,
+            4.38,
+            5.7267,
+            6.1218,
+            7.4035
+          ]
+        }
+      },
+      "score": -0.56058,
+      "status": "evaluated",
+      "wall_s": 2.8
+    },
+    {
+      "id": 25,
+      "parent_id": 24,
+      "mutation": "[FEAT] FEAT: restore acid_ph_ratio only, isolate its marginal effect vs the aggressive 17-feature trim (parent=#24)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.016850482169027743,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.7955110174517752,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 345,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "fixed_to_volatile_acid",
+            "citric_to_volatile_acid",
+            "sugar_to_alcohol",
+            "bound_so2"
+          ]
+        },
+        "result": {
+          "n_feats": 17,
+          "qwk": 0.55749,
+          "cutpoints": [
+            3.5591,
+            4.508,
+            5.7375,
+            6.1336,
+            7.5512
+          ]
+        }
+      },
+      "score": -0.55749,
+      "status": "evaluated",
+      "wall_s": 2.6
+    },
+    {
+      "id": 26,
+      "parent_id": 24,
+      "mutation": "[FEAT] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 (NOTE: seed variants are a known dead end per experience.md -- only used as a last-resort filler once every authored mutation is exhausted, never counted on for a win) (parent=#24)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 57,
+          "max_depth": 3,
+          "learning_rate": 0.016850482169027743,
+          "min_child_samples": 40,
+          "subsample": 0.9520104938890754,
+          "colsample_bytree": 0.7120571432335079,
+          "reg_alpha": 0.7955110174517752,
+          "reg_lambda": 0.001041891430753302,
+          "n_estimators": 345,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": [
+            "fixed_to_volatile_acid",
+            "citric_to_volatile_acid",
+            "sugar_to_alcohol",
+            "acid_ph_ratio",
+            "bound_so2"
+          ]
+        },
+        "result": {
+          "n_feats": 16,
+          "qwk": 0.56099,
+          "cutpoints": [
+            3.5365,
+            4.6084,
+            5.6963,
+            6.1446,
+            7.5887
+          ]
+        }
+      },
+      "score": -0.56099,
+      "status": "evaluated",
+      "wall_s": 2.1
+    },
+    {
+      "id": 27,
+      "parent_id": 6,
+      "mutation": "[CATORIG] CATORIG: nudge toward the tuned-CAT region from the untuned default (depth 6 kept, lr 0.03->0.02, l2_leaf_reg 3.0->5.0) -- cheap probe of whether the vanilla config is leaving easy gains on the table (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "random_seed": 42,
+          "depth": 6,
+          "learning_rate": 0.02,
+          "l2_leaf_reg": 5.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.53727,
+          "cutpoints": [
+            3.5201,
+            4.7545,
+            5.6634,
+            6.0869,
+            7.4646
+          ]
+        }
+      },
+      "score": -0.53727,
+      "status": "evaluated",
+      "wall_s": 5.3
+    },
+    {
+      "id": 28,
+      "parent_id": 27,
+      "mutation": "[CATORIG] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3000 (NOTE: seed variants are a known dead end per experience.md -- only used as a last-resort filler once every authored mutation is exhausted, never counted on for a win) (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "random_seed": 3000,
+          "depth": 6,
+          "learning_rate": 0.02,
+          "l2_leaf_reg": 5.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.5398,
+          "cutpoints": [
+            3.4746,
+            4.7296,
+            5.6226,
+            6.1124,
+            7.5021
+          ]
+        }
+      },
+      "score": -0.5398,
+      "status": "evaluated",
+      "wall_s": 5.1
+    },
+    {
+      "id": 29,
+      "parent_id": 28,
+      "mutation": "[CATORIG] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3001 (NOTE: seed variants are a known dead end per experience.md -- only used as a last-resort filler once every authored mutation is exhausted, never counted on for a win) (parent=#28)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "random_seed": 3001,
+          "depth": 6,
+          "learning_rate": 0.02,
+          "l2_leaf_reg": 5.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.54329,
+          "cutpoints": [
+            3.5283,
+            4.734,
+            5.6547,
+            6.1461,
+            7.5063
+          ]
+        }
+      },
+      "score": -0.54329,
+      "status": "evaluated",
+      "wall_s": 5.1
+    },
+    {
+      "id": 30,
+      "parent_id": 3,
+      "mutation": "[XGB] XGB: heavier regularization (max_depth 5->3, min_child_weight 5->10, reg_alpha/lambda added) -- untested direction, XGB was never Optuna-tuned in the linear run (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "reg:squarederror",
+          "n_estimators": 1500,
+          "learning_rate": 0.03,
+          "max_depth": 3,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_lambda": 3.0,
+          "min_child_weight": 10,
+          "random_state": 42,
+          "reg_alpha": 1.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.52672,
+          "cutpoints": [
+            3.4806,
+            4.4988,
+            5.6833,
+            6.1449,
+            7.9165
+          ]
+        }
+      },
+      "score": -0.52672,
+      "status": "evaluated",
+      "wall_s": 10.1
+    },
+    {
+      "id": 31,
+      "parent_id": 30,
+      "mutation": "[XGB] XGB: slower pace (lr 0.03->0.015, more estimators) -- finer optimization, untested direction (parent=#30)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "reg:squarederror",
+          "n_estimators": 2500,
+          "learning_rate": 0.015,
+          "max_depth": 3,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_lambda": 3.0,
+          "min_child_weight": 10,
+          "random_state": 42,
+          "reg_alpha": 1.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.52044,
+          "cutpoints": [
+            3.5492,
+            4.7395,
+            5.588,
+            6.2381,
+            7.425
+          ]
+        }
+      },
+      "score": -0.52044,
+      "status": "evaluated",
+      "wall_s": 18.6
+    },
+    {
+      "id": 32,
+      "parent_id": 30,
+      "mutation": "[XGB] XGB: heavier row/feature subsampling for variance reduction on this small, imbalanced dataset (parent=#30)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "reg:squarederror",
+          "n_estimators": 1500,
+          "learning_rate": 0.03,
+          "max_depth": 3,
+          "subsample": 0.6,
+          "colsample_bytree": 0.5,
+          "reg_lambda": 3.0,
+          "min_child_weight": 10,
+          "random_state": 42,
+          "reg_alpha": 1.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.52631,
+          "cutpoints": [
+            3.4796,
+            4.7343,
+            5.6697,
+            6.2068,
+            7.497
+          ]
+        }
+      },
+      "score": -0.52631,
+      "status": "evaluated",
+      "wall_s": 9.9
+    },
+    {
+      "id": 33,
+      "parent_id": 7,
+      "mutation": "[LGBORIG] LGBORIG: nudge toward more regularization from the untuned default (num_leaves 31->45 capacity + min_child_samples/reg_lambda up) -- cheap probe distinct from the Optuna-tuned lineages (parent=#7)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 42,
+          "num_leaves": 45,
+          "min_child_samples": 25,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.50561,
+          "cutpoints": [
+            3.5351,
+            4.7076,
+            5.6161,
+            6.2168,
+            7.5442
+          ]
+        }
+      },
+      "score": -0.50561,
+      "status": "evaluated",
+      "wall_s": 18.1
+    },
+    {
+      "id": 34,
+      "parent_id": 33,
+      "mutation": "[LGBORIG] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 (NOTE: seed variants are a known dead end per experience.md -- only used as a last-resort filler once every authored mutation is exhausted, never counted on for a win) (parent=#33)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 3000,
+          "num_leaves": 45,
+          "min_child_samples": 25,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.50757,
+          "cutpoints": [
+            3.5508,
+            4.5892,
+            5.6108,
+            6.1771,
+            7.6563
+          ]
+        }
+      },
+      "score": -0.50757,
+      "status": "evaluated",
+      "wall_s": 23.8
+    },
+    {
+      "id": 35,
+      "parent_id": 34,
+      "mutation": "[LGBORIG] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 (NOTE: seed variants are a known dead end per experience.md -- only used as a last-resort filler once every authored mutation is exhausted, never counted on for a win) (parent=#34)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 3001,
+          "num_leaves": 45,
+          "min_child_samples": 25,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.50437,
+          "cutpoints": [
+            3.6513,
+            4.5991,
+            5.6009,
+            6.1034,
+            7.5622
+          ]
+        }
+      },
+      "score": -0.50437,
+      "status": "evaluated",
+      "wall_s": 24.7
+    },
+    {
+      "id": 36,
+      "parent_id": 34,
+      "mutation": "[LGBORIG] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3002 (NOTE: seed variants are a known dead end per experience.md -- only used as a last-resort filler once every authored mutation is exhausted, never counted on for a win) (parent=#34)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 3002,
+          "num_leaves": 45,
+          "min_child_samples": 25,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 21,
+          "qwk": 0.50665,
+          "cutpoints": [
+            3.5106,
+            4.4931,
+            5.6063,
+            6.215,
+            7.5531
+          ]
+        }
+      },
+      "score": -0.50665,
+      "status": "evaluated",
+      "wall_s": 27.1
+    },
+    {
+      "id": 37,
+      "parent_id": 13,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #15 -> 4-way (parent=#13)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          5,
+          15
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            5,
+            15
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node5",
+            "node15"
+          ],
+          "weights": {
+            "0": 0.3033107737712179,
+            "2": 0.10697893019183446,
+            "5": 0.01506931527522418,
+            "15": 0.5746409807617235
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5172,
+            4.6831,
+            5.617,
+            6.1507,
+            7.4985
+          ],
+          "qwk": 0.56725
+        }
+      },
+      "score": -0.56725,
+      "status": "evaluated",
+      "wall_s": 45.8
+    },
+    {
+      "id": 38,
+      "parent_id": 13,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #15 -> 4-way (parent=#13)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          5,
+          15
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            5,
+            15
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node5",
+            "node15"
+          ],
+          "weights": {
+            "0": 0.3033107737712179,
+            "2": 0.10697893019183446,
+            "5": 0.01506931527522418,
+            "15": 0.5746409807617235
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5172,
+            4.6831,
+            5.617,
+            6.1507,
+            7.4985
+          ],
+          "qwk": 0.56725
+        }
+      },
+      "score": -0.56725,
+      "status": "evaluated",
+      "wall_s": 45.8
+    },
+    {
+      "id": 39,
+      "parent_id": 13,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #15 -> 4-way (parent=#13)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          5,
+          15
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            2,
+            5,
+            15
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node5",
+            "node15"
+          ],
+          "weights": {
+            "0": 0.3033107737712179,
+            "2": 0.10697893019183446,
+            "5": 0.01506931527522418,
+            "15": 0.5746409807617235
+          },
+          "method": "dirichlet",
+          "cutpoints": [
+            3.5172,
+            4.6831,
+            5.617,
+            6.1507,
+            7.4985
+          ],
+          "qwk": 0.56725
+        }
+      },
+      "score": -0.56725,
+      "status": "evaluated",
+      "wall_s": 45.4
+    }
+  ],
+  "search_state": {
+    "active_lineage": 8,
+    "streak": {
+      "8": 3,
+      "2": 3,
+      "4": 3,
+      "1": 3,
+      "5": 3,
+      "6": 3,
+      "3": 3,
+      "7": 4
+    },
+    "plateaued": [
+      7,
+      8
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 14,
+        "plateaued_lineage": 8,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 17,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 20,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 23,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 26,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 29,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 32,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 35,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": null,
+        "reason": "all lineages plateaued -> reopened once (fallback so the search can keep going toward the node budget)"
+      },
+      {
+        "at_node_id": 36,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      },
+      {
+        "at_node_id": 39,
+        "plateaued_lineage": 8,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best -0.56766"
+      }
+    ]
+  }
+}
