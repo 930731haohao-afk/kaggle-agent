@@ -115,3 +115,116 @@ uv run kaggle competitions submit -c playground-series-s3e11 -f <submission.csv>
 單一長程序版 `iterate.py` 在背景執行時於 R1 CatBoost 階段停滯 33 分鐘後被 timeout 殺掉
 (疑與 CatBoost 預設檔案日誌寫入受沙箱限制有關,未能穩定重現)。改寫為 `iterate2.py`:
 每輪獨立程序 + npz checkpoint + `allow_writing_files=False` + 明確 thread_count,全部順利完成。
+
+## Appendix: Phase D-6 tree-search v2 sweep (2026-07-04) — the SCALE case, sweep finale
+
+**Sweep question**: v2 was 4/4 BEAT (s3e3 eval#12, s3e7 eval#13, s3e1 eval#9, s3e19
+eval#7). Does the harness hold at 360k rows, where a solo eval costs 30-55s (not the
+2-20s of every prior comp) and the node budget must be blend-heavy? **Answer: BEAT —
+first beat at evaluation #10, finished 0.295280 by evaluation #21 of 24 (−0.000368 vs
+linear's 0.295648, ~5.5× the linear run's entire Phase-B R2→R5 residual gain), total
+training+search wall 513.5s (8.6 min), a fraction of the 30-35 min budget.** The two
+levers — a 4th tuned-CAT seed the linear run stopped short of, and pushing CatBoost
+depth BEYOND Optuna's own search cap — are both direct extensions of s3e11's own
+distilled lessons.
+
+Built: `tree_search/eval_s3e11.py` (solo: LGB/CAT on log1p target, identical
+KFold(5,shuffle,seed42), OOF cached in log1p space matching iterate2.py's own blend
+semantics; blend: harness_v2.eval_blend minimizing rmsle_from_log) +
+`tree_search/run_s3e11.py` (harness_v2 driver, two-phase). OOF cache:
+`tree_search/cache_s3e11/` (gitignored). Banned per brief: per-combo feature means
+after store_te (R4 dead end), XGB (R1 zero-weight dead end), auto_scale postprocess
+(s3e19's lever, structurally inapplicable — KFold OOF has no systematic level gap).
+
+### Scale management (the Phase D-6-specific lever)
+- **Legacy OOF reuse instead of retraining**: root (CAT_tuned) + 4 pool seeds
+  (LGB_ORIG/CAT_ORIG/CAT_S2024/CAT_S7) were loaded directly from the linear run's own
+  `scripts/cache/*.npz` checkpoints at wall_s=0.0 each, with digit-for-digit
+  verification against experiments.json inside `load_legacy_solo()` (max deviation
+  4e-6, pure npz-roundtrip float noise; the reproduction check the brief mandates,
+  done as load+recompute instead of a ~10-12 min retrain).
+- Eval cost profile confirmed the brief's expectation: new CAT solos 34-54s, deep LGB
+  8.5s, blends 17-39s (dirichlet over a 360k×n OOF matrix — blend cost now scales
+  with n_rows and is no longer negligible, unlike every smaller comp).
+- Node mix ended 12 solo / 12 blend — the blend-heaviest sweep run, as planned.
+
+### Node/backtrack/dedup summary
+- **24 evaluated nodes** (12 solo / 12 blend; 5 solos reused at zero cost), 0 failed,
+  wall 513.5s total (phase 1: 425.5s / 20 nodes; phase 2: 88.0s / 4 nodes).
+- **2 backtracks**, both genuine 3-strike plateaus: BLEND at node #16 (streak on
+  0.295492), CAT_S7 at #21 (streak on 0.295280). tie_rate peaked at 0.059 — RMSLE is
+  continuous, the adaptive-plateau branch never fired (as designed).
+- **Dedup: 0 reactive rejections** — proposer-side pre-checks (find_dup before eval,
+  order-insensitive blend-member hashing) silently skipped duplicate member-sets
+  inside blend_fallback (e.g. re-adding #2 to #13's pool would recreate #12's set),
+  leaving nothing for the safety net. Fifth consecutive comp with a clean dedup ledger.
+
+### Best vs linear, evaluations-to-match/beat
+| | OOF RMSLE | evaluations |
+|---|---|---|
+| Linear-iteration best (exp #8, 5-way 0.1-grid blend) | 0.295648 | 8 experiments |
+| Tree v2: node #8 (5-way pool reproduction, dirichlet) | 0.295650 | 9 (match to 2e-6) |
+| Tree v2: node #9 (6-way, +CAT_S99 4th seed) | 0.295619 | **10 (first beat)** |
+| Tree v2: node #13 (lean 5-way, weakest removed) | 0.295492 | 14 |
+| Tree v2: node #17 (SOLO: tuned CAT depth 10→12) | 0.295461 | 18 |
+| Tree v2: node #20 (global best: 7-way around depth-12 family) | **0.295280** | **21** |
+
+Winning chain: #8 pool reproduction 0.295650 → #9 +CAT_S99 0.295619 → #10 +DEEPLGB
+0.295500 → #12/#13 remove zero-weight LGB/CAT_orig 0.295492 → (BLEND plateaus,
+backtrack) → #17 depth-12 solo 0.295461 → (phase 2) #20 re-blend top-7 pool
+**0.295280** (weights: depth-12 family .247+.319+.239=.805, DEEPLGB .178, everything
+else ≤.01). The depth-12 seed family (seeds 7/3000/3001: 0.295461/0.295462/0.295483)
+plus one deliberately-diverse deep LGB carries essentially the whole final blend.
+
+### What actually moved it — and what didn't (honest ledger)
+- **Depth 12 > Optuna's cap**: the single biggest discovery. The linear Optuna run
+  searched depth 4-10 and chose 10 (its own search boundary); one manual push to
+  depth 12 on 360k rows gave solo 0.295779→0.295461, beating every phase-1 blend.
+  Extends experience.md's "large data wants MORE capacity" finding with a sharper
+  corollary: **when Optuna's optimum sits ON a search-space boundary, the boundary
+  itself is the next mutation** — the tuner never saw depth>10.
+- **The blend around the new family, not the solo, set the final mark**: phase 1's
+  BLEND lineage plateaued BEFORE #17 existed, so no phase-1 blend contained it; the
+  phase-2 BLEND2 re-seed (pure weight search, 17.6s, zero retraining) took
+  0.295461→0.295280. Sequencing lesson for the harness: a post-plateau solo
+  breakthrough should re-open the blend lineage (v3 candidate rule).
+- **4th tuned-CAT seed (CAT_S99)**: solo 0.295786 (mid-pool), but as a blend member it
+  produced the first beat (#9) — the linear run's "diminishing returns, stop at 3
+  seeds" call left real value on the table at this scale; seed-bagging pays as long
+  as weight search can arbitrate.
+- **DEEPLGB (num_leaves 255, light reg)**: mediocre solo (0.295833) yet held 0.156-0.377
+  weight in every blend that contained it and drove #10's −0.000119 — fifth consecutive
+  sweep comp confirming blend contribution ≠ solo score, and the capacity direction
+  works for LGB here too (beats hand-set LGB_ORIG 0.296608 outright).
+- **What lost**: FEATVARIANT feature-subtraction (drop children_away/cars_per_child:
+  0.296184→0.297230, the worst solo of the run — at 360k rows even "weak" ratio
+  features carry real signal; the s3e7/s3e14 trim-features prior did NOT transfer,
+  opposite of s3e19 where it did); adding FEATVARIANT as a blend member (#11,
+  0.295520) and re-adding removed members (#14/#15, #22/#23) were all washes or hairs
+  worse; depth-12 seed variants beyond the third (#21 seed3002, 0.295562) regressed —
+  the seed family saturates at ~3 members, consistent with the linear run's R5
+  observation, just one capacity level higher.
+
+### Prior-usage log (idea-injection experiment)
+`suggest_priors({"metric":"rmsle","tags":["低訊號","optuna","ensemble"]})` returned 20
+bullets (P0-P19); like s3e19, s3e11 got much of its OWN distillate back (P10-P12 are
+s3e11 evidence). Among the 14 search-loop mutations (first-gen seeds excluded):
+- **3 prior-informed, win rate 3/3 = 100%** (P8 add-4th-seed #9: W; P14 remove-weakest
+  #13: W; P6 capacity-push depth-12 #17: W — the run's biggest single gain) — the
+  highest informed win rate of the sweep alongside s3e1.
+- **11 uninformed, win rate 2/11 = 18%** (#10 DEEPLGB-add and #12 fallback-remove won;
+  all fallback seed-variations and re-adds lost).
+- Sweep-final pattern across 5 comps (informed vs uninformed): s3e3 —, s3e7 62.5%,
+  s3e1 100%, s3e19 33%, s3e11 100% vs consistently-lower uninformed rates. Priors
+  reliably nominate WHAT to try; payoff size stays comp-local (here: P6's capacity
+  direction paid 4× more than P8's seed direction); and the biggest lever again came
+  from comp-local structure the library only partially encodes (Optuna's depth cap
+  being the binding constraint). Priors set the floor; comp-local insight sets the
+  ceiling — now confirmed on all 5 sweep comps.
+
+### Sweep verdict (Phase D complete)
+**5/5 BEAT**: s3e3 (AUC, small data), s3e7 (AUC), s3e1 (RMSE, geo), s3e19 (SMAPE,
+TimeSeriesSplit), s3e11 (RMSLE, 360k rows). The v2 harness (ensemble-default node
+space + OOF cache + priors + adaptive plateau + dedup) beat the linear-iteration
+best on every metric family, CV scheme, and data scale tested, always within
+9-21 evaluations. Note: 未提交 Kaggle(批次跑無憑證),tree best 為 OOF 分數。
