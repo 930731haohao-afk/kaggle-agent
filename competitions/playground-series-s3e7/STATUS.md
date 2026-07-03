@@ -16,6 +16,8 @@
       OOF weight-searched blend)
 - [x] Stage 4 Evaluation/iteration — 1 reflexion-driven iteration (feature trimming)
 - [x] Stage 5 Submission generated — `submissions/sub_blend_0.89939_20260703_190223.csv`
+- [x] **Phase B self-improvement iteration (2026-07-03 evening)** — 3 rounds, new best
+      OOF 0.899893 (exp 6); final submission `submissions/sub_blend_0.89989_20260703_205132.csv`
 - [ ] Not submitted to Kaggle leaderboard (no credentials in this run; local CV only)
 
 ## Best result vs baseline
@@ -23,9 +25,30 @@
 |-|-------------|------------------------|
 | Generic baseline blend (exp 1, raw 17 features) | 0.89882 | — |
 | Iter1: 17 raw + 14 engineered features (exp 2) | 0.89788 | −0.00094 |
-| **Iter2: 17 raw + 8 trimmed engineered features (exp 3, FINAL)** | **0.89939** | **+0.00057** |
+| Iter2: 17 raw + 8 trimmed engineered features (exp 3) | 0.89939 | +0.00057 |
+| Phase B R1: Optuna-tuned LGB + hand-set XGB/CAT (exp 4) | 0.899891 | +0.00107 |
+| Phase B R2: + Optuna-tuned XGB (exp 5, REJECTED) | 0.899722 | +0.00090 |
+| **Phase B R3: exp-4 bases, 0.01-grid prob blend (exp 6, FINAL)** | **0.899893** | **+0.00107** |
 
 CV is local-only this run (no Kaggle submission), so no CV↔LB gap to report.
+
+## Phase B self-improvement iteration (3 rounds, same CV: 5-fold StratifiedKFold seed=42)
+- **Round 1 (exp 4, KEPT)**: Optuna-tuned LGB (50 trials, TPE, fold-0 proxy objective —
+  a first attempt tuning on full 5-fold per trial blew a 25-min timeout with zero results;
+  fold-0 tuning took 300s). Winner is shallow + regularized: max_depth=3, lr=0.068,
+  reg_alpha=2.14, colsample=0.53 vs hand-set depth-unlimited num_leaves=63/lr=0.03.
+  LGB solo 0.898824 → 0.899215; blend 0.899395 → **0.899891** (+0.000496).
+- **Round 2 (exp 5, REJECTED)**: same recipe applied to XGB (50 trials, fold-0 proxy).
+  XGB solo improved 0.898765 → 0.898860, but blend REGRESSED to 0.899722 (−0.000169):
+  tuned XGB converged to shallow trees (depth 4, colsample 0.5) similar to tuned LGB,
+  losing ensemble diversity. Kept hand-set XGB.
+- **Round 3 (exp 6, FINAL)**: ensemble-stage-only change on exp-4 base models.
+  Fine 0.01 weight grid 0.899893 (weights LGB 0.54/XGB 0.40/CAT 0.06); rank-average
+  blend 0.899884 (worse). Delta +0.000002 vs exp 4 — noise-level. Counted together
+  with Round 2 as two consecutive rounds without meaningful improvement → STOP.
+- Scripts: `scripts/optuna_lgb.py` (R1), `scripts/optuna_xgb.py` (R2),
+  `scripts/blend_refine.py` (R3). Total Phase B wall time ≈ 45 min (25 of which was
+  the aborted full-5-fold tuning attempt).
 
 ## EDA key findings
 1. `lead_time` is the single strongest predictor (single-feature AUC 0.73, |corr| 0.375):
@@ -63,50 +86,68 @@ Per the self-improvement decision framework, +0.00057 is a small-but-real "flat�
 signal (not a plateau — only 2 iterations run); stopped after iter2 given the 15-minute
 training budget and diminishing expected returns from a 3rd micro-tweak.
 
-## Model results (OOF AUC, 5-fold, iter2/final feature set — 25 features)
+## Model results (OOF AUC, 5-fold, Phase A iter2 feature set — 25 features)
 | Model | OOF AUC | time |
 |-------|---------|------|
 | LightGBM (binary, num_leaves=63, lr=0.03) | 0.89882 | 30.3s |
 | XGBoost (binary:logistic, depth=6, lr=0.03) | 0.89876 | 31.2s |
 | CatBoost (Logloss/AUC, depth=7, lr=0.03) | 0.89671 | 47.1s |
-| **Blend 0.5/0.4/0.1 (weight-searched, grid step 0.05)** | **0.89939** | — |
+| Blend 0.5/0.4/0.1 (weight-searched, grid step 0.05) | 0.89939 | — |
 
 Total training time (all 3 models, iter2 run): ~109s. Well within the 15-minute budget
 across both iterations combined (~3m37s wall time for train.py × 2 runs).
 
-Experiment log: `experiments.json` (#1 generic baseline, #2 iter1, #3 iter2/final).
+Experiment log: `experiments.json` (#1 generic baseline, #2 iter1, #3 iter2,
+#4 Phase B R1/tuned-LGB, #5 Phase B R2/rejected, #6 Phase B R3/final).
+
+## Model results (OOF AUC, 5-fold, Phase B final — exp 6)
+| Model | OOF AUC | notes |
+|-------|---------|-------|
+| LightGBM (Optuna-tuned: depth=3, lr=0.068, reg_alpha=2.14) | 0.899215 | strongest single |
+| XGBoost (hand-set: depth=6, lr=0.03 — kept for diversity) | 0.898765 | |
+| CatBoost (hand-set: depth=7, lr=0.03) | 0.896709 | |
+| **Blend 0.54/0.40/0.06 (prob, 0.01 grid)** | **0.899893** | FINAL |
 
 ## Next ideas (not tried — future work)
-- Optuna tuning of LGB/XGB (current hyperparams are reasonable defaults, not tuned).
 - Target/frequency encoding for `market_segment_type` given its large rate spread (1.6–50.5%).
-- Stacking meta-model on the 3 base models' OOF instead of a linear weight-searched blend.
+- CatBoost native categorical handling for the 3 label-encoded categorical cols
+  (meal_plan 4 lv / room_type 7 lv / market_segment 5 lv) — CAT is the weakest base
+  model (0.8967) and only carries 0.06 blend weight, so expected blend gain is small.
+- Optuna-tune CAT (same fold-0 proxy recipe) — but see the Round-2 diversity caveat.
 - Threshold-free ranking metric (AUC) means no post-processing/threshold tuning applies.
 
 ## Files
 ```
 competitions/playground-series-s3e7/
 ├── config.yaml
-├── experiments.json        # 3 entries: generic baseline, iter1, iter2/final
+├── experiments.json        # 6 entries (see above)
 ├── STATUS.md                # this file
 ├── data/                    # train.csv, test.csv, sample_submission.csv
 ├── scripts/
 │   ├── eda.py
 │   ├── features.py          # build_features() + feature_columns(variant="trimmed"|"full")
-│   └── train.py              # LGB/XGB/CAT, 5-fold CV, weight-search blend, logs experiment
+│   ├── train.py              # LGB/XGB/CAT, 5-fold CV, weight-search blend, logs experiment
+│   ├── optuna_lgb.py          # Phase B R1: Optuna LGB (fold-0 proxy) + blend → exp 4
+│   ├── optuna_xgb.py          # Phase B R2: Optuna XGB (rejected) → exp 5
+│   └── blend_refine.py        # Phase B R3: fine-grid + rank blend → exp 6 (final)
 └── submissions/
     ├── sub_generic_0.89882_20260703_120542.csv   # pre-existing baseline
     ├── sub_blend_0.89788_20260703_185938.csv     # iter1 (kept for audit trail)
-    └── sub_blend_0.89939_20260703_190223.csv     # iter2/final — best local CV
+    ├── sub_blend_0.89939_20260703_190223.csv     # iter2 (Phase A best)
+    ├── sub_blend_0.89989_20260703_203932.csv     # Phase B R1 (exp 4)
+    └── sub_blend_0.89989_20260703_205132.csv     # Phase B R3 (exp 6) — FINAL best local CV
 ```
 
 ## Reproduce
 ```bash
 cd /home/tjyen/ai_agents/kaggle
 uv run python3 competitions/playground-series-s3e7/scripts/eda.py
-uv run python3 competitions/playground-series-s3e7/scripts/train.py
+uv run python3 competitions/playground-series-s3e7/scripts/train.py        # Phase A pipeline
+uv run python3 competitions/playground-series-s3e7/scripts/optuna_lgb.py    # Phase B R1
+uv run python3 competitions/playground-series-s3e7/scripts/blend_refine.py  # Phase B R3 (final)
 # Not submitted to Kaggle in this run (no credentials available). To submit:
 export KAGGLE_API_TOKEN=$(python3 -c "import json; print(json.load(open('/home/tjyen/.kaggle/kaggle.json'))['key'])")
 uv run kaggle competitions submit -c playground-series-s3e7 \
-  -f competitions/playground-series-s3e7/submissions/sub_blend_0.89939_20260703_190223.csv \
-  -m "LGB+XGB+CAT weight-searched blend, trimmed features, OOF 0.89939"
+  -f competitions/playground-series-s3e7/submissions/sub_blend_0.89989_20260703_205132.csv \
+  -m "Optuna-tuned LGB + XGB + CAT blend (0.54/0.40/0.06), OOF 0.899893"
 ```

@@ -288,16 +288,355 @@
       },
       "submission": "sub_blend_0.89939_20260703_190223.csv",
       "notes": "Delta vs generic baseline 0.89882: +0.00057. Iter2/reflexion: trimmed to 8 engineered features (dropped cyclical month/date, price_per_night, special*price interaction) after iter1's 14-feature set (17 raw + 14 engineered) scored 0.89788, below baseline."
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T20:39:32",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "LGB(Optuna-tuned,50trials)+XGB+CAT weight-searched blend",
+      "score": 0.899891,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold(booking_status)"
+      },
+      "features": [
+        "no_of_adults",
+        "no_of_children",
+        "no_of_weekend_nights",
+        "no_of_week_nights",
+        "type_of_meal_plan",
+        "required_car_parking_space",
+        "room_type_reserved",
+        "lead_time",
+        "arrival_year",
+        "arrival_month",
+        "arrival_date",
+        "market_segment_type",
+        "repeated_guest",
+        "no_of_previous_cancellations",
+        "no_of_previous_bookings_not_canceled",
+        "avg_price_per_room",
+        "no_of_special_requests",
+        "total_nights",
+        "total_guests",
+        "has_children",
+        "weekend_ratio",
+        "price_per_person",
+        "lead_time_log",
+        "prior_cancel_rate",
+        "has_prior_history"
+      ],
+      "n_features": 25,
+      "base_models": [
+        {
+          "model": "LGB",
+          "params": {
+            "objective": "binary",
+            "metric": "auc",
+            "n_estimators": "3000",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "verbose": "-1",
+            "subsample_freq": "1",
+            "learning_rate": "0.06811817027632358",
+            "num_leaves": "178",
+            "max_depth": "3",
+            "min_child_samples": "47",
+            "subsample": "0.8888159684496226",
+            "colsample_bytree": "0.5316042232727975",
+            "reg_alpha": "2.142043500176781",
+            "reg_lambda": "0.011502513321845967"
+          },
+          "oof_auc": 0.899215,
+          "time_s": 24.5
+        },
+        {
+          "model": "XGB",
+          "params": {
+            "objective": "binary:logistic",
+            "n_estimators": "3000",
+            "learning_rate": "0.03",
+            "max_depth": "6",
+            "min_child_weight": "5",
+            "subsample": "0.8",
+            "colsample_bytree": "0.8",
+            "reg_alpha": "0.5",
+            "reg_lambda": "1.0",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "eval_metric": "auc",
+            "early_stopping_rounds": "150"
+          },
+          "oof_auc": 0.898765,
+          "time_s": 28.1
+        },
+        {
+          "model": "CAT",
+          "params": {
+            "loss_function": "Logloss",
+            "eval_metric": "AUC",
+            "iterations": "4000",
+            "learning_rate": "0.03",
+            "depth": "7",
+            "l2_leaf_reg": "5.0",
+            "random_seed": "42",
+            "thread_count": "-1",
+            "verbose": "False"
+          },
+          "oof_auc": 0.896709,
+          "time_s": 46.6
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.55,
+          "XGB": 0.4,
+          "CAT": 0.05
+        },
+        "score": 0.899891
+      },
+      "submission": "sub_blend_0.89989_20260703_203932.csv",
+      "notes": "Round1: Optuna-tuned LGB (50 trials, TPE, fold-0 proxy objective, same folds/features as exp #3) replacing hand-set LGB params; XGB/CAT unchanged from exp #3. Tuning time 300.2s. Tuned LGB solo OOF=0.899215 vs hand-set exp#3 LGB solo 0.898824. Blend delta vs prev best 0.899395: +0.000496."
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-03T20:47:55",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "LGB(tuned r1)+XGB(Optuna-tuned,50trials)+CAT weight-searched blend",
+      "score": 0.899722,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold(booking_status)"
+      },
+      "features": [
+        "no_of_adults",
+        "no_of_children",
+        "no_of_weekend_nights",
+        "no_of_week_nights",
+        "type_of_meal_plan",
+        "required_car_parking_space",
+        "room_type_reserved",
+        "lead_time",
+        "arrival_year",
+        "arrival_month",
+        "arrival_date",
+        "market_segment_type",
+        "repeated_guest",
+        "no_of_previous_cancellations",
+        "no_of_previous_bookings_not_canceled",
+        "avg_price_per_room",
+        "no_of_special_requests",
+        "total_nights",
+        "total_guests",
+        "has_children",
+        "weekend_ratio",
+        "price_per_person",
+        "lead_time_log",
+        "prior_cancel_rate",
+        "has_prior_history"
+      ],
+      "n_features": 25,
+      "base_models": [
+        {
+          "model": "LGB",
+          "params": {
+            "objective": "binary",
+            "metric": "auc",
+            "n_estimators": "3000",
+            "learning_rate": "0.06811817027632358",
+            "num_leaves": "178",
+            "max_depth": "3",
+            "min_child_samples": "47",
+            "subsample": "0.8888159684496226",
+            "subsample_freq": "1",
+            "colsample_bytree": "0.5316042232727975",
+            "reg_alpha": "2.142043500176781",
+            "reg_lambda": "0.011502513321845967",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "verbose": "-1"
+          },
+          "oof_auc": 0.899215,
+          "time_s": 29.5
+        },
+        {
+          "model": "XGB",
+          "params": {
+            "objective": "binary:logistic",
+            "n_estimators": "3000",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "eval_metric": "auc",
+            "early_stopping_rounds": "150",
+            "learning_rate": "0.04762037769392163",
+            "max_depth": "4",
+            "min_child_weight": "10",
+            "subsample": "0.9562756917815254",
+            "colsample_bytree": "0.5009444241255817",
+            "reg_alpha": "0.3747968669840011",
+            "reg_lambda": "0.0012246651174215777"
+          },
+          "oof_auc": 0.89886,
+          "time_s": 32.0
+        },
+        {
+          "model": "CAT",
+          "params": {
+            "loss_function": "Logloss",
+            "eval_metric": "AUC",
+            "iterations": "4000",
+            "learning_rate": "0.03",
+            "depth": "7",
+            "l2_leaf_reg": "5.0",
+            "random_seed": "42",
+            "thread_count": "-1",
+            "verbose": "False"
+          },
+          "oof_auc": 0.896709,
+          "time_s": 46.4
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.5,
+          "XGB": 0.35,
+          "CAT": 0.15
+        },
+        "score": 0.899722
+      },
+      "notes": "Round2: Optuna-tuned XGB (50 trials, TPE, fold-0 proxy objective); LGB fixed at Round-1 tuned params, CAT unchanged. Tuning time 335.6s. Tuned XGB solo OOF=0.898860 vs hand-set 0.898765. Blend delta vs Round-1 best 0.899891: -0.000169."
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-03T20:51:32",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "LGB(tuned r1)+XGB+CAT, ensemble refinement (prob_0.01grid)",
+      "score": 0.899893,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold(booking_status)"
+      },
+      "features": [
+        "no_of_adults",
+        "no_of_children",
+        "no_of_weekend_nights",
+        "no_of_week_nights",
+        "type_of_meal_plan",
+        "required_car_parking_space",
+        "room_type_reserved",
+        "lead_time",
+        "arrival_year",
+        "arrival_month",
+        "arrival_date",
+        "market_segment_type",
+        "repeated_guest",
+        "no_of_previous_cancellations",
+        "no_of_previous_bookings_not_canceled",
+        "avg_price_per_room",
+        "no_of_special_requests",
+        "total_nights",
+        "total_guests",
+        "has_children",
+        "weekend_ratio",
+        "price_per_person",
+        "lead_time_log",
+        "prior_cancel_rate",
+        "has_prior_history"
+      ],
+      "n_features": 25,
+      "base_models": [
+        {
+          "model": "LGB",
+          "params": {
+            "objective": "binary",
+            "metric": "auc",
+            "n_estimators": "3000",
+            "learning_rate": "0.06811817027632358",
+            "num_leaves": "178",
+            "max_depth": "3",
+            "min_child_samples": "47",
+            "subsample": "0.8888159684496226",
+            "subsample_freq": "1",
+            "colsample_bytree": "0.5316042232727975",
+            "reg_alpha": "2.142043500176781",
+            "reg_lambda": "0.011502513321845967",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "verbose": "-1"
+          },
+          "oof_auc": 0.899215,
+          "time_s": 25.7
+        },
+        {
+          "model": "XGB",
+          "params": {
+            "objective": "binary:logistic",
+            "n_estimators": "3000",
+            "learning_rate": "0.03",
+            "max_depth": "6",
+            "min_child_weight": "5",
+            "subsample": "0.8",
+            "colsample_bytree": "0.8",
+            "reg_alpha": "0.5",
+            "reg_lambda": "1.0",
+            "random_state": "42",
+            "n_jobs": "-1",
+            "eval_metric": "auc",
+            "early_stopping_rounds": "150"
+          },
+          "oof_auc": 0.898765,
+          "time_s": 27.7
+        },
+        {
+          "model": "CAT",
+          "params": {
+            "loss_function": "Logloss",
+            "eval_metric": "AUC",
+            "iterations": "4000",
+            "learning_rate": "0.03",
+            "depth": "7",
+            "l2_leaf_reg": "5.0",
+            "random_seed": "42",
+            "thread_count": "-1",
+            "verbose": "False"
+          },
+          "oof_auc": 0.896709,
+          "time_s": 46.0
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.54,
+          "XGB": 0.4,
+          "CAT": 0.06
+        },
+        "score": 0.899893,
+        "method": "prob_0.01grid"
+      },
+      "submission": "sub_blend_0.89989_20260703_205132.csv",
+      "notes": "Round3: ensemble-stage-only change on exp #4 base models. (a) prob 0.05grid=0.899891 (sanity, exp#4=0.899891), (b) prob 0.01grid=0.899893, (c) rank 0.01grid=0.899884. Chosen prob_0.01grid. Delta vs exp #4: +0.000002. Motivation: Round2 showed retuning XGB hurt blend via diversity loss, so refine combination instead of base models."
     }
   ],
   "best": {
-    "experiment_id": 3,
-    "timestamp": "2026-07-03T19:02:23",
+    "experiment_id": 6,
+    "timestamp": "2026-07-03T20:51:32",
     "source_format": "v2",
     "metric": "roc_auc",
     "direction": "maximize",
-    "model": "LGB+XGB+CAT weight-searched blend (trimmed features, iter2)",
-    "score": 0.899395,
+    "model": "LGB(tuned r1)+XGB+CAT, ensemble refinement (prob_0.01grid)",
+    "score": 0.899893,
     "cv": {
       "scheme": "5fold",
       "n_splits": 5,
@@ -339,20 +678,21 @@
           "objective": "binary",
           "metric": "auc",
           "n_estimators": "3000",
-          "learning_rate": "0.03",
-          "num_leaves": "63",
-          "min_child_samples": "30",
-          "subsample": "0.8",
+          "learning_rate": "0.06811817027632358",
+          "num_leaves": "178",
+          "max_depth": "3",
+          "min_child_samples": "47",
+          "subsample": "0.8888159684496226",
           "subsample_freq": "1",
-          "colsample_bytree": "0.8",
-          "reg_alpha": "0.5",
-          "reg_lambda": "1.0",
+          "colsample_bytree": "0.5316042232727975",
+          "reg_alpha": "2.142043500176781",
+          "reg_lambda": "0.011502513321845967",
           "random_state": "42",
           "n_jobs": "-1",
           "verbose": "-1"
         },
-        "oof_auc": 0.898824,
-        "time_s": 30.3
+        "oof_auc": 0.899215,
+        "time_s": 25.7
       },
       {
         "model": "XGB",
@@ -372,7 +712,7 @@
           "early_stopping_rounds": "150"
         },
         "oof_auc": 0.898765,
-        "time_s": 31.2
+        "time_s": 27.7
       },
       {
         "model": "CAT",
@@ -388,19 +728,20 @@
           "verbose": "False"
         },
         "oof_auc": 0.896709,
-        "time_s": 47.1
+        "time_s": 46.0
       }
     ],
     "ensemble": {
       "weights": {
-        "LGB": 0.5,
+        "LGB": 0.54,
         "XGB": 0.4,
-        "CAT": 0.1
+        "CAT": 0.06
       },
-      "score": 0.899395
+      "score": 0.899893,
+      "method": "prob_0.01grid"
     },
-    "submission": "sub_blend_0.89939_20260703_190223.csv",
-    "notes": "Delta vs generic baseline 0.89882: +0.00057. Iter2/reflexion: trimmed to 8 engineered features (dropped cyclical month/date, price_per_night, special*price interaction) after iter1's 14-feature set (17 raw + 14 engineered) scored 0.89788, below baseline."
+    "submission": "sub_blend_0.89989_20260703_205132.csv",
+    "notes": "Round3: ensemble-stage-only change on exp #4 base models. (a) prob 0.05grid=0.899891 (sanity, exp#4=0.899891), (b) prob 0.01grid=0.899893, (c) rank 0.01grid=0.899884. Chosen prob_0.01grid. Delta vs exp #4: +0.000002. Motivation: Round2 showed retuning XGB hurt blend via diversity loss, so refine combination instead of base models."
   },
   "trajectory": [
     {
@@ -419,6 +760,24 @@
       "experiment_id": 3,
       "timestamp": "2026-07-03T19:02:23",
       "score": 0.899395,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T20:39:32",
+      "score": 0.899891,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-03T20:47:55",
+      "score": 0.899722,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-03T20:51:32",
+      "score": 0.899893,
       "source_format": "v2"
     }
   ],

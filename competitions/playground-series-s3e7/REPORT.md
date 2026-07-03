@@ -1,7 +1,7 @@
 # 競賽分析報告:playground-series-s3e7
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-03
+> 素材等級:full | 產生日期:2026-07-03(Phase B 自我改進迭代後更新)
 
 ## 1. 競賽目的
 
@@ -28,7 +28,8 @@ facts.json 僅記錄各實驗使用的特徵數,未記錄訓練/測試集的實�
 |------|--------|
 | 通用 baseline blend(exp 1) | 17 |
 | Iter1:17 原始 + 工程特徵(exp 2) | 31 |
-| Iter2/最終:17 原始 + 精簡工程特徵(exp 3) | 25 |
+| Iter2:17 原始 + 精簡工程特徵(exp 3) | 25 |
+| Phase B 三輪(exp 4–6,特徵集凍結不變) | 25 |
 
 素材等級為 **full**(本場已執行 EDA 與特徵工程,並非僅有 baseline)。
 
@@ -38,25 +39,28 @@ false)、不允許預訓練模型(pretrained_models_allowed: false)、不允許�
 
 ## 3. 模型規格
 
-最終選用模型(best,依 OOF score 選出的 exp 3)由三個基模型加權混合而成
+最終選用模型(best,依 OOF score 選出的 exp 6)由三個基模型加權混合而成
 (來源:`best.base_models`):
 
 | 模型 | OOF ROC-AUC | 訓練時間(秒) |
 |------|-------------|----------------|
-| LGB | 0.898824 | 30.3 |
-| XGB | 0.898765 | 31.2 |
-| CAT | 0.896709 | 47.1 |
+| LGB(Optuna 調參,Phase B R1) | 0.899215 | 25.7 |
+| XGB(手設參數,保留多樣性) | 0.898765 | 27.7 |
+| CAT(手設參數) | 0.896709 | 46.0 |
 
-Ensemble 權重與分數(來源:`best.ensemble`):LGB 0.5 / XGB 0.4 / CAT 0.1,混合後
-OOF ROC-AUC = **0.899395**。
+Ensemble 權重與分數(來源:`best.ensemble`):LGB 0.54 / XGB 0.4 / CAT 0.06,
+混合方法 `prob_0.01grid`(機率混合、0.01 步長權重網格搜尋),混合後
+OOF ROC-AUC = **0.899893**。
 
-**選型理由**:三個模型的單模型 OOF 分數彼此接近(0.8967–0.8988),屬於多樣但實力相當的
-樹模型組合,權重搜尋給 CatBoost 較低權重(0.1)反映其單模略弱;LGB 與 XGB 權重相近(0.5/0.4)
-反映兩者表現幾乎並列。此組合較單一最佳模型(LGB, 0.898824)進一步提升到 0.899395。
+**選型理由**:Phase B Round 1 以 Optuna(50 trials、TPE、fold-0 代理目標)只調 LGB,
+LGB 單模由 0.898824 升至 0.899215,成為最強單模。Round 2 以同法調 XGB 時,XGB 單模雖由
+0.898765 微升至 0.89886,但混合分數反而退步(exp 5 之 0.899722)——調參後的 XGB 收斂到
+與調參 LGB 相似的淺樹結構,喪失 ensemble 多樣性,故保留手設 XGB。CatBoost 單模最弱
+(0.896709),權重搜尋僅給 0.06。
 
 ## 4. 訓練規格
 
-CV 方案(來源:`best.cv`):
+CV 方案(來源:`best.cv`,六個實驗全程固定同一方案,分數可直接比較):
 
 | scheme | n_splits | seed | strategy |
 |--------|----------|------|----------|
@@ -66,13 +70,18 @@ CV 方案(來源:`best.cv`):
 StratifiedKFold 可確保每一折的正負類別比例一致,避免因某一折類別分佈偏移而使 CV 分數
 不穩定或不可信。
 
-各基模型關鍵超參(來源:`best.base_models[].params`,皆有紀錄):
+各基模型關鍵超參(來源:`best.base_models[].params`,皆有紀錄;LGB 為 Optuna 調參結果,
+數值四捨五入至 3–4 位小數):
 
 | 模型 | 關鍵超參 |
 |------|----------|
-| LGB | objective=binary, metric=auc, n_estimators=3000, learning_rate=0.03, num_leaves=63, min_child_samples=30, subsample=0.8, subsample_freq=1, colsample_bytree=0.8, reg_alpha=0.5, reg_lambda=1.0, random_state=42, n_jobs=-1, verbose=-1 |
+| LGB(Optuna) | objective=binary, metric=auc, n_estimators=3000, learning_rate≈0.068, num_leaves=178, max_depth=3, min_child_samples=47, subsample≈0.889, colsample_bytree≈0.532, reg_alpha≈2.14, reg_lambda≈0.0115, random_state=42, n_jobs=-1, verbose=-1 |
 | XGB | objective=binary:logistic, n_estimators=3000, learning_rate=0.03, max_depth=6, min_child_weight=5, subsample=0.8, colsample_bytree=0.8, reg_alpha=0.5, reg_lambda=1.0, random_state=42, n_jobs=-1, eval_metric=auc, early_stopping_rounds=150 |
 | CAT | loss_function=Logloss, eval_metric=AUC, iterations=4000, learning_rate=0.03, depth=7, l2_leaf_reg=5.0, random_seed=42, thread_count=-1, verbose=False |
+
+值得注意:Optuna 找到的 LGB 最佳解是「淺而強正則」(max_depth=3、較高學習率、
+reg_alpha≈2.14),num_leaves=178 在 depth=3 之下實際不起作用;這與跨競賽經驗
+「小/中型資料獎勵正則化而非容量」一致。
 
 ## 5. 推論程序
 
@@ -80,7 +89,7 @@ StratifiedKFold 可確保每一折的正負類別比例一致,避免因某一折
 為排序型指標,不需要機率門檻轉換)。
 
 **Submission 檔名與格式**(來源:`best.submission`、`competition.id_column`/`target_column`):
-檔名 `sub_blend_0.89939_20260703_190223.csv`,欄位為 id 欄 `id` 與目標欄 `booking_status`
+檔名 `sub_blend_0.89989_20260703_205132.csv`,欄位為 id 欄 `id` 與目標欄 `booking_status`
 (輸出為取消機率,而非硬分類標籤,符合 ROC-AUC 評分需求)。
 
 ## 6. 評估指標
@@ -92,10 +101,10 @@ StratifiedKFold 可確保每一折的正負類別比例一致,避免因某一折
 
 | 項目 | ROC-AUC |
 |------|---------|
-| LGB(base model) | 0.898824 |
+| LGB(base model,Optuna 調參) | 0.899215 |
 | XGB(base model) | 0.898765 |
 | CAT(base model) | 0.896709 |
-| Ensemble(最終) | 0.899395 |
+| Ensemble(最終,exp 6) | 0.899893 |
 | Public LB | 無紀錄 |
 | Private LB | 無紀錄 |
 
@@ -111,19 +120,38 @@ StratifiedKFold 可確保每一折的正負類別比例一致,避免因某一折
 | 1 | 2026-07-03T12:05:42 | 0.89882 | generic_batch |
 | 2 | 2026-07-03T18:59:38 | 0.89788 | v2 |
 | 3 | 2026-07-03T19:02:23 | 0.899395 | v2 |
+| 4 | 2026-07-03T20:39:32 | 0.899891 | v2 |
+| 5 | 2026-07-03T20:48:03 | 0.899722 | v2 |
+| 6 | 2026-07-03T20:51:32 | 0.899893 | v2 |
 
-**突破點敘述**:分數躍升發生在 experiment 3。experiment 2(17 原始 + 14 工程特徵,含月份/日期
-的週期性編碼與價格交乘項)分數為 0.89788,低於通用 baseline 的 0.89882,呈現退步訊號
-(來源:exp 2 之 `notes`:"Delta vs generic baseline 0.89882: -0.00094")。據此反思,
-experiment 3 將工程特徵精簡為 8 個(移除週期性月份/日期編碼、price_per_night、
-special×price 交乘項),分數回升至 0.899395,較 baseline 進步
-(來源:exp 3 之 `notes`:"Delta vs generic baseline 0.89882: +0.00057")。以下為以
-facts.json 內 `best.score`(0.899395)與 exp 1 之 `score`(0.89882)重新計算之衍生差值,
-僅用於驗證上述 notes 描述之方向一致,不作為新事實:
+**突破點敘述**:本場有兩個階段的躍升。
+
+*Phase A(exp 1–3)*:experiment 2(17 原始 + 14 工程特徵,含月份/日期的週期性編碼與
+價格交乘項)分數為 0.89788,低於通用 baseline 的 0.89882,呈現退步訊號(來源:exp 2 之
+`notes`:"Delta vs generic baseline 0.89882: -0.00094")。據此反思,experiment 3 將
+工程特徵精簡為 8 個(移除週期性月份/日期編碼、price_per_night、special×price 交乘項),
+分數回升至 0.899395(來源:exp 3 之 `notes`:"+0.00057")。
+
+*Phase B(exp 4–6,自我改進迭代;特徵集與 CV 凍結,每輪只改一件事)*:
+- exp 4(Round 1,**主要躍升**):Optuna 調 LGB(50 trials、TPE、fold-0 代理目標),
+  LGB 單模 0.898824 → 0.899215,混合 0.899395 → 0.899891(來源:exp 4 之 `notes`:
+  "+0.000496")。
+- exp 5(Round 2,退步、棄用):同法調 XGB,單模微升至 0.89886,但混合退至 0.899722
+  (來源:exp 5 之 `notes`:"-0.000169")——調參使 XGB 與 LGB 樹結構趨同、多樣性下降。
+- exp 6(Round 3,最終):凍結 exp 4 基模型、僅改混合層(0.01 步長權重網格),達 0.899893
+  (來源:exp 6 之 `notes`:"+0.000002",噪音等級;rank-average 混合 0.899884 更差)。
+  連同 Round 2 視為兩輪無實質改進,依停止準則收手。
+
+以下為以 facts.json 內各實驗 `score` 重新計算之衍生差值,僅用於驗證上述 notes 描述之方向
+一致,不作為新事實:
 
 ```
-0.899395 (exp3 最終 ensemble score) − 0.89882 (exp1 baseline score) = 0.000575
-0.89788  (exp2 ensemble score)      − 0.89882 (exp1 baseline score) = -0.00094
+0.899893 (exp6 最終)  − 0.89882  (exp1 baseline)     = +0.001073
+0.899893 (exp6 最終)  − 0.899395 (exp3 Phase A 最佳)  = +0.000498
+0.899891 (exp4)       − 0.899395 (exp3)              = +0.000496
+0.899722 (exp5)       − 0.899891 (exp4)              = −0.000169
+0.899893 (exp6)       − 0.899891 (exp4)              = +0.000002
+0.89788  (exp2)       − 0.89882  (exp1)              = −0.00094
 ```
 
 `unparsed`:facts.json 之 `unparsed` 清單為空,無法解析之紀錄:無。
@@ -136,9 +164,15 @@ cd /home/tjyen/ai_agents/kaggle
 # Stage 1: EDA
 uv run python3 competitions/playground-series-s3e7/scripts/eda.py
 
-# Stage 2-3: feature engineering + modeling (LGB/XGB/CAT, 5-fold StratifiedKFold,
-# OOF weight-searched blend, writes submissions/ + logs experiments.json)
+# Stage 2-3 (Phase A): feature engineering + modeling (LGB/XGB/CAT, 5-fold
+# StratifiedKFold, OOF weight-searched blend) → exp 3
 uv run python3 competitions/playground-series-s3e7/scripts/train.py
+
+# Phase B Round 1: Optuna-tuned LGB (50 trials, fold-0 proxy) + blend → exp 4
+uv run python3 competitions/playground-series-s3e7/scripts/optuna_lgb.py
+
+# Phase B Round 3: ensemble refinement (fine 0.01 grid + rank blend) → exp 6 (final)
+uv run python3 competitions/playground-series-s3e7/scripts/blend_refine.py
 
 # Report generation (this file)
 uv run python3 .claude/skills/kaggle-report/assets/collect.py playground-series-s3e7
@@ -150,6 +184,6 @@ bash .claude/skills/kaggle-report/assets/md2pdf.sh competitions/playground-serie
 # To submit the final submission file to the leaderboard:
 export KAGGLE_API_TOKEN=$(python3 -c "import json; print(json.load(open('/home/tjyen/.kaggle/kaggle.json'))['key'])")
 uv run kaggle competitions submit -c playground-series-s3e7 \
-    -f competitions/playground-series-s3e7/submissions/sub_blend_0.89939_20260703_190223.csv \
-    -m "LGB+XGB+CAT weight-searched blend, trimmed features"
+    -f competitions/playground-series-s3e7/submissions/sub_blend_0.89989_20260703_205132.csv \
+    -m "Optuna-tuned LGB + XGB + CAT blend (0.54/0.40/0.06), OOF 0.899893"
 ```
