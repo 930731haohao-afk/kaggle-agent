@@ -22,7 +22,11 @@ pathlib.Path(html_path).write_text(
     encoding="utf-8")
 PY
 
-CHROME="$(command -v chromium || command -v chromium-browser)"
+# `|| true` is required: under `set -e`, if both `command -v` calls fail,
+# the assignment's command substitution would abort the script here (exit 1,
+# no WARN) before the `if` below ever runs — that breaks the spec §10
+# soft-fail contract (exit 2 + WARN, keep the .md as deliverable).
+CHROME="$(command -v chromium || command -v chromium-browser || true)"
 if [ -z "$CHROME" ]; then
   rm -f "$HTML"
   echo "WARN: chromium not found — skipping PDF, REPORT.md is the deliverable" >&2
