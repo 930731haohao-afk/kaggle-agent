@@ -1,0 +1,142 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-07-03T12:10:20",
+    "model": "generic LGB+XGB+CAT blend",
+    "metric": "rmsle",
+    "n_features": 15,
+    "cv": "5fold",
+    "per_model": {
+      "LGB": 0.29731,
+      "XGB": 0.29877,
+      "CAT": 0.2977
+    },
+    "blend_weights": {
+      "LGB": 0.7,
+      "XGB": 0.0,
+      "CAT": 0.3
+    },
+    "blend_score": 0.29723,
+    "submission": "sub_generic_0.29723_20260703_121020.csv"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-03T19:25:07",
+    "model": "base LGB+XGB+CAT blend (log1p target, KFold5)",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.2971,
+    "features": [
+      "store_sales(in millions)",
+      "unit_sales(in millions)",
+      "total_children",
+      "num_children_at_home",
+      "avg_cars_at home(approx).1",
+      "gross_weight",
+      "recyclable_package",
+      "low_fat",
+      "units_per_case",
+      "store_sqft",
+      "coffee_bar",
+      "video_store",
+      "salad_bar",
+      "prepared_food",
+      "florist"
+    ],
+    "n_features": 15,
+    "cv": {
+      "strategy": "5fold_kfold_shuffle",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "LGB",
+        "oof_rmsle": 0.29765,
+        "time_s": 94.4
+      },
+      {
+        "model": "XGB",
+        "oof_rmsle": 0.29827,
+        "time_s": 25.7
+      },
+      {
+        "model": "CAT",
+        "oof_rmsle": 0.29715,
+        "time_s": 49.2
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.2,
+        "XGB": 0.0,
+        "CAT": 0.8
+      }
+    },
+    "submission": "sub_base_0.29710_20260703_192507.csv",
+    "notes": "mode=base; trained on log1p(cost) with RMSE objective, expm1+clip>=0 at predict time; raw 15 features only, no target encoding (methodology-only run)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T19:28:19",
+    "model": "engineered LGB+XGB+CAT blend (log1p target, KFold5)",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.296143,
+    "features": [
+      "store_sales(in millions)",
+      "unit_sales(in millions)",
+      "total_children",
+      "num_children_at_home",
+      "avg_cars_at home(approx).1",
+      "gross_weight",
+      "recyclable_package",
+      "low_fat",
+      "units_per_case",
+      "store_sqft",
+      "coffee_bar",
+      "video_store",
+      "salad_bar",
+      "prepared_food",
+      "florist",
+      "amenity_count",
+      "weight_per_case",
+      "sales_ratio",
+      "children_away",
+      "cars_per_child",
+      "store_te"
+    ],
+    "n_features": 21,
+    "cv": {
+      "strategy": "5fold_kfold_shuffle",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "LGB",
+        "oof_rmsle": 0.29661,
+        "time_s": 70.4
+      },
+      {
+        "model": "XGB",
+        "oof_rmsle": 0.29713,
+        "time_s": 24.5
+      },
+      {
+        "model": "CAT",
+        "oof_rmsle": 0.29618,
+        "time_s": 58.3
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.2,
+        "XGB": 0.0,
+        "CAT": 0.8
+      }
+    },
+    "submission": "sub_engineered_0.29614_20260703_192819.csv",
+    "notes": "mode=engineered; trained on log1p(cost) with RMSE objective, expm1+clip>=0 at predict time; store_combo (store_sqft+5 amenity flags) K-fold target-encoded per fold, test encoding averaged across folds."
+  }
+]
