@@ -1,0 +1,250 @@
+{
+  "generated_by": "docs/scripts/build_benchmark_table.py",
+  "source": "collect.py (imported by path) over each competitions/<name>/experiments.json",
+  "tier_definitions": {
+    "tier1": "generic baseline (competitions/run_competition.py batch run)",
+    "tier2": "best skill-pipeline score BEFORE the Phase B self-improvement commit",
+    "tier3": "final best score (after Phase B, current state)"
+  },
+  "rows": [
+    {
+      "comp": "s3e1",
+      "metric": "rmse",
+      "direction": "minimize",
+      "tier1": {
+        "value": 0.56166,
+        "experiment_id": 1,
+        "label": "generic batch (run_competition.py)"
+      },
+      "tier2": {
+        "value": 0.558768,
+        "experiment_id": 2,
+        "label": "skill pipeline best, pre-Phase-B (Phase A)"
+      },
+      "tier3": {
+        "value": 0.557088,
+        "experiment_id": 7,
+        "label": "final best (post-Phase-B self-improvement)"
+      },
+      "relative_pct": 0.8140155966242959,
+      "note": null
+    },
+    {
+      "comp": "s3e3",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "tier1": {
+        "value": 0.81624,
+        "experiment_id": 1,
+        "label": "generic batch (run_competition.py)"
+      },
+      "tier2": {
+        "value": 0.832925,
+        "experiment_id": 3,
+        "label": "skill pipeline best, pre-Phase-B (Phase A)"
+      },
+      "tier3": {
+        "value": 0.83814,
+        "experiment_id": 7,
+        "label": "final best (post-Phase-B self-improvement)"
+      },
+      "relative_pct": 2.6830344016465784,
+      "note": null
+    },
+    {
+      "comp": "s3e5",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "tier1": {
+        "value": 0.47871,
+        "experiment_id": 1,
+        "label": "generic batch (run_competition.py)"
+      },
+      "tier2": {
+        "value": 0.52687,
+        "experiment_id": 3,
+        "label": "skill pipeline best, pre-Phase-B (Phase A)"
+      },
+      "tier3": {
+        "value": 0.56769,
+        "experiment_id": 8,
+        "label": "final best (post-Phase-B self-improvement)"
+      },
+      "relative_pct": 18.587453782039233,
+      "note": null
+    },
+    {
+      "comp": "s3e7",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "tier1": {
+        "value": 0.89882,
+        "experiment_id": 1,
+        "label": "generic batch (run_competition.py)"
+      },
+      "tier2": {
+        "value": 0.899395,
+        "experiment_id": 3,
+        "label": "skill pipeline best, pre-Phase-B (Phase A)"
+      },
+      "tier3": {
+        "value": 0.899893,
+        "experiment_id": 6,
+        "label": "final best (post-Phase-B self-improvement)"
+      },
+      "relative_pct": 0.11937874101601008,
+      "note": null
+    },
+    {
+      "comp": "s3e9",
+      "metric": "rmse",
+      "direction": "minimize",
+      "tier1": {
+        "value": 12.54287,
+        "experiment_id": 1,
+        "label": "generic batch (run_competition.py)"
+      },
+      "tier2": {
+        "value": 12.073474,
+        "experiment_id": 2,
+        "label": "skill pipeline best, pre-Phase-B (Phase A)"
+      },
+      "tier3": {
+        "value": 12.070034,
+        "experiment_id": 8,
+        "label": "final best (post-Phase-B self-improvement)"
+      },
+      "relative_pct": 3.769759233732,
+      "note": null
+    },
+    {
+      "comp": "s3e11",
+      "metric": "rmsle",
+      "direction": "minimize",
+      "tier1": {
+        "value": 0.29723,
+        "experiment_id": 1,
+        "label": "generic batch (run_competition.py)"
+      },
+      "tier2": {
+        "value": 0.296143,
+        "experiment_id": 3,
+        "label": "skill pipeline best, pre-Phase-B (Phase A)"
+      },
+      "tier3": {
+        "value": 0.295648,
+        "experiment_id": 8,
+        "label": "final best (post-Phase-B self-improvement)"
+      },
+      "relative_pct": 0.532247754264365,
+      "note": null
+    },
+    {
+      "comp": "s3e14",
+      "metric": "mae",
+      "direction": "minimize",
+      "tier1": {
+        "value": 341.40782,
+        "experiment_id": 1,
+        "label": "generic batch (run_competition.py)"
+      },
+      "tier2": {
+        "value": 340.711795,
+        "experiment_id": 3,
+        "label": "skill pipeline best, pre-Phase-B (Phase A)"
+      },
+      "tier3": {
+        "value": 340.59891,
+        "experiment_id": 7,
+        "label": "final best (post-Phase-B self-improvement)"
+      },
+      "relative_pct": 0.2369336472726447,
+      "note": null
+    },
+    {
+      "comp": "s3e19",
+      "metric": "smape",
+      "direction": "minimize",
+      "tier1": null,
+      "tier2": {
+        "value": 10.175397,
+        "experiment_id": 2,
+        "label": "skill pipeline best, pre-Phase-B (Phase A, TimeSeriesSplit CV)"
+      },
+      "tier3": {
+        "value": 10.019463,
+        "experiment_id": 7,
+        "label": "final best (post-Phase-B, TimeSeriesSplit CV)"
+      },
+      "relative_pct": 1.532461092181467,
+      "relative_pct_basis": "tier2->tier3 (no comparable generic tier1 under this CV scheme)",
+      "note": "Primary/honest row: test period is strictly future, so TimeSeriesSplit is the only valid CV scheme here. The generic-batch entry (exp #1, 5.31891) used plain KFold and is NOT tier1-comparable to this row — see the separate CV-scheme diagnostic pair below."
+    },
+    {
+      "comp": "s3e19-kfold-diagnostic",
+      "metric": "smape",
+      "direction": "minimize",
+      "tier1": {
+        "value": 5.31891,
+        "experiment_id": 1,
+        "label": "generic batch (run_competition.py), plain KFold"
+      },
+      "tier2": {
+        "value": 4.281421,
+        "experiment_id": 3,
+        "label": "skill features/models, SAME plain KFold (diagnostic only)"
+      },
+      "tier3": {
+        "value": 4.281421,
+        "experiment_id": 3,
+        "label": "same as tier2 — never iterated further under this CV scheme"
+      },
+      "relative_pct": 19.505669394669205,
+      "note": "Same-CV-scheme sanity check only (knowledge/experience.md CV-design guard): isolates the skill's feature/model gain from the CV-scheme optimism gap. Not a real production trajectory — the actual submission path is the TimeSeriesSplit row above."
+    },
+    {
+      "comp": "s3e16",
+      "metric": "mae",
+      "direction": "minimize",
+      "tier1": {
+        "value": 1.35441,
+        "experiment_id": 2,
+        "label": "generic batch (run_competition.py), rounded MAE"
+      },
+      "tier2": {
+        "value": 1.33812,
+        "experiment_id": 1,
+        "label": "skill pipeline best, pre-Phase-B (rounded OOF MAE, from experiments.json notes text — raw/unrounded blend_oof_mae=1.35589)"
+      },
+      "tier3": {
+        "value": 1.33812,
+        "experiment_id": 1,
+        "label": "final best — Phase B ran (exp #3/#4: Optuna-tune + seed-bag) but BOTH rounds made rounded OOF MAE worse (1.33850, 1.33893); stopped per 2-non-improving-round protocol, best remains unchanged"
+      },
+      "relative_pct": 1.2027377234367669,
+      "note": "Decision metric is ROUNDED OOF MAE (validated against real Kaggle LB, CV-LB gap ~0.006), not the raw blend_oof_mae exposed by collect.py's generic adapter. Phase B attempted the validated Optuna-tune+seed-bag recipe but it did not survive the rounding step (raw OOF improved 1.35589->1.35533, rounded OOF worsened 1.33812->1.33893) — a documented boundary case, not a missing iteration."
+    },
+    {
+      "comp": "s3e20",
+      "metric": "rmse",
+      "direction": "minimize",
+      "tier1": {
+        "value": 28.3424,
+        "experiment_id": 3,
+        "label": "PROXY baseline: 3-model GBDT blend WITHOUT location-week TE, same Leave-One-Year-Out CV as tier2/3 (NOT a real generic-batch entry — see note)"
+      },
+      "tier2": {
+        "value": 22.6488,
+        "experiment_id": 4,
+        "label": "skill pipeline best, pre-Phase-B (adds pure location-week TE, weight search gives it 100%)"
+      },
+      "tier3": {
+        "value": 21.1487,
+        "experiment_id": 7,
+        "label": "final best (post-Phase-B TE denoising: shrinkage + COVID-downweight + neighbor-week smoothing)"
+      },
+      "relative_pct": 25.381407361409053,
+      "note": "No run_competition.py generic-batch script was ever executed for s3e20 — it is a closed (2023) legacy competition first solved in an earlier session (2026-02-14), outside this weekend's 10-competition batch scope. Its own exp #1-#2 (RMSE 38.51, 33.21) use a single time-based split with no CatBoost/TE and are NOT CV-comparable to exp #3 onward (Leave-One-Year-Out); they are excluded rather than mislabeled as tier1. tier1 here is a same-CV-scheme PROXY (GBDT blend before the TE insight), not a generic-batch entry — treat this tier1->tier3 comparison as an approximation."
+    }
+  ]
+}
