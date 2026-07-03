@@ -19,8 +19,8 @@
     },
     "notes": "Aygun et al. Nature 2026 Kaggle Playground benchmark (Season 3 Episode 14)."
   },
-  "material_level": "baseline-only",
-  "status_md_present": false,
+  "material_level": "full",
+  "status_md_present": true,
   "experiments": [
     {
       "experiment_id": 1,
@@ -58,44 +58,212 @@
         "n_splits": 5
       },
       "submission": "sub_generic_341.40782_20260703_121146.csv"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T19:36:46",
+      "source_format": "v2",
+      "metric": "mae",
+      "direction": "minimize",
+      "model": "LGB+XGB+CAT weighted blend (KFold, MAE objective, feature-engineered v1)",
+      "score": 340.958565,
+      "cv": {
+        "scheme": "5fold_kfold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "clonesize",
+        "honeybee",
+        "bumbles",
+        "andrena",
+        "osmia",
+        "MaxOfUpperTRange",
+        "MinOfUpperTRange",
+        "AverageOfUpperTRange",
+        "MaxOfLowerTRange",
+        "MinOfLowerTRange",
+        "AverageOfLowerTRange",
+        "RainingDays",
+        "AverageRainingDays",
+        "fruitset",
+        "fruitmass",
+        "seeds",
+        "fruitset_x_seeds",
+        "fruitset_x_fruitmass",
+        "fruitmass_x_seeds",
+        "fruit_triple",
+        "seeds_per_fruitset",
+        "temp_spread",
+        "temp_avg",
+        "total_pollinators",
+        "honeybee_share",
+        "rain_intensity",
+        "log_clonesize"
+      ],
+      "n_features": 27,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 342.10905
+        },
+        {
+          "name": "XGB",
+          "score": 342.53852
+        },
+        {
+          "name": "CAT",
+          "score": 344.07199
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.5,
+          "XGB": 0.25,
+          "CAT": 0.25
+        },
+        "score": 341.02061
+      },
+      "postprocess": [
+        "selected='snap_to_grid' (candidates: none=341.02061, clip=341.02061, snap_to_grid=340.95856)"
+      ],
+      "submission": "sub_blend_340.95856_20260703_193646.csv",
+      "notes": "v1 feature set: fruit-biology interactions, condensed temp feature, pollinator index, rain intensity, log clonesize. 16 raw + 11 engineered = 27 features."
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T19:39:59",
+      "source_format": "v2",
+      "metric": "mae",
+      "direction": "minimize",
+      "model": "LGB+XGB+CAT(native-categorical) blend, pruned features, best-of(grid/ridge-stack)",
+      "score": 340.711795,
+      "cv": {
+        "scheme": "5fold_kfold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "clonesize",
+        "honeybee",
+        "bumbles",
+        "andrena",
+        "osmia",
+        "MaxOfUpperTRange",
+        "MinOfUpperTRange",
+        "MaxOfLowerTRange",
+        "RainingDays",
+        "AverageRainingDays",
+        "fruitset",
+        "fruitmass",
+        "seeds",
+        "fruitset_x_seeds",
+        "fruitset_x_fruitmass",
+        "fruitmass_x_seeds",
+        "fruit_triple",
+        "seeds_per_fruitset",
+        "temp_spread",
+        "total_pollinators",
+        "honeybee_share"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 342.02154
+        },
+        {
+          "name": "XGB",
+          "score": 342.21778
+        },
+        {
+          "name": "CAT",
+          "score": 343.60196
+        }
+      ],
+      "ensemble": {
+        "method": "grid_simplex",
+        "weights": {
+          "LGB": 0.45,
+          "XGB": 0.25,
+          "CAT": 0.3
+        },
+        "score": 340.75961
+      },
+      "postprocess": [
+        "snap_to_grid=used (raw=340.75961, snapped=340.71180)",
+        "grid_simplex=340.75961 vs ridge_stack=344.04375 -> chose grid_simplex"
+      ],
+      "submission": "sub_blend_v2_340.71180_20260703_193959.csv",
+      "notes": "Iteration 2 (reflexion on exp #2): dropped 6 near-zero-importance engineered/raw features (temp_avg, log_clonesize, rain_intensity, MinOfLowerTRange, AverageOfLowerTRange, AverageOfUpperTRange); CatBoost now treats low-cardinality env cols as native categoricals; added Ridge (non-negative) stacking meta-model as an alternative to the grid-searched simplex blend, keeping whichever OOF MAE is lower."
     }
   ],
   "best": {
-    "experiment_id": 1,
-    "timestamp": "2026-07-03T12:11:46",
-    "source_format": "generic_batch",
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T19:39:59",
+    "source_format": "v2",
     "metric": "mae",
     "direction": "minimize",
-    "model": "generic LGB+XGB+CAT blend",
+    "model": "LGB+XGB+CAT(native-categorical) blend, pruned features, best-of(grid/ridge-stack)",
+    "score": 340.711795,
+    "cv": {
+      "scheme": "5fold_kfold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "features": [
+      "clonesize",
+      "honeybee",
+      "bumbles",
+      "andrena",
+      "osmia",
+      "MaxOfUpperTRange",
+      "MinOfUpperTRange",
+      "MaxOfLowerTRange",
+      "RainingDays",
+      "AverageRainingDays",
+      "fruitset",
+      "fruitmass",
+      "seeds",
+      "fruitset_x_seeds",
+      "fruitset_x_fruitmass",
+      "fruitmass_x_seeds",
+      "fruit_triple",
+      "seeds_per_fruitset",
+      "temp_spread",
+      "total_pollinators",
+      "honeybee_share"
+    ],
+    "n_features": 21,
     "base_models": [
       {
         "name": "LGB",
-        "score": 345.32118
+        "score": 342.02154
       },
       {
         "name": "XGB",
-        "score": 344.13027
+        "score": 342.21778
       },
       {
         "name": "CAT",
-        "score": 344.24276
+        "score": 343.60196
       }
     ],
     "ensemble": {
+      "method": "grid_simplex",
       "weights": {
-        "LGB": 0.3,
-        "XGB": 0.3,
-        "CAT": 0.4
+        "LGB": 0.45,
+        "XGB": 0.25,
+        "CAT": 0.3
       },
-      "score": 341.40782
+      "score": 340.75961
     },
-    "score": 341.40782,
-    "n_features": 16,
-    "cv": {
-      "scheme": "5fold",
-      "n_splits": 5
-    },
-    "submission": "sub_generic_341.40782_20260703_121146.csv"
+    "postprocess": [
+      "snap_to_grid=used (raw=340.75961, snapped=340.71180)",
+      "grid_simplex=340.75961 vs ridge_stack=344.04375 -> chose grid_simplex"
+    ],
+    "submission": "sub_blend_v2_340.71180_20260703_193959.csv",
+    "notes": "Iteration 2 (reflexion on exp #2): dropped 6 near-zero-importance engineered/raw features (temp_avg, log_clonesize, rain_intensity, MinOfLowerTRange, AverageOfLowerTRange, AverageOfUpperTRange); CatBoost now treats low-cardinality env cols as native categoricals; added Ridge (non-negative) stacking meta-model as an alternative to the grid-searched simplex blend, keeping whichever OOF MAE is lower."
   },
   "trajectory": [
     {
@@ -103,13 +271,23 @@
       "timestamp": "2026-07-03T12:11:46",
       "score": 341.40782,
       "source_format": "generic_batch"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T19:36:46",
+      "score": 340.958565,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T19:39:59",
+      "score": 340.711795,
+      "source_format": "v2"
     }
   ],
   "leaderboard": null,
   "missing": [
-    "leaderboard",
-    "feature_list",
-    "cv_seed"
+    "leaderboard"
   ],
   "unparsed": []
 }
