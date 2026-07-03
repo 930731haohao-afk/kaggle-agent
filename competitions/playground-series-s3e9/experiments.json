@@ -216,5 +216,284 @@
     },
     "submission": "sub_blend_12.07347_20260703_191124.csv",
     "notes": "Regularized LGB(num_leaves=15,depth5,L1=2/L2=4)/XGB(depth4,L1=2/L2=4) + CatBoost(depth6,l2=6) with 8 engineered features (log_age, water/binder ratios) vs baseline exp#1 (generic untuned blend, RMSE 12.54287, CatBoost 100% weight)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-03T23:41:35",
+    "model": "LGB+XGB+CatBoost weighted blend (dup-group fold-safe target smoothing)",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 12.081216,
+    "features": [
+      "CementComponent",
+      "BlastFurnaceSlag",
+      "FlyAshComponent",
+      "WaterComponent",
+      "SuperplasticizerComponent",
+      "CoarseAggregateComponent",
+      "FineAggregateComponent",
+      "AgeInDays",
+      "log_age",
+      "sqrt_age",
+      "has_slag",
+      "has_flyash",
+      "has_superplasticizer",
+      "binder",
+      "water_binder_ratio",
+      "water_cement_ratio",
+      "sp_binder_ratio",
+      "agg_binder_ratio",
+      "fine_coarse_ratio",
+      "slag_cement_ratio",
+      "flyash_cement_ratio",
+      "total_mass"
+    ],
+    "n_features": 22,
+    "cv": {
+      "strategy": "5fold_stratified_strength_decile",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "LGB",
+        "rmse": 12.12277,
+        "time_s": 7.5
+      },
+      {
+        "model": "XGB",
+        "rmse": 12.11109,
+        "time_s": 6.9
+      },
+      {
+        "model": "CAT",
+        "rmse": 12.08207,
+        "time_s": 2.5
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.05,
+        "XGB": 0.1,
+        "CAT": 0.85
+      },
+      "method": "oof_weight_search_grid0.05"
+    },
+    "notes": "Round 1 self-improvement iteration: fold-safe duplicate-group target smoothing (group by raw 8-feature tuple = same def. as EDA's 56% duplicate-row diagnosis; training target per fold replaced with group-mean Strength computed ONLY from that fold's training rows, validation targets/CV metric untouched). n_groups=3006 dup_frac=0.4441. Same features/hyperparams/folds as exp#2/#4 (12.07347) -- isolated single change. Result: 12.08122 (no improvement)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-03T23:49:50",
+    "model": "4-way blend: LGB+XGB+CatBoost (orig) + Optuna-tuned LGB added to pool",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 12.073474,
+    "features": [
+      "CementComponent",
+      "BlastFurnaceSlag",
+      "FlyAshComponent",
+      "WaterComponent",
+      "SuperplasticizerComponent",
+      "CoarseAggregateComponent",
+      "FineAggregateComponent",
+      "AgeInDays",
+      "log_age",
+      "sqrt_age",
+      "has_slag",
+      "has_flyash",
+      "has_superplasticizer",
+      "binder",
+      "water_binder_ratio",
+      "water_cement_ratio",
+      "sp_binder_ratio",
+      "agg_binder_ratio",
+      "fine_coarse_ratio",
+      "slag_cement_ratio",
+      "flyash_cement_ratio",
+      "total_mass"
+    ],
+    "n_features": 22,
+    "cv": {
+      "strategy": "5fold_stratified_strength_decile",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "LGB",
+        "rmse": 12.11061,
+        "time_s": 6.6
+      },
+      {
+        "model": "XGB",
+        "rmse": 12.12086,
+        "time_s": 6.6
+      },
+      {
+        "model": "CAT",
+        "rmse": 12.07459,
+        "time_s": 2.7
+      },
+      {
+        "model": "LGB_tuned",
+        "rmse": 12.12074,
+        "time_s": 371.6,
+        "note": "Optuna 60-trial full-5fold-CV objective tuned LGB; params={'learning_rate': 0.019795655587585677, 'num_leaves': 11, 'max_depth': 3, 'min_child_samples': 31, 'subsample': 0.6018504151952752, 'colsample_bytree': 0.5006835428888052, 'reg_alpha': 0.1120861378640153, 'reg_lambda': 0.3020804107290036, 'n_estimators': 3000}"
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.148,
+        "XGB": 0.0,
+        "CAT": 0.852,
+        "LGB_tuned": 0.0
+      },
+      "method": "oof_weight_search(simplex_grid0.05_for3+dirichlet_random_for4)"
+    },
+    "notes": "Round 2 self-improvement: Optuna (TPE, 60 trials, 60 run, timeout 400s, 371.6s actual) tuned LGB on full 5-fold CV RMSE objective (same folds/seed as exp#2). Solo tuned LGB OOF 12.12074 vs orig LGB 12.11061. Added as 4th pool member (not replacing orig LGB) per validated recipe. Reverted Round 1's dup-smoothing (exp#5, 12.08122, no improvement) back to original targets. Result: 12.07347 vs best-so-far 12.07347 (no improvement)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-03T23:49:55",
+    "model": "5-way blend: LGB+XGB+CatBoost (orig) + Optuna-tuned LGB + seed-bagged tuned LGB",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 12.071429,
+    "features": [
+      "CementComponent",
+      "BlastFurnaceSlag",
+      "FlyAshComponent",
+      "WaterComponent",
+      "SuperplasticizerComponent",
+      "CoarseAggregateComponent",
+      "FineAggregateComponent",
+      "AgeInDays",
+      "log_age",
+      "sqrt_age",
+      "has_slag",
+      "has_flyash",
+      "has_superplasticizer",
+      "binder",
+      "water_binder_ratio",
+      "water_cement_ratio",
+      "sp_binder_ratio",
+      "agg_binder_ratio",
+      "fine_coarse_ratio",
+      "slag_cement_ratio",
+      "flyash_cement_ratio",
+      "total_mass"
+    ],
+    "n_features": 22,
+    "cv": {
+      "strategy": "5fold_stratified_strength_decile",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "LGB",
+        "rmse": 12.11061,
+        "time_s": 6.6
+      },
+      {
+        "model": "XGB",
+        "rmse": 12.12086,
+        "time_s": 6.6
+      },
+      {
+        "model": "CAT",
+        "rmse": 12.07459,
+        "time_s": 2.7
+      },
+      {
+        "model": "LGB_tuned",
+        "rmse": 12.12074,
+        "time_s": 371.6,
+        "note": "Optuna 60-trial full-5fold-CV objective tuned LGB; params={'learning_rate': 0.019795655587585677, 'num_leaves': 11, 'max_depth': 3, 'min_child_samples': 31, 'subsample': 0.6018504151952752, 'colsample_bytree': 0.5006835428888052, 'reg_alpha': 0.1120861378640153, 'reg_lambda': 0.3020804107290036, 'n_estimators': 3000}"
+      },
+      {
+        "model": "LGB_tuned_seed2",
+        "rmse": 12.10843,
+        "time_s": 4.4,
+        "note": "seed bag of LGB_tuned with random_state=1042, same Optuna params"
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.0,
+        "CAT": 0.773,
+        "LGB_tuned": 0.0,
+        "LGB_tuned_seed2": 0.227
+      },
+      "method": "oof_weight_search(dirichlet_random+coord_descent)"
+    },
+    "notes": "Round 3 self-improvement: seed-bag Round 2's Optuna-tuned LGB with a second random_state (1042, same hyperparams) as a cheap 5th pool member (validated recipe: seed bagging after tuning is the cheapest residual gain). Solo OOF 12.10843. Result: 12.07143 vs Round 2 12.07347 vs best-so-far 12.07347 (IMPROVED)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-03T23:51:20",
+    "model": "7-way blend: Round-3 pool + CAT_seed2 + LGB_tuned_seed3 (seed-bag expansion)",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 12.070034,
+    "features": [
+      "CementComponent",
+      "BlastFurnaceSlag",
+      "FlyAshComponent",
+      "WaterComponent",
+      "SuperplasticizerComponent",
+      "CoarseAggregateComponent",
+      "FineAggregateComponent",
+      "AgeInDays",
+      "log_age",
+      "sqrt_age",
+      "has_slag",
+      "has_flyash",
+      "has_superplasticizer",
+      "binder",
+      "water_binder_ratio",
+      "water_cement_ratio",
+      "sp_binder_ratio",
+      "agg_binder_ratio",
+      "fine_coarse_ratio",
+      "slag_cement_ratio",
+      "flyash_cement_ratio",
+      "total_mass"
+    ],
+    "n_features": 22,
+    "cv": {
+      "strategy": "5fold_stratified_strength_decile",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "CAT_seed2",
+        "rmse": 12.07852,
+        "time_s": 2.7,
+        "note": "seed bag of orig CatBoost(depth6,l2=6) with random_seed=1042"
+      },
+      {
+        "model": "LGB_tuned_seed3",
+        "rmse": 12.0977,
+        "time_s": 6.0,
+        "note": "3rd seed (2042) of Optuna-tuned LGB"
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.0,
+        "CAT": 0.478,
+        "LGB_tuned": 0.0,
+        "LGB_tuned_seed2": 0.127,
+        "CAT_seed2": 0.265,
+        "LGB_tuned_seed3": 0.129
+      },
+      "method": "oof_weight_search(dirichlet8000+coord_descent_fine)"
+    },
+    "submission": "sub_blend_12.07003_20260703_235120.csv",
+    "notes": "Round 4 self-improvement: seed-bag the dominant CatBoost member (77% weight in Round 3) + 3rd tuned-LGB seed; 7-way pool weight search 12.07003 vs re-refined 5-way 12.07143; kept the better. Result 12.07003 vs Round 3 12.07143 vs previous best 12.07347 (IMPROVED)."
   }
 ]

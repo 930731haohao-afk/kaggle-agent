@@ -15,16 +15,19 @@
 - [x] Stage 2 Feature engineering — `scripts/features.py`
 - [x] Stage 3 Modeling + CV — `scripts/train.py` (LGB/XGB/CatBoost, RMSE objective)
 - [x] Stage 4 Self-improvement iteration — interaction features tried, reverted (see below)
-- [x] Stage 5 Submission generated (local only) — `submissions/sub_blend_12.07347_20260703_191124.csv`
+- [x] Stage 4b Phase B self-improvement iteration (4 rounds, exp #5–#8, see below) —
+  new best via seed-bagged pool (dup-smoothing and Optuna-tuned-LGB-solo did not help)
+- [x] Stage 5 Submission generated (local only) — `submissions/sub_blend_12.07003_20260703_235120.csv`
 - [ ] Submitted to Kaggle leaderboard — pending (no API credentials this session)
 
 ## Current best score (local CV only — no LB yet)
 | | OOF RMSE |
 |-|----------|
-| Blend (weighted) | **12.07347** |
+| Blend (7-way weighted, exp #8) | **12.07003** |
 
 Baseline to beat (experiment #1, generic untuned blend): **12.54287**.
-Improvement: 12.54287 − 12.07347 = 0.46940 (3.74% relative).
+Improvement: 12.54287 − 12.07003 = 0.47284 (3.77% relative).
+Phase B iteration gain over previous best: 12.07347 − 12.07003 = 0.00344.
 
 ## EDA key findings (`scripts/eda.py`)
 1. `AgeInDays` is the dominant driver (Pearson 0.334, Spearman 0.604 with raw values) but
@@ -94,29 +97,65 @@ experiment #2's result was not a fluke. The worse (exp #3) submission file was d
 from `submissions/` after logging to keep only the two best-CV submission files
 (exp #2 / exp #4, identical) and the baseline for comparison.
 
+## Phase B self-improvement iteration (exp #5–#8, 2026-07-03 evening)
+Four rounds, one isolated change each, same folds/seed/features as exp #2 throughout
+(5-fold StratifiedKFold on Strength deciles, seed 42 — scores directly comparable).
+
+| Round | Change | OOF RMSE | Verdict |
+|-------|--------|----------|---------|
+| 1 (exp #5) | Fold-safe duplicate-group target smoothing (train targets → group-mean Strength of exact raw-feature duplicates within the training fold; validation/metric untouched) | 12.08122 | worse (+0.00775), reverted |
+| 2 (exp #6) | Optuna-tuned LGB (TPE 60 trials, full-5fold-CV objective, 371.6s) added to pool as 4th member | 12.07347 | tie — tuned LGB solo 12.12074 worse than orig 12.11061, weight search gave it 0 |
+| 3 (exp #7) | Seed-bagged the tuned LGB (2nd random_state=1042) as 5th member | **12.07143** | improved (−0.00204); weights {CAT 0.773, LGB_tuned_seed2 0.227} |
+| 4 (exp #8) | Seed-bagged the dominant CatBoost (seed 1042) + 3rd tuned-LGB seed (2042); 7-way pool | **12.07003** | improved (−0.00140); weights {CAT 0.478, CAT_seed2 0.265, LGB_tuned_seed2 0.127, LGB_tuned_seed3 0.129} |
+
+**Round 1 self-critique (dup-smoothing failed — why)**: GBDT with squared loss already
+fits the *conditional mean* of duplicated feature rows implicitly (the squared-loss
+minimizer over identical inputs is their target mean), so explicit group-mean smoothing
+adds no information; what it does change is the effective per-group sample weighting
+and it biases the training signal for groups split across folds (a group's fold-local
+mean is a noisy estimate of its true mean). Net effect: all three models slightly worse
+(LGB 12.11061→12.12277, XGB 12.12086→12.11109*, CAT 12.07459→12.08207; *XGB alone
+improved, but not enough to help the blend). The label-noise diagnosis was right; the
+implied fix was already priced in by the loss function. Precision on the diagnosis:
+2,401/5,407 rows (44.4%) are non-first duplicates; ~56% of rows belong to some
+duplicate group (both figures describe the same structure).
+
+**Rounds 2–4 takeaway**: on this label-noise-bounded data, the entire Phase B gain
+came from *seed bagging* (variance reduction), not from tuning or denoising. Optuna's
+best full-CV solution (num_leaves 11, depth 3, lr 0.0198, weak L1/L2) solo scored
+worse than the hand-regularized LGB and earned 0 blend weight — yet its *seed variants*
+earned 25.6% combined weight, and seed-bagging CatBoost (77%→ split 47.8/26.5) gave
+the largest single-round gain. Consistent with the noise-ceiling story: at the ceiling,
+averaging independently-seeded models is the only "free" direction left.
+
 ## Key observations
 - Small-data + label-noise story (56% duplicate feature-rows with differing targets)
   is the single most important fact about this competition — it bounds how much any
   model/feature engineering can improve RMSE and rewards regularization over capacity.
+- Phase B confirmed the ceiling operationally: denoising (dup-smoothing) and
+  hyperparameter tuning both failed to beat it; only seed-bagging/averaging moved it.
 - No CV↔LB comparison available yet (not submitted to Kaggle this run).
 
 ## Potential improvements (not yet tried)
-- Optuna tuning of CatBoost depth/l2_leaf_reg (currently hand-set) — small headroom
-  expected given the label-noise ceiling, but untried.
-- A denoising approach: for exact-duplicate feature-rows, replace the target with the
-  group mean before training (removes label noise at the cost of some info) — risky,
-  would need careful CV-fold-safe implementation to avoid leakage.
-- Stacking meta-model on the 3 base OOF predictions instead of a linear weight search.
+- Stacking meta-model on the base OOF predictions instead of a linear weight search
+  (note: Ridge stacking lost to simplex search on s3e14 — low EV).
+- More seeds in the bag (returns are visibly diminishing: −0.00204 → −0.00140).
+- GroupKFold on duplicate-groups as a CV-honesty diagnostic (untried; would change
+  the CV scheme so scores would not be comparable to the current series).
 
 ## Reproduce
 ```bash
 cd /home/tjyen/ai_agents/kaggle
 uv run python3 competitions/playground-series-s3e9/scripts/eda.py
-uv run python3 competitions/playground-series-s3e9/scripts/train.py
+uv run python3 competitions/playground-series-s3e9/scripts/train.py            # 3-way best (12.07347)
+# Phase B iteration (in order; round 4 consumes round 2/3's npz checkpoint):
+uv run python3 competitions/playground-series-s3e9/scripts/train_dup_smooth.py     # round 1 (12.08122, negative)
+uv run python3 competitions/playground-series-s3e9/scripts/train_optuna_pool.py    # rounds 2+3 (12.07347 / 12.07143)
+uv run python3 competitions/playground-series-s3e9/scripts/train_round4_seedbag.py # round 4 → best 12.07003 + submission
 # submit (needs a valid Kaggle token; none available in this session):
 export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')
 uv run kaggle competitions submit -c playground-series-s3e9 \
-  -f competitions/playground-series-s3e9/submissions/sub_blend_12.07347_20260703_191124.csv \
+  -f competitions/playground-series-s3e9/submissions/sub_blend_12.07003_20260703_235120.csv \
   -m "<msg>"
 ```
 
@@ -125,7 +164,9 @@ uv run kaggle competitions submit -c playground-series-s3e9 \
 competitions/playground-series-s3e9/
 ├── config.yaml
 ├── STATUS.md
-├── experiments.json          # 4 experiments: #1 baseline, #2 best, #3 reverted, #4 confirm
+├── experiments.json          # 8 experiments: #1 baseline, #2 best-3way, #3 reverted,
+│                             # #4 confirm, #5 dup-smooth (neg), #6 +tuned LGB (tie),
+│                             # #7 +seed-bag LGB (12.07143), #8 7-way seed-bag best (12.07003)
 ├── data/
 │   ├── train.csv
 │   ├── test.csv
@@ -133,9 +174,14 @@ competitions/playground-series-s3e9/
 ├── scripts/
 │   ├── eda.py
 │   ├── features.py
-│   └── train.py
+│   ├── train.py                  # 3-way blend (exp #2/#4)
+│   ├── train_dup_smooth.py       # Phase B round 1 (negative result, kept for record)
+│   ├── train_optuna_pool.py      # Phase B rounds 2+3
+│   ├── train_round4_seedbag.py   # Phase B round 4 (current best)
+│   └── _round*.npz               # OOF/pred checkpoints (regenerable, not committed)
 └── submissions/
     ├── sub_generic_12.54287_20260703_120632.csv       # baseline
-    ├── sub_blend_12.07347_20260703_191007.csv          # current best (exp #2, not submitted)
-    └── sub_blend_12.07347_20260703_191124.csv          # identical reproduction (exp #4)
+    ├── sub_blend_12.07347_20260703_191007.csv          # exp #2 3-way best
+    ├── sub_blend_12.07347_20260703_191124.csv          # identical reproduction (exp #4)
+    └── sub_blend_12.07003_20260703_235120.csv          # CURRENT BEST (exp #8, not submitted)
 ```
