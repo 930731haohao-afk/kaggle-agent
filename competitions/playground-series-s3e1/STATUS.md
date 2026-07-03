@@ -12,15 +12,19 @@
 - [x] Stage 3 Modeling + CV — `scripts/train.py` (LGB/XGB/CatBoost, RMSE objective, weight-searched blend)
 - [x] Stage 3b Iteration probe — `scripts/tune_geo_te.py` (geo target-encoding, not adopted)
 - [x] Stage 5 Submission generated — `submissions/sub_lgb_xgb_cat_blend_0.55877_20260703_182947.csv`
+- [x] Stage 6 Self-improvement iteration (Phase B, 4 rounds) — new best submission
+      `submissions/sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv`
 - [ ] Submitted to Kaggle leaderboard — not performed this run (no Kaggle credentials touched; run is offline/unattended)
 
 ## Current Best Score
 | | OOF RMSE |
 |-|----------|
 | Baseline (exp 1, generic 8-feature blend) | 0.56166 |
-| **Blend (exp 2, engineered features)** | **0.55877** |
+| Blend (exp 2, engineered features) | 0.55877 |
+| **5-way blend (exp 7: +Optuna-tuned LGB, +seed-bag, +KNN/coastal geo feats)** | **0.55709** |
 
-Improvement over baseline: 0.56166 − 0.55877 = 0.00289 (≈0.51% relative reduction in RMSE).
+Improvement over exp-2 blend: 0.55877 − 0.55709 = 0.00168 (≈0.30% further relative RMSE reduction).
+Improvement over exp-1 baseline: 0.56166 − 0.55709 = 0.00457 (≈0.81% relative reduction).
 No public/private LB available — submission was not made to Kaggle this run.
 
 ## EDA key findings
@@ -97,6 +101,37 @@ feature set as final.
 
 Experiment log: `experiments.json` (#1 baseline, #2 winning blend, #3 rejected TE probe).
 
+## Phase B self-improvement iteration (4 rounds, all improved — stopped at protocol's 2–4 round upper bound)
+
+| Round | exp # | Change | OOF RMSE | Delta vs prior |
+|-------|-------|--------|----------|-----------------|
+| 1 | 4 | Optuna TPE fold-0-proxy tuning of LGB (50 trials, 74.3s), added as 4th blend member (not replacing original LGB) | 0.557977 | -0.00079 vs exp 2 (0.558768) |
+| 2 | 5 | Seed bagging: same tuned-LGB hyperparams, random_state 42→2024, added as 5th member | 0.557859 | -0.00012 vs round 1 |
+| 3 | 6 | Probe: +knn_mean_dist_10 (KNN k=10 mean distance, combined train+test coords) +coastal_dist (distance to 12 CA coastline anchor points); LGB-only probe | 0.560444 (solo LGB) | -0.00065 vs exp-2 LGB (0.56109) — above 0.0005 noise threshold, adopted |
+| 4 | 7 | Full retrain of the 5-member pool on the 26-feature set (round-3 features added) | **0.557088** | -0.00077 vs round 2 |
+
+**Total improvement this iteration**: 0.558768 (exp 2) → 0.557088 (exp 7) = -0.00168 (≈0.30% relative).
+Combined with the original feature-engineering win: 0.56166 (exp 1 baseline) → 0.557088 = -0.004572
+(≈0.81% relative reduction overall).
+
+**Reflexion — Round 3 vs. Round-1-era exp #3**: exp #3 showed that *target-encoding* a coarse
+geo grouping adds nothing once trees already split on raw Lat/Long (-0.00007, noise). Round 3
+tested a different lever — *non-target-encoded* geometric features (KNN local-density distance,
+coastal distance) — and got a real gain (-0.00065). Lesson: "geo target-encoding is noise-level
+here" does not generalize to "no more geo feature engineering is possible" — the two are
+different mechanisms (grouped target leakage-safe averaging vs. raw distance geometry).
+
+**Training time**: Optuna search 74.3s + full-CV revalidation 13.2s + 3-model recompute 45.2s
+(round 1) + 9.7s (round 2 seed bag) + geo probe (~seconds) + 67.2s (round 4 full retrain) — total
+well under the 30-minute budget.
+
+New best submission: `submissions/sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv`.
+Not submitted to Kaggle this run (no credentials touched, unattended run).
+
+Experiment log additions: `experiments.json` #4–#7. Scripts: `scripts/tune_lgb_optuna.py` (round 1),
+`scripts/seed_bag_round2.py` (round 2), `scripts/geo_knn_probe.py` (round 3 probe),
+`scripts/round4_full_retrain.py` (round 4).
+
 ## Reproduce
 ```bash
 cd /home/tjyen/ai_agents/kaggle
@@ -105,6 +140,11 @@ uv run python3 competitions/playground-series-s3e1/scripts/features.py
 uv run python3 competitions/playground-series-s3e1/scripts/train.py
 # optional iteration probe (not adopted, informational only):
 uv run python3 competitions/playground-series-s3e1/scripts/tune_geo_te.py
+# Phase B iteration (current best pipeline):
+uv run python3 competitions/playground-series-s3e1/scripts/tune_lgb_optuna.py
+uv run python3 competitions/playground-series-s3e1/scripts/seed_bag_round2.py
+uv run python3 competitions/playground-series-s3e1/scripts/geo_knn_probe.py
+uv run python3 competitions/playground-series-s3e1/scripts/round4_full_retrain.py
 ```
 
 No Kaggle submission was made this run (unattended weekend batch — credentials untouched by
@@ -112,6 +152,6 @@ instruction). To submit the generated file manually:
 ```bash
 export KAGGLE_API_TOKEN=$(python3 -c "import json; print(json.load(open('/home/tjyen/.kaggle/kaggle.json'))['key'])")
 uv run kaggle competitions submit -c playground-series-s3e1 \
-  -f competitions/playground-series-s3e1/submissions/sub_lgb_xgb_cat_blend_0.55877_20260703_182947.csv \
-  -m "engineered features blend, OOF 0.55877"
+  -f competitions/playground-series-s3e1/submissions/sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv \
+  -m "5-way blend (Optuna-tuned LGB + seed bag + KNN/coastal geo features), OOF 0.557088"
 ```

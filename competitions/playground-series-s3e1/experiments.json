@@ -187,5 +187,354 @@
       }
     ],
     "notes": "Reflexion: hypothesis was that finer (50-cluster) smoothed target encoding of geo location would beat the coarse 25-cluster id used in exp 2's LGB (OOF 0.56109), since raw Lat/Long were the top-2 importance features in EDA's quick LGB. Result: 0.56102, delta -0.00007 (noise-level). Conclusion: trees already extract the geo signal via splits on raw Lat/Long + dist-to-city features; explicit target encoding adds no meaningful value here. NOT adopted into the final feature set/blend (exp 2 remains best)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-03T21:24:30",
+    "model": "LGB+XGB+CAT+Optuna-tuned-LGB 4-way weight-searched blend",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 0.557977,
+    "features": [
+      "MedInc",
+      "HouseAge",
+      "AveRooms",
+      "AveBedrms",
+      "Population",
+      "AveOccup",
+      "Latitude",
+      "Longitude",
+      "households",
+      "bedroom_ratio",
+      "rooms_per_person",
+      "log_AveRooms",
+      "log_AveBedrms",
+      "log_Population",
+      "log_AveOccup",
+      "log_households",
+      "dist_LA",
+      "dist_SF",
+      "dist_SanDiego",
+      "dist_Sacramento",
+      "dist_SanJose",
+      "dist_nearest_city",
+      "lat_long",
+      "geo_cluster"
+    ],
+    "n_features": 24,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "shuffle": true,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.56109
+      },
+      {
+        "name": "XGB",
+        "score": 0.56297
+      },
+      {
+        "name": "CAT",
+        "score": 0.56188
+      },
+      {
+        "name": "LGB_TUNED",
+        "score": 0.55996,
+        "params": {
+          "learning_rate": 0.011615865989246453,
+          "num_leaves": 121,
+          "max_depth": 10,
+          "min_child_samples": 82,
+          "subsample": 0.6523068845866853,
+          "colsample_bytree": 0.5488360570031919,
+          "reg_alpha": 0.5456725485601477,
+          "reg_lambda": 0.057624872164786026,
+          "n_estimators": 2000,
+          "random_state": 42,
+          "verbosity": -1,
+          "objective": "rmse"
+        },
+        "tuning": {
+          "method": "optuna_tpe_fold0_proxy",
+          "n_trials": 50,
+          "search_time_s": 74.3,
+          "fold0_proxy_rmse": 0.58291
+        }
+      }
+    ],
+    "ensemble": {
+      "method": "oof_weight_grid_search_4way",
+      "weights": {
+        "LGB": 0.25,
+        "XGB": 0.05,
+        "CAT": 0.3,
+        "LGB_TUNED": 0.4
+      },
+      "score": 0.557977
+    },
+    "postprocess": [
+      "clip_to_train_target_range"
+    ],
+    "submission": "sub_lgb_xgb_cat_lgbtuned_blend_0.55798_20260703_212430.csv",
+    "notes": "Iteration round 1: Optuna TPE fold-0-proxy tuning of LGB (50 trials, 74.3s search + 13.2s full-CV revalidation). Tuned LGB OOF 0.55996 (solo) vs exp#2 LGB 0.56109. Per experience.md recipe, ADDED as 4th pool member (not replacing original LGB) to preserve ensemble diversity. Exp#2 best was 0.558768; this round IMPROVED to 0.557977."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-03T21:25:21",
+    "model": "5-way blend: LGB+XGB+CAT+Optuna-tuned-LGB+seed-bagged-tuned-LGB",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 0.557859,
+    "features": [
+      "MedInc",
+      "HouseAge",
+      "AveRooms",
+      "AveBedrms",
+      "Population",
+      "AveOccup",
+      "Latitude",
+      "Longitude",
+      "households",
+      "bedroom_ratio",
+      "rooms_per_person",
+      "log_AveRooms",
+      "log_AveBedrms",
+      "log_Population",
+      "log_AveOccup",
+      "log_households",
+      "dist_LA",
+      "dist_SF",
+      "dist_SanDiego",
+      "dist_Sacramento",
+      "dist_SanJose",
+      "dist_nearest_city",
+      "lat_long",
+      "geo_cluster"
+    ],
+    "n_features": 24,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "shuffle": true,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.56109
+      },
+      {
+        "name": "XGB",
+        "score": 0.56297
+      },
+      {
+        "name": "CAT",
+        "score": 0.56188
+      },
+      {
+        "name": "LGB_TUNED",
+        "score": 0.55996,
+        "params": {
+          "learning_rate": 0.011615865989246453,
+          "num_leaves": 121,
+          "max_depth": 10,
+          "min_child_samples": 82,
+          "subsample": 0.6523068845866853,
+          "colsample_bytree": 0.5488360570031919,
+          "reg_alpha": 0.5456725485601477,
+          "reg_lambda": 0.057624872164786026,
+          "n_estimators": 2000,
+          "random_state": 42,
+          "verbosity": -1,
+          "objective": "rmse"
+        }
+      },
+      {
+        "name": "LGB_TUNED_SEED2024",
+        "score": 0.55942,
+        "params": {
+          "learning_rate": 0.011615865989246453,
+          "num_leaves": 121,
+          "max_depth": 10,
+          "min_child_samples": 82,
+          "subsample": 0.6523068845866853,
+          "colsample_bytree": 0.5488360570031919,
+          "reg_alpha": 0.5456725485601477,
+          "reg_lambda": 0.057624872164786026,
+          "n_estimators": 2000,
+          "random_state": 2024,
+          "verbosity": -1,
+          "objective": "rmse"
+        }
+      }
+    ],
+    "ensemble": {
+      "method": "oof_weight_grid_search_5way",
+      "weights": {
+        "LGB": 0.25,
+        "XGB": 0.05,
+        "CAT": 0.25,
+        "LGB_TUNED": 0.15,
+        "LGB_TUNED_SEED2024": 0.3
+      },
+      "score": 0.557859
+    },
+    "postprocess": [
+      "clip_to_train_target_range"
+    ],
+    "submission": "sub_5way_seedbag_blend_0.55786_20260703_212521.csv",
+    "notes": "Iteration round 2: seed bagging (s3e14 recipe) -- added a 5th member: same tuned-LGB hyperparams from round 1 but random_state=2024 instead of 42. Solo OOF 0.55942, train time 9.7s (cheapest possible residual-gain move, no new tuning). Round1 best was 0.55798; this round IMPROVED to 0.557859."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-03T21:26:27",
+    "model": "LGB single-model probe: +knn_mean_dist_10 +coastal_dist",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 0.560444,
+    "features": [
+      "MedInc",
+      "HouseAge",
+      "AveRooms",
+      "AveBedrms",
+      "Population",
+      "AveOccup",
+      "Latitude",
+      "Longitude",
+      "households",
+      "bedroom_ratio",
+      "rooms_per_person",
+      "log_AveRooms",
+      "log_AveBedrms",
+      "log_Population",
+      "log_AveOccup",
+      "log_households",
+      "dist_LA",
+      "dist_SF",
+      "dist_SanDiego",
+      "dist_Sacramento",
+      "dist_SanJose",
+      "dist_nearest_city",
+      "lat_long",
+      "geo_cluster",
+      "knn_mean_dist_10",
+      "coastal_dist"
+    ],
+    "n_features": 26,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "shuffle": true,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.56044,
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 63,
+          "min_child_samples": 20,
+          "subsample": 0.8,
+          "colsample_bytree": 0.8,
+          "reg_alpha": 0.1,
+          "reg_lambda": 0.1,
+          "random_state": 42,
+          "verbosity": -1,
+          "objective": "rmse"
+        }
+      }
+    ],
+    "notes": "Iteration round 3 candidate: KNN(k=10) mean-distance local-density feature + coastal-distance feature (raw numeric, not target-encoded), computed over combined train+test coords (no target leakage). Baseline LGB (exp 2) was 0.56109. Result: 0.56044 (ADOPTED)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-03T21:28:11",
+    "model": "5-way blend on 26 features (+knn_mean_dist_10 +coastal_dist)",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 0.557088,
+    "features": [
+      "MedInc",
+      "HouseAge",
+      "AveRooms",
+      "AveBedrms",
+      "Population",
+      "AveOccup",
+      "Latitude",
+      "Longitude",
+      "households",
+      "bedroom_ratio",
+      "rooms_per_person",
+      "log_AveRooms",
+      "log_AveBedrms",
+      "log_Population",
+      "log_AveOccup",
+      "log_households",
+      "dist_LA",
+      "dist_SF",
+      "dist_SanDiego",
+      "dist_Sacramento",
+      "dist_SanJose",
+      "dist_nearest_city",
+      "lat_long",
+      "geo_cluster",
+      "knn_mean_dist_10",
+      "coastal_dist"
+    ],
+    "n_features": 26,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "shuffle": true,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.56073
+      },
+      {
+        "name": "XGB",
+        "score": 0.56133
+      },
+      {
+        "name": "CAT",
+        "score": 0.56106
+      },
+      {
+        "name": "LGB_TUNED",
+        "score": 0.55887
+      },
+      {
+        "name": "LGB_TUNED_SEED2024",
+        "score": 0.55881
+      }
+    ],
+    "ensemble": {
+      "method": "oof_weight_grid_search_5way",
+      "weights": {
+        "LGB": 0.2,
+        "XGB": 0.1,
+        "CAT": 0.25,
+        "LGB_TUNED": 0.25,
+        "LGB_TUNED_SEED2024": 0.2
+      },
+      "score": 0.557088
+    },
+    "postprocess": [
+      "clip_to_train_target_range"
+    ],
+    "submission": "sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv",
+    "notes": "Iteration round 4: full retrain of the same 5-member pool (LGB, XGB, CAT, Optuna-tuned LGB from round1, seed-bagged tuned LGB from round2) on round-3's adopted feature set (+knn_mean_dist_10, +coastal_dist; 26 features total). Training time 67.2s. Round2 best (24 features) was 0.55786; this round IMPROVED to 0.557088."
   }
 ]
