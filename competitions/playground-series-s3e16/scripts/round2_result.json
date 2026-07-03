@@ -1,0 +1,28 @@
+{
+  "names": [
+    "LGB",
+    "XGB",
+    "CAT",
+    "LGB_tuned",
+    "LGB_tuned_seed2024"
+  ],
+  "maes": {
+    "LGB": 1.3565051667362336,
+    "XGB": 1.3576253788039563,
+    "CAT": 1.3616213263027535,
+    "LGB_tuned": 1.3558286813333595,
+    "LGB_tuned_seed2024": 1.3560412592813584
+  },
+  "weights": {
+    "LGB": 0.2,
+    "XGB": 0.1,
+    "CAT": 0.1,
+    "LGB_tuned": 0.4,
+    "LGB_tuned_seed2024": 0.2
+  },
+  "blend_raw_mae": 1.35533,
+  "blend_round_mae": 1.33893,
+  "use_round": true,
+  "improved_vs_orig": false,
+  "improved_vs_round1": false
+}

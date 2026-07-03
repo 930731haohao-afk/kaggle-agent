@@ -1,0 +1,180 @@
+[
+  {
+    "timestamp": "2026-07-03T09:18:40",
+    "n_features": 24,
+    "features": [
+      "Length",
+      "Diameter",
+      "Height",
+      "Weight",
+      "Shucked Weight",
+      "Viscera Weight",
+      "Shell Weight",
+      "Height_was_zero",
+      "is_infant",
+      "is_male",
+      "is_female",
+      "Shucked Weight_ratio",
+      "Viscera Weight_ratio",
+      "Shell Weight_ratio",
+      "weight_resid",
+      "parts_sum",
+      "diam_len",
+      "height_len",
+      "height_diam",
+      "volume",
+      "density",
+      "shell_density",
+      "meat_to_shell",
+      "shucked_to_shell"
+    ],
+    "cv": "5fold_stratified_agebin",
+    "base_models": [
+      {
+        "model": "LGB",
+        "oof_mae": 1.35651,
+        "time_s": 30.8
+      },
+      {
+        "model": "XGB",
+        "oof_mae": 1.35763,
+        "time_s": 36.7
+      },
+      {
+        "model": "CAT",
+        "oof_mae": 1.36162,
+        "time_s": 23.7
+      }
+    ],
+    "blend_weights": {
+      "LGB": 0.6,
+      "XGB": 0.3,
+      "CAT": 0.1
+    },
+    "blend_oof_mae": 1.35589,
+    "use_round": true,
+    "submission": "sub_blend_20260703_091840.csv",
+    "leaderboard": {
+      "public": 1.34356,
+      "private": 1.34075,
+      "submitted": "2026-07-03"
+    }
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-07-03T11:57:39",
+    "model": "generic LGB+XGB+CAT blend",
+    "metric": "mae",
+    "n_features": 8,
+    "cv": "5fold",
+    "per_model": {
+      "LGB": 1.3623,
+      "XGB": 1.35886,
+      "CAT": 1.35714
+    },
+    "blend_weights": {
+      "LGB": 0.3,
+      "XGB": 0.2,
+      "CAT": 0.5
+    },
+    "blend_score": 1.35441,
+    "submission": "sub_generic_1.35441_20260703_115739.csv"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T22:56:33",
+    "model": "LGB+XGB+CAT+LGB_tuned (Optuna fold0-proxy) blend",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 1.3385,
+    "cv": {
+      "scheme": "5fold_stratified_agebin",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "oof_mae": 1.35651
+      },
+      {
+        "name": "XGB",
+        "oof_mae": 1.35763
+      },
+      {
+        "name": "CAT",
+        "oof_mae": 1.36162
+      },
+      {
+        "name": "LGB_tuned",
+        "oof_mae": 1.35583,
+        "note": "Optuna 21 trials (timeout 300s) on fold-0 proxy, L1 objective"
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.3,
+        "XGB": 0.1,
+        "CAT": 0.1,
+        "LGB_tuned": 0.5
+      },
+      "score": 1.35541
+    },
+    "postprocess": [
+      "round"
+    ],
+    "notes": "Round 1/iteration: Optuna fold0-proxy tuned LGB ADDED as 4th pool member (not replacing original LGB), per validated recipe. Raw OOF MAE 1.35541 (vs prior best 1.35589, marginal +0.0005 improvement) but ROUNDED OOF MAE 1.33850 is WORSE than current best 1.33812 (+0.00038). Non-improving round (rounded is the decision metric). Optuna only completed 21/50 trials before 300s timeout guard hit -- fold0 proxy itself (1.36949) was worse than fold0 raw LGB, so tuning gains were modest and did not survive rounding. Kept as pool candidate for round 2 seed-bagging test."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-03T22:58:34",
+    "model": "LGB+XGB+CAT+LGB_tuned+LGB_tuned_seed2024 (seed bagging) blend",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 1.33893,
+    "cv": {
+      "scheme": "5fold_stratified_agebin",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "oof_mae": 1.35651
+      },
+      {
+        "name": "XGB",
+        "oof_mae": 1.35763
+      },
+      {
+        "name": "CAT",
+        "oof_mae": 1.36162
+      },
+      {
+        "name": "LGB_tuned",
+        "oof_mae": 1.35583
+      },
+      {
+        "name": "LGB_tuned_seed2024",
+        "oof_mae": 1.35604,
+        "note": "same Optuna-tuned hyperparams as LGB_tuned, random_state=2024"
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.2,
+        "XGB": 0.1,
+        "CAT": 0.1,
+        "LGB_tuned": 0.4,
+        "LGB_tuned_seed2024": 0.2
+      },
+      "score": 1.35533
+    },
+    "postprocess": [
+      "round"
+    ],
+    "notes": "Round 2/iteration: seed bagging (add LGB_tuned with random_state=2024, same hyperparams) as 5th pool member, per validated recipe (cheapest residual gain after Optuna tuning in s3e1/s3e7/s3e11/s3e14). Raw OOF MAE improved marginally to 1.35533 (best raw so far) but ROUNDED OOF MAE 1.33893 is WORSE than both current best (1.33812) and round 1 (1.33850). 2nd consecutive non-improving round on the rounded decision metric -> STOP per iteration protocol. Insight: on this dataset the Optuna-tuned LGB variants cluster very close to the original LGB in OOF-space (low diversity, since only depth/lr/reg differ, same objective/features/CV), so raw-MAE gains from tuning+bagging are real but too small to survive the discrete rounding step; the untuned 3-model blend at 0.6/0.3/0.1 remains the best ROUNDED submission."
+  }
+]

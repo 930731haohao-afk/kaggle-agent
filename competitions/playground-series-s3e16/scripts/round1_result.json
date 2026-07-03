@@ -1,0 +1,24 @@
+{
+  "names": [
+    "LGB",
+    "XGB",
+    "CAT",
+    "LGB_tuned"
+  ],
+  "maes": {
+    "LGB": 1.3565051667362336,
+    "XGB": 1.3576253788039563,
+    "CAT": 1.3616213263027535,
+    "LGB_tuned": 1.3558286813333595
+  },
+  "weights": {
+    "LGB": 0.3,
+    "XGB": 0.1,
+    "CAT": 0.1,
+    "LGB_tuned": 0.5
+  },
+  "blend_raw_mae": 1.35541,
+  "blend_round_mae": 1.3385,
+  "use_round": true,
+  "improved": false
+}

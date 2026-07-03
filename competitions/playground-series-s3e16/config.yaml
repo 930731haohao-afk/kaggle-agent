@@ -1,0 +1,22 @@
+name: playground-series-s3e16
+url: https://www.kaggle.com/competitions/playground-series-s3e16
+description: Predict the age of crabs from physical measurements (Crab Age Dataset)
+problem_type: regression
+evaluation_metric: mae
+optimization_direction: minimize
+target_column: Age
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes: |
+  - Aygün et al. (Nature 2026) Kaggle Playground benchmark 之一 (Season 3, Episode 16)
+  - 74,051 train / 49,368 test rows; 8 features + target Age
+  - Sex is categorical (I=infant, M, F); rest are continuous size/weight measures
+  - Target Age is a positive integer count (regression, evaluated by MAE)
+  - Weight columns are highly correlated (Weight = Shucked + Viscera + Shell approx)

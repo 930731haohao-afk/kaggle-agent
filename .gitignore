@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Competition data (large files)
+competitions/*/data/
+
+# CatBoost training artifacts
+catboost_info/
+
+# Cached OOF/pred arrays for iteration rounds (regenerable, large)
+competitions/*/scripts/cache/
+
+# Credentials / secrets
+.env
+kaggle.json

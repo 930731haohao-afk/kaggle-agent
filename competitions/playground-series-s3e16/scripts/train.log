@@ -1,0 +1,68 @@
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+n_features=24  train=(74051, 24)  test=(49368, 24)
+
+=== LGB ===
+  [LGB] fold0 MAE=1.3699 best_iter=797
+  [LGB] fold1 MAE=1.3408 best_iter=516
+  [LGB] fold2 MAE=1.3571 best_iter=447
+  [LGB] fold3 MAE=1.3536 best_iter=476
+  [LGB] fold4 MAE=1.3611 best_iter=740
+LGB OOF MAE = 1.35651  (round=1.33885)  [31s]
+
+=== XGB ===
+  [XGB] fold0 MAE=1.3718 best_iter=722
+  [XGB] fold1 MAE=1.3425 best_iter=753
+  [XGB] fold2 MAE=1.3574 best_iter=744
+  [XGB] fold3 MAE=1.3535 best_iter=516
+  [XGB] fold4 MAE=1.3629 best_iter=1144
+XGB OOF MAE = 1.35763  (round=1.34160)  [37s]
+
+=== CAT ===
+  [CAT] fold0 MAE=1.3733 best_iter=1052
+  [CAT] fold1 MAE=1.3438 best_iter=1192
+  [CAT] fold2 MAE=1.3650 best_iter=1039
+  [CAT] fold3 MAE=1.3598 best_iter=921
+  [CAT] fold4 MAE=1.3663 best_iter=1228
+CAT OOF MAE = 1.36162  (round=1.33846)  [24s]
+
+BLEND(mean) OOF MAE = 1.35644  (round=1.33862)
+BEST weighted blend {'LGB': np.float64(0.6), 'XGB': np.float64(0.3), 'CAT': np.float64(0.1)} OOF MAE = 1.35589
+Final OOF MAE = 1.35589  round=1.33812
+use_round=True
+
+Wrote competitions/playground-series-s3e16/submissions/sub_blend_20260703_091840.csv  shape=(49368, 2)
+      id   Age
+0  74051   7.0
+1  74052   8.0
+2  74053  10.0
+3  74054   9.0
+4  74055   7.0
+count    49368.000000
+mean         9.644608
+std          2.329083
+min          4.000000
+25%          8.000000
+50%         10.000000
+75%         11.000000
+max         18.000000
+Name: Age, dtype: float64
+Logged experiment #1 to competitions/playground-series-s3e16/experiments.json
