@@ -208,3 +208,120 @@ uv run python3 competitions/playground-series-s3e19/scripts/features.py
 uv run python3 competitions/playground-series-s3e19/scripts/train.py
 uv run python3 competitions/playground-series-s3e19/scripts/diagnostic_kfold.py  # optional diagnostic
 ```
+
+## Appendix: Phase D-5 tree-search v2 sweep (2026-07-04) — the TIME-SERIES case
+
+**Sweep question**: v2 was 3/3 BEAT on KFold-CV comps (s3e3 eval#12, s3e7 eval#13, s3e1
+eval#9). Does the harness generalize to TimeSeriesSplit CV, where the OOF vector only
+covers a subset of rows and folds are non-interchangeable? **Answer for s3e19: BEAT,
+the most decisive of the sweep — first beat at evaluation #7 (the FIRST new idea
+evaluated after 6 linear-pool reproduction nodes), finished 9.75707 by evaluation #18
+of 22 (−0.26239 vs linear's 10.01946, −2.62% relative — an order of magnitude larger
+relative margin than any KFold sweep comp), wall 321.0s total.** The two levers —
+seed-bagging the Optuna-tuned LGB and a global ×1.02 OOF-fitted multiplier — are both
+ideas the linear run explicitly listed as untried, and both are amplified by
+time-series-specific mechanics (see below).
+
+Built: `tree_search/eval_s3e19.py` (solo: LGB/CAT on log1p target, expm1 before SMAPE;
+blend: harness_v2.eval_blend with an `auto_scale` grid-searched global multiplier
+applied INSIDE metric_fn) + `tree_search/run_s3e19.py` (harness_v2 driver). Root =
+linear winner's strongest solo (exp #7 Optuna fold-5-proxy-tuned LGB, OOF 10.14833).
+OOF cache: `tree_search/cache_s3e19/` (gitignored). Banned per brief: ratio
+decomposition, XGB solo (both linear dead ends).
+
+### TimeSeriesSplit reproduction rigor (the brief's ⚠️ items, both verified)
+- **Identical folds**: TimeSeriesSplit(5) on the 1826 sorted unique dates, broadcast to
+  row masks via isin() — byte-for-byte the same construction as scripts/train.py's
+  get_time_folds(). Verified digit-for-digit BEFORE searching: root 10.148325→exp #7's
+  10.14833, LGB_S42 10.177577→10.17758, CAT_S42 10.730642→10.73064, LGB_S2024
+  10.210617→10.21059, LGB_S7 10.19448→10.19446, CAT_S2024 10.983835→10.98383.
+- **OOF index mask**: only the last 5×304 dates have OOF predictions (114,000 of
+  136,950 rows; the first ~306 dates are train-only in every fold). eval_s3e19.py
+  caches full-length OOF vectors (zeros outside the mask) but scores EVERYTHING —
+  solo, every blend weight candidate, every scale candidate — on the identical
+  `IDX` mask scripts/train.py used (`fold_mask_any`), asserted == 114000 at import.
+
+### Node/backtrack/dedup summary
+- **22 evaluated nodes** (13 solo / 9 blend), 0 failed, wall=321.0s (CatBoost seeds
+  dominate the budget: 81s+45s; every LGB solo ≤7s, every blend ≤29s).
+- **2 backtracks**, both genuine 3-strike plateaus (SEEDBAG_TUNED at node #12, BLEND at
+  #20). tie_rate stayed 0.000 — SMAPE is continuous, the adaptive-plateau discretization
+  branch never fired (as designed).
+- **Dedup: 0 rejections** — the proposer-side pre-checks (find_dup before eval,
+  order-insensitive blend-member hashing, inherited verbatim from run_s3e1.py) left
+  nothing for the safety net to catch this time.
+
+### Best vs linear, evaluations-to-match/beat
+| | OOF SMAPE | evaluations |
+|---|---|---|
+| Linear-iteration best (exp #7, 6-way 0.1-grid blend) | 10.01946 | 7 experiments |
+| Tree v2: node #6 (SEEDBAG_TUNED seed, solo!) | 9.974778 | **7 (first beat)** |
+| Tree v2: node #13 (7-way blend, +SEEDBAG_TUNED member) | 9.951185 | 12 |
+| Tree v2: node #15 (8-way + auto_scale ×1.02) | 9.775774 | 14 |
+| Tree v2: node #17 (global best: 10-way + auto_scale) | **9.757070** | **18** |
+
+Winning chain: #9 BLEND seed 6-way dirichlet 10.027281 (hair-WORSE than linear's
+0.1-grid 10.01946 — dirichlet stochasticity, the only sweep comp where the
+reproduction blend didn't match) → #13 +SEEDBAG_TUNED 9.951185 → #14 +DEEPLGB
+9.943698 → #15 auto_scale=True ×1.02 **9.775774** (single biggest gain of the run,
+−0.168) → #16 +CALSUBSET 9.771093 → #17 +tuned-seed-3000 member **9.757070**.
+Final: 10 members, scale 1.02, dominated by the tuned-LGB seed family (s2024 .245 +
+s3000 .256) + CALSUBSET .178 + LGB_S7 .199.
+
+### What actually moved it — and what didn't (honest ledger)
+- **Seed-bagging the Optuna-tuned LGB — STATUS.md's own "untried, s3e5 warns it may be
+  neutral" item — was the beat all by itself**: tuned params + seed 2024 solo scored
+  9.974778 vs seed-42's 10.148325, single-handedly under the linear 6-way blend. The
+  s3e5 counterexample did NOT transfer, and the reason is time-series-specific: under
+  TimeSeriesSplit the tuned config's seed family spans 10.15/10.07/9.99/9.97 (seeds
+  42/777/3000/2024) — a 0.17-SMAPE seed spread, far beyond anything the KFold sweep
+  comps showed. Fold non-interchangeability (fold 1 trains on 306 dates only) makes
+  model variance enormous, so variance-reduction levers (seed pools) pay far more
+  than under KFold. Corollary: seed 42's 10.148 "tuned solo" was partly an unlucky
+  draw, and the linear run's fold-5-proxy caveat compounds with seed luck.
+- **Global multiplier (auto_scale, ×1.02) — the brief's cheap untried lever — was the
+  single largest gain: −0.168** (9.9437→9.7758 at the 8-way layer). Mechanically: every
+  TimeSeriesSplit validation block is LATER than its training window, and the series
+  grows into 2021, so OOF predictions run systematically ~2% low; SMAPE is
+  scale-sensitive, and a 1-parameter level fit recovers it. This is structurally the
+  same gap the real 2022 test has, so the correction should transfer directionally.
+  It is also structurally DIFFERENT from the rejected ratio decomposition (no
+  country/date structure, just a scalar), which is why it won where RD lost.
+- **Calendar-feature subtraction transferred**: dropping weekofyear+day gave a real
+  solo gain (10.1377 vs 10.1776) and 0.18–0.22 blend weight; the more aggressive
+  subset (also dropping is_month_start/end) regressed (10.2277) — the s3e7/s3e14
+  "trim redundant features, but not too far" pattern reproduced under time series.
+- **DEEPLGB (deliberate-diversity, capacity direction)**: mediocre solo (10.347) but
+  earned 0.07–0.16 blend weight and +0.0075 at #14 — fourth consecutive sweep comp
+  confirming blend contribution ≠ solo score.
+- **What lost**: remove-weakest (#18, −CAT_S42 w=.0003) was a wash (9.757173 vs
+  9.757070 — P14's "zero-cost" reads as literally zero here, not positive); adding the
+  weaker tuned-seed variants #11/#10 as extra members (#19/#20) regressed slightly —
+  the 10-way pool was already saturated with that seed family.
+- **Honest caveat (inherited + extended)**: like the linear 10.01946, the 9.75707
+  carries fold-5 double-dip optimism, PLUS the scale parameter and the seed selection
+  are OOF-fitted. All are 1-to-few-parameter fits on 114k rows (low overfit risk
+  individually), but the true expected 2022 SMAPE is best read as "meaningfully below
+  10.02", not literally 9.76.
+
+### Prior-usage log (idea-injection experiment)
+`suggest_priors({"metric":"smape","tags":["cv","optuna","ensemble","時序"]})` returned
+20 bullets (P0–P19) — notably, s3e19 is itself the sole evidence source for the whole
+SMAPE/時序 section, so this run is the first where the library fed a comp its OWN
+distilled lessons back. Among the 12 search-loop mutations (first-gen seeds excluded):
+- **3 prior-informed, win rate 1/3 = 33%** (P8 add-tuned-seedbag-to-blend: W; P8
+  second-seed-777: L; P14 remove-weakest: L/wash) — the LOWEST informed win rate of
+  the sweep (vs 100% on s3e1, 62.5% on s3e7).
+- **9 uninformed, win rate 4/9 = 44%**, including the run's two biggest search-loop
+  gains (auto_scale #15, fallback member-add #17).
+- BUT the accounting under-credits priors here: the single decisive idea (seed-bag the
+  tuned config, node #6, informed by P8 + STATUS.md's own untried-ideas list) was a
+  first-generation seed, which the win-rate bookkeeping excludes by construction.
+  Four sweeps in, the refined pattern: **priors reliably nominate WHAT to try (seed
+  bagging, add-not-replace, feature trimming — all transferred to time series), but
+  the size of each prior's payoff is comp-local** (seed bagging paid far more here
+  than on KFold comps because TimeSeriesSplit inflates model variance), **and the
+  single biggest lever is still comp-local structure the library cannot know**
+  (the 2022-extrapolation level gap → auto_scale). Priors set the floor; comp-local
+  insight sets the ceiling — confirmed on the 4th consecutive comp, now including
+  time series.
