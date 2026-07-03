@@ -12,7 +12,9 @@
 - [x] Stage 2 Feature engineering — `scripts/features.py`
 - [x] Stage 3 Modeling + CV — `scripts/train.py` (iteration 1), `scripts/train_v2.py` (iteration 2, self-improvement)
 - [x] Stage 4 Evaluation — reflexion between iteration 1 and 2 (see below)
-- [x] Stage 5 Submission generated — `submissions/sub_blend_v2_340.71180_20260703_193959.csv`
+- [x] Phase B self-improvement iteration (2026-07-03 evening) — 4 rounds, `scripts/train_v3.py`–`train_v6.py`
+      (exp #4–#7, see "Phase B iteration rounds" below)
+- [x] Stage 5 Submission generated — best: `submissions/sub_blend_v6_340.59891_20260703_211503.csv`
 - [ ] Submitted to Kaggle leaderboard — **not submitted** (no Kaggle credentials in this environment; per task
       instructions this run does not submit)
 
@@ -21,9 +23,12 @@
 |------------|-------|---------|
 | #1 (prior baseline) | generic LGB+XGB+CAT blend | 341.40782 |
 | #2 (iteration 1) | feature-engineered blend + snap-to-grid | 340.95856 |
-| #3 (iteration 2, **best**) | pruned features + native-cat CatBoost + snap-to-grid | **340.71180** |
+| #3 (iteration 2) | pruned features + native-cat CatBoost + snap-to-grid | 340.71180 |
+| #5 (Phase B round 2) | 4-way blend (+Optuna-tuned LGB as extra member) + snap | 340.62702 |
+| #7 (Phase B round 4, **best**) | 5-way blend (+seed-2024 LGB) + snap | **340.59891** |
 
-Improvement over baseline: 341.40782 − 340.71180 = 0.69602 (~0.20% relative).
+Improvement over baseline: 341.40782 − 340.59891 = 0.80891 (~0.24% relative).
+Phase B improvement over previous best: 340.71180 − 340.59891 = 0.11289.
 
 ## EDA key findings (`scripts/eda.py`)
 1. Target `yield` is continuous, roughly symmetric (skew ≈ −0.16), range [1945.5, 8969.4]. Only 776 of
@@ -78,17 +83,38 @@ Experiment log: `experiments.json` (#1 baseline, #2, #3), all logged via `log_ex
 - Stopped after 2 iterations (within the 1–2 iteration budget for this run): improvement is decelerating and
   the dominant signal (fruit-biology block) has already been exploited via interactions.
 
+## Phase B iteration rounds (2026-07-03 evening, exp #4–#7)
+One change per round, same 5-fold KFold seed 42; stopped after round 4 (protocol max, gains decelerating).
+
+| Round | Script | Change (vs previous best config) | OOF MAE | Verdict |
+|-------|--------|----------------------------------|---------|---------|
+| 1 | `train_v3.py` (exp #4) | Optuna fold-0-proxy tuned LGB (50-trial recipe from experience.md) **replaces** original LGB | 340.82694 | ✗ worse — tuned LGB better solo (342.02154→341.68775) but blend degraded (340.75961→340.95316): diversity loss |
+| 2 | `train_v4.py` (exp #5) | keep original LGB **and add** tuned LGB as 4th base model, 4-way simplex grid | **340.62702** | ✓ new best (weights LGB 0.35 / LGB_TUNED 0.2 / XGB 0.2 / CAT 0.25) |
+| 3 | `train_v5.py` (exp #6) | nested OOF isotonic calibration of blend output before snap | 340.62702 (fallback) | ✗ isotonic itself 346.99717 — badly worse, auto-rejected; result = round-2 output |
+| 4 | `train_v6.py` (exp #7) | add seed-diversified LGB (identical params, seed 2024) as 5th base model | **340.59891** | ✓ new best (weights 0.2/0.15/0.2/0.25/0.2; snap 340.65207→340.59891) |
+
+Key Phase B lessons:
+- A better-tuned single model can *hurt* the blend if it replaces a diverse member — s3e7's "don't re-tune
+  the second model" lesson generalizes: tuned variants should be **added** to the pool, not swapped in.
+- Isotonic calibration of a GBDT blend on MAE is strongly negative here (+6.3 MAE) — the blend is already
+  well-calibrated in the median sense; monotone recalibration only adds variance.
+- Seed bagging (5th member, seed 2024) gave a small but real gain (340.62702 → 340.59891).
+- OOF/test prediction matrix cached in `data/oof_v4.npz` for cheap future blend experiments.
+
 ## Next ideas (not yet tried)
-- Optuna tuning of LGB/XGB/CatBoost hyperparameters (time budget in this run went to feature/blend
-  experiments instead).
 - Target transform (log or Box-Cox) given the wide yield range, then evaluate MAE in original units.
 - Quantile regression heads or per-clonesize-bucket separate models (clonesize is a strong discrete driver).
+- More seed bags (3–5 seeds per model family) — round 4 suggests small further gains available.
 
 ## Reproduce
 ```bash
 cd /home/tjyen/ai_agents/kaggle
 uv run python3 competitions/playground-series-s3e14/scripts/eda.py
 uv run python3 competitions/playground-series-s3e14/scripts/train.py     # iteration 1
-uv run python3 competitions/playground-series-s3e14/scripts/train_v2.py  # iteration 2 (best)
+uv run python3 competitions/playground-series-s3e14/scripts/train_v2.py  # iteration 2
+uv run python3 competitions/playground-series-s3e14/scripts/train_v3.py  # Phase B round 1 (Optuna, exp #4)
+uv run python3 competitions/playground-series-s3e14/scripts/train_v4.py  # Phase B round 2 (exp #5; writes data/oof_v4.npz)
+uv run python3 competitions/playground-series-s3e14/scripts/train_v5.py  # Phase B round 3 (isotonic, exp #6; needs oof_v4.npz)
+uv run python3 competitions/playground-series-s3e14/scripts/train_v6.py  # Phase B round 4 (exp #7, best; needs oof_v4.npz)
 ```
 No Kaggle submission was made (no credentials in this environment).

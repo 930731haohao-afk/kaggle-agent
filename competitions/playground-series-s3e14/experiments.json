@@ -156,5 +156,249 @@
     ],
     "submission": "sub_blend_v2_340.71180_20260703_193959.csv",
     "notes": "Iteration 2 (reflexion on exp #2): dropped 6 near-zero-importance engineered/raw features (temp_avg, log_clonesize, rain_intensity, MinOfLowerTRange, AverageOfLowerTRange, AverageOfUpperTRange); CatBoost now treats low-cardinality env cols as native categoricals; added Ridge (non-negative) stacking meta-model as an alternative to the grid-searched simplex blend, keeping whichever OOF MAE is lower."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-03T21:07:27",
+    "model": "LGB(Optuna fold-proxy tuned)+XGB+CAT(native-cat, unchanged) grid-simplex blend",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 340.826945,
+    "features": [
+      "clonesize",
+      "honeybee",
+      "bumbles",
+      "andrena",
+      "osmia",
+      "MaxOfUpperTRange",
+      "MinOfUpperTRange",
+      "MaxOfLowerTRange",
+      "RainingDays",
+      "AverageRainingDays",
+      "fruitset",
+      "fruitmass",
+      "seeds",
+      "fruitset_x_seeds",
+      "fruitset_x_fruitmass",
+      "fruitmass_x_seeds",
+      "fruit_triple",
+      "seeds_per_fruitset",
+      "temp_spread",
+      "total_pollinators",
+      "honeybee_share"
+    ],
+    "n_features": 21,
+    "cv": {
+      "scheme": "5fold_kfold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 341.68775
+      },
+      {
+        "name": "XGB",
+        "score": 342.21778
+      },
+      {
+        "name": "CAT",
+        "score": 343.60196
+      }
+    ],
+    "ensemble": {
+      "method": "grid_simplex",
+      "weights": {
+        "LGB": 0.5,
+        "XGB": 0.3,
+        "CAT": 0.2
+      },
+      "score": 340.95316
+    },
+    "postprocess": [
+      "snap_to_grid=used (raw=340.95316, snapped=340.82694)"
+    ],
+    "submission": "sub_blend_v3_340.82694_20260703_210727.csv",
+    "notes": "Phase B round 1 (change vs iter 2: Optuna-tune LGB only via fold-0 proxy, 36 trials in 293s; best_params={'learning_rate': 0.015389816656608301, 'num_leaves': 63, 'max_depth': 5, 'min_child_samples': 30, 'subsample': 0.7899031923134097, 'colsample_bytree': 0.6842166782718478, 'reg_alpha': 0.012648426946439915, 'reg_lambda': 0.00346212601571565}; XGB/CAT kept identical to iteration 2 per experience.md (re-tuning 2nd model hurt blend diversity in s3e7); skipped re-testing Ridge stack, already lost in exp #3)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-03T21:11:27",
+    "model": "LGB+LGB(tuned)+XGB+CAT(native-cat) 4-way grid-simplex blend",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 340.627017,
+    "features": [
+      "clonesize",
+      "honeybee",
+      "bumbles",
+      "andrena",
+      "osmia",
+      "MaxOfUpperTRange",
+      "MinOfUpperTRange",
+      "MaxOfLowerTRange",
+      "RainingDays",
+      "AverageRainingDays",
+      "fruitset",
+      "fruitmass",
+      "seeds",
+      "fruitset_x_seeds",
+      "fruitset_x_fruitmass",
+      "fruitmass_x_seeds",
+      "fruit_triple",
+      "seeds_per_fruitset",
+      "temp_spread",
+      "total_pollinators",
+      "honeybee_share"
+    ],
+    "n_features": 21,
+    "cv": {
+      "scheme": "5fold_kfold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 342.02154
+      },
+      {
+        "name": "LGB_TUNED",
+        "score": 341.68775
+      },
+      {
+        "name": "XGB",
+        "score": 342.21778
+      },
+      {
+        "name": "CAT",
+        "score": 343.60196
+      }
+    ],
+    "ensemble": {
+      "method": "grid_simplex_4way",
+      "weights": {
+        "LGB": 0.35,
+        "LGB_TUNED": 0.2,
+        "XGB": 0.2,
+        "CAT": 0.25
+      },
+      "score": 340.69924
+    },
+    "postprocess": [
+      "snap_to_grid=used (raw=340.69924, snapped=340.62702)"
+    ],
+    "submission": "sub_blend_v4_340.62702_20260703_211127.csv",
+    "notes": "Phase B round 2 (reflexion on exp #4: tuned LGB improved solo 342.02->341.69 but REPLACING original LGB hurt blend 340.76->340.95 via lost diversity). Change: keep original LGB AND add tuned LGB as a 4th base model; 4-way simplex grid (step 0.05); XGB/CAT identical to exp #3. OOF/test preds saved to data/oof_v4.npz."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-03T21:12:45",
+    "model": "4-way blend + nested OOF isotonic calibration (from saved oof_v4.npz)",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 340.627017,
+    "cv": {
+      "scheme": "5fold_kfold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "ensemble": {
+      "method": "grid_simplex_4way+isotonic",
+      "weights": {
+        "LGB": 0.35,
+        "LGB_TUNED": 0.2,
+        "XGB": 0.2,
+        "CAT": 0.25
+      },
+      "blend_score": 340.69924,
+      "isotonic_score": 346.99717,
+      "isotonic_kept": false
+    },
+    "postprocess": [
+      "isotonic=rejected (raw=340.69924, iso=346.99717)",
+      "snap_to_grid=used (pre=340.69924, snapped=340.62702)"
+    ],
+    "notes": "Phase B round 3 (change vs exp #5: nested OOF isotonic calibration of blend output before snap; base models and weight search identical to exp #5, loaded from oof_v4.npz; isotonic tried as the stacking alternative after Ridge lost in exp #3). Submission file removed post-hoc: byte-identical (md5) to exp #5's sub_blend_v4 file (isotonic rejected -> fallback reproduced round-2 output exactly)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-03T21:15:03",
+    "model": "LGB+LGB(tuned)+XGB+CAT+LGB(seed2024) 5-way grid-simplex blend",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 340.59891,
+    "features": [
+      "clonesize",
+      "honeybee",
+      "bumbles",
+      "andrena",
+      "osmia",
+      "MaxOfUpperTRange",
+      "MinOfUpperTRange",
+      "MaxOfLowerTRange",
+      "RainingDays",
+      "AverageRainingDays",
+      "fruitset",
+      "fruitmass",
+      "seeds",
+      "fruitset_x_seeds",
+      "fruitset_x_fruitmass",
+      "fruitmass_x_seeds",
+      "fruit_triple",
+      "seeds_per_fruitset",
+      "temp_spread",
+      "total_pollinators",
+      "honeybee_share"
+    ],
+    "n_features": 21,
+    "cv": {
+      "scheme": "5fold_kfold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 342.02154
+      },
+      {
+        "name": "LGB_TUNED",
+        "score": 341.68775
+      },
+      {
+        "name": "XGB",
+        "score": 342.21778
+      },
+      {
+        "name": "CAT",
+        "score": 343.60196
+      },
+      {
+        "name": "LGB_SEED2024",
+        "score": 342.04208
+      }
+    ],
+    "ensemble": {
+      "method": "grid_simplex_5way",
+      "weights": {
+        "LGB": 0.2,
+        "LGB_TUNED": 0.15,
+        "XGB": 0.2,
+        "CAT": 0.25,
+        "LGB_SEED2024": 0.2
+      },
+      "score": 340.65207
+    },
+    "postprocess": [
+      "snap_to_grid=used (raw=340.65207, snapped=340.59891)"
+    ],
+    "submission": "sub_blend_v6_340.59891_20260703_211503.csv",
+    "notes": "Phase B round 4 (change vs exp #5: add seed-diversified LGB, identical params but random_state 2024, as 5th base model; other 4 model predictions loaded unchanged from oof_v4.npz; folds unchanged KFold seed 42)."
   }
 ]
