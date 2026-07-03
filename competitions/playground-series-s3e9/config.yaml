@@ -1,0 +1,17 @@
+name: playground-series-s3e9
+url: https://www.kaggle.com/competitions/playground-series-s3e9
+description: Predict concrete compressive strength
+problem_type: regression
+evaluation_metric: rmse
+optimization_direction: minimize
+target_column: Strength
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes: Aygun et al. Nature 2026 Kaggle Playground benchmark (Season 3 Episode 9).

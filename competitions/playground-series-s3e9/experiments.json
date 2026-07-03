@@ -1,0 +1,220 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-07-03T12:06:32",
+    "model": "generic LGB+XGB+CAT blend",
+    "metric": "rmse",
+    "n_features": 8,
+    "cv": "5fold",
+    "per_model": {
+      "LGB": 13.2055,
+      "XGB": 12.98156,
+      "CAT": 12.54287
+    },
+    "blend_weights": {
+      "LGB": 0.0,
+      "XGB": 0.0,
+      "CAT": 1.0
+    },
+    "blend_score": 12.54287,
+    "submission": "sub_generic_12.54287_20260703_120632.csv"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-03T19:10:07",
+    "model": "LGB+XGB+CatBoost weighted blend (regularized, engineered features)",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 12.073474,
+    "features": [
+      "CementComponent",
+      "BlastFurnaceSlag",
+      "FlyAshComponent",
+      "WaterComponent",
+      "SuperplasticizerComponent",
+      "CoarseAggregateComponent",
+      "FineAggregateComponent",
+      "AgeInDays",
+      "log_age",
+      "sqrt_age",
+      "has_slag",
+      "has_flyash",
+      "has_superplasticizer",
+      "binder",
+      "water_binder_ratio",
+      "water_cement_ratio",
+      "sp_binder_ratio",
+      "agg_binder_ratio",
+      "fine_coarse_ratio",
+      "slag_cement_ratio",
+      "flyash_cement_ratio",
+      "total_mass"
+    ],
+    "n_features": 22,
+    "cv": {
+      "strategy": "5fold_stratified_strength_decile",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "LGB",
+        "rmse": 12.11061,
+        "time_s": 6.7
+      },
+      {
+        "model": "XGB",
+        "rmse": 12.12086,
+        "time_s": 7.7
+      },
+      {
+        "model": "CAT",
+        "rmse": 12.07459,
+        "time_s": 2.7
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.15,
+        "XGB": 0.0,
+        "CAT": 0.85
+      },
+      "method": "oof_weight_search_grid0.05"
+    },
+    "submission": "sub_blend_12.07347_20260703_191007.csv",
+    "notes": "Regularized LGB(num_leaves=15,depth5,L1=2/L2=4)/XGB(depth4,L1=2/L2=4) + CatBoost(depth6,l2=6) with 8 engineered features (log_age, water/binder ratios) vs baseline exp#1 (generic untuned blend, RMSE 12.54287, CatBoost 100% weight)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T19:10:47",
+    "model": "LGB+XGB+CatBoost weighted blend (regularized, engineered features)",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 12.094826,
+    "features": [
+      "CementComponent",
+      "BlastFurnaceSlag",
+      "FlyAshComponent",
+      "WaterComponent",
+      "SuperplasticizerComponent",
+      "CoarseAggregateComponent",
+      "FineAggregateComponent",
+      "AgeInDays",
+      "log_age",
+      "sqrt_age",
+      "has_slag",
+      "has_flyash",
+      "has_superplasticizer",
+      "binder",
+      "water_binder_ratio",
+      "water_cement_ratio",
+      "sp_binder_ratio",
+      "agg_binder_ratio",
+      "fine_coarse_ratio",
+      "slag_cement_ratio",
+      "flyash_cement_ratio",
+      "total_mass",
+      "binder_x_logage",
+      "cement_x_logage",
+      "water_binder_x_logage"
+    ],
+    "n_features": 25,
+    "cv": {
+      "strategy": "5fold_stratified_strength_decile",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "LGB",
+        "rmse": 12.12611,
+        "time_s": 7.5
+      },
+      {
+        "model": "XGB",
+        "rmse": 12.13615,
+        "time_s": 6.6
+      },
+      {
+        "model": "CAT",
+        "rmse": 12.0962,
+        "time_s": 2.5
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.15,
+        "XGB": 0.0,
+        "CAT": 0.85
+      },
+      "method": "oof_weight_search_grid0.05"
+    },
+    "submission": "sub_blend_12.09483_20260703_191047.csv",
+    "notes": "Regularized LGB(num_leaves=15,depth5,L1=2/L2=4)/XGB(depth4,L1=2/L2=4) + CatBoost(depth6,l2=6) with 8 engineered features (log_age, water/binder ratios) vs baseline exp#1 (generic untuned blend, RMSE 12.54287, CatBoost 100% weight)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-03T19:11:24",
+    "model": "LGB+XGB+CatBoost weighted blend (regularized, engineered features)",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 12.073474,
+    "features": [
+      "CementComponent",
+      "BlastFurnaceSlag",
+      "FlyAshComponent",
+      "WaterComponent",
+      "SuperplasticizerComponent",
+      "CoarseAggregateComponent",
+      "FineAggregateComponent",
+      "AgeInDays",
+      "log_age",
+      "sqrt_age",
+      "has_slag",
+      "has_flyash",
+      "has_superplasticizer",
+      "binder",
+      "water_binder_ratio",
+      "water_cement_ratio",
+      "sp_binder_ratio",
+      "agg_binder_ratio",
+      "fine_coarse_ratio",
+      "slag_cement_ratio",
+      "flyash_cement_ratio",
+      "total_mass"
+    ],
+    "n_features": 22,
+    "cv": {
+      "strategy": "5fold_stratified_strength_decile",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "model": "LGB",
+        "rmse": 12.11061,
+        "time_s": 7.4
+      },
+      {
+        "model": "XGB",
+        "rmse": 12.12086,
+        "time_s": 7.6
+      },
+      {
+        "model": "CAT",
+        "rmse": 12.07459,
+        "time_s": 2.6
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.15,
+        "XGB": 0.0,
+        "CAT": 0.85
+      },
+      "method": "oof_weight_search_grid0.05"
+    },
+    "submission": "sub_blend_12.07347_20260703_191124.csv",
+    "notes": "Regularized LGB(num_leaves=15,depth5,L1=2/L2=4)/XGB(depth4,L1=2/L2=4) + CatBoost(depth6,l2=6) with 8 engineered features (log_age, water/binder ratios) vs baseline exp#1 (generic untuned blend, RMSE 12.54287, CatBoost 100% weight)."
+  }
+]
