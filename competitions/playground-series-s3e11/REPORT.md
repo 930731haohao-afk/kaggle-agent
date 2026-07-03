@@ -42,7 +42,9 @@ Aygun et al.(Nature 2026)Kaggle Playground 基準之一(來源:`competition.note
 
 ## 3. 模型規格
 
-本場共三筆實驗,皆為 LightGBM + XGBoost + CatBoost 三模型加權集成,差別在特徵集與訓練方法:
+本場共八筆實驗:前三筆(Phase A)為 LightGBM + XGBoost + CatBoost 三模型加權集成,差別在
+特徵集與訓練方法;後五筆(Phase B 自我改進迭代 R1–R5)在最佳特徵集上調整模型池組成
+(刪除 XGBoost、Optuna 調參 CatBoost、seed bagging、特徵消融)。
 
 **實驗 1(`generic_batch`,通用批次基線;15 原始特徵)— base models:**
 
@@ -66,7 +68,7 @@ Ensemble 分數(來源:`experiments[0].ensemble.score`):**0.29723**。
 Ensemble 權重(來源:`experiments[1].ensemble.weights`):LGB 0.2 / XGB 0.0 / CAT 0.8,
 集成分數(來源:`experiments[1].score`):**0.2971**。
 
-**實驗 3(`v2`,skill 管線 engineered 模式;21 特徵,facts.best)— base models:**
+**實驗 3(`v2`,skill 管線 engineered 模式;21 特徵,Phase A 最佳)— base models:**
 
 | Model | OOF RMSLE | time_s |
 |-------|-----------|--------|
@@ -75,7 +77,7 @@ Ensemble 權重(來源:`experiments[1].ensemble.weights`):LGB 0.2 / XGB 0.0 / CA
 | CAT | 0.29618 | 58.3 |
 
 Ensemble 權重(來源:`experiments[2].ensemble.weights`):LGB 0.2 / XGB 0.0 / CAT 0.8,
-集成分數(來源:`experiments[2].score`,即 `facts.best.score`):**0.296143**。
+集成分數(來源:`experiments[2].score`):**0.296143**。
 
 **特徵差異**:實驗 3 在 15 個原始欄位之上加入 6 個工程特徵(來源:`experiments[2].features`,
 n_features = 21):`amenity_count`(五個設施旗標加總)、`weight_per_case`、`sales_ratio`、
@@ -87,15 +89,45 @@ n_features = 21):`amenity_count`(五個設施旗標加總)、`weight_per_case`�
 可降低單一模型方差。兩次 skill 管線 run 的權重搜尋皆收斂到 CatBoost 為主(0.8)、XGBoost
 權重 0 的組合,顯示 CatBoost 在此低訊號資料集上最強、XGB 與其他兩者高度冗餘。
 
+**Phase B 自我改進迭代(實驗 4–8,同一 21 特徵集,除實驗 7)**:
+
+| 實驗 | 改動(每輪一項) | Ensemble 分數 |
+|------|------------------|----------------|
+| 4(R1) | 刪除 XGBoost(前兩輪權重皆 0),LGB+CAT 雙模型池 | 0.296143 |
+| 5(R2) | Optuna(TPE 40 trials,fold-0 proxy)調參 CatBoost,調參版**加入**池(不替換) | 0.295781 |
+| 6(R3) | 調參 CatBoost 以 random_seed=2024 重訓,加為第 4 成員(seed bagging) | 0.295715 |
+| 7(R4) | 加 3 個 per-store_combo 特徵均值(24 特徵)——**退步,棄用** | 0.2962 |
+| 8(R5) | 調參 CatBoost 第三個 seed(7),5-way 池 | **0.295648** |
+
+(分數來源:`experiments[3..7].score`;facts.best = 實驗 8。)
+
+實驗 5 的 Optuna 最佳參數(來源:`experiments[4].notes`,原值照錄):depth=10、
+learning_rate=0.08243442179862394、l2_leaf_reg=5.4822780685788235、min_data_in_leaf=33、
+random_strength=0.09160286047373326;搜尋耗時 319.3s(40 trials,timeout guard 480s)。
+
+**實驗 8(facts.best,R5 5-way 池)— base models 與權重:**
+
+| Member | OOF RMSLE | time_s | 權重 |
+|--------|-----------|--------|------|
+| LGB | 0.29661 | 75.5 | 0.0 |
+| CAT_orig | 0.29618 | 58.2 | 0.0 |
+| CAT_tuned | 0.29579 | 31.4 | 0.4 |
+| CAT_tuned_seed2024 | 0.29591 | 34.0 | 0.2 |
+| CAT_tuned_seed7 | 0.29578 | 31.9 | 0.4 |
+
+(來源:`experiments[7].base_models`、`experiments[7].ensemble.weights`。)
+權重搜尋把全部權重給了調參 CatBoost 家族——調參後單模(0.29579)已勝 Phase A 三模型
+blend(0.296143),LGB 與原參數 CatBoost 淪為冗餘。
+
 ## 4. 訓練規格
 
 | 實驗 | CV scheme | n_splits | seed |
 |------|-----------|----------|------|
 | 1 | 5fold | 5 | 無紀錄 |
-| 2 | 5fold_kfold_shuffle | 5(自 strategy 名稱) | 42 |
-| 3 | 5fold_kfold_shuffle | 5(自 strategy 名稱) | 42 |
+| 2–8 | 5fold_kfold_shuffle | 5(自 strategy 名稱) | 42 |
 
-(來源:`experiments[].cv`。實驗 1 的 seed 無對應欄位,寫「無紀錄」。)
+(來源:`experiments[].cv`。實驗 1 的 seed 無對應欄位,寫「無紀錄」。實驗 2–8 全部使用
+同一 fold 切分,分數可直接比較。)
 
 **Objective**:實驗 2、3 對 **log1p(cost)** 以 RMSE objective 訓練(LGB `regression`、
 XGB `reg:squarederror`、CAT `RMSE`),因為 RMSLE 即「log1p 空間的 RMSE」,如此 objective
@@ -109,16 +141,17 @@ XGB `reg:squarederror`、CAT `RMSE`),因為 RMSLE 即「log1p 空間的 RMSE」,
 
 ## 5. 推論程序
 
-`facts.best`(實驗 3)之 `postprocess` 欄位未記錄 → **無後處理紀錄**;惟 `experiments[2].notes`
+`facts.best`(實驗 8)之 `postprocess` 欄位未記錄 → **無後處理紀錄**;惟各實驗 notes
 記載推論流程本身包含「expm1 逆轉換 + clip 至非負」,這是 log 目標訓練的必要配套步驟而非
 額外後處理。測試集的 `store_te` 特徵取五個 fold 編碼平均、未見過的 profile 以訓練折全域
-平均代入(fallback)。
+平均代入(fallback)。最終預測為 5 個成員測試預測(各自已是 5-fold 平均)在 log 空間的
+加權和,再做 expm1 + clip。
 
-Submission:`sub_engineered_0.29614_20260703_192819.csv`(來源:`experiments[2].submission`),
-格式為兩欄 —— `id`(`competition.id_column`)與 `cost`(`competition.target_column`),
-每列對應一筆測試樣本的成本預測值。
+Submission:`sub_r5_seedbag3_0.29565_20260703_223829.csv`(來源:`experiments[7].submission`,
+即 `facts.best.submission`),格式為兩欄 —— `id`(`competition.id_column`)與 `cost`
+(`competition.target_column`),每列對應一筆測試樣本的成本預測值。
 
-**注意**:本場為週末自主批次執行,三筆實驗皆**未提交** Kaggle 排行榜(`facts.missing` 含
+**注意**:本場為週末自主批次執行,八筆實驗皆**未提交** Kaggle 排行榜(`facts.missing` 含
 `leaderboard`),無 Public/Private LB 分數。
 
 ## 6. 評估指標
@@ -130,16 +163,27 @@ Submission:`sub_engineered_0.29614_20260703_192819.csv`(來源:`experiments[2].s
 |------|-----------|
 | 實驗 1 Ensemble(generic 基線) | 0.29723 |
 | 實驗 2 Ensemble(skill base) | 0.2971 |
-| 實驗 3 Ensemble(skill engineered,**facts.best**) | **0.296143** |
+| 實驗 3 Ensemble(skill engineered,Phase A 最佳) | 0.296143 |
+| 實驗 5 Ensemble(R2 Optuna CatBoost) | 0.295781 |
+| 實驗 6 Ensemble(R3 seed bagging) | 0.295715 |
+| 實驗 8 Ensemble(R5 seed bagging ×3,**facts.best**) | **0.295648** |
 | Public LB | 無紀錄(未提交) |
 | Private LB | 無紀錄(未提交) |
 
 **相對基線改善**(衍生算式,依 Hard Rule 置於 code block):
 
 ```
+Phase A:
 實驗 3 − 實驗 1:0.29723 − 0.296143 = 0.001087   (RMSLE 下降,~0.37% 相對改善)
 實驗 3 − 實驗 2:0.29710 − 0.296143 = 0.000957   (特徵工程貢獻,佔改善絕大部分)
 實驗 2 − 實驗 1:0.29723 − 0.29710  = 0.000130   (方法論差異:log1p 目標 + early stopping)
+
+Phase B(自我改進迭代):
+實驗 5 − 實驗 3:0.296143 − 0.295781 = 0.000362  (Optuna 調參 CatBoost,Phase B 最大單項)
+實驗 6 − 實驗 5:0.295781 − 0.295715 = 0.000066  (seed bagging 第 2 個 seed)
+實驗 8 − 實驗 6:0.295715 − 0.295648 = 0.000067  (seed bagging 第 3 個 seed)
+實驗 7 − 實驗 6:0.2962   − 0.295715 = 0.000485  (退步:per-combo 特徵均值,棄用)
+實驗 8 − 實驗 3:0.296143 − 0.295648 = 0.000495  (Phase B 總增益,~0.17% 相對改善)
 ```
 
 CV↔LB gap:無排行榜紀錄,無法計算。
@@ -151,15 +195,27 @@ CV↔LB gap:無排行榜紀錄,無法計算。
 | 1 | 2026-07-03T12:10:20 | 0.29723 | generic_batch |
 | 2 | 2026-07-03T19:25:07 | 0.2971 | v2 |
 | 3 | 2026-07-03T19:28:19 | 0.296143 | v2 |
+| 4 | 2026-07-03T22:23:54 | 0.296143 | v2 |
+| 5 | 2026-07-03T22:31:01 | 0.295781 | v2 |
+| 6 | 2026-07-03T22:32:05 | 0.295715 | v2 |
+| 7 | 2026-07-03T22:36:33 | 0.2962 | v2 |
+| 8 | 2026-07-03T22:38:30 | 0.295648 | v2 |
 
-(來源:`facts.trajectory`。三筆實驗中最佳分數出現於第 3 筆。)
+(來源:`facts.trajectory`。最佳分數出現於第 8 筆,即 `facts.best`。)
 
-**突破點**:主要改善發生在第 2 → 第 3 筆之間。第 2 筆只是把通用基線的方法論換成「log1p
-目標 + early stopping + 權重搜尋」,分數僅微幅改善;第 3 筆加入 6 個工程特徵——尤其是
-store profile 的 K-fold target encoding(`store_te`)——帶來本場絕大部分的增益(見節 6 的
+**突破點(Phase A)**:主要改善發生在第 2 → 第 3 筆之間。第 2 筆只是把通用基線的方法論換成
+「log1p 目標 + early stopping + 權重搜尋」,分數僅微幅改善;第 3 筆加入 6 個工程特徵——尤其是
+store profile 的 K-fold target encoding(`store_te`)——帶來 Phase A 絕大部分的增益(見節 6 的
 衍生算式)。這與 EDA 的判讀一致:單欄位訊號極弱,但 store profile 組合的組平均是資料中
 最強的可用結構;在低訊號 playground 資料集上,能把這類「組合層級」訊號餵給模型的特徵
 工程,比模型/超參數調整更有價值。
+
+**突破點(Phase B)**:第 4 筆(R1)驗證刪除兩輪零權重的 XGBoost 不損分數(與第 3 筆分數
+完全相同);第 5 筆(R2)Optuna fold-0 proxy 調參 CatBoost 是 Phase B 最大單項增益,且調參版
+是「加入」模型池而非替換原成員(跨競賽驗證過的配方);第 6、8 筆(R3/R5)兩次 seed bagging
+各貢獻噪音級以上的小增益;第 7 筆(R4)在 store_te 之上再加 per-combo 特徵均值反而全面退步
+——樹模型已能從 store_te 與原始欄位取得該組合的訊號,額外的組彙總只添冗餘——故棄用,
+最終最佳(第 8 筆)回到 21 特徵集。迭代依「連續退步/增益縮至噪音級即停」原則於 R5 後收手。
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 
@@ -179,14 +235,22 @@ uv run python3 competitions/playground-series-s3e11/scripts/eda.py
 # 2) 實驗 2:skill base 模式(15 原始特徵,方法論對照)
 uv run python3 competitions/playground-series-s3e11/scripts/train.py base
 
-# 3) 實驗 3:skill engineered 模式(21 特徵,含 store_te target encoding;最佳)
+# 3) 實驗 3:skill engineered 模式(21 特徵,含 store_te target encoding;Phase A 最佳)
 uv run python3 competitions/playground-series-s3e11/scripts/train.py engineered
 #    → submissions/sub_engineered_*.csv,並自動以 log_experiment_v2 寫入 experiments.json
 
-# 4) (未執行)提交排行榜:
+# 4) Phase B 自我改進迭代(實驗 4–8;checkpointed,cache 命中會跳過已訓練成員)
+uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r1    # 實驗 4
+uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py tune  # Optuna(參數存 scripts/cache/)
+uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r2    # 實驗 5
+uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r3    # 實驗 6
+uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r4    # 實驗 7(退步,棄用)
+uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r5    # 實驗 8(最佳)
+
+# 5) (未執行)提交排行榜:
 # uv run kaggle competitions submit -c playground-series-s3e11 \
-#     -f competitions/playground-series-s3e11/submissions/sub_engineered_0.29614_20260703_192819.csv \
-#     -m "engineered blend"
+#     -f competitions/playground-series-s3e11/submissions/sub_r5_seedbag3_0.29565_20260703_223829.csv \
+#     -m "r5 seed-bagged tuned CatBoost blend"
 ```
 
 執行目錄為專案根目錄 `/home/tjyen/ai_agents/kaggle`;所有 Python 執行皆透過 `uv run`

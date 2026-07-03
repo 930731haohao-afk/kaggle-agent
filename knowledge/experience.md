@@ -86,6 +86,9 @@
 - **調參後的單模應「加入」pool 而非「替換」原成員**:Optuna 調參版 LGB 單模由 342.02154 進步到 341.68775,但若直接替換掉原 LGB,blend 反退步(340.75961→340.95316,多樣性流失,權重被迫壓到 XGB/CAT);改為「保留原 LGB 並把調參版當額外成員」的 4-way blend 則降至 340.62702。是 s3e7「別替換多樣成員」教訓對最強模型自身的推廣。 | 證據:s3e14, exp #4(替換)340.95316 vs exp #5(增列)340.62702。
 - **seed bagging(同超參、換 random_state)是調參之後最便宜的殘餘增益**:再加一個 seed=2024 的原參數 LGB 作第 5 成員,blend 340.62702→340.59891;成本僅一次 5-fold 訓練(~52s)。 | 證據:s3e14, exp #7,5-way blend 權重 0.2/0.15/0.2/0.25/0.2。
 - **三個競賽(s3e7/s3e14/s3e1)一致驗證同一套「Optuna fold-proxy 調參 → 加入 pool(不替換)→ seed bagging」流程**,即使 RMSE 尺度、資料規模、特徵集完全不同:s3e1 fold-0 代理 50 trials 僅 74.3s(vs 完整 5-fold 逾時風險),調參 LGB 加為 4-way 第 4 成員後 blend 0.558768→0.557977,再加 seed=2024 版為第 5 成員後 0.557977→0.557859——流程本身可視為此類「中型表格迴歸/GBDT blend」場景的預設起手式,不必每場重新論證。 | 證據:s3e1, exp #4/#5。
+- **第 4 個競賽驗證:配方遷移到「CatBoost 為最強成員」且資料放大到 360k 列仍成立**:fold-0 代理 40 trials 319s 調 CatBoost(depth/lr/l2/min_data_in_leaf/random_strength),調參版加入 pool 後 blend 0.296143→0.295781(該輪迭代最大單項);seed bagging 第 2、3 個 seed 再各得 0.295781→0.295715→0.295648。兩點新觀察:(1) 大資料上最優解是「更深+更高 lr」(depth 10、lr 0.082、min_data_in_leaf 33)而非 s3e7 小資料的「淺+強正則」——容量/正則需求隨資料量反轉;(2) 調參後 early-stopping 收斂迭代數 ~300(原參數 ~1300),單 fold 訓練反而快近一倍,調參同時買到分數與速度。 | 證據:s3e11, exp #4→#5→#6→#8。
+- **調參成功後權重可能全數流向調參版 seed 家族**:s3e11 權重搜尋把 LGB 與原參數 CAT 都歸零(tuned CAT 單模 0.29579 已勝原 3-way blend 0.296143)。與 s3e7「異質成員是資產」不矛盾——把原成員留在 pool、讓權重搜尋自行裁決即可(留著零成本,勝出與否由 OOF 決定)。 | 證據:s3e11, exp #8 權重 {LGB 0, CAT_orig 0, tuned×3 = 0.4/0.2/0.4}。
+- **刪除連續兩輪權重 0 的成員零代價**:s3e11 刪 XGB 後 2-way blend 分數與原 3-way 完全相同(0.296143 = 0.296143),每輪訓練省 ~25s。零權重裁決可放心執行,不必「以防萬一」保留。 | 證據:s3e11, exp #3 vs #4。
 - 混合層微調(0.05→0.01 權重網格、rank-average)在 AUC 上只有噪音級差異(+0.000002 / −0.000007),不是可靠增益來源。 | 證據:s3e7, exp #6,prob 0.01grid 0.899893 vs 0.05grid 0.899891 vs rank 0.899884。
 
 ---
@@ -115,6 +118,8 @@
 
 - 對 AUC 目標加類別不平衡加權(scale_pos_weight/class_weights)→ 反而拖累所有模型;XGB/CAT 甚至跌破自己的無特徵 baseline。 | 證據:s3e3, exp #2,XGB 0.80511→0.79196、CAT 0.80874→0.77663;exp #3 移除後回升。
 - 樹已用原始經緯度時再加粗粒度地理目標編碼 → 噪音級增益,不採用。 | 證據:s3e1, exp #3,-0.00007。
+- 已有群組 target encoding(store_te)後,再加同一群組的「非目標特徵均值」(per-combo mean of sales_ratio/weight_per_case/gross_weight)→ 所有成員與 blend 全面退步(0.295715→0.296200),revert。群組鍵的目標訊號已被 TE 吃盡,同鍵的特徵彙總對樹只是冗餘+噪音;與 s3e1「粗粒度群組彙總對已能自行切分的樹是冗餘」同構。 | 證據:s3e11, exp #7(棄用)。
+- 工程面:單一長程序跑多輪迭代,CatBoost 在沙箱背景執行時因預設檔案日誌(catboost_info)疑似寫檔受阻而無輸出停滯 33 分鐘,整程序被 timeout 殺掉、所有已完成訓練付諸流水。解方:每輪獨立程序 + OOF/pred npz checkpoint + `allow_writing_files=False` + 明確 thread_count,重跑全部順利。 | 證據:s3e11, Phase B iterate.py(棄用)vs iterate2.py。
 - 顯式交互項(有物理依據亦然)加給 GBDT → 退步,revert。 | 證據:s3e9, exp #3,12.07347→12.09483。
 - 對「與目標無關的日期欄」做 cyclical 編碼與交互 → 整組特徵工程輸給 baseline;剪掉才反超。 | 證據:s3e7, exp #2 0.89788 < baseline 0.89882;exp #3 剪後 0.89939。
 - Ridge stacking meta-model(僅 3 個 base OOF)→ 輸給 simplex 網格搜尋 3.3 個 MAE。 | 證據:s3e14, exp #3,344.04 vs 340.76。

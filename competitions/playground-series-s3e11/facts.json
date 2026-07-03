@@ -178,16 +178,352 @@
       },
       "submission": "sub_engineered_0.29614_20260703_192819.csv",
       "notes": "mode=engineered; trained on log1p(cost) with RMSE objective, expm1+clip>=0 at predict time; store_combo (store_sqft+5 amenity flags) K-fold target-encoded per fold, test encoding averaged across folds."
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T22:23:54",
+      "source_format": "v2",
+      "metric": "rmsle",
+      "direction": "minimize",
+      "model": "R1: LGB+CAT (XGB dropped, engineered 21 feats)",
+      "score": 0.296143,
+      "cv": {
+        "strategy": "5fold_kfold_shuffle",
+        "seed": 42
+      },
+      "features": [
+        "store_sales(in millions)",
+        "unit_sales(in millions)",
+        "total_children",
+        "num_children_at_home",
+        "avg_cars_at home(approx).1",
+        "gross_weight",
+        "recyclable_package",
+        "low_fat",
+        "units_per_case",
+        "store_sqft",
+        "coffee_bar",
+        "video_store",
+        "salad_bar",
+        "prepared_food",
+        "florist",
+        "amenity_count",
+        "weight_per_case",
+        "sales_ratio",
+        "children_away",
+        "cars_per_child",
+        "store_te"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "model": "LGB",
+          "oof_rmsle": 0.29661,
+          "time_s": 75.5
+        },
+        {
+          "model": "CAT_orig",
+          "oof_rmsle": 0.29618,
+          "time_s": 58.2
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.2,
+          "CAT_orig": 0.8
+        }
+      },
+      "submission": "sub_r1_noxgb_0.29614_20260703_222353.csv",
+      "notes": "Dropped XGB from pool (zero blend weight in exp#2 and exp#3); same engineered 21-feature set + fold-safe store_te as exp#3. Frees budget for CatBoost tuning."
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-03T22:31:01",
+      "source_format": "v2",
+      "metric": "rmsle",
+      "direction": "minimize",
+      "model": "R2: LGB+CAT_orig+CAT_tuned (Optuna fold-0 proxy CatBoost, added to pool)",
+      "score": 0.295781,
+      "cv": {
+        "strategy": "5fold_kfold_shuffle",
+        "seed": 42
+      },
+      "features": [
+        "store_sales(in millions)",
+        "unit_sales(in millions)",
+        "total_children",
+        "num_children_at_home",
+        "avg_cars_at home(approx).1",
+        "gross_weight",
+        "recyclable_package",
+        "low_fat",
+        "units_per_case",
+        "store_sqft",
+        "coffee_bar",
+        "video_store",
+        "salad_bar",
+        "prepared_food",
+        "florist",
+        "amenity_count",
+        "weight_per_case",
+        "sales_ratio",
+        "children_away",
+        "cars_per_child",
+        "store_te"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "model": "LGB",
+          "oof_rmsle": 0.29661,
+          "time_s": 75.5
+        },
+        {
+          "model": "CAT_orig",
+          "oof_rmsle": 0.29618,
+          "time_s": 58.2
+        },
+        {
+          "model": "CAT_tuned",
+          "oof_rmsle": 0.29579,
+          "time_s": 31.4
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "CAT_orig": 0.1,
+          "CAT_tuned": 0.9
+        }
+      },
+      "submission": "sub_r2_cattuned_0.29578_20260703_223101.csv",
+      "notes": "Optuna TPE 40 trials (319.3s, timeout guard 480s) fold-0 proxy tuning CatBoost depth/lr/l2/min_data_in_leaf/random_strength; best params {'depth': 10, 'learning_rate': 0.08243442179862394, 'l2_leaf_reg': 5.4822780685788235, 'min_data_in_leaf': 33, 'random_strength': 0.09160286047373326}; tuned CAT ADDED as pool member (original kept, per experience.md add-don't-replace recipe)."
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-03T22:32:05",
+      "source_format": "v2",
+      "metric": "rmsle",
+      "direction": "minimize",
+      "model": "R3: 4-way LGB+CAT_orig+CAT_tuned+CAT_tuned_seed2024 (seed bagging)",
+      "score": 0.295715,
+      "cv": {
+        "strategy": "5fold_kfold_shuffle",
+        "seed": 42
+      },
+      "features": [
+        "store_sales(in millions)",
+        "unit_sales(in millions)",
+        "total_children",
+        "num_children_at_home",
+        "avg_cars_at home(approx).1",
+        "gross_weight",
+        "recyclable_package",
+        "low_fat",
+        "units_per_case",
+        "store_sqft",
+        "coffee_bar",
+        "video_store",
+        "salad_bar",
+        "prepared_food",
+        "florist",
+        "amenity_count",
+        "weight_per_case",
+        "sales_ratio",
+        "children_away",
+        "cars_per_child",
+        "store_te"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "model": "LGB",
+          "oof_rmsle": 0.29661,
+          "time_s": 75.5
+        },
+        {
+          "model": "CAT_orig",
+          "oof_rmsle": 0.29618,
+          "time_s": 58.2
+        },
+        {
+          "model": "CAT_tuned",
+          "oof_rmsle": 0.29579,
+          "time_s": 31.4
+        },
+        {
+          "model": "CAT_tuned_seed2024",
+          "oof_rmsle": 0.29591,
+          "time_s": 34.0
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "CAT_orig": 0.0,
+          "CAT_tuned": 0.6,
+          "CAT_tuned_s2024": 0.4
+        }
+      },
+      "submission": "sub_r3_seedbag_0.29571_20260703_223204.csv",
+      "notes": "Seed bagging: tuned CatBoost hyperparams retrained with random_seed=2024, added as 4th pool member (cheapest residual gain per experience.md recipe)."
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-03T22:36:33",
+      "source_format": "v2",
+      "metric": "rmsle",
+      "direction": "minimize",
+      "model": "R4: 4-way pool + deeper store-profile aggregates (fold-safe combo means)",
+      "score": 0.2962,
+      "cv": {
+        "strategy": "5fold_kfold_shuffle",
+        "seed": 42
+      },
+      "features": [
+        "store_sales(in millions)",
+        "unit_sales(in millions)",
+        "total_children",
+        "num_children_at_home",
+        "avg_cars_at home(approx).1",
+        "gross_weight",
+        "recyclable_package",
+        "low_fat",
+        "units_per_case",
+        "store_sqft",
+        "coffee_bar",
+        "video_store",
+        "salad_bar",
+        "prepared_food",
+        "florist",
+        "amenity_count",
+        "weight_per_case",
+        "sales_ratio",
+        "children_away",
+        "cars_per_child",
+        "store_te",
+        "combo_mean_sales_ratio",
+        "combo_mean_weight_per_case",
+        "combo_mean_gross_weight"
+      ],
+      "n_features": 24,
+      "base_models": [
+        {
+          "model": "LGB",
+          "oof_rmsle": 0.29729,
+          "time_s": 82.4
+        },
+        {
+          "model": "CAT_orig",
+          "oof_rmsle": 0.29677,
+          "time_s": 70.8
+        },
+        {
+          "model": "CAT_tuned",
+          "oof_rmsle": 0.29634,
+          "time_s": 41.9
+        },
+        {
+          "model": "CAT_tuned_seed2024",
+          "oof_rmsle": 0.29644,
+          "time_s": 41.4
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "CAT_orig": 0.0,
+          "CAT_tuned": 0.6,
+          "CAT_tuned_s2024": 0.4
+        }
+      },
+      "submission": "sub_r4_deepstore_0.29620_20260703_223633.csv",
+      "notes": "Added fold-safe per-store_combo mean of sales_ratio/weight_per_case/gross_weight on top of store_te (24 feats); same 4-way pool as R3, all retrained."
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-03T22:38:30",
+      "source_format": "v2",
+      "metric": "rmsle",
+      "direction": "minimize",
+      "model": "R5: 5-way pool, third seed of tuned CatBoost (seed bagging extension)",
+      "score": 0.295648,
+      "cv": {
+        "strategy": "5fold_kfold_shuffle",
+        "seed": 42
+      },
+      "features": [
+        "store_sales(in millions)",
+        "unit_sales(in millions)",
+        "total_children",
+        "num_children_at_home",
+        "avg_cars_at home(approx).1",
+        "gross_weight",
+        "recyclable_package",
+        "low_fat",
+        "units_per_case",
+        "store_sqft",
+        "coffee_bar",
+        "video_store",
+        "salad_bar",
+        "prepared_food",
+        "florist",
+        "amenity_count",
+        "weight_per_case",
+        "sales_ratio",
+        "children_away",
+        "cars_per_child",
+        "store_te"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "model": "LGB",
+          "oof_rmsle": 0.29661,
+          "time_s": 75.5
+        },
+        {
+          "model": "CAT_orig",
+          "oof_rmsle": 0.29618,
+          "time_s": 58.2
+        },
+        {
+          "model": "CAT_tuned",
+          "oof_rmsle": 0.29579,
+          "time_s": 31.4
+        },
+        {
+          "model": "CAT_tuned_seed2024",
+          "oof_rmsle": 0.29591,
+          "time_s": 34.0
+        },
+        {
+          "model": "CAT_tuned_seed7",
+          "oof_rmsle": 0.29578,
+          "time_s": 31.9
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "CAT_orig": 0.0,
+          "CAT_tuned": 0.4,
+          "CAT_tuned_s2024": 0.2,
+          "CAT_tuned_s7": 0.4
+        }
+      },
+      "submission": "sub_r5_seedbag3_0.29565_20260703_223829.csv",
+      "notes": "Third seed (7) of tuned CatBoost added as 5th pool member; back on the 21-feat set (R4 deep store aggregates rejected after regression)."
     }
   ],
   "best": {
-    "experiment_id": 3,
-    "timestamp": "2026-07-03T19:28:19",
+    "experiment_id": 8,
+    "timestamp": "2026-07-03T22:38:30",
     "source_format": "v2",
     "metric": "rmsle",
     "direction": "minimize",
-    "model": "engineered LGB+XGB+CAT blend (log1p target, KFold5)",
-    "score": 0.296143,
+    "model": "R5: 5-way pool, third seed of tuned CatBoost (seed bagging extension)",
+    "score": 0.295648,
     "cv": {
       "strategy": "5fold_kfold_shuffle",
       "seed": 42
@@ -220,28 +556,40 @@
       {
         "model": "LGB",
         "oof_rmsle": 0.29661,
-        "time_s": 70.4
+        "time_s": 75.5
       },
       {
-        "model": "XGB",
-        "oof_rmsle": 0.29713,
-        "time_s": 24.5
-      },
-      {
-        "model": "CAT",
+        "model": "CAT_orig",
         "oof_rmsle": 0.29618,
-        "time_s": 58.3
+        "time_s": 58.2
+      },
+      {
+        "model": "CAT_tuned",
+        "oof_rmsle": 0.29579,
+        "time_s": 31.4
+      },
+      {
+        "model": "CAT_tuned_seed2024",
+        "oof_rmsle": 0.29591,
+        "time_s": 34.0
+      },
+      {
+        "model": "CAT_tuned_seed7",
+        "oof_rmsle": 0.29578,
+        "time_s": 31.9
       }
     ],
     "ensemble": {
       "weights": {
-        "LGB": 0.2,
-        "XGB": 0.0,
-        "CAT": 0.8
+        "LGB": 0.0,
+        "CAT_orig": 0.0,
+        "CAT_tuned": 0.4,
+        "CAT_tuned_s2024": 0.2,
+        "CAT_tuned_s7": 0.4
       }
     },
-    "submission": "sub_engineered_0.29614_20260703_192819.csv",
-    "notes": "mode=engineered; trained on log1p(cost) with RMSE objective, expm1+clip>=0 at predict time; store_combo (store_sqft+5 amenity flags) K-fold target-encoded per fold, test encoding averaged across folds."
+    "submission": "sub_r5_seedbag3_0.29565_20260703_223829.csv",
+    "notes": "Third seed (7) of tuned CatBoost added as 5th pool member; back on the 21-feat set (R4 deep store aggregates rejected after regression)."
   },
   "trajectory": [
     {
@@ -260,6 +608,36 @@
       "experiment_id": 3,
       "timestamp": "2026-07-03T19:28:19",
       "score": 0.296143,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T22:23:54",
+      "score": 0.296143,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-03T22:31:01",
+      "score": 0.295781,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-03T22:32:05",
+      "score": 0.295715,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-03T22:36:33",
+      "score": 0.2962,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-03T22:38:30",
+      "score": 0.295648,
       "source_format": "v2"
     }
   ],
