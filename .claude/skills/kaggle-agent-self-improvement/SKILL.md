@@ -1,0 +1,209 @@
+---
+name: kaggle-agent-self-improvement
+description: |
+  Hybrid AI agent for Kaggle competitions combining Claude Code reasoning with Auto-ML tools (LightGBM, XGBoost, CatBoost, AutoGluon).
+  Guides through full competition pipeline: ingestion, EDA, feature engineering, modeling, evaluation, and submission.
+
+  Use this skill when the user wants to: work on a Kaggle competition, perform exploratory data analysis on competition data,
+  engineer features for a Kaggle dataset, train and evaluate models for a competition, generate or improve a Kaggle submission,
+  review experiment history and decide next steps, or optimize competition performance.
+
+  Trigger phrases: "kaggle", "competition", "submission", "leaderboard", "kaggle agent", "train model", "feature engineering",
+  "EDA", "cross-validation", "ensemble".
+
+  Supports both tabular (tree models) and NLP (transformers) competitions.
+---
+
+# Kaggle Agent
+
+A hybrid AI agent that combines Claude Code's reasoning with Auto-ML tools for systematic optimization.
+
+## Project Structure
+
+This skill operates within a structured project workspace:
+
+```
+kaggle/                              # Project root
+├── .claude/skills/kaggle-agent/     # This skill
+│   ├── SKILL.md                     # Skill definition (this file)
+│   ├── references/                  # Detailed stage instructions
+│   │   ├── 01_setup.md             # Competition setup
+│   │   ├── 02_eda.md               # Exploratory data analysis
+│   │   ├── 03_features.md          # Feature engineering
+│   │   ├── 04_modeling.md          # Model training
+│   │   ├── 05_evaluation.md        # Evaluation & iteration
+│   │   └── 06_submission.md        # Submission generation
+│   └── assets/                      # Bundled resources
+│       ├── templates/               # Python script templates
+│       └── utils/                   # Utility scripts
+└── competitions/                    # Per-competition workspaces
+    └── <competition-name>/
+        ├── config.yaml              # Competition metadata
+        ├── STATUS.md                # Competition status doc (created after first submission)
+        ├── data/                    # Raw and processed data
+        ├── scripts/                 # Generated Python scripts
+        ├── submissions/             # Generated submission files
+        └── experiments.json         # Experiment tracking
+```
+
+## Configuration
+
+- **Python**: Managed by `uv` — run all scripts with `uv run python3 <script>`
+- **Dependencies**: Tracked in `pyproject.toml` at project root
+- **Kaggle API**: Requires `KAGGLE_API_TOKEN` environment variable
+
+### Kaggle API Authentication
+
+The Kaggle CLI requires the `KAGGLE_API_TOKEN` environment variable. Always chain the export with kaggle commands:
+
+```bash
+export KAGGLE_API_TOKEN=$(python3 -c "import json; print(json.load(open('/home/tjyen/.kaggle/kaggle.json'))['key'])") && uv run kaggle <command>
+```
+
+Environment variables don't persist across separate Bash tool invocations in Claude Code.
+
+## Self-Improvement Strategies
+
+This agent has 5 self-improvement strategies it can deploy at its own discretion. These are **not mandatory steps** — the agent evaluates the situation and decides whether a strategy would help. See [references/07_self_improvement.md](references/07_self_improvement.md) for full details.
+
+### Decision Framework
+
+At each stage transition and after each experiment, pause and ask yourself these questions:
+
+**Before choosing an approach** (Stages 0-3):
+- *"Have I seen a competition like this before?"* → If yes or unsure, consult **Experience Library** (MEMORY.md, past `competitions/*/STATUS.md`). If the competition type is familiar and you remember what worked, skip this.
+- *"Am I confident in one approach, or should I hedge?"* → If uncertain, use **Best-of-N** to evaluate 3-5 diverse candidates. If one approach is clearly best from experience, go direct.
+
+**After each experiment** (Stages 3-4):
+- *"Did the score improve?"* → Track with **Verifiable Rewards**. Always compute: absolute score, delta vs baseline, delta vs best, trend over last 3 experiments. This is lightweight and should always happen.
+- *"Did the result surprise me?"* → If yes (score went the wrong direction, or by an unexpected amount), apply **Reflexion** — write a structured self-critique to understand why. If the result was expected, a brief note suffices.
+- *"Am I stuck?"* → If 3+ experiments with no improvement, trigger **Adaptive Search** — look externally for new ideas. If you still have untried ideas from your own reasoning, keep going.
+
+**Before moving to submission** (Stage 4→5):
+- *"Have I left obvious value on the table?"* → If the best model was found on iteration 1 and no alternatives were explored, consider whether Best-of-N or Adaptive Search would uncover something better. If multiple strategies have been tried and scores have plateaued, move on.
+
+### Strategy Summary
+
+| Strategy | The agent should use this when... | Skip when... |
+|----------|----------------------------------|-------------|
+| **Experience Library** | Unfamiliar competition type, or want to avoid past mistakes | Highly familiar domain with clear approach |
+| **Verifiable Rewards** | Always — lightweight score tracking is always useful | Never skip this |
+| **Reflexion** | Score degrades, unexpected result, or repeated failure | Score improved as expected |
+| **Best-of-N** | Uncertain which approach to take, or starting fresh | One approach is clearly dominant |
+| **Adaptive Search** | Stuck 3+ experiments, or completely new problem domain | Still have untried ideas from own reasoning |
+
+### Autonomous Iteration
+
+When the user doesn't specify a particular stage, the agent can run 3-5 improvement iterations autonomously, applying whichever strategies are relevant at each step. Stop when: plateau detected, max iterations reached, or a decision needs user input.
+
+## Core Workflow
+
+Follow these stages sequentially. The user may start at any stage or repeat stages as needed.
+
+### Stage 0: Competition Setup
+**Goal**: Establish workspace and understand the competition.
+
+See [references/01_setup.md](references/01_setup.md) for detailed instructions.
+
+Key actions: Create workspace, config.yaml, inspect data files. Consider consulting experience library if the competition type overlaps with past work.
+
+### Stage 1: Exploratory Data Analysis (EDA)
+**Goal**: Understand the data deeply before modeling.
+
+See [references/02_eda.md](references/02_eda.md) for detailed instructions.
+
+Key actions: Generate EDA script, analyze distributions/correlations, identify issues, recommend validation strategy.
+
+### Stage 2: Feature Engineering
+**Goal**: Create informative features based on EDA insights.
+
+See [references/03_features.md](references/03_features.md) for detailed instructions.
+
+Key actions: Propose features, get approval, implement and validate features, check importance.
+
+### Stage 3: Modeling
+**Goal**: Train models using Auto-ML and custom approaches.
+
+See [references/04_modeling.md](references/04_modeling.md) for detailed instructions.
+
+Key actions: Establish baseline, run Auto-ML (AutoGluon/FLAML), log experiments, report CV scores. Consider Best-of-N if uncertain about approach; track verifiable rewards (score deltas) after each experiment.
+
+### Stage 4: Evaluation & Iteration
+**Goal**: Analyze results and decide on next steps.
+
+See [references/05_evaluation.md](references/05_evaluation.md) for detailed instructions.
+
+Key actions: Review experiments, analyze errors, propose improvements, track trajectory. Apply reflexion when results surprise you; use verifiable rewards to detect plateaus; consider adaptive search if stuck 3+ experiments.
+
+### Stage 5: Submission
+**Goal**: Generate competition-ready submission file.
+
+See [references/06_submission.md](references/06_submission.md) for detailed instructions.
+
+Key actions: Retrain on full data, generate predictions, format submission, validate output.
+
+## Behavioral Guidelines
+
+### Transparency
+- **Explain every decision**: Before running code, state what you're doing and why
+- **Report results clearly**: After each script, summarize key takeaways
+- **Flag concerns**: Warn about leakage, overfitting, or data issues immediately
+
+### Iteration Protocol
+- **Never repeat failed approaches**: Change something each iteration
+- **Track everything**: Log all experiments with parameters, features, and scores
+- **Experiment logging is MANDATORY via `experiment_log.log_experiment_v2()`** (assets/utils/experiment_log.py).
+  Never hand-roll experiment dicts in training scripts — past hand-rolled entries created three
+  incompatible schemas. Import it by path in generated scripts:
+
+  ```python
+  import importlib.util
+  _spec = importlib.util.spec_from_file_location(
+      "experiment_log",
+      ".claude/skills/kaggle-agent-self-improvement/assets/utils/experiment_log.py")
+  experiment_log = importlib.util.module_from_spec(_spec)
+  _spec.loader.exec_module(experiment_log)
+  experiment_log.log_experiment_v2(comp_dir, model=..., metric=..., direction=..., score=..., ...)
+  ```
+- **Compare against baseline**: Always report improvement relative to baseline
+
+### Safety
+- **Ask before long operations**: Confirm if training will take >5 minutes
+- **Use timestamped filenames**: Never overwrite good submissions
+- **Validate before submitting**: Check format, shape, value ranges
+
+### Resource Awareness
+- **Start small**: Use samples for initial experiments, scale up when validated
+- **Mind submission limits**: Don't waste daily submission quotas
+- **Use appropriate tools**: Lighter models first, heavy ensembles when justified
+
+## Quick Reference: Available Resources
+
+### Templates (assets/templates/)
+- `eda_template.py` — EDA script scaffold
+- `feature_template.py` — Feature engineering scaffold
+- `train_template.py` — Model training scaffold
+- `submit_template.py` — Submission generation scaffold
+
+### Utils (assets/utils/)
+- `data_loader.py` — Load and validate competition data
+- `evaluation.py` — Local scoring and CV utilities
+- `experiment_log.py` — Log experiments to JSON
+- `kaggle_auth.sh` — Kaggle API authentication helper
+
+### Reference Files (references/)
+- `01_setup.md` — Competition setup instructions
+- `02_eda.md` — EDA instructions
+- `03_features.md` — Feature engineering instructions
+- `04_modeling.md` — Modeling instructions
+- `05_evaluation.md` — Evaluation instructions
+- `06_submission.md` — Submission instructions
+- `07_self_improvement.md` — Self-improvement strategies (experience library, verifiable rewards, reflexion, best-of-N, adaptive search)
+
+## Important Notes
+
+- **Environment**: Linux with NVIDIA GPU, Python 3.11, PyTorch 2.11.0 + CUDA 13.0
+- **Path format**: Use forward slashes for paths
+- **Python command**: Use `python3` (not `python`)
+- **Package manager**: Always use `uv` for Python package management
+- **Git**: Project is version controlled, use standard git workflow
