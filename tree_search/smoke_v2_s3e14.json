@@ -1,0 +1,184 @@
+{
+  "comp": "playground-series-s3e14",
+  "all_match": true,
+  "results": [
+    {
+      "node": "root(#0)",
+      "v1_score": 342.02154,
+      "v2_score": 342.02154,
+      "match": true,
+      "note": "cache-hit (no retrain)"
+    },
+    {
+      "node": "CAT(#1)",
+      "v1_score": 343.60196,
+      "v2_score": 343.60196,
+      "match": true,
+      "note": "cache-hit (no retrain)"
+    },
+    {
+      "node": "XGB(#2)",
+      "v1_score": 342.21778,
+      "v2_score": 342.21778,
+      "match": true,
+      "note": "cache-hit (no retrain)"
+    },
+    {
+      "node": "BLEND(v1 #7, v2 #3)",
+      "v1_score": 340.693,
+      "v2_score": 340.693,
+      "match": true,
+      "note": "recomputed via unchanged eval_s3e14.evaluate_blend, cached members 0/1/2"
+    }
+  ],
+  "tree_v2": {
+    "comp": "playground-series-s3e14",
+    "root_id": 0,
+    "nodes": [
+      {
+        "id": 0,
+        "parent_id": null,
+        "mutation": "root: s3e14 current-best single LGB (regression_l1, num_leaves=63, 21 pruned features) from scripts/train_v2.py-train_v6.py -- solo OOF ~342.02154 per STATUS.md; the fair single-model reference point for this tree-search run",
+        "config": {
+          "kind": "solo",
+          "model": "lgb",
+          "params": {
+            "objective": "regression_l1",
+            "metric": "mae",
+            "n_estimators": 3000,
+            "learning_rate": 0.02,
+            "num_leaves": 63,
+            "min_child_samples": 30,
+            "subsample": 0.8,
+            "subsample_freq": 1,
+            "colsample_bytree": 0.7,
+            "reg_alpha": 1.0,
+            "reg_lambda": 2.0,
+            "random_state": 42,
+            "early_stopping_rounds": 150
+          },
+          "features": {
+            "drop": [
+              "temp_avg",
+              "log_clonesize",
+              "rain_intensity",
+              "MinOfLowerTRange",
+              "AverageOfLowerTRange",
+              "AverageOfUpperTRange"
+            ]
+          },
+          "postprocess": {
+            "snap": false
+          }
+        },
+        "score": 342.02154,
+        "status": "evaluated",
+        "wall_s": 0.0,
+        "kind": "solo"
+      },
+      {
+        "id": 1,
+        "parent_id": 0,
+        "mutation": "[CAT] model-type: CatBoost solo w/ native categorical handling of the 7 low-cardinality env cols -- STATUS.md exp #2/#3 unchanged config, solo ~343.60196; weakest of the 3 original solo learners but a useful blend-diversity source (ordered boosting differs structurally from LGB/XGB)",
+        "config": {
+          "kind": "solo",
+          "model": "cat",
+          "params": {
+            "loss_function": "MAE",
+            "eval_metric": "MAE",
+            "iterations": 4000,
+            "learning_rate": 0.03,
+            "depth": 7,
+            "l2_leaf_reg": 5.0,
+            "random_seed": 42,
+            "native_cat": true
+          },
+          "features": {
+            "drop": [
+              "temp_avg",
+              "log_clonesize",
+              "rain_intensity",
+              "MinOfLowerTRange",
+              "AverageOfLowerTRange",
+              "AverageOfUpperTRange"
+            ]
+          },
+          "postprocess": {
+            "snap": false
+          }
+        },
+        "score": 343.60196,
+        "status": "evaluated",
+        "wall_s": 0.0,
+        "kind": "solo"
+      },
+      {
+        "id": 2,
+        "parent_id": 0,
+        "mutation": "[XGB] model-type: XGB solo, STATUS.md exp #2/#3 unchanged config -- solo ~342.21778",
+        "config": {
+          "kind": "solo",
+          "model": "xgb",
+          "params": {
+            "objective": "reg:absoluteerror",
+            "n_estimators": 3000,
+            "learning_rate": 0.02,
+            "max_depth": 6,
+            "min_child_weight": 5,
+            "subsample": 0.8,
+            "colsample_bytree": 0.7,
+            "reg_alpha": 1.0,
+            "reg_lambda": 2.0,
+            "random_state": 42,
+            "eval_metric": "mae",
+            "early_stopping_rounds": 150
+          },
+          "features": {
+            "drop": [
+              "temp_avg",
+              "log_clonesize",
+              "rain_intensity",
+              "MinOfLowerTRange",
+              "AverageOfLowerTRange",
+              "AverageOfUpperTRange"
+            ]
+          },
+          "postprocess": {
+            "snap": false
+          }
+        },
+        "score": 342.21778,
+        "status": "evaluated",
+        "wall_s": 0.0,
+        "kind": "solo"
+      },
+      {
+        "id": 3,
+        "parent_id": 0,
+        "mutation": "[BLEND] ensemble seed: 3-way blend of root LGB(#0) + XGB(#2) + CAT(#1) CACHED OOF, dirichlet weight search + snap -- mirrors STATUS.md exp #3's starting point (340.75961 raw / 340.71180 snapped) as this tree-search's entry point into ensemble space; no retraining, evaluates in <1s",
+        "config": {
+          "kind": "blend",
+          "members": [
+            0,
+            2,
+            1
+          ],
+          "weight_search": "dirichlet",
+          "postprocess": {
+            "snap": true
+          }
+        },
+        "score": 340.693,
+        "status": "evaluated",
+        "wall_s": 0.9,
+        "kind": "blend"
+      }
+    ],
+    "search_state": {
+      "active_lineage": null,
+      "streak": {},
+      "plateaued": [],
+      "backtrack_log": []
+    }
+  }
+}
