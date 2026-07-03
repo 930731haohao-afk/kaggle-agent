@@ -155,3 +155,110 @@ uv run kaggle competitions submit -c playground-series-s3e1 \
   -f competitions/playground-series-s3e1/submissions/sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv \
   -m "5-way blend (Optuna-tuned LGB + seed bag + KNN/coastal geo features), OOF 0.557088"
 ```
+
+## Appendix: Phase D-4 tree-search v2 sweep (2026-07-04)
+
+**Sweep question**: can harness v2 (ensemble-default node space + experience-library
+priors + adaptive plateau + child dedup) match or beat the linear-iteration best
+(0.557088) in fewer evaluations than linear iteration took rounds (7 experiments,
+exp #1–#7)? **Answer for s3e1: BEAT, decisively — matched at evaluation #9 (< linear's
+7 rounds only if counted against linear's 7 experiments: 9 > 7 on raw eval count, but
+evals #1–#8 were just reproducing linear's own pool digit-for-digit; the first NEW idea
+evaluated was already a beat) and finished at 0.556329 by evaluation #14 (−0.000759 vs
+linear, ≈0.14% relative), wall 190.3s total.** The two levers that moved it —
+clip-aware blend scoring and a ceiling-classifier hybrid as a blend member — are both
+top-code-aware nodes the linear run never tried, exploiting STATUS.md EDA finding #1
+(4.92% of train targets capped at exactly 5.00001).
+
+Built: `tree_search/eval_s3e1.py` (solo: LGB/XGB/CAT + a `ceiling_hybrid` two-stage
+model on the exp-#7 26-feature set, KFold(5, shuffle, seed=42); blend:
+harness_v2.eval_blend with clip applied INSIDE metric_fn) + `tree_search/run_s3e1.py`
+(harness_v2 driver). Root = linear winner's strongest solo (exp #4 Optuna
+fold-0-proxy-tuned LGB, OOF 0.558866). OOF cache: `tree_search/cache_s3e1/` (gitignored).
+
+### Reproduction rigor (two engineering findings worth keeping)
+Digit-for-digit reproduction was verified for all 5 linear pool members BEFORE searching
+(LGB 0.560732→.56073, XGB 0.561331→.56133, CAT 0.561063→.56106, LGB_TUNED
+0.558866→.55887, LGB_TUNED_SEED2024 0.558812→.55881; 5-way dirichlet blend 0.557085 vs
+linear's 0.05-grid 0.557088 — the −0.000003 gap is weight-grid quantization, not model
+drift). Two findings from getting there:
+1. **LightGBM is chaotically sensitive to ~1e-13 float differences** at num_leaves=121:
+   recomputing the same feature-engineering logic fresh from raw CSVs (instead of
+   loading the linear run's train_processed_v2.csv) shifted LGB_TUNED_SEED2024's OOF
+   from 0.558812 to 0.558552 — a real 0.00026 delta from pure sub-ULP noise (confirmed:
+   round-tripping the fresh features through a CSV text buffer alone restores 0.558812).
+   eval_s3e1.py therefore loads the on-disk processed_v2 CSVs (exact byte-identical
+   artifact) and only falls back to fresh recomputation if they're missing.
+2. **Explicit `n_jobs=-1` on the LGB/XGB sklearn wrappers is a ~10-50x SLOWDOWN** on
+   this 20-core sandbox (17–27s/fold vs 1.6–2s/fold with n_jobs left at default) —
+   an oversubscription quirk. The linear scripts never set n_jobs; matching them fixed it.
+
+### Node/backtrack/dedup summary
+- **22 evaluated nodes** (15 solo / 7 blend), 23 total (1 failed), wall=190.3s.
+- **1 failed node** (#13): grid_simplex weight search on an 8-member blend — exceeds
+  harness_v2's documented 5-member combinatorial limit, ValueError captured cleanly as
+  status=failed in 0.0s (no compute wasted, search loop unaffected).
+- **3 backtracks**: 1 forced (BLEND lineage's mutation space genuinely exhausted after
+  the pool was fully blended) + 2 genuine 3-strike plateaus (SEEDBAG at node #18,
+  REGNUDGE at #21). tie_rate stayed 0.000 — RMSE is continuous, the adaptive-plateau
+  discretization branch never fired (as designed).
+- **Dedup: 1 rejection**, and it validated the s3e7 lesson end-to-end: after #13 failed,
+  the retry slot re-proposed the identical grid_simplex config; find_dup caught it
+  against the failed node and the queue advanced instead of re-running a known-broken
+  eval. Zero live-lock (the s3e7 proposer-side fixes — pre-check find_dup, hash blend
+  members order-insensitively — were inherited verbatim).
+
+### Best vs linear, evaluations-to-match/beat
+| | OOF RMSE | evaluations |
+|---|---|---|
+| Linear-iteration best (exp #7, 5-way 0.05-grid blend) | 0.557088 | 7 experiments |
+| Tree v2: node #8 (BLEND seed = linear's 5-member pool, dirichlet) | 0.557085 | 9 (match/hair-beat) |
+| Tree v2: node #11 (7-way + clip-aware weight search) | 0.556931 | 12 (first structural beat) |
+| Tree v2: node #12 (+ceiling_hybrid member) | 0.556333 | 13 |
+| Tree v2: node #14 (global best: −root member, w=0.023) | **0.556329** | **14** |
+
+Winning chain: #8 5-way 0.557085 → #9 +REGNUDGE 0.557083 → #10 +XGB_deep 0.557054 →
+#11 clip=True **0.556931** → #12 +CEILING **0.556333** → #14 −LGB_tuned(root, w=0.023)
+**0.556329**. Final: 7 members, clip=True, weights LGBORIG .150 / XGBORIG .036 /
+CATORIG .249 / SEEDBAG .186 / REGNUDGE .050 / XGB_deep .041 / CEILING .289.
+
+### What actually moved it — and what didn't (honest ledger)
+- **Top-code-aware clip (OOF-level, inside the weight search)**: +0.000123 at the 7-way
+  layer (0.557054→0.556931), re-confirmed at the final 7-way by #15's reverse toggle
+  (clip=False 0.556407 vs clip=True 0.556329). The linear run only ever clipped the
+  TEST submission — scoring/searching on clipped OOF was free money it left on the table.
+- **Ceiling-classifier hybrid — the run's ONE ambitious node — failed solo, won big in
+  blend**: solo 0.561227 (worse than root by 0.0024; the soft cap-probability nudge
+  mis-hits uncapped rows, exactly the flagged risk) yet as a blend member it took the
+  LARGEST weight (0.289) and delivered the single biggest gain of the whole tree
+  (−0.000598, 0.556931→0.556333). Its cap-classifier (OOF AUC 0.964) contributes a
+  signal direction no pure regressor in the pool has. Third consecutive sweep comp
+  confirming: blend contribution ≠ solo score (s3e7's XGB_deep, now s3e1's CEILING).
+- **Removing the near-zero-weight root member (w=0.023) gained +0.000004** — P14
+  confirmed again; poetic that the discarded member was the root/linear-strongest-solo
+  itself: its seed-bag sibling (#4) plus REGNUDGE variant made it redundant.
+- **Regularization nudges on tuned LGB worked HERE (unlike s3e7)**: the REGNUDGE lineage
+  marched 0.558916→0.558683→0.558339→0.558208 (best solo of the whole tree, beating
+  root by 0.00066). At 37k rows the regularize-further prior paid off where at s3e7's
+  42k it lost 5/5 — the boundary is not a clean row-count threshold. Honest residual:
+  these late REGNUDGE improvements never got re-blended (BLEND lineage had already
+  plateaued/exhausted) — the blend's REGNUDGE member is the weaker seed #5, so a little
+  headroom is knowingly left unharvested.
+- **Seed-bagging kept paying, diminishingly**: seed 777 (#16, 0.558595) beat seed 2024
+  (#4, 0.558812); the two reg-tweaks on top of it lost. Consistent with P8's
+  "diminishing but real" phrasing.
+- **XGB_deep (deliberate-diversity, s3e7's lever)**: worst solo (0.565230) but earned
+  0.04–0.09 blend weight and a small real gain (+0.000029 at #10). Transfers, weakly.
+
+### Prior-usage log (idea-injection experiment)
+`suggest_priors({"metric":"rmse","tags":["地理","optuna","ensemble"]})` returned 20
+bullets (P0–P19). Among the 13 search-loop mutations (first-gen seeds excluded):
+- **5 prior-informed, win rate 5/5 = 100%** (P8 seed-bag ×2: 2W; P6 reg-nudge ×2: 2W;
+  P14 remove-weakest: 1W).
+- **8 uninformed, win rate 5/8 = 62.5%** — but the two LARGEST gains of the run (clip
+  toggle #11, ceiling member #12) were both [PRIOR none]: comp-specific top-code insight
+  from this comp's own EDA, absent from the experience library by construction.
+- Three sweeps in, the pattern sharpens: prior-informed mutations are near-guaranteed
+  small wins (ensemble/tuning mechanics transfer reliably: 62.5%→100% win rates on
+  s3e7/s3e1), while the BIG wins keep coming from comp-local insight (s3e3's next-ideas,
+  s3e1's top-coding). Priors set the floor; local EDA sets the ceiling.
