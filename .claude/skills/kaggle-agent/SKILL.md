@@ -66,6 +66,12 @@ Environment variables don't persist across separate Bash tool invocations in Cla
 
 Follow these stages sequentially. The user may start at any stage or repeat stages as needed.
 
+### Experience Library (check first)
+
+Before Stage 1 (EDA) and Stage 3 (Modeling), consult `knowledge/experience.md` at the project root
+for validated cross-competition insights (indexed by metric/data-type, each entry evidence-backed).
+Apply what transfers; log new validated insights back into it after major score changes.
+
 ### Stage 0: Competition Setup
 **Goal**: Establish workspace and understand the competition.
 
