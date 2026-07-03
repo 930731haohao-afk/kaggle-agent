@@ -1,0 +1,212 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-07-03T12:14:06",
+    "model": "generic LGB+XGB+CAT blend",
+    "metric": "smape",
+    "n_features": 8,
+    "cv": "5fold",
+    "per_model": {
+      "LGB": 5.45633,
+      "XGB": 7.41858,
+      "CAT": 6.09778
+    },
+    "blend_weights": {
+      "LGB": 0.7,
+      "XGB": 0.0,
+      "CAT": 0.3
+    },
+    "blend_score": 5.31891,
+    "submission": "sub_generic_5.31891_20260703_121406.csv"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-03T19:49:08",
+    "model": "LGB+XGB+CAT blend (calendar + cyclical + categorical features, log1p target)",
+    "metric": "smape",
+    "direction": "minimize",
+    "score": 10.175397,
+    "features": [
+      "year",
+      "month",
+      "day",
+      "dow",
+      "day_of_year",
+      "weekofyear",
+      "quarter",
+      "is_weekend",
+      "is_month_start",
+      "is_month_end",
+      "is_new_year",
+      "month_sin",
+      "month_cos",
+      "dow_sin",
+      "dow_cos",
+      "doy_sin",
+      "doy_cos",
+      "country_cat",
+      "store_cat",
+      "product_cat"
+    ],
+    "n_features": 20,
+    "cv": {
+      "strategy": "TimeSeriesSplit-5fold-on-unique-dates",
+      "n_splits": 5,
+      "per_model_fold_scores": {
+        "LGB": [
+          12.42911,
+          8.05177,
+          10.1666,
+          9.69818,
+          10.54223
+        ],
+        "XGB": [
+          12.57714,
+          8.01841,
+          10.07536,
+          10.48908,
+          11.13998
+        ],
+        "CAT": [
+          13.54313,
+          8.58337,
+          10.25081,
+          10.35037,
+          10.92552
+        ]
+      }
+    },
+    "base_models": [
+      {
+        "model": "LightGBM",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 63,
+          "min_child_samples": 20,
+          "subsample": 0.9,
+          "colsample_bytree": 0.8,
+          "reg_lambda": 1.0
+        },
+        "oof_smape": 10.17758
+      },
+      {
+        "model": "XGBoost",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "max_depth": 7,
+          "subsample": 0.9,
+          "colsample_bytree": 0.8,
+          "reg_lambda": 1.0
+        },
+        "oof_smape": 10.46
+      },
+      {
+        "model": "CatBoost",
+        "params": {
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 8,
+          "l2_leaf_reg": 3.0
+        },
+        "oof_smape": 10.73064
+      }
+    ],
+    "ensemble": {
+      "type": "weighted-average-oof-search",
+      "weights": {
+        "LGB": 0.9,
+        "XGB": 0.0,
+        "CAT": 0.1
+      },
+      "grid_step": 0.1
+    },
+    "submission": "sub_lgb_xgb_cat_blend_10.17540_20260703_194908.csv",
+    "notes": "Time-based CV (TimeSeriesSplit on unique dates) chosen because test=2022 is strictly after train=2017-2021 with zero date overlap (see scripts/eda.py). Features: calendar (year/month/day/dow/doy/weekofyear/quarter), cyclical sin/cos for month/dow/doy, is_weekend/is_month_start/is_month_end/is_new_year flags, and label-encoded country/store/product used natively as categoricals in all three models. Target trained as log1p(num_sold), inverted with expm1 before SMAPE scoring. Final models retrained on 100% of training data before generating the submission."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T19:53:27",
+    "model": "DIAGNOSTIC: LGB+XGB+CAT blend, same 20 engineered features, plain shuffled 5-fold KFold",
+    "metric": "smape",
+    "direction": "minimize",
+    "score": 4.281421,
+    "features": [
+      "year",
+      "month",
+      "day",
+      "dow",
+      "day_of_year",
+      "weekofyear",
+      "quarter",
+      "is_weekend",
+      "is_month_start",
+      "is_month_end",
+      "is_new_year",
+      "month_sin",
+      "month_cos",
+      "dow_sin",
+      "dow_cos",
+      "doy_sin",
+      "doy_cos",
+      "country_cat",
+      "store_cat",
+      "product_cat"
+    ],
+    "n_features": 20,
+    "cv": {
+      "strategy": "KFold-5fold-shuffled-seed42",
+      "n_splits": 5,
+      "per_model_fold_scores": {
+        "LGB": [
+          4.2892,
+          4.29857,
+          4.29455,
+          4.32494,
+          4.37365
+        ],
+        "XGB": [
+          4.3145,
+          4.31062,
+          4.30503,
+          4.33134,
+          4.39854
+        ],
+        "CAT": [
+          4.33795,
+          4.30271,
+          4.28689,
+          4.32753,
+          4.36443
+        ]
+      }
+    },
+    "base_models": [
+      {
+        "model": "LightGBM",
+        "oof_smape": 4.31618
+      },
+      {
+        "model": "XGBoost",
+        "oof_smape": 4.33201
+      },
+      {
+        "model": "CatBoost",
+        "oof_smape": 4.3239
+      }
+    ],
+    "ensemble": {
+      "type": "weighted-average-oof-search",
+      "weights": {
+        "LGB": 0.4,
+        "XGB": 0.2,
+        "CAT": 0.4
+      },
+      "grid_step": 0.1
+    },
+    "notes": "Reflexion diagnostic, not used for submission. Purpose: isolate whether experiment #2's much worse SMAPE (10.17540 vs baseline 5.31891) comes from the CV *scheme* (time-based extrapolation is a harder, more honest test) or from the engineered feature set itself. Same 20 features and same 3 models as experiment #2, but validated with plain shuffled row-level 5-fold KFold (matching what the baseline experiment #1 almost certainly used, since its log has no time-awareness field). If this diagnostic scores close to or better than 5.31891, the feature engineering is sound and the CV-scheme choice (documented in scripts/eda.py) fully explains the gap."
+  }
+]
