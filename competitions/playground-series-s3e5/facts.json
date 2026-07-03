@@ -190,16 +190,591 @@
         "clip[3,8]"
       ],
       "notes": "Final model for submission. Optimized-rounder gain over naive round on the same blend: +0.05496. Baseline (generic pipeline, experiment #1): 0.47871."
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T23:08:22",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "LGB+XGB+CAT regression blend (finer weight search)",
+      "score": 0.52986,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.50547
+        },
+        {
+          "name": "XGB",
+          "score": 0.50847
+        },
+        {
+          "name": "CAT",
+          "score": 0.52517
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.028,
+          "XGB": 0.023,
+          "CAT": 0.949
+        },
+        "score": 0.52986
+      },
+      "postprocess": [
+        "OptimizedRounder(cutpoints=[3.451, 4.891, 5.563, 6.19, 7.497])",
+        "clip[3,8]"
+      ],
+      "notes": "Round 0 (methodology-only, no new model/feature): exp#3 used a coarse 0.1-step grid over the 3-model simplex; replaced with Dirichlet random search (800 draws) + coordinate-ascent refinement, scored on post-rounder QWK. Same 3 members, same CV/folds/seed. Final QWK 0.52986 vs exp#3 grid-search 0.52687 (delta +0.00299)."
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-03T23:09:50",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "LGB+XGB+CAT+LGB_tuned(Optuna full-CV direct-QWK) blend",
+      "score": 0.56293,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.50547
+        },
+        {
+          "name": "XGB",
+          "score": 0.50847
+        },
+        {
+          "name": "CAT",
+          "score": 0.52517
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.56244
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.02,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "LGB_tuned": 0.98
+        },
+        "score": 0.56293
+      },
+      "postprocess": [
+        "OptimizedRounder(cutpoints=[3.636, 4.466, 5.647, 6.105, 7.756])",
+        "clip[3,8]"
+      ],
+      "notes": "Round 1: Optuna (TPE, 40 trials/600s timeout, full 5-fold CV, objective = post-rounder QWK directly on OOF -- dodges s3e16 raw-vs-rounded trap) tuned LGB added as 4th pool member (kept, not replaced, per s3e14 lesson). Weight search: Dirichlet random (800) + coordinate refinement, scored on post-rounder QWK. Final QWK 0.56293 vs exp#3 baseline 0.52687 (delta +0.03606). Decision made on POST-ROUNDER score only."
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-03T23:10:42",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "5-way blend + seed-bagged LGB_tuned",
+      "score": 0.56293,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.50547
+        },
+        {
+          "name": "XGB",
+          "score": 0.50847
+        },
+        {
+          "name": "CAT",
+          "score": 0.52517
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.56244
+        },
+        {
+          "name": "LGB_tuned_seed2024",
+          "score": 0.55765
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.02,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "LGB_tuned": 0.98,
+          "LGB_tuned_seed2024": 0.0
+        },
+        "score": 0.56293
+      },
+      "postprocess": [
+        "OptimizedRounder(cutpoints=[3.636, 4.466, 5.647, 6.105, 7.756])",
+        "clip[3,8]"
+      ],
+      "notes": "Round 2: seed-bagged a second random_state=2024 copy of the top-weighted member (LGB_tuned) from round 1, added to pool (not replaced). Final post-rounder QWK 0.56293 vs round1 0.56293 vs baseline 0.52687."
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-03T23:11:20",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "nested-cutpoint diagnostic on running-best (5-way) blend",
+      "score": 0.54649,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0196078431372549,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "LGB_tuned": 0.9803921568627451,
+          "LGB_tuned_seed2024": 0.0
+        },
+        "score": 0.54649
+      },
+      "postprocess": [
+        "OptimizedRounder(nested: fit on 4 folds, applied to held-out fold)",
+        "clip[3,8]"
+      ],
+      "notes": "Diagnostic (not a model change): full-OOF-fit cutpoints QWK=0.56293 vs honest nested (leave-fold-out) cutpoint QWK=0.54649, gap=+0.01644. Averaged-fold cutpoints applied globally = 0.55079. Addresses STATUS.md overfit-risk flag on full-OOF cutpoint fitting."
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-03T23:13:44",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "6-way blend + Optuna-tuned CatBoost (full-CV direct-QWK)",
+      "score": 0.56769,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.50547
+        },
+        {
+          "name": "XGB",
+          "score": 0.50847
+        },
+        {
+          "name": "CAT",
+          "score": 0.52517
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.56244
+        },
+        {
+          "name": "LGB_tuned_seed2024",
+          "score": 0.55765
+        },
+        {
+          "name": "CAT_tuned",
+          "score": 0.56466
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.05,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "LGB_tuned": 0.0,
+          "LGB_tuned_seed2024": 0.0,
+          "CAT_tuned": 0.95
+        },
+        "score": 0.56769
+      },
+      "postprocess": [
+        "OptimizedRounder(cutpoints=[3.574, 4.586, 5.609, 6.174, 7.628])",
+        "clip[3,8]"
+      ],
+      "notes": "Round 3: Optuna (TPE, 40 trials/600s timeout, full 5-fold CV, direct post-rounder-QWK objective) tuned CatBoost added as an extra pool member (kept, not replaced). Final QWK 0.56769 vs running best 0.56293 vs original baseline 0.52687."
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-03T23:15:20",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "7-way blend + seed-bagged CAT_tuned",
+      "score": 0.56716,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.50547
+        },
+        {
+          "name": "XGB",
+          "score": 0.50847
+        },
+        {
+          "name": "CAT",
+          "score": 0.52517
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.56244
+        },
+        {
+          "name": "LGB_tuned_seed2024",
+          "score": 0.55765
+        },
+        {
+          "name": "CAT_tuned",
+          "score": 0.56466
+        },
+        {
+          "name": "CAT_tuned_seed2024",
+          "score": 0.56002
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.011,
+          "XGB": 0.006,
+          "CAT": 0.043,
+          "LGB_tuned": 0.0,
+          "LGB_tuned_seed2024": 0.046,
+          "CAT_tuned": 0.894,
+          "CAT_tuned_seed2024": 0.0
+        },
+        "score": 0.56716
+      },
+      "postprocess": [
+        "OptimizedRounder(cutpoints=[3.544, 4.611, 5.616, 6.178, 7.624])",
+        "clip[3,8]"
+      ],
+      "notes": "Seed-bag round: added a second random_state=2024 copy of the top-weighted member (CAT_tuned) from the running best pool, added (not replaced). Final post-rounder QWK 0.56716 vs running best 0.56769 vs baseline 0.52687."
+    },
+    {
+      "experiment_id": 10,
+      "timestamp": "2026-07-03T23:15:32",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "nested-cutpoint diagnostic on running-best (6-way) blend",
+      "score": 0.56393,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "ensemble": {
+        "weights": {
+          "LGB": 0.05012531328320802,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "LGB_tuned": 0.0,
+          "LGB_tuned_seed2024": 0.0,
+          "CAT_tuned": 0.9498746867167919
+        },
+        "score": 0.56393
+      },
+      "postprocess": [
+        "OptimizedRounder(nested: fit on 4 folds, applied to held-out fold)",
+        "clip[3,8]"
+      ],
+      "notes": "Diagnostic (not a model change): full-OOF-fit cutpoints QWK=0.56769 vs honest nested (leave-fold-out) cutpoint QWK=0.56393, gap=+0.00377. Averaged-fold cutpoints applied globally = 0.56449. Addresses STATUS.md overfit-risk flag on full-OOF cutpoint fitting."
+    },
+    {
+      "experiment_id": 11,
+      "timestamp": "2026-07-03T23:16:51",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "7-way blend + LGB multiclass (class_weight=balanced) expected-value decode",
+      "score": 0.56769,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.50547
+        },
+        {
+          "name": "XGB",
+          "score": 0.50847
+        },
+        {
+          "name": "CAT",
+          "score": 0.52517
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.56244
+        },
+        {
+          "name": "LGB_tuned_seed2024",
+          "score": 0.55765
+        },
+        {
+          "name": "CAT_tuned",
+          "score": 0.56466
+        },
+        {
+          "name": "LGB_multiclass_EV",
+          "score": 0.5204
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.05,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "LGB_tuned": 0.0,
+          "LGB_tuned_seed2024": 0.0,
+          "CAT_tuned": 0.95,
+          "LGB_multiclass_EV": 0.0
+        },
+        "score": 0.56769
+      },
+      "postprocess": [
+        "OptimizedRounder(cutpoints=[3.574, 4.586, 5.609, 6.174, 7.628])",
+        "clip[3,8]"
+      ],
+      "notes": "Round: diverse ordinal head -- LGB multiclass classifier (class_weight=balanced, targeting the extreme-class data-starvation flagged in STATUS.md) with expected-value decode (sum class_i * P(class_i)) added as an extra pool member (kept, not replaced). Final QWK 0.56769 vs running best 0.56769 vs baseline 0.52687."
     }
   ],
   "best": {
-    "experiment_id": 3,
-    "timestamp": "2026-07-03T18:48:21",
+    "experiment_id": 8,
+    "timestamp": "2026-07-03T23:13:44",
     "source_format": "v2",
     "metric": "quadratic_weighted_kappa",
     "direction": "maximize",
-    "model": "LGB+XGB+CAT regression blend (optimized-rounder)",
-    "score": 0.52687,
+    "model": "6-way blend + Optuna-tuned CatBoost (full-CV direct-QWK)",
+    "score": 0.56769,
     "cv": {
       "scheme": "5fold",
       "n_splits": 5,
@@ -233,30 +808,45 @@
     "base_models": [
       {
         "name": "LGB",
-        "score": 0.4522
+        "score": 0.50547
       },
       {
         "name": "XGB",
-        "score": 0.46218
+        "score": 0.50847
       },
       {
         "name": "CAT",
-        "score": 0.47094
+        "score": 0.52517
+      },
+      {
+        "name": "LGB_tuned",
+        "score": 0.56244
+      },
+      {
+        "name": "LGB_tuned_seed2024",
+        "score": 0.55765
+      },
+      {
+        "name": "CAT_tuned",
+        "score": 0.56466
       }
     ],
     "ensemble": {
       "weights": {
-        "LGB": 0.2,
-        "XGB": 0.2,
-        "CAT": 0.6
+        "LGB": 0.05,
+        "XGB": 0.0,
+        "CAT": 0.0,
+        "LGB_tuned": 0.0,
+        "LGB_tuned_seed2024": 0.0,
+        "CAT_tuned": 0.95
       },
-      "score": 0.52687
+      "score": 0.56769
     },
     "postprocess": [
-      "OptimizedRounder(cutpoints=[3.642, 4.594, 5.657, 6.196, 7.386])",
+      "OptimizedRounder(cutpoints=[3.574, 4.586, 5.609, 6.174, 7.628])",
       "clip[3,8]"
     ],
-    "notes": "Final model for submission. Optimized-rounder gain over naive round on the same blend: +0.05496. Baseline (generic pipeline, experiment #1): 0.47871."
+    "notes": "Round 3: Optuna (TPE, 40 trials/600s timeout, full 5-fold CV, direct post-rounder-QWK objective) tuned CatBoost added as an extra pool member (kept, not replaced). Final QWK 0.56769 vs running best 0.56293 vs original baseline 0.52687."
   },
   "trajectory": [
     {
@@ -275,6 +865,54 @@
       "experiment_id": 3,
       "timestamp": "2026-07-03T18:48:21",
       "score": 0.52687,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T23:08:22",
+      "score": 0.52986,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-03T23:09:50",
+      "score": 0.56293,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-03T23:10:42",
+      "score": 0.56293,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-03T23:11:20",
+      "score": 0.54649,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-03T23:13:44",
+      "score": 0.56769,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-03T23:15:20",
+      "score": 0.56716,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 10,
+      "timestamp": "2026-07-03T23:15:32",
+      "score": 0.56393,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 11,
+      "timestamp": "2026-07-03T23:16:51",
+      "score": 0.56769,
       "source_format": "v2"
     }
   ],
