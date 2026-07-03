@@ -30,7 +30,7 @@
 ## 6. 評估指標
 - 指標定義(一句)+ 分數總表:各 base model、ensemble、(若有)Public/Private LB。
   來源:best.*、leaderboard
-- CV↔LB gap:僅當 leaderboard 存在;差值以內嵌算式呈現(Hard Rule 1)
+- CV↔LB gap:僅當 leaderboard 存在;差值以內嵌算式呈現並置於 fenced code block 內(Hard Rule 1;verify_report.py 對 code block 豁免,衍生數字一律走此模式)
 
 ## 7. 實驗軌跡
 - 逐實驗分數表(id、timestamp、score、source_format)。來源:trajectory

@@ -21,7 +21,7 @@ reproduce the pipeline **without reading the code**.
 1. **Every number in REPORT.md must be copied verbatim from facts.json.**
    Never recompute, re-round, or invent a number. Derived stats (improvement %,
    gaps) may only appear if the underlying numbers are in facts.json and the
-   arithmetic is shown inline (e.g. "1.34356 − 1.33812 = 0.00544").
+   arithmetic is shown inline (e.g. "1.34356 − 1.33812 = 0.00544") and placed in a fenced code block — verify_report.py intentionally exempts code blocks, so derived results (which can never literally exist in facts.json) belong there; never use a code block to shelter a non-derived number.
 2. **STATUS.md is narrative context only** — you may read it to understand *why*
    decisions were made, but numbers still come from facts.json.
 3. **material_level == "baseline-only"** → say so explicitly: the run used only
