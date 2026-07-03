@@ -135,8 +135,11 @@ def build_facts(comp_dir: str) -> dict:
     trajectory = [{"experiment_id": e["experiment_id"], "timestamp": e.get("timestamp"),
                    "score": e.get("score"), "source_format": e["source_format"]}
                   for e in experiments]
-    material_level = ("full" if any(e["source_format"] != "generic_batch"
-                                    for e in experiments) else "baseline-only")
+    def _is_generic(e):
+        return (e["source_format"] == "generic_batch"
+                or str(e.get("model", "")).startswith("generic "))
+    material_level = ("full" if any(not _is_generic(e) for e in experiments)
+                      else "baseline-only")
     leaderboard = next((e["leaderboard"] for e in reversed(experiments)
                         if e.get("leaderboard")), None)
     missing = []

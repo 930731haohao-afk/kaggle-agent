@@ -147,3 +147,22 @@ def test_missing_inputs_exit(load_module, tmp_path):
     c = load_module(COLLECT, "collect")
     with pytest.raises(SystemExit):
         c.build_facts(str(tmp_path / "nonexistent"))
+
+
+def test_run_competition_logs_v2_shape(load_module, comp_dir):
+    """run_competition.py 改版後寫出的 entry 應被辨識為 v2(不再是 generic_batch)。"""
+    c = load_module(COLLECT, "collect")
+    new_entry = {  # 與 run_competition.py 改版後 hist.append 的形狀一致
+        "schema_version": 2, "experiment_id": 1, "timestamp": "2026-07-03T12:00:00",
+        "model": "generic LGB+XGB+CAT blend", "metric": "mae", "direction": "minimize",
+        "score": 1.35441, "n_features": 8, "cv": {"scheme": "5fold", "n_splits": 5, "seed": 42},
+        "base_models": [{"name": "LGB", "score": 1.3623}],
+        "ensemble": {"weights": {"LGB": 1.0}, "score": 1.35441},
+        "submission": "sub_generic.csv",
+    }
+    assert c.detect_format(new_entry) == "v2"
+    _write_exps(comp_dir, [new_entry])
+    facts = c.build_facts(str(comp_dir))
+    assert facts["experiments"][0]["score"] == 1.35441
+    # generic 基線即使是 v2 格式,素材等級仍應是 baseline-only —— 見 Step 3 的 material 判定調整
+    assert facts["material_level"] == "baseline-only"
