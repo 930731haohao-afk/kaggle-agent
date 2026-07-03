@@ -185,3 +185,68 @@ competitions/playground-series-s3e9/
     ├── sub_blend_12.07347_20260703_191124.csv          # identical reproduction (exp #4)
     └── sub_blend_12.07003_20260703_235120.csv          # CURRENT BEST (exp #8, not submitted)
 ```
+
+## Phase C-2a — Tree-search prototype (2026-07-04)
+
+Ran the ERA-inspired (Aygün et al. 2026) candidate-tree search prototype (計畫書
+Stage-4 先遣實驗) against s3e9, using `tree_search/harness.py` (generic
+selection/plateau/backtrack engine) + `tree_search/eval_s3e9.py` (per-comp evaluator,
+reuses the *exact* same 22-feature set and 5-fold `StratifiedKFold` decile scheme,
+seed=42, as `scripts/train.py` — single-model configs only, LGB/XGB/CAT, no blending).
+Driver: `tree_search/run_s3e9.py`. Full tree persisted to `experiments_tree.json`.
+
+**Run stats**: 20/20 nodes evaluated (0 failed), wall time **125.3s** (well under the
+~40 min budget; per-node cost 2.0–17.0s, cheaper than the 20–60s design target).
+Root = s3e9's current hand-regularized single-LGB config (reproduced byte-for-byte:
+12.11061, matching the table above). 5 first-generation lineages fanned out from
+root: **CAT** (model swap), **XGB** (model swap), **FEAT** (feature-subtraction),
+**ROBUST** (huber/fair loss objective swap — untested direction), **REG** (further
+capacity/regularization nudges).
+
+**Backtracks: 4 genuine plateau→backtrack events** (not faked — logged in
+`experiments_tree.json`'s `search_state.backtrack_log`): CAT plateaued after 3
+non-improving children → switched to REG (2nd-best lineage) → REG plateaued →
+switched to FEAT (3rd-best) → FEAT plateaued → switched to XGB (4th-best) → XGB
+plateaued at the node budget. ROBUST (5th-best, worst-scoring lineage) never got a
+turn as "active" — it only received its 2 seed-adjacent children while other
+lineages were active, since it never surfaced as best-scoring.
+
+**Best tree-search node**: `#1`, the **CatBoost seed itself** (depth=6, l2=6),
+OOF RMSE **12.07459** — i.e. no proposed mutation across all 20 nodes beat the
+already-known-best single-model config from the earlier linear iteration. Every one
+of CAT's own 3 children (regularize more / shrink depth / add bagging_temperature)
+tied or lost to the parent; every REG, FEAT, and XGB child scored 12.10–12.11 range
+(worse than CAT, none beating the 12.11061 LGB reference either in most cases).
+
+**Comparisons** (all CV-only, no LB):
+| Reference | RMSE | vs tree-search best (12.07459) |
+|-----------|------|------|
+| Single-model root (regularized LGB solo, this run's root) | 12.11061 | tree search **-0.03602** better (rediscovers the already-known CAT solo score, not a new gain) |
+| Linear-iteration 7-way seed-bagged blend (exp #8) | **12.07003** | tree search **+0.00456** worse — expected: this harness evaluates single models only, it cannot reach the blend/seed-bagging space that produced the actual best score |
+
+**Most productive mutation direction**: none, strictly — the tree search did not
+discover anything better than a config linear iteration already knew about. If
+forced to rank, "model-type switch to CatBoost" (the very first branch) was the only
+lineage worth exploring further; every genuinely *new* mutation (huber/fair loss,
+feature subtraction, deeper regularization, XGB nudges) moved the score the wrong
+way. The clearest and most useful negative finding: **swapping to a robust loss
+(huber/fair) made LGB substantially worse** (12.11061 → 12.16–12.22), the opposite
+of the a-priori hypothesis that a loss less sensitive to residual magnitude would
+help under the 56%-duplicate-row label-noise ceiling — worth remembering as a
+"tried, don't retry" data point alongside dup-group smoothing and interaction terms.
+
+**Harness design deviations from the brief** (documented in `harness.py`'s
+docstring): (1) a lineage that exhausts its per-node expansion budget
+(`MAX_CHILDREN_PER_NODE=3`) is also treated as "plateaued" even without 3
+non-improving children, so the search never stalls; (2) if literally every lineage
+is plateaued the flags are cleared once as a fallback. Neither triggered in this
+run (plain 3-non-improvement plateaus accounted for all 4 backtracks).
+
+**Feasibility verdict for Stage 4**: the harness mechanics are solid and cheap
+(crash-safe JSON-after-every-node, deterministic, ~6s/node average, adaptive
+backtracking worked exactly as designed) and are ready to scale up; but to actually
+beat this competition's current best score, Stage 4 needs the search space widened
+beyond single-model nodes — e.g. an explicit "ensemble/seed-bag of two existing tree
+nodes" node type — since on this particular label-noise-capped dataset the real
+historical gains (Phase B, 12.07347→12.07003) came entirely from seed-bagging /
+blending, a move this single-model-per-node prototype structurally cannot make.

@@ -1,0 +1,692 @@
+{
+  "comp": "playground-series-s3e9",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: s3e9 hand-regularized single-LGB config from scripts/train.py (num_leaves=15,depth=5,L1=2,L2=4) -- OOF solo ~12.11061 per STATUS.md; the fair single-model reference point for this tree-search run",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.11061,
+      "status": "evaluated",
+      "wall_s": 5.2
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[CAT] model-type switch: CatBoost solo (depth6,l2=6) -- known strongest single learner on this data (STATUS.md 12.07459 vs LGB 12.11061/XGB 12.12086); ordered-boosting regularization resists the 56%-dup-row label noise best",
+      "config": {
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "early_stopping_rounds": 200
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.07459,
+      "status": "evaluated",
+      "wall_s": 2.7
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[XGB] model-type switch: XGB solo (depth4,min_child_weight=8,L1=2,L2=4) -- currently the weakest of the three solo learners (12.12086); branch explores whether extra regularization/robust-loss nudges can close the gap",
+      "config": {
+        "model": "xgb",
+        "params": {
+          "max_depth": 4,
+          "min_child_weight": 8,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.12086,
+      "status": "evaluated",
+      "wall_s": 6.8
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[FEAT] feature-subset SUBTRACTION (not addition -- exp #3 already proved adding interaction terms dead, do not retest): drop 6 weak/redundant members (sqrt_age redundant w/ log_age per EDA; total_mass a raw sum with low marginal info; fine_coarse/flyash_cement/slag_cement ratios weaker than the binder-based ratios; has_superplasticizer a low-info flag) -- 16 of 22 features remain; 'too many features hurts' is a recurring cross-comp finding (s3e7, s3e9 exp #3) but subtraction on THIS feature set is untested",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "sqrt_age",
+            "total_mass",
+            "fine_coarse_ratio",
+            "flyash_cement_ratio",
+            "slag_cement_ratio",
+            "has_superplasticizer"
+          ]
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.10736,
+      "status": "evaluated",
+      "wall_s": 5.4
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[ROBUST] objective swap: LGB huber loss (alpha=10) instead of plain L2 -- untested direction; hypothesis is that a loss less sensitive to individual residual magnitude should help given the 56%-duplicate-feature-row label-noise ceiling (different Strength values for identical recipes), unlike dup-group target smoothing (STATUS exp #5) which tried to fix the noise at the DATA level and failed -- this fixes it at the LOSS level instead",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150,
+          "objective": "huber",
+          "alpha": 10.0
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.16356,
+      "status": "evaluated",
+      "wall_s": 10.2
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[REG] hyperparam nudge: shrink capacity further along the already-proven 'regularize over capacity' axis (num_leaves 15->10, depth 5->4, lr 0.02->0.03 to compensate for fewer boosting steps needed) -- tests whether root's leaves=15/depth=5 undershot or overshot the noise-ceiling sweet spot",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 10,
+          "max_depth": 4,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.03,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.10566,
+      "status": "evaluated",
+      "wall_s": 5.3
+    },
+    {
+      "id": 6,
+      "parent_id": 1,
+      "mutation": "[CAT] CAT: l2_leaf_reg 6->9, more L2 given the label-noise ceiling (parent=#1)",
+      "config": {
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 9.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "early_stopping_rounds": 200
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.07862,
+      "status": "evaluated",
+      "wall_s": 2.5
+    },
+    {
+      "id": 7,
+      "parent_id": 1,
+      "mutation": "[CAT] CAT: depth 6->5, less capacity to probe the over/underfit boundary (parent=#1)",
+      "config": {
+        "model": "cat",
+        "params": {
+          "depth": 5,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "early_stopping_rounds": 200
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.08243,
+      "status": "evaluated",
+      "wall_s": 2.0
+    },
+    {
+      "id": 8,
+      "parent_id": 1,
+      "mutation": "[CAT] CAT: add bagging_temperature=1.0 (Bayesian-bootstrap row weighting) -- untested regularization axis for CatBoost on this data (parent=#1)",
+      "config": {
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "early_stopping_rounds": 200,
+          "bagging_temperature": 1.0
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.07459,
+      "status": "evaluated",
+      "wall_s": 2.5
+    },
+    {
+      "id": 9,
+      "parent_id": 5,
+      "mutation": "[REG] LGB: num_leaves 10->7, continue shrinking capacity along the same axis (parent=#5)",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 7,
+          "max_depth": 4,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.03,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.11431,
+      "status": "evaluated",
+      "wall_s": 2.8
+    },
+    {
+      "id": 10,
+      "parent_id": 5,
+      "mutation": "[REG] LGB: min_child_samples 25->40, stronger leaf-occupancy regularization (untested axis -- only leaves/depth/L1L2 were tuned in the linear run) (parent=#5)",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 10,
+          "max_depth": 4,
+          "min_child_samples": 40,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.03,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.10979,
+      "status": "evaluated",
+      "wall_s": 4.5
+    },
+    {
+      "id": 11,
+      "parent_id": 5,
+      "mutation": "[REG] LGB: reg_lambda 4->6, push L2 further along the known-good direction (parent=#5)",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 10,
+          "max_depth": 4,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 6.0,
+          "learning_rate": 0.03,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.10668,
+      "status": "evaluated",
+      "wall_s": 5.2
+    },
+    {
+      "id": 12,
+      "parent_id": 3,
+      "mutation": "[FEAT] FEAT: further trim agg_binder_ratio (15 feats left) -- testing if the aggregate/binder ratio is also low marginal value (parent=#3)",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "agg_binder_ratio",
+            "fine_coarse_ratio",
+            "flyash_cement_ratio",
+            "has_superplasticizer",
+            "slag_cement_ratio",
+            "sqrt_age",
+            "total_mass"
+          ]
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.11398,
+      "status": "evaluated",
+      "wall_s": 6.4
+    },
+    {
+      "id": 13,
+      "parent_id": 3,
+      "mutation": "[FEAT] FEAT: drop the naive water_cement_ratio (EDA: water_binder_ratio Pearson -0.227 dominates the naive -0.151 version) and restore has_superplasticizer (parent=#3)",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "fine_coarse_ratio",
+            "flyash_cement_ratio",
+            "slag_cement_ratio",
+            "sqrt_age",
+            "total_mass",
+            "water_cement_ratio"
+          ]
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.11186,
+      "status": "evaluated",
+      "wall_s": 7.4
+    },
+    {
+      "id": 14,
+      "parent_id": 3,
+      "mutation": "[FEAT] FEAT: aggressive trim to a 13-feature core (raw8 + log_age + binder + water_binder_ratio + has_slag/has_flyash) -- minimal-sufficient-set test (parent=#3)",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "agg_binder_ratio",
+            "fine_coarse_ratio",
+            "flyash_cement_ratio",
+            "has_superplasticizer",
+            "slag_cement_ratio",
+            "sp_binder_ratio",
+            "sqrt_age",
+            "total_mass",
+            "water_cement_ratio"
+          ]
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.11464,
+      "status": "evaluated",
+      "wall_s": 6.4
+    },
+    {
+      "id": 15,
+      "parent_id": 2,
+      "mutation": "[XGB] XGB: max_depth 4->3, lean harder into regularization since XGB is currently the weakest solo learner (parent=#2)",
+      "config": {
+        "model": "xgb",
+        "params": {
+          "max_depth": 3,
+          "min_child_weight": 8,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.1105,
+      "status": "evaluated",
+      "wall_s": 5.9
+    },
+    {
+      "id": 16,
+      "parent_id": 15,
+      "mutation": "[XGB] XGB: double L1/L2 (2->4 / 4->8) (parent=#15)",
+      "config": {
+        "model": "xgb",
+        "params": {
+          "max_depth": 3,
+          "min_child_weight": 8,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 4.0,
+          "reg_lambda": 8.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.10898,
+      "status": "evaluated",
+      "wall_s": 6.0
+    },
+    {
+      "id": 17,
+      "parent_id": 16,
+      "mutation": "[XGB] XGB: lr 0.02->0.01, finer pace with the same early-stopping patience (parent=#16)",
+      "config": {
+        "model": "xgb",
+        "params": {
+          "max_depth": 3,
+          "min_child_weight": 8,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 4.0,
+          "reg_lambda": 8.0,
+          "learning_rate": 0.01,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.10637,
+      "status": "evaluated",
+      "wall_s": 11.7
+    },
+    {
+      "id": 18,
+      "parent_id": 4,
+      "mutation": "[ROBUST] LGB: swap huber->fair loss (fair_c=1.0), alternate robust-loss family (parent=#4)",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150,
+          "objective": "fair",
+          "alpha": 10.0,
+          "fair_c": 1.0
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.22266,
+      "status": "evaluated",
+      "wall_s": 9.5
+    },
+    {
+      "id": 19,
+      "parent_id": 4,
+      "mutation": "[ROBUST] LGB: huber alpha 10->5, more aggressive down-weighting of large residuals (parent=#4)",
+      "config": {
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150,
+          "objective": "huber",
+          "alpha": 5.0
+        },
+        "features": {
+          "drop": []
+        },
+        "postprocess": {
+          "clip_min": 0,
+          "clip_max": null,
+          "clip_oof": false
+        }
+      },
+      "score": 12.21054,
+      "status": "evaluated",
+      "wall_s": 17.0
+    }
+  ],
+  "search_state": {
+    "active_lineage": 4,
+    "streak": {
+      "1": 3,
+      "5": 3,
+      "3": 3,
+      "2": 3,
+      "4": 2
+    },
+    "plateaued": [
+      1,
+      5,
+      3,
+      2
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 8,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 12.07459"
+      },
+      {
+        "at_node_id": 11,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 12.07459"
+      },
+      {
+        "at_node_id": 14,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 12.07459"
+      },
+      {
+        "at_node_id": 17,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 12.07459"
+      }
+    ]
+  }
+}
