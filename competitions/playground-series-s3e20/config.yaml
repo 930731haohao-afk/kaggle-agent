@@ -1,0 +1,23 @@
+name: playground-series-s3e20
+url: https://www.kaggle.com/competitions/playground-series-s3e20
+description: Predict CO2 emissions in Rwanda using satellite data
+problem_type: regression
+evaluation_metric: rmse
+optimization_direction: minimize
+target_column: emission
+id_column: ID_LAT_LON_YEAR_WEEK
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes: |
+  - Time series component: year (2019-2021 train, 2022 test), week_no (0-52)
+  - Geographic component: latitude, longitude in Rwanda
+  - 75 features mostly from satellite sensors (Cloud, Aerosol, UV measurements)
+  - Heavy missing values in some feature groups (99.4% in UvAerosolLayerHeight)
+  - Target is heavily right-skewed (median 45.6, mean 81.9, max 3167.8)
+  - Sample submission uses mean of training target as baseline

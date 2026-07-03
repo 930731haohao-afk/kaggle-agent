@@ -1,0 +1,443 @@
+{
+  "competition": {
+    "name": "playground-series-s3e20",
+    "url": "https://www.kaggle.com/competitions/playground-series-s3e20",
+    "description": "Predict CO2 emissions in Rwanda using satellite data",
+    "problem_type": "regression",
+    "evaluation_metric": "rmse",
+    "optimization_direction": "minimize",
+    "target_column": "emission",
+    "id_column": "ID_LAT_LON_YEAR_WEEK",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false,
+      "daily_submission_limit": 5
+    },
+    "notes": "- Time series component: year (2019-2021 train, 2022 test), week_no (0-52)\n- Geographic component: latitude, longitude in Rwanda\n- 75 features mostly from satellite sensors (Cloud, Aerosol, UV measurements)\n- Heavy missing values in some feature groups (99.4% in UvAerosolLayerHeight)\n- Target is heavily right-skewed (median 45.6, mean 81.9, max 3167.8)\n- Sample submission uses mean of training target as baseline\n"
+  },
+  "material_level": "full",
+  "status_md_present": true,
+  "experiments": [
+    {
+      "experiment_id": 1,
+      "timestamp": "20260214_161647",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB+XGB+Ridge ensemble",
+      "score": 38.507172,
+      "cv": {
+        "scheme": "time-based (2019-2020 train, 2021 val)",
+        "seed": 42
+      },
+      "features": "processed_v1 (102 features)",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 45.095326
+        },
+        {
+          "name": "XGB",
+          "score": 35.215633
+        },
+        {
+          "name": "Ridge",
+          "score": 23917.628108
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "lgb": 0.37881543114715904,
+          "xgb": 0.6211832222035492,
+          "ridge": 1.3466492918305598e-06
+        },
+        "score": 38.507172
+      },
+      "submission": "competitions/playground-series-s3e20/submissions/submission_ensemble_38.5072_20260214_161647.csv",
+      "notes": "Log1p target transformation, GPU training, time-based validation"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "20260214_161743",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB+XGB ensemble (50/50)",
+      "score": 33.205568,
+      "cv": {
+        "scheme": "time-based (2019-2020 train, 2021 val)",
+        "seed": 42
+      },
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 32.74576
+        },
+        {
+          "name": "XGB",
+          "score": 34.439619
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.5,
+          "XGB": 0.5
+        },
+        "score": 33.205568
+      },
+      "submission": "competitions/playground-series-s3e20/submissions/submission_final_33.2056_20260214_161743.csv"
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T09:59:53",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB+XGB+CatBoost blend + loc-week target encoding",
+      "score": 28.3424,
+      "cv": {
+        "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+        "n_splits": 3,
+        "seed": 42
+      },
+      "features": "70 base (63 sensors, dropped 7) + te_locweek + te_loc",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 32.5813
+        },
+        {
+          "name": "XGB",
+          "score": 28.4029
+        },
+        {
+          "name": "CAT",
+          "score": 28.9487
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "XGB": 0.75,
+          "CAT": 0.25
+        },
+        "score": 28.3424
+      },
+      "postprocess": [
+        "clip >= 0"
+      ],
+      "submission": "sub_v2_blend_28.3424_20260703_095953.csv",
+      "notes": "Key: emission stable per (loc,week) across years; target encoding is the dominant signal. log1p target. Cannot submit (comp closed)."
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T10:12:09",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB+XGB+CatBoost blend + loc-week target encoding",
+      "score": 22.6488,
+      "cv": {
+        "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+        "n_splits": 3,
+        "seed": 42
+      },
+      "features": "70 base (63 sensors, dropped 7) + te_locweek + te_loc",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 32.5813
+        },
+        {
+          "name": "XGB",
+          "score": 28.4029
+        },
+        {
+          "name": "CAT",
+          "score": 28.9487
+        },
+        {
+          "name": "TE (loc-week mean)",
+          "score": 22.6488
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "TE": 1.0
+        },
+        "score": 22.6488
+      },
+      "postprocess": [
+        "clip >= 0"
+      ],
+      "submission": "sub_v2_blend_22.6488_20260703_101209.csv",
+      "notes": "Key: emission stable per (loc,week) across years; target encoding is the dominant signal. log1p target. Cannot submit (comp closed)."
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-04T00:58:26",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB+XGB+CatBoost blend + EB-shrunk loc-week target encoding",
+      "score": 22.4897,
+      "cv": {
+        "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+        "n_splits": 3,
+        "seed": 42
+      },
+      "features": "70 base (63 sensors, dropped 7) + te_locweek(shrunk alpha=0.935) + te_loc",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 32.0977
+        },
+        {
+          "name": "XGB",
+          "score": 28.3584
+        },
+        {
+          "name": "CAT",
+          "score": 28.6391
+        },
+        {
+          "name": "TE (denoised loc-week mean)",
+          "score": 22.4897
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "TE": 1.0
+        },
+        "score": 22.4897
+      },
+      "postprocess": [
+        "clip >= 0"
+      ],
+      "submission": "sub_v3_blend_22.4897_20260704_005826.csv",
+      "notes": "Round 1 of Phase-B iteration. Cells are perfectly balanced panel (497 loc x 53 wk x 3yr) so every LOYO fold's source has exactly n=2 obs/cell -- shrinking the noisy 2-obs cell mean toward the ~106-obs loc mean improves OOF. GBDTs still expected to get ~0 weight (structure-dominant target, per s3e20/s3e19 boundary-condition insight in knowledge/experience.md)."
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-04T01:16:24",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB+XGB+CatBoost blend + EB-shrunk + COVID-downweighted loc-week target encoding",
+      "score": 21.6317,
+      "cv": {
+        "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+        "n_splits": 3,
+        "seed": 42
+      },
+      "features": "70 base (63 sensors, dropped 7) + te_locweek(alpha=0.945, w2020=0.29) + te_loc",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 31.8172
+        },
+        {
+          "name": "XGB",
+          "score": 28.3109
+        },
+        {
+          "name": "CAT",
+          "score": 28.7845
+        },
+        {
+          "name": "TE (denoised loc-week mean)",
+          "score": 21.6317
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "TE": 1.0
+        },
+        "score": 21.6317
+      },
+      "postprocess": [
+        "clip >= 0"
+      ],
+      "submission": "sub_v4_blend_21.6317_20260704_011624.csv",
+      "notes": "Round 2 of Phase-B iteration. 2020 COVID dip makes that year's observations less representative of 'normal' location-week levels shared with 2019/2021/2022; down-weighting (not fully excluding -- W2020=0 was tested and worse than 0.29, still gives 2020 partial credit) improves OOF further. GBDTs still ~0 weight."
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-04T01:19:31",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB+XGB+CatBoost blend + neighbor-week-smoothed + COVID-downweighted loc-week target encoding",
+      "score": 21.1487,
+      "cv": {
+        "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+        "n_splits": 3,
+        "seed": 42
+      },
+      "features": "70 base (63 sensors, dropped 7) + te_locweek(alpha=1.0, w2020=0.24, wnb=0.28) + te_loc",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 32.074
+        },
+        {
+          "name": "XGB",
+          "score": 28.0674
+        },
+        {
+          "name": "CAT",
+          "score": 28.8466
+        },
+        {
+          "name": "TE (denoised loc-week mean)",
+          "score": 21.1487
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "TE": 1.0
+        },
+        "score": 21.1487
+      },
+      "postprocess": [
+        "clip >= 0"
+      ],
+      "submission": "sub_v5_blend_21.1487_20260704_011931.csv",
+      "notes": "Round 3 of Phase-B iteration. Neighboring-week smoothing is a second, complementary way (local/seasonal vs Round-1's global loc-mean) to denoise the n=2-per-fold cell mean; re-tuned ALPHA collapses to 1.0, meaning Round-1 loc-mean shrinkage becomes redundant once neighbor-week smoothing is applied (both reduce the same source of noise). GBDTs still ~0 weight."
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-04T01:35:00",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB residual model on (emission - TE_v5) [DIAGNOSTIC, REJECTED]",
+      "score": 21.1487,
+      "cv": {
+        "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+        "n_splits": 3,
+        "seed": 42
+      },
+      "features": "lat/lon/week + sin/cos + 63 sensors (median-imputed); target = residual vs v5 TE",
+      "notes": "NEGATIVE RESULT (kept as documentation): no residual signal exists beyond the smoothed location-week structure -- sensor features are noise even for the residual. Confirms s3e20 boundary condition: when target is near-constant across years per (loc,week), structure fully saturates the predictable signal. Iteration stopped per protocol (wider window + residual model both non-improving)."
+    }
+  ],
+  "best": {
+    "experiment_id": 7,
+    "timestamp": "2026-07-04T01:19:31",
+    "source_format": "v2",
+    "metric": "rmse",
+    "direction": "minimize",
+    "model": "LGB+XGB+CatBoost blend + neighbor-week-smoothed + COVID-downweighted loc-week target encoding",
+    "score": 21.1487,
+    "cv": {
+      "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+      "n_splits": 3,
+      "seed": 42
+    },
+    "features": "70 base (63 sensors, dropped 7) + te_locweek(alpha=1.0, w2020=0.24, wnb=0.28) + te_loc",
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 32.074
+      },
+      {
+        "name": "XGB",
+        "score": 28.0674
+      },
+      {
+        "name": "CAT",
+        "score": 28.8466
+      },
+      {
+        "name": "TE (denoised loc-week mean)",
+        "score": 21.1487
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.0,
+        "CAT": 0.0,
+        "TE": 1.0
+      },
+      "score": 21.1487
+    },
+    "postprocess": [
+      "clip >= 0"
+    ],
+    "submission": "sub_v5_blend_21.1487_20260704_011931.csv",
+    "notes": "Round 3 of Phase-B iteration. Neighboring-week smoothing is a second, complementary way (local/seasonal vs Round-1's global loc-mean) to denoise the n=2-per-fold cell mean; re-tuned ALPHA collapses to 1.0, meaning Round-1 loc-mean shrinkage becomes redundant once neighbor-week smoothing is applied (both reduce the same source of noise). GBDTs still ~0 weight."
+  },
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "20260214_161647",
+      "score": 38.507172,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "20260214_161743",
+      "score": 33.205568,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T09:59:53",
+      "score": 28.3424,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T10:12:09",
+      "score": 22.6488,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-04T00:58:26",
+      "score": 22.4897,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-04T01:16:24",
+      "score": 21.6317,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-04T01:19:31",
+      "score": 21.1487,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-04T01:35:00",
+      "score": 21.1487,
+      "source_format": "v2"
+    }
+  ],
+  "leaderboard": null,
+  "missing": [
+    "leaderboard"
+  ],
+  "unparsed": []
+}

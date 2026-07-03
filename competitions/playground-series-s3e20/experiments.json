@@ -1,0 +1,576 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "20260214_161647",
+    "stage": "modeling",
+    "model": "LGB+XGB+Ridge ensemble",
+    "features": "processed_v1 (102 features)",
+    "params": {
+      "lgb": {
+        "objective": "regression",
+        "metric": "rmse",
+        "boosting_type": "gbdt",
+        "learning_rate": 0.05,
+        "num_leaves": 31,
+        "max_depth": -1,
+        "min_child_samples": 20,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.8,
+        "reg_alpha": 0.1,
+        "reg_lambda": 0.1,
+        "verbose": -1,
+        "random_state": 42,
+        "device": "gpu",
+        "gpu_platform_id": 0,
+        "gpu_device_id": 0
+      },
+      "xgb": {
+        "objective": "reg:squarederror",
+        "eval_metric": "rmse",
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "min_child_weight": 3,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_alpha": 0.1,
+        "reg_lambda": 1.0,
+        "random_state": 42,
+        "device": "cuda",
+        "tree_method": "hist"
+      },
+      "ridge_alpha": 10.0,
+      "ensemble_weights": {
+        "lgb": 0.37881543114715904,
+        "xgb": 0.6211832222035492,
+        "ridge": 1.3466492918305598e-06
+      }
+    },
+    "cv_strategy": "time-based (2019-2020 train, 2021 val)",
+    "val_scores": {
+      "baseline_rmse": 155.5423738693852,
+      "lgb_rmse": 45.095326061098845,
+      "xgb_rmse": 35.21563336592749,
+      "ridge_rmse": 23917.628107584616,
+      "ensemble_rmse": 38.507172447106136
+    },
+    "notes": "Log1p target transformation, GPU training, time-based validation",
+    "submission_file": "competitions/playground-series-s3e20/submissions/submission_ensemble_38.5072_20260214_161647.csv",
+    "schema_version": 2,
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 38.507172,
+    "cv": {
+      "scheme": "time-based (2019-2020 train, 2021 val)",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 45.095326
+      },
+      {
+        "name": "XGB",
+        "score": 35.215633
+      },
+      {
+        "name": "Ridge",
+        "score": 23917.628108
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "lgb": 0.37881543114715904,
+        "xgb": 0.6211832222035492,
+        "ridge": 1.3466492918305598e-06
+      },
+      "score": 38.507172
+    },
+    "submission": "competitions/playground-series-s3e20/submissions/submission_ensemble_38.5072_20260214_161647.csv"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "20260214_161743",
+    "model": "LGB+XGB ensemble (50/50)",
+    "val_rmse": 33.20556757423806,
+    "lgb_rmse": 32.74576004811053,
+    "xgb_rmse": 34.439619262545406,
+    "submission_file": "competitions/playground-series-s3e20/submissions/submission_final_33.2056_20260214_161743.csv",
+    "schema_version": 2,
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 33.205568,
+    "cv": {
+      "scheme": "time-based (2019-2020 train, 2021 val)",
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 32.74576
+      },
+      {
+        "name": "XGB",
+        "score": 34.439619
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.5,
+        "XGB": 0.5
+      },
+      "score": 33.205568
+    },
+    "submission": "competitions/playground-series-s3e20/submissions/submission_final_33.2056_20260214_161743.csv"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T09:59:53",
+    "stage": "modeling_v2",
+    "model": "LGB+XGB+CatBoost blend + loc-week target encoding",
+    "features": "70 base (63 sensors, dropped 7) + te_locweek + te_loc",
+    "cv_strategy": "Leave-One-Year-Out (2019/2020/2021)",
+    "per_model_oof_rmse": {
+      "LGB": 32.5813,
+      "XGB": 28.4029,
+      "CAT": 28.9487
+    },
+    "fold_scores": {
+      "LGB": [
+        34.2845,
+        33.0785,
+        30.249
+      ],
+      "XGB": [
+        29.1947,
+        29.3523,
+        26.5759
+      ],
+      "CAT": [
+        29.8861,
+        29.5795,
+        27.3123
+      ]
+    },
+    "blend_weights": {
+      "LGB": 0.0,
+      "XGB": 0.75,
+      "CAT": 0.25
+    },
+    "blend_oof_rmse": 28.3424,
+    "ref_locweek_mean_rmse": 22.6488,
+    "notes": "Key: emission stable per (loc,week) across years; target encoding is the dominant signal. log1p target. Cannot submit (comp closed).",
+    "submission_file": "sub_v2_blend_28.3424_20260703_095953.csv",
+    "schema_version": 2,
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 28.3424,
+    "cv": {
+      "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+      "n_splits": 3,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 32.5813
+      },
+      {
+        "name": "XGB",
+        "score": 28.4029
+      },
+      {
+        "name": "CAT",
+        "score": 28.9487
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.75,
+        "CAT": 0.25
+      },
+      "score": 28.3424
+    },
+    "submission": "sub_v2_blend_28.3424_20260703_095953.csv",
+    "postprocess": [
+      "clip >= 0"
+    ]
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-07-03T10:12:09",
+    "stage": "modeling_v2",
+    "model": "LGB+XGB+CatBoost blend + loc-week target encoding",
+    "features": "70 base (63 sensors, dropped 7) + te_locweek + te_loc",
+    "cv_strategy": "Leave-One-Year-Out (2019/2020/2021)",
+    "per_model_oof_rmse": {
+      "LGB": 32.5813,
+      "XGB": 28.4029,
+      "CAT": 28.9487
+    },
+    "fold_scores": {
+      "LGB": [
+        34.2845,
+        33.0785,
+        30.249
+      ],
+      "XGB": [
+        29.1947,
+        29.3523,
+        26.5759
+      ],
+      "CAT": [
+        29.8861,
+        29.5795,
+        27.3123
+      ]
+    },
+    "blend_members": [
+      "LGB",
+      "XGB",
+      "CAT",
+      "TE"
+    ],
+    "blend_weights": {
+      "LGB": 0.0,
+      "XGB": 0.0,
+      "CAT": 0.0,
+      "TE": 1.0
+    },
+    "blend_oof_rmse": 22.6488,
+    "ref_locweek_mean_rmse": 22.6488,
+    "notes": "Key: emission stable per (loc,week) across years; target encoding is the dominant signal. log1p target. Cannot submit (comp closed).",
+    "submission_file": "sub_v2_blend_22.6488_20260703_101209.csv",
+    "schema_version": 2,
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 22.6488,
+    "cv": {
+      "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+      "n_splits": 3,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 32.5813
+      },
+      {
+        "name": "XGB",
+        "score": 28.4029
+      },
+      {
+        "name": "CAT",
+        "score": 28.9487
+      },
+      {
+        "name": "TE (loc-week mean)",
+        "score": 22.6488
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.0,
+        "CAT": 0.0,
+        "TE": 1.0
+      },
+      "score": 22.6488
+    },
+    "submission": "sub_v2_blend_22.6488_20260703_101209.csv",
+    "postprocess": [
+      "clip >= 0"
+    ]
+  },
+  {
+    "experiment_id": 5,
+    "timestamp": "2026-07-04T00:58:26",
+    "stage": "modeling_v3_round1_eb_shrinkage",
+    "model": "LGB+XGB+CatBoost blend + EB-shrunk loc-week target encoding",
+    "features": "70 base (63 sensors, dropped 7) + te_locweek(shrunk alpha=0.935) + te_loc",
+    "cv_strategy": "Leave-One-Year-Out (2019/2020/2021), same as v2",
+    "change_vs_prev": "empirical-Bayes shrinkage of te_locweek toward te_loc: te = alpha*cell_mean + (1-alpha)*loc_mean, alpha=0.935 (chosen via pre-sweep grid 0.3-1.0 on same LOYO CV, min at 0.935)",
+    "per_model_oof_rmse": {
+      "LGB": 32.0977,
+      "XGB": 28.3584,
+      "CAT": 28.6391
+    },
+    "fold_scores": {
+      "LGB": [
+        34.2776,
+        32.369,
+        29.4632
+      ],
+      "XGB": [
+        29.3176,
+        28.9968,
+        26.6883
+      ],
+      "CAT": [
+        30.2359,
+        29.1063,
+        26.4426
+      ]
+    },
+    "blend_members": [
+      "LGB",
+      "XGB",
+      "CAT",
+      "TE"
+    ],
+    "blend_weights": {
+      "LGB": 0.0,
+      "XGB": 0.0,
+      "CAT": 0.0,
+      "TE": 1.0
+    },
+    "blend_oof_rmse": 22.4897,
+    "ref_locweek_mean_shrunk_rmse": 22.4897,
+    "ref_prev_best_unshrunk_rmse": 22.6488,
+    "delta_vs_prev_best": -0.1591,
+    "notes": "Round 1 of Phase-B iteration. Cells are perfectly balanced panel (497 loc x 53 wk x 3yr) so every LOYO fold's source has exactly n=2 obs/cell -- shrinking the noisy 2-obs cell mean toward the ~106-obs loc mean improves OOF. GBDTs still expected to get ~0 weight (structure-dominant target, per s3e20/s3e19 boundary-condition insight in knowledge/experience.md).",
+    "submission_file": "sub_v3_blend_22.4897_20260704_005826.csv",
+    "schema_version": 2,
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 22.4897,
+    "cv": {
+      "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+      "n_splits": 3,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 32.0977
+      },
+      {
+        "name": "XGB",
+        "score": 28.3584
+      },
+      {
+        "name": "CAT",
+        "score": 28.6391
+      },
+      {
+        "name": "TE (denoised loc-week mean)",
+        "score": 22.4897
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.0,
+        "CAT": 0.0,
+        "TE": 1.0
+      },
+      "score": 22.4897
+    },
+    "submission": "sub_v3_blend_22.4897_20260704_005826.csv",
+    "postprocess": [
+      "clip >= 0"
+    ]
+  },
+  {
+    "experiment_id": 6,
+    "timestamp": "2026-07-04T01:16:24",
+    "stage": "modeling_v4_round2_covid_downweight",
+    "model": "LGB+XGB+CatBoost blend + EB-shrunk + COVID-downweighted loc-week target encoding",
+    "features": "70 base (63 sensors, dropped 7) + te_locweek(alpha=0.945, w2020=0.29) + te_loc",
+    "cv_strategy": "Leave-One-Year-Out (2019/2020/2021), same as v2/v3",
+    "change_vs_prev": "down-weight year==2020 rows (COVID emissions dip) to W2020=0.29 when computing historical cell/loc means, on top of Round-1 EB shrinkage (alpha re-tuned jointly to 0.945). Pre-swept alpha x W2020 grid on same LOYO CV.",
+    "per_model_oof_rmse": {
+      "LGB": 31.8172,
+      "XGB": 28.3109,
+      "CAT": 28.7845
+    },
+    "fold_scores": {
+      "LGB": [
+        33.3813,
+        32.3198,
+        29.6333
+      ],
+      "XGB": [
+        29.5489,
+        29.2295,
+        26.0196
+      ],
+      "CAT": [
+        30.4471,
+        28.9677,
+        26.8235
+      ]
+    },
+    "blend_members": [
+      "LGB",
+      "XGB",
+      "CAT",
+      "TE"
+    ],
+    "blend_weights": {
+      "LGB": 0.0,
+      "XGB": 0.0,
+      "CAT": 0.0,
+      "TE": 1.0
+    },
+    "blend_oof_rmse": 21.6317,
+    "ref_te_only_rmse": 21.6317,
+    "ref_prev_round_rmse": 22.4897,
+    "delta_vs_prev_round": -0.858,
+    "notes": "Round 2 of Phase-B iteration. 2020 COVID dip makes that year's observations less representative of 'normal' location-week levels shared with 2019/2021/2022; down-weighting (not fully excluding -- W2020=0 was tested and worse than 0.29, still gives 2020 partial credit) improves OOF further. GBDTs still ~0 weight.",
+    "submission_file": "sub_v4_blend_21.6317_20260704_011624.csv",
+    "schema_version": 2,
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 21.6317,
+    "cv": {
+      "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+      "n_splits": 3,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 31.8172
+      },
+      {
+        "name": "XGB",
+        "score": 28.3109
+      },
+      {
+        "name": "CAT",
+        "score": 28.7845
+      },
+      {
+        "name": "TE (denoised loc-week mean)",
+        "score": 21.6317
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.0,
+        "CAT": 0.0,
+        "TE": 1.0
+      },
+      "score": 21.6317
+    },
+    "submission": "sub_v4_blend_21.6317_20260704_011624.csv",
+    "postprocess": [
+      "clip >= 0"
+    ]
+  },
+  {
+    "experiment_id": 7,
+    "timestamp": "2026-07-04T01:19:31",
+    "stage": "modeling_v5_round3_neighbor_week_smoothing",
+    "model": "LGB+XGB+CatBoost blend + neighbor-week-smoothed + COVID-downweighted loc-week target encoding",
+    "features": "70 base (63 sensors, dropped 7) + te_locweek(alpha=1.0, w2020=0.24, wnb=0.28) + te_loc",
+    "cv_strategy": "Leave-One-Year-Out (2019/2020/2021), same as v2/v3/v4",
+    "change_vs_prev": "smooth cell mean across neighboring weeks (w-1, w+1 at same location, weight WNB=0.28 vs own week 1.0) before shrinking toward loc mean; ALPHA re-tuned jointly to 1.0 (neighbor smoothing subsumes the Round-1 loc-mean shrinkage -- both attack cell noise, redundant once combined), W2020 re-tuned to 0.24.",
+    "per_model_oof_rmse": {
+      "LGB": 32.074,
+      "XGB": 28.0674,
+      "CAT": 28.8466
+    },
+    "fold_scores": {
+      "LGB": [
+        33.9513,
+        32.6853,
+        29.4144
+      ],
+      "XGB": [
+        29.5901,
+        29.0156,
+        25.4137
+      ],
+      "CAT": [
+        30.8785,
+        29.0938,
+        26.3901
+      ]
+    },
+    "blend_members": [
+      "LGB",
+      "XGB",
+      "CAT",
+      "TE"
+    ],
+    "blend_weights": {
+      "LGB": 0.0,
+      "XGB": 0.0,
+      "CAT": 0.0,
+      "TE": 1.0
+    },
+    "blend_oof_rmse": 21.1487,
+    "ref_te_only_rmse": 21.1487,
+    "ref_prev_round_rmse": 21.6317,
+    "delta_vs_prev_round": -0.483,
+    "notes": "Round 3 of Phase-B iteration. Neighboring-week smoothing is a second, complementary way (local/seasonal vs Round-1's global loc-mean) to denoise the n=2-per-fold cell mean; re-tuned ALPHA collapses to 1.0, meaning Round-1 loc-mean shrinkage becomes redundant once neighbor-week smoothing is applied (both reduce the same source of noise). GBDTs still ~0 weight.",
+    "submission_file": "sub_v5_blend_21.1487_20260704_011931.csv",
+    "schema_version": 2,
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 21.1487,
+    "cv": {
+      "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+      "n_splits": 3,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 32.074
+      },
+      {
+        "name": "XGB",
+        "score": 28.0674
+      },
+      {
+        "name": "CAT",
+        "score": 28.8466
+      },
+      {
+        "name": "TE (denoised loc-week mean)",
+        "score": 21.1487
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.0,
+        "CAT": 0.0,
+        "TE": 1.0
+      },
+      "score": 21.1487
+    },
+    "submission": "sub_v5_blend_21.1487_20260704_011931.csv",
+    "postprocess": [
+      "clip >= 0"
+    ]
+  },
+  {
+    "experiment_id": 8,
+    "timestamp": "2026-07-04T01:35:00",
+    "stage": "modeling_v6_round4_residual_diagnostic",
+    "model": "LGB residual model on (emission - TE_v5) [DIAGNOSTIC, REJECTED]",
+    "features": "lat/lon/week + sin/cos + 63 sensors (median-imputed); target = residual vs v5 TE",
+    "cv_strategy": "Leave-One-Year-Out (2019/2020/2021), same as v2-v5",
+    "change_vs_prev": "Round 4a: widen neighbor-week smoothing window to +-2/+-3 weeks -> all worse (21.2341/21.3163/21.5093 vs 21.1487; +-1 optimal). Round 4b: LGB trained on residual (y - TE_v5) added back at scales 1.0/0.5/0.25/0.1 -> 22.0654/21.3879/21.2106/21.1592, monotonically approaching TE-only as scale->0.",
+    "blend_oof_rmse": 21.1487,
+    "ref_te_only_rmse": 21.1487,
+    "delta_vs_prev_round": 0.0,
+    "notes": "NEGATIVE RESULT (kept as documentation): no residual signal exists beyond the smoothed location-week structure -- sensor features are noise even for the residual. Confirms s3e20 boundary condition: when target is near-constant across years per (loc,week), structure fully saturates the predictable signal. Iteration stopped per protocol (wider window + residual model both non-improving).",
+    "submission_file": null,
+    "schema_version": 2,
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 21.1487,
+    "cv": {
+      "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+      "n_splits": 3,
+      "seed": 42
+    }
+  }
+]

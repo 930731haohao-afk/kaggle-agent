@@ -1,0 +1,43 @@
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but LGBMRegressor was fitted with feature names
+  warnings.warn(
+train (79023, 76)  test (24353, 75)
+dropped 7 sensor cols with >90% missing; keep 63 sensors
+  holdout 2019 [LGB] RMSE=34.2845
+  holdout 2019 [XGB] RMSE=29.1947
+  holdout 2019 [CAT] RMSE=29.8861
+  holdout 2020 [LGB] RMSE=33.0785
+  holdout 2020 [XGB] RMSE=29.3523
+  holdout 2020 [CAT] RMSE=29.5795
+  holdout 2021 [LGB] RMSE=30.2490
+  holdout 2021 [XGB] RMSE=26.5759
+  holdout 2021 [CAT] RMSE=27.3123
+
+--- per-model OOF RMSE (LOYO) --- [164s]
+  LGB: OOF=32.5813  folds=[34.285, 33.078, 30.249]
+  XGB: OOF=28.4029  folds=[29.195, 29.352, 26.576]
+  CAT: OOF=28.9487  folds=[29.886, 29.58, 27.312]
+pure loc-week-mean OOF RMSE = 22.6488
+
+BEST blend {'LGB': np.float64(0.0), 'XGB': np.float64(0.0), 'CAT': np.float64(0.0), 'TE': np.float64(1.0)}  OOF RMSE = 22.6488
+
+Wrote competitions/playground-series-s3e20/submissions/sub_v2_blend_22.6488_20260703_101209.csv  shape=(24353, 2)
+count    24353.000000
+mean        82.191800
+std        144.425519
+min          0.000000
+25%         10.093289
+50%         46.318612
+75%        109.460442
+max       3021.981900
+Name: emission, dtype: float64
+Logged experiment #4 to competitions/playground-series-s3e20/experiments.json
