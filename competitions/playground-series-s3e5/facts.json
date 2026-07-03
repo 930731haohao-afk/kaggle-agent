@@ -1,0 +1,286 @@
+{
+  "competition": {
+    "name": "playground-series-s3e5",
+    "url": "https://www.kaggle.com/competitions/playground-series-s3e5",
+    "description": "Predict wine quality (ordinal)",
+    "problem_type": "classification",
+    "evaluation_metric": "quadratic_weighted_kappa",
+    "optimization_direction": "maximize",
+    "target_column": "quality",
+    "id_column": "Id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false,
+      "daily_submission_limit": 5
+    },
+    "notes": "Aygun et al. Nature 2026 Kaggle Playground benchmark (Season 3 Episode 5)."
+  },
+  "material_level": "full",
+  "status_md_present": true,
+  "experiments": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:03:41",
+      "source_format": "generic_batch",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "generic LGB+XGB+CAT blend",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.45223
+        },
+        {
+          "name": "XGB",
+          "score": 0.46995
+        },
+        {
+          "name": "CAT",
+          "score": 0.46768
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.1,
+          "XGB": 0.4,
+          "CAT": 0.5
+        },
+        "score": 0.47871
+      },
+      "score": 0.47871,
+      "n_features": 11,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5
+      },
+      "submission": "sub_generic_0.47871_20260703_120341.csv"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T18:48:21",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "LGB+XGB+CAT regression blend (naive round)",
+      "score": 0.47191,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.4522
+        },
+        {
+          "name": "XGB",
+          "score": 0.46218
+        },
+        {
+          "name": "CAT",
+          "score": 0.47094
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.2,
+          "XGB": 0.2,
+          "CAT": 0.6
+        },
+        "score": 0.47191
+      },
+      "postprocess": [
+        "round_to_nearest_int",
+        "clip[3,8]"
+      ],
+      "notes": "Regression blend, same weights as experiment 3, but rounded naively (baseline for measuring the optimized-rounder gain). Not submitted."
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T18:48:21",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "LGB+XGB+CAT regression blend (optimized-rounder)",
+      "score": 0.52687,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "features": [
+        "fixed acidity",
+        "volatile acidity",
+        "citric acid",
+        "residual sugar",
+        "chlorides",
+        "free sulfur dioxide",
+        "total sulfur dioxide",
+        "density",
+        "pH",
+        "sulphates",
+        "alcohol",
+        "free_so2_ratio",
+        "bound_so2",
+        "fixed_to_volatile_acid",
+        "citric_to_volatile_acid",
+        "total_acid",
+        "alcohol_x_sulphates",
+        "alcohol_to_density",
+        "alcohol_x_density",
+        "sugar_to_alcohol",
+        "acid_ph_ratio"
+      ],
+      "n_features": 21,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.4522
+        },
+        {
+          "name": "XGB",
+          "score": 0.46218
+        },
+        {
+          "name": "CAT",
+          "score": 0.47094
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.2,
+          "XGB": 0.2,
+          "CAT": 0.6
+        },
+        "score": 0.52687
+      },
+      "postprocess": [
+        "OptimizedRounder(cutpoints=[3.642, 4.594, 5.657, 6.196, 7.386])",
+        "clip[3,8]"
+      ],
+      "notes": "Final model for submission. Optimized-rounder gain over naive round on the same blend: +0.05496. Baseline (generic pipeline, experiment #1): 0.47871."
+    }
+  ],
+  "best": {
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T18:48:21",
+    "source_format": "v2",
+    "metric": "quadratic_weighted_kappa",
+    "direction": "maximize",
+    "model": "LGB+XGB+CAT regression blend (optimized-rounder)",
+    "score": 0.52687,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42,
+      "strategy": "StratifiedKFold on quality"
+    },
+    "features": [
+      "fixed acidity",
+      "volatile acidity",
+      "citric acid",
+      "residual sugar",
+      "chlorides",
+      "free sulfur dioxide",
+      "total sulfur dioxide",
+      "density",
+      "pH",
+      "sulphates",
+      "alcohol",
+      "free_so2_ratio",
+      "bound_so2",
+      "fixed_to_volatile_acid",
+      "citric_to_volatile_acid",
+      "total_acid",
+      "alcohol_x_sulphates",
+      "alcohol_to_density",
+      "alcohol_x_density",
+      "sugar_to_alcohol",
+      "acid_ph_ratio"
+    ],
+    "n_features": 21,
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.4522
+      },
+      {
+        "name": "XGB",
+        "score": 0.46218
+      },
+      {
+        "name": "CAT",
+        "score": 0.47094
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.2,
+        "XGB": 0.2,
+        "CAT": 0.6
+      },
+      "score": 0.52687
+    },
+    "postprocess": [
+      "OptimizedRounder(cutpoints=[3.642, 4.594, 5.657, 6.196, 7.386])",
+      "clip[3,8]"
+    ],
+    "notes": "Final model for submission. Optimized-rounder gain over naive round on the same blend: +0.05496. Baseline (generic pipeline, experiment #1): 0.47871."
+  },
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:03:41",
+      "score": 0.47871,
+      "source_format": "generic_batch"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T18:48:21",
+      "score": 0.47191,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T18:48:21",
+      "score": 0.52687,
+      "source_format": "v2"
+    }
+  ],
+  "leaderboard": null,
+  "missing": [
+    "leaderboard"
+  ],
+  "unparsed": []
+}
