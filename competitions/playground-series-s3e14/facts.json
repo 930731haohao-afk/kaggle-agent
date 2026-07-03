@@ -1,0 +1,115 @@
+{
+  "competition": {
+    "name": "playground-series-s3e14",
+    "url": "https://www.kaggle.com/competitions/playground-series-s3e14",
+    "description": "Predict wild blueberry yield",
+    "problem_type": "regression",
+    "evaluation_metric": "mae",
+    "optimization_direction": "minimize",
+    "target_column": "yield",
+    "id_column": "id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false,
+      "daily_submission_limit": 5
+    },
+    "notes": "Aygun et al. Nature 2026 Kaggle Playground benchmark (Season 3 Episode 14)."
+  },
+  "material_level": "baseline-only",
+  "status_md_present": false,
+  "experiments": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:11:46",
+      "source_format": "generic_batch",
+      "metric": "mae",
+      "direction": "minimize",
+      "model": "generic LGB+XGB+CAT blend",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 345.32118
+        },
+        {
+          "name": "XGB",
+          "score": 344.13027
+        },
+        {
+          "name": "CAT",
+          "score": 344.24276
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.3,
+          "XGB": 0.3,
+          "CAT": 0.4
+        },
+        "score": 341.40782
+      },
+      "score": 341.40782,
+      "n_features": 16,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5
+      },
+      "submission": "sub_generic_341.40782_20260703_121146.csv"
+    }
+  ],
+  "best": {
+    "experiment_id": 1,
+    "timestamp": "2026-07-03T12:11:46",
+    "source_format": "generic_batch",
+    "metric": "mae",
+    "direction": "minimize",
+    "model": "generic LGB+XGB+CAT blend",
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 345.32118
+      },
+      {
+        "name": "XGB",
+        "score": 344.13027
+      },
+      {
+        "name": "CAT",
+        "score": 344.24276
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.3,
+        "XGB": 0.3,
+        "CAT": 0.4
+      },
+      "score": 341.40782
+    },
+    "score": 341.40782,
+    "n_features": 16,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5
+    },
+    "submission": "sub_generic_341.40782_20260703_121146.csv"
+  },
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:11:46",
+      "score": 341.40782,
+      "source_format": "generic_batch"
+    }
+  ],
+  "leaderboard": null,
+  "missing": [
+    "leaderboard",
+    "feature_list",
+    "cv_seed"
+  ],
+  "unparsed": []
+}
