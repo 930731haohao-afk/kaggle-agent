@@ -35,4 +35,12 @@ fi
 "$CHROME" --headless --disable-gpu --no-sandbox --no-pdf-header-footer \
   --print-to-pdf="$PDF" "file://$(cd "$(dirname "$HTML")" && pwd)/$(basename "$HTML")" 2>/dev/null
 rm -f "$HTML"
+# snap chromium can exit 0 WITHOUT writing the PDF when the output path is
+# outside its sandbox (e.g. this session's /tmp scratchpad) — verify the file
+# actually exists and is non-empty before declaring success. exit 3
+# distinguishes this from exit 2 (chromium missing).
+if [ ! -s "$PDF" ]; then
+  echo "ERROR: chromium exited 0 but no PDF was written at $PDF (sandbox path restriction?)" >&2
+  exit 3
+fi
 echo "wrote $PDF"
