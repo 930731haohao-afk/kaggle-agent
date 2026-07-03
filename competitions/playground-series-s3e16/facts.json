@@ -1,0 +1,197 @@
+{
+  "competition": {
+    "name": "playground-series-s3e16",
+    "url": "https://www.kaggle.com/competitions/playground-series-s3e16",
+    "description": "Predict the age of crabs from physical measurements (Crab Age Dataset)",
+    "problem_type": "regression",
+    "evaluation_metric": "mae",
+    "optimization_direction": "minimize",
+    "target_column": "Age",
+    "id_column": "id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false,
+      "daily_submission_limit": 5
+    },
+    "notes": "- Aygün et al. (Nature 2026) Kaggle Playground benchmark 之一 (Season 3, Episode 16)\n- 74,051 train / 49,368 test rows; 8 features + target Age\n- Sex is categorical (I=infant, M, F); rest are continuous size/weight measures\n- Target Age is a positive integer count (regression, evaluated by MAE)\n- Weight columns are highly correlated (Weight = Shucked + Viscera + Shell approx)\n"
+  },
+  "material_level": "full",
+  "status_md_present": true,
+  "experiments": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T09:18:40",
+      "source_format": "skill_train",
+      "metric": "mae",
+      "direction": "minimize",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 1.35651,
+          "time_s": 30.8
+        },
+        {
+          "name": "XGB",
+          "score": 1.35763,
+          "time_s": 36.7
+        },
+        {
+          "name": "CAT",
+          "score": 1.36162,
+          "time_s": 23.7
+        }
+      ],
+      "model": "LGB+XGB+CAT blend",
+      "ensemble": {
+        "weights": {
+          "LGB": 0.6,
+          "XGB": 0.3,
+          "CAT": 0.1
+        },
+        "score": 1.35589
+      },
+      "score": 1.35589,
+      "postprocess": [
+        "round"
+      ],
+      "features": [
+        "Length",
+        "Diameter",
+        "Height",
+        "Weight",
+        "Shucked Weight",
+        "Viscera Weight",
+        "Shell Weight",
+        "Height_was_zero",
+        "is_infant",
+        "is_male",
+        "is_female",
+        "Shucked Weight_ratio",
+        "Viscera Weight_ratio",
+        "Shell Weight_ratio",
+        "weight_resid",
+        "parts_sum",
+        "diam_len",
+        "height_len",
+        "height_diam",
+        "volume",
+        "density",
+        "shell_density",
+        "meat_to_shell",
+        "shucked_to_shell"
+      ],
+      "n_features": 24,
+      "cv": {
+        "scheme": "5fold_stratified_agebin",
+        "n_splits": 5
+      },
+      "submission": "sub_blend_20260703_091840.csv",
+      "leaderboard": {
+        "public": 1.34356,
+        "private": 1.34075,
+        "submitted": "2026-07-03"
+      }
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T11:57:39",
+      "source_format": "generic_batch",
+      "metric": "mae",
+      "direction": "minimize",
+      "model": "generic LGB+XGB+CAT blend",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 1.3623
+        },
+        {
+          "name": "XGB",
+          "score": 1.35886
+        },
+        {
+          "name": "CAT",
+          "score": 1.35714
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.3,
+          "XGB": 0.2,
+          "CAT": 0.5
+        },
+        "score": 1.35441
+      },
+      "score": 1.35441,
+      "n_features": 8,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5
+      },
+      "submission": "sub_generic_1.35441_20260703_115739.csv"
+    }
+  ],
+  "best": {
+    "experiment_id": 2,
+    "timestamp": "2026-07-03T11:57:39",
+    "source_format": "generic_batch",
+    "metric": "mae",
+    "direction": "minimize",
+    "model": "generic LGB+XGB+CAT blend",
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 1.3623
+      },
+      {
+        "name": "XGB",
+        "score": 1.35886
+      },
+      {
+        "name": "CAT",
+        "score": 1.35714
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.3,
+        "XGB": 0.2,
+        "CAT": 0.5
+      },
+      "score": 1.35441
+    },
+    "score": 1.35441,
+    "n_features": 8,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5
+    },
+    "submission": "sub_generic_1.35441_20260703_115739.csv"
+  },
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T09:18:40",
+      "score": 1.35589,
+      "source_format": "skill_train"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T11:57:39",
+      "score": 1.35441,
+      "source_format": "generic_batch"
+    }
+  ],
+  "leaderboard": {
+    "public": 1.34356,
+    "private": 1.34075,
+    "submitted": "2026-07-03"
+  },
+  "missing": [
+    "cv_seed"
+  ],
+  "unparsed": []
+}
