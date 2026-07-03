@@ -236,16 +236,367 @@
       },
       "submission": "sub_blend_0.83292_20260703_183913.csv",
       "notes": "Reflexion iteration on exp #2: removed scale_pos_weight (XGB) / class_weights (CatBoost) since AUC is rank-based and weighting was hurting XGB/CAT OOF AUC (0.79196/0.77663 in exp #2, both below generic baseline per-model scores). Also reduced LGB num_leaves 15->7 and raised regularization to fight overfitting on 48 correlated engineered features with only 1677 rows."
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T23:29:51",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "LGB Optuna-tuned (full 5-fold CV AUC objective, solo)",
+      "score": 0.837305,
+      "cv": {
+        "strategy": "StratifiedKFold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "DailyRate",
+        "DistanceFromHome",
+        "Education",
+        "EnvironmentSatisfaction",
+        "HourlyRate",
+        "JobInvolvement",
+        "JobLevel",
+        "JobSatisfaction",
+        "MonthlyIncome",
+        "MonthlyRate",
+        "NumCompaniesWorked",
+        "PercentSalaryHike",
+        "PerformanceRating",
+        "RelationshipSatisfaction",
+        "StockOptionLevel",
+        "TotalWorkingYears",
+        "TrainingTimesLastYear",
+        "WorkLifeBalance",
+        "YearsAtCompany",
+        "YearsInCurrentRole",
+        "YearsSinceLastPromotion",
+        "YearsWithCurrManager",
+        "BusinessTravel_le",
+        "BusinessTravel_freq",
+        "Department_le",
+        "Department_freq",
+        "EducationField_le",
+        "EducationField_freq",
+        "Gender_le",
+        "Gender_freq",
+        "JobRole_le",
+        "JobRole_freq",
+        "MaritalStatus_le",
+        "MaritalStatus_freq",
+        "OverTime_le",
+        "OverTime_freq",
+        "role_tenure_ratio",
+        "mgr_tenure_ratio",
+        "promo_ratio",
+        "company_tenure_ratio",
+        "income_per_joblevel",
+        "income_per_year_worked",
+        "satisfaction_avg",
+        "satisfaction_min",
+        "overtime_joblevel",
+        "age_at_join",
+        "companies_per_year"
+      ],
+      "n_features": 48,
+      "base_models": [
+        {
+          "name": "LGB_tuned",
+          "oof_auc": 0.837305
+        }
+      ],
+      "ensemble": {
+        "method": "single_model",
+        "weights": {
+          "LGB_tuned": 1.0
+        }
+      },
+      "notes": "Optuna TPE, 50 trials (timeout 600s, actual 111.3s), objective = direct full 5-fold StratifiedKFold OOF ROC-AUC (data tiny enough that full CV per trial is cheap, no fold-0 proxy needed per experience.md recipe). Best params: {'learning_rate': 0.050253069663926536, 'num_leaves': 3, 'max_depth': 4, 'min_child_samples': 60, 'subsample': 0.8995656675058548, 'colsample_bytree': 0.7246802411328122, 'reg_alpha': 0.06815791273889091, 'reg_lambda': 0.0011513245661312597}. Solo LGB OOF 0.837305 vs exp #3 baseline LGB 0.832925 (improved)."
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-03T23:30:44",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "5-way blend: LGB_orig+XGB+CAT+LGB_tuned+LGB_tuned_seedbag",
+      "score": 0.837776,
+      "cv": {
+        "strategy": "StratifiedKFold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "DailyRate",
+        "DistanceFromHome",
+        "Education",
+        "EnvironmentSatisfaction",
+        "HourlyRate",
+        "JobInvolvement",
+        "JobLevel",
+        "JobSatisfaction",
+        "MonthlyIncome",
+        "MonthlyRate",
+        "NumCompaniesWorked",
+        "PercentSalaryHike",
+        "PerformanceRating",
+        "RelationshipSatisfaction",
+        "StockOptionLevel",
+        "TotalWorkingYears",
+        "TrainingTimesLastYear",
+        "WorkLifeBalance",
+        "YearsAtCompany",
+        "YearsInCurrentRole",
+        "YearsSinceLastPromotion",
+        "YearsWithCurrManager",
+        "BusinessTravel_le",
+        "BusinessTravel_freq",
+        "Department_le",
+        "Department_freq",
+        "EducationField_le",
+        "EducationField_freq",
+        "Gender_le",
+        "Gender_freq",
+        "JobRole_le",
+        "JobRole_freq",
+        "MaritalStatus_le",
+        "MaritalStatus_freq",
+        "OverTime_le",
+        "OverTime_freq",
+        "role_tenure_ratio",
+        "mgr_tenure_ratio",
+        "promo_ratio",
+        "company_tenure_ratio",
+        "income_per_joblevel",
+        "income_per_year_worked",
+        "satisfaction_avg",
+        "satisfaction_min",
+        "overtime_joblevel",
+        "age_at_join",
+        "companies_per_year"
+      ],
+      "n_features": 48,
+      "base_models": [
+        {
+          "name": "LGB_orig",
+          "oof_auc": 0.832925
+        },
+        {
+          "name": "XGB",
+          "oof_auc": 0.807634
+        },
+        {
+          "name": "CAT",
+          "oof_auc": 0.762684
+        },
+        {
+          "name": "LGB_tuned",
+          "oof_auc": 0.837305
+        },
+        {
+          "name": "LGB_tuned_seed2024",
+          "oof_auc": 0.83345
+        }
+      ],
+      "ensemble": {
+        "method": "grid_weight_search",
+        "weights": {
+          "LGB_orig": 0.30000000000000004,
+          "XGB": 0.0,
+          "CAT": 0.0,
+          "LGB_tuned": 0.7000000000000001,
+          "LGB_tuned_seed2024": 0.0
+        }
+      },
+      "submission": "sub_blend_0.83778_20260703_233044.csv",
+      "notes": "Round 2 of Phase B iteration: added round-1 Optuna-tuned LGB (fold-fixed CV AUC objective, exp #4 solo 0.837305) to the exp #3 pool (LGB_orig/XGB/CAT unchanged params) rather than replacing, plus a seed=2024 bag of the same tuned params (seed bagging is the cheap residual gain after tuning per experience.md). Weight search result: {'LGB_orig': 0.3, 'XGB': 0.0, 'CAT': 0.0, 'LGB_tuned': 0.7, 'LGB_tuned_seed2024': 0.0}."
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-03T23:31:25",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "CatBoost native categorical retry (allow_writing_files=False)",
+      "score": 0.814259,
+      "cv": {
+        "strategy": "StratifiedKFold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "BusinessTravel",
+        "DailyRate",
+        "Department",
+        "DistanceFromHome",
+        "Education",
+        "EducationField",
+        "EnvironmentSatisfaction",
+        "Gender",
+        "HourlyRate",
+        "JobInvolvement",
+        "JobLevel",
+        "JobRole",
+        "JobSatisfaction",
+        "MaritalStatus",
+        "MonthlyIncome",
+        "MonthlyRate",
+        "NumCompaniesWorked",
+        "OverTime",
+        "PercentSalaryHike",
+        "PerformanceRating",
+        "RelationshipSatisfaction",
+        "StockOptionLevel",
+        "TotalWorkingYears",
+        "TrainingTimesLastYear",
+        "WorkLifeBalance",
+        "YearsAtCompany",
+        "YearsInCurrentRole",
+        "YearsSinceLastPromotion",
+        "YearsWithCurrManager",
+        "role_tenure_ratio",
+        "mgr_tenure_ratio",
+        "promo_ratio",
+        "company_tenure_ratio",
+        "income_per_joblevel",
+        "income_per_year_worked",
+        "satisfaction_avg",
+        "satisfaction_min",
+        "age_at_join",
+        "companies_per_year"
+      ],
+      "n_features": 40,
+      "base_models": [
+        {
+          "name": "CAT_native_best",
+          "oof_auc": 0.814259
+        }
+      ],
+      "ensemble": {
+        "method": "single_model",
+        "weights": {
+          "CAT_native_best": 1.0
+        }
+      },
+      "notes": "Open item retry: native cat_features=['BusinessTravel', 'Department', 'EducationField', 'Gender', 'JobRole', 'MaritalStatus', 'OverTime'] passed directly to CatBoost (raw strings, no label/freq pre-encoding) instead of the label+freq-encoded features used by LGB/XGB/exp#3-CAT. Swept 3 depth/reg configs (best: {'depth': 3, 'l2_leaf_reg': 16.0, 'learning_rate': 0.05}). Result 0.814259 vs exp #3 encoded-CAT 0.762684 (RESCUED)."
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-03T23:33:03",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "6-way blend incl. CAT_native (rank_average_same_weights)",
+      "score": 0.83814,
+      "cv": {
+        "strategy": "StratifiedKFold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "DailyRate",
+        "DistanceFromHome",
+        "Education",
+        "EnvironmentSatisfaction",
+        "HourlyRate",
+        "JobInvolvement",
+        "JobLevel",
+        "JobSatisfaction",
+        "MonthlyIncome",
+        "MonthlyRate",
+        "NumCompaniesWorked",
+        "PercentSalaryHike",
+        "PerformanceRating",
+        "RelationshipSatisfaction",
+        "StockOptionLevel",
+        "TotalWorkingYears",
+        "TrainingTimesLastYear",
+        "WorkLifeBalance",
+        "YearsAtCompany",
+        "YearsInCurrentRole",
+        "YearsSinceLastPromotion",
+        "YearsWithCurrManager",
+        "BusinessTravel_le",
+        "BusinessTravel_freq",
+        "Department_le",
+        "Department_freq",
+        "EducationField_le",
+        "EducationField_freq",
+        "Gender_le",
+        "Gender_freq",
+        "JobRole_le",
+        "JobRole_freq",
+        "MaritalStatus_le",
+        "MaritalStatus_freq",
+        "OverTime_le",
+        "OverTime_freq",
+        "role_tenure_ratio",
+        "mgr_tenure_ratio",
+        "promo_ratio",
+        "company_tenure_ratio",
+        "income_per_joblevel",
+        "income_per_year_worked",
+        "satisfaction_avg",
+        "satisfaction_min",
+        "overtime_joblevel",
+        "age_at_join",
+        "companies_per_year"
+      ],
+      "n_features": 48,
+      "base_models": [
+        {
+          "name": "LGB_orig",
+          "oof_auc": 0.832925
+        },
+        {
+          "name": "XGB",
+          "oof_auc": 0.807634
+        },
+        {
+          "name": "CAT_orig",
+          "oof_auc": 0.762684
+        },
+        {
+          "name": "LGB_tuned",
+          "oof_auc": 0.837305
+        },
+        {
+          "name": "LGB_tuned_seed2024",
+          "oof_auc": 0.83345
+        },
+        {
+          "name": "CAT_native",
+          "oof_auc": 0.814259
+        }
+      ],
+      "ensemble": {
+        "method": "rank_average_same_weights",
+        "weights": {
+          "LGB_orig": 0.30000000000000004,
+          "XGB": 0.0,
+          "CAT_orig": 0.0,
+          "LGB_tuned": 0.7000000000000001,
+          "LGB_tuned_seed2024": 0.0,
+          "CAT_native": 0.0
+        }
+      },
+      "submission": "sub_blend_0.83814_20260703_233303.csv",
+      "notes": "Round 4: added CAT_native (round 3, solo 0.814259, rescued from 0.7627 via native cat_features but still weakest member) to the round-2 5-way pool, and compared prob-space weight-search blend (0.837776) vs rank-average with the same weights (0.838140). Weight search: {'LGB_orig': 0.3, 'XGB': 0.0, 'CAT_orig': 0.0, 'LGB_tuned': 0.7, 'LGB_tuned_seed2024': 0.0, 'CAT_native': 0.0}. Prior best (round 2): 0.837776."
     }
   ],
   "best": {
-    "experiment_id": 3,
-    "timestamp": "2026-07-03T18:39:13",
+    "experiment_id": 7,
+    "timestamp": "2026-07-03T23:33:03",
     "source_format": "v2",
     "metric": "roc_auc",
     "direction": "maximize",
-    "model": "LGB+XGB+CAT blend (engineered features, v2 no-imbalance-weighting)",
-    "score": 0.832925,
+    "model": "6-way blend incl. CAT_native (rank_average_same_weights)",
+    "score": 0.83814,
     "cv": {
       "strategy": "StratifiedKFold",
       "n_splits": 5,
@@ -304,7 +655,7 @@
     "n_features": 48,
     "base_models": [
       {
-        "name": "LGB",
+        "name": "LGB_orig",
         "oof_auc": 0.832925
       },
       {
@@ -312,20 +663,35 @@
         "oof_auc": 0.807634
       },
       {
-        "name": "CAT",
+        "name": "CAT_orig",
         "oof_auc": 0.762684
+      },
+      {
+        "name": "LGB_tuned",
+        "oof_auc": 0.837305
+      },
+      {
+        "name": "LGB_tuned_seed2024",
+        "oof_auc": 0.83345
+      },
+      {
+        "name": "CAT_native",
+        "oof_auc": 0.814259
       }
     ],
     "ensemble": {
-      "method": "grid_weight_search",
+      "method": "rank_average_same_weights",
       "weights": {
-        "LGB": 1.0,
+        "LGB_orig": 0.30000000000000004,
         "XGB": 0.0,
-        "CAT": 0.0
+        "CAT_orig": 0.0,
+        "LGB_tuned": 0.7000000000000001,
+        "LGB_tuned_seed2024": 0.0,
+        "CAT_native": 0.0
       }
     },
-    "submission": "sub_blend_0.83292_20260703_183913.csv",
-    "notes": "Reflexion iteration on exp #2: removed scale_pos_weight (XGB) / class_weights (CatBoost) since AUC is rank-based and weighting was hurting XGB/CAT OOF AUC (0.79196/0.77663 in exp #2, both below generic baseline per-model scores). Also reduced LGB num_leaves 15->7 and raised regularization to fight overfitting on 48 correlated engineered features with only 1677 rows."
+    "submission": "sub_blend_0.83814_20260703_233303.csv",
+    "notes": "Round 4: added CAT_native (round 3, solo 0.814259, rescued from 0.7627 via native cat_features but still weakest member) to the round-2 5-way pool, and compared prob-space weight-search blend (0.837776) vs rank-average with the same weights (0.838140). Weight search: {'LGB_orig': 0.3, 'XGB': 0.0, 'CAT_orig': 0.0, 'LGB_tuned': 0.7, 'LGB_tuned_seed2024': 0.0, 'CAT_native': 0.0}. Prior best (round 2): 0.837776."
   },
   "trajectory": [
     {
@@ -344,6 +710,30 @@
       "experiment_id": 3,
       "timestamp": "2026-07-03T18:39:13",
       "score": 0.832925,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-03T23:29:51",
+      "score": 0.837305,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-03T23:30:44",
+      "score": 0.837776,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-03T23:31:25",
+      "score": 0.814259,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-03T23:33:03",
+      "score": 0.83814,
       "source_format": "v2"
     }
   ],
