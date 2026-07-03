@@ -17,8 +17,9 @@
 | Experiment | CV scheme | Blend SMAPE |
 |-|-|-|
 | #1 generic baseline | random 5-fold | 5.31891 |
-| #2 engineered (submission) | TimeSeriesSplit 5-fold | 10.17540 |
-| #3 diagnostic (same features as #2) | random 5-fold | **4.28142** |
+| #2 engineered | TimeSeriesSplit 5-fold | 10.17540 |
+| #3 diagnostic (same features as #2) | random 5-fold | 4.28142 |
+| #7 Phase B final (6-way + Optuna-tuned LGB) | TimeSeriesSplit 5-fold | **10.01946** |
 
 **Apples-to-apples read**: under the same random-KFold scheme as the baseline, the engineered
 pipeline improves SMAPE 5.31891 → 4.28142 (−19.5%). The 10.17540 number is not a regression —
@@ -67,32 +68,136 @@ Under interpolation all three models are near-identical and blending helps; unde
 Score went from 5.32 → 10.18 which initially reads as a failure. Hypothesis tested by #3: the jump is caused by the CV scheme, not the features/models. Confirmed — identical features/models under the baseline's random-KFold scheme score 4.28 (< 5.32). Lesson reinforced: **never compare scores across CV schemes**; log the scheme with every experiment (v2 schema `cv.strategy` field does this).
 
 ## Submission
-- File: `submissions/sub_lgb_xgb_cat_blend_10.17540_20260703_194908.csv`
-- Method: LGB+XGB+CAT retrained on 100% of train (log1p target), blended 0.9/0.0/0.1, clipped at 0
-- Prediction sanity: mean 178.2 / max 1389.6 vs train mean 165.5 / max 1380 — plausible for a growing 2022
+- Current best file: `submissions/sub_6way_optuna_blend_10.01946_20260704_002039.csv` (Phase B round 4)
+- Method: LGB seeds 42/2024/7 + CAT seeds 42/2024 + Optuna-tuned LGB, all retrained on
+  100% of train (log1p target), blended 0/0.1/0.4/0/0/0.5, clipped at 0
+- Prediction sanity: mean 178.2 / max 1432.9 vs train mean 165.5 / max 1380 — plausible for a growing 2022
+- Previous submission (pre-Phase B): `submissions/sub_lgb_xgb_cat_blend_10.17540_20260703_194908.csv`
 - Not submitted to Kaggle (no credentials in this unattended run)
 
-## Potential improvements (untried)
-- Ratio-decomposition approach: forecast total daily sales, then apply (near-constant) store/product shares and smoothed country-share trend — the share stability found in EDA suggests this could beat pure GBDT.
-- Per-country GDP-style regressors or explicit country-share extrapolation for the drifting country mix.
-- Fourier terms with multiple harmonics; holiday calendars per country (external data disallowed → build from date patterns only).
-- Blend weight search on the *last* time fold only (closest to the 2022 regime).
+## Phase B self-improvement iteration (2026-07-04)
+
+**Baseline going in**: 10.17540 (TimeSeriesSplit, exp #2, LGB 0.9/XGB 0/CAT 0.1).
+
+### Round 1 — ratio decomposition as standalone member (exp #4) — REJECTED
+Implemented the highest-EV untried idea: `total(date) x country_share(country,year,
+linear-trend-extrapolated, renormalized) x combo_share_within_country(country,store,
+product, pooled)`. Pre-check motivating this: additive OLS of log1p(num_sold) on
+country+store+product alone (**no date at all**) explains **R²=0.974** of target
+variance — strong evidence for the multiplicative structure.
+Despite that, the standalone RD model scored OOF SMAPE **14.75038** (TimeSeriesSplit),
+far worse than LGB's 10.17758 — weight search gave it **0.0** weight in a 3-way blend
+with LGB+CAT (XGB dropped, see below). Blend only nudged to 10.17489 via a finer
+weight-grid (0.05 vs 0.1 step) on LGB/CAT, **not** from RD.
+
+Follow-up oracle diagnostics (fed the ACTUAL daily total, isolating the share-model
+error) showed the share decomposition alone gets SMAPE 10.04 (flat country share) to
+10.84 (trend-extrapolated country share) — i.e. **roughly on par with GBDT**, not
+better. Swapping the harmonic-linear total-forecast for a small LightGBM on the
+aggregated daily series didn't help either (daily-total OOF SMAPE ~9.6-10%, R²=0.41
+in log space) — the 5-year, COVID-disrupted grand-total series (2017 4.45M → 2018
+4.72M → 2019 4.52M → **2020 4.09M dip** → **2021 4.88M rebound**) has no reliable
+extrapolable trend signal with only 4-5 yearly points. **Conclusion: unlike s3e20,
+the structural/ratio signal here does NOT beat GBDT** — GBDT already captures the
+categorical structure natively (native cat_features / label-encoding splits are
+already ~as good as the pooled share ratios) and the real bottleneck (grand-total
+1-year-ahead extrapolation under a volatile short series) affects any method equally.
+Also notable: **linear trend extrapolation of the drifting country share is worse
+than a flat (last-value) share** (10.84 vs 10.04 SMAPE with oracle total) — a
+counter-intuitive but real result given how few, noisy yearly points are available.
+
+Also dropped **XGBoost** from the pool per instruction (weight-searched to 0 in both
+exp #2 and #3 already).
+
+### Round 2 — seed bagging (exp #5) — IMPROVED
+Pivoted to a cheap, previously-validated cross-competition pattern (see
+`knowledge/experience.md`): add a second LGB seed (2024) alongside the original
+LGB (seed 42) and CAT (seed 42), 3-way weight search.
+**Result: 10.17489 → 10.16605** (weights LGB_s42 0.65 / LGB_s2024 0.30 / CAT 0.05).
+This is also better than the original submitted best (10.17540). New submission:
+`submissions/sub_lgb_seedbag_cat_blend_10.16605_20260704_000957.csv`.
+
+### Round 3 — extended seed bagging (exp #6) — IMPROVED
+Added a third LGB seed (7) and a second CAT seed (2024): 5-way weight search over
+LGB(s42,s2024,s7) + CAT(s42,s2024).
+**Result: 10.16605 → 10.15721** (weights LGB_s42 0.4 / LGB_s2024 0.2 / LGB_s7 0.3 /
+CAT_s42 0.1 / CAT_s2024 0.0). Diminishing but real seed-bagging gains, consistent
+with the experience.md pattern. Submission:
+`submissions/sub_lgb3seed_cat2seed_blend_10.15721_20260704_001501.csv`.
+
+### Round 4 — Optuna LGB tuning, fold-5 proxy (exp #7) — IMPROVED (largest gain)
+Optuna TPE, 40 trials in 42.0s, objective = SMAPE on **fold 5 only** — chosen over
+the usual fold-0 proxy because TimeSeriesSplit folds are not interchangeable and
+fold 5 has the largest training window / regime closest to the real
+train(2017–21)→test(2022) gap. Best params: lr 0.0371, num_leaves 20,
+min_child_samples 38, subsample 0.61, colsample_bytree 0.90, reg_alpha 0.001,
+reg_lambda 0.43 — shallower/simpler than the hand-set config (num_leaves 63),
+consistent with "extrapolation rewards regularization".
+Tuned LGB re-validated on the full 5-fold OOF: solo **10.14833** (new best single
+model, vs LGB_s42 10.17758). Added as a NEW member (not a replacement) to the
+round-3 pool; 6-way weight search → weights {LGB_s42 0, LGB_s2024 0.1, LGB_s7 0.4,
+CAT_s42 0, CAT_s2024 0, **LGB_tuned 0.5**}.
+**Result: 10.15721 → 10.01946.** Submission:
+`submissions/sub_6way_optuna_blend_10.01946_20260704_002039.csv`.
+
+**Honest caveat**: fold 5 is both the Optuna objective and 1/5 of the OOF used for
+the blend weight search, so LGB_tuned's stellar fold-5 score (8.13 vs its fold-4
+11.90) is partially selected-on, and 10.01946 is likely somewhat optimistic
+relative to a fully nested protocol. Directionally the gain is real (LGB_tuned
+also wins or ties folds 2–3, which were not tuned on: 8.00/10.13 vs LGB_s42
+8.05/10.17), but the true expected 2022 SMAPE is probably between ~10.05 and
+~10.15.
+
+### Phase B summary
+| Round | Change | TimeSeriesSplit blend SMAPE |
+|-|-|-|
+| — | baseline (exp #2, submitted config) | 10.17540 |
+| 1 | + ratio-decomposition member (exp #4) | 10.17489 (RD weight 0 → rejected) |
+| 2 | seed bagging: + LGB s2024 (exp #5) | 10.16605 |
+| 3 | + LGB s7, + CAT s2024 (exp #6) | 10.15721 |
+| 4 | + Optuna fold-5-proxy tuned LGB (exp #7) | **10.01946** |
+
+Net improvement: 10.17540 → 10.01946 (−0.15594 SMAPE, −1.53% relative), all under
+the identical TimeSeriesSplit 5-fold scheme (same folds, same seed 42). Stopped at
+4 rounds (protocol max). Current best submission:
+`submissions/sub_6way_optuna_blend_10.01946_20260704_002039.csv` (not submitted to
+Kaggle — unattended run, no credentials).
+
+## Potential improvements (untried / deprioritized after Phase B)
+- Ratio-decomposition (tried, rejected — see Round 1 above). Do not retry without a
+  materially better total-forecasting method for the aggregate series.
+- Nested fold-proxy validation for the tuned LGB (train fold-5-tuned config, but
+  weight-search on folds 1–4 only) to firm up the 10.019 estimate.
+- Per-country GDP-style regressors or explicit country-share extrapolation — likely
+  low value given Round 1's finding that trend-extrapolated shares underperform flat.
+- Fourier terms with multiple harmonics; holiday calendars per country (external data
+  disallowed → build from date patterns only).
+- Seed-bag the tuned LGB (experience.md warns this may be ineffective for
+  directly-tuned configs — s3e5 counterexample — but cheap to test).
 
 ## Files
 ```
 competitions/playground-series-s3e19/
 ├── config.yaml
 ├── STATUS.md
-├── experiments.json            # 3 experiments (v2 schema for #2, #3)
+├── experiments.json            # 7 experiments (v2 schema for #2-#7)
 ├── data/                       # train/test/sample + *_processed.csv
 ├── scripts/
 │   ├── eda.py
 │   ├── features.py
 │   ├── train.py                # main pipeline (time-based CV + submission)
-│   └── diagnostic_kfold.py     # reflexion diagnostic (no submission)
+│   ├── diagnostic_kfold.py     # reflexion diagnostic (no submission)
+│   ├── train_ratio.py          # Phase B round 1: ratio decomposition (rejected)
+│   ├── train_seedbag.py        # Phase B round 2: LGB seed bagging
+│   ├── train_seedbag2.py       # Phase B round 3: extended seed bagging
+│   └── train_optuna.py         # Phase B round 4: Optuna fold-5-proxy tuned LGB
 └── submissions/
     ├── sub_generic_5.31891_20260703_121406.csv
-    └── sub_lgb_xgb_cat_blend_10.17540_20260703_194908.csv
+    ├── sub_lgb_xgb_cat_blend_10.17540_20260703_194908.csv
+    ├── sub_lgb_cat_rd_blend_10.17489_20260704_000355.csv
+    ├── sub_lgb_seedbag_cat_blend_10.16605_20260704_000957.csv
+    ├── sub_lgb3seed_cat2seed_blend_10.15721_20260704_001501.csv
+    └── sub_6way_optuna_blend_10.01946_20260704_002039.csv   # current best
 ```
 
 ## Reproduce

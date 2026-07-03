@@ -248,6 +248,403 @@
         "grid_step": 0.1
       },
       "notes": "Reflexion diagnostic, not used for submission. Purpose: isolate whether experiment #2's much worse SMAPE (10.17540 vs baseline 5.31891) comes from the CV *scheme* (time-based extrapolation is a harder, more honest test) or from the engineered feature set itself. Same 20 features and same 3 models as experiment #2, but validated with plain shuffled row-level 5-fold KFold (matching what the baseline experiment #1 almost certainly used, since its log has no time-awareness field). If this diagnostic scores close to or better than 5.31891, the feature engineering is sound and the CV-scheme choice (documented in scripts/eda.py) fully explains the gap."
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-04T00:03:25",
+      "source_format": "v2",
+      "metric": "smape",
+      "direction": "minimize",
+      "model": "LGB+CAT+RatioDecomp blend (XGB dropped: weight-searched to 0 in exp #2/#3)",
+      "score": 10.17489,
+      "cv": {
+        "strategy": "TimeSeriesSplit-5fold-on-unique-dates",
+        "n_splits": 5,
+        "per_model_fold_scores": {
+          "LGB": [
+            12.42911,
+            8.05177,
+            10.1666,
+            9.69818,
+            10.54223
+          ],
+          "CAT": [
+            13.54313,
+            8.58337,
+            10.25081,
+            10.35037,
+            10.92552
+          ],
+          "RD": [
+            14.26701,
+            13.26383,
+            15.21532,
+            13.21033,
+            17.79539
+          ]
+        }
+      },
+      "features": [
+        "year",
+        "month",
+        "day",
+        "dow",
+        "day_of_year",
+        "weekofyear",
+        "quarter",
+        "is_weekend",
+        "is_month_start",
+        "is_month_end",
+        "is_new_year",
+        "month_sin",
+        "month_cos",
+        "dow_sin",
+        "dow_cos",
+        "doy_sin",
+        "doy_cos",
+        "country_cat",
+        "store_cat",
+        "product_cat"
+      ],
+      "n_features": 20,
+      "base_models": [
+        {
+          "model": "LightGBM",
+          "oof_smape": 10.17758
+        },
+        {
+          "model": "CatBoost",
+          "oof_smape": 10.73064
+        },
+        {
+          "model": "RatioDecomp",
+          "oof_smape": 14.75038
+        }
+      ],
+      "ensemble": {
+        "type": "weighted-average-oof-search",
+        "weights": {
+          "LGB": 0.95,
+          "CAT": 0.05,
+          "RD": 0.0
+        },
+        "grid_step": 0.05
+      },
+      "submission": "sub_lgb_cat_rd_blend_10.17489_20260704_000355.csv",
+      "notes": "Phase B round 1: added ratio-decomposition model (RD) as a new ensemble member. RD = harmonic linear regression (not GBDT) for the daily grand-total trend/seasonality x per-country linear-trend-extrapolated share (renormalized to sum 1 per year) x pooled store/product share within country (near-constant per EDA). Pre-check: additive OLS of log1p(num_sold) on country+store+product alone (no date) explains R^2=0.974 of target variance, motivating this decomposition. Same TimeSeriesSplit 5-fold CV as exp #2 for direct comparability. XGB dropped per instruction (weight-searched to 0 twice already)."
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-04T00:09:24",
+      "source_format": "v2",
+      "metric": "smape",
+      "direction": "minimize",
+      "model": "LGB(seed42)+LGB(seed2024)+CAT seed-bagged blend (RD rejected in exp #4; XGB dropped)",
+      "score": 10.166045,
+      "cv": {
+        "strategy": "TimeSeriesSplit-5fold-on-unique-dates",
+        "n_splits": 5,
+        "per_model_fold_scores": {
+          "LGB_s42": [
+            12.42911,
+            8.05177,
+            10.1666,
+            9.69818,
+            10.54223
+          ],
+          "LGB_s2024": [
+            12.38748,
+            8.02529,
+            10.04975,
+            9.49415,
+            11.09642
+          ],
+          "CAT": [
+            13.54313,
+            8.58337,
+            10.25081,
+            10.35037,
+            10.92552
+          ]
+        }
+      },
+      "features": [
+        "year",
+        "month",
+        "day",
+        "dow",
+        "day_of_year",
+        "weekofyear",
+        "quarter",
+        "is_weekend",
+        "is_month_start",
+        "is_month_end",
+        "is_new_year",
+        "month_sin",
+        "month_cos",
+        "dow_sin",
+        "dow_cos",
+        "doy_sin",
+        "doy_cos",
+        "country_cat",
+        "store_cat",
+        "product_cat"
+      ],
+      "n_features": 20,
+      "base_models": [
+        {
+          "model": "LightGBM_seed42",
+          "oof_smape": 10.17758
+        },
+        {
+          "model": "LightGBM_seed2024",
+          "oof_smape": 10.21062
+        },
+        {
+          "model": "CatBoost_seed42",
+          "oof_smape": 10.73064
+        }
+      ],
+      "ensemble": {
+        "type": "weighted-average-oof-search",
+        "weights": {
+          "LGB_s42": 0.65,
+          "LGB_s2024": 0.3,
+          "CAT": 0.05
+        },
+        "grid_step": 0.05
+      },
+      "submission": "sub_lgb_seedbag_cat_blend_10.16605_20260704_000957.csv",
+      "notes": "Phase B round 2: after ratio-decomposition (exp #4) was rejected (RD weight-searched to 0, solo OOF 14.75 vs LGB 10.18 -- the structural signal does NOT beat GBDT here, unlike s3e20; oracle diagnostics showed the bottleneck is grand-total trend forecasting under a volatile 5-year/COVID-affected series, not the store/product/country share decomposition itself, which roughly matches GBDT when given the true total), pivoted to a cheap validated pattern from experience.md: seed bagging the dominant LGB member. Added LGB(seed=2024) alongside the original LGB(seed=42) and CAT(seed=42); XGB stays dropped (weight-searched to 0 in exp #2/#3)."
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-04T00:13:58",
+      "source_format": "v2",
+      "metric": "smape",
+      "direction": "minimize",
+      "model": "LGB(3 seeds)+CAT(2 seeds) seed-bagged blend (RD rejected in exp #4; XGB dropped)",
+      "score": 10.157212,
+      "cv": {
+        "strategy": "TimeSeriesSplit-5fold-on-unique-dates",
+        "n_splits": 5,
+        "per_model_fold_scores": {
+          "LGB_s42": [
+            12.42911,
+            8.05177,
+            10.1666,
+            9.69818,
+            10.54223
+          ],
+          "LGB_s2024": [
+            12.38748,
+            8.02529,
+            10.04975,
+            9.49415,
+            11.09642
+          ],
+          "LGB_s7": [
+            12.40334,
+            8.03213,
+            10.08806,
+            10.1116,
+            10.33717
+          ],
+          "CAT_s42": [
+            13.54313,
+            8.58337,
+            10.25081,
+            10.35037,
+            10.92552
+          ],
+          "CAT_s2024": [
+            13.49015,
+            8.04572,
+            11.38131,
+            10.02255,
+            11.97943
+          ]
+        }
+      },
+      "features": [
+        "year",
+        "month",
+        "day",
+        "dow",
+        "day_of_year",
+        "weekofyear",
+        "quarter",
+        "is_weekend",
+        "is_month_start",
+        "is_month_end",
+        "is_new_year",
+        "month_sin",
+        "month_cos",
+        "dow_sin",
+        "dow_cos",
+        "doy_sin",
+        "doy_cos",
+        "country_cat",
+        "store_cat",
+        "product_cat"
+      ],
+      "n_features": 20,
+      "base_models": [
+        {
+          "model": "LightGBM_seed42",
+          "oof_smape": 10.17758
+        },
+        {
+          "model": "LightGBM_seed2024",
+          "oof_smape": 10.21062
+        },
+        {
+          "model": "LightGBM_seed7",
+          "oof_smape": 10.19446
+        },
+        {
+          "model": "CatBoost_seed42",
+          "oof_smape": 10.73064
+        },
+        {
+          "model": "CatBoost_seed2024",
+          "oof_smape": 10.98383
+        }
+      ],
+      "ensemble": {
+        "type": "weighted-average-oof-search",
+        "weights": {
+          "LGB_s42": 0.4,
+          "LGB_s2024": 0.2,
+          "LGB_s7": 0.3,
+          "CAT_s42": 0.1,
+          "CAT_s2024": -0.0
+        },
+        "grid_step": 0.1
+      },
+      "submission": "sub_lgb3seed_cat2seed_blend_10.15721_20260704_001501.csv",
+      "notes": "Phase B round 3: extended round 2's seed bagging (exp #5, 10.17489 -> 10.16605 with LGB seed42+seed2024+CAT seed42) by adding a third LGB seed (7) and a second CAT seed (2024), 5-way weight search (grid_step 0.1, all 5 members present so search space is large -- coarser step than exp #5 to keep runtime bounded). Tests whether seed-bagging gains continue with diminishing returns (per experience.md pattern across s3e9/s3e14) or have plateaued after round 2."
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-04T00:19:34",
+      "source_format": "v2",
+      "metric": "smape",
+      "direction": "minimize",
+      "model": "LGB(3 seeds)+CAT(2 seeds)+LGB_tuned(Optuna fold-5-proxy) blend",
+      "score": 10.019463,
+      "cv": {
+        "strategy": "TimeSeriesSplit-5fold-on-unique-dates",
+        "n_splits": 5,
+        "per_model_fold_scores": {
+          "LGB_s42": [
+            12.42911,
+            8.05177,
+            10.1666,
+            9.69818,
+            10.54223
+          ],
+          "LGB_s2024": [
+            12.38748,
+            8.02529,
+            10.04975,
+            9.49403,
+            11.09642
+          ],
+          "LGB_s7": [
+            12.40334,
+            8.03213,
+            10.08806,
+            10.1116,
+            10.33717
+          ],
+          "CAT_s42": [
+            13.54313,
+            8.58337,
+            10.25081,
+            10.35037,
+            10.92552
+          ],
+          "CAT_s2024": [
+            13.49015,
+            8.04572,
+            11.38131,
+            10.02255,
+            11.97943
+          ],
+          "LGB_tuned": [
+            12.58263,
+            8.00041,
+            10.1317,
+            11.89833,
+            8.12856
+          ]
+        },
+        "optuna_fold_proxy": "fold_5 (last, largest training window -- closest to real 2022 extrapolation)"
+      },
+      "features": [
+        "year",
+        "month",
+        "day",
+        "dow",
+        "day_of_year",
+        "weekofyear",
+        "quarter",
+        "is_weekend",
+        "is_month_start",
+        "is_month_end",
+        "is_new_year",
+        "month_sin",
+        "month_cos",
+        "dow_sin",
+        "dow_cos",
+        "doy_sin",
+        "doy_cos",
+        "country_cat",
+        "store_cat",
+        "product_cat"
+      ],
+      "n_features": 20,
+      "base_models": [
+        {
+          "model": "LGB_s42",
+          "oof_smape": 10.17758
+        },
+        {
+          "model": "LGB_s2024",
+          "oof_smape": 10.21059
+        },
+        {
+          "model": "LGB_s7",
+          "oof_smape": 10.19446
+        },
+        {
+          "model": "CAT_s42",
+          "oof_smape": 10.73064
+        },
+        {
+          "model": "CAT_s2024",
+          "oof_smape": 10.98383
+        },
+        {
+          "model": "LGB_tuned",
+          "oof_smape": 10.14833
+        }
+      ],
+      "ensemble": {
+        "type": "weighted-average-oof-search",
+        "weights": {
+          "LGB_s42": 0.0,
+          "LGB_s2024": 0.1,
+          "LGB_s7": 0.4,
+          "CAT_s42": 0.0,
+          "CAT_s2024": 0.0,
+          "LGB_tuned": 0.5
+        },
+        "grid_step": 0.1
+      },
+      "submission": "sub_6way_optuna_blend_10.01946_20260704_002039.csv",
+      "notes": "Phase B round 4: Optuna (TPE, 40 trials, 42.0s) tuned LGB hyperparameters using fold 5 (the last TimeSeriesSplit fold, closest in spirit to the real 2022 extrapolation gap) as a fast single-fold proxy objective; best fold-5 SMAPE 8.19294 with params {'learning_rate': 0.037125798221945665, 'num_leaves': 20, 'min_child_samples': 38, 'subsample': 0.6105071416341405, 'colsample_bytree': 0.9049138633231821, 'reg_alpha': 0.0010341384364001556, 'reg_lambda': 0.43011494608925666, 'n_estimators': 2000, 'random_state': 42, 'verbosity': -1}. Tuned config re-validated on the full 5-fold OOF and added as a NEW pool member (not a replacement) alongside the round-3 seed-bagged LGB/CAT pool; weight search over all 6 members decides the final blend."
     }
   ],
   "best": {
@@ -350,6 +747,30 @@
       "experiment_id": 3,
       "timestamp": "2026-07-03T19:53:27",
       "score": 4.281421,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-04T00:03:25",
+      "score": 10.17489,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-04T00:09:24",
+      "score": 10.166045,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-04T00:13:58",
+      "score": 10.157212,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-04T00:19:34",
+      "score": 10.019463,
       "source_format": "v2"
     }
   ],
