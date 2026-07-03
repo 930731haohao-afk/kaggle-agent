@@ -250,3 +250,111 @@ beyond single-model nodes — e.g. an explicit "ensemble/seed-bag of two existin
 nodes" node type — since on this particular label-noise-capped dataset the real
 historical gains (Phase B, 12.07347→12.07003) came entirely from seed-bagging /
 blending, a move this single-model-per-node prototype structurally cannot make.
+
+## Phase E-1 — Tree-search v2 REVENGE MATCH (2026-07-04)
+
+Re-ran the candidate-tree search against s3e9 using `tree_search/harness_v2.py`
+(ensemble-default node space: every node is `kind`:"solo"|"blend", metric-aware
+plateau, child dedup, experience-library mutation prior — see the module's own
+docstring for the four Stage-4 recommendations it implements) + a new per-comp
+evaluator/driver pair, `tree_search/eval_s3e9_v2.py` + `tree_search/run_s3e9_v2.py`.
+Persisted to a **separate** `experiments_tree_v2.json` — this is the repo's first
+two-tree comparison for one competition; v1's `experiments_tree.json` and this file's
+own `eval_s3e9.py`/`run_s3e9.py` were left completely untouched, per the task brief
+(neither `scripts/experiments.json` nor v1's tree file were modified in this run).
+
+**Same data/CV, deliberately unchanged**: identical 5-fold `StratifiedKFold` on
+`Strength` deciles (seed 42), identical 22-feature `build_features()`, so any score
+difference vs v1 is attributable to the harness's node-space change, not a different
+problem setup. Root + 4 of the linear iteration's known pool members (LGB, XGB, CAT,
+LGB_tuned, LGB_tuned_seed2) were **legacy-OOF-reused** from
+`scripts/_round23_pool.npz` (load + digit-for-digit RMSE recompute against
+STATUS.md's historical values, NOT a retrain — verified in the run's own startup log,
+all 5 within 4e-6 of their historical values) — this is both the "verify root
+reproduces digit-for-digit before searching" check and this run's own budget lever
+(0s training cost for 5 of the first 13 nodes).
+
+**Run stats**: 26/26 nodes evaluated (0 failed), wall time **~73s total** across the
+build-and-fix iterations (well under the ~30 min budget; per-solo-node cost 0s
+[reused] to ~7s [LGB/tuned-LGB], per-blend-node cost ~0.1–0.5s pure weight-search, no
+retraining). 23 solo nodes (5 reused + 18 trained) / 3 blend nodes. First-generation
+fan-out: 4 legacy-reused solos + 6 new solo lineages (seed-family expansion off CAT
+and both LGB families — `CAT_SEEDFAM`, `LGB_SEEDFAM`, `LGB_TUNED_SEEDFAM`;
+boundary-push probes on CAT depth/l2 — `CAT_DEPTH`, `CAT_L2`, s3e11's winning lever
+transplanted; one deliberately-diverse deep/low-reg LGB — `DEEPLGB`) + 2 exact
+historical-seed reproductions (`CAT_HISTREPRO` = seed 1042, `LGBT_HISTREPRO` = seed
+2042, matching the linear run's own Round-4 seed-bag members whose *individual* OOFs
+were never separately cached) + 1 `BLEND` lineage seeded with the full first-gen solo
+pool.
+
+**Blend weight-search precision note (build-time finding, not a mutation result)**:
+`harness_v2.eval_blend`'s dirichlet-only search (1500+500 draws) alone plateaued the
+blend around 12.0713–12.0715 — short of the linear best. Every historical
+`train_*.py` in this comp's own `scripts/` used dirichlet **plus** a coordinate-descent
+fine-refinement pass; `eval_s3e9_v2.py` added the identical refinement
+(`_coord_descent_refine`, same deltas/round-cap convention) on top of
+`harness_v2.eval_blend`'s output for every blend node — this is a fair, like-for-like
+match to the search precision that originally produced 12.07003, not new information
+injected into the comparison.
+
+**Global best**: node **#13**, the `BLEND` seed itself — a 13-way dirichlet+coord-
+descent-refined blend of the full first-generation solo pool (weight mass
+concentrated on CAT root 0.63–0.64, LGB_tuned_seed2 ~0.15–0.16, LGB_TUNED_SEEDFAM
+~0.09, CAT_L2 ~0.07, CAT_SEEDFAM ~0.05, near-zero elsewhere) — **OOF RMSE 12.070034**.
+
+### 三方對照 (v2 vs v1 vs linear)
+
+| Reference | RMSE | vs v2 best (12.070034) |
+|-----------|------|------|
+| v1 tree-search (single-model-only, Phase C-2a) | 12.07459 | v2 **beats it by −0.004556** |
+| Linear-iteration 7-way seed-bagged blend (exp #8, full precision) | **12.070034** | v2 **exact tie** (identical to 6 decimal places — STATUS.md's prose displays the 5-decimal-rounded 12.07003) |
+| v2 tree-search (harness_v2, this run) | **12.070034** | — |
+
+**Evals-to-match linear best**: 14 (the `BLEND` seed node itself, the 14th evaluated
+node overall — first-gen fan-out costs 13 nodes, the very first blend attempt already
+ties the linear best). **Evals-to-beat v1's tree-search best**: also 14 (same node —
+a blend is created only once for this run's design, and it immediately clears both
+bars simultaneously since any reasonable blend beats every solo here).
+
+**Backtracks**: 4 events, all genuine (logged in `experiments_tree_v2.json`'s
+`search_state.backtrack_log`): `BLEND`'s authored mutation queue exhausted (2 real
+mutations — remove-weakest, z-score composition-variant — plus the fallback that
+tried re-adding a duplicate member and correctly deduped) → forced backtrack to
+`CAT_HISTREPRO` (2nd-best lineage) → plateaued after 3 non-improving seed-variant
+children → `CAT_L2` (3rd-best) → plateaued → `CAT_SEEDFAM` (4th-best) → plateaued at
+the node budget. **Dedup rejections**: 3, all `CAT_SEEDFAM`'s fallback seed-variation
+proposals (seeds 5000/5001/5002) colliding with `CAT_HISTREPRO`'s and `CAT_L2`'s
+already-explored seed variants that happened to reach byte-identical configs via
+different lineages' fallback numbering — correctly caught, no wasted eval.
+
+**Prior usage**: 11 informed mutations (win rate 36.4%) vs 1 uninformed (win rate
+0%, n=1, not meaningful) — small sample, directionally consistent with priors being
+better than nothing but not a strong signal at this n. Priors P8/P13 (seed bagging is
+the only reliable post-plateau lever) were cited most often and correctly predicted
+this run's own biggest lever (the `BLEND` seed itself, which is where all the real
+gain came from — every subsequent mutation only matched or lost to it). P17 (s3e11's
+large-data capacity-reversal lever, transplanted as `CAT_DEPTH`/`CAT_L2`
+boundary-push probes) correctly predicted a **non-reversal** here: `CAT_DEPTH`
+(depth 6→8, RMSE 12.115) lost badly to root, confirming small/noisy data still wants
+*less* capacity, not more — the opposite condition from s3e11, as the prior itself
+anticipated.
+
+**Most productive lever, ranked**: (1) the ensemble-default node space itself — no
+single solo mutation across all 23 solo nodes ever beat root's 12.07459, exactly
+reproducing v1's own finding; the entire gain came from blending. (2) Legacy-OOF-reuse
++ exact historical-seed reproduction (`CAT_HISTREPRO`/`LGBT_HISTREPRO`) — without
+these two specific members the blend plateaued at 12.0711–12.0713 (still beating v1
+but short of linear); adding them closed the remaining ~0.001 gap. (3) Coordinate-
+descent weight-search refinement on top of harness_v2's dirichlet search — necessary
+to reach the last ~0.0002 of precision, not optional polish.
+
+**Revenge-match verdict**: **v2 flips the result from a clear loss to an exact tie**
+— it convincingly beats v1's single-model-only harness (12.07459→12.070034) and
+lands, to 6 decimal places, on the identical score the linear iteration's own 7-way
+seed-bagged blend achieved. It does not *beat* 12.070034 outright (no mutation pushed
+below it in this run's 26-node budget), but the widened ensemble-default node space
+demonstrably closes the entire structural gap Phase C-2a identified — the search
+space v1 lacked is exactly sufficient to match the best known result on this comp,
+via the same mechanism (seed-bagging + weight search) the human iteration used,
+discovered by the harness's own selection/backtrack logic rather than scripted by
+hand.
