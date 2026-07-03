@@ -1,0 +1,953 @@
+{
+  "comp": "playground-series-s3e14",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: s3e14 current-best single LGB (regression_l1, num_leaves=63, 21 pruned features) from scripts/train_v2.py-train_v6.py -- solo OOF ~342.02154 per STATUS.md; the fair single-model reference point for this tree-search run",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 63,
+          "min_child_samples": 30,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 342.02154,
+      "status": "evaluated",
+      "wall_s": 52.1
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[CAT] model-type: CatBoost solo w/ native categorical handling of the 7 low-cardinality env cols -- STATUS.md exp #2/#3 unchanged config, solo ~343.60196; weakest of the 3 original solo learners but a useful blend-diversity source (ordered boosting differs structurally from LGB/XGB)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "MAE",
+          "eval_metric": "MAE",
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "depth": 7,
+          "l2_leaf_reg": 5.0,
+          "random_seed": 42,
+          "native_cat": true
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 343.60196,
+      "status": "evaluated",
+      "wall_s": 41.8
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[XGB] model-type: XGB solo, STATUS.md exp #2/#3 unchanged config -- solo ~342.21778",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "reg:absoluteerror",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "max_depth": 6,
+          "min_child_weight": 5,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42,
+          "eval_metric": "mae",
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 342.21778,
+      "status": "evaluated",
+      "wall_s": 19.8
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[LGBTUNED] hyperparam: reuse the Optuna fold-0-proxy tuned LGB params from STATUS.md exp #4 (50-trial recipe already proven -- per experience.md do not re-run Optuna, add tuned solo to the pool) -- solo ~341.68775, currently the strongest single learner on this data",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "subsample_freq": 1,
+          "random_state": 42,
+          "learning_rate": 0.015389816656608301,
+          "num_leaves": 63,
+          "max_depth": 5,
+          "min_child_samples": 30,
+          "subsample": 0.7899031923134097,
+          "colsample_bytree": 0.6842166782718478,
+          "reg_alpha": 0.012648426946439915,
+          "reg_lambda": 0.00346212601571565,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 341.68775,
+      "status": "evaluated",
+      "wall_s": 50.3
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[SEEDBAG] seed variation: identical root LGB params, random_state 42->2024 -- STATUS.md exp #7's 5th blend member (solo ~342.04208); cheapest diversity source per experience.md's seed-bagging recipe, seeded upfront so BLEND can reference it without a mid-run detour to train a new solo model",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 63,
+          "min_child_samples": 30,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 2024,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 342.04208,
+      "status": "evaluated",
+      "wall_s": 52.1
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[FEAT] feature-subset SUBTRACTION beyond the already-pruned 21: drop the 3 remaining raw temp-range columns (MaxOfUpperTRange/MinOfUpperTRange/MaxOfLowerTRange) now that temp_spread already condenses them (computed before the drop, so still valid) -- 18-feature test, UNTESTED in the linear-iteration run (which stopped pruning at 21); doubles as a differently-featured blend-diversity member if it holds up",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 63,
+          "min_child_samples": 30,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange",
+            "MaxOfUpperTRange",
+            "MinOfUpperTRange",
+            "MaxOfLowerTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 18
+        }
+      },
+      "score": 342.02283,
+      "status": "evaluated",
+      "wall_s": 45.2
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[REG] hyperparam nudge: regularize further along the proven 'regularize over capacity' axis -- num_leaves 63->31, min_child_samples 30->50 (root's leaves=63 is high for ~15k rows; untested whether it already undershot the sweet spot)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 31,
+          "min_child_samples": 50,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 342.93033,
+      "status": "evaluated",
+      "wall_s": 40.1
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: 3-way blend of root LGB(#0) + XGB(#2) + CAT(#1) CACHED OOF, dirichlet weight search + snap -- mirrors STATUS.md exp #3's starting point (340.75961 raw / 340.71180 snapped) as this tree-search's entry point into ensemble space; no retraining, evaluates in <1s",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "snap": true
+        },
+        "result": {
+          "members": [
+            0,
+            2,
+            1
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node1"
+          ],
+          "weights": [
+            0.46664710173953794,
+            0.2587542424903711,
+            0.2745986557700911
+          ],
+          "method": "dirichlet",
+          "raw_score": 340.75606,
+          "snap_score": 340.693,
+          "used_snap": true
+        }
+      },
+      "score": 340.693,
+      "status": "evaluated",
+      "wall_s": 0.8
+    },
+    {
+      "id": 8,
+      "parent_id": 7,
+      "mutation": "[BLEND] BLEND: add LGBTUNED solo member (#3) -> 4-way, dirichlet weight search + snap (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "snap": true
+        },
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node1",
+            "node3"
+          ],
+          "weights": [
+            0.35373718294749357,
+            0.2231517879847823,
+            0.23335017011334652,
+            0.18976085895437753
+          ],
+          "method": "dirichlet",
+          "raw_score": 340.69716,
+          "snap_score": 340.59485,
+          "used_snap": true
+        }
+      },
+      "score": 340.59485,
+      "status": "evaluated",
+      "wall_s": 0.8
+    },
+    {
+      "id": 9,
+      "parent_id": 8,
+      "mutation": "[BLEND] BLEND: add SEEDBAG solo member (#4) -> 5-way, dirichlet weight search + snap (parent=#8)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          4
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "snap": true
+        },
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3,
+            4
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node1",
+            "node3",
+            "node4"
+          ],
+          "weights": [
+            0.20537140572494297,
+            0.1889789659194993,
+            0.25105642245596466,
+            0.13775526086518683,
+            0.21683794503440615
+          ],
+          "method": "dirichlet",
+          "raw_score": 340.6516,
+          "snap_score": 340.54904,
+          "used_snap": true
+        }
+      },
+      "score": 340.54904,
+      "status": "evaluated",
+      "wall_s": 0.8
+    },
+    {
+      "id": 10,
+      "parent_id": 9,
+      "mutation": "[BLEND] BLEND: weight-search method comparison dirichlet->grid_simplex on the same 5 members (same pool, different search strategy) (parent=#9)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          4
+        ],
+        "weight_search": "grid_simplex",
+        "postprocess": {
+          "snap": true
+        },
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3,
+            4
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node1",
+            "node3",
+            "node4"
+          ],
+          "weights": [
+            0.2,
+            0.2,
+            0.25,
+            0.15000000000000002,
+            0.19999999999999996
+          ],
+          "method": "grid_simplex",
+          "raw_score": 340.65207,
+          "snap_score": 340.59891,
+          "used_snap": true
+        }
+      },
+      "score": 340.59891,
+      "status": "evaluated",
+      "wall_s": 0.5
+    },
+    {
+      "id": 11,
+      "parent_id": 9,
+      "mutation": "[BLEND] BLEND: add FEAT solo member (#5) -> 6-way, dirichlet weight search + snap (parent=#9)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          4,
+          5
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "snap": true
+        },
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3,
+            4,
+            5
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node1",
+            "node3",
+            "node4",
+            "node5"
+          ],
+          "weights": [
+            0.1071360201485377,
+            0.1869922758772767,
+            0.23839054585504074,
+            0.14210919975549427,
+            0.17517810525049846,
+            0.1501938531131522
+          ],
+          "method": "dirichlet",
+          "raw_score": 340.64596,
+          "snap_score": 340.52635,
+          "used_snap": true
+        }
+      },
+      "score": 340.52635,
+      "status": "evaluated",
+      "wall_s": 0.8
+    },
+    {
+      "id": 12,
+      "parent_id": 11,
+      "mutation": "[BLEND] BLEND: remove lowest-weight member #0 (w=0.107) -> leaner 5-way, test whether it was truly adding value or just being tolerated by the weight search (parent=#11)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          1,
+          3,
+          4,
+          5
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "snap": true
+        },
+        "result": {
+          "members": [
+            2,
+            1,
+            3,
+            4,
+            5
+          ],
+          "names": [
+            "node2",
+            "node1",
+            "node3",
+            "node4",
+            "node5"
+          ],
+          "weights": [
+            0.20963491674794363,
+            0.24811082648793956,
+            0.13378451802997232,
+            0.20295162064333952,
+            0.205518118090805
+          ],
+          "method": "dirichlet",
+          "raw_score": 340.66165,
+          "snap_score": 340.63637,
+          "used_snap": true
+        }
+      },
+      "score": 340.63637,
+      "status": "evaluated",
+      "wall_s": 0.8
+    },
+    {
+      "id": 13,
+      "parent_id": 11,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #6 -> 7-way (parent=#11)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          4,
+          5,
+          6
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "snap": true
+        },
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3,
+            4,
+            5,
+            6
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node1",
+            "node3",
+            "node4",
+            "node5",
+            "node6"
+          ],
+          "weights": [
+            0.11116520965976709,
+            0.22350096161221966,
+            0.23053253411185606,
+            0.15483170404824534,
+            0.12512874285266262,
+            0.15224523501851828,
+            0.0025956126967309786
+          ],
+          "method": "dirichlet",
+          "raw_score": 340.65062,
+          "snap_score": 340.60446,
+          "used_snap": true
+        }
+      },
+      "score": 340.60446,
+      "status": "evaluated",
+      "wall_s": 0.8
+    },
+    {
+      "id": 14,
+      "parent_id": 11,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #6 -> 7-way (parent=#11)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          4,
+          5,
+          6
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "snap": true
+        },
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3,
+            4,
+            5,
+            6
+          ],
+          "names": [
+            "node0",
+            "node2",
+            "node1",
+            "node3",
+            "node4",
+            "node5",
+            "node6"
+          ],
+          "weights": [
+            0.11116520965976709,
+            0.22350096161221966,
+            0.23053253411185606,
+            0.15483170404824534,
+            0.12512874285266262,
+            0.15224523501851828,
+            0.0025956126967309786
+          ],
+          "method": "dirichlet",
+          "raw_score": 340.65062,
+          "snap_score": 340.60446,
+          "used_snap": true
+        }
+      },
+      "score": 340.60446,
+      "status": "evaluated",
+      "wall_s": 0.8
+    },
+    {
+      "id": 15,
+      "parent_id": 3,
+      "mutation": "[LGBTUNED] LGBTUNED: seed variation on the Optuna-tuned params (random_state 42->7) -- second, independent seed-bag source distinct from root's seedbag (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "subsample_freq": 1,
+          "random_state": 7,
+          "learning_rate": 0.015389816656608301,
+          "num_leaves": 63,
+          "max_depth": 5,
+          "min_child_samples": 30,
+          "subsample": 0.7899031923134097,
+          "colsample_bytree": 0.6842166782718478,
+          "reg_alpha": 0.012648426946439915,
+          "reg_lambda": 0.00346212601571565,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 341.71805,
+      "status": "evaluated",
+      "wall_s": 55.1
+    },
+    {
+      "id": 16,
+      "parent_id": 3,
+      "mutation": "[LGBTUNED] LGBTUNED: lr 0.0154->0.01 with more estimators, finer optimization pace (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 4000,
+          "subsample_freq": 1,
+          "random_state": 42,
+          "learning_rate": 0.01,
+          "num_leaves": 63,
+          "max_depth": 5,
+          "min_child_samples": 30,
+          "subsample": 0.7899031923134097,
+          "colsample_bytree": 0.6842166782718478,
+          "reg_alpha": 0.012648426946439915,
+          "reg_lambda": 0.00346212601571565,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 341.68861,
+      "status": "evaluated",
+      "wall_s": 81.4
+    },
+    {
+      "id": 17,
+      "parent_id": 3,
+      "mutation": "[LGBTUNED] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "subsample_freq": 1,
+          "random_state": 3000,
+          "learning_rate": 0.015389816656608301,
+          "num_leaves": 63,
+          "max_depth": 5,
+          "min_child_samples": 30,
+          "subsample": 0.7899031923134097,
+          "colsample_bytree": 0.6842166782718478,
+          "reg_alpha": 0.012648426946439915,
+          "reg_lambda": 0.00346212601571565,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "temp_avg",
+            "log_clonesize",
+            "rain_intensity",
+            "MinOfLowerTRange",
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 21
+        }
+      },
+      "score": 341.95945,
+      "status": "evaluated",
+      "wall_s": 48.1
+    },
+    {
+      "id": 18,
+      "parent_id": 5,
+      "mutation": "[FEAT] FEAT: further trim seeds_per_fruitset (ratio feature, likely redundant with fruitset_x_seeds product term) -- 17 feats (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 63,
+          "min_child_samples": 30,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange",
+            "MaxOfLowerTRange",
+            "MaxOfUpperTRange",
+            "MinOfLowerTRange",
+            "MinOfUpperTRange",
+            "log_clonesize",
+            "rain_intensity",
+            "seeds_per_fruitset",
+            "temp_avg"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 17
+        }
+      },
+      "score": 342.28883,
+      "status": "evaluated",
+      "wall_s": 52.9
+    },
+    {
+      "id": 19,
+      "parent_id": 5,
+      "mutation": "[FEAT] FEAT: restore MaxOfUpperTRange only, isolate its marginal effect vs the aggressive 18-feature trim (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 63,
+          "min_child_samples": 30,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42,
+          "early_stopping_rounds": 150
+        },
+        "features": {
+          "drop": [
+            "AverageOfLowerTRange",
+            "AverageOfUpperTRange",
+            "MaxOfLowerTRange",
+            "MinOfLowerTRange",
+            "MinOfUpperTRange",
+            "log_clonesize",
+            "rain_intensity",
+            "temp_avg"
+          ]
+        },
+        "postprocess": {
+          "snap": false
+        },
+        "result": {
+          "n_feats": 19
+        }
+      },
+      "score": 342.2641,
+      "status": "evaluated",
+      "wall_s": 48.4
+    }
+  ],
+  "search_state": {
+    "active_lineage": 5,
+    "streak": {
+      "7": 3,
+      "3": 3,
+      "5": 2
+    },
+    "plateaued": [
+      7,
+      3
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 14,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 340.52635"
+      },
+      {
+        "at_node_id": 17,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive children of the active lineage failed to beat prior global best 340.52635"
+      }
+    ]
+  }
+}

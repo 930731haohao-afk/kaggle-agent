@@ -98,6 +98,17 @@ def _next_id(tree: dict) -> int:
     return (max((n["id"] for n in tree["nodes"]), default=-1)) + 1
 
 
+def next_id(tree: dict) -> int:
+    """Public wrapper around _next_id — the id that the next add_node(...) call will
+    assign. Added for Phase C-2b (s3e14 ensemble-node space): a solo node's evaluator
+    caches its OOF/test prediction matrix to disk keyed by node id so later blend nodes
+    can reference it without retraining, and the eval call happens BEFORE add_node
+    assigns the real id. Safe only under the same strictly-sequential, single-writer
+    usage every run_*.py driver in this repo already assumes (no concurrent add_node
+    calls between next_id() and the matching add_node() for that node)."""
+    return _next_id(tree)
+
+
 def add_root(tree: dict, mutation: str, config: dict, score, status: str, wall_s: float) -> int:
     assert not tree["nodes"], "root already exists"
     nid = 0

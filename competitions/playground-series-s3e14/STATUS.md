@@ -118,3 +118,78 @@ uv run python3 competitions/playground-series-s3e14/scripts/train_v5.py  # Phase
 uv run python3 competitions/playground-series-s3e14/scripts/train_v6.py  # Phase B round 4 (exp #7, best; needs oof_v4.npz)
 ```
 No Kaggle submission was made (no credentials in this environment).
+
+## Appendix — Tree search with ensemble node space (Phase C-2b, 2026-07-04)
+
+ERA-inspired candidate-tree search (`tree_search/run_s3e14.py` + `tree_search/eval_s3e14.py` +
+`tree_search/harness.py`), second prototype run. Innovation vs the s3e9 first run: the node
+space has TWO kinds — `solo` (one model config; its OOF/test matrix is cached to
+`tree_search/cache_s3e14/` at eval time) and `blend` (Dirichlet- or grid-simplex weight search
+over cached member OOF matrices + snap-to-grid, **no retraining → <1 s per node**). This
+directly fixes the s3e9 verdict that a single-model-only node space cannot reach where linear
+iteration won. Same 5-fold KFold seed 42 folds as all linear-iteration scripts (verified: solo
+seeds reproduce STATUS numbers to 5 decimals — 342.02154 / 342.21778 / 343.60196 / 341.68775).
+
+### Headline result
+| | Linear iteration (Phase A+B) | Tree search (this run) |
+|---|---|---|
+| Best OOF MAE | 340.59891 (exp #7, 5-way blend) | **340.52635** (node #11, 6-way blend) |
+| Evaluations to reach its best | ~7 experiments × 3–5 model trainings each | 12 evaluations (8 solo trainings + 4 blend evals) |
+| Evaluations to match/beat 340.59891 | — | **9** (node #8, 4-way blend, 340.59485) |
+| Total training wall time | ~4 rounds × 3–6 min (Phase B alone) | **593 s (9.9 min)** for all 20 nodes |
+| Backtracks | n/a (linear) | 2 (plateau rule, both after best was found) |
+
+Tree best **340.52635 beats linear best 340.59891 by 0.073** (~0.02% relative — small but real
+on this metric scale, and 2.6× larger than linear Phase B's final round-4 gain of 0.028).
+
+### Winning node (#11)
+6-way blend of cached solo OOFs: root LGB (#0) + XGB (#2) + CAT (#1) + Optuna-tuned LGB (#3) +
+seed-2024 LGB (#4) + **18-feature trimmed LGB (#5)** — Dirichlet weight search
+(w ≈ 0.11/0.19/0.24/0.14/0.18/0.15), raw 340.64596 → snap 340.52635. The 6th member (drop the
+3 remaining raw temp-range cols on top of the 21-feature set; solo 342.02283, i.e. no solo
+gain over root) was never tried by linear iteration — its value is pure blend diversity,
+exactly the kind of node only reachable once the tree can expand into ensemble space.
+
+Sanity anchor: node #10 (grid_simplex method-swap probe on the 5-way pool) reproduced linear
+exp #7 **exactly** — raw 340.65207, snap 340.59891, weights 0.2/0.2/0.25/0.15/0.2 — confirming
+the two runs are fold-for-fold comparable, and isolating the Dirichlet search (2×3000 samples
++ concentration refinement) as the source of the finer-weight edge (#9: 340.54904 vs
+#10: 340.59891 on identical members).
+
+### Score-vs-evaluations curve (global best after each evaluation)
+```
+eval  1 (root solo LGB)      342.02154
+eval  4 (tuned-LGB seed)     341.68775   <- best any solo node ever reaches
+eval  8 (3-way blend seed)   340.69300   <- first blend node
+eval  9 (4-way +tunedLGB)    340.59485   <- BEATS linear best (340.59891)
+eval 10 (5-way +seedbag)     340.54904
+eval 12 (6-way +FEAT)        340.52635   <- final best; evals 13-20 never improved on it
+```
+Node-efficiency verdict: linear iteration needed 2 Phase-A iterations + 4 Phase-B rounds (each
+a full multi-model pipeline) to reach 340.59891; the tree passed that score at evaluation 9 of
+20 (~5.7 min wall), and each ensemble improvement after the solo pool existed cost <1 s.
+
+### Search trace (20 evaluated nodes: 12 solo / 8 blend, 0 failed)
+- Root + 6 solo seeds (CAT/XGB/LGBTUNED/SEEDBAG/FEAT/REG) populate the OOF cache (~5 min).
+- BLEND lineage seeded (3-way mirror of exp #3) → immediately best → harness keeps pulling on
+  it: +tuned (→340.59485), +seedbag (→340.54904), method-swap probe (grid_simplex, 340.59891),
+  +FEAT (→**340.52635**), remove-weakest probe (340.63637 — confirms even the lowest-weight
+  member pulls its weight), +REG 7-way (340.60446, REG weight ~0.003 — the weight search
+  correctly rejects the weak solo), fallback re-run (unchanged).
+- Backtrack #1 at node 14 (BLEND: 3 non-improving children) → LGBTUNED lineage: seed-7 variant
+  341.71805, finer-lr 341.68861, seed fallback 341.95945 → backtrack #2 at node 17 → FEAT
+  lineage: 2 further trims (342.28883 / 342.26410, both worse) → 20-node budget reached.
+- Both backtracks fired *after* the global best was already found — the plateau rule correctly
+  spent the residual budget probing solo space for new diversity sources rather than
+  over-expanding a saturated blend lineage.
+
+### Verdict vs the s3e9 run
+The C-2b hypothesis is confirmed: with ensemble nodes in the search space, tree search matched
+linear iteration's Phase-B result in 9 evaluations and then exceeded it with a blend
+composition (6-way incl. a differently-featured member) that the linear process never
+proposed. Caching solo OOFs at eval time is the enabling mechanism — blend nodes are ~50×
+cheaper than solo nodes, so ensemble-space exploration is nearly free once the pool exists.
+Full tree: `experiments_tree.json`; OOF caches regenerable via the run script, gitignored.
+
+Reproduce: `uv run python3 tree_search/run_s3e14.py` (delete `experiments_tree.json` and
+`tree_search/cache_s3e14/` first for a from-scratch run; the script resumes otherwise).

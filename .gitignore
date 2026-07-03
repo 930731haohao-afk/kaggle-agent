@@ -18,6 +18,10 @@ catboost_info/
 # Cached OOF/pred arrays for iteration rounds (regenerable, large)
 competitions/*/scripts/cache/
 
+# Tree-search solo-node OOF/pred caches (regenerable via tree_search/run_*.py, kept out
+# of git -- experiments_tree.json itself is small and stays tracked)
+tree_search/cache_*/
+
 # Credentials / secrets
 .env
 kaggle.json
