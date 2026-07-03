@@ -1,0 +1,355 @@
+{
+  "competition": {
+    "name": "playground-series-s3e3",
+    "url": "https://www.kaggle.com/competitions/playground-series-s3e3",
+    "description": "Predict employee attrition",
+    "problem_type": "classification",
+    "evaluation_metric": "roc_auc",
+    "optimization_direction": "maximize",
+    "target_column": "Attrition",
+    "id_column": "id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false,
+      "daily_submission_limit": 5
+    },
+    "notes": "Aygun et al. Nature 2026 Kaggle Playground benchmark (Season 3 Episode 3)."
+  },
+  "material_level": "full",
+  "status_md_present": true,
+  "experiments": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:02:55",
+      "source_format": "generic_batch",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "generic LGB+XGB+CAT blend",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.81362
+        },
+        {
+          "name": "XGB",
+          "score": 0.80511
+        },
+        {
+          "name": "CAT",
+          "score": 0.80874
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.7,
+          "XGB": 0.0,
+          "CAT": 0.3
+        },
+        "score": 0.81624
+      },
+      "score": 0.81624,
+      "n_features": 33,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5
+      },
+      "submission": "sub_generic_0.81624_20260703_120255.csv"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T18:37:57",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "LGB+XGB+CAT blend (engineered features)",
+      "score": 0.819008,
+      "cv": {
+        "strategy": "StratifiedKFold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "DailyRate",
+        "DistanceFromHome",
+        "Education",
+        "EnvironmentSatisfaction",
+        "HourlyRate",
+        "JobInvolvement",
+        "JobLevel",
+        "JobSatisfaction",
+        "MonthlyIncome",
+        "MonthlyRate",
+        "NumCompaniesWorked",
+        "PercentSalaryHike",
+        "PerformanceRating",
+        "RelationshipSatisfaction",
+        "StockOptionLevel",
+        "TotalWorkingYears",
+        "TrainingTimesLastYear",
+        "WorkLifeBalance",
+        "YearsAtCompany",
+        "YearsInCurrentRole",
+        "YearsSinceLastPromotion",
+        "YearsWithCurrManager",
+        "BusinessTravel_le",
+        "BusinessTravel_freq",
+        "Department_le",
+        "Department_freq",
+        "EducationField_le",
+        "EducationField_freq",
+        "Gender_le",
+        "Gender_freq",
+        "JobRole_le",
+        "JobRole_freq",
+        "MaritalStatus_le",
+        "MaritalStatus_freq",
+        "OverTime_le",
+        "OverTime_freq",
+        "role_tenure_ratio",
+        "mgr_tenure_ratio",
+        "promo_ratio",
+        "company_tenure_ratio",
+        "income_per_joblevel",
+        "income_per_year_worked",
+        "satisfaction_avg",
+        "satisfaction_min",
+        "overtime_joblevel",
+        "age_at_join",
+        "companies_per_year"
+      ],
+      "n_features": 48,
+      "base_models": [
+        {
+          "name": "LGB",
+          "oof_auc": 0.819008
+        },
+        {
+          "name": "XGB",
+          "oof_auc": 0.79196
+        },
+        {
+          "name": "CAT",
+          "oof_auc": 0.776632
+        }
+      ],
+      "ensemble": {
+        "method": "grid_weight_search",
+        "weights": {
+          "LGB": 1.0,
+          "XGB": 0.0,
+          "CAT": 0.0
+        }
+      },
+      "submission": "sub_blend_0.81901_20260703_183757.csv",
+      "notes": "Feature-engineered run: dropped constant cols (EmployeeCount/StandardHours/Over18), label+freq encoded categoricals, tenure/income/satisfaction engineered features (45 total). scale_pos_weight / class_weights used for imbalance. Weight-searched blend of LGB/XGB/CAT beats generic baseline (exp #1, 0.81624)."
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T18:39:13",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "LGB+XGB+CAT blend (engineered features, v2 no-imbalance-weighting)",
+      "score": 0.832925,
+      "cv": {
+        "strategy": "StratifiedKFold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "DailyRate",
+        "DistanceFromHome",
+        "Education",
+        "EnvironmentSatisfaction",
+        "HourlyRate",
+        "JobInvolvement",
+        "JobLevel",
+        "JobSatisfaction",
+        "MonthlyIncome",
+        "MonthlyRate",
+        "NumCompaniesWorked",
+        "PercentSalaryHike",
+        "PerformanceRating",
+        "RelationshipSatisfaction",
+        "StockOptionLevel",
+        "TotalWorkingYears",
+        "TrainingTimesLastYear",
+        "WorkLifeBalance",
+        "YearsAtCompany",
+        "YearsInCurrentRole",
+        "YearsSinceLastPromotion",
+        "YearsWithCurrManager",
+        "BusinessTravel_le",
+        "BusinessTravel_freq",
+        "Department_le",
+        "Department_freq",
+        "EducationField_le",
+        "EducationField_freq",
+        "Gender_le",
+        "Gender_freq",
+        "JobRole_le",
+        "JobRole_freq",
+        "MaritalStatus_le",
+        "MaritalStatus_freq",
+        "OverTime_le",
+        "OverTime_freq",
+        "role_tenure_ratio",
+        "mgr_tenure_ratio",
+        "promo_ratio",
+        "company_tenure_ratio",
+        "income_per_joblevel",
+        "income_per_year_worked",
+        "satisfaction_avg",
+        "satisfaction_min",
+        "overtime_joblevel",
+        "age_at_join",
+        "companies_per_year"
+      ],
+      "n_features": 48,
+      "base_models": [
+        {
+          "name": "LGB",
+          "oof_auc": 0.832925
+        },
+        {
+          "name": "XGB",
+          "oof_auc": 0.807634
+        },
+        {
+          "name": "CAT",
+          "oof_auc": 0.762684
+        }
+      ],
+      "ensemble": {
+        "method": "grid_weight_search",
+        "weights": {
+          "LGB": 1.0,
+          "XGB": 0.0,
+          "CAT": 0.0
+        }
+      },
+      "submission": "sub_blend_0.83292_20260703_183913.csv",
+      "notes": "Reflexion iteration on exp #2: removed scale_pos_weight (XGB) / class_weights (CatBoost) since AUC is rank-based and weighting was hurting XGB/CAT OOF AUC (0.79196/0.77663 in exp #2, both below generic baseline per-model scores). Also reduced LGB num_leaves 15->7 and raised regularization to fight overfitting on 48 correlated engineered features with only 1677 rows."
+    }
+  ],
+  "best": {
+    "experiment_id": 3,
+    "timestamp": "2026-07-03T18:39:13",
+    "source_format": "v2",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "model": "LGB+XGB+CAT blend (engineered features, v2 no-imbalance-weighting)",
+    "score": 0.832925,
+    "cv": {
+      "strategy": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "features": [
+      "Age",
+      "DailyRate",
+      "DistanceFromHome",
+      "Education",
+      "EnvironmentSatisfaction",
+      "HourlyRate",
+      "JobInvolvement",
+      "JobLevel",
+      "JobSatisfaction",
+      "MonthlyIncome",
+      "MonthlyRate",
+      "NumCompaniesWorked",
+      "PercentSalaryHike",
+      "PerformanceRating",
+      "RelationshipSatisfaction",
+      "StockOptionLevel",
+      "TotalWorkingYears",
+      "TrainingTimesLastYear",
+      "WorkLifeBalance",
+      "YearsAtCompany",
+      "YearsInCurrentRole",
+      "YearsSinceLastPromotion",
+      "YearsWithCurrManager",
+      "BusinessTravel_le",
+      "BusinessTravel_freq",
+      "Department_le",
+      "Department_freq",
+      "EducationField_le",
+      "EducationField_freq",
+      "Gender_le",
+      "Gender_freq",
+      "JobRole_le",
+      "JobRole_freq",
+      "MaritalStatus_le",
+      "MaritalStatus_freq",
+      "OverTime_le",
+      "OverTime_freq",
+      "role_tenure_ratio",
+      "mgr_tenure_ratio",
+      "promo_ratio",
+      "company_tenure_ratio",
+      "income_per_joblevel",
+      "income_per_year_worked",
+      "satisfaction_avg",
+      "satisfaction_min",
+      "overtime_joblevel",
+      "age_at_join",
+      "companies_per_year"
+    ],
+    "n_features": 48,
+    "base_models": [
+      {
+        "name": "LGB",
+        "oof_auc": 0.832925
+      },
+      {
+        "name": "XGB",
+        "oof_auc": 0.807634
+      },
+      {
+        "name": "CAT",
+        "oof_auc": 0.762684
+      }
+    ],
+    "ensemble": {
+      "method": "grid_weight_search",
+      "weights": {
+        "LGB": 1.0,
+        "XGB": 0.0,
+        "CAT": 0.0
+      }
+    },
+    "submission": "sub_blend_0.83292_20260703_183913.csv",
+    "notes": "Reflexion iteration on exp #2: removed scale_pos_weight (XGB) / class_weights (CatBoost) since AUC is rank-based and weighting was hurting XGB/CAT OOF AUC (0.79196/0.77663 in exp #2, both below generic baseline per-model scores). Also reduced LGB num_leaves 15->7 and raised regularization to fight overfitting on 48 correlated engineered features with only 1677 rows."
+  },
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:02:55",
+      "score": 0.81624,
+      "source_format": "generic_batch"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T18:37:57",
+      "score": 0.819008,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T18:39:13",
+      "score": 0.832925,
+      "source_format": "v2"
+    }
+  ],
+  "leaderboard": null,
+  "missing": [
+    "leaderboard"
+  ],
+  "unparsed": []
+}
