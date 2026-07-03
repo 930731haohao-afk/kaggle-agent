@@ -230,25 +230,25 @@ def main(comp):
     sub.to_csv(path, index=False)
     print(f"  wrote {os.path.basename(path)}  ({len(sub)} rows)")
 
-    # log (canonical v2 schema — see docs/superpowers/specs/2026-07-03-kaggle-report-skill-design.md §6)
-    exp = os.path.join(cdir, "experiments.json")
-    hist = json.load(open(exp)) if os.path.exists(exp) else []
-    hist.append(dict(
-        schema_version=2,
-        experiment_id=len(hist) + 1,
-        timestamp=datetime.now().isoformat(timespec="seconds"),
+    # log via the canonical v2 logger (mandated by the skills' Iteration Protocol)
+    import importlib.util
+    _spec = importlib.util.spec_from_file_location(
+        "experiment_log", ".claude/skills/kaggle-agent/assets/utils/experiment_log.py")
+    experiment_log = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(experiment_log)
+    experiment_log.log_experiment_v2(
+        cdir,
         model="generic LGB+XGB+CAT blend",
         metric=mname,
         direction=("maximize" if higher else "minimize"),
         score=round(float(best_s), 5),
-        n_features=len(feats),
         cv=dict(scheme=f"{N_SPLITS}fold", n_splits=N_SPLITS, seed=SEED),
         base_models=[dict(name=n, score=round(float(per[n]), 5)) for n in NAMES],
         ensemble=dict(weights=dict(zip(NAMES, [round(float(x), 2) for x in best_w])),
                       score=round(float(best_s), 5)),
+        features=list(feats),
         submission=os.path.basename(path),
-    ))
-    json.dump(hist, open(exp, "w"), indent=2)
+    )
     return dict(comp=comp, metric=mname, score=round(float(best_s), 5),
                 weights=dict(zip(NAMES, [round(float(x), 2) for x in best_w])))
 

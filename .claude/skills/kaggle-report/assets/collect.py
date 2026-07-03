@@ -65,7 +65,7 @@ def normalize(e: dict, idx: int, default_metric, default_direction):
     elif fmt == "skill_train":
         n["base_models"] = [
             {"name": b["model"],
-             "score": next(v for k, v in b.items() if k.startswith("oof_")),
+             "score": next((v for k, v in b.items() if k.startswith("oof_")), None),
              "time_s": b.get("time_s")}
             for b in e["base_models"]
         ]

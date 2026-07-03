@@ -129,7 +129,7 @@
 
 ## 9. 驗證(對應計畫書 §5 報告驗證)
 
-1. **數字一致性(自動)**:比對腳本核對 REPORT.md 中每個數字皆存在於 facts.json、facts.json 每個數字皆存在於原始 experiments.json/config.yaml
+1. **數字一致性(自動)**:比對腳本核對 REPORT.md 中每個數字皆存在於 facts.json、facts.json 每個數字皆存在於原始 experiments.json/config.yaml(實作狀態:正向檢查〔報告→facts〕已實作於 verify_report.py;反向檢查〔facts→原始檔〕為後續項目,collect.py 僅複製來源欄位、不自行計算,風險低)
 2. **rubric 檢核(LLM 自檢 + 人工抽查)**:8 節齊備、每節必填欄位齊備、重現指令可執行
 3. **測試案例**:s3e16(full)+ 一場批次題(baseline-only),兩份報告皆須過 rubric
 4. **回歸**:v2 `log_experiment()` 附單元測試;三種舊格式 adapter 各附一筆真實紀錄的解析測試

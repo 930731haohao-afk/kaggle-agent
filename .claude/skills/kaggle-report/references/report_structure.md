@@ -17,6 +17,7 @@
 - 使用的模型清單與各自分數表。來源:best.base_models(name/score/time_s)
 - Ensemble 權重與分數。來源:best.ensemble.weights、best.ensemble.score
 - 選型理由(敘述;可參考 STATUS.md 脈絡)
+- 注意:facts.best 以 OOF score 最小/最大選出,不考慮 CV scheme 是否一致、也不代表已提交;若 best 與 leaderboard 所屬實驗不同,報告必須如 s3e16 範例明確區分兩者
 
 ## 4. 訓練規格
 - CV 方案表:scheme、n_splits、seed。來源:best.cv(seed 無紀錄則寫「無紀錄」)

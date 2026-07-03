@@ -7,6 +7,7 @@ MD="$1"
 PDF="${2:-${MD%.md}.pdf}"
 CSS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/report_style.css"
 HTML="${MD%.md}.tmp.html"   # 不用隱藏檔名:snap chromium 讀不到部分隱藏路徑
+trap 'rm -f "$HTML"' EXIT
 
 uv run python3 - "$MD" "$CSS" "$HTML" <<'PY'
 import pathlib, sys
@@ -28,13 +29,11 @@ PY
 # soft-fail contract (exit 2 + WARN, keep the .md as deliverable).
 CHROME="$(command -v chromium || command -v chromium-browser || true)"
 if [ -z "$CHROME" ]; then
-  rm -f "$HTML"
   echo "WARN: chromium not found — skipping PDF, REPORT.md is the deliverable" >&2
   exit 2
 fi
 "$CHROME" --headless --disable-gpu --no-sandbox --no-pdf-header-footer \
   --print-to-pdf="$PDF" "file://$(cd "$(dirname "$HTML")" && pwd)/$(basename "$HTML")" 2>/dev/null
-rm -f "$HTML"
 # snap chromium can exit 0 WITHOUT writing the PDF when the output path is
 # outside its sandbox (e.g. this session's /tmp scratchpad) — verify the file
 # actually exists and is non-empty before declaring success. exit 3

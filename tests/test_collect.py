@@ -166,3 +166,19 @@ def test_run_competition_logs_v2_shape(load_module, comp_dir):
     assert facts["experiments"][0]["score"] == 1.35441
     # generic 基線即使是 v2 格式,素材等級仍應是 baseline-only —— 見 Step 3 的 material 判定調整
     assert facts["material_level"] == "baseline-only"
+
+
+def test_skill_train_base_model_without_oof_key_yields_none_score(load_module, comp_dir):
+    """base_models 中若某筆缺 oof_* 鍵,不應讓 build_facts 炸出 StopIteration,score 應為 None。"""
+    c = load_module(COLLECT, "collect")
+    entry = dict(SKILL_TRAIN_ENTRY)
+    entry["base_models"] = [
+        {"model": "LGB", "oof_mae": 1.35651, "time_s": 30.8},
+        {"model": "MYSTERY", "time_s": 12.0},  # 缺 oof_* 鍵
+    ]
+    _write_exps(comp_dir, [entry])
+    facts = c.build_facts(str(comp_dir))
+    e = facts["experiments"][0]
+    scores_by_name = {b["name"]: b["score"] for b in e["base_models"]}
+    assert scores_by_name["LGB"] == 1.35651
+    assert scores_by_name["MYSTERY"] is None
