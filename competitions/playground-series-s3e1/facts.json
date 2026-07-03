@@ -1,0 +1,363 @@
+{
+  "competition": {
+    "name": "playground-series-s3e1",
+    "url": "https://www.kaggle.com/competitions/playground-series-s3e1",
+    "description": "Predict median house value (California Housing)",
+    "problem_type": "regression",
+    "evaluation_metric": "rmse",
+    "optimization_direction": "minimize",
+    "target_column": "MedHouseVal",
+    "id_column": "id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false,
+      "daily_submission_limit": 5
+    },
+    "notes": "Aygun et al. Nature 2026 Kaggle Playground benchmark (Season 3 Episode 1)."
+  },
+  "material_level": "full",
+  "status_md_present": true,
+  "experiments": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:02:12",
+      "source_format": "generic_batch",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "generic LGB+XGB+CAT blend",
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.57002
+        },
+        {
+          "name": "XGB",
+          "score": 0.56744
+        },
+        {
+          "name": "CAT",
+          "score": 0.56391
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.2,
+          "XGB": 0.2,
+          "CAT": 0.6
+        },
+        "score": 0.56166
+      },
+      "score": 0.56166,
+      "n_features": 8,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5
+      },
+      "submission": "sub_generic_0.56166_20260703_120212.csv"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T18:29:47",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB+XGB+CAT weight-searched blend (engineered features)",
+      "score": 0.558768,
+      "cv": {
+        "scheme": "KFold",
+        "n_splits": 5,
+        "shuffle": true,
+        "seed": 42
+      },
+      "features": [
+        "MedInc",
+        "HouseAge",
+        "AveRooms",
+        "AveBedrms",
+        "Population",
+        "AveOccup",
+        "Latitude",
+        "Longitude",
+        "households",
+        "bedroom_ratio",
+        "rooms_per_person",
+        "log_AveRooms",
+        "log_AveBedrms",
+        "log_Population",
+        "log_AveOccup",
+        "log_households",
+        "dist_LA",
+        "dist_SF",
+        "dist_SanDiego",
+        "dist_Sacramento",
+        "dist_SanJose",
+        "dist_nearest_city",
+        "lat_long",
+        "geo_cluster"
+      ],
+      "n_features": 24,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.56109,
+          "time_s": null,
+          "params": {
+            "n_estimators": 2000,
+            "learning_rate": 0.03,
+            "num_leaves": 63,
+            "min_child_samples": 20,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "reg_alpha": 0.1,
+            "reg_lambda": 0.1,
+            "random_state": 42,
+            "verbosity": -1
+          }
+        },
+        {
+          "name": "XGB",
+          "score": 0.56297,
+          "time_s": null,
+          "params": {
+            "n_estimators": 2000,
+            "learning_rate": 0.03,
+            "max_depth": 7,
+            "min_child_weight": 5,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "reg_alpha": 0.1,
+            "reg_lambda": 1.0,
+            "random_state": 42,
+            "tree_method": "hist",
+            "verbosity": 0
+          }
+        },
+        {
+          "name": "CAT",
+          "score": 0.56188,
+          "time_s": null,
+          "params": {
+            "iterations": 2000,
+            "learning_rate": 0.03,
+            "depth": 8,
+            "l2_leaf_reg": 3.0,
+            "random_seed": 42,
+            "verbose": false
+          }
+        }
+      ],
+      "ensemble": {
+        "method": "oof_weight_grid_search",
+        "weights": {
+          "LGB": 0.45,
+          "XGB": 0.15,
+          "CAT": 0.4
+        },
+        "score": 0.558768
+      },
+      "postprocess": [
+        "clip_to_train_target_range"
+      ],
+      "submission": "sub_lgb_xgb_cat_blend_0.55877_20260703_182947.csv",
+      "notes": "5-fold KFold on 24 engineered features (rooms_per_person, dist_to_cities, geo_cluster, log-transforms, bedroom_ratio). Total train time 45.5s. Baseline (exp 1, generic 8-feature blend) was 0.56166."
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T18:31:02",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "LGB single-model probe: +smoothed geo_cluster_50 target-encoding",
+      "score": 0.561017,
+      "cv": {
+        "scheme": "KFold",
+        "n_splits": 5,
+        "shuffle": true,
+        "seed": 42
+      },
+      "features": [
+        "MedInc",
+        "HouseAge",
+        "AveRooms",
+        "AveBedrms",
+        "Population",
+        "AveOccup",
+        "Latitude",
+        "Longitude",
+        "households",
+        "bedroom_ratio",
+        "rooms_per_person",
+        "log_AveRooms",
+        "log_AveBedrms",
+        "log_Population",
+        "log_AveOccup",
+        "log_households",
+        "dist_LA",
+        "dist_SF",
+        "dist_SanDiego",
+        "dist_Sacramento",
+        "dist_SanJose",
+        "dist_nearest_city",
+        "lat_long",
+        "geo_cluster",
+        "geo_te"
+      ],
+      "n_features": 25,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.56102,
+          "params": {
+            "n_estimators": 2000,
+            "learning_rate": 0.03,
+            "num_leaves": 63,
+            "min_child_samples": 20,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "reg_alpha": 0.1,
+            "reg_lambda": 0.1,
+            "random_state": 42,
+            "verbosity": -1,
+            "objective": "rmse"
+          }
+        }
+      ],
+      "notes": "Reflexion: hypothesis was that finer (50-cluster) smoothed target encoding of geo location would beat the coarse 25-cluster id used in exp 2's LGB (OOF 0.56109), since raw Lat/Long were the top-2 importance features in EDA's quick LGB. Result: 0.56102, delta -0.00007 (noise-level). Conclusion: trees already extract the geo signal via splits on raw Lat/Long + dist-to-city features; explicit target encoding adds no meaningful value here. NOT adopted into the final feature set/blend (exp 2 remains best)."
+    }
+  ],
+  "best": {
+    "experiment_id": 2,
+    "timestamp": "2026-07-03T18:29:47",
+    "source_format": "v2",
+    "metric": "rmse",
+    "direction": "minimize",
+    "model": "LGB+XGB+CAT weight-searched blend (engineered features)",
+    "score": 0.558768,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "shuffle": true,
+      "seed": 42
+    },
+    "features": [
+      "MedInc",
+      "HouseAge",
+      "AveRooms",
+      "AveBedrms",
+      "Population",
+      "AveOccup",
+      "Latitude",
+      "Longitude",
+      "households",
+      "bedroom_ratio",
+      "rooms_per_person",
+      "log_AveRooms",
+      "log_AveBedrms",
+      "log_Population",
+      "log_AveOccup",
+      "log_households",
+      "dist_LA",
+      "dist_SF",
+      "dist_SanDiego",
+      "dist_Sacramento",
+      "dist_SanJose",
+      "dist_nearest_city",
+      "lat_long",
+      "geo_cluster"
+    ],
+    "n_features": 24,
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.56109,
+        "time_s": null,
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 63,
+          "min_child_samples": 20,
+          "subsample": 0.8,
+          "colsample_bytree": 0.8,
+          "reg_alpha": 0.1,
+          "reg_lambda": 0.1,
+          "random_state": 42,
+          "verbosity": -1
+        }
+      },
+      {
+        "name": "XGB",
+        "score": 0.56297,
+        "time_s": null,
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "max_depth": 7,
+          "min_child_weight": 5,
+          "subsample": 0.8,
+          "colsample_bytree": 0.8,
+          "reg_alpha": 0.1,
+          "reg_lambda": 1.0,
+          "random_state": 42,
+          "tree_method": "hist",
+          "verbosity": 0
+        }
+      },
+      {
+        "name": "CAT",
+        "score": 0.56188,
+        "time_s": null,
+        "params": {
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 8,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 42,
+          "verbose": false
+        }
+      }
+    ],
+    "ensemble": {
+      "method": "oof_weight_grid_search",
+      "weights": {
+        "LGB": 0.45,
+        "XGB": 0.15,
+        "CAT": 0.4
+      },
+      "score": 0.558768
+    },
+    "postprocess": [
+      "clip_to_train_target_range"
+    ],
+    "submission": "sub_lgb_xgb_cat_blend_0.55877_20260703_182947.csv",
+    "notes": "5-fold KFold on 24 engineered features (rooms_per_person, dist_to_cities, geo_cluster, log-transforms, bedroom_ratio). Total train time 45.5s. Baseline (exp 1, generic 8-feature blend) was 0.56166."
+  },
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-03T12:02:12",
+      "score": 0.56166,
+      "source_format": "generic_batch"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-03T18:29:47",
+      "score": 0.558768,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-03T18:31:02",
+      "score": 0.561017,
+      "source_format": "v2"
+    }
+  ],
+  "leaderboard": null,
+  "missing": [
+    "leaderboard"
+  ],
+  "unparsed": []
+}
