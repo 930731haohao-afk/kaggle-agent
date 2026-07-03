@@ -2,16 +2,51 @@
   "generated_by": "docs/scripts/build_tree_facts.py",
   "sources": [
     "tree_search/harness.py",
+    "tree_search/harness_v2.py",
     "competitions/playground-series-s3e9/experiments_tree.json",
     "competitions/playground-series-s3e14/experiments_tree.json",
     "competitions/playground-series-s3e5/experiments_tree.json",
+    "competitions/playground-series-s3e3/experiments_tree.json",
+    "competitions/playground-series-s3e7/experiments_tree.json",
+    "competitions/playground-series-s3e1/experiments_tree.json",
+    "competitions/playground-series-s3e19/experiments_tree.json",
+    "competitions/playground-series-s3e11/experiments_tree.json",
     "competitions/playground-series-s3e9/STATUS.md (Phase C-2a appendix)",
     "competitions/playground-series-s3e14/STATUS.md (Phase C-2b appendix)",
-    "competitions/playground-series-s3e5/STATUS.md (Phase C-2c appendix)"
+    "competitions/playground-series-s3e5/STATUS.md (Phase C-2c appendix)",
+    "competitions/playground-series-s3e3/STATUS.md (Phase D-2 appendix)",
+    "competitions/playground-series-s3e7/STATUS.md (Phase D-3 appendix)",
+    "competitions/playground-series-s3e1/STATUS.md (Phase D-4 appendix)",
+    "competitions/playground-series-s3e19/STATUS.md (Phase D-5 appendix)",
+    "competitions/playground-series-s3e11/STATUS.md (Phase D-6 appendix)",
+    ".superpowers/weekend-plan.md (Phase D progress log)"
   ],
   "harness_constants": {
     "MAX_CHILDREN_PER_NODE": 3,
-    "PLATEAU_STREAK": 3
+    "PLATEAU_STREAK": 3,
+    "ADAPTIVE_PLATEAU_STREAK": 5,
+    "TIE_RATE_THRESHOLD": 0.15,
+    "config_hash_note": "harness_v2.config_hash() uses hashlib.sha256"
+  },
+  "dataset_scale": {
+    "s3e3": {
+      "train_rows": 1677,
+      "source": "competitions/playground-series-s3e3/STATUS.md line 4"
+    },
+    "s3e11": {
+      "train_rows": 360336,
+      "train_rows_k": 360,
+      "source": "competitions/playground-series-s3e11/STATUS.md line 4"
+    },
+    "s3e19": {
+      "total_rows": 136950,
+      "oof_scored_rows": 114000,
+      "source": "competitions/playground-series-s3e19/STATUS.md Phase D-5 appendix"
+    },
+    "s3e1": {
+      "capped_target_pct": 4.92,
+      "source": "competitions/playground-series-s3e1/STATUS.md Phase D-4 appendix (EDA finding #1)"
+    }
   },
   "s3e9": {
     "comp": "s3e9",
@@ -535,6 +570,966 @@
     },
     "mutation": "[CAT] model-type switch: CatBoost solo (depth6,l2=6) -- known strongest single learner on this data (STATUS.md 12.07459 vs LGB 12.11061/XGB 12.12086); ordered-boosting regularization resists the 56%-dup-row label noise best"
   },
+  "s3e3_v2": {
+    "comp": "s3e3",
+    "harness": "v2",
+    "n_nodes_total": 22,
+    "n_evaluated": 22,
+    "n_failed": 0,
+    "root_id": 0,
+    "root_score_stored": -0.837305,
+    "root_score_positive": 0.837305,
+    "root_wall_s": 1.9,
+    "global_best_id": 11,
+    "global_best_score_stored": -0.841442,
+    "global_best_score_positive": 0.841442,
+    "global_best_mutation": "[FEAT] FEAT: further trim income_per_year_worked (redundant with income_per_joblevel + MonthlyIncome itself) -- 42 feats [PRIOR none -- untested extension of the STATUS.md next-idea] (parent=#6)",
+    "total_wall_s": 34.0,
+    "wall_s_min_all": 0.7,
+    "wall_s_max_all": 3.1,
+    "wall_by_kind": {
+      "solo": {
+        "min": 0.7,
+        "max": 3.1,
+        "n": 18
+      },
+      "blend": {
+        "min": 0.7,
+        "max": 0.7,
+        "n": 4
+      }
+    },
+    "kind_counts": {
+      "solo": 18,
+      "blend": 4
+    },
+    "n_backtracks": 4,
+    "n_forced_backtracks": 0,
+    "max_tie_rate": 0.0,
+    "first_eval_reaching_linear_best": {
+      "node_id": 6,
+      "evaluation_number": 7,
+      "score": -0.838903
+    },
+    "dedup_rejections_count": 0,
+    "n_priors_returned": 7,
+    "prior_usage_summary": {
+      "n_informed": 7,
+      "n_uninformed": 7,
+      "informed_win_rate": 0.14285714285714285,
+      "uninformed_win_rate": 0.14285714285714285
+    },
+    "verdict": "BEAT",
+    "linear_best_score": 0.83814
+  },
+  "s3e7_v2": {
+    "comp": "s3e7",
+    "harness": "v2",
+    "n_nodes_total": 22,
+    "n_evaluated": 22,
+    "n_failed": 0,
+    "root_id": 0,
+    "root_score_stored": -0.899215,
+    "root_score_positive": 0.899215,
+    "root_wall_s": 27.0,
+    "global_best_id": 13,
+    "global_best_score_stored": -0.900242,
+    "global_best_score_positive": 0.900242,
+    "global_best_mutation": "[BLEND] BLEND: remove lowest-weight member #2 (w=0.007) -> leaner 5-way, test whether it was truly adding value or just being tolerated by the weight search [PRIOR P16 -- removing (near-)zero-weight members is zero-cost, per experience.md Ensemble/後處理] (parent=#12)",
+    "total_wall_s": 405.9,
+    "wall_s_min_all": 7.2,
+    "wall_s_max_all": 46.7,
+    "wall_by_kind": {
+      "solo": {
+        "min": 14.5,
+        "max": 46.7,
+        "n": 13
+      },
+      "blend": {
+        "min": 7.2,
+        "max": 7.4,
+        "n": 9
+      }
+    },
+    "kind_counts": {
+      "solo": 13,
+      "blend": 9
+    },
+    "n_backtracks": 3,
+    "n_forced_backtracks": 1,
+    "max_tie_rate": 0.1,
+    "first_eval_reaching_linear_best": {
+      "node_id": 7,
+      "evaluation_number": 8,
+      "score": -0.899893
+    },
+    "dedup_rejections_count": 0,
+    "n_priors_returned": 20,
+    "prior_usage_summary": {
+      "n_informed": 8,
+      "n_uninformed": 6,
+      "informed_win_rate": 0.625,
+      "uninformed_win_rate": 0.16666666666666666
+    },
+    "verdict": "BEAT",
+    "linear_best_score": 0.899893
+  },
+  "s3e1_v2": {
+    "comp": "s3e1",
+    "harness": "v2",
+    "n_nodes_total": 23,
+    "n_evaluated": 22,
+    "n_failed": 1,
+    "root_id": 0,
+    "root_score_stored": 0.558866,
+    "root_score_positive": 0.558866,
+    "root_wall_s": 11.9,
+    "global_best_id": 14,
+    "global_best_score_stored": 0.556329,
+    "global_best_score_positive": 0.556329,
+    "global_best_mutation": "[BLEND] BLEND: remove lowest-weight member #0 (w=0.023) -> leaner 7-way, test whether it was truly adding value or just being tolerated by the weight search [PRIOR P14 -- removing (near-)zero-weight members is zero-cost, per experience.md Ensemble/後處理] (parent=#12)",
+    "total_wall_s": 190.1,
+    "wall_s_min_all": 0.2,
+    "wall_s_max_all": 28.8,
+    "wall_by_kind": {
+      "solo": {
+        "min": 3.3,
+        "max": 28.8,
+        "n": 15
+      },
+      "blend": {
+        "min": 0.2,
+        "max": 0.3,
+        "n": 7
+      }
+    },
+    "kind_counts": {
+      "solo": 15,
+      "blend": 7
+    },
+    "n_backtracks": 3,
+    "n_forced_backtracks": 1,
+    "max_tie_rate": 0.0,
+    "first_eval_reaching_linear_best": {
+      "node_id": 8,
+      "evaluation_number": 9,
+      "score": 0.557085
+    },
+    "dedup_rejections_count": 1,
+    "n_priors_returned": 20,
+    "prior_usage_summary": {
+      "n_informed": 5,
+      "n_uninformed": 8,
+      "informed_win_rate": 1.0,
+      "uninformed_win_rate": 0.625
+    },
+    "verdict": "BEAT",
+    "linear_best_score": 0.557088
+  },
+  "s3e19_v2": {
+    "comp": "s3e19",
+    "harness": "v2",
+    "n_nodes_total": 22,
+    "n_evaluated": 22,
+    "n_failed": 0,
+    "root_id": 0,
+    "root_score_stored": 10.148325,
+    "root_score_positive": 10.148325,
+    "root_wall_s": 3.3,
+    "global_best_id": 17,
+    "global_best_score_stored": 9.75707,
+    "global_best_score_positive": 9.75707,
+    "global_best_mutation": "[BLEND] BLEND fallback: add next-best unused pool member #12 -> 10-way [PRIOR none -- fallback] (parent=#16)",
+    "total_wall_s": 320.9,
+    "wall_s_min_all": 0.8,
+    "wall_s_max_all": 81.3,
+    "wall_by_kind": {
+      "solo": {
+        "min": 2.9,
+        "max": 81.3,
+        "n": 13
+      },
+      "blend": {
+        "min": 0.8,
+        "max": 29.0,
+        "n": 9
+      }
+    },
+    "kind_counts": {
+      "solo": 13,
+      "blend": 9
+    },
+    "n_backtracks": 2,
+    "n_forced_backtracks": 0,
+    "max_tie_rate": 0.0,
+    "first_eval_reaching_linear_best": {
+      "node_id": 6,
+      "evaluation_number": 7,
+      "score": 9.974778
+    },
+    "dedup_rejections_count": 0,
+    "n_priors_returned": 20,
+    "prior_usage_summary": {
+      "n_informed": 3,
+      "n_uninformed": 9,
+      "informed_win_rate": 0.3333333333333333,
+      "uninformed_win_rate": 0.4444444444444444
+    },
+    "verdict": "BEAT",
+    "linear_best_score": 10.01946
+  },
+  "s3e11_v2": {
+    "comp": "s3e11",
+    "harness": "v2",
+    "n_nodes_total": 24,
+    "n_evaluated": 24,
+    "n_failed": 0,
+    "root_id": 0,
+    "root_score_stored": 0.29579,
+    "root_score_positive": 0.29579,
+    "root_wall_s": 0.0,
+    "global_best_id": 20,
+    "global_best_score_stored": 0.29528,
+    "global_best_score_positive": 0.29528,
+    "global_best_mutation": "[BLEND2] ensemble phase-2 seed: 7-way blend of the current top-7 solo pool [17, 18, 19, 4, 5, 0, 6] (includes the depth-12 CAT family found AFTER the BLEND lineage plateaued -- phase 1's best solo #17 never entered any blend), dirichlet weight search over CACHED OOF, no retraining [PRIOR P8/P11 -- add-to-pool-not-replace applied to the newly discovered strongest family; weight search arbitrates]",
+    "total_wall_s": 513.3,
+    "wall_s_min_all": 0.0,
+    "wall_s_max_all": 53.9,
+    "wall_by_kind": {
+      "solo": {
+        "min": 0.0,
+        "max": 53.9,
+        "n": 12
+      },
+      "blend": {
+        "min": 17.2,
+        "max": 38.9,
+        "n": 12
+      }
+    },
+    "kind_counts": {
+      "solo": 12,
+      "blend": 12
+    },
+    "n_backtracks": 2,
+    "n_forced_backtracks": 0,
+    "max_tie_rate": 0.0588,
+    "first_eval_reaching_linear_best": {
+      "node_id": 9,
+      "evaluation_number": 10,
+      "score": 0.295619
+    },
+    "dedup_rejections_count": 0,
+    "n_priors_returned": 20,
+    "prior_usage_summary": {
+      "n_informed": 3,
+      "n_uninformed": 11,
+      "informed_win_rate": 1.0,
+      "uninformed_win_rate": 0.18181818181818182
+    },
+    "verdict": "BEAT",
+    "linear_best_score": 0.295648
+  },
+  "s3e3_v2_node6": {
+    "id": 6,
+    "score": -0.838903,
+    "wall_s": 1.3,
+    "config": {
+      "kind": "solo",
+      "model": "lgb",
+      "params": {
+        "objective": "binary",
+        "metric": "auc",
+        "n_estimators": 2000,
+        "learning_rate": 0.050253069663926536,
+        "num_leaves": 3,
+        "max_depth": 4,
+        "min_child_samples": 60,
+        "subsample": 0.8995656675058548,
+        "colsample_bytree": 0.7246802411328122,
+        "reg_alpha": 0.06815791273889091,
+        "reg_lambda": 0.0011513245661312597,
+        "random_state": 42
+      },
+      "features": {
+        "drop": [
+          "YearsAtCompany",
+          "YearsInCurrentRole",
+          "YearsWithCurrManager",
+          "YearsSinceLastPromotion",
+          "TotalWorkingYears"
+        ]
+      },
+      "result": {
+        "n_feats": 43,
+        "auc": 0.838903
+      }
+    },
+    "mutation": "[FEAT] feature-subset SUBTRACTION on the tuned-LGB hyperparams: drop the 5 raw tenure columns now condensed into role_tenure_ratio/mgr_tenure_ratio/promo_ratio/company_tenure_ratio/income_per_year_worked/age_at_join (computed upstream in features.py before this drop, so still valid) -- 43-feature test, UNTESTED in the linear-iteration run [PRIOR none -- sourced from STATUS.md's own 'Next ideas': 'drop redundant raw tenure columns, keep engineered ratios only -- untested hypothesis']"
+  },
+  "s3e3_v2_node11": {
+    "id": 11,
+    "score": -0.841442,
+    "wall_s": 1.5,
+    "config": {
+      "kind": "solo",
+      "model": "lgb",
+      "params": {
+        "objective": "binary",
+        "metric": "auc",
+        "n_estimators": 2000,
+        "learning_rate": 0.050253069663926536,
+        "num_leaves": 3,
+        "max_depth": 4,
+        "min_child_samples": 60,
+        "subsample": 0.8995656675058548,
+        "colsample_bytree": 0.7246802411328122,
+        "reg_alpha": 0.06815791273889091,
+        "reg_lambda": 0.0011513245661312597,
+        "random_state": 42
+      },
+      "features": {
+        "drop": [
+          "YearsAtCompany",
+          "YearsInCurrentRole",
+          "YearsWithCurrManager",
+          "YearsSinceLastPromotion",
+          "TotalWorkingYears",
+          "income_per_year_worked"
+        ]
+      },
+      "result": {
+        "n_feats": 42,
+        "auc": 0.841442
+      }
+    },
+    "mutation": "[FEAT] FEAT: further trim income_per_year_worked (redundant with income_per_joblevel + MonthlyIncome itself) -- 42 feats [PRIOR none -- untested extension of the STATUS.md next-idea] (parent=#6)"
+  },
+  "s3e7_v2_node7": {
+    "id": 7,
+    "score": -0.899893,
+    "wall_s": 7.2,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2
+      ],
+      "weight_search": "dirichlet",
+      "space": "prob",
+      "result": {
+        "members": [
+          0,
+          1,
+          2
+        ],
+        "weights": [
+          0.5397,
+          0.4021,
+          0.0582
+        ],
+        "method": "dirichlet",
+        "space": "prob",
+        "auc": 0.899893
+      }
+    },
+    "mutation": "[BLEND] ensemble seed: 3-way blend of root LGB_tuned(#0) + XGBHAND(#1) + CATHAND(#2) CACHED OOF, dirichlet weight search, prob-space -- reproduces the linear-iteration's exp #4/#6 base-model trio under harness_v2's ensemble machinery, no retraining [PRIOR none -- generic ensemble-default node-space seed, the recommendation #1 mechanism itself]"
+  },
+  "s3e7_v2_node8": {
+    "id": 8,
+    "score": -0.900054,
+    "wall_s": 7.3,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "weight_search": "dirichlet",
+      "space": "prob",
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "weights": [
+          0.0804,
+          0.3598,
+          0.054,
+          0.5058
+        ],
+        "method": "dirichlet",
+        "space": "prob",
+        "auc": 0.900054
+      }
+    },
+    "mutation": "[BLEND] BLEND: add SEEDBAG solo member (#3) -> 4-way, dirichlet weight search, prob-space [PRIOR P2 -- add-to-pool + seed-bag stacks small gains on AUC, let weight search decide] (parent=#7)"
+  },
+  "s3e7_v2_node13": {
+    "id": 13,
+    "score": -0.900242,
+    "wall_s": 7.3,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        3,
+        6,
+        5
+      ],
+      "weight_search": "dirichlet",
+      "space": "rank",
+      "result": {
+        "members": [
+          0,
+          1,
+          3,
+          6,
+          5
+        ],
+        "weights": [
+          0.057,
+          0.1343,
+          0.5064,
+          0.0142,
+          0.2881
+        ],
+        "method": "dirichlet",
+        "space": "rank",
+        "auc": 0.900242
+      }
+    },
+    "mutation": "[BLEND] BLEND: remove lowest-weight member #2 (w=0.007) -> leaner 5-way, test whether it was truly adding value or just being tolerated by the weight search [PRIOR P16 -- removing (near-)zero-weight members is zero-cost, per experience.md Ensemble/後處理] (parent=#12)"
+  },
+  "s3e1_v2_node8": {
+    "id": 8,
+    "score": 0.557085,
+    "wall_s": 0.2,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "weight_search": "dirichlet",
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "weights": [
+          0.2734,
+          0.1912,
+          0.0794,
+          0.2577,
+          0.1983
+        ],
+        "method": "dirichlet",
+        "clip": false,
+        "rmse": 0.557085
+      }
+    },
+    "mutation": "[BLEND] ensemble seed: 5-way blend of root LGB_tuned(#0) + LGBORIG(#1) + XGBORIG(#2) + CATORIG(#3) + SEEDBAG(#4) CACHED OOF, dirichlet weight search -- reproduces the linear-iteration's exp #7 5-member pool under harness_v2's ensemble machinery, no retraining [PRIOR none -- generic ensemble-default node-space seed, the recommendation #1 mechanism itself]"
+  },
+  "s3e1_v2_node10": {
+    "id": 10,
+    "score": 0.557054,
+    "wall_s": 0.2,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7
+      ],
+      "weight_search": "dirichlet",
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          7
+        ],
+        "weights": [
+          0.2124,
+          0.1826,
+          0.0506,
+          0.2545,
+          0.1618,
+          0.0872,
+          0.051
+        ],
+        "method": "dirichlet",
+        "clip": false,
+        "rmse": 0.557054
+      }
+    },
+    "mutation": "[BLEND] BLEND: add XGBDIV solo member (#7) -> 7-way, dirichlet weight search [PRIOR none -- deliberate-diversity XGB as blend member, s3e7's winning lever applied here] (parent=#9)"
+  },
+  "s3e1_v2_node11": {
+    "id": 11,
+    "score": 0.556931,
+    "wall_s": 0.3,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7
+      ],
+      "weight_search": "dirichlet",
+      "postprocess": {
+        "clip": true
+      },
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          7
+        ],
+        "weights": [
+          0.2124,
+          0.1826,
+          0.0506,
+          0.2545,
+          0.1618,
+          0.0872,
+          0.051
+        ],
+        "method": "dirichlet",
+        "clip": true,
+        "rmse": 0.556931
+      }
+    },
+    "mutation": "[BLEND] BLEND: TOP-CODE-AWARE postprocess toggle clip=False->True -- clip blended OOF to [y.min(), 5.00001] BEFORE scoring (applied inside metric_fn per harness_v2.eval_blend's contract, so the weight search itself is clip-aware, not just the winner) -- STATUS.md's linear run only ever clipped the final TEST submission, never the OOF used to select/score models; solo-level clip test showed a real +0.00018 gain (0.558866-> 0.558683 on root alone) [PRIOR none -- this run's own top-code-aware node, direct response to STATUS.md EDA finding #1] (parent=#10)"
+  },
+  "s3e1_v2_node12": {
+    "id": 12,
+    "score": 0.556333,
+    "wall_s": 0.3,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        6
+      ],
+      "weight_search": "dirichlet",
+      "postprocess": {
+        "clip": true
+      },
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          6
+        ],
+        "weights": [
+          0.023,
+          0.1493,
+          0.0238,
+          0.2648,
+          0.1288,
+          0.0649,
+          0.0533,
+          0.2921
+        ],
+        "method": "dirichlet",
+        "clip": true,
+        "rmse": 0.556333
+      }
+    },
+    "mutation": "[BLEND] BLEND: add CEILING solo member (#6) -> 8-way, dirichlet weight search [PRIOR none -- ambitious-node member, let weight search decide whether the ceiling hybrid adds value in blend even if its solo score is worse] (parent=#11)"
+  },
+  "s3e1_v2_node14": {
+    "id": 14,
+    "score": 0.556329,
+    "wall_s": 0.3,
+    "config": {
+      "kind": "blend",
+      "members": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        6
+      ],
+      "weight_search": "dirichlet",
+      "postprocess": {
+        "clip": true
+      },
+      "result": {
+        "members": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          6
+        ],
+        "weights": [
+          0.1501,
+          0.0362,
+          0.2487,
+          0.1855,
+          0.0498,
+          0.0407,
+          0.2889
+        ],
+        "method": "dirichlet",
+        "clip": true,
+        "rmse": 0.556329
+      }
+    },
+    "mutation": "[BLEND] BLEND: remove lowest-weight member #0 (w=0.023) -> leaner 7-way, test whether it was truly adding value or just being tolerated by the weight search [PRIOR P14 -- removing (near-)zero-weight members is zero-cost, per experience.md Ensemble/後處理] (parent=#12)"
+  },
+  "s3e19_v2_node6": {
+    "id": 6,
+    "score": 9.974778,
+    "wall_s": 3.0,
+    "config": {
+      "kind": "solo",
+      "model": "lgb",
+      "params": {
+        "learning_rate": 0.037125798221945665,
+        "num_leaves": 20,
+        "min_child_samples": 38,
+        "subsample": 0.6105071416341405,
+        "colsample_bytree": 0.9049138633231821,
+        "reg_alpha": 0.0010341384364001556,
+        "reg_lambda": 0.43011494608925666,
+        "n_estimators": 2000,
+        "random_state": 2024,
+        "verbosity": -1
+      },
+      "features": {
+        "drop": []
+      },
+      "result": {
+        "n_feats": 20,
+        "smape": 9.974778,
+        "scale_used": 1.0
+      }
+    },
+    "mutation": "[SEEDBAG_TUNED] UNTRIED per STATUS.md 'Potential improvements': seed-bag the Optuna-tuned LGB itself, random_state 42->2024 -- experience.md flags a real counter-example (s3e5: seed-bagging a config whose Optuna objective WAS the final metric can be neutral/negative, since the tuned config already converged to a shallow, low-variance solution) but s3e19's LGB_tuned was tuned on a FOLD-5 PROXY (not the full-OOF final metric directly), so its variance profile may differ -- honest test, not assumed to help [PRIOR P8 -- seed bagging is the cheapest reliable post-tuning residual gain, but flagged with the s3e5 counter-example caveat for directly-tuned configs]"
+  },
+  "s3e19_v2_node14": {
+    "id": 14,
+    "score": 9.943698,
+    "wall_s": 1.0,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "weight_search": "dirichlet",
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": [
+          0.031,
+          0.0401,
+          0.0478,
+          0.198,
+          0.0036,
+          0.0033,
+          0.667,
+          0.0091
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.0,
+        "smape": 9.943698
+      }
+    },
+    "mutation": "[BLEND] BLEND: add DEEPLGB solo member (#7) -> 8-way, dirichlet weight search [PRIOR none -- deliberate-diversity LGB as blend member, s3e7's diversity lesson applied via LGB capacity instead of a banned second model family] (parent=#13)"
+  },
+  "s3e19_v2_node15": {
+    "id": 15,
+    "score": 9.775774,
+    "wall_s": 29.0,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "weight_search": "dirichlet",
+      "postprocess": {
+        "auto_scale": true
+      },
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": [
+          0.0303,
+          0.1097,
+          0.0291,
+          0.2304,
+          0.0092,
+          0.0052,
+          0.4386,
+          0.1475
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.02,
+        "smape": 9.775774
+      }
+    },
+    "mutation": "[BLEND] BLEND: UNTRIED global-multiplier postprocess toggle auto_scale=False->True -- grid-search a flat scalar multiplier on the blended OOF (applied inside metric_fn per harness_v2.eval_blend's contract, so the weight search itself is scale-aware) -- STRUCTURALLY DIFFERENT from the already-REJECTED ratio-decomposition (STATUS.md Round 1, RD weight 0): no country/date-conditional structure at all, just a level-fit; task brief flags this as cheap+untried, linear iteration never tried it [PRIOR none -- this run's own untried lever] (parent=#14)"
+  },
+  "s3e19_v2_node17": {
+    "id": 17,
+    "score": 9.75707,
+    "wall_s": 21.8,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        12
+      ],
+      "weight_search": "dirichlet",
+      "postprocess": {
+        "auto_scale": true
+      },
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12
+        ],
+        "weights": [
+          0.0089,
+          0.0238,
+          0.0115,
+          0.1989,
+          0.0003,
+          0.0032,
+          0.2448,
+          0.0746,
+          0.1781,
+          0.2559
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.02,
+        "smape": 9.75707
+      }
+    },
+    "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #12 -> 10-way [PRIOR none -- fallback] (parent=#16)"
+  },
+  "s3e11_v2_node4": {
+    "id": 4,
+    "score": 0.295779,
+    "wall_s": 0.0,
+    "config": {
+      "kind": "solo",
+      "model": "cat",
+      "params": {
+        "depth": 10,
+        "learning_rate": 0.08243442179862394,
+        "l2_leaf_reg": 5.4822780685788235,
+        "min_data_in_leaf": 33,
+        "random_strength": 0.09160286047373326,
+        "random_seed": 7
+      },
+      "features": {
+        "drop": []
+      },
+      "result": {
+        "n_feats": 21,
+        "rmsle": 0.295779,
+        "reused_from": "scripts/cache/cat_tuned_seed7.npz"
+      }
+    },
+    "mutation": "[CAT_S7] seed variation: Optuna-tuned CatBoost, random_seed 42->7 -- STATUS.md R5's 3rd seed-bag member, solo OOF 0.29578 (essentially tied with the tuned root for strongest single model), weight 0.4 in the final blend [PRIOR P8 -- seed bagging, same evidence as CAT_S2024, REUSED from scripts/cache/cat_tuned_seed7.npz]"
+  },
+  "s3e11_v2_node9": {
+    "id": 9,
+    "score": 0.295619,
+    "wall_s": 38.9,
+    "config": {
+      "kind": "blend",
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "weight_search": "dirichlet",
+      "result": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "weights": [
+          0.2708,
+          0.0013,
+          0.0067,
+          0.1139,
+          0.2805,
+          0.3268
+        ],
+        "method": "dirichlet",
+        "rmsle": 0.295619
+      }
+    },
+    "mutation": "[BLEND] BLEND: add CAT_S99 solo member (#5) -> 6-way, dirichlet weight search [PRIOR P8 -- add-to-pool-not-replace, untried 4th-seed idea, weight search arbitrates whether it helps at zero extra blend-side cost] (parent=#8)"
+  },
+  "s3e11_v2_node17": {
+    "id": 17,
+    "score": 0.295461,
+    "wall_s": 37.2,
+    "config": {
+      "kind": "solo",
+      "model": "cat",
+      "params": {
+        "depth": 12,
+        "learning_rate": 0.08243442179862394,
+        "l2_leaf_reg": 5.4822780685788235,
+        "min_data_in_leaf": 33,
+        "random_strength": 0.09160286047373326,
+        "random_seed": 7
+      },
+      "features": {
+        "drop": []
+      },
+      "result": {
+        "n_feats": 21,
+        "rmsle": 0.295461
+      }
+    },
+    "mutation": "[CAT_S7] CAT_S7: depth 10->12, push capacity further while keeping seed=7 [PRIOR P6 -- continue the large-data-wants-capacity direction] (parent=#4)"
+  },
+  "s3e11_v2_node20": {
+    "id": 20,
+    "score": 0.29528,
+    "wall_s": 17.6,
+    "config": {
+      "kind": "blend",
+      "members": [
+        17,
+        18,
+        19,
+        4,
+        5,
+        0,
+        6
+      ],
+      "weight_search": "dirichlet",
+      "result": {
+        "members": [
+          17,
+          18,
+          19,
+          4,
+          5,
+          0,
+          6
+        ],
+        "weights": [
+          0.2478,
+          0.3187,
+          0.239,
+          0.0091,
+          0.0031,
+          0.0039,
+          0.1783
+        ],
+        "method": "dirichlet",
+        "rmsle": 0.29528
+      }
+    },
+    "mutation": "[BLEND2] ensemble phase-2 seed: 7-way blend of the current top-7 solo pool [17, 18, 19, 4, 5, 0, 6] (includes the depth-12 CAT family found AFTER the BLEND lineage plateaued -- phase 1's best solo #17 never entered any blend), dirichlet weight search over CACHED OOF, no retraining [PRIOR P8/P11 -- add-to-pool-not-replace applied to the newly discovered strongest family; weight search arbitrates]"
+  },
   "linear_reference": {
     "s3e9": {
       "best_score": 12.07003,
@@ -550,12 +1545,44 @@
       "best_score": 0.56769,
       "label": "6-way blend, exp #8",
       "source": "competitions/playground-series-s3e5/STATUS.md line ~177"
+    },
+    "s3e3": {
+      "best_score": 0.83814,
+      "label": "6-way rank-avg blend, exp #7",
+      "source": "competitions/playground-series-s3e3/STATUS.md Phase D-2 appendix"
+    },
+    "s3e7": {
+      "best_score": 0.899893,
+      "label": "3-model prob 0.01-grid blend, exp #6",
+      "source": "competitions/playground-series-s3e7/STATUS.md Phase D-3 appendix"
+    },
+    "s3e1": {
+      "best_score": 0.557088,
+      "label": "5-way 0.05-grid blend, exp #7",
+      "source": "competitions/playground-series-s3e1/STATUS.md Phase D-4 appendix"
+    },
+    "s3e19": {
+      "best_score": 10.01946,
+      "label": "6-way 0.1-grid blend, exp #7",
+      "source": "competitions/playground-series-s3e19/STATUS.md Phase D-5 appendix"
+    },
+    "s3e11": {
+      "best_score": 0.295648,
+      "label": "5-way 0.1-grid blend, exp #8",
+      "source": "competitions/playground-series-s3e11/STATUS.md Phase D-6 appendix"
     }
   },
   "derived_diffs": {
     "s3e9_tree_minus_linear": 0.00456,
     "s3e14_linear_minus_tree": 0.07256,
-    "s3e5_linear_minus_tree": 3e-05
+    "s3e5_linear_minus_tree": 3e-05,
+    "s3e3_tree_minus_linear_auc": 0.003302,
+    "s3e7_tree_minus_linear_auc": 0.000349,
+    "s3e1_linear_minus_tree_rmse": 0.000759,
+    "s3e19_linear_minus_tree_smape": 0.26239,
+    "s3e19_linear_minus_tree_smape_pct": 2.62,
+    "s3e11_linear_minus_tree_rmsle": 0.000368,
+    "s3e1_linear_minus_tree_rmse_pct": 0.14
   },
   "s3e5_qwk_positive": {
     "root_qwk": 0.56244,
@@ -566,5 +1593,70 @@
       0.56664,
       0.56725
     ]
+  },
+  "v2_sweep_verdict": {
+    "n_comps": 5,
+    "n_beat": 5,
+    "eval_counts_to_beat": {
+      "s3e3_v2": 7,
+      "s3e7_v2": 8,
+      "s3e1_v2": 9,
+      "s3e19_v2": 7,
+      "s3e11_v2": 10
+    },
+    "prior_win_rate_by_comp": {
+      "s3e3_v2": {
+        "n_informed": 7,
+        "n_uninformed": 7,
+        "informed_win_rate": 0.14285714285714285,
+        "uninformed_win_rate": 0.14285714285714285
+      },
+      "s3e7_v2": {
+        "n_informed": 8,
+        "n_uninformed": 6,
+        "informed_win_rate": 0.625,
+        "uninformed_win_rate": 0.16666666666666666
+      },
+      "s3e1_v2": {
+        "n_informed": 5,
+        "n_uninformed": 8,
+        "informed_win_rate": 1.0,
+        "uninformed_win_rate": 0.625
+      },
+      "s3e19_v2": {
+        "n_informed": 3,
+        "n_uninformed": 9,
+        "informed_win_rate": 0.3333333333333333,
+        "uninformed_win_rate": 0.4444444444444444
+      },
+      "s3e11_v2": {
+        "n_informed": 3,
+        "n_uninformed": 11,
+        "informed_win_rate": 1.0,
+        "uninformed_win_rate": 0.18181818181818182
+      }
+    },
+    "prior_win_rate_pct": {
+      "s3e3_v2": {
+        "informed_pct": 14.3,
+        "uninformed_pct": 14.3
+      },
+      "s3e7_v2": {
+        "informed_pct": 62.5,
+        "uninformed_pct": 16.7
+      },
+      "s3e1_v2": {
+        "informed_pct": 100.0,
+        "uninformed_pct": 62.5
+      },
+      "s3e19_v2": {
+        "informed_pct": 33.3,
+        "uninformed_pct": 44.4
+      },
+      "s3e11_v2": {
+        "informed_pct": 100.0,
+        "uninformed_pct": 18.2
+      }
+    }
   }
 }
