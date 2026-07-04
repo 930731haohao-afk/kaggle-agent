@@ -4,7 +4,8 @@
   "tier_definitions": {
     "tier1": "generic baseline (competitions/run_competition.py batch run)",
     "tier2": "best skill-pipeline score BEFORE the Phase B self-improvement commit",
-    "tier3": "final best score (after Phase B, current state)"
+    "tier3": "final best score after Phase B linear self-improvement iteration (excludes tree-search entries, frozen at the Phase C-1 benchmark meaning)",
+    "tier4": "best score after tree-search harvest (Phase G-1a/G-1b), i.e. best over ALL experiment_ids including tree-search entries"
   },
   "rows": [
     {
@@ -24,9 +25,15 @@
       "tier3": {
         "value": 0.557088,
         "experiment_id": 7,
-        "label": "final best (post-Phase-B self-improvement)"
+        "label": "final best (post-Phase-B self-improvement, linear iteration only, excludes tree-search entries)"
+      },
+      "tier4": {
+        "value": 0.556329,
+        "experiment_id": 8,
+        "label": "best after tree-search harvest (Phase G-1a/G-1b)"
       },
       "relative_pct": 0.8140155966242959,
+      "relative_pct_tier1_tier4": 0.9491507317594426,
       "note": null
     },
     {
@@ -46,9 +53,15 @@
       "tier3": {
         "value": 0.83814,
         "experiment_id": 7,
-        "label": "final best (post-Phase-B self-improvement)"
+        "label": "final best (post-Phase-B self-improvement, linear iteration only, excludes tree-search entries)"
+      },
+      "tier4": {
+        "value": 0.845051,
+        "experiment_id": 8,
+        "label": "best after tree-search harvest (Phase G-1a/G-1b)"
       },
       "relative_pct": 2.6830344016465784,
+      "relative_pct_tier1_tier4": 3.529721650494957,
       "note": null
     },
     {
@@ -68,9 +81,15 @@
       "tier3": {
         "value": 0.56769,
         "experiment_id": 8,
-        "label": "final best (post-Phase-B self-improvement)"
+        "label": "final best (post-Phase-B self-improvement, linear iteration only, excludes tree-search entries)"
+      },
+      "tier4": {
+        "value": 0.57066,
+        "experiment_id": 12,
+        "label": "best after tree-search harvest (Phase G-1a/G-1b)"
       },
       "relative_pct": 18.587453782039233,
+      "relative_pct_tier1_tier4": 19.20787115372562,
       "note": null
     },
     {
@@ -90,9 +109,15 @@
       "tier3": {
         "value": 0.899893,
         "experiment_id": 6,
-        "label": "final best (post-Phase-B self-improvement)"
+        "label": "final best (post-Phase-B self-improvement, linear iteration only, excludes tree-search entries)"
+      },
+      "tier4": {
+        "value": 0.900455,
+        "experiment_id": 7,
+        "label": "best after tree-search harvest (Phase G-1a/G-1b)"
       },
       "relative_pct": 0.11937874101601008,
+      "relative_pct_tier1_tier4": 0.18190516454908137,
       "note": null
     },
     {
@@ -112,9 +137,15 @@
       "tier3": {
         "value": 12.070034,
         "experiment_id": 8,
-        "label": "final best (post-Phase-B self-improvement)"
+        "label": "final best (post-Phase-B self-improvement, linear iteration only, excludes tree-search entries)"
+      },
+      "tier4": {
+        "value": 12.070034,
+        "experiment_id": 8,
+        "label": "no tree-search entry beat the linear best -- tie with tier3"
       },
       "relative_pct": 3.769759233732,
+      "relative_pct_tier1_tier4": 3.769759233732,
       "note": null
     },
     {
@@ -134,9 +165,15 @@
       "tier3": {
         "value": 0.295648,
         "experiment_id": 8,
-        "label": "final best (post-Phase-B self-improvement)"
+        "label": "final best (post-Phase-B self-improvement, linear iteration only, excludes tree-search entries)"
+      },
+      "tier4": {
+        "value": 0.29528,
+        "experiment_id": 9,
+        "label": "best after tree-search harvest (Phase G-1a/G-1b)"
       },
       "relative_pct": 0.532247754264365,
+      "relative_pct_tier1_tier4": 0.6560575984927522,
       "note": null
     },
     {
@@ -156,9 +193,15 @@
       "tier3": {
         "value": 340.59891,
         "experiment_id": 7,
-        "label": "final best (post-Phase-B self-improvement)"
+        "label": "final best (post-Phase-B self-improvement, linear iteration only, excludes tree-search entries)"
+      },
+      "tier4": {
+        "value": 340.35572,
+        "experiment_id": 8,
+        "label": "best after tree-search harvest (Phase G-1a/G-1b)"
       },
       "relative_pct": 0.2369336472726447,
+      "relative_pct_tier1_tier4": 0.3081651732523279,
       "note": null
     },
     {
@@ -174,11 +217,18 @@
       "tier3": {
         "value": 10.019463,
         "experiment_id": 7,
-        "label": "final best (post-Phase-B, TimeSeriesSplit CV)"
+        "label": "final best (post-Phase-B, TimeSeriesSplit CV, linear iteration only, excludes tree-search entries)"
+      },
+      "tier4": {
+        "value": 9.75707,
+        "experiment_id": 8,
+        "label": "best after tree-search harvest (Phase G-1b, node #17, same TimeSeriesSplit CV scheme)"
       },
       "relative_pct": 1.532461092181467,
-      "relative_pct_basis": "tier2->tier3 (no comparable generic tier1 under this CV scheme)",
-      "note": "Primary/honest row: test period is strictly future, so TimeSeriesSplit is the only valid CV scheme here. The generic-batch entry (exp #1, 5.31891) used plain KFold and is NOT tier1-comparable to this row — see the separate CV-scheme diagnostic pair below."
+      "relative_pct_tier1_tier4": null,
+      "relative_pct_tier2_tier4": 4.111161461316936,
+      "relative_pct_basis": "tier2->tier3/tier4 (no comparable generic tier1 under this CV scheme)",
+      "note": "Primary/honest row: test period is strictly future, so TimeSeriesSplit is the only valid CV scheme here. The generic-batch entry (exp #1, 5.31891) used plain KFold and is NOT tier1-comparable to this row — see the separate CV-scheme diagnostic pair below. This CV-scheme caveat now covers tier2, tier3, AND tier4: the tier4 tree-search entry (Phase D-5, node #17, 9.75707) also ran under the same honest TimeSeriesSplit CV and carries the SAME fold-5 double-dip caveat as tier2/tier3 (see competitions/playground-series-s3e19/REPORT.md 3c and STATUS.md Appendix), PLUS its own scale-parameter/seed-selection OOF-fitting caveat — the true expected 2022 SMAPE is best read as 'meaningfully below 10.02', not literally 9.76."
     },
     {
       "comp": "s3e19-kfold-diagnostic",
@@ -199,7 +249,13 @@
         "experiment_id": 3,
         "label": "same as tier2 — never iterated further under this CV scheme"
       },
+      "tier4": {
+        "value": 4.281421,
+        "experiment_id": 3,
+        "label": "same as tier2/tier3 — no tree-search was ever run under this diagnostic plain-KFold CV scheme (tree-search only ran on the honest TimeSeriesSplit trajectory, see the row above)"
+      },
       "relative_pct": 19.505669394669205,
+      "relative_pct_tier1_tier4": 19.505669394669205,
       "note": "Same-CV-scheme sanity check only (knowledge/experience.md CV-design guard): isolates the skill's feature/model gain from the CV-scheme optimism gap. Not a real production trajectory — the actual submission path is the TimeSeriesSplit row above."
     },
     {
@@ -219,10 +275,16 @@
       "tier3": {
         "value": 1.33812,
         "experiment_id": 1,
-        "label": "final best — Phase B ran (exp #3/#4: Optuna-tune + seed-bag) but BOTH rounds made rounded OOF MAE worse (1.33850, 1.33893); stopped per 2-non-improving-round protocol, best remains unchanged"
+        "label": "final best — Phase B ran (exp #3/#4: Optuna-tune + seed-bag) but BOTH rounds made rounded OOF MAE worse (1.33850, 1.33893); stopped per 2-non-improving-round protocol, best remains unchanged. Linear iteration only, excludes the tree-search entry below."
+      },
+      "tier4": {
+        "value": 1.33563,
+        "experiment_id": 5,
+        "label": "best after tree-search harvest (Phase G-1a, node #15, ROUNDED OOF MAE — this is a raw-vs-rounded INVERSION case: the node's raw OOF MAE (1.35712) is WORSE than the linear champion's raw 1.35589, but its ROUNDED OOF MAE (1.33563) is better; decision metric on this comp is the rounded score, per this comp's own boundary-case finding)"
       },
       "relative_pct": 1.2027377234367669,
-      "note": "Decision metric is ROUNDED OOF MAE (validated against real Kaggle LB, CV-LB gap ~0.006), not the raw blend_oof_mae exposed by collect.py's generic adapter. Phase B attempted the validated Optuna-tune+seed-bag recipe but it did not survive the rounding step (raw OOF improved 1.35589->1.35533, rounded OOF worsened 1.33812->1.33893) — a documented boundary case, not a missing iteration."
+      "relative_pct_tier1_tier4": 1.3865816111812375,
+      "note": "Decision metric is ROUNDED OOF MAE (validated against real Kaggle LB, CV-LB gap ~0.006), not the raw blend_oof_mae exposed by collect.py's generic adapter. Phase B attempted the validated Optuna-tune+seed-bag recipe but it did not survive the rounding step (raw OOF improved 1.35589->1.35533, rounded OOF worsened 1.33812->1.33893) — a documented boundary case, not a missing iteration. tier4's tree-search entry is likewise rounded-MAE-only-comparable: raw OOF is worse than the linear champion, rounded OOF is better — see tier4 label. All tiers are CV-only; none of these scores were submitted to Kaggle."
     },
     {
       "comp": "s3e20",
@@ -241,10 +303,16 @@
       "tier3": {
         "value": 21.1487,
         "experiment_id": 7,
-        "label": "final best (post-Phase-B TE denoising: shrinkage + COVID-downweight + neighbor-week smoothing)"
+        "label": "final best (post-Phase-B TE denoising: shrinkage + COVID-downweight + neighbor-week smoothing). Linear iteration only, excludes the tree-search entry below."
+      },
+      "tier4": {
+        "value": 21.0589,
+        "experiment_id": 9,
+        "label": "best after tree-search harvest (Phase G-1b, node #28, pure-structural JOINT lineage — NOT the 21.0332 GBDT-blend node, which STATUS.md flags as low-confidence CV-noise, see competitions/playground-series-s3e20/STATUS.md Appendix 'Phase E-4 樹搜尋 v2')"
       },
       "relative_pct": 25.381407361409053,
-      "note": "No run_competition.py generic-batch script was ever executed for s3e20 — it is a closed (2023) legacy competition first solved in an earlier session (2026-02-14), outside this weekend's 10-competition batch scope. Its own exp #1-#2 (RMSE 38.51, 33.21) use a single time-based split with no CatBoost/TE and are NOT CV-comparable to exp #3 onward (Leave-One-Year-Out); they are excluded rather than mislabeled as tier1. tier1 here is a same-CV-scheme PROXY (GBDT blend before the TE insight), not a generic-batch entry — treat this tier1->tier3 comparison as an approximation."
+      "relative_pct_tier1_tier4": 25.69824714914757,
+      "note": "No run_competition.py generic-batch script was ever executed for s3e20 — it is a closed (2023) legacy competition first solved in an earlier session (2026-02-14), outside this weekend's 10-competition batch scope. Its own exp #1-#2 (RMSE 38.51, 33.21) use a single time-based split with no CatBoost/TE and are NOT CV-comparable to exp #3 onward (Leave-One-Year-Out); they are excluded rather than mislabeled as tier1. tier1 here is a same-CV-scheme PROXY (GBDT blend before the TE insight), not a generic-batch entry — treat this tier1->tier3/tier4 comparison as an approximation. Late Submission for this competition is closed; all tiers (incl. tier4) are CV-only and were never submitted to Kaggle."
     }
   ]
 }

@@ -103,4 +103,6 @@ G-1 各場樹最佳以 log_experiment_v2 正式寫入 experiments.json(notes 引
 - [ ] F-3 樹搜尋報告最終版
 - [x] Phase F-3 最終報告完成(commit d90826a;15 次樹執行全彙整;9勝1平+三機制;verify+pdf過)
 - [x] Phase G-1a 收割完成(commit 待補;s3e1 0.556329/s3e3 0.845051/s3e5 0.57066/s3e7 0.900455/s3e16 rounded 1.33563 全數以 log_experiment_v2 入帳,notes 皆引樹檔+node id+CV-only 聲明;5 場 REPORT.md 重產,verify+pdf 全綠;s3e16 report 同步補上先前未重產的 Phase B exp3/4,並在 3/6/7 節明確區分 raw-vs-rounded 語意與「facts.best≠已提交LB」)
-- [ ] G-1b 收割 s3e11/s3e14/s3e19/s3e20 + benchmark tier-4
+- [x] Phase G-1a 收割完成(commit 1e3beb9;s3e1/s3e3/s3e5/s3e7/s3e16 樹最佳入帳 exp#、報告重產,verify+pdf 全過;s3e16 raw/rounded 反轉記錄在案)
+- [x] Phase G-1b 收割完成(commit 待補;s3e11 0.29528/s3e14 340.35572/s3e19 9.75707(fold-5 double-dip+OOF-fitted scale 警語逐字入 notes)/s3e20 21.0589(純結構節點,明確不採 21.0332 低信心 blend)全數以 log_experiment_v2 入帳,notes 皆引樹檔+node id+CV-only 聲明;4 場 REPORT.md 重產,verify+pdf 全綠;docs/scripts/build_benchmark_table.py 新增機械式 is_tree_entry() 偵測 + tier4 欄位,docs/benchmark_facts.json 重產(11 rows,10 場主表 tier1→tier4 9 勝 1 平手 s3e9),docs/benchmark_summary.md 加 tier4 欄+相對變化欄+「樹搜尋(tier4)」段落,全部既有 caveat 保留並擴充涵蓋 tier4,verify+pdf 過)
+- [ ] C-4 週末總結

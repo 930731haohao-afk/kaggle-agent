@@ -1,7 +1,7 @@
 # 競賽分析報告:playground-series-s3e11
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-03
+> 素材等級:full | 產生日期:2026-07-03(2026-07-04 更新:Phase G-1b 樹搜尋成果入帳,實驗 9)
 
 ## 1. 競賽目的
 
@@ -42,9 +42,10 @@ Aygun et al.(Nature 2026)Kaggle Playground 基準之一(來源:`competition.note
 
 ## 3. 模型規格
 
-本場共八筆實驗:前三筆(Phase A)為 LightGBM + XGBoost + CatBoost 三模型加權集成,差別在
-特徵集與訓練方法;後五筆(Phase B 自我改進迭代 R1–R5)在最佳特徵集上調整模型池組成
-(刪除 XGBoost、Optuna 調參 CatBoost、seed bagging、特徵消融)。
+本場共九筆實驗:前三筆(Phase A)為 LightGBM + XGBoost + CatBoost 三模型加權集成,差別在
+特徵集與訓練方法;第 4–8 筆(Phase B 自我改進迭代 R1–R5)在最佳特徵集上調整模型池組成
+(刪除 XGBoost、Optuna 調參 CatBoost、seed bagging、特徵消融);**第 9 筆(facts.best,
+Phase G-1b 樹搜尋)不是線性迭代的延續回合**,細節見 3a 小節。
 
 **實驗 1(`generic_batch`,通用批次基線;15 原始特徵)— base models:**
 
@@ -119,15 +120,51 @@ random_strength=0.09160286047373326;搜尋耗時 319.3s(40 trials,timeout guard 
 權重搜尋把全部權重給了調參 CatBoost 家族——調參後單模(0.29579)已勝 Phase A 三模型
 blend(0.296143),LGB 與原參數 CatBoost 淪為冗餘。
 
+### 3a. 樹搜尋最佳(facts.best,實驗 9)——本次更新(Phase G-1b)新增
+
+Phase D-6(harness v2,2026-07-04,「SCALE case,sweep finale」)樹搜尋在實驗 8 的相同
+21-特徵集上另闢節點空間,於 `experiments_tree.json` 的 node #20(24 個評估節點:12
+solo/12 blend,其中 5 個 solo 直接複用線性迭代自己的 npz cache 而零成本評估,0 失敗,
+兩階段總 wall 513.5s;node #20 本身於第 21/24 次評估找到,是零重訓的 phase-2 純
+權重再搜尋節點,node wall_s=17.6s)找到 RMSLE 更低的 7-way blend(best.base_models):
+
+| 模型 | OOF RMSLE | 權重 |
+|------|-----------|------|
+| CAT_D12_S7 | 0.295461 | 0.2478 |
+| CAT_D12_S3000 | 0.295462 | 0.3187 |
+| CAT_D12_S3001 | 0.295483 | 0.239 |
+| CAT_S7_D10 | 0.295779 | 0.0091 |
+| CAT_S99 | 0.295786 | 0.0031 |
+| CAT_TUNED_ROOT | 0.29579 | 0.0039 |
+| DEEPLGB | 0.295833 | 0.1783 |
+
+**Ensemble**(best.ensemble):harness_v2 dirichlet phase-2 權重搜尋(BLEND2 re-seed,
+在發現 depth-12 家族後重開 blend lineage,零重訓,於快取 OOF 上進行),score = **0.29528**。
+較實驗 8 改善 -0.000368(約 -0.124% 相對改善,詳見第 6 節程式區塊)。
+
+**兩個關鍵槓桿(best.notes)**:(1) 把 CatBoost depth 推到 12,**超出**線性迭代 Optuna 自身
+的搜尋上限 10(該次 Optuna 搜尋空間本就止於 depth=10,其選出的最優解恰好落在邊界上)——
+單模 CAT_D12_S7(0.295461)已勝過 phase-1 的每一個 blend;(2) 在發現這個新的 depth-12
+solo 家族**之後**才重開 blend lineage——phase-1 的 BLEND lineage 早在 node #17 存在之前
+就已 3-strike plateau 於 0.295492。完整節點鏈、backtrack/dedup 記錄、與誠實負向結果見
+`competitions/playground-series-s3e11/STATUS.md`〈Appendix: Phase D-6 tree-search v2
+sweep〉。
+
+> **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
+> 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。本場的「現行最佳提交」仍是實驗
+> 8 對應的 submission 檔(見第 5 節);facts.best 是以 OOF score 最小者選出,與是否已
+> 提交至 Kaggle 無關。
+
 ## 4. 訓練規格
 
 | 實驗 | CV scheme | n_splits | seed |
 |------|-----------|----------|------|
 | 1 | 5fold | 5 | 無紀錄 |
 | 2–8 | 5fold_kfold_shuffle | 5(自 strategy 名稱) | 42 |
+| 9(樹搜尋) | KFold | 5(shuffle=true) | 42 |
 
-(來源:`experiments[].cv`。實驗 1 的 seed 無對應欄位,寫「無紀錄」。實驗 2–8 全部使用
-同一 fold 切分,分數可直接比較。)
+(來源:`experiments[].cv`。實驗 1 的 seed 無對應欄位,寫「無紀錄」。實驗 2–9 全部使用
+同一 fold 切分(KFold/5/shuffle/seed 42),分數可直接比較。)
 
 **Objective**:實驗 2、3 對 **log1p(cost)** 以 RMSE objective 訓練(LGB `regression`、
 XGB `reg:squarederror`、CAT `RMSE`),因為 RMSLE 即「log1p 空間的 RMSE」,如此 objective
@@ -141,17 +178,20 @@ XGB `reg:squarederror`、CAT `RMSE`),因為 RMSLE 即「log1p 空間的 RMSE」,
 
 ## 5. 推論程序
 
-`facts.best`(實驗 8)之 `postprocess` 欄位未記錄 → **無後處理紀錄**;惟各實驗 notes
+**facts.best 現為實驗 9(樹搜尋,見 3a 節)**,其 `postprocess`/`submission` 欄位皆未記錄
+(OOF-only 結果,未產生 test 預測)。以下描述線性迭代終點實驗 8 的推論流程:`postprocess`
+欄位未記錄 → **無後處理紀錄**;惟各實驗 notes
 記載推論流程本身包含「expm1 逆轉換 + clip 至非負」,這是 log 目標訓練的必要配套步驟而非
 額外後處理。測試集的 `store_te` 特徵取五個 fold 編碼平均、未見過的 profile 以訓練折全域
 平均代入(fallback)。最終預測為 5 個成員測試預測(各自已是 5-fold 平均)在 log 空間的
 加權和,再做 expm1 + clip。
 
 Submission:`sub_r5_seedbag3_0.29565_20260703_223829.csv`(來源:`experiments[7].submission`,
-即 `facts.best.submission`),格式為兩欄 —— `id`(`competition.id_column`)與 `cost`
-(`competition.target_column`),每列對應一筆測試樣本的成本預測值。
+即實驗 8 的提交檔,格式為兩欄 —— `id`(`competition.id_column`)與 `cost`
+(`competition.target_column`),每列對應一筆測試樣本的成本預測值)。**實驗 9(現行
+facts.best)未產生任何 submission 檔**——樹搜尋為 OOF-only 搜尋,不可與此檔案混淆。
 
-**注意**:本場為週末自主批次執行,八筆實驗皆**未提交** Kaggle 排行榜(`facts.missing` 含
+**注意**:本場為週末自主批次執行,九筆實驗皆**未提交** Kaggle 排行榜(`facts.missing` 含
 `leaderboard`),無 Public/Private LB 分數。
 
 ## 6. 評估指標
@@ -166,7 +206,8 @@ Submission:`sub_r5_seedbag3_0.29565_20260703_223829.csv`(來源:`experiments[7].
 | 實驗 3 Ensemble(skill engineered,Phase A 最佳) | 0.296143 |
 | 實驗 5 Ensemble(R2 Optuna CatBoost) | 0.295781 |
 | 實驗 6 Ensemble(R3 seed bagging) | 0.295715 |
-| 實驗 8 Ensemble(R5 seed bagging ×3,**facts.best**) | **0.295648** |
+| 實驗 8 Ensemble(R5 seed bagging ×3,線性迭代終點) | 0.295648 |
+| 實驗 9 樹搜尋 v2(node #20,**facts.best**) | **0.29528** |
 | Public LB | 無紀錄(未提交) |
 | Private LB | 無紀錄(未提交) |
 
@@ -184,6 +225,9 @@ Phase B(自我改進迭代):
 實驗 8 − 實驗 6:0.295715 − 0.295648 = 0.000067  (seed bagging 第 3 個 seed)
 實驗 7 − 實驗 6:0.2962   − 0.295715 = 0.000485  (退步:per-combo 特徵均值,棄用)
 實驗 8 − 實驗 3:0.296143 − 0.295648 = 0.000495  (Phase B 總增益,~0.17% 相對改善)
+
+Phase G-1b(樹搜尋 v2,node #20):
+實驗 8 − 實驗 9:0.295648 − 0.29528  = 0.000368  (~0.124% 相對改善,詳見第 3a 節兩槓桿)
 ```
 
 CV↔LB gap:無排行榜紀錄,無法計算。
@@ -200,8 +244,9 @@ CV↔LB gap:無排行榜紀錄,無法計算。
 | 6 | 2026-07-03T22:32:05 | 0.295715 | v2 |
 | 7 | 2026-07-03T22:36:33 | 0.2962 | v2 |
 | 8 | 2026-07-03T22:38:30 | 0.295648 | v2 |
+| 9 | 2026-07-04T12:17:25 | 0.29528 | v2 |
 
-(來源:`facts.trajectory`。最佳分數出現於第 8 筆,即 `facts.best`。)
+(來源:`facts.trajectory`。最佳分數現為第 9 筆(樹搜尋),即 `facts.best`。)
 
 **突破點(Phase A)**:主要改善發生在第 2 → 第 3 筆之間。第 2 筆只是把通用基線的方法論換成
 「log1p 目標 + early stopping + 權重搜尋」,分數僅微幅改善;第 3 筆加入 6 個工程特徵——尤其是
@@ -216,6 +261,17 @@ store profile 的 K-fold target encoding(`store_te`)——帶來 Phase A 絕大�
 各貢獻噪音級以上的小增益;第 7 筆(R4)在 store_te 之上再加 per-combo 特徵均值反而全面退步
 ——樹模型已能從 store_te 與原始欄位取得該組合的訊號,額外的組彙總只添冗餘——故棄用,
 最終最佳(第 8 筆)回到 21 特徵集。迭代依「連續退步/增益縮至噪音級即停」原則於 R5 後收手。
+
+**突破點(Phase G-1b,本次更新新增)**:第 9 筆不是線性迭代的延續回合,而是 Phase D-6
+(2026-07-04)以 harness v2 執行的**樹搜尋(tree-search)**結果——來源 `experiments_tree.json`
+的 node #20。樹搜尋在實驗 8 的相同 21-特徵集與 CV 折上另闢節點空間,把 CatBoost depth
+推到線性迭代 Optuna 搜尋上限(10)之外的 12,並在發現這個新的高容量家族後重開已 plateau
+的 blend lineage,兩者複合把分數從 0.295648 降至 0.29528(詳見 3a 節)。**誠實 CV-only
+警語**:此結果為 OOF-only 搜尋產物——tree_search harness 未產生任何 test 預測檔,facts.json
+本筆亦無 submission 欄位,**未提交至 Kaggle**;不可與實驗 8 實際提交的 submission 檔案
+混淆(見第 5 節)。完整節點鏈、backtrack/dedup 統計、與「什麼真正起作用」的誠實歸因見
+`competitions/playground-series-s3e11/STATUS.md`〈Appendix: Phase D-6 tree-search v2
+sweep〉。
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 
@@ -245,7 +301,10 @@ uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py tune  # 
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r2    # 實驗 5
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r3    # 實驗 6
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r4    # 實驗 7(退步,棄用)
-uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r5    # 實驗 8(最佳)
+uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r5    # 實驗 8(線性迭代終點)
+
+# 4b) Phase D-6 樹搜尋 v2(facts.best,實驗 9)— resumable;軌跡存於 experiments_tree.json
+uv run python3 tree_search/run_s3e11.py
 
 # 5) (未執行)提交排行榜:
 # uv run kaggle competitions submit -c playground-series-s3e11 \

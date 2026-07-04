@@ -514,82 +514,153 @@
       },
       "submission": "sub_r5_seedbag3_0.29565_20260703_223829.csv",
       "notes": "Third seed (7) of tuned CatBoost added as 5th pool member; back on the 21-feat set (R4 deep store aggregates rejected after regression)."
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-04T12:17:25",
+      "source_format": "v2",
+      "metric": "rmsle",
+      "direction": "minimize",
+      "model": "tree-search v2 blend (7-way: depth-12 CatBoost seed family + seed-bagged tuned CAT pool + deep LGB, phase-2 weight re-search)",
+      "score": 0.29528,
+      "cv": {
+        "scheme": "KFold",
+        "n_splits": 5,
+        "shuffle": true,
+        "seed": 42
+      },
+      "base_models": [
+        {
+          "name": "CAT_D12_S7",
+          "score": 0.295461,
+          "weight": 0.2478,
+          "note": "tuned-CAT depth 10->12, seed 7; best solo of the whole tree, beats Optuna's own search cap (depth<=10)"
+        },
+        {
+          "name": "CAT_D12_S3000",
+          "score": 0.295462,
+          "weight": 0.3187,
+          "note": "depth-12 family, fallback seed variation"
+        },
+        {
+          "name": "CAT_D12_S3001",
+          "score": 0.295483,
+          "weight": 0.239,
+          "note": "depth-12 family, fallback seed variation"
+        },
+        {
+          "name": "CAT_S7_D10",
+          "score": 0.295779,
+          "weight": 0.0091,
+          "note": "linear-run's depth-10 tuned-CAT seed-7 pool member, reused from scripts/cache/cat_tuned_seed7.npz"
+        },
+        {
+          "name": "CAT_S99",
+          "score": 0.295786,
+          "weight": 0.0031,
+          "note": "4th tuned-CAT seed, untried by the linear run"
+        },
+        {
+          "name": "CAT_TUNED_ROOT",
+          "score": 0.29579,
+          "weight": 0.0039,
+          "note": "linear-run's strongest solo (Optuna fold-0-proxy tuned CAT, seed 42), reused from scripts/cache/cat_tuned.npz"
+        },
+        {
+          "name": "DEEPLGB",
+          "score": 0.295833,
+          "weight": 0.1783,
+          "note": "deliberately diverse deep/light-reg LGB (num_leaves 255); never tuned by the linear run"
+        }
+      ],
+      "ensemble": {
+        "method": "harness_v2 dirichlet phase-2 weight search over cached OOF (BLEND2 re-seed after depth-12 family discovery, zero retraining)",
+        "weights": {
+          "CAT_D12_S7": 0.2478,
+          "CAT_D12_S3000": 0.3187,
+          "CAT_D12_S3001": 0.239,
+          "CAT_S7_D10": 0.0091,
+          "CAT_S99": 0.0031,
+          "CAT_TUNED_ROOT": 0.0039,
+          "DEEPLGB": 0.1783
+        },
+        "score": 0.29528
+      },
+      "notes": "Tree-search result (Phase D-6, harness v2, 2026-07-04) — NOT a linear-iteration round; the model still trains on the same 21-feature set as experiment_id=8. Source: experiments_tree.json, node #20 (24 evaluated nodes total: 12 solo/12 blend, 5 solos reused at zero cost from the linear run's own npz caches, 0 failed, wall 513.5s total over both search phases; node #20 itself found at evaluation #21 of 24, as a phase-2 pure re-blend/weight-search over cached OOF with zero retraining, node wall_s=17.6s). Beats linear-iteration best (experiment_id=8, 0.295648) by -0.000368 (~-0.124% relative). The two levers that moved it: (1) pushing CatBoost depth to 12, BEYOND Optuna's own search cap of 10 (the linear run's Optuna search space stopped at depth=10, its own chosen optimum sat on that boundary) — solo CAT_D12_S7 (0.295461) beat every phase-1 blend outright; (2) re-opening the blend lineage AFTER this new depth-12 solo family was discovered (phase 1's BLEND lineage had already 3-strike plateaued at 0.295492 before node #17 existed). See competitions/playground-series-s3e11/STATUS.md Appendix 'Phase D-6 tree-search v2 sweep' for full node lineage, backtrack/dedup ledger, and honest negative results. OOF-only search result — no test predictions were generated for this blend, so no submission field (do not fabricate a filename); not submitted to Kaggle."
     }
   ],
   "best": {
-    "experiment_id": 8,
-    "timestamp": "2026-07-03T22:38:30",
+    "experiment_id": 9,
+    "timestamp": "2026-07-04T12:17:25",
     "source_format": "v2",
     "metric": "rmsle",
     "direction": "minimize",
-    "model": "R5: 5-way pool, third seed of tuned CatBoost (seed bagging extension)",
-    "score": 0.295648,
+    "model": "tree-search v2 blend (7-way: depth-12 CatBoost seed family + seed-bagged tuned CAT pool + deep LGB, phase-2 weight re-search)",
+    "score": 0.29528,
     "cv": {
-      "strategy": "5fold_kfold_shuffle",
+      "scheme": "KFold",
+      "n_splits": 5,
+      "shuffle": true,
       "seed": 42
     },
-    "features": [
-      "store_sales(in millions)",
-      "unit_sales(in millions)",
-      "total_children",
-      "num_children_at_home",
-      "avg_cars_at home(approx).1",
-      "gross_weight",
-      "recyclable_package",
-      "low_fat",
-      "units_per_case",
-      "store_sqft",
-      "coffee_bar",
-      "video_store",
-      "salad_bar",
-      "prepared_food",
-      "florist",
-      "amenity_count",
-      "weight_per_case",
-      "sales_ratio",
-      "children_away",
-      "cars_per_child",
-      "store_te"
-    ],
-    "n_features": 21,
     "base_models": [
       {
-        "model": "LGB",
-        "oof_rmsle": 0.29661,
-        "time_s": 75.5
+        "name": "CAT_D12_S7",
+        "score": 0.295461,
+        "weight": 0.2478,
+        "note": "tuned-CAT depth 10->12, seed 7; best solo of the whole tree, beats Optuna's own search cap (depth<=10)"
       },
       {
-        "model": "CAT_orig",
-        "oof_rmsle": 0.29618,
-        "time_s": 58.2
+        "name": "CAT_D12_S3000",
+        "score": 0.295462,
+        "weight": 0.3187,
+        "note": "depth-12 family, fallback seed variation"
       },
       {
-        "model": "CAT_tuned",
-        "oof_rmsle": 0.29579,
-        "time_s": 31.4
+        "name": "CAT_D12_S3001",
+        "score": 0.295483,
+        "weight": 0.239,
+        "note": "depth-12 family, fallback seed variation"
       },
       {
-        "model": "CAT_tuned_seed2024",
-        "oof_rmsle": 0.29591,
-        "time_s": 34.0
+        "name": "CAT_S7_D10",
+        "score": 0.295779,
+        "weight": 0.0091,
+        "note": "linear-run's depth-10 tuned-CAT seed-7 pool member, reused from scripts/cache/cat_tuned_seed7.npz"
       },
       {
-        "model": "CAT_tuned_seed7",
-        "oof_rmsle": 0.29578,
-        "time_s": 31.9
+        "name": "CAT_S99",
+        "score": 0.295786,
+        "weight": 0.0031,
+        "note": "4th tuned-CAT seed, untried by the linear run"
+      },
+      {
+        "name": "CAT_TUNED_ROOT",
+        "score": 0.29579,
+        "weight": 0.0039,
+        "note": "linear-run's strongest solo (Optuna fold-0-proxy tuned CAT, seed 42), reused from scripts/cache/cat_tuned.npz"
+      },
+      {
+        "name": "DEEPLGB",
+        "score": 0.295833,
+        "weight": 0.1783,
+        "note": "deliberately diverse deep/light-reg LGB (num_leaves 255); never tuned by the linear run"
       }
     ],
     "ensemble": {
+      "method": "harness_v2 dirichlet phase-2 weight search over cached OOF (BLEND2 re-seed after depth-12 family discovery, zero retraining)",
       "weights": {
-        "LGB": 0.0,
-        "CAT_orig": 0.0,
-        "CAT_tuned": 0.4,
-        "CAT_tuned_s2024": 0.2,
-        "CAT_tuned_s7": 0.4
-      }
+        "CAT_D12_S7": 0.2478,
+        "CAT_D12_S3000": 0.3187,
+        "CAT_D12_S3001": 0.239,
+        "CAT_S7_D10": 0.0091,
+        "CAT_S99": 0.0031,
+        "CAT_TUNED_ROOT": 0.0039,
+        "DEEPLGB": 0.1783
+      },
+      "score": 0.29528
     },
-    "submission": "sub_r5_seedbag3_0.29565_20260703_223829.csv",
-    "notes": "Third seed (7) of tuned CatBoost added as 5th pool member; back on the 21-feat set (R4 deep store aggregates rejected after regression)."
+    "notes": "Tree-search result (Phase D-6, harness v2, 2026-07-04) — NOT a linear-iteration round; the model still trains on the same 21-feature set as experiment_id=8. Source: experiments_tree.json, node #20 (24 evaluated nodes total: 12 solo/12 blend, 5 solos reused at zero cost from the linear run's own npz caches, 0 failed, wall 513.5s total over both search phases; node #20 itself found at evaluation #21 of 24, as a phase-2 pure re-blend/weight-search over cached OOF with zero retraining, node wall_s=17.6s). Beats linear-iteration best (experiment_id=8, 0.295648) by -0.000368 (~-0.124% relative). The two levers that moved it: (1) pushing CatBoost depth to 12, BEYOND Optuna's own search cap of 10 (the linear run's Optuna search space stopped at depth=10, its own chosen optimum sat on that boundary) — solo CAT_D12_S7 (0.295461) beat every phase-1 blend outright; (2) re-opening the blend lineage AFTER this new depth-12 solo family was discovered (phase 1's BLEND lineage had already 3-strike plateaued at 0.295492 before node #17 existed). See competitions/playground-series-s3e11/STATUS.md Appendix 'Phase D-6 tree-search v2 sweep' for full node lineage, backtrack/dedup ledger, and honest negative results. OOF-only search result — no test predictions were generated for this blend, so no submission field (do not fabricate a filename); not submitted to Kaggle."
   },
   "trajectory": [
     {
@@ -638,6 +709,12 @@
       "experiment_id": 8,
       "timestamp": "2026-07-03T22:38:30",
       "score": 0.295648,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-04T12:17:25",
+      "score": 0.29528,
       "source_format": "v2"
     }
   ],

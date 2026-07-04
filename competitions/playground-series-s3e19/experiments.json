@@ -605,5 +605,98 @@
     },
     "notes": "Phase B round 4: Optuna (TPE, 40 trials, 42.0s) tuned LGB hyperparameters using fold 5 (the last TimeSeriesSplit fold, closest in spirit to the real 2022 extrapolation gap) as a fast single-fold proxy objective; best fold-5 SMAPE 8.19294 with params {'learning_rate': 0.037125798221945665, 'num_leaves': 20, 'min_child_samples': 38, 'subsample': 0.6105071416341405, 'colsample_bytree': 0.9049138633231821, 'reg_alpha': 0.0010341384364001556, 'reg_lambda': 0.43011494608925666, 'n_estimators': 2000, 'random_state': 42, 'verbosity': -1}. Tuned config re-validated on the full 5-fold OOF and added as a NEW pool member (not a replacement) alongside the round-3 seed-bagged LGB/CAT pool; weight search over all 6 members decides the final blend.",
     "submission": "sub_6way_optuna_blend_10.01946_20260704_002039.csv"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-04T12:18:09",
+    "model": "tree-search v2 blend (10-way: seed-bagged tuned-LGB family + calendar-subset probe + auto_scale global multiplier)",
+    "metric": "smape",
+    "direction": "minimize",
+    "score": 9.75707,
+    "cv": {
+      "strategy": "TimeSeriesSplit-5fold-on-unique-dates",
+      "n_splits": 5
+    },
+    "base_models": [
+      {
+        "name": "LGB_TUNED_ROOT",
+        "score": 10.148325,
+        "weight": 0.0089,
+        "note": "root: linear-run's Optuna fold-5-proxy-tuned LGB, seed 42"
+      },
+      {
+        "name": "LGB_S42",
+        "score": 10.177577,
+        "weight": 0.0238,
+        "note": "hand-set LGB, seed 42"
+      },
+      {
+        "name": "LGB_S2024",
+        "score": 10.210617,
+        "weight": 0.0115,
+        "note": "hand-set LGB, seed 2024"
+      },
+      {
+        "name": "LGB_S7",
+        "score": 10.19448,
+        "weight": 0.1989,
+        "note": "hand-set LGB, seed 7"
+      },
+      {
+        "name": "CAT_S42",
+        "score": 10.730642,
+        "weight": 0.0003,
+        "note": "hand-set CatBoost, seed 42"
+      },
+      {
+        "name": "CAT_S2024",
+        "score": 10.983835,
+        "weight": 0.0032,
+        "note": "hand-set CatBoost, seed 2024"
+      },
+      {
+        "name": "SEEDBAG_TUNED_S2024",
+        "score": 9.974778,
+        "weight": 0.2448,
+        "note": "seed-bagged Optuna-tuned LGB, random_state 42->2024 -- STATUS.md-flagged 'untried' idea, single-handedly beat the linear 6-way blend as a solo"
+      },
+      {
+        "name": "DEEPLGB",
+        "score": 10.347073,
+        "weight": 0.0746,
+        "note": "deliberately diverse deep/high-capacity/light-reg LGB"
+      },
+      {
+        "name": "CALSUBSET",
+        "score": 10.137705,
+        "weight": 0.1781,
+        "note": "drop weekofyear (redundant with day_of_year) calendar-feature-subset probe"
+      },
+      {
+        "name": "SEEDBAG_TUNED_S3000",
+        "score": 9.990227,
+        "weight": 0.2559,
+        "note": "seed-bagged tuned LGB, fallback seed variation random_state=3000"
+      }
+    ],
+    "ensemble": {
+      "type": "harness_v2 dirichlet weight search + auto_scale grid-searched global multiplier (both fitted inside metric_fn on cached OOF)",
+      "weights": {
+        "LGB_TUNED_ROOT": 0.0089,
+        "LGB_S42": 0.0238,
+        "LGB_S2024": 0.0115,
+        "LGB_S7": 0.1989,
+        "CAT_S42": 0.0003,
+        "CAT_S2024": 0.0032,
+        "SEEDBAG_TUNED_S2024": 0.2448,
+        "DEEPLGB": 0.0746,
+        "CALSUBSET": 0.1781,
+        "SEEDBAG_TUNED_S3000": 0.2559
+      },
+      "scale_used": 1.02,
+      "score": 9.75707
+    },
+    "notes": "Tree-search result (Phase D-5, harness v2, 2026-07-04) \u2014 NOT a linear-iteration round; trains on the same 20-feature set as experiment_id=7. Source: experiments_tree.json, node #17 (22 evaluated nodes total: 13 solo/9 blend, 0 failed, wall 321.0s total; this node found at evaluation #18 of 22, node wall_s=21.8s, as a 10-way blend with an auto_scale global multiplier applied INSIDE metric_fn). Weight search: dirichlet, scale_used=1.02. Beats linear-iteration best (experiment_id=7, 10.019463) by -0.262393 (~-2.62% relative) \u2014 the largest relative sweep margin of any comp tested with harness v2. The two decisive levers: (1) seed-bagging the Optuna-tuned LGB itself (node #6, SEEDBAG_TUNED_S2024, solo 9.974778) \u2014 an idea STATUS.md explicitly flagged as untried and cautioned might be neutral (per s3e5's counter-example for directly-tuned configs), but here it single-handedly beat the entire linear 6-way blend as a solo, because the tuned config was fitted on a fold-5 PROXY (not the full-OOF metric), leaving real seed variance for bagging to reduce; (2) a global x1.02 OOF-fitted multiplier (auto_scale) correcting a systematic ~2% low bias in TimeSeriesSplit OOF predictions (every validation block is later in time than its training window, and the series grows into 2021) \u2014 the single largest gain of the run (-0.168 at the 8-way layer, node #15). IMPORTANT CAVEAT (verbatim from STATUS.md Appendix 'Phase D-5 tree-search v2 sweep \u2014 the TIME-SERIES case'): 'like the linear 10.01946, the 9.75707 carries fold-5 double-dip optimism, PLUS the scale parameter and the seed selection are OOF-fitted. All are 1-to-few-parameter fits on 114k rows (low overfit risk individually), but the true expected 2022 SMAPE is best read as \"meaningfully below 10.02\", not literally 9.76.' See competitions/playground-series-s3e19/STATUS.md same Appendix for the full node lineage, TimeSeriesSplit reproduction-rigor verification, and backtrack/dedup ledger. OOF-only search result \u2014 no test predictions were generated for this blend, so no submission field (do not fabricate a filename); not submitted to Kaggle."
   }
 ]

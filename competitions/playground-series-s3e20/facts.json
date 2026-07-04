@@ -336,54 +336,71 @@
       },
       "features": "lat/lon/week + sin/cos + 63 sensors (median-imputed); target = residual vs v5 TE",
       "notes": "NEGATIVE RESULT (kept as documentation): no residual signal exists beyond the smoothed location-week structure -- sensor features are noise even for the residual. Confirms s3e20 boundary condition: when target is near-constant across years per (loc,week), structure fully saturates the predictable signal. Iteration stopped per protocol (wider window + residual model both non-improving)."
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-04T12:18:33",
+      "source_format": "v2",
+      "metric": "rmse",
+      "direction": "minimize",
+      "model": "tree-search v2 JOINT lineage: pure-structural location-week TE (EB shrinkage + COVID-downweight + neighbor smoothing + multi-year downweight, jointly re-optimized)",
+      "score": 21.0589,
+      "cv": {
+        "scheme": "Leave-One-Year-Out (2019/2020/2021)",
+        "n_splits": 3,
+        "seed": 42
+      },
+      "base_models": [
+        {
+          "name": "TE_JOINT",
+          "score": 21.0589,
+          "params": {
+            "alpha": 0.99,
+            "w2020": 0.2,
+            "wnb": 0.3,
+            "window": 1,
+            "year_weights": {
+              "2019": 0.6,
+              "2020": 0.2,
+              "2021": 1.2
+            }
+          }
+        }
+      ],
+      "notes": "Tree-search result (Phase E-4, harness v2, 2026-07-04) — NOT a linear-iteration round. Source: experiments_tree.json, node #28, the JOINT lineage's pure-structural optimum (38 evaluated nodes total: 37 solo/1 blend, 0 dedup rejections, 15 backtrack events, wall 33.3s total for the ENTIRE sweep; node #28 itself is a solo config, node wall_s=0.07s). This is a location-week historical-mean target-encoding pipeline (method=te) with 4 tuned scalar hyperparameters: alpha=0.99 (empirical-Bayes shrinkage), w2020=0.2 (COVID downweight), wnb=0.3 (neighbor-week smoothing weight), window=1, PLUS a new year_weights axis {2019: 0.6, 2020: 0.2, 2021: 1.2} (downweighting anomalous years 2019/2020, upweighting 2021 as closest to the test year) that Phase-B's one-axis-at-a-time protocol never tried. Beats the Phase-B hand-tuned root (experiment_id=7, 21.1487, root re-verified digit-for-digit before the search) by -0.0898 (~-0.42% relative). IMPORTANT — do NOT log the 21.0332 blend instead: node #28's sibling BLEND node (#29, not logged here) mixes this structural node with a diagnostic GBDT at only 2.17% weight, over just 3-fold Leave-One-Year-Out CV with the weight fitted directly on the same OOF it is scored on — STATUS.md explicitly calls this '低信心...視為 CV 噪音範圍內的邊際發現,非穩健結論' (low-confidence, within CV-noise margin, not a robust conclusion). Node #28 (21.0589, logged here) is the robust, purely-structural result: JOINT-moving all 4 tuned axes together in one step (plus the new year_weights axis) reached a composed optimum that Phase-B's one-axis-at-a-time manual tuning was structurally unable to find, even though re-scanning each individually-tuned axis (w2020, wnb) in isolation only confirmed Phase-B's existing optimum (an honest 'tie', not a gain). See competitions/playground-series-s3e20/STATUS.md Appendix 'Phase E-4 樹搜尋 v2' for the full node/lineage table and the honest regime-observation discussion. OOF-only search result — no test predictions were generated, so no submission field (do not fabricate a filename); not submitted to Kaggle."
     }
   ],
   "best": {
-    "experiment_id": 7,
-    "timestamp": "2026-07-04T01:19:31",
+    "experiment_id": 9,
+    "timestamp": "2026-07-04T12:18:33",
     "source_format": "v2",
     "metric": "rmse",
     "direction": "minimize",
-    "model": "LGB+XGB+CatBoost blend + neighbor-week-smoothed + COVID-downweighted loc-week target encoding",
-    "score": 21.1487,
+    "model": "tree-search v2 JOINT lineage: pure-structural location-week TE (EB shrinkage + COVID-downweight + neighbor smoothing + multi-year downweight, jointly re-optimized)",
+    "score": 21.0589,
     "cv": {
       "scheme": "Leave-One-Year-Out (2019/2020/2021)",
       "n_splits": 3,
       "seed": 42
     },
-    "features": "70 base (63 sensors, dropped 7) + te_locweek(alpha=1.0, w2020=0.24, wnb=0.28) + te_loc",
     "base_models": [
       {
-        "name": "LGB",
-        "score": 32.074
-      },
-      {
-        "name": "XGB",
-        "score": 28.0674
-      },
-      {
-        "name": "CAT",
-        "score": 28.8466
-      },
-      {
-        "name": "TE (denoised loc-week mean)",
-        "score": 21.1487
+        "name": "TE_JOINT",
+        "score": 21.0589,
+        "params": {
+          "alpha": 0.99,
+          "w2020": 0.2,
+          "wnb": 0.3,
+          "window": 1,
+          "year_weights": {
+            "2019": 0.6,
+            "2020": 0.2,
+            "2021": 1.2
+          }
+        }
       }
     ],
-    "ensemble": {
-      "weights": {
-        "LGB": 0.0,
-        "XGB": 0.0,
-        "CAT": 0.0,
-        "TE": 1.0
-      },
-      "score": 21.1487
-    },
-    "postprocess": [
-      "clip >= 0"
-    ],
-    "submission": "sub_v5_blend_21.1487_20260704_011931.csv",
-    "notes": "Round 3 of Phase-B iteration. Neighboring-week smoothing is a second, complementary way (local/seasonal vs Round-1's global loc-mean) to denoise the n=2-per-fold cell mean; re-tuned ALPHA collapses to 1.0, meaning Round-1 loc-mean shrinkage becomes redundant once neighbor-week smoothing is applied (both reduce the same source of noise). GBDTs still ~0 weight."
+    "notes": "Tree-search result (Phase E-4, harness v2, 2026-07-04) — NOT a linear-iteration round. Source: experiments_tree.json, node #28, the JOINT lineage's pure-structural optimum (38 evaluated nodes total: 37 solo/1 blend, 0 dedup rejections, 15 backtrack events, wall 33.3s total for the ENTIRE sweep; node #28 itself is a solo config, node wall_s=0.07s). This is a location-week historical-mean target-encoding pipeline (method=te) with 4 tuned scalar hyperparameters: alpha=0.99 (empirical-Bayes shrinkage), w2020=0.2 (COVID downweight), wnb=0.3 (neighbor-week smoothing weight), window=1, PLUS a new year_weights axis {2019: 0.6, 2020: 0.2, 2021: 1.2} (downweighting anomalous years 2019/2020, upweighting 2021 as closest to the test year) that Phase-B's one-axis-at-a-time protocol never tried. Beats the Phase-B hand-tuned root (experiment_id=7, 21.1487, root re-verified digit-for-digit before the search) by -0.0898 (~-0.42% relative). IMPORTANT — do NOT log the 21.0332 blend instead: node #28's sibling BLEND node (#29, not logged here) mixes this structural node with a diagnostic GBDT at only 2.17% weight, over just 3-fold Leave-One-Year-Out CV with the weight fitted directly on the same OOF it is scored on — STATUS.md explicitly calls this '低信心...視為 CV 噪音範圍內的邊際發現,非穩健結論' (low-confidence, within CV-noise margin, not a robust conclusion). Node #28 (21.0589, logged here) is the robust, purely-structural result: JOINT-moving all 4 tuned axes together in one step (plus the new year_weights axis) reached a composed optimum that Phase-B's one-axis-at-a-time manual tuning was structurally unable to find, even though re-scanning each individually-tuned axis (w2020, wnb) in isolation only confirmed Phase-B's existing optimum (an honest 'tie', not a gain). See competitions/playground-series-s3e20/STATUS.md Appendix 'Phase E-4 樹搜尋 v2' for the full node/lineage table and the honest regime-observation discussion. OOF-only search result — no test predictions were generated, so no submission field (do not fabricate a filename); not submitted to Kaggle."
   },
   "trajectory": [
     {
@@ -432,6 +449,12 @@
       "experiment_id": 8,
       "timestamp": "2026-07-04T01:35:00",
       "score": 21.1487,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-04T12:18:33",
+      "score": 21.0589,
       "source_format": "v2"
     }
   ],

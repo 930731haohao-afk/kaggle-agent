@@ -400,5 +400,204 @@
     ],
     "submission": "sub_blend_v6_340.59891_20260703_211503.csv",
     "notes": "Phase B round 4 (change vs exp #5: add seed-diversified LGB, identical params but random_state 2024, as 5th base model; other 4 model predictions loaded unchanged from oof_v4.npz; folds unchanged KFold seed 42)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-04T12:17:48",
+    "model": "tree-search v3 explore-burst mega-blend (34-way kitchen-sink pool, k=800 weight search + snap-to-grid)",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 340.35572,
+    "cv": {
+      "scheme": "5fold_kfold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB_ROOT",
+        "score": 342.02154
+      },
+      {
+        "name": "CAT",
+        "score": 343.60196
+      },
+      {
+        "name": "XGB",
+        "score": 342.21778
+      },
+      {
+        "name": "LGBTUNED",
+        "score": 341.68775
+      },
+      {
+        "name": "SEEDBAG_S2024",
+        "score": 342.04208
+      },
+      {
+        "name": "FEAT",
+        "score": 342.02283
+      },
+      {
+        "name": "REG",
+        "score": 342.93033
+      },
+      {
+        "name": "XGBTUNED",
+        "score": 341.9943
+      },
+      {
+        "name": "LGBTUNED_NEW",
+        "score": 341.89372
+      },
+      {
+        "name": "LGBTUNED_S4000",
+        "score": 341.63373
+      },
+      {
+        "name": "LGBTUNED_S4001",
+        "score": 341.91928
+      },
+      {
+        "name": "XGBTUNED_S4000",
+        "score": 342.36635
+      },
+      {
+        "name": "XGBTUNED_S4001",
+        "score": 342.1212
+      },
+      {
+        "name": "XGBTUNED_S4002",
+        "score": 342.49949
+      },
+      {
+        "name": "FEAT_NEW2",
+        "score": 342.28883
+      },
+      {
+        "name": "FEAT_S4000",
+        "score": 341.89382
+      },
+      {
+        "name": "FEAT_S4001",
+        "score": 342.07229
+      },
+      {
+        "name": "SEEDBAG_S555",
+        "score": 341.68944
+      },
+      {
+        "name": "SEEDBAG_S4000",
+        "score": 342.05908
+      },
+      {
+        "name": "SEEDBAG_S4001",
+        "score": 342.23701
+      },
+      {
+        "name": "XGB_NEW",
+        "score": 342.521
+      },
+      {
+        "name": "XGB_S4000",
+        "score": 342.89275
+      },
+      {
+        "name": "XGB_S4001",
+        "score": 342.57559
+      },
+      {
+        "name": "REG_L2",
+        "score": 342.85043
+      },
+      {
+        "name": "REG_LEAVES90",
+        "score": 343.73934
+      },
+      {
+        "name": "REG_S4000",
+        "score": 342.81987
+      },
+      {
+        "name": "CAT_NEW",
+        "score": 344.30153
+      },
+      {
+        "name": "CAT_S4000",
+        "score": 343.88165
+      },
+      {
+        "name": "CAT_S4001",
+        "score": 343.99525
+      },
+      {
+        "name": "EXPL_DART",
+        "score": 6156.32115
+      },
+      {
+        "name": "EXPL_XT",
+        "score": 344.82504
+      },
+      {
+        "name": "EXPL_CATDEEP",
+        "score": 345.1579
+      },
+      {
+        "name": "EXPL_XGBLEAF",
+        "score": 343.21412
+      },
+      {
+        "name": "EXPL_REGDEEP",
+        "score": 341.99788
+      }
+    ],
+    "ensemble": {
+      "method": "harness_v3 explore_burst mega-blend: k=800 dirichlet + coordinate-ascent weight search over 34 cached solo OOF vectors, zero retraining",
+      "members": [
+        "LGB_ROOT",
+        "CAT",
+        "XGB",
+        "LGBTUNED",
+        "SEEDBAG_S2024",
+        "FEAT",
+        "REG",
+        "XGBTUNED",
+        "LGBTUNED_NEW",
+        "LGBTUNED_S4000",
+        "LGBTUNED_S4001",
+        "XGBTUNED_S4000",
+        "XGBTUNED_S4001",
+        "XGBTUNED_S4002",
+        "FEAT_NEW2",
+        "FEAT_S4000",
+        "FEAT_S4001",
+        "SEEDBAG_S555",
+        "SEEDBAG_S4000",
+        "SEEDBAG_S4001",
+        "XGB_NEW",
+        "XGB_S4000",
+        "XGB_S4001",
+        "REG_L2",
+        "REG_LEAVES90",
+        "REG_S4000",
+        "CAT_NEW",
+        "CAT_S4000",
+        "CAT_S4001",
+        "EXPL_DART",
+        "EXPL_XT",
+        "EXPL_CATDEEP",
+        "EXPL_XGBLEAF",
+        "EXPL_REGDEEP"
+      ],
+      "n_members": 34,
+      "n_members_weight_over_0.005": 28,
+      "score_raw": 340.57853,
+      "score": 340.35572
+    },
+    "postprocess": [
+      "snap_to_grid (applied inside metric_fn on the raw blend OOF, not just at submission time)"
+    ],
+    "notes": "Tree-search result (Phase F-2, harness v3, 2026-07-04) \u2014 NOT a linear-iteration round. Source: experiments_tree_v3.json, node #44, the mandatory explore-burst 'kitchen-sink mega-blend' of the ENTIRE 34-member solo pool built up over the run (evaluation #44 of the 60-eval hard cap; node wall_s=1.64s, pure weight search over already-cached OOF, zero retraining). Weight search: v3's k=800 dirichlet + coordinate-ascent, raw blend score 340.57853 -> snap-to-grid postprocess (applied inside metric_fn) 340.35572. Individual per-member weights are NOT persisted as a field in this harness_v3 tree node (unlike v2's node schema) \u2014 only the member-id list and the two scores (raw/snapped) are recorded in experiments_tree_v3.json; per STATUS.md's prose ledger (Appendix 'Phase F-2 harness v3 validation run'), 28 of the 34 members kept weight > 0.005, including 4 CatBoost variants (0.22 combined weight) and both long-shot explore-burst survivors EXPL_CATDEEP (solo 345.16, weight 0.051) and EXPL_REGDEEP (solo 341.99, weight 0.045) \u2014 exact weights for the remaining members are not recorded anywhere and are NOT fabricated here. Beats linear-iteration best (experiment_id=7, 340.59891) by -0.24319 (~-0.071% relative) and the prior harness-v1-proto tree result (340.52635, Phase C-2b) by -0.17063. The burst alone (evaluations 39-44) accounted for 100% of the post-exploit-phase gain (340.45150 -> 340.35572, -0.096); the 60-eval run stopped at the hard budget cap, not via the patience auto-stop. See competitions/playground-series-s3e14/STATUS.md Appendix 'Phase F-2 harness v3 validation run' for the full node lineage, phase machine behavior, and honest operational ledger (incl. 6 catastrophic DART evals). OOF-only search result \u2014 no test predictions were generated for this blend, so no submission field (do not fabricate a filename); not submitted to Kaggle."
   }
 ]
