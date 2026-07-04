@@ -220,3 +220,95 @@ s3e14(擊敗),三綜資料點的模式:**樹搜尋的價值集中在 blend 組�
 cd /home/tjyen/ai_agents/kaggle
 uv run python3 tree_search/run_s3e5.py   # 可中斷/續跑;樹狀態存 experiments_tree.json
 ```
+
+## Appendix — 樹搜尋 v2(harness_v2,Phase E-2,自適應 plateau 首測,2026-07-04)
+
+v1 在本賽以 0.56766 對線性迭代 0.56769「統計上打平」(切點噪音量級差距);harness_v2 的
+metric-aware 自適應 plateau(§6.2)正是讀著這個 v1 教訓設計的,本次是它的第一場實戰。
+評估器 `tree_search/eval_s3e5_v2.py`、驅動 `tree_search/run_s3e5_v2.py`、樹狀態
+`experiments_tree_v2.json`(v1 的 `experiments_tree.json` 未動);v1 的
+`cache_s3e5/*.npz` 唯讀重用(root + 6 個 solo seed 逐位驗證後直接載入,|diff|<4e-6,
+零重訓),v2 自身快取寫入 `cache_s3e5/v2/` 子目錄。CV/rounder 紀律與 v1 完全相同:
+5-fold StratifiedKFold(seed=42),所有節點分數一律為 post-rounder QWK。
+
+### 結果:三方對照
+| | 分數 (OOF QWK, post-rounder) |
+|-|-|
+| 線性迭代最佳(exp #8,6-way blend) | 0.56769 |
+| 樹搜尋 v1 最佳(node #11,4-way blend) | 0.56766 |
+| **樹搜尋 v2 最佳(node #17,3-way blend)** | **0.57066** |
+
+**v2 首次擊敗線性迭代(+0.00297)與 v1(+0.00300)**——差距約為 v1↔線性 gap
+(0.00003)的 100 倍,不再是切點噪音量級。最佳節點 #17 = blend(root tuned-LGB #0 +
+tuned-CAT #1 + **LGBBOUND #7**),權重 0.151/0.551/0.297,由 #16(4-way, 0.57027)
+remove-weakest(LGBNUDGE 權重僅 0.0117)而來。
+
+### 兩個真正起作用的槓桿(誠實歸因)
+1. **邊界推進成員(s3e11 槓桿,PRIOR P18)**:先檢查線性跑的 Optuna 搜索空間
+   (scripts/iterate.py tune_lgb),發現 tuned-LGB 有 **3 個超參正好落在搜索盒邊界上**
+   (max_depth=3 = 下界 [3,10]、min_child_samples=40 = 上界 [3,40]、reg_lambda≈1e-3 ≈
+   下界)。LGBBOUND lineage 推過邊界(max_depth 3→2),solo 僅 0.55784(比 root 低
+   0.005),但作為 blend 成員拿到 0.297 權重、貢獻 +0.0026(#13 0.56766 → #16
+   0.57027)——「solo 較弱但異質」的教科書級 blend 價值。對照組 CATBOUND(CAT tuned
+   參數無任何邊界飽和)如預期沒有可比增益(solo 0.56378 < 0.56466,加入 blend 減分)。
+2. **權重搜尋預算實測修正(本次最重要的工程決定)**:任務簡報建議「粗化權重網格省
+   45s/blend」;實測 k=200 粗搜在 v1 最佳的同一組 4 成員 OOF 上只找到 0.56601(v1
+   0.56766,同資料、純搜尋品質差距;coord-ascent 局部精修救不回,因粗搜根本沒採樣到
+   最優盆地附近)。k 掃描(200/500/800/1500 + coord-ascent):0.56601 / 0.56766 /
+   **0.56874** / 0.56792。故本 run 用 k=800(≈v1 自身預算)+ coord-ascent,~60s/blend
+   節點——**在這個離散指標上,省 blend 搜尋預算會直接把「勝」變回「平」**,而 30 分鐘
+   預算根本用不完(全程 793.7s),粗化毫無必要。此教訓與 harness 新機制無關,純屬
+   評估器預算配置。
+
+### 搜尋統計
+- **22 個評估節點**(11 solo / 11 blend,其中 7 個 solo 從 v1 快取零成本重用),
+  1 個 failed(#18,見下),總 wall 793.7s(~13.2 分,預算 28 分)。
+- **1 次 backtrack**(vs v1 的 11 次):BLEND lineage 在 #17 之後連續 3 子代未破。
+  v1 的 8 條 lineage 全數 plateau + reopen-once;v2 因 blend 一路有進展、且 22 節點
+  上限先到,搜尋壓根沒進入「多 lineage 輪替耗竭」階段。
+- **1 次 dedup 拒絕**:fold_avg toggle 失敗(timeout)後 fallback 想重提同一 config,
+  被 rec #3 的 config-hash dedup 攔下——v1 的 #37/#38/#39 重複子代 bug 在同型情境下
+  被正確阻止,並促使 lineage 改試下一個 mutation。
+- **Prior 使用率**:informed 9 節點、勝率 33.3%(3 勝:#13/#16/#17,即全部三次
+  global-best 刷新都是 prior-tagged 突變,P18/P19);uninformed 2 節點、勝率 0%。
+  每個突變的 prior 出處都以 `[PRIOR Pk]` 記錄在 mutation 字串裡(P0-P19 全文存於樹
+  JSON 的 `priors` 欄)。
+
+### 自適應 plateau 行為報告(本次首測的核心問題)
+**沒有觸發——整場 tie_rate 恆為 0.000**(`tie_rate_log` 11 筆全 0),自適應模式
+(ADAPTIVE_PLATEAU_STREAK=5、平手中性計分)從未啟動,全程走 v1 相同的 streak=3 規則。
+為什麼為它量身打造的比賽反而沒讓它上場?三個原因,依重要性:
+1. **v1 的 4 組同分中最大一組(0.56725×3)是 duplicate-children bug 的產物**——rec #3
+   的 dedup 修掉了病因,同分的主要來源隨之消失。機制間有依賴:**dedup 修好後,
+   tie-neutrality 的觸發條件在同一情境下反而變得罕見**。
+2. k=800 + coord-ascent 的權重搜尋讓每個 blend 節點落點更精細,5 位小數完全同分的
+   機率大幅下降(v1 粗搜下不同成員集常收斂到同一個切點格局)。
+3. 本 run blend 一路在進步(0.5676→0.56766→0.57027→0.57066),streak 很少累積,
+   plateau 邏輯本身就少被觸碰。
+結論:**自適應 plateau 在其目標情境的首測中呈「休眠」狀態,既未幫忙也未礙事**;
+v2 的勝利歸因於 ensemble-default 節點空間(11/22 節點是 blend、最佳節點是 blend)+
+邊界推進 prior + 足額權重搜尋預算,而非 §6.2 機制。它的真正測試要等一場「dedup 修復
+後仍高頻同分」的比賽。
+
+### 其他觀察
+- **fold_avg rounder(任務簡報的 per-fold-averaged cutpoints 探針)兩種形態都確認
+  無益**:solo 形態(#9)0.54766,遠低於同 config 的 full_oof 0.56244(與 STATUS.md
+  exp #10 手工診斷方向一致);blend 形態(#18)直接 **timeout>120s**——fold_avg 在
+  權重搜尋內意味著每個候選權重要做 5 次 Nelder-Mead 擬合(~5 倍成本),在「rounder
+  必須進 metric_fn」的紀律下結構性不可行。此路線可安心關閉。
+- 風險註記:0.57066 由更徹底的權重搜尋直接優化 full-OOF post-rounder QWK 而得,
+  權重+切點對 OOF 的過擬風險比 v1 略高(搜尋越徹底、對 OOF 噪音的擬合越徹底)。
+  本次未重跑 nested-cutpoint 診斷;按 exp #7/#10 的模式,建議在採用此 blend 產生
+  submission 前補跑一次 nested 驗證。
+
+### 泛化判定(Phase E-2)
+四綜資料點更新:s3e9 v1 未達→v2 逆轉(E-1)、s3e14 勝、s3e5 v1 平→**v2 勝(本次)**。
+「樹搜尋的價值集中在 blend 組合空間」的結論加強為:**當 blend 組合空間裡有線性迭代
+沒開採過的異質成員來源(這裡是 Optuna 盒邊界外的超參區域)時,樹搜尋能超越而非只是
+追平線性迭代——前提是 blend 權重搜尋預算不縮水**。
+
+### 重現
+```bash
+cd /home/tjyen/ai_agents/kaggle
+uv run python3 tree_search/run_s3e5_v2.py   # 可中斷/續跑;樹狀態存 experiments_tree_v2.json
+```
