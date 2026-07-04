@@ -536,5 +536,76 @@
     ],
     "submission": "sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv",
     "notes": "Iteration round 4: full retrain of the same 5-member pool (LGB, XGB, CAT, Optuna-tuned LGB from round1, seed-bagged tuned LGB from round2) on round-3's adopted feature set (+knn_mean_dist_10, +coastal_dist; 26 features total). Training time 67.2s. Round2 best (24 features) was 0.55786; this round IMPROVED to 0.557088."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-04T11:59:43",
+    "model": "tree-search v2 blend (7-way, clip-aware weight search + ceiling-classifier hybrid member)",
+    "metric": "rmse",
+    "direction": "minimize",
+    "score": 0.556329,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "shuffle": true,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGBORIG",
+        "score": 0.560732,
+        "weight": 0.15
+      },
+      {
+        "name": "XGBORIG",
+        "score": 0.561331,
+        "weight": 0.036
+      },
+      {
+        "name": "CATORIG",
+        "score": 0.561063,
+        "weight": 0.249
+      },
+      {
+        "name": "SEEDBAG",
+        "score": 0.558812,
+        "weight": 0.186,
+        "note": "LGB_TUNED_SEED2024, root's seed-bagged sibling"
+      },
+      {
+        "name": "REGNUDGE",
+        "score": 0.558208,
+        "weight": 0.05,
+        "note": "regularization-nudged tuned-LGB variant; best solo of the whole tree"
+      },
+      {
+        "name": "XGB_deep",
+        "weight": 0.041
+      },
+      {
+        "name": "CEILING",
+        "score": 0.561227,
+        "weight": 0.289,
+        "note": "ceiling-classifier hybrid (two-stage top-code-aware model); weakest solo (worse than root by 0.0024) but LARGEST blend weight, single biggest score gain of the tree"
+      }
+    ],
+    "ensemble": {
+      "method": "harness_v2 clip-aware dirichlet(k=800)+coordinate-ascent weight search (clip applied inside metric_fn, not just at submission time)",
+      "weights": {
+        "LGBORIG": 0.15,
+        "XGBORIG": 0.036,
+        "CATORIG": 0.249,
+        "SEEDBAG": 0.186,
+        "REGNUDGE": 0.05,
+        "XGB_deep": 0.041,
+        "CEILING": 0.289
+      },
+      "score": 0.556329
+    },
+    "postprocess": [
+      "clip_to_train_target_range (scored on clipped OOF inside metric_fn, not just at submission)"
+    ],
+    "notes": "Tree-search result (Phase D-4, harness v2, 2026-07-04) \u2014 NOT a linear-iteration round; trained on the same 26-feature set as experiment_id=7. Source: experiments_tree.json, node #14 (22 evaluated nodes / 23 total incl. 1 failed, wall 190.3s). Beats linear-iteration best (experiment_id=7, 0.557088) by -0.000759 (~-0.14% relative). The two levers that moved it: (1) clip-aware blend scoring (clipping OOF before scoring, not just the test submission) and (2) the ceiling-classifier hybrid as a blend member (failed solo, won big in blend). See competitions/playground-series-s3e1/STATUS.md Appendix 'Phase D-4 tree-search v2 sweep' for full node lineage. OOF-only search result \u2014 no test predictions were generated for this blend, so no submission field (do not fabricate a filename)."
   }
 ]

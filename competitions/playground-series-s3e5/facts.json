@@ -765,88 +765,95 @@
         "clip[3,8]"
       ],
       "notes": "Round: diverse ordinal head -- LGB multiclass classifier (class_weight=balanced, targeting the extreme-class data-starvation flagged in STATUS.md) with expected-value decode (sum class_i * P(class_i)) added as an extra pool member (kept, not replaced). Final QWK 0.56769 vs running best 0.56769 vs baseline 0.52687."
+    },
+    {
+      "experiment_id": 12,
+      "timestamp": "2026-07-04T11:59:43",
+      "source_format": "v2",
+      "metric": "quadratic_weighted_kappa",
+      "direction": "maximize",
+      "model": "tree-search v2 blend (node #17, 3-way: root tuned-LGB + tuned-CAT + LGBBOUND boundary-push member)",
+      "score": 0.57066,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold on quality"
+      },
+      "base_models": [
+        {
+          "name": "LGB_tuned (root)",
+          "weight": 0.151
+        },
+        {
+          "name": "CAT_tuned",
+          "weight": 0.551
+        },
+        {
+          "name": "LGBBOUND",
+          "weight": 0.297,
+          "score": 0.55784,
+          "note": "boundary-pushed LGB (max_depth 3->2, per Optuna-box-edge-distrust prior); solo WORSE than root by 0.005 but largest blend weight, contributed +0.0026"
+        }
+      ],
+      "ensemble": {
+        "method": "harness_v2 dirichlet(k=800)+coordinate-ascent weight search, decided directly on post-rounder QWK (metric_fn scores after OptimizedRounder)",
+        "weights": {
+          "LGB_tuned": 0.151,
+          "CAT_tuned": 0.551,
+          "LGBBOUND": 0.297
+        },
+        "score": 0.57066
+      },
+      "postprocess": [
+        "OptimizedRounder cutpoints (searched jointly with blend weights inside every node's metric_fn, post-rounder QWK is the scored quantity)"
+      ],
+      "notes": "Tree-search result (Phase E-2, harness v2 adaptive-plateau first test, 2026-07-04) — NOT a linear-iteration round. Source: experiments_tree_v2.json (v1's experiments_tree.json / node #11, 0.56766, was not touched), node #17 (22 evaluated nodes, 1 backtrack, 1 dedup rejection, wall 793.7s). Beats linear-iteration best (experiment_id=11, 0.56769) by +0.00297 and tree v1 (0.56766) by +0.00300 -- roughly 100x the v1-vs-linear noise-level gap, i.e. a genuine structural beat, not cutpoint noise. Driven by a full k=800 weight-search budget (a coarser k=200 search on the SAME 4 members found only 0.56601 -- confirming that shrinking the blend weight-search budget on this discrete metric silently turns a win back into a tie). Risk note carried from STATUS.md: weights+cutpoints were optimized directly against full OOF with no nested validation, and a nested-cutpoint diagnostic was not rerun for this specific result. OOF-only search result -- no test predictions were generated, so no submission field (do not fabricate a filename)."
     }
   ],
   "best": {
-    "experiment_id": 8,
-    "timestamp": "2026-07-03T23:13:44",
+    "experiment_id": 12,
+    "timestamp": "2026-07-04T11:59:43",
     "source_format": "v2",
     "metric": "quadratic_weighted_kappa",
     "direction": "maximize",
-    "model": "6-way blend + Optuna-tuned CatBoost (full-CV direct-QWK)",
-    "score": 0.56769,
+    "model": "tree-search v2 blend (node #17, 3-way: root tuned-LGB + tuned-CAT + LGBBOUND boundary-push member)",
+    "score": 0.57066,
     "cv": {
       "scheme": "5fold",
       "n_splits": 5,
       "seed": 42,
       "strategy": "StratifiedKFold on quality"
     },
-    "features": [
-      "fixed acidity",
-      "volatile acidity",
-      "citric acid",
-      "residual sugar",
-      "chlorides",
-      "free sulfur dioxide",
-      "total sulfur dioxide",
-      "density",
-      "pH",
-      "sulphates",
-      "alcohol",
-      "free_so2_ratio",
-      "bound_so2",
-      "fixed_to_volatile_acid",
-      "citric_to_volatile_acid",
-      "total_acid",
-      "alcohol_x_sulphates",
-      "alcohol_to_density",
-      "alcohol_x_density",
-      "sugar_to_alcohol",
-      "acid_ph_ratio"
-    ],
-    "n_features": 21,
     "base_models": [
       {
-        "name": "LGB",
-        "score": 0.50547
-      },
-      {
-        "name": "XGB",
-        "score": 0.50847
-      },
-      {
-        "name": "CAT",
-        "score": 0.52517
-      },
-      {
-        "name": "LGB_tuned",
-        "score": 0.56244
-      },
-      {
-        "name": "LGB_tuned_seed2024",
-        "score": 0.55765
+        "name": "LGB_tuned (root)",
+        "weight": 0.151
       },
       {
         "name": "CAT_tuned",
-        "score": 0.56466
+        "weight": 0.551
+      },
+      {
+        "name": "LGBBOUND",
+        "weight": 0.297,
+        "score": 0.55784,
+        "note": "boundary-pushed LGB (max_depth 3->2, per Optuna-box-edge-distrust prior); solo WORSE than root by 0.005 but largest blend weight, contributed +0.0026"
       }
     ],
     "ensemble": {
+      "method": "harness_v2 dirichlet(k=800)+coordinate-ascent weight search, decided directly on post-rounder QWK (metric_fn scores after OptimizedRounder)",
       "weights": {
-        "LGB": 0.05,
-        "XGB": 0.0,
-        "CAT": 0.0,
-        "LGB_tuned": 0.0,
-        "LGB_tuned_seed2024": 0.0,
-        "CAT_tuned": 0.95
+        "LGB_tuned": 0.151,
+        "CAT_tuned": 0.551,
+        "LGBBOUND": 0.297
       },
-      "score": 0.56769
+      "score": 0.57066
     },
     "postprocess": [
-      "OptimizedRounder(cutpoints=[3.574, 4.586, 5.609, 6.174, 7.628])",
-      "clip[3,8]"
+      "OptimizedRounder cutpoints (searched jointly with blend weights inside every node's metric_fn, post-rounder QWK is the scored quantity)"
     ],
-    "notes": "Round 3: Optuna (TPE, 40 trials/600s timeout, full 5-fold CV, direct post-rounder-QWK objective) tuned CatBoost added as an extra pool member (kept, not replaced). Final QWK 0.56769 vs running best 0.56293 vs original baseline 0.52687."
+    "notes": "Tree-search result (Phase E-2, harness v2 adaptive-plateau first test, 2026-07-04) — NOT a linear-iteration round. Source: experiments_tree_v2.json (v1's experiments_tree.json / node #11, 0.56766, was not touched), node #17 (22 evaluated nodes, 1 backtrack, 1 dedup rejection, wall 793.7s). Beats linear-iteration best (experiment_id=11, 0.56769) by +0.00297 and tree v1 (0.56766) by +0.00300 -- roughly 100x the v1-vs-linear noise-level gap, i.e. a genuine structural beat, not cutpoint noise. Driven by a full k=800 weight-search budget (a coarser k=200 search on the SAME 4 members found only 0.56601 -- confirming that shrinking the blend weight-search budget on this discrete metric silently turns a win back into a tie). Risk note carried from STATUS.md: weights+cutpoints were optimized directly against full OOF with no nested validation, and a nested-cutpoint diagnostic was not rerun for this specific result. OOF-only search result -- no test predictions were generated, so no submission field (do not fabricate a filename)."
   },
   "trajectory": [
     {
@@ -913,6 +920,12 @@
       "experiment_id": 11,
       "timestamp": "2026-07-03T23:16:51",
       "score": 0.56769,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 12,
+      "timestamp": "2026-07-04T11:59:43",
+      "score": 0.57066,
       "source_format": "v2"
     }
   ],

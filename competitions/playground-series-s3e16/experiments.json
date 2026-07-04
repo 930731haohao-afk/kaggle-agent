@@ -176,5 +176,83 @@
       "round"
     ],
     "notes": "Round 2/iteration: seed bagging (add LGB_tuned with random_state=2024, same hyperparams) as 5th pool member, per validated recipe (cheapest residual gain after Optuna tuning in s3e1/s3e7/s3e11/s3e14). Raw OOF MAE improved marginally to 1.35533 (best raw so far) but ROUNDED OOF MAE 1.33893 is WORSE than both current best (1.33812) and round 1 (1.33850). 2nd consecutive non-improving round on the rounded decision metric -> STOP per iteration protocol. Insight: on this dataset the Optuna-tuned LGB variants cluster very close to the original LGB in OOF-space (low diversity, since only depth/lr/reg differ, same objective/features/CV), so raw-MAE gains from tuning+bagging are real but too small to survive the discrete rounding step; the untuned 3-model blend at 0.6/0.3/0.1 remains the best ROUNDED submission."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-04T11:59:43",
+    "model": "tree-search v2 blend (node #15, 8-way blend, weight search decided directly on ROUNDED MAE)",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 1.33563,
+    "cv": {
+      "scheme": "5fold_stratified_agebin",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB (root)",
+        "weight": 0.0198,
+        "solo_rounded_mae": 1.33885
+      },
+      {
+        "name": "XGB",
+        "weight": 0.0256,
+        "solo_rounded_mae": 1.3416
+      },
+      {
+        "name": "CAT",
+        "weight": 0.5061,
+        "solo_rounded_mae": 1.33846,
+        "note": "dominant weight"
+      },
+      {
+        "name": "LGB_tuned",
+        "weight": 0.0075,
+        "solo_rounded_mae": 1.33979
+      },
+      {
+        "name": "LGB_tuned_seed2024",
+        "weight": 0.0626,
+        "solo_rounded_mae": 1.33914
+      },
+      {
+        "name": "LGBBOUND",
+        "weight": 0.1117,
+        "solo_rounded_mae": 1.3395,
+        "note": "boundary-pushed LGB, learning_rate=0.005"
+      },
+      {
+        "name": "TWEEDIE",
+        "weight": 0.0004,
+        "solo_rounded_mae": 1.37467,
+        "note": "near-inert final weight but contributed the run's single largest blend improvement when added (1.33616->1.33567)"
+      },
+      {
+        "name": "FEATPRUNE",
+        "weight": 0.2662,
+        "solo_rounded_mae": 1.34025,
+        "note": "drops the near-collinear (r=0.993) Weight column; highest-weighted new member, produced the global-best node"
+      }
+    ],
+    "ensemble": {
+      "method": "harness_v2 dirichlet(k=800)+coordinate-ascent weight search, decided directly on ROUNDED MAE (metric_fn = MAE(round(clip(blend))))",
+      "weights": {
+        "LGB": 0.0198,
+        "XGB": 0.0256,
+        "CAT": 0.5061,
+        "LGB_tuned": 0.0075,
+        "LGB_tuned_seed2024": 0.0626,
+        "LGBBOUND": 0.1117,
+        "TWEEDIE": 0.0004,
+        "FEATPRUNE": 0.2662
+      },
+      "score": 1.35712
+    },
+    "postprocess": [
+      "round"
+    ],
+    "notes": "Tree-search result (Phase E-3, harness v2 acid-test on ROUNDED-INTEGER MAE, 2026-07-04) \u2014 NOT a linear-iteration round. Source: experiments_tree.json (v2 harness tree), node #15 (27 nodes total, 24 evaluated, 3 failed [harmless, XGB/CAT lineages out of this evaluator's fresh-training scope], wall 1409.4s). Score above (1.33563) is the ROUNDED OOF MAE, this competition's decision metric \u2014 consistent with experiment_id=3/4's convention (top-level score = rounded, ensemble.score = raw). Beats the Kaggle-SUBMITTED linear champion (the very first entry in this file, rounded 1.33812, public/private LB 1.34356/1.34075) by -0.00249 (-0.186% relative), DESPITE this node's raw OOF MAE (1.35712) being WORSE than the champion's raw 1.35589 -- a genuine raw-vs-rounded INVERSION, independently re-verified digit-for-digit from the 8 cached member OOFs outside the search tree. This is the mirror image of experiment_id=3/4 (there: raw improved, rounded worsened; here: raw worsened, rounded improved) -- together the cleanest possible demonstration that rounded MAE, not raw OOF MAE, must be the decision metric on this comp. OOF-only \u2014 this blend was NOT submitted to Kaggle; no submission field is set (do not confuse with the real, submitted LB scores quoted above, which remain this competition's official leaderboard result)."
   }
 ]

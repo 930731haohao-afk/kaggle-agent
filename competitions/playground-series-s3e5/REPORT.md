@@ -1,7 +1,7 @@
 # 競賽分析報告:playground-series-s3e5
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-03(Phase B 自我改進迭代更新)
+> 素材等級:full | 產生日期:2026-07-04(Phase G-1a 樹搜尋成果入帳後更新)
 
 ## 1. 競賽目的
 
@@ -37,7 +37,9 @@
 
 ## 3. 模型規格
 
-本場共 11 筆實驗紀錄,`facts.best` 為實驗 8:
+本場共 12 筆實驗紀錄,**`facts.best` 現為實驗 12——一筆樹搜尋(tree-search)結果**,而非
+線性迭代最佳(實驗 8/11,並列 0.56769)。實驗 1–11(線性迭代)先完整說明如下,實驗 12
+見本節末的 3a 小節。
 
 **實驗 1(`generic_batch`,通用批次管線,11 特徵)— base models:**
 
@@ -133,15 +135,51 @@ Ensemble 分數(來源:`experiments[7].ensemble.score`):**0.56769**。此為 `fa
 判斷——此為避免序數/離散化指標特有的「原始分數進步但離散化後不進步」陷阱。另嘗試 seed-bagging
 (實驗 6、9)與多分類期望值解碼頭(實驗 11)兩種候選改動,皆未通過此判準,故未採用。
 
+### 3a. 樹搜尋最佳(best, experiment_id=12)——本次更新新增
+
+Phase E-2(harness v2 自適應 plateau 首測,2026-07-04)在 `experiments_tree_v2.json`(v1 的
+`experiments_tree.json`/node #11、0.56766,未被觸碰)的 node #17 找到本場目前最佳 QWK:
+3-way blend——root tuned-LGB + tuned-CAT + `LGBBOUND`(邊界推進成員):
+
+| Model | 權重 | 備註 |
+|-------|------|------|
+| LGB_tuned(root) | 0.151 | — |
+| CAT_tuned | 0.551 | — |
+| LGBBOUND | 0.297 | solo QWK 0.55784(比 root 差 0.005),邊界推進(max_depth 3→2);blend 中最大權重,貢獻 +0.0026 |
+
+**Ensemble**(best.ensemble):method = "harness_v2 dirichlet(k=800)+coordinate-ascent
+weight search, decided directly on post-rounder QWK",weights 同上表,score = **0.57066**。
+
+**後處理**(best.postprocess):`OptimizedRounder cutpoints(searched jointly with blend
+weights inside every node's metric_fn, post-rounder QWK is the scored quantity)`——切點
+與 blend 權重在每個節點的 metric_fn 內共同搜尋,facts.json 未附具體切點數值(無紀錄,
+不臆測,與實驗 8 的 `cutpoints=[3.574, 4.586, 5.609, 6.174, 7.628]` 為不同節點的不同搜尋
+結果)。
+
+**選型理由/來源說明**(best.notes):此為 Phase E-2 樹搜尋結果,不是線性迭代第 12 輪。
+勝出的兩個真正槓桿:(1)邊界推進成員 LGBBOUND——檢視線性迭代 Optuna 搜尋盒發現 tuned-LGB
+有 3 個超參數落在盒邊界上,推過邊界後 solo 分數變差但 blend 貢獻大;(2)本 run 使用完整
+k=800(+coordinate-ascent)權重搜尋預算,對照組 k=200 粗搜在同一組 4 成員上僅找到
+0.56601——確認「離散指標上縮減 blend 權重搜尋預算會讓勝場悄悄變回平手」。
+
+> **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
+> 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。facts.best 是以 OOF score 最大者
+> 選出(本場 metric 為 quadratic_weighted_kappa,maximize),與是否已提交至 Kaggle 無關;
+> 本場所有實驗(含實驗 12)皆未提交至 Kaggle(見第 5/6 節)。best.notes 亦記載風險註記:
+> 權重與切點皆直接對全 OOF 做搜尋、無巢狀驗證,本結果未重跑巢狀切點診斷(對照實驗 7/10
+> 的巢狀驗證模式)。
+
 ## 4. 訓練規格
 
 | 實驗 | CV scheme | n_splits | seed |
 |------|-----------|----------|------|
 | 1 | 5fold | 5 | 無紀錄 |
 | 2–11 | 5fold | 5 | 42 |
+| 12(best,樹搜尋) | 5fold | 5 | 42 |
 
-(來源:`experiments[].cv`;實驗 1 之 seed 未記錄,故寫「無紀錄」;實驗 2–11 皆為
-`StratifiedKFold on quality`,標籤分層抽樣,folds/seed 全程保持一致以利跨實驗比較。)
+(來源:`experiments[].cv`;實驗 1 之 seed 未記錄,故寫「無紀錄」;實驗 2–12 皆為
+`StratifiedKFold on quality`,標籤分層抽樣,folds/seed 全程保持一致以利跨實驗比較——樹搜尋
+(實驗 12)沿用與線性迭代完全相同的 CV 折。)
 
 各 base model 之 objective/超參數在 `experiments[].base_models[]` 中未記錄對應欄位,故此項為
 「無紀錄」;`LGB_tuned`/`CAT_tuned` 之 Optuna 最佳超參數本身未寫入 `experiments.json`(僅分數與
@@ -149,12 +187,16 @@ Ensemble 分數(來源:`experiments[7].ensemble.score`):**0.56769**。此為 `fa
 
 **為何用此 CV**:`quality` 為小基數(3–8 共 6 級)且嚴重不平衡的序數目標(依 STATUS.md 記載,
 最稀有等級與最常見等級之比例懸殊),若採用一般隨機 K-fold 切分,稀有等級可能在某些 fold 中
-樣本過少甚至掛零,使該 fold 的 QWK 計算不穩定。全部 11 筆實驗皆改用「依 `quality` 標籤分層
+樣本過少甚至掛零,使該 fold 的 QWK 計算不穩定。全部 12 筆實驗皆改用「依 `quality` 標籤分層
 抽樣」的 StratifiedKFold,且 folds/seed 固定不變,使各實驗分數可直接比較。
 
 ## 5. 推論程序
 
-`facts.best`(實驗 8)之 `postprocess` 欄位記錄:
+`facts.best`(實驗 12,樹搜尋)之 `postprocess` 見第 3a 節。**Submission 檔名
+(best.submission):無紀錄**——實驗 12 是樹搜尋(OOF-only)結果,facts.json 本筆未附
+submission 欄位,未產生 test 預測、未提交 Kaggle。
+
+線性迭代最佳(實驗 8)之 `postprocess` 欄位記錄:
 `OptimizedRounder(cutpoints=[3.574, 4.586, 5.609, 6.174, 7.628])` 與 `clip[3,8]`(來源:
 `experiments[7].postprocess`)。即先以最佳化搜尋得到的 5 個分割閾值,將迴歸模型輸出的連續值
 轉換為離散等級,再限制於 3 至 8 的合法範圍內。
@@ -163,7 +205,7 @@ Ensemble 分數(來源:`experiments[7].ensemble.score`):**0.56769**。此為 `fa
 applied to held-out fold)`(來源:`experiments[6].postprocess`、`experiments[9].postprocess`)——
 此為診斷用途,用以檢驗全 OOF 切點擬合是否過度貼合本次 OOF 樣本,並非用於正式提交之後處理。
 
-`facts.best`(實驗 8)之 `submission` 欄位在 `facts.json` 中無紀錄(v2 schema 之 submission 為
+線性迭代最佳(實驗 8)之 `submission` 欄位在 `facts.json` 中無紀錄(v2 schema 之 submission 為
 選填欄位,`log_experiment_v2` 呼叫時未填入,依 Hard Rule 4 標記「無紀錄」)。對應之提交檔由
 獨立的 `scripts/iterate.py submit` 步驟產生於 `submissions/` 目錄下(id 欄 `Id`、目標欄
 `quality`),其確切檔名/時間戳記未記入 experiments.json,故不在此覆誦。實驗 1 之 submission
@@ -186,10 +228,11 @@ applied to held-out fold)`(來源:`experiments[6].postprocess`、`experiments[9]
 | 實驗 5 Ensemble(+Optuna 調校 LGB) | 0.56293 |
 | 實驗 6 Ensemble(+seed-bag LGB_tuned) | 0.56293 |
 | 實驗 7(巢狀切點診斷) | 0.54649 |
-| 實驗 8 Ensemble(+Optuna 調校 CAT,facts.best) | **0.56769** |
+| 實驗 8 Ensemble(+Optuna 調校 CAT,線性迭代最佳之一) | 0.56769 |
 | 實驗 9 Ensemble(+seed-bag CAT_tuned) | 0.56716 |
 | 實驗 10(巢狀切點診斷) | 0.56393 |
 | 實驗 11 Ensemble(+多分類期望值解碼頭) | 0.56769 |
+| 實驗 12 樹搜尋 Ensemble(facts.best) | **0.57066** |
 | Public LB | 無紀錄 |
 | Private LB | 無紀錄 |
 
@@ -199,7 +242,7 @@ applied to held-out fold)`(來源:`experiments[6].postprocess`、`experiments[9]
 **CV↔LB gap**:因本場所有實驗皆未提交排行榜,`facts.leaderboard` 不存在,故無法計算 CV↔LB
 差值,亦不進行任何推測性比較。
 
-`facts.best`(實驗 8)相對於 Phase B 迭代前既有最佳(實驗 3)之增益,以內嵌算式呈現:
+線性迭代最佳(實驗 8/11)相對於 Phase B 迭代前既有最佳(實驗 3)之增益,以內嵌算式呈現:
 
 ```
 實驗 8 OOF QWK − 實驗 3 OOF QWK = 0.56769 − 0.52687 = 0.04082
@@ -217,6 +260,14 @@ applied to held-out fold)`(來源:`experiments[6].postprocess`、`experiments[9]
 實驗 8 全 OOF 切點 QWK − 實驗 10 巢狀切點 QWK = 0.56769 − 0.56393 = 0.00376
 ```
 
+`facts.best`(實驗 12,樹搜尋)相對線性迭代最佳(實驗 8/11,0.56769)與樹搜尋 v1
+(node #11,0.56766,見第 7 節)之增益:
+
+```
+實驗 12 OOF QWK − 實驗 8 OOF QWK = 0.57066 − 0.56769 = 0.00297
+實驗 12 OOF QWK − 樹搜尋v1 OOF QWK = 0.57066 − 0.56766 = 0.00300
+```
+
 ## 7. 實驗軌跡
 
 | experiment_id | timestamp | score | source_format |
@@ -232,6 +283,7 @@ applied to held-out fold)`(來源:`experiments[6].postprocess`、`experiments[9]
 | 9 | 2026-07-03T23:15:20 | 0.56716 | v2 |
 | 10 | 2026-07-03T23:15:32 | 0.56393 | v2 |
 | 11 | 2026-07-03T23:16:51 | 0.56769 | v2 |
+| 12 | 2026-07-04T11:59:43 | 0.57066 | v2 |
 
 （來源：`facts.trajectory`）
 
@@ -243,8 +295,18 @@ CatBoost 加入集成池,`experiments[7].notes`)。實驗 4(更細緻權重搜�
 為方法論層面的小幅穩定增益。實驗 6、9(seed-bagging)與實驗 11(多分類期望值解碼頭)三次嘗試
 權重搜尋皆將新成員權重歸零或分數持平/下降(`experiments[5,8,10].notes`),故未被採用為
 `facts.best`。實驗 7、10 為診斷性巢狀切點檢驗,非模型改動,用以評估 STATUS.md 中「切點於全 OOF
-擬合可能過擬」的風險,結果顯示差距分別為 0.01644(5-way blend)與 0.00377(`facts.best` 之
-6-way blend),差距隨集成池成熟而縮小。
+擬合可能過擬」的風險,結果顯示差距分別為 0.01644(5-way blend)與 0.00377(6-way blend),
+差距隨集成池成熟而縮小。
+
+**突破點 2(exp 11→12,本次更新新增)**:實驗 12 不是線性迭代的延續回合,而是 Phase E-2
+(2026-07-04)以 harness v2 執行的**樹搜尋(tree-search)**結果——來源
+`experiments_tree_v2.json` 的 node #17(v1 的 `experiments_tree.json`/node #11 未被觸碰)。
+分數由線性迭代最佳 0.56769 升至 0.57066(見上方程式,絕對提升 0.00297)。**誠實 CV-only
+警語**:此結果為 OOF-only 搜尋產物——tree_search harness 未產生任何 test 預測檔,facts.json
+本筆亦無 submission 欄位,**未提交至 Kaggle**;不可與實驗 1 的 submission 檔案(唯一有紀錄
+的 submission)混淆(見第 5 節)。完整節點鏈、自適應 plateau 機制為何本場未觸發、與誠實風險
+註記見 `competitions/playground-series-s3e5/STATUS.md`〈Appendix — 樹搜尋 v2(harness_v2,
+Phase E-2,自適應 plateau 首測,2026-07-04)〉。
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 
@@ -274,6 +336,10 @@ uv run python3 competitions/playground-series-s3e5/scripts/iterate.py seed_bag  
 uv run python3 competitions/playground-series-s3e5/scripts/iterate.py nested_cut   # 實驗 10
 uv run python3 competitions/playground-series-s3e5/scripts/iterate.py r3_multiclass # 實驗 11
 uv run python3 competitions/playground-series-s3e5/scripts/iterate.py submit       # 產出最終提交檔
+
+# Phase E-2 樹搜尋 v2(實驗 12,本場目前 best;可中斷/續跑;樹狀態存
+# experiments_tree_v2.json,與 v1 的 experiments_tree.json 各自獨立)
+uv run python3 tree_search/run_s3e5_v2.py
 
 # 提交至 Kaggle(本次執行環境未設定憑證,以下指令供後續有憑證時使用)
 export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')

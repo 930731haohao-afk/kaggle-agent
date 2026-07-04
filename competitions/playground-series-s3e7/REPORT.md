@@ -1,7 +1,7 @@
 # 競賽分析報告:playground-series-s3e7
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-03(Phase B 自我改進迭代後更新)
+> 素材等級:full | 產生日期:2026-07-04(Phase G-1a 樹搜尋成果入帳後更新)
 
 ## 1. 競賽目的
 
@@ -39,8 +39,12 @@ false)、不允許預訓練模型(pretrained_models_allowed: false)、不允許�
 
 ## 3. 模型規格
 
-最終選用模型(best,依 OOF score 選出的 exp 6)由三個基模型加權混合而成
-(來源:`best.base_models`):
+**facts.json 目前的 best 是 experiment_id=7——一筆樹搜尋(tree-search)結果**(見 3b 節),
+而非本節原本描述的線性迭代最終回合(exp 6)。兩者皆完整說明。
+
+### 3a. 線性迭代最佳(experiment_id=6,3 輪 Phase B 迭代之終點)
+
+由三個基模型加權混合而成(來源:`experiments[5].base_models`,即 exp 6):
 
 | 模型 | OOF ROC-AUC | 訓練時間(秒) |
 |------|-------------|----------------|
@@ -58,9 +62,42 @@ LGB 單模由 0.898824 升至 0.899215,成為最強單模。Round 2 以同法調
 與調參 LGB 相似的淺樹結構,喪失 ensemble 多樣性,故保留手設 XGB。CatBoost 單模最弱
 (0.896709),權重搜尋僅給 0.06。
 
+### 3b. 樹搜尋最佳(best, experiment_id=7)——本次更新新增
+
+Phase F-2(harness v3 驗證跑,2026-07-04)在 `experiments_tree_v3.json`(全新樹,D-3 的
+22-節點 v2 掃描樹 `experiments_tree.json` 未被觸碰)的 node #48 找到本場目前最佳 ROC-AUC:
+rank-space 38-member Dirichlet(k=800)+coordinate-ascent blend(權重搜尋將 29/38 個成員
+歸零,9 個非零權重存活者,來源:`best.base_models`):
+
+| 成員 | 權重 | 備註 |
+|------|------|------|
+| SEEDBAG | 0.358 | — |
+| XGBDIV family(4 個節點合計) | 0.459 | — |
+| EXPL_BOUND2 | 0.114 | solo 0.897541(boundary-push 衍生 depth-2 LGB);solo 較弱但第 3 大權重 |
+| root | 0.038 | — |
+| FEATPRUNE-child | 0.018 | — |
+| XGBHAND-child | 0.013 | — |
+
+**Ensemble**(best.ensemble):method = "harness_v3 mandatory explore-burst kitchen-sink
+blend: rank-space dirichlet(k=800)+coordinate-ascent over the FULL 38-member solo pool",
+score = **0.900455**。
+
+**選型理由/來源說明**(best.notes):此為 Phase F-2 樹搜尋結果,不是線性迭代第 7 輪,也不是
+D-3 的 22-節點 v2 掃描延伸。全部超越 v2 重現高原(0.900054)的增益皆來自 harness v3 的
+**強制 explore-burst 機制**(kitchen-sink mega-blend),於 eval 39(所有第一代 lineage
+三振 plateau 後)自動注入。誠實風險註記(來源:best.notes):權重直接對全 OOF 擬合、無巢狀
+驗證,相對 v2 的 ~0.0002 增益帶有 OOF 權重過擬風險——「burst mega-blend 優於手工成長 blend」
+的方向性結論才是穩健的部分,第 4 位小數不是。
+
+> **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
+> 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。facts.best 是以 OOF score 最大者
+> 選出(本場 metric 為 roc_auc,maximize),與是否已提交至 Kaggle 無關;本場所有實驗(含
+> 實驗 7)皆未提交至 Kaggle(見第 5/6 節)。
+
 ## 4. 訓練規格
 
-CV 方案(來源:`best.cv`,六個實驗全程固定同一方案,分數可直接比較):
+CV 方案(來源:`best.cv`,experiment_id=7 為現在的 best;7 個實驗全程固定同一方案,分數可
+直接比較):
 
 | scheme | n_splits | seed | strategy |
 |--------|----------|------|----------|
@@ -68,12 +105,14 @@ CV 方案(來源:`best.cv`,六個實驗全程固定同一方案,分數可直接�
 
 **為何用此 CV**:目標欄位為二元分類且存在類別不平衡,直接對 `booking_status` 做
 StratifiedKFold 可確保每一折的正負類別比例一致,避免因某一折類別分佈偏移而使 CV 分數
-不穩定或不可信。
+不穩定或不可信。樹搜尋(experiment_id=7)沿用完全相同的 CV 折。
 
-各基模型關鍵超參(來源:`best.base_models[].params`,皆有紀錄;LGB 為 Optuna 調參結果,
+各基模型關鍵超參:facts.json 本筆 best(experiment_id=7,樹搜尋)的 base_models 僅附
+score/weight/note,**未附 params 欄位——無紀錄**,不臆測。以下為線性迭代 exp 6 記錄的
+參考超參(來源:`experiments[5].base_models[].params`,皆有紀錄;LGB 為 Optuna 調參結果,
 數值四捨五入至 3–4 位小數):
 
-| 模型 | 關鍵超參 |
+| 模型 | 關鍵超參(exp6 紀錄) |
 |------|----------|
 | LGB(Optuna) | objective=binary, metric=auc, n_estimators=3000, learning_rate≈0.068, num_leaves=178, max_depth=3, min_child_samples=47, subsample≈0.889, colsample_bytree≈0.532, reg_alpha≈2.14, reg_lambda≈0.0115, random_state=42, n_jobs=-1, verbose=-1 |
 | XGB | objective=binary:logistic, n_estimators=3000, learning_rate=0.03, max_depth=6, min_child_weight=5, subsample=0.8, colsample_bytree=0.8, reg_alpha=0.5, reg_lambda=1.0, random_state=42, n_jobs=-1, eval_metric=auc, early_stopping_rounds=150 |
@@ -85,12 +124,15 @@ reg_alpha≈2.14),num_leaves=178 在 depth=3 之下實際不起作用;這與跨�
 
 ## 5. 推論程序
 
-**後處理步驟**:facts.json 之 `best` 未記錄 `postprocess` 欄位 → **無後處理紀錄**(ROC-AUC
-為排序型指標,不需要機率門檻轉換)。
+**後處理步驟**:facts.json 之 `best`(experiment_id=7,樹搜尋)未記錄 `postprocess` 欄位 →
+**無後處理紀錄**(ROC-AUC 為排序型指標,不需要機率門檻轉換)。
 
-**Submission 檔名與格式**(來源:`best.submission`、`competition.id_column`/`target_column`):
-檔名 `sub_blend_0.89989_20260703_205132.csv`,欄位為 id 欄 `id` 與目標欄 `booking_status`
-(輸出為取消機率,而非硬分類標籤,符合 ROC-AUC 評分需求)。
+**Submission 檔名(best.submission):無紀錄**——experiment_id=7 是樹搜尋(OOF-only)結果,
+facts.json 本筆未附 submission 欄位,未產生 test 預測、未提交 Kaggle。欄位格式仍為
+`competition.id_column`/`target_column`:id 欄 `id`、目標欄 `booking_status`。
+
+線性迭代終點(exp 6)有提交檔案供參考:`sub_blend_0.89989_20260703_205132.csv`(來源:
+`experiments[5].submission`),對應 OOF 0.899893,非目前 best 的 0.900455。
 
 ## 6. 評估指標
 
@@ -104,12 +146,19 @@ reg_alpha≈2.14),num_leaves=178 在 depth=3 之下實際不起作用;這與跨�
 | LGB(base model,Optuna 調參) | 0.899215 |
 | XGB(base model) | 0.898765 |
 | CAT(base model) | 0.896709 |
-| Ensemble(最終,exp 6) | 0.899893 |
+| Ensemble(線性迭代終點,exp 6) | 0.899893 |
+| 樹搜尋 Ensemble(exp 7,facts.best) | **0.900455** |
 | Public LB | 無紀錄 |
 | Private LB | 無紀錄 |
 
 **CV↔LB gap**:facts.json 之 `leaderboard` 為空(`missing` 清單包含 `leaderboard`)——本場
 僅完成本機 CV,尚未提交至 Kaggle 排行榜,故無法計算 CV↔LB gap。
+
+exp7(樹搜尋 best)相對 exp6(線性迭代終點)之改善:
+
+```
+exp7 - exp6:  0.900455 - 0.899893 = 0.000562   (絕對改善)
+```
 
 ## 7. 實驗軌跡
 
@@ -123,8 +172,9 @@ reg_alpha≈2.14),num_leaves=178 在 depth=3 之下實際不起作用;這與跨�
 | 4 | 2026-07-03T20:39:32 | 0.899891 | v2 |
 | 5 | 2026-07-03T20:48:03 | 0.899722 | v2 |
 | 6 | 2026-07-03T20:51:32 | 0.899893 | v2 |
+| 7 | 2026-07-04T11:59:43 | 0.900455 | v2 |
 
-**突破點敘述**:本場有兩個階段的躍升。
+**突破點敘述**:本場有三個階段的躍升。
 
 *Phase A(exp 1–3)*:experiment 2(17 原始 + 14 工程特徵,含月份/日期的週期性編碼與
 價格交乘項)分數為 0.89788,低於通用 baseline 的 0.89882,呈現退步訊號(來源:exp 2 之
@@ -152,7 +202,21 @@ reg_alpha≈2.14),num_leaves=178 在 depth=3 之下實際不起作用;這與跨�
 0.899722 (exp5)       − 0.899891 (exp4)              = −0.000169
 0.899893 (exp6)       − 0.899891 (exp4)              = +0.000002
 0.89788  (exp2)       − 0.89882  (exp1)              = −0.00094
+0.900455 (exp7 樹搜尋) − 0.899893 (exp6 線性迭代終點) = +0.000562
 ```
+
+*Phase F-2 樹搜尋(exp 7,本次更新新增,facts.best)*:experiment_id=7 不是線性迭代的
+延續回合,而是 Phase F-2(2026-07-04)以 harness v3 執行的**樹搜尋(tree-search)**結果——
+來源 `experiments_tree_v3.json`(全新樹,D-3 的 22-節點 v2 掃描樹 `experiments_tree.json`
+未被觸碰)的 node #48(60-節點預算,硬上限;最佳解出現於 eval 46,wall 1593s)。分數由
+exp 6 的 0.899893 升至 0.900455(見上方程式,絕對改善 +0.000562)。全部超越 v2 重現高原
+(0.900054)的增益皆來自 harness v3 的強制 explore-burst 機制(kitchen-sink mega-blend)。
+**誠實 CV-only 警語**:此結果為 OOF-only 搜尋產物——tree_search harness 未產生任何 test
+預測檔,facts.json 本筆亦無 submission 欄位,**未提交至 Kaggle**;不可與 exp 6 實際提交的
+submission 檔案混淆(見第 5 節)。完整節點鏈、policy 行為誠實記錄(phase machine/burst
+payoff/boundary-push/dedup/reopen-blend)、與操作面問題(3 次重啟)見
+`competitions/playground-series-s3e7/STATUS.md`〈Appendix: Phase F-2 harness v3
+validation run〉。
 
 `unparsed`:facts.json 之 `unparsed` 清單為空,無法解析之紀錄:無。
 
@@ -171,8 +235,12 @@ uv run python3 competitions/playground-series-s3e7/scripts/train.py
 # Phase B Round 1: Optuna-tuned LGB (50 trials, fold-0 proxy) + blend → exp 4
 uv run python3 competitions/playground-series-s3e7/scripts/optuna_lgb.py
 
-# Phase B Round 3: ensemble refinement (fine 0.01 grid + rank blend) → exp 6 (final)
+# Phase B Round 3: ensemble refinement (fine 0.01 grid + rank blend) → exp 6 (linear-iteration end)
 uv run python3 competitions/playground-series-s3e7/scripts/blend_refine.py
+
+# Phase F-2 tree-search v3 validation run (exp 7, current best; resumable; tree state
+# in experiments_tree_v3.json, independent of the v2-sweep experiments_tree.json)
+uv run python3 tree_search/run_s3e7_v3.py
 
 # Report generation (this file)
 uv run python3 .claude/skills/kaggle-report/assets/collect.py playground-series-s3e7

@@ -587,111 +587,45 @@
       },
       "submission": "sub_blend_0.83814_20260703_233303.csv",
       "notes": "Round 4: added CAT_native (round 3, solo 0.814259, rescued from 0.7627 via native cat_features but still weakest member) to the round-2 5-way pool, and compared prob-space weight-search blend (0.837776) vs rank-average with the same weights (0.838140). Weight search: {'LGB_orig': 0.3, 'XGB': 0.0, 'CAT_orig': 0.0, 'LGB_tuned': 0.7, 'LGB_tuned_seed2024': 0.0, 'CAT_native': 0.0}. Prior best (round 2): 0.837776."
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-04T11:59:43",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "tree-search scale-run kitchen-sink blend (KITCHENBLEND lineage, explore phase, rank/prob dirichlet(k=800) blend of the full solo pool)",
+      "score": 0.845051,
+      "cv": {
+        "strategy": "StratifiedKFold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "ensemble": {
+        "method": "KITCHENBLEND: dirichlet(k=800)+coordinate-ascent blend over every solo node evaluated so far in the 80-node scale run (explore phase)",
+        "score": 0.845051
+      },
+      "notes": "Tree-search result (Phase E-5 scaling experiment, 2026-07-04) — NOT a linear-iteration round, and a DIFFERENT tree from the Phase D-2 22-node v2 sweep. Source: experiments_tree_scale.json (fresh tree produced by tree_search/run_s3e3_scale.py; the D-2 tree experiments_tree.json was not touched), node #55 (80-node budget, best found at eval 52, wall ~97s across two invocations). Beats the linear-iteration best (experiment_id=7, 0.838140) by +0.006911, and beats the smaller D-2 v2 sweep best (0.841442, in experiments_tree.json) by +0.003609. All 3 post-eval-40 improvements came from the same KITCHENBLEND lineage (a kitchen-sink blend of every solo node found so far, including CatBoost variants and boundary-pushed models the exploit-phase per-model queues had already individually rejected); no other explore-phase lineage beat the exploit-phase ceiling of 0.843524. Full curve and cross-run calibration in docs/scaling_experiment.md. OOF-only search result — no test predictions were generated, so no submission field (do not fabricate a filename)."
     }
   ],
   "best": {
-    "experiment_id": 7,
-    "timestamp": "2026-07-03T23:33:03",
+    "experiment_id": 8,
+    "timestamp": "2026-07-04T11:59:43",
     "source_format": "v2",
     "metric": "roc_auc",
     "direction": "maximize",
-    "model": "6-way blend incl. CAT_native (rank_average_same_weights)",
-    "score": 0.83814,
+    "model": "tree-search scale-run kitchen-sink blend (KITCHENBLEND lineage, explore phase, rank/prob dirichlet(k=800) blend of the full solo pool)",
+    "score": 0.845051,
     "cv": {
       "strategy": "StratifiedKFold",
       "n_splits": 5,
       "seed": 42
     },
-    "features": [
-      "Age",
-      "DailyRate",
-      "DistanceFromHome",
-      "Education",
-      "EnvironmentSatisfaction",
-      "HourlyRate",
-      "JobInvolvement",
-      "JobLevel",
-      "JobSatisfaction",
-      "MonthlyIncome",
-      "MonthlyRate",
-      "NumCompaniesWorked",
-      "PercentSalaryHike",
-      "PerformanceRating",
-      "RelationshipSatisfaction",
-      "StockOptionLevel",
-      "TotalWorkingYears",
-      "TrainingTimesLastYear",
-      "WorkLifeBalance",
-      "YearsAtCompany",
-      "YearsInCurrentRole",
-      "YearsSinceLastPromotion",
-      "YearsWithCurrManager",
-      "BusinessTravel_le",
-      "BusinessTravel_freq",
-      "Department_le",
-      "Department_freq",
-      "EducationField_le",
-      "EducationField_freq",
-      "Gender_le",
-      "Gender_freq",
-      "JobRole_le",
-      "JobRole_freq",
-      "MaritalStatus_le",
-      "MaritalStatus_freq",
-      "OverTime_le",
-      "OverTime_freq",
-      "role_tenure_ratio",
-      "mgr_tenure_ratio",
-      "promo_ratio",
-      "company_tenure_ratio",
-      "income_per_joblevel",
-      "income_per_year_worked",
-      "satisfaction_avg",
-      "satisfaction_min",
-      "overtime_joblevel",
-      "age_at_join",
-      "companies_per_year"
-    ],
-    "n_features": 48,
-    "base_models": [
-      {
-        "name": "LGB_orig",
-        "oof_auc": 0.832925
-      },
-      {
-        "name": "XGB",
-        "oof_auc": 0.807634
-      },
-      {
-        "name": "CAT_orig",
-        "oof_auc": 0.762684
-      },
-      {
-        "name": "LGB_tuned",
-        "oof_auc": 0.837305
-      },
-      {
-        "name": "LGB_tuned_seed2024",
-        "oof_auc": 0.83345
-      },
-      {
-        "name": "CAT_native",
-        "oof_auc": 0.814259
-      }
-    ],
     "ensemble": {
-      "method": "rank_average_same_weights",
-      "weights": {
-        "LGB_orig": 0.30000000000000004,
-        "XGB": 0.0,
-        "CAT_orig": 0.0,
-        "LGB_tuned": 0.7000000000000001,
-        "LGB_tuned_seed2024": 0.0,
-        "CAT_native": 0.0
-      }
+      "method": "KITCHENBLEND: dirichlet(k=800)+coordinate-ascent blend over every solo node evaluated so far in the 80-node scale run (explore phase)",
+      "score": 0.845051
     },
-    "submission": "sub_blend_0.83814_20260703_233303.csv",
-    "notes": "Round 4: added CAT_native (round 3, solo 0.814259, rescued from 0.7627 via native cat_features but still weakest member) to the round-2 5-way pool, and compared prob-space weight-search blend (0.837776) vs rank-average with the same weights (0.838140). Weight search: {'LGB_orig': 0.3, 'XGB': 0.0, 'CAT_orig': 0.0, 'LGB_tuned': 0.7, 'LGB_tuned_seed2024': 0.0, 'CAT_native': 0.0}. Prior best (round 2): 0.837776."
+    "notes": "Tree-search result (Phase E-5 scaling experiment, 2026-07-04) — NOT a linear-iteration round, and a DIFFERENT tree from the Phase D-2 22-node v2 sweep. Source: experiments_tree_scale.json (fresh tree produced by tree_search/run_s3e3_scale.py; the D-2 tree experiments_tree.json was not touched), node #55 (80-node budget, best found at eval 52, wall ~97s across two invocations). Beats the linear-iteration best (experiment_id=7, 0.838140) by +0.006911, and beats the smaller D-2 v2 sweep best (0.841442, in experiments_tree.json) by +0.003609. All 3 post-eval-40 improvements came from the same KITCHENBLEND lineage (a kitchen-sink blend of every solo node found so far, including CatBoost variants and boundary-pushed models the exploit-phase per-model queues had already individually rejected); no other explore-phase lineage beat the exploit-phase ceiling of 0.843524. Full curve and cross-run calibration in docs/scaling_experiment.md. OOF-only search result — no test predictions were generated, so no submission field (do not fabricate a filename)."
   },
   "trajectory": [
     {
@@ -734,6 +668,12 @@
       "experiment_id": 7,
       "timestamp": "2026-07-03T23:33:03",
       "score": 0.83814,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-04T11:59:43",
+      "score": 0.845051,
       "source_format": "v2"
     }
   ],

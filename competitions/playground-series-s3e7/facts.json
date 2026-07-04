@@ -627,121 +627,103 @@
       },
       "submission": "sub_blend_0.89989_20260703_205132.csv",
       "notes": "Round3: ensemble-stage-only change on exp #4 base models. (a) prob 0.05grid=0.899891 (sanity, exp#4=0.899891), (b) prob 0.01grid=0.899893, (c) rank 0.01grid=0.899884. Chosen prob_0.01grid. Delta vs exp #4: +0.000002. Motivation: Round2 showed retuning XGB hurt blend via diversity loss, so refine combination instead of base models."
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-04T11:59:43",
+      "source_format": "v2",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "model": "tree-search v3 mega-blend (node #48, rank-space 38-member Dirichlet(k=800)+coordinate-ascent blend, 9 nonzero-weight survivors)",
+      "score": 0.900455,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42,
+        "strategy": "StratifiedKFold(booking_status)"
+      },
+      "base_models": [
+        {
+          "name": "SEEDBAG",
+          "weight": 0.358
+        },
+        {
+          "name": "XGBDIV family (4 nodes)",
+          "weight": 0.459
+        },
+        {
+          "name": "EXPL_BOUND2",
+          "weight": 0.114,
+          "score": 0.897541,
+          "note": "boundary-push-derived depth-2 LGB (paired-compensation variant); solo weaker than most of the pool but 3rd-largest blend weight"
+        },
+        {
+          "name": "root",
+          "weight": 0.038
+        },
+        {
+          "name": "FEATPRUNE-child",
+          "weight": 0.018
+        },
+        {
+          "name": "XGBHAND-child",
+          "weight": 0.013
+        }
+      ],
+      "ensemble": {
+        "method": "harness_v3 mandatory explore-burst kitchen-sink blend: rank-space dirichlet(k=800)+coordinate-ascent over the FULL 38-member solo pool (weight search zeroed 29/38 members)",
+        "score": 0.900455
+      },
+      "notes": "Tree-search result (Phase F-2, harness v3 validation run, 2026-07-04) — NOT a linear-iteration round, and a DIFFERENT tree from the Phase D-3 22-node v2 sweep. Source: experiments_tree_v3.json (fresh tree from tree_search/run_s3e7_v3.py; the v2-sweep experiments_tree.json was not touched), node #48 (60-node budget, hard-capped; best found at eval 46, wall 1593s across the 60 nodes). Beats linear-iteration best (experiment_id=6, 0.899893) by +0.000562 and the D-3 v2 sweep best (0.900242, in experiments_tree.json) by +0.000213 -- the ENTIRE gain beyond the v2-reproduction plateau (0.900054) came from harness v3's mandatory explore-burst mechanism (kitchen-sink mega-blend), injected automatically at eval 39 after all first-generation lineages 3-strike plateaued. Honest caveat carried from STATUS.md: weights are fit on full OOF with no nested validation, so the ~0.0002-level gain over v2 carries OOF-weight-overfit risk; the qualitative direction (burst mega-blend > hand-grown blend) is the robust part, the 4th decimal is not. OOF-only search result — no test predictions were generated, so no submission field (do not fabricate a filename)."
     }
   ],
   "best": {
-    "experiment_id": 6,
-    "timestamp": "2026-07-03T20:51:32",
+    "experiment_id": 7,
+    "timestamp": "2026-07-04T11:59:43",
     "source_format": "v2",
     "metric": "roc_auc",
     "direction": "maximize",
-    "model": "LGB(tuned r1)+XGB+CAT, ensemble refinement (prob_0.01grid)",
-    "score": 0.899893,
+    "model": "tree-search v3 mega-blend (node #48, rank-space 38-member Dirichlet(k=800)+coordinate-ascent blend, 9 nonzero-weight survivors)",
+    "score": 0.900455,
     "cv": {
       "scheme": "5fold",
       "n_splits": 5,
       "seed": 42,
       "strategy": "StratifiedKFold(booking_status)"
     },
-    "features": [
-      "no_of_adults",
-      "no_of_children",
-      "no_of_weekend_nights",
-      "no_of_week_nights",
-      "type_of_meal_plan",
-      "required_car_parking_space",
-      "room_type_reserved",
-      "lead_time",
-      "arrival_year",
-      "arrival_month",
-      "arrival_date",
-      "market_segment_type",
-      "repeated_guest",
-      "no_of_previous_cancellations",
-      "no_of_previous_bookings_not_canceled",
-      "avg_price_per_room",
-      "no_of_special_requests",
-      "total_nights",
-      "total_guests",
-      "has_children",
-      "weekend_ratio",
-      "price_per_person",
-      "lead_time_log",
-      "prior_cancel_rate",
-      "has_prior_history"
-    ],
-    "n_features": 25,
     "base_models": [
       {
-        "model": "LGB",
-        "params": {
-          "objective": "binary",
-          "metric": "auc",
-          "n_estimators": "3000",
-          "learning_rate": "0.06811817027632358",
-          "num_leaves": "178",
-          "max_depth": "3",
-          "min_child_samples": "47",
-          "subsample": "0.8888159684496226",
-          "subsample_freq": "1",
-          "colsample_bytree": "0.5316042232727975",
-          "reg_alpha": "2.142043500176781",
-          "reg_lambda": "0.011502513321845967",
-          "random_state": "42",
-          "n_jobs": "-1",
-          "verbose": "-1"
-        },
-        "oof_auc": 0.899215,
-        "time_s": 25.7
+        "name": "SEEDBAG",
+        "weight": 0.358
       },
       {
-        "model": "XGB",
-        "params": {
-          "objective": "binary:logistic",
-          "n_estimators": "3000",
-          "learning_rate": "0.03",
-          "max_depth": "6",
-          "min_child_weight": "5",
-          "subsample": "0.8",
-          "colsample_bytree": "0.8",
-          "reg_alpha": "0.5",
-          "reg_lambda": "1.0",
-          "random_state": "42",
-          "n_jobs": "-1",
-          "eval_metric": "auc",
-          "early_stopping_rounds": "150"
-        },
-        "oof_auc": 0.898765,
-        "time_s": 27.7
+        "name": "XGBDIV family (4 nodes)",
+        "weight": 0.459
       },
       {
-        "model": "CAT",
-        "params": {
-          "loss_function": "Logloss",
-          "eval_metric": "AUC",
-          "iterations": "4000",
-          "learning_rate": "0.03",
-          "depth": "7",
-          "l2_leaf_reg": "5.0",
-          "random_seed": "42",
-          "thread_count": "-1",
-          "verbose": "False"
-        },
-        "oof_auc": 0.896709,
-        "time_s": 46.0
+        "name": "EXPL_BOUND2",
+        "weight": 0.114,
+        "score": 0.897541,
+        "note": "boundary-push-derived depth-2 LGB (paired-compensation variant); solo weaker than most of the pool but 3rd-largest blend weight"
+      },
+      {
+        "name": "root",
+        "weight": 0.038
+      },
+      {
+        "name": "FEATPRUNE-child",
+        "weight": 0.018
+      },
+      {
+        "name": "XGBHAND-child",
+        "weight": 0.013
       }
     ],
     "ensemble": {
-      "weights": {
-        "LGB": 0.54,
-        "XGB": 0.4,
-        "CAT": 0.06
-      },
-      "score": 0.899893,
-      "method": "prob_0.01grid"
+      "method": "harness_v3 mandatory explore-burst kitchen-sink blend: rank-space dirichlet(k=800)+coordinate-ascent over the FULL 38-member solo pool (weight search zeroed 29/38 members)",
+      "score": 0.900455
     },
-    "submission": "sub_blend_0.89989_20260703_205132.csv",
-    "notes": "Round3: ensemble-stage-only change on exp #4 base models. (a) prob 0.05grid=0.899891 (sanity, exp#4=0.899891), (b) prob 0.01grid=0.899893, (c) rank 0.01grid=0.899884. Chosen prob_0.01grid. Delta vs exp #4: +0.000002. Motivation: Round2 showed retuning XGB hurt blend via diversity loss, so refine combination instead of base models."
+    "notes": "Tree-search result (Phase F-2, harness v3 validation run, 2026-07-04) — NOT a linear-iteration round, and a DIFFERENT tree from the Phase D-3 22-node v2 sweep. Source: experiments_tree_v3.json (fresh tree from tree_search/run_s3e7_v3.py; the v2-sweep experiments_tree.json was not touched), node #48 (60-node budget, hard-capped; best found at eval 46, wall 1593s across the 60 nodes). Beats linear-iteration best (experiment_id=6, 0.899893) by +0.000562 and the D-3 v2 sweep best (0.900242, in experiments_tree.json) by +0.000213 -- the ENTIRE gain beyond the v2-reproduction plateau (0.900054) came from harness v3's mandatory explore-burst mechanism (kitchen-sink mega-blend), injected automatically at eval 39 after all first-generation lineages 3-strike plateaued. Honest caveat carried from STATUS.md: weights are fit on full OOF with no nested validation, so the ~0.0002-level gain over v2 carries OOF-weight-overfit risk; the qualitative direction (burst mega-blend > hand-grown blend) is the robust part, the 4th decimal is not. OOF-only search result — no test predictions were generated, so no submission field (do not fabricate a filename)."
   },
   "trajectory": [
     {
@@ -778,6 +760,12 @@
       "experiment_id": 6,
       "timestamp": "2026-07-03T20:51:32",
       "score": 0.899893,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-04T11:59:43",
+      "score": 0.900455,
       "source_format": "v2"
     }
   ],
