@@ -243,3 +243,83 @@ the 14 search-loop mutations (first-gen seeds excluded, no in-lineage parent):
   the pattern is "priors excel at ensemble mechanics, comp-specific feature insight
   still has to be earned locally" (s3e7's P3 pruning transfer failed, s3e3's did too in
   reverse — its winner was local, not transferred).
+
+## Appendix: Phase F-2 harness v3 validation run (2026-07-04)
+
+**Validation question**: does harness_v3's DEFAULT automatic policy (budget/phase machine
++ auto-stop + dedup-consumes-budget + reopen-blend trigger + boundary-push + k=800+
+coordinate-ascent blend search + blend-cost guard) run end-to-end in the wild with no
+regression vs the v2 sweep — and does the policy machinery do real work? **Answer: yes on
+both. New best OOF 0.900455 (+0.000213 over v2's 0.900242, +0.000562 over linear), and
+the ENTIRE gain beyond the v2-reproduction plateau came from the phase machine's
+mandatory explore burst (kitchen-sink mega-blend), the exact mechanism E-5 predicted.**
+
+Built: `tree_search/run_s3e7_v3.py` (driver; `eval_s3e7.py` reused byte-for-byte
+unmodified) → `experiments_tree_v3.json` (prior `experiments_tree.json` untouched).
+Root + the 6 v2 solo seeds + 1 v2 node were reused from `cache_s3e7/` via the
+digit-verify path (recomputed AUC from cached OOF must equal the v2 tree's stored score
+to 6dp; root asserted == 0.899215 before anything else ran). 44 solos trained fresh.
+
+### v3 vs v2 vs linear 對照
+| | OOF AUC | evals | best found at |
+|---|---|---|---|
+| Linear iteration (exp #6) | 0.899893 | 6 experiments | — |
+| Tree v2 (harness_v2, D-3) | 0.900242 | 22 | eval 13 |
+| **Tree v3 (this run)** | **0.900455** | 60 (cap) | **eval 46** |
+
+Winning node #48: rank-space Dirichlet(k=800)+coordinate-ascent blend over the FULL
+38-member solo pool (injected as the explore burst's kitchen-sink long-shot, node #44
+prob-space 0.900432 → #48 rank swap 0.900455). Weight search zeroed 29/38 members; the
+9 survivors: SEEDBAG .358, XGBDIV family .459 (4 nodes), **EXPL_BOUND2 .114 (the
+boundary-push-derived depth-2 LGB — solo only 0.897541, yet 3rd-largest weight)**, root
+.038, FEATPRUNE-child .018, XGBHAND-child .013. Confirms (at 38-member scale) the v2
+lesson that blend contribution ≠ solo score. Honest caveat shared with every prior tree
+run: weights are fit on the full OOF (no nested validation), so ~0.0002-level gains
+carry OOF-weight-overfit risk; the direction (burst mega-blend > hand-grown blend) is
+the robust part, the 6th decimal is not.
+
+### Policy behavior (the v3 features, honestly scored)
+- **Phase machine**: exploit evals 1–39 (all 9 first-gen lineages 3-strike-plateaued in
+  sequence, pre-burst best 0.900054 = v2's 4-way SEEDBAG blend reproduced at eval 11);
+  `explore_burst` auto-fired at eval 39 → 5 long-shot solos (DART/extra-trees/deep-CAT/
+  lossguide-XGB/depth2-LGB, all solo-worse as expected) + the mega-blend (the winner);
+  stopped at the **hard cap 60/60** (`stop_reason`: "hard budget cap reached"),
+  `evals_since_burst_improve`=13 < patience 20 at cap — the burst improving the best at
+  evals 45/46 reset the patience counter, so the numeric backstop did its job. Idle
+  tail: 14 evals (46→60), within the ≤~20 target.
+- **Burst payoff**: +0.000401 over the pre-burst plateau (0.900054 → 0.900455). Without
+  the burst this run would have ended a v2-regression; with it, a v2-beat. Second comp
+  (after E-5 s3e3-scale) where the mandatory burst supplied every post-plateau gain.
+- **Boundary-push (feature 4)**: `boundary_candidates()` flagged the root's max_depth=3
+  sitting on its Optuna box's own low edge [3,12] → auto-seeded BOUNDARYPUSH (depth 2,
+  solo 0.896441, worse) and the burst's paired-compensation variant EXPL_BOUND2
+  (depth 2 + lr 0.1, solo 0.897541) — which earned 0.114 weight in the winning blend.
+  The mutation type paid rent via diversity, not solo score.
+- **Dedup-consumes-budget (feature 2)**: fired 3× (nodes #45–47, `status=failed`
+  placeholders burned under the root after 2-in-a-row dedup rejections of replayed
+  burst-seed proposals during a crash-resume). Worked as designed; zero evaluated-node
+  budget wasted.
+- **Reopen-blend-on-solo-breakthrough (feature 3)**: never fired — correct, no solo node
+  ever became global best after blends existed (blends led from eval 10 onward).
+- **Cost guard (feature 6)**: never fired — the 38-member AUC blend cost 11.4s < 45s
+  threshold. k=800+ascent (feature 5) was the default throughout.
+- **Prior usage**: informed 7 (win 28.6%) vs uninformed 3 (33.3%) — small n, no edge
+  this run; the two decisive moves (burst injection, mega-blend) were harness-policy
+  moves, not experience-library transfers.
+
+### Honest operational ledger (things that went wrong)
+- Sum of eval wall over the 60 nodes: 1593s (26.6 min) — within budget. But the run
+  needed 3 restarts: (1) a `KeyError` on the burst's mega-blend lineage (driver bug:
+  `propose_child` dispatched blend-vs-solo on the literal name "BLEND"; fixed to
+  dispatch on the lineage's first-gen node `kind`), (2) module-level driver state
+  (`LINEAGE_NAMES`/burst flag/node results) not surviving resume (fixed: node_results
+  moved into `search_state`, burst state re-derived from the tree), and (3) one
+  EXPL_CATDEEP CatBoost eval (depth 9, bagging_temperature 2.0, seed 4001) hung 28 min
+  at 313% CPU — `signal.alarm`-based timeouts cannot interrupt a native fit() that
+  never returns to Python bytecode; killed + resumed, the retry completed in 54.8s.
+  Lesson for the harness backlog: eval timeouts need a subprocess boundary, not SIGALRM.
+- All three fixes are driver-level; `harness_v3.py` itself needed zero changes.
+
+Reproduce: `uv run python3 tree_search/run_s3e7_v3.py` (resumes from
+`experiments_tree_v3.json`; delete it + the non-v2 `cache_s3e7/solo_*.npz` entries for
+a from-scratch run).

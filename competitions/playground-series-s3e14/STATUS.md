@@ -193,3 +193,82 @@ Full tree: `experiments_tree.json`; OOF caches regenerable via the run script, g
 
 Reproduce: `uv run python3 tree_search/run_s3e14.py` (delete `experiments_tree.json` and
 `tree_search/cache_s3e14/` first for a from-scratch run; the script resumes otherwise).
+
+## Appendix — Phase F-2 harness v3 validation run (2026-07-04)
+
+**Validation question** (same as the s3e7 F-2 run): does harness_v3's DEFAULT automatic
+policy run end-to-end with no regression vs the v1-proto tree, and does the policy
+machinery do real work? **Answer: yes on both. New best OOF MAE 340.35572 (−0.171 vs the
+v1-proto tree's 340.52635, −0.243 vs linear's 340.59891), and again the single biggest
+move came from the phase machine's mandatory explore-burst kitchen-sink mega-blend.**
+
+Built: `tree_search/run_s3e14_v3.py` (driver; `eval_s3e14.py` reused byte-for-byte
+unmodified) → `experiments_tree_v3.json` (prior `experiments_tree.json` untouched).
+Root + the 6 v1-proto solo seeds (nodes 0–6) reused from `cache_s3e14/` via the
+digit-verify path (fresh MAE recompute from cached OOF must equal the stored score to
+5dp; root asserted == 342.02154). Blend nodes evaluated fresh via v3's k=800 +
+coordinate-ascent search (never v1's k=3000 hand-rolled search), snap-to-grid INSIDE
+the metric_fn for every candidate weight vector.
+
+### v3 vs v1-proto vs linear 對照
+| | OOF MAE | evals | best found at |
+|---|---|---|---|
+| Linear iteration (exp #7, 5-way blend) | 340.59891 | ~7 experiments | — |
+| Tree v1-proto (harness v1, C-2b) | 340.52635 | 20 | eval 11 |
+| **Tree v3 (this run)** | **340.35572** | 60 (cap) | **eval 44** |
+
+Curve: beat linear at eval 9 (4-way, 340.55371), beat the v1-proto tree at eval 11
+(5-way, 340.51119 — one eval later than v1 needed, on the same member set), then the
+exploit phase ground down to 340.45150 by eval 16 (7-way minus XGB, node #15), 22 more
+exploit evals bought nothing, and the burst's 34-member mega-blend (#44, eval 44) took
+it to **340.35572** (raw 340.57853 → snap 340.35572). Unlike s3e7 (where the weight
+search zeroed 29/38 members), here 28/34 members kept weight >0.005 — including 4 CAT
+variants (0.22 combined), both burst survivors EXPL_CATDEEP (solo 345.16, w=.051) and
+EXPL_REGDEEP (solo 341.99, w=.045): on this noisier target, breadth-of-averaging itself
+is the signal, one more confirmation that blend contribution ≠ solo score.
+
+### Policy behavior (v3 features, honestly scored)
+- **Phase machine**: exploit evals 1–38 (BLEND exhausted its mutation space first —
+  forced backtrack — then all 8 solo lineages 3-strike-plateaued in sequence);
+  `explore_burst` auto-fired at eval 38 → 5 long-shot solos + mega-blend; **stopped at
+  the hard cap 60/60** (`stop_reason`: "hard budget cap reached"),
+  evals_since_burst_improve = 16 < patience 20 at the cap. Idle tail 16 evals ≤ 20
+  target. Same shape as s3e7: the burst improving the global best resets the patience
+  counter, so the patience stop can only fire when a burst FAILS — on both F-2 comps
+  the burst paid off, and the numeric backstop (cap) is what ended the run. The
+  patience path itself was verified end-to-end only in a small-budget driver smoke
+  (stop_reason "2 evals without improvement post-burst (patience=2)") — in-the-wild
+  evidence for it is still pending a comp whose burst is a dud.
+- **Burst payoff**: 340.45150 → 340.35572 (−0.096), 100% of the post-exploit gain; the
+  5 long-shot solos were all solo-worse (DART catastrophically so — see ledger) yet 2
+  of them entered the winning blend.
+- **Boundary-push (feature 4)**: `boundary_candidates(LGBTUNED params vs its train_v3
+  Optuna box)` returned [] — correct, no tuned param sits within 5% of its box edge
+  here (nearest: reg_lambda at ~13% in log-space). The check ran and honestly found
+  nothing; s3e7's F-2 run is where it fires for real (max_depth on the box edge).
+- **Dedup-consumes-budget / reopen-blend / cost guard**: none fired (0 rejections — the
+  authored queues never re-proposed a duplicate; no solo ever beat a blend; the
+  34-member MAE blend cost 1.6s ≪ 45s). All three verified live on s3e7 or in unit
+  tests instead.
+- **Prior usage**: informed 4 (win 75% — the P9/P2 add-to-pool moves) vs uninformed 5
+  (win 20%); consistent with the D-3 finding that priors excel at ensemble mechanics.
+
+### Honest operational ledger
+- Sum of eval wall: 2338s (39 min) over 60 evals; the first process hit the driver's
+  own 35-min wall guard at 59/60 and a 2-minute resume recorded the final eval + the
+  hard-cap stop. The overshoot is DART's fault: 6 DART evals at 107–140s each (vs
+  ~40-70s typical) — DART's MAE objective run produced garbage solos (6144–6544 OOF
+  MAE, ~18× worse than baseline; dart + early-stopping-disabled + regression_l1 do not
+  mix at this n_estimators) and burned ~12 min for zero value. Backlog note: burst
+  seeds need a per-seed wall/score sanity gate.
+- Nodes 0–8 (root, 6 seeds, 3-way + 4-way blends) were first evaluated during a
+  pre-flight smoke of this driver's plumbing (node #8's mutation string carries a
+  leftover "[test]" tag) and the real run resumed on top — every config and score is a
+  genuine evaluation through the identical code path (reuse digit-verified against the
+  v1-proto tree; blend search deterministic at seed=42).
+- Same OOF-weight-overfit caveat as every tree run: 34-dim weights fit on the full OOF,
+  no nested validation; the burst-beats-exploit direction is robust, the 5th decimal
+  is not.
+
+Reproduce: `uv run python3 tree_search/run_s3e14_v3.py` (resumes from
+`experiments_tree_v3.json`).
