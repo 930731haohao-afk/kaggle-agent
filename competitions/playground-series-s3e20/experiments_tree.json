@@ -1,0 +1,1015 @@
+{
+  "comp": "playground-series-s3e20",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: scripts/train_v5.py's exact Phase-B Round-3 config (EB shrinkage alpha=1.0 [neighbor smoothing subsumed Round-1's shrinkage], COVID year down-weight w2020=0.24, neighbor-week-smoothing weight wnb=0.28, window=+-1), OOF RMSE 21.1487 (experiments.json #7), verified digit-for-digit before searching begins",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1487
+        }
+      },
+      "score": 21.1487,
+      "status": "evaluated",
+      "wall_s": 0.09,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[ALPHA] ALPHA fine re-sweep: 1.0->0.98 -- pre-flight probe found this the local single-axis optimum near Phase B's own alpha=1.0 (21.1487->21.1460, tiny but real; Phase B's Round-3 pre-sweep never checked alpha values strictly between 0.95 and 1.0) [PRIOR none -- pure numeric re-sweep of an existing knob]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.98,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.146
+        }
+      },
+      "score": 21.146,
+      "status": "evaluated",
+      "wall_s": 0.09,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[W2020] W2020 fine re-sweep: 0.24->0.22 -- HONEST check whether Phase B's Round-3 joint pre-sweep already found this axis's true optimum; pre-flight grid (0.15..0.32) shows 0.24 IS the single-axis minimum (0.22 alone scores 21.1508, worse) [PRIOR none]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.22,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1508
+        }
+      },
+      "score": 21.1508,
+      "status": "evaluated",
+      "wall_s": 0.09,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[WNB] WNB fine re-sweep: 0.28->0.30 -- same honest-check purpose as W2020; pre-flight grid (0.20..0.40) shows 0.28 IS the single-axis minimum [PRIOR none]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.3,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1499
+        }
+      },
+      "score": 21.1499,
+      "status": "evaluated",
+      "wall_s": 0.09,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[WINDOW] WINDOW: widen to +-2 weeks but with DECAYED weight (wnb**d per offset distance d) instead of Phase B's flat wnb for every offset -- Phase B's flat-weight +-2 was worse (21.2341, experiments.json #8); decay lets far neighbors contribute less, an untested combination [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section -- denoising the historical mean is the entire lever on this comp]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 2,
+        "neighbor_weight_mode": "decay",
+        "result": {
+          "method": "te",
+          "rmse": 21.2313
+        }
+      },
+      "score": 21.2313,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[YEARWEIGHTS] YEARWEIGHTS (NEW axis): down-weight 2019 (ramp-up year of the sensor program, potentially less reliable) in addition to Phase B's own 2020 COVID down-weight -- Phase B invented 'down-weight an anomalous year' but never asked whether it applies to OTHER years too. Pre-flight: real improvement, 21.1487->21.0951 [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section -- same denoise-the-historical-mean lever generalized to a 2nd year]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.7,
+          "2020": 0.24
+        },
+        "result": {
+          "method": "te",
+          "rmse": 21.0951
+        }
+      },
+      "score": 21.0951,
+      "status": "evaluated",
+      "wall_s": 0.09,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[PERLOCALPHA] PERLOCALPHA (NEW axis): replace the single global alpha with a per-location empirical-Bayes value (tau2_loc/(tau2_loc+sigma2_loc/(k*n_year)) -- locations with flatter/noisier weekly profiles shrink harder toward their own loc mean, strength constant k=4.0 chosen from a pre-flight k-grid (0.25..8.0). Phase B's alpha was always a single global scalar. Pre-flight: 21.1026, close to but NOT beating the root's plain scalar alpha=1.0 -- kept as an honest (moderately negative) new-idea result [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 4.0,
+        "result": {
+          "method": "te",
+          "rmse": 21.1026
+        }
+      },
+      "score": 21.1026,
+      "status": "evaluated",
+      "wall_s": 0.13,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[CIRCULAR] CIRCULAR (NEW axis): wrap the neighbor-week lookup across the year boundary (week 52's +1 neighbor becomes week 0) instead of leaving edge weeks with only one real neighbor -- the annual cycle has no true edge. Pre-flight: worse (21.3295) -- Rwanda's week-0/week-52 seasons are evidently not alike enough for this prior to hold; kept as a quick honest negative result [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section, negative outcome]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "circular": true,
+        "result": {
+          "method": "te",
+          "rmse": 21.3295
+        }
+      },
+      "score": 21.3295,
+      "status": "evaluated",
+      "wall_s": 0.09,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[MONTHFALLBACK] MONTHFALLBACK (NEW axis): add a location-month mean as an extra fallback tier for any (loc,week) cell with no data in the source years. Pre-flight: EXACT tie with root (21.1487) -- this dataset's panel is PERFECTLY BALANCED (497 locs x 53 weeks x 3 years, every combination present every year), so the fallback tier can mathematically never fire in any LOYO fold. Kept as a documented, expected no-op -- itself a regime observation (fallback tiers are worthless on a complete panel) [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "month_fallback": true,
+        "result": {
+          "method": "te",
+          "rmse": 21.1487
+        }
+      },
+      "score": 21.1487,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[GBDT] GBDT diagnostic (the ONE allowed per task brief): single lightweight LGB (log1p target, 63 sensor cols + lat/lon/week, n_estimators=400, LOYO CV) -- NOT a full 3-model ensemble, since Phase B already proved GBDTs get 0 blend weight against this structural signal 5 separate times (experiments.json #4-#8); this re-confirms the finding transfers to harness_v2's own OOF-cache + blend-search path without re-answering an already-answered question [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section -- GBDT-vs-structure is this section's own central finding]",
+      "config": {
+        "kind": "solo",
+        "method": "gbdt_lgb_quick",
+        "params": {
+          "n_estimators": 400,
+          "learning_rate": 0.05
+        },
+        "result": {
+          "method": "gbdt_lgb_quick",
+          "n_estimators": 400,
+          "rmse": 51.4012
+        }
+      },
+      "score": 51.4012,
+      "status": "evaluated",
+      "wall_s": 30.11,
+      "kind": "solo"
+    },
+    {
+      "id": 10,
+      "parent_id": 0,
+      "mutation": "[JOINT] JOINT (2-param move in ONE step, straight from root): alpha 1.0->0.98 AND w2020 0.24->0.20 TOGETHER -- this is the run's central thesis test: Phase B's per-round PROPOSAL step always changed exactly one axis (STATUS.md's own Round headers: \u4e00\u6b21\u4e00\u9805); joint re-tuning only ever happened as a separate, ad hoc manual scratch pre-sweep, never as the tree's own single mutation. A tree-search node can just BE a 2-param move [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.98,
+        "w2020": 0.2,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1538
+        }
+      },
+      "score": 21.1538,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 5,
+      "mutation": "[YEARWEIGHTS] YEARWEIGHTS: 2019 weight 0.7->0.6, pre-flight grid showed 0.6-0.7 is the flat minimum region [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.6,
+          "2020": 0.24
+        },
+        "result": {
+          "method": "te",
+          "rmse": 21.0978
+        }
+      },
+      "score": 21.0978,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 5,
+      "mutation": "[YEARWEIGHTS] YEARWEIGHTS: fine step 2019 weight=0.65 [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.65,
+          "2020": 0.24
+        },
+        "result": {
+          "method": "te",
+          "rmse": 21.0942
+        }
+      },
+      "score": 21.0942,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 12,
+      "mutation": "[YEARWEIGHTS] YEARWEIGHTS: ALSO up-weight 2021 (closest year to the 2022 test year) within the same year-weights axis -- pre-flight found w21=1.2 alone is also a small win (21.1125); combine with the already-better 2019 weight [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section] (parent=#12)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.65,
+          "2020": 0.24,
+          "2021": 1.15
+        },
+        "result": {
+          "method": "te",
+          "rmse": 21.0808
+        }
+      },
+      "score": 21.0808,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 6,
+      "mutation": "[PERLOCALPHA] PERLOCALPHA: k 4.0->2.0, pre-flight grid direction toward more shrinkage [PRIOR none] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 2.0,
+        "result": {
+          "method": "te",
+          "rmse": 21.1369
+        }
+      },
+      "score": 21.1369,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 6,
+      "mutation": "[PERLOCALPHA] PERLOCALPHA: k 4.0->8.0, other bracket direction (less shrinkage, closer to plain scalar) [PRIOR none] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 8.0,
+        "result": {
+          "method": "te",
+          "rmse": 21.1074
+        }
+      },
+      "score": 21.1074,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 6,
+      "mutation": "[PERLOCALPHA] fallback perturbation (queue exhausted): per_loc_k += -0.8676 [PRIOR none -- last-resort filler] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 3.1323803431429886,
+        "result": {
+          "method": "te",
+          "rmse": 21.108
+        }
+      },
+      "score": 21.108,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 1,
+      "mutation": "[ALPHA] ALPHA: 0.98->0.99, bracket other direction [PRIOR none] (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.99,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1435
+        }
+      },
+      "score": 21.1435,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 17,
+      "mutation": "[ALPHA] ALPHA: 0.98->0.965, refine toward finer optimum [PRIOR none] (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.965,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1647
+        }
+      },
+      "score": 21.1647,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 17,
+      "mutation": "[ALPHA] ALPHA: push further to 0.95 [PRIOR none] (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.95,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.201
+        }
+      },
+      "score": 21.201,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 3,
+      "mutation": "[WNB] WNB: 0.30->0.26, bracket other direction around root's 0.28 [PRIOR none] (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.26,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1502
+        }
+      },
+      "score": 21.1502,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 21,
+      "parent_id": 3,
+      "mutation": "[WNB] WNB: fine step 0.29 [PRIOR none] (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.29,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.149
+        }
+      },
+      "score": 21.149,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 21,
+      "mutation": "[WNB] fallback perturbation (queue exhausted): wnb += -0.0347 [PRIOR none -- last-resort filler] (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.2552952137257195,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.151
+        }
+      },
+      "score": 21.151,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 2,
+      "mutation": "[W2020] W2020: 0.22->0.26, bracket other direction around root's 0.24 [PRIOR none] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.26,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1503
+        }
+      },
+      "score": 21.1503,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 24,
+      "parent_id": 23,
+      "mutation": "[W2020] W2020: fine step 0.25 [PRIOR none] (parent=#23)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.25,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1491
+        }
+      },
+      "score": 21.1491,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 25,
+      "parent_id": 24,
+      "mutation": "[W2020] fallback perturbation (queue exhausted): w2020 += -0.0347 [PRIOR none -- last-resort filler] (parent=#24)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.21529521372571955,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1519
+        }
+      },
+      "score": 21.1519,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 26,
+      "parent_id": 10,
+      "mutation": "[JOINT] JOINT (3rd+4th axis in one move): fold in wnb 0.28->0.30 AND the NEW year_weights axis (2019=0.7) on top of the alpha+w2020 move already made -- 4 structural knobs moved across 2 tree nodes total, something no single Phase-B round attempted [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section] (parent=#10)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.98,
+        "w2020": 0.2,
+        "wnb": 0.3,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.0801
+        },
+        "year_weights": {
+          "2019": 0.7,
+          "2020": 0.2
+        }
+      },
+      "score": 21.0801,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 27,
+      "parent_id": 26,
+      "mutation": "[JOINT] JOINT: refine year_weights further (2019 0.7->0.6, add 2021=1.2 up-weight) while keeping alpha/w2020/wnb fixed at this lineage's current point -- tests whether the single-axis YEARWEIGHTS-lineage's own best point still helps once composed with the other 3 axes [PRIOR: \u5177\u8de8\u5e74\u7a69\u5b9a\u7d50\u69cb section] (parent=#26)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.98,
+        "w2020": 0.2,
+        "wnb": 0.3,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.0594
+        },
+        "year_weights": {
+          "2019": 0.6,
+          "2020": 0.2,
+          "2021": 1.2
+        }
+      },
+      "score": 21.0594,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 28,
+      "parent_id": 27,
+      "mutation": "[JOINT] JOINT: fine nudge alpha 0.98->0.99 at this joint point -- local refinement of the composed optimum [PRIOR none] (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.99,
+        "w2020": 0.2,
+        "wnb": 0.3,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.0589
+        },
+        "year_weights": {
+          "2019": 0.6,
+          "2020": 0.2,
+          "2021": 1.2
+        }
+      },
+      "score": 21.0589,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 29,
+      "parent_id": 28,
+      "mutation": "[JOINT] JOINT: fine nudge w2020 0.20->0.22 at this joint point [PRIOR none] (parent=#28)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.99,
+        "w2020": 0.22,
+        "wnb": 0.3,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.0589
+        },
+        "year_weights": {
+          "2019": 0.6,
+          "2020": 0.2,
+          "2021": 1.2
+        }
+      },
+      "score": 21.0589,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 30,
+      "parent_id": 4,
+      "mutation": "[WINDOW] WINDOW: widen decayed window +-2->+-3 -- does decay keep improving with more neighbors or already peaked at +-2? [PRIOR none] (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 3,
+        "neighbor_weight_mode": "decay",
+        "result": {
+          "method": "te",
+          "rmse": 21.2963
+        }
+      },
+      "score": 21.2963,
+      "status": "evaluated",
+      "wall_s": 0.08,
+      "kind": "solo"
+    },
+    {
+      "id": 31,
+      "parent_id": 4,
+      "mutation": "[WINDOW] WINDOW: same +-2 decayed window, larger base wnb (0.28->0.45) since decay damps far neighbors anyway -- tests whether decay mode wants a different base weight than flat mode's optimum [PRIOR none] (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.45,
+        "window": 2,
+        "neighbor_weight_mode": "decay",
+        "result": {
+          "method": "te",
+          "rmse": 21.5873
+        }
+      },
+      "score": 21.5873,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 32,
+      "parent_id": 7,
+      "mutation": "[CIRCULAR] CIRCULAR: lower wnb (0.28->0.20) to test whether circular wraparound only hurt because it was injecting a full-weight but poorly-matched neighbor at the season boundary [PRIOR none] (parent=#7)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.2,
+        "window": 1,
+        "circular": true,
+        "result": {
+          "method": "te",
+          "rmse": 21.2849
+        }
+      },
+      "score": 21.2849,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 33,
+      "parent_id": 15,
+      "mutation": "[PERLOCALPHA] fallback perturbation (queue exhausted): per_loc_k += +0.0092 [PRIOR none -- last-resort filler] (parent=#15)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 8.009239052378732,
+        "result": {
+          "method": "te",
+          "rmse": 21.1074
+        }
+      },
+      "score": 21.1074,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 34,
+      "parent_id": 15,
+      "mutation": "[PERLOCALPHA] fallback perturbation (queue exhausted): per_loc_k += +0.3025 [PRIOR none -- last-resort filler] (parent=#15)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 8.302494652302528,
+        "result": {
+          "method": "te",
+          "rmse": 21.108
+        }
+      },
+      "score": 21.108,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 35,
+      "parent_id": 15,
+      "mutation": "[PERLOCALPHA] fallback perturbation (queue exhausted): per_loc_k += +0.4800 [PRIOR none -- last-resort filler] (parent=#15)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 8.4800346846179,
+        "result": {
+          "method": "te",
+          "rmse": 21.1084
+        }
+      },
+      "score": 21.1084,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 36,
+      "parent_id": 17,
+      "mutation": "[ALPHA] fallback perturbation (queue exhausted): alpha += -0.0347 [PRIOR none -- last-resort filler] (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.9552952137257196,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "result": {
+          "method": "te",
+          "rmse": 21.1861
+        }
+      },
+      "score": 21.1861,
+      "status": "evaluated",
+      "wall_s": 0.07,
+      "kind": "solo"
+    },
+    {
+      "id": 37,
+      "parent_id": 0,
+      "mutation": "[BLEND] BLEND (the one materially-different pair this run tests): best structural TE node so far (#28, rmse=21.0589) + the GBDT diagnostic (#9, rmse=51.4012) -- weight-searched. Structural-vs-structural blends were deliberately NOT tried (root vs YEARWEIGHTS-seed OOF correlation = 0.99997, blend weight search already confirmed to give 100%/0% -- see module docstring) [PRIOR: Ensemble/\u5f8c\u8655\u7406 section -- weight search arbitrates, no cost to trying once]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          28,
+          9
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            28,
+            9
+          ],
+          "weights": {
+            "28": 0.9783,
+            "9": 0.0217
+          },
+          "method": "dirichlet",
+          "rmse": 21.0332
+        }
+      },
+      "score": 21.0332,
+      "status": "evaluated",
+      "wall_s": 0.17,
+      "kind": "blend"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 1,
+    "streak": {
+      "5": 0,
+      "6": 3,
+      "1": 1,
+      "8": 0,
+      "3": 3,
+      "2": 3,
+      "10": 0,
+      "4": 2,
+      "7": 1,
+      "9": 0
+    },
+    "plateaued": [
+      9,
+      10,
+      5,
+      6
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 5,
+        "reason": "lineage YEARWEIGHTS's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": 16,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 21.0808 (tie_rate=0.059, discretized=False)"
+      },
+      {
+        "at_node_id": 19,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 21.0808 (tie_rate=0.050, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 8,
+        "reason": "lineage MONTHFALLBACK's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": 22,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 21.0808 (tie_rate=0.043, discretized=False)"
+      },
+      {
+        "at_node_id": 25,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 21.0808 (tie_rate=0.038, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 10,
+        "reason": "lineage JOINT's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 4,
+        "reason": "lineage WINDOW's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 7,
+        "reason": "lineage CIRCULAR's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 9,
+        "reason": "lineage GBDT's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": null,
+        "reason": "all lineages plateaued -> reopened once (fallback so the search can keep going toward the node budget)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 9,
+        "reason": "lineage GBDT's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 10,
+        "reason": "lineage JOINT's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 5,
+        "reason": "lineage YEARWEIGHTS's mutation proposals exhausted -> forced backtrack"
+      },
+      {
+        "at_node_id": 35,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 21.0589 (tie_rate=0.111, discretized=False)"
+      }
+    ],
+    "tie_rate_log": [
+      0.0833,
+      0.0769,
+      0.0714,
+      0.0667,
+      0.0625,
+      0.0588,
+      0.0556,
+      0.0526,
+      0.05,
+      0.0476,
+      0.0455,
+      0.0435,
+      0.0417,
+      0.04,
+      0.0385,
+      0.037,
+      0.0357,
+      0.0345,
+      0.0667,
+      0.0645,
+      0.0625,
+      0.0606,
+      0.0882,
+      0.1143,
+      0.1111,
+      0.1081
+    ]
+  },
+  "priors": [
+    "\u6975\u53f3\u504f\u76ee\u6a19(skew 10.2)\u5fc5 log1p;\u7dda\u6027\u6a21\u578b(Ridge)\u5728\u6b64\u8a2d\u5b9a\u4e0b\u53ef\u707d\u96e3\u6027\u7206\u70b8,GBDT \u7a69\u5065\u3002 | \u8b49\u64da:s3e20, exp #1,Ridge RMSE 23,917.63 vs LGB 32.75(\u5747\u503c baseline 155.54)\u3002",
+    "\u5148\u9a57\u8b49\u300c\u6b77\u53f2\u5747\u503c\u300d\u57fa\u6e96:\u82e5\u76ee\u6a19\u5c0d (\u4f4d\u7f6e, \u9031\u6b21) \u8de8\u5e74\u8fd1\u4e4e\u6046\u5b9a(\u8de8\u5e74 std \u4e2d\u4f4d\u6578 \u22483.1),\u7d14 location-week \u6b77\u53f2\u5747\u503c\u53ef\u5b8c\u52dd\u6240\u6709 GBDT\u3002 | \u8b49\u64da:s3e20, exp #4,4 \u8def\u6b0a\u91cd\u641c\u5c0b\u7d66 TE-mean 100%\u3001\u4e09\u500b GBDT \u5168 0;TE-mean 22.6488 vs \u6700\u4f73 GBDT blend 28.3424\u3002\u7406\u89e3\u8cc7\u6599\u52dd\u904e\u6a21\u578b\u8907\u96dc\u5ea6\u3002",
+    "**\u6b77\u53f2\u5747\u503c\u8d0f\u4e86\u4e4b\u5f8c,\u4e0b\u4e00\u5c64\u69d3\u687f\u662f\u300c\u5c0d\u5747\u503c\u672c\u8eab\u53bb\u566a\u300d,\u4e09\u62db\u4f9d\u5e8f\u758a\u52a0\u5171 \u22126.6%(22.6488\u219221.1487),GBDT \u6bcf\u8f2a\u6b0a\u91cd\u4ecd\u5168 0**(s3e20 Phase B,LOYO CV \u5168\u7a0b\u540c\u6298\u53ef\u6bd4):",
+    "**\u6b98\u5dee\u8a3a\u65b7\u78ba\u8a8d\u300c\u7d50\u69cb\u98fd\u548c\u300d\u908a\u754c\u689d\u4ef6\u5ef6\u4f38\u5230\u6b98\u5dee\u5c64**:LGB \u8a13\u7df4\u65bc (y \u2212 \u53bb\u566aTE) \u6b98\u5dee\u3001\u4ee5 1.0/0.5/0.25/0.1 \u4efb\u4f55\u6bd4\u4f8b\u52a0\u56de\u90fd\u8b8a\u5dee(22.07/21.39/21.21/21.16,\u55ae\u8abf\u8da8\u8fd1 TE-only)\u2014\u2014\u611f\u6e2c\u7279\u5fb5\u9023\u6b98\u5dee\u90fd\u89e3\u91cb\u4e0d\u4e86\u3002\u8207 s3e19 \u53cd\u4f8b\u5408\u4f75:\u76ee\u6a19\u8de8\u5e74\u8fd1\u6046\u5b9a\u6642,\u7d50\u69cb\u4e0d\u53ea\u8d0f GBDT,\u800c\u662f\u5403\u5149\u5168\u90e8\u53ef\u9810\u6e2c\u8a0a\u865f;\u4e0d\u5fc5\u518d\u5c0d\u6b64\u578b\u8cc7\u6599\u5617\u8a66\u300c\u7d50\u69cb+GBDT \u6b98\u5dee\u300d\u6df7\u5408\u3002 | \u8b49\u64da:s3e20, exp #8(4b),21.1487 \u2192 \u5168\u90e8 \u226521.1592,\u68c4\u7528\u3002",
+    "OOF \u6b0a\u91cd\u641c\u5c0b\u5e38\u76f4\u63a5\u6dd8\u6c70\u5f31\u6a21\u578b(\u6b0a\u91cd=0)\u2014\u2014\u9019\u662f\u7279\u5fb5\u800c\u975e bug,\u5c0a\u91cd\u5b83:s3e3 CAT=0(\u5169\u6b21)\u3001s3e11 XGB=0(\u5169\u6b21)\u3001s3e19 \u5916\u63a8\u4e0b XGB=0(\u5169\u6b21)\u3001s3e20 \u4e09\u500b GBDT \u5168=0\u3002 | \u8b49\u64da:\u5404\u8a72\u8cfd experiments.json blend_weights\u3002",
+    "\u4e09\u6a21\u578b\u6642,\u55ae\u7d14 simplex \u7db2\u683c\u6b0a\u91cd\u641c\u5c0b\u96e3\u88ab\u5b78\u7fd2\u5f0f stacking \u6253\u6557:Ridge(\u975e\u8ca0)stacking \u53cd\u800c\u660e\u986f\u66f4\u5dee\u3002 | \u8b49\u64da:s3e14, exp #3,Ridge stack 344.04 vs simplex blend 340.76\u3002",
+    "\u672a\u512a\u5316\u7684 50/50 \u7b49\u6b0a ensemble \u53ef\u80fd\u6bd4\u6700\u4f73\u55ae\u6a21\u5dee\u2014\u2014\u6b0a\u91cd\u5fc5\u9808\u641c\u5c0b\u3002 | \u8b49\u64da:s3e20, exp #2,LGB 32.75 + XGB 34.44 \u7b49\u6b0a = 33.21 > LGB \u55ae\u6a21\u3002",
+    "\u6a21\u578b\u5be6\u529b\u76f8\u8fd1\u6642 blend \u624d\u7a69\u5b9a\u52dd\u904e\u6240\u6709\u55ae\u6a21\u3002 | \u8b49\u64da:s3e1, exp #2,blend 0.55877 < LGB 0.56109/XGB 0.56297/CAT 0.56188\u3002",
+    "\u5f8c\u8655\u7406\u4e09\u5bf6\u7686\u6709\u5be6\u8b49:\u6574\u6578\u53d6\u6574(s3e16, 1.3565\u21921.3389)\u3001OptimizedRounder(s3e5, +0.055)\u3001snap-to-grid(s3e14, ~+0.05~0.06);\u53e6 clip \u5230\u8a13\u7df4\u76ee\u6a19\u503c\u57df\u4f5c\u5b89\u5168\u7db2(s3e1\u3001s3e11)\u3002 | \u8b49\u64da:\u898b\u300c\u4f9d\u6307\u6a19\u300d\u7bc0\u5404\u689d\u3002"
+  ],
+  "prior_usage_summary": {
+    "n_informed": 12,
+    "n_uninformed": 14,
+    "informed_win_rate": 0.3333333333333333,
+    "uninformed_win_rate": 0.42857142857142855
+  },
+  "dedup_rejections": [],
+  "final_tie_rate": 0.1053,
+  "linear_best_rmse": 21.1487
+}
