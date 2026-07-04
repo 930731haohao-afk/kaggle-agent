@@ -107,6 +107,15 @@ See [references/05_evaluation.md](references/05_evaluation.md) for detailed inst
 
 Key actions: Review experiments, analyze errors, propose improvements, track trajectory.
 
+**Tree Search (preferred for optimization)**: Once the linear Iteration Protocol above
+has produced a baseline solo model plus at least one blend, switch to tree search — see
+[references/07_tree_search.md](references/07_tree_search.md). Evidence: tree search beats
+the linear iteration best in 9 of 10 benchmarked competitions (1 exact tie, 0 losses;
+`docs/tree_search_prototype.md`). Harness: `tree_search/harness_v3.py`; example driver:
+`tree_search/run_s3e7_v3.py`. Keep the linear protocol above as the fallback for the very
+first iteration pass (before a baseline + blend exist) and for small/cheap-eval
+competitions where a ~60-node search budget isn't worth it.
+
 ### Stage 5: Submission
 **Goal**: Generate competition-ready submission file.
 
@@ -170,6 +179,7 @@ Key actions: Retrain on full data, generate predictions, format submission, vali
 - `04_modeling.md` — Modeling instructions
 - `05_evaluation.md` — Evaluation instructions
 - `06_submission.md` — Submission instructions
+- `07_tree_search.md` — Tree search: agent-driven Stage 4 optimization loop (preferred once a baseline + blend exist)
 
 ## Important Notes
 

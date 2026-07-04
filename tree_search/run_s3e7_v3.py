@@ -1,10 +1,25 @@
 """tree_search/run_s3e7_v3.py — Phase F-2 harness_v3 validation run for
-playground-series-s3e7 (Hotel Reservation Cancellation, ROC-AUC, maximize). Re-runs the
-comp under harness_v3's DEFAULT automatic policy (budget/phase machine, dedup-consumes-
-budget, reopen-blend-on-solo-breakthrough, boundary_candidates, k=800+coordinate-ascent
-blend search, blend-cost guard) to verify (a) no regression vs the harness_v2 sweep
-(tree_search/run_s3e7.py, best 0.900242 @ eval 13/22, experiments_tree.json — UNTOUCHED
-by this run) and (b) the v3 policy machinery does real work end to end.
+playground-series-s3e7 (Hotel Reservation Cancellation, ROC-AUC, maximize), retrofitted
+in Phase H-2 to be the canonical example driver for `.claude/skills/*/references/
+07_tree_search.md`. Re-runs the comp under harness_v3's DEFAULT automatic policy
+(budget/phase machine, dedup-consumes-budget, reopen-blend-on-solo-breakthrough,
+boundary_candidates, k=800+coordinate-ascent blend search, blend-cost guard) to verify
+(a) no regression vs the harness_v2 sweep (tree_search/run_s3e7.py, best 0.900242 @
+eval 13/22, experiments_tree.json — UNTOUCHED by this run) and (b) the v3 policy
+machinery does real work end to end.
+
+Phase H-2 update: this driver now goes through harness_v3's three Phase H-1 production-
+readiness entry points instead of the lower-level pieces it originally used —
+`hv3.save_search_state`/`hv3.load_search_state` (validated resume, replacing bare
+`hv3.save`/`hv3.load` for THIS driver's own tree; the read-only OLD v2 tree still uses
+plain `hv2.load`), `hv3.eval_solo_subprocess` (child-process-isolated solo evals,
+replacing a direct `ev.evaluate(...)` call, so a hung native `fit()` gets hard-killed
+instead of wedging the loop), and `hv3.apply_burst_seed_sanity_gate` (called on every
+explore-burst seed right after it's evaluated). `DEDUP_REJECTIONS`/`COST_GUARD_FIRED`
+also moved from module-level globals into `tree["search_state"]["driver_state"]` so they
+survive a resume (see `_driver_state`/`_dedup_rejections`/`_cost_guard_fired` below). Run
+`uv run python3 tree_search/run_s3e7_v3.py --dry-run` to verify this wiring end-to-end
+with zero training compute and zero writes to TREE_PATH.
 
 eval_s3e7.py (the per-comp evaluator) is reused byte-for-byte, unmodified — only this
 DRIVER changes. Two deliberate driver-level deviations from run_s3e7.py's own
@@ -71,6 +86,10 @@ COMP = "playground-series-s3e7"
 _COMP_DIR = os.path.join(os.path.dirname(_HERE), "competitions", COMP)
 OLD_TREE_PATH = os.path.join(_COMP_DIR, "experiments_tree.json")       # v2 tree -- READ-ONLY
 TREE_PATH = os.path.join(_COMP_DIR, "experiments_tree_v3.json")        # this run's output
+EVAL_MODULE_PATH = os.path.join(_HERE, "eval_s3e7.py")                 # Phase H-1 feature 8:
+                                                                        # eval_solo_subprocess loads
+                                                                        # the evaluator BY PATH, in a
+                                                                        # child process
 EVAL_TIMEOUT_S = 200
 MAX_WALL_S = 35 * 60          # task's per-comp wall-time ceiling (soft safety net; should_stop
                                # is the intended stop mechanism, this just guards against a
@@ -95,11 +114,35 @@ LGB_SEARCH_SPACE = {
     "reg_lambda": {"low": 1e-3, "high": 10.0, "log": True},
 }
 
-DEDUP_REJECTIONS = []
+# Phase H-1 feature 7 (resume-state contract): DEDUP_REJECTIONS and COST_GUARD_FIRED used
+# to be plain module-level lists -- exactly the class of bug H-1 fixes (F-2's own s3e7 run
+# lost driver state across a resume because nothing put it inside the persisted tree). Both
+# now live in tree["search_state"]["driver_state"] (see _driver_state()/_dedup_rejections()/
+# _cost_guard_fired() below) so they survive a process restart via save_search_state /
+# load_search_state, with zero custom reconstruction code. LINEAGE_NAMES and BURST_INJECTED
+# keep their existing resume-safety design (rebuilt FROM the tree's own node mutations on
+# resume, see main()) -- that self-healing approach is at least as robust as persisting them
+# and is left as-is. _dedup_offset (a pure indexing convenience into per-lineage mutation
+# queues) is NOT migrated: losing it across a resume costs at most one extra dedup-rejected
+# proposal attempt for the affected lineage (self-correcting, not a correctness bug), so the
+# added complexity of persisting an int-keyed dict isn't justified here.
 _dedup_offset = {}
 BURST_INJECTED = [False]
-COST_GUARD_FIRED = []
 BOUNDARY_LOG = []
+
+
+def _driver_state(tree):
+    """Phase H-1 feature 7's reserved free-form spot for driver-local bookkeeping that must
+    survive a restart -- see harness_v3.save_search_state's own docstring."""
+    return tree.setdefault("search_state", {}).setdefault("driver_state", {})
+
+
+def _dedup_rejections(tree):
+    return _driver_state(tree).setdefault("dedup_rejections", [])
+
+
+def _cost_guard_fired(tree):
+    return _driver_state(tree).setdefault("cost_guard_fired", [])
 
 
 def dc(cfg):
@@ -215,7 +258,7 @@ def evaluate_blend_v3(tree, stored_cfg):
         raise ValueError(f"unknown blend space {space!r}")
     wall = time.time() - t0
     if warning:
-        COST_GUARD_FIRED.append(warning)
+        _cost_guard_fired(tree).append(warning)
     result = dict(members=members, weights=[round(float(w), 4) for w in best_w],
                   method="dirichlet", space=space, auc=round(best_score, 6))
     return result, best_score, wall, warning
@@ -232,7 +275,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
     if not is_root:
         dup_id = hv3.find_duplicate_config(tree, stored)
         if dup_id is not None:
-            DEDUP_REJECTIONS.append(dict(mutation=mutation, dup_id=dup_id))
+            _dedup_rejections(tree).append(dict(mutation=mutation, dup_id=dup_id))
             if lineage_id is not None:
                 _dedup_offset[lineage_id] = _dedup_offset.get(lineage_id, 0) + 1
             # route through hv3.add_node anyway so its own dedup-consumes-budget
@@ -241,7 +284,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
             nid_null, dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
                                                stored, None, "failed", 0.0)
             assert nid_null is None
-            hv3.save(tree, TREE_PATH)
+            hv3.save_search_state(tree, TREE_PATH)  # Phase H-1 feature 7
             return None, dup_id, None
 
     nid = hv3.next_id(tree)
@@ -259,7 +302,10 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
                               f"#{old['id']}, digit-verified AUC {auc_val:.6f} == "
                               f"{result.get('auc')} to 6dp, no retraining]")
         else:
-            r = ev.evaluate(proposal_cfg, node_id=nid, timeout_s=EVAL_TIMEOUT_S)
+            # Phase H-1 feature 8: run the solo eval in a child process so a hung native
+            # fit() (F-2's s3e7 CatBoost 28-minute hang) gets hard-killed instead of
+            # wedging the whole search loop -- see EVAL_MODULE_PATH above.
+            r = hv3.eval_solo_subprocess(EVAL_MODULE_PATH, proposal_cfg, EVAL_TIMEOUT_S, node_id=nid)
             score, status, wall_s, result = r["score"], r["status"], r["wall_s"], r["result"]
             full_mutation = mutation
     elif kind == "blend":
@@ -281,7 +327,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
     assert real_nid == nid, f"id-prediction mismatch: predicted {nid}, got {real_nid}"
     if result is not None:
         _node_results(tree)[str(real_nid)] = result
-    hv3.save(tree, TREE_PATH)
+    hv3.save_search_state(tree, TREE_PATH)  # Phase H-1 feature 7
     return real_nid, None, dict(score=score, status=status, wall_s=wall_s, result=result)
 
 
@@ -654,6 +700,20 @@ ALL_LINEAGE_NAMES.extend(BURST_NAMES)  # so resume's LINEAGE_NAMES-rebuild loop 
                                         # recognize burst-injected lineages after a restart
 
 
+def _sanity_check_burst_seed(tree, nid, name):
+    """Phase H-1 feature 9: immediately after a fresh explore-burst long-shot seed is
+    evaluated, check it against the sanity band before letting its lineage spawn any
+    children. On failure the lineage is marked plateaued right here (one burned seed
+    node, not a whole wasted mutation queue) -- the exact fix for F-2's s3e14 lesson
+    (a DART seed at ~18x the root/global-best gap that ate ~12 minutes / 6 evals of
+    further children before the run gave up on it)."""
+    passed, bound = hv3.apply_burst_seed_sanity_gate(tree, nid)
+    if not passed:
+        print(f"[BURST {name}] #{nid} FAILED sanity gate (bound={bound}) -- lineage "
+              f"plateaued immediately, no children will be spawned from it")
+    return passed
+
+
 def inject_explore_burst(tree, root_id):
     seeds = _burst_seeds()
     injected_ids = []
@@ -664,6 +724,7 @@ def inject_explore_burst(tree, root_id):
             SOLO_QUEUES[name] = []
             injected_ids.append(nid)
             print(f"[BURST {name}] #{nid} AUC={auc_of(r)} status={r['status']} wall_s={r['wall_s']}")
+            _sanity_check_burst_seed(tree, nid, name)
     # 6th long-shot: a mega-blend of the FULL solo pool at burst-start time (real test of
     # feature 5's k=800+ascent search + feature 6's cost guard at larger member count)
     pool = solo_pool(tree)
@@ -676,6 +737,7 @@ def inject_explore_burst(tree, root_id):
         if nid is not None:
             LINEAGE_NAMES[nid] = "EXPL_MEGABLEND"
             injected_ids.append(nid)
+            _sanity_check_burst_seed(tree, nid, "EXPL_MEGABLEND")
             print(f"[BURST EXPL_MEGABLEND] #{nid} AUC={auc_of(r)} status={r['status']} wall_s={r['wall_s']}")
     return injected_ids
 
@@ -709,7 +771,10 @@ def prior_usage_summary(tree):
 def main():
     t_start = time.time()
     if os.path.exists(TREE_PATH):
-        tree = hv3.load(TREE_PATH)
+        # Phase H-1 feature 7: load_search_state validates search_state consistency
+        # before handing the tree back, so a corrupt resume fails loudly here instead of
+        # a mysterious KeyError several iterations into the loop below.
+        tree = hv3.load_search_state(TREE_PATH)
         print(f"Resuming existing tree at {TREE_PATH} ({len(tree['nodes'])} nodes)")
     else:
         tree = hv3.new_tree(COMP)
@@ -812,7 +877,7 @@ def main():
                     at_node_id=None, plateaued_lineage=lineage_id,
                     reason=f"lineage {LINEAGE_NAMES.get(lineage_id, lineage_id)}'s mutation "
                            f"space exhausted -> forced backtrack"))
-            hv3.save(tree, TREE_PATH)
+            hv3.save_search_state(tree, TREE_PATH)  # Phase H-1 feature 7
             print(f"FORCED BACKTRACK: lineage {LINEAGE_NAMES.get(lineage_id, lineage_id)} exhausted; "
                   f"plateaued={tree['search_state']['plateaued']}")
             continue
@@ -841,9 +906,14 @@ def main():
         "informed_win_rate": prior_stats["informed_win_rate"],
         "uninformed_win_rate": prior_stats["uninformed_win_rate"],
     }
-    tree["dedup_rejections"] = DEDUP_REJECTIONS
+    # top-level mirrors for docs/scripts/build_tree_facts.py, sourced from the
+    # resume-durable tree["search_state"]["driver_state"] lists (Phase H-1 feature 7)
+    # rather than module globals that would be empty after a mid-run process restart.
+    dedup_rejections = _dedup_rejections(tree)
+    cost_guard_fired = _cost_guard_fired(tree)
+    tree["dedup_rejections"] = dedup_rejections
     tree["boundary_candidates_log"] = BOUNDARY_LOG
-    tree["cost_guard_fired"] = COST_GUARD_FIRED
+    tree["cost_guard_fired"] = cost_guard_fired
 
     evals_to_match = None
     running_best = None
@@ -853,7 +923,7 @@ def main():
         if running_best >= LINEAR_BEST and evals_to_match is None:
             evals_to_match = i
     tree["evals_to_match_linear_best"] = evals_to_match
-    hv3.save(tree, TREE_PATH)
+    hv3.save_search_state(tree, TREE_PATH)  # Phase H-1 feature 7
 
     print(f"\nDone. {n_evaluated()} evaluated nodes ({n_solo} solo / {n_blend} blend), "
           f"{len(tree['nodes'])} total, wall={total_wall:.1f}s")
@@ -864,16 +934,48 @@ def main():
     print(f"Evals to match/beat linear best: {evals_to_match}")
     print(f"Budget/phase state: {tree['search_state']['budget']}")
     print(f"Boundary candidates found: {BOUNDARY_LOG}")
-    print(f"Cost-guard fired: {len(COST_GUARD_FIRED)} time(s): {COST_GUARD_FIRED}")
+    print(f"Cost-guard fired: {len(cost_guard_fired)} time(s): {cost_guard_fired}")
     print(f"Backtrack log ({len(tree['search_state']['backtrack_log'])} events):")
     for e in tree["search_state"]["backtrack_log"]:
         print(" ", e)
-    print(f"Dedup rejections ({len(DEDUP_REJECTIONS)}):")
-    for e in DEDUP_REJECTIONS:
+    print(f"Dedup rejections ({len(dedup_rejections)}):")
+    for e in dedup_rejections:
         print(" ", e)
     print(f"Prior usage: informed={len(prior_stats['informed'])} (win rate={prior_stats['informed_win_rate']}), "
           f"uninformed={len(prior_stats['uninformed'])} (win rate={prior_stats['uninformed_win_rate']})")
 
 
+def dry_run():
+    """Phase H-2 wiring check: verifies this driver's Phase H-1 entry-point plumbing
+    (save_search_state/load_search_state round-trip, eval_solo_subprocess's module path,
+    the sanity-gate functions) actually works, WITHOUT spending any real training compute
+    and WITHOUT touching TREE_PATH -- everything happens on a scratch tree in a temp
+    dir. Run with `uv run python3 tree_search/run_s3e7_v3.py --dry-run`."""
+    import tempfile
+    print("[dry-run] checking Phase H-1 entry points wired by this driver...")
+    assert os.path.exists(EVAL_MODULE_PATH), f"eval module not found: {EVAL_MODULE_PATH}"
+
+    scratch = hv3.new_tree(COMP)
+    hv3.init_budget(scratch)
+    root_cfg = {"kind": "solo", "model": "lgb", "params": {}, "features": {"drop": []}}
+    rid = hv3.add_root(scratch, "dry-run root", root_cfg, -0.5, "evaluated", 0.01)
+
+    with tempfile.TemporaryDirectory() as td:
+        scratch_path = os.path.join(td, "scratch_tree.json")
+        hv3.save_search_state(scratch, scratch_path)          # feature 7
+        reloaded = hv3.load_search_state(scratch_path)        # feature 7
+        assert reloaded["root_id"] == rid, "save/load_search_state round-trip mismatch"
+    print("[dry-run] save_search_state/load_search_state round-trip OK")
+
+    passed, bound = hv3.burst_seed_sanity_gate(scratch, -0.4)  # feature 9
+    print(f"[dry-run] burst_seed_sanity_gate reachable (passed={passed}, bound={bound})")
+
+    print(f"[dry-run] eval_solo_subprocess module path OK: {EVAL_MODULE_PATH}")
+    print("[dry-run] OK -- no model was trained, no cache written, TREE_PATH untouched.")
+
+
 if __name__ == "__main__":
-    main()
+    if "--dry-run" in sys.argv:
+        dry_run()
+    else:
+        main()
