@@ -1,0 +1,5235 @@
+{
+  "comp": "playground-series-s3e3",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: s3e3 linear-winner's tuned-LGB config -- Optuna direct-full-5-fold-CV-AUC-objective tuning (STATUS.md exp #4), solo OOF AUC ~0.837305, strongest single learner (weight 0.7 in the linear-iteration's final blend) [PRIOR P1: Optuna-direct-final-metric-on-full-CV transfers cleanly to AUC, no discretization trap like QWK]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.837305,
+          "reused_from_d2_node": 0,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.837305,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[LGBORIG] [PHASE seed] model-variant: exp #3's original (non-Optuna) LGB, num_leaves=7 heavily regularized -- solo ~0.832925, cheap diversity source distinct from the Optuna optimum, known non-zero blend member (weight 0.3 in linear best) [PRIOR P0: AUC is a ranking metric -- no imbalance weighting, regularization over capacity is what worked here]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 7,
+          "min_child_samples": 30,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.832925,
+          "reused_from_d2_node": 1,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.832925,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[XGBTUNED] [PHASE seed] model-type: Optuna-tuned XGB (30 trials, TPE, full 5-fold CV AUC objective, 86.5s, one-time pre-tune -- NEVER done for XGB in the linear-iteration run, which only ever Optuna-tuned LGB) -- solo OOF AUC 0.835633 vs vanilla XGB 0.807634, closing most of the gap to LGB_tuned's 0.837305 [PRIOR P1: apply the direct-final-metric-on-full-CV Optuna recipe to a model type it was never tried on]",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 42,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 2,
+          "min_child_weight": 13,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 0.8448951877348988
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.835633,
+          "reused_from_d2_node": 2,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.835633,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[CATORIG] [PHASE seed] model-type: CatBoost, label/freq-encoded features, exp #3 unchanged config -- solo ~0.762684, weakest learner; kept ONLY as an inert blend-diversity seed, no further solo-direction mutation queue (see CATORIG_QUEUE=[]) [PRIOR P3: CatBoost structurally weak on this ~1.7k-row dataset, zeroed by weight search twice already -- do not retry as a solo direction]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 5,
+          "l2_leaf_reg": 8.0,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.762684,
+          "reused_from_d2_node": 3,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.762684,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[CATNATIVE] [PHASE seed] model-type: CatBoost w/ native categorical handling (round-3 winning depth=3/l2=16/lr=0.05 config) -- solo ~0.814259, best CatBoost variant but still 2.3pt below LGB_tuned; CLOSED item per STATUS.md, no further mutation queue (CATNATIVE_QUEUE=[]), kept only as a blend-diversity seed [PRIOR P4: native cat_features narrows the CatBoost gap but cannot flip the ranking -- necessary but not sufficient, do not retry again]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 16.0,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.814259,
+          "reused_from_d2_node": 4,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.814259,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[SEEDBAG] [PHASE seed] seed variation: LGB_tuned params, random_state 42->2024 -- STATUS.md exp #5's 5th blend member (solo ~same order as root, seed-bag of the Optuna optimum) [PRIOR P2: 'add tuned to pool + seed bag' compounds small but real gains on AUC, diminishing with iteration count]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 2024
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.83345,
+          "reused_from_d2_node": 5,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.83345,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[FEAT] [PHASE seed] feature-subset SUBTRACTION on the tuned-LGB hyperparams: drop the 5 raw tenure columns now condensed into role_tenure_ratio/mgr_tenure_ratio/promo_ratio/company_tenure_ratio/income_per_year_worked/age_at_join (computed upstream in features.py before this drop, so still valid) -- 43-feature test, UNTESTED in the linear-iteration run [PRIOR none -- sourced from STATUS.md's own 'Next ideas': 'drop redundant raw tenure columns, keep engineered ratios only -- untested hypothesis']",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears"
+          ]
+        },
+        "result": {
+          "n_feats": 43,
+          "auc": 0.838903,
+          "reused_from_d2_node": 6,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.838903,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[BLEND] [PHASE seed] ensemble seed: 3-way blend of root LGB_tuned(#0) + XGBTUNED(#2) + LGBORIG(#1) CACHED OOF, dirichlet weight search, prob-space -- this tree-search's entry point into ensemble space; no retraining, evaluates in <1s [PRIOR none -- generic ensemble-default node-space seed, the recommendation #1 mechanism itself]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1
+        ],
+        "weight_search": "dirichlet",
+        "space": "prob",
+        "result": {
+          "members": [
+            0,
+            2,
+            1
+          ],
+          "weights": [
+            0.5602,
+            0.4221,
+            0.0177
+          ],
+          "method": "dirichlet",
+          "space": "prob",
+          "auc": 0.83954
+        }
+      },
+      "score": -0.83954,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 8,
+      "parent_id": 7,
+      "mutation": "[BLEND] [PHASE exploit] BLEND: add CATORIG solo member (#3) -> 4-way, dirichlet weight search, prob-space [PRIOR none -- STATUS.md exp #7 pattern: let weight search decide even for a closed-solo-direction model] (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "weight_search": "dirichlet",
+        "space": "prob",
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "weights": [
+            0.4929,
+            0.4369,
+            0.0701,
+            0.0002
+          ],
+          "method": "dirichlet",
+          "space": "prob",
+          "auc": 0.839448
+        }
+      },
+      "score": -0.839448,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 9,
+      "parent_id": 7,
+      "mutation": "[BLEND] [PHASE exploit] BLEND: add CATNATIVE solo member (#4) -> 4-way, dirichlet weight search, prob-space [PRIOR P3/P4 -- same closed-item logic, weight search is expected to zero it per experience.md] (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          4
+        ],
+        "weight_search": "dirichlet",
+        "space": "prob",
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            4
+          ],
+          "weights": [
+            0.4958,
+            0.4264,
+            0.0765,
+            0.0013
+          ],
+          "method": "dirichlet",
+          "space": "prob",
+          "auc": 0.839441
+        }
+      },
+      "score": -0.839441,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 7,
+      "mutation": "[BLEND] [PHASE exploit] BLEND: add SEEDBAG solo member (#5) -> 4-way, dirichlet weight search, prob-space [PRIOR P2 -- add-to-pool + seed-bag] (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          5
+        ],
+        "weight_search": "dirichlet",
+        "space": "prob",
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            5
+          ],
+          "weights": [
+            0.5185,
+            0.4044,
+            0.073,
+            0.0042
+          ],
+          "method": "dirichlet",
+          "space": "prob",
+          "auc": 0.839445
+        }
+      },
+      "score": -0.839445,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 11,
+      "parent_id": 6,
+      "mutation": "[FEAT] [PHASE exploit] FEAT: further trim income_per_year_worked (redundant with income_per_joblevel + MonthlyIncome itself) -- 42 feats [PRIOR none -- untested extension of the STATUS.md next-idea] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked"
+          ]
+        },
+        "result": {
+          "n_feats": 42,
+          "auc": 0.841442,
+          "reused_from_d2_node": 11,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.841442,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 11,
+      "mutation": "[FEAT] [PHASE exploit] FEAT: restore TotalWorkingYears only, isolate its marginal effect vs the aggressive 5-column tenure trim [PRIOR none] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "income_per_year_worked"
+          ]
+        },
+        "result": {
+          "n_feats": 43,
+          "auc": 0.836977,
+          "reused_from_d2_node": 12,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.836977,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 11,
+      "mutation": "[FEAT] [PHASE exploit] FEATPRUNE: drop the 3 noisy *Rate columns (DailyRate, HourlyRate, MonthlyRate) on top of the current drop list [PRIOR none -- untested] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate"
+          ]
+        },
+        "result": {
+          "n_feats": 39,
+          "auc": 0.84236
+        }
+      },
+      "score": -0.84236,
+      "status": "evaluated",
+      "wall_s": 1.7,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 13,
+      "mutation": "[FEAT] [PHASE exploit] FEATPRUNE joint-move: drop all 7 redundant *_le label-encoded columns, keep the *_freq encoding of the same categoricals only [PRIOR none -- untested, generic collinear-encoding hygiene] (parent=#13)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate",
+            "BusinessTravel_le",
+            "Department_le",
+            "EducationField_le",
+            "Gender_le",
+            "JobRole_le",
+            "MaritalStatus_le",
+            "OverTime_le"
+          ]
+        },
+        "result": {
+          "n_feats": 32,
+          "auc": 0.839821
+        }
+      },
+      "score": -0.839821,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 13,
+      "mutation": "[FEAT] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#13)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate"
+          ]
+        },
+        "result": {
+          "n_feats": 39,
+          "auc": 0.841229
+        }
+      },
+      "score": -0.841229,
+      "status": "evaluated",
+      "wall_s": 1.3,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 13,
+      "mutation": "[FEAT] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 [PRIOR none -- fallback] (parent=#13)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3001
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate"
+          ]
+        },
+        "result": {
+          "n_feats": 39,
+          "auc": 0.83741
+        }
+      },
+      "score": -0.83741,
+      "status": "evaluated",
+      "wall_s": 1.2,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 2,
+      "mutation": "[XGBTUNED] [PHASE exploit] XGBTUNED: seed variation on the Optuna-tuned params (random_state 42->2024) -- independent seed-bag source for the newly-tuned XGB [PRIOR P2: add-to-pool + seed-bag] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 2024,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 2,
+          "min_child_weight": 13,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 0.8448951877348988
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.82911,
+          "reused_from_d2_node": 15,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.82911,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 2,
+      "mutation": "[XGBTUNED] [PHASE exploit] XGBTUNED: min_child_weight 13->25, reg_lambda 0.84->2.0 -- push regularization further along the Optuna-found direction [PRIOR P5] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 42,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 2,
+          "min_child_weight": 25,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.819909,
+          "reused_from_d2_node": 16,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.819909,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 2,
+      "mutation": "[XGBTUNED] [PHASE exploit] XGBTUNED boundary-push: max_depth 2->1, maximal-shallow stumps [PRIOR P5] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 42,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 1,
+          "min_child_weight": 13,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 0.8448951877348988
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.838602
+        }
+      },
+      "score": -0.838602,
+      "status": "evaluated",
+      "wall_s": 2.8,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 5,
+      "mutation": "[SEEDBAG] [PHASE exploit] SEEDBAG: reg_lambda 0.00115->0.01, push L2 further along the tuned direction while keeping the seed=2024 bag [PRIOR P5] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.01,
+          "random_state": 2024
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.832671,
+          "reused_from_d2_node": 18,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.832671,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 21,
+      "parent_id": 5,
+      "mutation": "[SEEDBAG] [PHASE exploit] SEEDBAG: third seed variant (2024->777) [PRIOR P2: add-to-pool + seed-bag, diminishing but real gains] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 777
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.83479,
+          "reused_from_d2_node": 19,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.83479,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 21,
+      "mutation": "[SEEDBAG] [PHASE exploit] SEEDBAG boundary-push: reg_lambda 0.01->0.05, further along the tuned L2 direction [PRIOR P5] (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.05,
+          "random_state": 777
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.832671
+        }
+      },
+      "score": -0.832671,
+      "status": "evaluated",
+      "wall_s": 1.6,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 1,
+      "mutation": "[LGBORIG] [PHASE exploit] LGBORIG: reg_lambda 2.0->4.0, push L2 further along the known-good direction [PRIOR P5: small sample + correlated engineered features -> regularize over capacity] (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 7,
+          "min_child_samples": 30,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.813597,
+          "reused_from_d2_node": 21,
+          "reuse_digit_verified": true
+        }
+      },
+      "score": -0.813597,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 24,
+      "parent_id": 1,
+      "mutation": "[LGBORIG] [PHASE exploit] LGBORIG: num_leaves 7->5, min_child_samples 30->50 -- further regularization nudge [PRIOR P5] (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 5,
+          "min_child_samples": 50,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.817928
+        }
+      },
+      "score": -0.817928,
+      "status": "evaluated",
+      "wall_s": 2.7,
+      "kind": "solo"
+    },
+    {
+      "id": 25,
+      "parent_id": 1,
+      "mutation": "[LGBORIG] [PHASE exploit] LGBORIG boundary-push: reg_lambda 4.0->8.0, further along the known-good L2 direction [PRIOR P5] (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 7,
+          "min_child_samples": 30,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 8.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.815674
+        }
+      },
+      "score": -0.815674,
+      "status": "evaluated",
+      "wall_s": 4.0,
+      "kind": "solo"
+    },
+    {
+      "id": 26,
+      "parent_id": 4,
+      "mutation": "[CATNATIVE] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3000 [PRIOR none -- fallback] (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 16.0,
+          "random_seed": 3000
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.825559
+        }
+      },
+      "score": -0.825559,
+      "status": "evaluated",
+      "wall_s": 1.4,
+      "kind": "solo"
+    },
+    {
+      "id": 27,
+      "parent_id": 26,
+      "mutation": "[CATNATIVE] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3001 [PRIOR none -- fallback] (parent=#26)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 16.0,
+          "random_seed": 3001
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.831899
+        }
+      },
+      "score": -0.831899,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "solo"
+    },
+    {
+      "id": 28,
+      "parent_id": 27,
+      "mutation": "[CATNATIVE] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3002 [PRIOR none -- fallback] (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 16.0,
+          "random_seed": 3002
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.80868
+        }
+      },
+      "score": -0.80868,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 29,
+      "parent_id": 3,
+      "mutation": "[CATORIG] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3000 [PRIOR none -- fallback] (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 5,
+          "l2_leaf_reg": 8.0,
+          "random_seed": 3000
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.761395
+        }
+      },
+      "score": -0.761395,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 30,
+      "parent_id": 3,
+      "mutation": "[CATORIG] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3001 [PRIOR none -- fallback] (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 5,
+          "l2_leaf_reg": 8.0,
+          "random_seed": 3001
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.830498
+        }
+      },
+      "score": -0.830498,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 31,
+      "parent_id": 30,
+      "mutation": "[CATORIG] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3002 [PRIOR none -- fallback] (parent=#30)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 5,
+          "l2_leaf_reg": 8.0,
+          "random_seed": 3002
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.836679
+        }
+      },
+      "score": -0.836679,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "solo"
+    },
+    {
+      "id": 32,
+      "parent_id": 31,
+      "mutation": "[CATORIG] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3003 [PRIOR none -- fallback] (parent=#31)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 5,
+          "l2_leaf_reg": 8.0,
+          "random_seed": 3003
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.836591
+        }
+      },
+      "score": -0.836591,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "solo"
+    },
+    {
+      "id": 33,
+      "parent_id": 11,
+      "mutation": "[FEAT] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3002 [PRIOR none -- fallback] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3002
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked"
+          ]
+        },
+        "result": {
+          "n_feats": 42,
+          "auc": 0.833937
+        }
+      },
+      "score": -0.833937,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "solo"
+    },
+    {
+      "id": 34,
+      "parent_id": 15,
+      "mutation": "[FEAT] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3003 [PRIOR none -- fallback] (parent=#15)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3003
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate"
+          ]
+        },
+        "result": {
+          "n_feats": 39,
+          "auc": 0.841838
+        }
+      },
+      "score": -0.841838,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 35,
+      "parent_id": 34,
+      "mutation": "[FEAT] [PHASE exploit] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3004 [PRIOR none -- fallback] (parent=#34)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3004
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate"
+          ]
+        },
+        "result": {
+          "n_feats": 39,
+          "auc": 0.841676
+        }
+      },
+      "score": -0.841676,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 36,
+      "parent_id": 8,
+      "mutation": "[BLEND] [PHASE exploit] BLEND: weight-blend SPACE comparison prob->rank on the same 4 members -- re-check STATUS.md's 'next idea' (linear iteration's rank-average beat prob-blend by only +0.000364, flagged as possibly noise-level) [PRIOR none -- STATUS.md next-idea] (parent=#8)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "weights": [
+            0.5864,
+            0.347,
+            0.0125,
+            0.0542
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.839993
+        }
+      },
+      "score": -0.839993,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 37,
+      "parent_id": 36,
+      "mutation": "[BLEND] [PHASE exploit] BLEND: add FEAT solo member (#13) -> 5-way, dirichlet weight search, rank-space [PRIOR none -- untested feature-subset diversity member] (parent=#36)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3,
+          13
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3,
+            13
+          ],
+          "weights": [
+            0.0166,
+            0.3824,
+            0.0003,
+            0.0033,
+            0.5974
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.843483
+        }
+      },
+      "score": -0.843483,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 38,
+      "parent_id": 37,
+      "mutation": "[BLEND] [PHASE exploit] BLEND: remove lowest-weight member #1 (w=0.000) -> leaner 4-way, test whether it was truly adding value or just being tolerated by the weight search [PRIOR none -- generic ensemble hygiene, see knowledge/experience.md Ensemble/\u5f8c\u8655\u7406 section] (parent=#37)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          13
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            13
+          ],
+          "weights": [
+            0.0,
+            0.2123,
+            0.0077,
+            0.78
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.843524
+        }
+      },
+      "score": -0.843524,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 39,
+      "parent_id": 38,
+      "mutation": "[BLEND] [PHASE exploit] BLEND boundary-push: re-run dirichlet weight search at k=800 (vs the k=1500 default) on the same 4 members -- does a smaller search budget change the optimum? [PRIOR none] (parent=#38)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          13
+        ],
+        "weight_search": "dirichlet_k800",
+        "space": "rank",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            13
+          ],
+          "weights": [
+            0.1135,
+            0.2193,
+            0.0,
+            0.6672
+          ],
+          "method": "dirichlet_k800",
+          "space": "prob",
+          "auc": 0.842766
+        }
+      },
+      "score": -0.842766,
+      "status": "evaluated",
+      "wall_s": 0.4,
+      "kind": "blend"
+    },
+    {
+      "id": 40,
+      "parent_id": 0,
+      "mutation": "[EXTREMEREG] [PHASE explore] EXPLORE long-shot: LGB pushed FAR beyond every boundary-push tried in the exploit phase (num_leaves=3, reg_lambda=10, reg_alpha=1.0, min_child_samples=100) -- is there a regularization sweet spot the incremental boundary-pushes overshot past? [PRIOR none]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 100,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 1.0,
+          "reg_lambda": 10.0,
+          "random_state": 99
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.832297
+        }
+      },
+      "score": -0.832297,
+      "status": "evaluated",
+      "wall_s": 1.7,
+      "kind": "solo"
+    },
+    {
+      "id": 41,
+      "parent_id": 0,
+      "mutation": "[XGBSHALLOWWIDE] [PHASE explore] EXPLORE long-shot: XGB contrarian direction -- maximal-shallow (max_depth=1) but LESS subsampled (0.9/0.9) and slower learning_rate (0.02) than every XGBTUNED queue item tried so far [PRIOR none]",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 99,
+          "learning_rate": 0.02,
+          "max_depth": 1,
+          "min_child_weight": 13,
+          "subsample": 0.9,
+          "colsample_bytree": 0.9,
+          "reg_alpha": 0.002,
+          "reg_lambda": 0.84
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.835537
+        }
+      },
+      "score": -0.835537,
+      "status": "evaluated",
+      "wall_s": 3.7,
+      "kind": "solo"
+    },
+    {
+      "id": 42,
+      "parent_id": 0,
+      "mutation": "[CATDEEP] [PHASE explore] EXPLORE long-shot / late-backtrack test: CatBoost native, depth 3->6 (much deeper, much less L2) -- directly contradicts [PRIOR P3/P4]'s 'CatBoost is structurally weak here, do not retry' verdict; kept as an explicit test of whether that closed-item call was premature at a larger node budget",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 6,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 99
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.792092
+        }
+      },
+      "score": -0.792092,
+      "status": "evaluated",
+      "wall_s": 2.5,
+      "kind": "solo"
+    },
+    {
+      "id": 43,
+      "parent_id": 0,
+      "mutation": "[FEATKITCHEN] [PHASE explore] EXPLORE long-shot joint feature-prune: drop all 15 redundant/noisy columns identified across the whole exploit phase (5 raw tenure cols + 3 *Rate cols + 7 *_le cols) IN ONE MOVE, instead of the incremental single/pairwise drops tried so far [PRIOR none]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate",
+            "BusinessTravel_le",
+            "Department_le",
+            "EducationField_le",
+            "Gender_le",
+            "JobRole_le",
+            "MaritalStatus_le",
+            "OverTime_le"
+          ]
+        },
+        "result": {
+          "n_feats": 33,
+          "auc": 0.839177
+        }
+      },
+      "score": -0.839177,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 44,
+      "parent_id": 0,
+      "mutation": "[KITCHENBLEND] [PHASE explore] EXPLORE long-shot: kitchen-sink blend of ALL 32 solo nodes evaluated so far (ids [13, 34, 35, 11, 15, 14, 6, 19, 16, 0, 12, 31, 32, 2, 21, 33, 5, 1, 20, 22, 27, 30, 17, 26, 18, 24, 25, 4, 23, 28, 3, 29]), k=800 weight search -- does including every weak/closed-item/boundary-push learner ever beat the lean curated D-2-style blend? [PRIOR none]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29
+        ],
+        "weight_search": "dirichlet_k800",
+        "space": "prob",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29
+          ],
+          "weights": [
+            0.0104,
+            0.0335,
+            0.0412,
+            0.0582,
+            0.0039,
+            0.0117,
+            0.003,
+            0.0033,
+            0.007,
+            0.0066,
+            0.0069,
+            0.0064,
+            0.0262,
+            0.0079,
+            0.14,
+            0.0373,
+            0.0271,
+            0.0121,
+            0.0025,
+            0.0525,
+            0.0187,
+            0.0857,
+            0.0076,
+            0.2642,
+            0.0342,
+            0.0034,
+            0.0593,
+            0.0012,
+            0.0195,
+            0.0002,
+            0.0026,
+            0.0059
+          ],
+          "method": "dirichlet_k800",
+          "space": "prob",
+          "auc": 0.844394
+        }
+      },
+      "score": -0.844394,
+      "status": "evaluated",
+      "wall_s": 0.4,
+      "kind": "blend"
+    },
+    {
+      "id": 45,
+      "parent_id": 0,
+      "mutation": "[RANKKITCHEN] [PHASE explore] EXPLORE long-shot: same 32-node kitchen-sink pool, rank-space dirichlet search instead of prob-space -- re-checks STATUS.md's rank-vs-prob 'possibly noise' finding at kitchen-sink scale [PRIOR none]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29
+          ],
+          "weights": [
+            0.0083,
+            0.0635,
+            0.0076,
+            0.0,
+            0.0083,
+            0.0006,
+            0.0128,
+            0.0614,
+            0.0608,
+            0.0021,
+            0.0275,
+            0.0075,
+            0.0154,
+            0.0013,
+            0.0676,
+            0.0141,
+            0.0749,
+            0.0734,
+            0.0054,
+            0.0134,
+            0.0004,
+            0.0112,
+            0.0064,
+            0.2755,
+            0.0099,
+            0.003,
+            0.0205,
+            0.0215,
+            0.0028,
+            0.0029,
+            0.0228,
+            0.0974
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.843849
+        }
+      },
+      "score": -0.843849,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 46,
+      "parent_id": 38,
+      "mutation": "[BLEND] [PHASE explore] BLEND joint-move: add 2 unused pool members at once (#34, #35) -> 6-way in one step [PRIOR none] (parent=#38)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          13,
+          34,
+          35
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            13,
+            34,
+            35
+          ],
+          "weights": [
+            0.0066,
+            0.3358,
+            0.0209,
+            0.0583,
+            0.2949,
+            0.2835
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.843619
+        }
+      },
+      "score": -0.843619,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 47,
+      "parent_id": 46,
+      "mutation": "[BLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #11 -> 7-way [PRIOR none -- fallback] (parent=#46)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          13,
+          34,
+          35,
+          11
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            0,
+            2,
+            3,
+            13,
+            34,
+            35,
+            11
+          ],
+          "weights": [
+            0.0053,
+            0.2002,
+            0.0255,
+            0.3419,
+            0.2237,
+            0.0829,
+            0.1206
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.843751
+        }
+      },
+      "score": -0.843751,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 48,
+      "parent_id": 44,
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#44)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29,
+          43
+        ],
+        "weight_search": "dirichlet_k800",
+        "space": "prob",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29,
+            43
+          ],
+          "weights": [
+            0.0322,
+            0.0289,
+            0.0462,
+            0.0083,
+            0.0869,
+            0.0276,
+            0.0124,
+            0.0173,
+            0.0197,
+            0.022,
+            0.0273,
+            0.1047,
+            0.0286,
+            0.022,
+            0.0029,
+            0.013,
+            0.0795,
+            0.0192,
+            0.0022,
+            0.0031,
+            0.0147,
+            0.0164,
+            0.0061,
+            0.2048,
+            0.0137,
+            0.0056,
+            0.0139,
+            0.0041,
+            0.0406,
+            0.0074,
+            0.0002,
+            0.0353,
+            0.0335
+          ],
+          "method": "dirichlet_k800",
+          "space": "prob",
+          "auc": 0.845034
+        }
+      },
+      "score": -0.845034,
+      "status": "evaluated",
+      "wall_s": 0.4,
+      "kind": "blend"
+    },
+    {
+      "id": 49,
+      "parent_id": 48,
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#48)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29,
+          43,
+          41
+        ],
+        "weight_search": "dirichlet_k800",
+        "space": "prob",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29,
+            43,
+            41
+          ],
+          "weights": [
+            0.1087,
+            0.0055,
+            0.0152,
+            0.0225,
+            0.0024,
+            0.0175,
+            0.0388,
+            0.0187,
+            0.0581,
+            0.0033,
+            0.0109,
+            0.1238,
+            0.0,
+            0.0909,
+            0.0183,
+            0.0154,
+            0.0089,
+            0.0358,
+            0.0117,
+            0.0208,
+            0.0032,
+            0.0053,
+            0.0014,
+            0.1812,
+            0.0084,
+            0.017,
+            0.0137,
+            0.0008,
+            0.0784,
+            0.0113,
+            0.0093,
+            0.0085,
+            0.0227,
+            0.0116
+          ],
+          "method": "dirichlet_k800",
+          "space": "prob",
+          "auc": 0.844384
+        }
+      },
+      "score": -0.844384,
+      "status": "evaluated",
+      "wall_s": 0.4,
+      "kind": "blend"
+    },
+    {
+      "id": 50,
+      "parent_id": 48,
+      "mutation": "[dead-end placeholder] mutation fn for parent #48 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 48,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 51,
+      "parent_id": 48,
+      "mutation": "[dead-end placeholder] mutation fn for parent #48 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 48,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 52,
+      "parent_id": 44,
+      "mutation": "[dead-end placeholder] mutation fn for parent #44 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 44,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 53,
+      "parent_id": 44,
+      "mutation": "[dead-end placeholder] mutation fn for parent #44 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 44,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 54,
+      "parent_id": 49,
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #40 -> 35-way [PRIOR none -- fallback] (parent=#49)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29,
+          43,
+          41,
+          40
+        ],
+        "weight_search": "dirichlet_k800",
+        "space": "prob",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29,
+            43,
+            41,
+            40
+          ],
+          "weights": [
+            0.0224,
+            0.084,
+            0.0017,
+            0.018,
+            0.0138,
+            0.06,
+            0.0072,
+            0.0448,
+            0.0067,
+            0.0019,
+            0.0011,
+            0.0215,
+            0.0051,
+            0.0334,
+            0.0323,
+            0.0141,
+            0.0063,
+            0.0362,
+            0.0157,
+            0.0542,
+            0.0072,
+            0.0343,
+            0.0509,
+            0.2536,
+            0.0277,
+            0.0306,
+            0.0063,
+            0.0,
+            0.0,
+            0.011,
+            0.031,
+            0.0206,
+            0.0095,
+            0.0285,
+            0.0085
+          ],
+          "method": "dirichlet_k800",
+          "space": "prob",
+          "auc": 0.844949
+        }
+      },
+      "score": -0.844949,
+      "status": "evaluated",
+      "wall_s": 0.4,
+      "kind": "blend"
+    },
+    {
+      "id": 55,
+      "parent_id": 54,
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #42 -> 36-way [PRIOR none -- fallback] (parent=#54)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29,
+          43,
+          41,
+          40,
+          42
+        ],
+        "weight_search": "dirichlet_k800",
+        "space": "prob",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29,
+            43,
+            41,
+            40,
+            42
+          ],
+          "weights": [
+            0.0124,
+            0.1089,
+            0.0645,
+            0.0315,
+            0.0289,
+            0.0308,
+            0.0136,
+            0.0323,
+            0.0033,
+            0.0003,
+            0.0545,
+            0.0071,
+            0.0077,
+            0.119,
+            0.0248,
+            0.0093,
+            0.0001,
+            0.0018,
+            0.0077,
+            0.0101,
+            0.0076,
+            0.0054,
+            0.0128,
+            0.1291,
+            0.034,
+            0.0055,
+            0.0036,
+            0.0019,
+            0.0009,
+            0.0072,
+            0.0002,
+            0.0435,
+            0.0439,
+            0.0063,
+            0.1278,
+            0.0017
+          ],
+          "method": "dirichlet_k800",
+          "space": "prob",
+          "auc": 0.845051
+        }
+      },
+      "score": -0.845051,
+      "status": "evaluated",
+      "wall_s": 0.4,
+      "kind": "blend"
+    },
+    {
+      "id": 56,
+      "parent_id": 55,
+      "mutation": "[dead-end placeholder] mutation fn for parent #55 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 55,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 57,
+      "parent_id": 55,
+      "mutation": "[dead-end placeholder] mutation fn for parent #55 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 55,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 58,
+      "parent_id": 55,
+      "mutation": "[dead-end placeholder] mutation fn for parent #55 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 55,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 59,
+      "parent_id": 54,
+      "mutation": "[dead-end placeholder] mutation fn for parent #54 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 54,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 60,
+      "parent_id": 54,
+      "mutation": "[dead-end placeholder] mutation fn for parent #54 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 54,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 61,
+      "parent_id": 49,
+      "mutation": "[dead-end placeholder] mutation fn for parent #49 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 49,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 62,
+      "parent_id": 49,
+      "mutation": "[dead-end placeholder] mutation fn for parent #49 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 49,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 63,
+      "parent_id": 45,
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#45)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29,
+          43
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29,
+            43
+          ],
+          "weights": [
+            0.044,
+            0.0234,
+            0.0454,
+            0.0444,
+            0.0116,
+            0.0423,
+            0.008,
+            0.0668,
+            0.022,
+            0.1079,
+            0.025,
+            0.0336,
+            0.0157,
+            0.0097,
+            0.0178,
+            0.0116,
+            0.0087,
+            0.0005,
+            0.0003,
+            0.0242,
+            0.02,
+            0.0035,
+            0.0041,
+            0.2278,
+            0.0,
+            0.0016,
+            0.0022,
+            0.0089,
+            0.0494,
+            0.0035,
+            0.0549,
+            0.0298,
+            0.0314
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.844377
+        }
+      },
+      "score": -0.844377,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 64,
+      "parent_id": 63,
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#63)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29,
+          43,
+          41
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29,
+            43,
+            41
+          ],
+          "weights": [
+            0.0157,
+            0.0692,
+            0.0045,
+            0.004,
+            0.0185,
+            0.02,
+            0.0228,
+            0.0218,
+            0.036,
+            0.0042,
+            0.098,
+            0.0026,
+            0.0002,
+            0.0207,
+            0.0,
+            0.0017,
+            0.0,
+            0.0262,
+            0.0637,
+            0.0,
+            0.0323,
+            0.0021,
+            0.0008,
+            0.2881,
+            0.042,
+            0.0168,
+            0.0296,
+            0.0001,
+            0.0787,
+            0.0057,
+            0.0327,
+            0.0113,
+            0.0211,
+            0.0092
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.843768
+        }
+      },
+      "score": -0.843768,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 65,
+      "parent_id": 63,
+      "mutation": "[dead-end placeholder] mutation fn for parent #63 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 63,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 66,
+      "parent_id": 63,
+      "mutation": "[dead-end placeholder] mutation fn for parent #63 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 63,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 67,
+      "parent_id": 45,
+      "mutation": "[dead-end placeholder] mutation fn for parent #45 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 45,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 68,
+      "parent_id": 45,
+      "mutation": "[dead-end placeholder] mutation fn for parent #45 regenerated an identical existing config 2 times in a row (dedup-rejected every time) -- burning this expansion slot so the search moves on instead of spinning forever",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 45,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 69,
+      "parent_id": 64,
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #40 -> 35-way [PRIOR none -- fallback] (parent=#64)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          13,
+          34,
+          35,
+          11,
+          15,
+          14,
+          6,
+          19,
+          16,
+          0,
+          12,
+          31,
+          32,
+          2,
+          21,
+          33,
+          5,
+          1,
+          20,
+          22,
+          27,
+          30,
+          17,
+          26,
+          18,
+          24,
+          25,
+          4,
+          23,
+          28,
+          3,
+          29,
+          43,
+          41,
+          40
+        ],
+        "weight_search": "dirichlet",
+        "space": "rank",
+        "result": {
+          "members": [
+            13,
+            34,
+            35,
+            11,
+            15,
+            14,
+            6,
+            19,
+            16,
+            0,
+            12,
+            31,
+            32,
+            2,
+            21,
+            33,
+            5,
+            1,
+            20,
+            22,
+            27,
+            30,
+            17,
+            26,
+            18,
+            24,
+            25,
+            4,
+            23,
+            28,
+            3,
+            29,
+            43,
+            41,
+            40
+          ],
+          "weights": [
+            0.0225,
+            0.0189,
+            0.0106,
+            0.0,
+            0.0283,
+            0.0,
+            0.0056,
+            0.0785,
+            0.0333,
+            0.0069,
+            0.0399,
+            0.0118,
+            0.0117,
+            0.0038,
+            0.0289,
+            0.0202,
+            0.0321,
+            0.0586,
+            0.0041,
+            0.0157,
+            0.0001,
+            0.0174,
+            0.0182,
+            0.2406,
+            0.0055,
+            0.0007,
+            0.0099,
+            0.0197,
+            0.0027,
+            0.0076,
+            0.0268,
+            0.0569,
+            0.0313,
+            0.1262,
+            0.0048
+          ],
+          "method": "dirichlet",
+          "space": "rank",
+          "auc": 0.844164
+        }
+      },
+      "score": -0.844164,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 70,
+      "parent_id": 43,
+      "mutation": "[FEATKITCHEN] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#43)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate",
+            "BusinessTravel_le",
+            "Department_le",
+            "EducationField_le",
+            "Gender_le",
+            "JobRole_le",
+            "MaritalStatus_le",
+            "OverTime_le"
+          ]
+        },
+        "result": {
+          "n_feats": 33,
+          "auc": 0.839347
+        }
+      },
+      "score": -0.839347,
+      "status": "evaluated",
+      "wall_s": 1.7,
+      "kind": "solo"
+    },
+    {
+      "id": 71,
+      "parent_id": 70,
+      "mutation": "[FEATKITCHEN] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 [PRIOR none -- fallback] (parent=#70)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3001
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate",
+            "BusinessTravel_le",
+            "Department_le",
+            "EducationField_le",
+            "Gender_le",
+            "JobRole_le",
+            "MaritalStatus_le",
+            "OverTime_le"
+          ]
+        },
+        "result": {
+          "n_feats": 33,
+          "auc": 0.838131
+        }
+      },
+      "score": -0.838131,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 72,
+      "parent_id": 70,
+      "mutation": "[FEATKITCHEN] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3002 [PRIOR none -- fallback] (parent=#70)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3002
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "DailyRate",
+            "HourlyRate",
+            "MonthlyRate",
+            "BusinessTravel_le",
+            "Department_le",
+            "EducationField_le",
+            "Gender_le",
+            "JobRole_le",
+            "MaritalStatus_le",
+            "OverTime_le"
+          ]
+        },
+        "result": {
+          "n_feats": 33,
+          "auc": 0.83674
+        }
+      },
+      "score": -0.83674,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "solo"
+    },
+    {
+      "id": 73,
+      "parent_id": 19,
+      "mutation": "[XGBTUNED] [PHASE explore] XGBTUNED joint-move: subsample 0.688->0.5 + colsample 0.83->0.6 + reg_lambda 0.84->3.0 together [PRIOR P5] (parent=#19)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 42,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 1,
+          "min_child_weight": 13,
+          "subsample": 0.5,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 3.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.834086
+        }
+      },
+      "score": -0.834086,
+      "status": "evaluated",
+      "wall_s": 2.9,
+      "kind": "solo"
+    },
+    {
+      "id": 74,
+      "parent_id": 19,
+      "mutation": "[XGBTUNED] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#19)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 3000,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 1,
+          "min_child_weight": 13,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 0.8448951877348988
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.819722
+        }
+      },
+      "score": -0.819722,
+      "status": "evaluated",
+      "wall_s": 2.3,
+      "kind": "solo"
+    },
+    {
+      "id": 75,
+      "parent_id": 19,
+      "mutation": "[XGBTUNED] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 [PRIOR none -- fallback] (parent=#19)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 3001,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 1,
+          "min_child_weight": 13,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 0.8448951877348988
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.839203
+        }
+      },
+      "score": -0.839203,
+      "status": "evaluated",
+      "wall_s": 1.9,
+      "kind": "solo"
+    },
+    {
+      "id": 76,
+      "parent_id": 41,
+      "mutation": "[XGBSHALLOWWIDE] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#41)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 3000,
+          "learning_rate": 0.02,
+          "max_depth": 1,
+          "min_child_weight": 13,
+          "subsample": 0.9,
+          "colsample_bytree": 0.9,
+          "reg_alpha": 0.002,
+          "reg_lambda": 0.84
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.833546
+        }
+      },
+      "score": -0.833546,
+      "status": "evaluated",
+      "wall_s": 3.6,
+      "kind": "solo"
+    },
+    {
+      "id": 77,
+      "parent_id": 41,
+      "mutation": "[XGBSHALLOWWIDE] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 [PRIOR none -- fallback] (parent=#41)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 3001,
+          "learning_rate": 0.02,
+          "max_depth": 1,
+          "min_child_weight": 13,
+          "subsample": 0.9,
+          "colsample_bytree": 0.9,
+          "reg_alpha": 0.002,
+          "reg_lambda": 0.84
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.834541
+        }
+      },
+      "score": -0.834541,
+      "status": "evaluated",
+      "wall_s": 3.5,
+      "kind": "solo"
+    },
+    {
+      "id": 78,
+      "parent_id": 41,
+      "mutation": "[XGBSHALLOWWIDE] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3002 [PRIOR none -- fallback] (parent=#41)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 3002,
+          "learning_rate": 0.02,
+          "max_depth": 1,
+          "min_child_weight": 13,
+          "subsample": 0.9,
+          "colsample_bytree": 0.9,
+          "reg_alpha": 0.002,
+          "reg_lambda": 0.84
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.834199
+        }
+      },
+      "score": -0.834199,
+      "status": "evaluated",
+      "wall_s": 3.2,
+      "kind": "solo"
+    },
+    {
+      "id": 79,
+      "parent_id": 21,
+      "mutation": "[SEEDBAG] [PHASE explore] SEEDBAG joint-move: num_leaves 3->2 + reg_alpha 0.068->0.15 together [PRIOR P5] (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 2,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.15,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 777
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.840982
+        }
+      },
+      "score": -0.840982,
+      "status": "evaluated",
+      "wall_s": 1.3,
+      "kind": "solo"
+    },
+    {
+      "id": 80,
+      "parent_id": 79,
+      "mutation": "[SEEDBAG] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#79)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 2,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.15,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.840789
+        }
+      },
+      "score": -0.840789,
+      "status": "evaluated",
+      "wall_s": 2.2,
+      "kind": "solo"
+    },
+    {
+      "id": 81,
+      "parent_id": 79,
+      "mutation": "[SEEDBAG] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 [PRIOR none -- fallback] (parent=#79)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 2,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.15,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3001
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.841523
+        }
+      },
+      "score": -0.841523,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 82,
+      "parent_id": 24,
+      "mutation": "[LGBORIG] [PHASE explore] LGBORIG boundary-push: num_leaves 5->4, min_child_samples 50->80 [PRIOR P5] (parent=#24)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 4,
+          "min_child_samples": 80,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.819783
+        }
+      },
+      "score": -0.819783,
+      "status": "evaluated",
+      "wall_s": 2.0,
+      "kind": "solo"
+    },
+    {
+      "id": 83,
+      "parent_id": 82,
+      "mutation": "[LGBORIG] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#82)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 4,
+          "min_child_samples": 80,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.832346
+        }
+      },
+      "score": -0.832346,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "solo"
+    },
+    {
+      "id": 84,
+      "parent_id": 83,
+      "mutation": "[LGBORIG] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 [PRIOR none -- fallback] (parent=#83)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 4,
+          "min_child_samples": 80,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 3001
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.824034
+        }
+      },
+      "score": -0.824034,
+      "status": "evaluated",
+      "wall_s": 2.0,
+      "kind": "solo"
+    },
+    {
+      "id": 85,
+      "parent_id": 40,
+      "mutation": "[EXTREMEREG] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#40)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 100,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 1.0,
+          "reg_lambda": 10.0,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.830547
+        }
+      },
+      "score": -0.830547,
+      "status": "evaluated",
+      "wall_s": 1.2,
+      "kind": "solo"
+    },
+    {
+      "id": 86,
+      "parent_id": 40,
+      "mutation": "[EXTREMEREG] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 [PRIOR none -- fallback] (parent=#40)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 100,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 1.0,
+          "reg_lambda": 10.0,
+          "random_state": 3001
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.831193
+        }
+      },
+      "score": -0.831193,
+      "status": "evaluated",
+      "wall_s": 1.5,
+      "kind": "solo"
+    },
+    {
+      "id": 87,
+      "parent_id": 40,
+      "mutation": "[EXTREMEREG] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3002 [PRIOR none -- fallback] (parent=#40)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 100,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 1.0,
+          "reg_lambda": 10.0,
+          "random_state": 3002
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.832351
+        }
+      },
+      "score": -0.832351,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 88,
+      "parent_id": 27,
+      "mutation": "[CATNATIVE] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3003 [PRIOR none -- fallback] (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 16.0,
+          "random_seed": 3003
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.78282
+        }
+      },
+      "score": -0.78282,
+      "status": "evaluated",
+      "wall_s": 1.3,
+      "kind": "solo"
+    },
+    {
+      "id": 89,
+      "parent_id": 27,
+      "mutation": "[CATNATIVE] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3004 [PRIOR none -- fallback] (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 16.0,
+          "random_seed": 3004
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.836513
+        }
+      },
+      "score": -0.836513,
+      "status": "evaluated",
+      "wall_s": 1.4,
+      "kind": "solo"
+    },
+    {
+      "id": 90,
+      "parent_id": 89,
+      "mutation": "[CATNATIVE] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3005 [PRIOR none -- fallback] (parent=#89)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 16.0,
+          "random_seed": 3005
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.779206
+        }
+      },
+      "score": -0.779206,
+      "status": "evaluated",
+      "wall_s": 1.6,
+      "kind": "solo"
+    },
+    {
+      "id": 91,
+      "parent_id": 42,
+      "mutation": "[CATDEEP] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3000 [PRIOR none -- fallback] (parent=#42)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 6,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 3000
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.813761
+        }
+      },
+      "score": -0.813761,
+      "status": "evaluated",
+      "wall_s": 2.0,
+      "kind": "solo"
+    },
+    {
+      "id": 92,
+      "parent_id": 91,
+      "mutation": "[CATDEEP] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3001 [PRIOR none -- fallback] (parent=#91)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 6,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 3001
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.826381
+        }
+      },
+      "score": -0.826381,
+      "status": "evaluated",
+      "wall_s": 2.5,
+      "kind": "solo"
+    },
+    {
+      "id": 93,
+      "parent_id": 92,
+      "mutation": "[CATDEEP] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3002 [PRIOR none -- fallback] (parent=#92)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 6,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 3002
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.813954
+        }
+      },
+      "score": -0.813954,
+      "status": "evaluated",
+      "wall_s": 2.3,
+      "kind": "solo"
+    },
+    {
+      "id": 94,
+      "parent_id": 92,
+      "mutation": "[CATDEEP] [PHASE explore] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=3003 [PRIOR none -- fallback] (parent=#92)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 6,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 3003
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.80086
+        }
+      },
+      "score": -0.80086,
+      "status": "evaluated",
+      "wall_s": 1.9,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 42,
+    "streak": {
+      "7": 3,
+      "6": 3,
+      "2": 3,
+      "5": 3,
+      "1": 3,
+      "4": 3,
+      "3": 4,
+      "44": 0,
+      "45": 3,
+      "43": 3,
+      "41": 3,
+      "40": 3,
+      "42": 4
+    },
+    "plateaued": [
+      42
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 10,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.83954 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 16,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.84236 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 19,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.84236 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 22,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.84236 (tie_rate=0.043, discretized=False)"
+      },
+      {
+        "at_node_id": 25,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.84236 (tie_rate=0.038, discretized=False)"
+      },
+      {
+        "at_node_id": 28,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.84236 (tie_rate=0.034, discretized=False)"
+      },
+      {
+        "at_node_id": 31,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.84236 (tie_rate=0.031, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": null,
+        "reason": "all lineages plateaued -> reopened once (fallback so the search can keep going toward the node budget)"
+      },
+      {
+        "at_node_id": 32,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.84236 (tie_rate=0.030, discretized=False)"
+      },
+      {
+        "at_node_id": 35,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.84236 (tie_rate=0.028, discretized=False)"
+      },
+      {
+        "at_node_id": 47,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.844394 (tie_rate=0.021, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 44,
+        "reason": "expansion budget exhausted (all nodes in lineage reached MAX_CHILDREN_PER_NODE)"
+      },
+      {
+        "at_node_id": 69,
+        "plateaued_lineage": 45,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.018, discretized=False)"
+      },
+      {
+        "at_node_id": 72,
+        "plateaued_lineage": 43,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.017, discretized=False)"
+      },
+      {
+        "at_node_id": 75,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.016, discretized=False)"
+      },
+      {
+        "at_node_id": 78,
+        "plateaued_lineage": 41,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.016, discretized=False)"
+      },
+      {
+        "at_node_id": 81,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.015, discretized=False)"
+      },
+      {
+        "at_node_id": 84,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.014, discretized=False)"
+      },
+      {
+        "at_node_id": 87,
+        "plateaued_lineage": 40,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.014, discretized=False)"
+      },
+      {
+        "at_node_id": 90,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.013, discretized=False)"
+      },
+      {
+        "at_node_id": 93,
+        "plateaued_lineage": 42,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.013, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": null,
+        "reason": "all lineages plateaued -> reopened once (fallback so the search can keep going toward the node budget)"
+      },
+      {
+        "at_node_id": 94,
+        "plateaued_lineage": 42,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.845051 (tie_rate=0.012, discretized=False)"
+      }
+    ],
+    "tie_rate_log": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0435,
+      0.0417,
+      0.04,
+      0.0385,
+      0.037,
+      0.0357,
+      0.0345,
+      0.0333,
+      0.0323,
+      0.0312,
+      0.0303,
+      0.0294,
+      0.0286,
+      0.0278,
+      0.027,
+      0.0263,
+      0.0256,
+      0.025,
+      0.0213,
+      0.0208,
+      0.0204,
+      0.02,
+      0.0196,
+      0.0192,
+      0.0189,
+      0.0185,
+      0.0182,
+      0.0179,
+      0.0175,
+      0.0172,
+      0.0169,
+      0.0167,
+      0.0164,
+      0.0161,
+      0.0159,
+      0.0156,
+      0.0154,
+      0.0152,
+      0.0149,
+      0.0147,
+      0.0145,
+      0.0143,
+      0.0141,
+      0.0139,
+      0.0137,
+      0.0135,
+      0.0133,
+      0.0132,
+      0.013,
+      0.0128,
+      0.0127,
+      0.0125
+    ]
+  },
+  "priors": [
+    "AUC \u662f\u6392\u540d\u6307\u6a19:\u5c0d\u4e0d\u5e73\u8861\u4e8c\u5206\u985e\u52a0 scale_pos_weight/class_weights \u4e3b\u8981\u662f\u64fe\u52d5\u640d\u5931\u9762\u800c\u975e\u6539\u5584\u6392\u540d,\u5728\u5c0f\u6a23\u672c\u4e0a\u662f\u58de\u4ea4\u6613;\u79fb\u9664\u4e0d\u5e73\u8861\u52a0\u6b0a + \u52a0\u5f37\u6b63\u5247\u5316\u624d\u662f\u89e3\u65b9\u3002 | \u8b49\u64da:s3e3, exp #2(48 \u7279\u5fb5+\u4e0d\u5e73\u8861\u52a0\u6b0a)0.81901 \u2192 exp #3(\u540c\u7279\u5fb5\u3001\u79fb\u9664\u52a0\u6b0a\u3001LGB num_leaves 15\u21927\u3001L1 0.5\u21921.0\u3001L2 1.0\u21922.0)0.83292(+0.017)\u3002",
+    "**s3e5 \u7684\u300cOptuna \u76ee\u6a19\u51fd\u5f0f\u76f4\u63a5\u8a2d\u70ba\u5b8c\u6574 CV \u4e0a\u7684\u6700\u7d42\u6307\u6a19\u300d\u914d\u65b9(\u539f\u672c\u53ea\u5728 QWK/\u96e2\u6563\u5316\u5f8c\u8655\u7406\u5834\u666f\u9a57\u8b49\u904e)\u9077\u79fb\u5230 AUC \u540c\u6a23\u6709\u6548,\u4e14 AUC \u662f\u9023\u7e8c\u6392\u540d\u6307\u6a19,\u5b8c\u5168\u6c92\u6709 QWK \u90a3\u7a2e\u96e2\u6563\u5316\u9677\u9631**:\u5c0f\u8cc7\u6599(1677 \u5217)\u4e0a 50 trials \u5b8c\u6574 5-fold CV \u50c5\u9700 111.3 \u79d2,\u76f4\u63a5\u4ee5 OOF ROC-AUC(\u800c\u975e\u67d0\u4ee3\u7406 loss)\u70ba Optuna \u76ee\u6a19,\u627e\u5230\u7684\u6700\u512a\u89e3\u751a\u81f3\u6bd4\u65e2\u6709\u300c\u6dfa\u800c\u5f37\u6b63\u5247\u300d\u7684 exp #3 LGB \u66f4\u6dfa(num_leaves 7\u21923)\u4f46\u6b63\u5247\u53cd\u800c\u66f4\u8f15(reg_lambda 2.0\u21920.0012,\u9760 min_child_samples=60 \u63a7\u5236\u904e\u64ec\u5408)\u3002 | \u8b49\u64da:s3e3, exp #4,LGB \u55ae\u6a21 0.832925 \u2192 0.837305(+0.00438)\u3002",
+    "\u8abf\u53c3\u5f8c\u300c\u52a0\u5165\u6c60\u800c\u975e\u53d6\u4ee3 + seed bagging\u300d\u914d\u65b9\u5728 AUC \u4e0a\u540c\u6a23\u53ef\u758a\u52a0\u5c0f\u5e45\u589e\u76ca,\u60df\u91cf\u7d1a\u96a8\u8fed\u4ee3\u6b21\u6578\u905e\u6e1b(+0.0044\u2192+0.0005),\u8207 s3e14/s3e11 \u89c0\u5bdf\u4e00\u81f4\u3002 | \u8b49\u64da:s3e3, exp #5,5-way \u6b0a\u91cd\u641c\u5c0b blend 0.837305 \u2192 0.837776,\u6b0a\u91cd\u96c6\u4e2d\u5728 LGB_orig(0.3)+LGB_tuned(0.7),seed-bag \u7248\u672c\u6b0a\u91cd 0\u3002",
+    "\u5c0f\u6a23\u672c\u4e0a CatBoost \u53ef\u80fd\u6301\u7e8c\u52a3\u65bc LGB/XGB \u4e14\u88ab\u6b0a\u91cd\u641c\u5c0b\u6b78\u96f6\u2014\u2014\u4e0d\u8981\u5047\u8a2d\u4e09\u6a21\u578b blend \u6c38\u9060\u6709\u76ca,\u5148\u770b\u5404\u6a21\u578b OOF\u3002 | \u8b49\u64da:s3e3(1,677 \u5217), exp #2/#3,CAT 0.77663/0.76268 \u9060\u4f4e\u65bc LGB 0.81901/0.83292,\u5169\u6b21 blend \u6b0a\u91cd\u7686 LGB=1.0\u3002",
+    "**\u300cCatBoost \u5728\u5c0f\u8cc7\u6599\u4e0a\u504f\u5f31\u300d\u7684\u8a3a\u65b7\u7d50\u8ad6\u5df2\u91d0\u6e05:\u539f\u751f\u985e\u5225\u8655\u7406(cat_features \u50b3\u539f\u59cb\u5b57\u4e32,\u800c\u975e label/freq \u9810\u7de8\u78bc)\u53ef\u5927\u5e45\u7e2e\u5c0f\u5dee\u8ddd,\u4f46\u7121\u6cd5\u9006\u8f49\u6392\u5e8f\u2014\u2014\u662f\u300c\u7de8\u78bc\u65b9\u5f0f\u300d\u8207\u300c\u6a21\u578b/\u8cc7\u6599\u898f\u6a21\u4e0d\u5339\u914d\u300d\u5169\u500b\u7368\u7acb\u554f\u984c\u758a\u52a0,\u4e14\u5f8c\u8005\u624d\u662f\u4e3b\u56e0\u3002** \u5c0d s3e3(1,677 \u5217)\u91cd\u8a66 CatBoost,\u6539\u7528\u539f\u751f cat_features(7 \u500b\u985e\u5225\u6b04\u4f4d\u4fdd\u7559\u539f\u59cb\u5b57\u4e32)+ `allow_writing_files=False` + \u660e\u78ba thread_count,OOF \u7531\u6a19\u7c64/\u983b\u7387\u7de8\u78bc\u7248\u7684 0.762684 \u5927\u5e45\u56de\u5347\u81f3 0.814259(+0.0516,\u6df1\u5ea6 3\u3001l2_leaf_reg 16\u3001lr 0.05 \u4e4b\u6dfa\u6a39\u5f37\u6b63\u5247\u914d\u7f6e\u6700\u4f73),\u8b49\u660e\u539f\u672c\u843d\u5f8c\u7684\u4e00\u90e8\u5206\u539f\u56e0\u78ba\u5be6\u662f\u7de8\u78bc\u65b9\u5f0f\u4e0d\u7576;\u4f46\u5373\u4f7f\u539f\u751f\u8655\u7406\u5f8c\u4ecd\u6bd4\u540c\u8cc7\u6599\u4e0a\u7684 LGB(0.837305)\u4f4e 2.3 \u500b\u767e\u5206\u9ede,\u52a0\u5165 6-way blend \u6c60\u5f8c\u6b0a\u91cd\u641c\u5c0b\u4f9d\u7136\u7d66\u4e88 0 \u6b0a\u91cd(\u8207\u672a\u539f\u751f\u8655\u7406\u6642\u7684\u5224\u5b9a\u4e00\u81f4)\u3002**\u7d50\u8ad6:\u300cCatBoost \u5728\u6975\u5c0f\u8868\u683c\u8cc7\u6599\u4e0a\u7d50\u69cb\u6027\u504f\u5f31\u300d\u624d\u662f\u8010\u7528\u7684\u6559\u8a13,\u539f\u751f\u985e\u5225\u8655\u7406\u662f\u5fc5\u8981\u4f46\u4e0d\u5145\u5206\u7684\u7de9\u89e3,\u4e0d\u5fc5\u518d\u5c0d\u540c\u6578\u91cf\u7d1a\u8cc7\u6599\u91cd\u8a66\u6b64\u6a21\u578b\u3002** | \u8b49\u64da:s3e3, exp #6(CAT_native \u8a3a\u65b7,solo 0.814259)\u3001exp #7(6-way blend \u542b CAT_native,\u6b0a\u91cd\u641c\u5c0b\u4ecd\u7d66 0,blend \u5206\u6578\u8207\u672a\u542b CAT_native \u7684 exp #5 \u5728 prob-space \u76f8\u540c 0.837776)\u3002",
+    "\u5c0f\u6a23\u672c + \u76f8\u95dc\u6027\u9ad8\u7684\u5de5\u7a0b\u7279\u5fb5 \u2192 \u512a\u5148\u52a0\u6b63\u5247\u5316\u800c\u975e\u52a0\u5bb9\u91cf\u3002 | \u8b49\u64da:s3e3, exp #3 \u9760\u7dca\u7e2e LGB \u6b63\u5247\u62ff\u5230 +0.017;s3e9, exp #2 \u540c\u7406(\u898b\u4e0b)\u3002",
+    "\u5c0f\u6a23\u672c per-fold \u5206\u6578\u6ce2\u52d5\u5927(AUC 0.79\u20130.89)\u662f\u5e38\u614b,\u4e0d\u662f bug;\u62ff\u5230\u660e\u78ba\u589e\u76ca\u5f8c\u61c9\u300c\u898b\u597d\u5c31\u6536\u300d,\u907f\u514d\u5728\u566a\u97f3\u4e0a\u904e\u5ea6\u641c\u5c0b\u3002 | \u8b49\u64da:s3e3, STATUS.md \u660e\u793a plateau \u505c\u6b62\u6e96\u5247,\u4e00\u8f2a reflexion \u5f8c\u505c\u3002"
+  ],
+  "design_note": "Phase E-5 scaling experiment: fresh tree, same root+seeds+mutation policy as D-2 (experiments_tree.json), 80-node budget, exploit (evals 1-40) / explore (evals 41-80) phase-tagged.",
+  "curve": [
+    {
+      "eval_index": 1,
+      "node_id": 0,
+      "lineage": "ROOT",
+      "phase": "seed",
+      "auc": 0.837305,
+      "cum_best_auc": 0.837305,
+      "is_new_global_best": true,
+      "wall_s": 0.0,
+      "cum_wall_s": 0.0,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 2,
+      "node_id": 1,
+      "lineage": "LGBORIG",
+      "phase": "seed",
+      "auc": 0.832925,
+      "cum_best_auc": 0.837305,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 0.0,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 3,
+      "node_id": 2,
+      "lineage": "XGBTUNED",
+      "phase": "seed",
+      "auc": 0.835633,
+      "cum_best_auc": 0.837305,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 0.0,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 4,
+      "node_id": 3,
+      "lineage": "CATORIG",
+      "phase": "seed",
+      "auc": 0.762684,
+      "cum_best_auc": 0.837305,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 0.0,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 5,
+      "node_id": 4,
+      "lineage": "CATNATIVE",
+      "phase": "seed",
+      "auc": 0.814259,
+      "cum_best_auc": 0.837305,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 0.0,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 6,
+      "node_id": 5,
+      "lineage": "SEEDBAG",
+      "phase": "seed",
+      "auc": 0.83345,
+      "cum_best_auc": 0.837305,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 0.0,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 7,
+      "node_id": 6,
+      "lineage": "FEAT",
+      "phase": "seed",
+      "auc": 0.838903,
+      "cum_best_auc": 0.838903,
+      "is_new_global_best": true,
+      "wall_s": 0.0,
+      "cum_wall_s": 0.0,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 8,
+      "node_id": 7,
+      "lineage": "BLEND",
+      "phase": "seed",
+      "auc": 0.83954,
+      "cum_best_auc": 0.83954,
+      "is_new_global_best": true,
+      "wall_s": 0.7,
+      "cum_wall_s": 0.7,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 9,
+      "node_id": 8,
+      "lineage": "BLEND",
+      "phase": "exploit",
+      "auc": 0.839448,
+      "cum_best_auc": 0.83954,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 1.3,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 10,
+      "node_id": 9,
+      "lineage": "BLEND",
+      "phase": "exploit",
+      "auc": 0.839441,
+      "cum_best_auc": 0.83954,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 2.0,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 11,
+      "node_id": 10,
+      "lineage": "BLEND",
+      "phase": "exploit",
+      "auc": 0.839445,
+      "cum_best_auc": 0.83954,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 2.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 12,
+      "node_id": 11,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.841442,
+      "cum_best_auc": 0.841442,
+      "is_new_global_best": true,
+      "wall_s": 0.0,
+      "cum_wall_s": 2.6,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 13,
+      "node_id": 12,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.836977,
+      "cum_best_auc": 0.841442,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 2.6,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 14,
+      "node_id": 13,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.84236,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": true,
+      "wall_s": 1.7,
+      "cum_wall_s": 4.3,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 15,
+      "node_id": 14,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.839821,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.0,
+      "cum_wall_s": 5.3,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 16,
+      "node_id": 15,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.841229,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.3,
+      "cum_wall_s": 6.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 17,
+      "node_id": 16,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.83741,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.2,
+      "cum_wall_s": 7.7,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 18,
+      "node_id": 17,
+      "lineage": "XGBTUNED",
+      "phase": "exploit",
+      "auc": 0.82911,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 7.7,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 19,
+      "node_id": 18,
+      "lineage": "XGBTUNED",
+      "phase": "exploit",
+      "auc": 0.819909,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 7.8,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 20,
+      "node_id": 19,
+      "lineage": "XGBTUNED",
+      "phase": "exploit",
+      "auc": 0.838602,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 2.8,
+      "cum_wall_s": 10.5,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 21,
+      "node_id": 20,
+      "lineage": "SEEDBAG",
+      "phase": "exploit",
+      "auc": 0.832671,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 10.5,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 22,
+      "node_id": 21,
+      "lineage": "SEEDBAG",
+      "phase": "exploit",
+      "auc": 0.83479,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 10.5,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 23,
+      "node_id": 22,
+      "lineage": "SEEDBAG",
+      "phase": "exploit",
+      "auc": 0.832671,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.6,
+      "cum_wall_s": 12.1,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 24,
+      "node_id": 23,
+      "lineage": "LGBORIG",
+      "phase": "exploit",
+      "auc": 0.813597,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.0,
+      "cum_wall_s": 12.1,
+      "reused_from_d2": true
+    },
+    {
+      "eval_index": 25,
+      "node_id": 24,
+      "lineage": "LGBORIG",
+      "phase": "exploit",
+      "auc": 0.817928,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 2.7,
+      "cum_wall_s": 14.8,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 26,
+      "node_id": 25,
+      "lineage": "LGBORIG",
+      "phase": "exploit",
+      "auc": 0.815674,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 4.0,
+      "cum_wall_s": 18.8,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 27,
+      "node_id": 26,
+      "lineage": "CATNATIVE",
+      "phase": "exploit",
+      "auc": 0.825559,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.4,
+      "cum_wall_s": 20.2,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 28,
+      "node_id": 27,
+      "lineage": "CATNATIVE",
+      "phase": "exploit",
+      "auc": 0.831899,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.1,
+      "cum_wall_s": 21.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 29,
+      "node_id": 28,
+      "lineage": "CATNATIVE",
+      "phase": "exploit",
+      "auc": 0.80868,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.8,
+      "cum_wall_s": 23.1,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 30,
+      "node_id": 29,
+      "lineage": "CATORIG",
+      "phase": "exploit",
+      "auc": 0.761395,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.8,
+      "cum_wall_s": 23.9,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 31,
+      "node_id": 30,
+      "lineage": "CATORIG",
+      "phase": "exploit",
+      "auc": 0.830498,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.0,
+      "cum_wall_s": 24.9,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 32,
+      "node_id": 31,
+      "lineage": "CATORIG",
+      "phase": "exploit",
+      "auc": 0.836679,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.1,
+      "cum_wall_s": 26.0,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 33,
+      "node_id": 32,
+      "lineage": "CATORIG",
+      "phase": "exploit",
+      "auc": 0.836591,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.1,
+      "cum_wall_s": 27.1,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 34,
+      "node_id": 33,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.833937,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.9,
+      "cum_wall_s": 28.0,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 35,
+      "node_id": 34,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.841838,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.8,
+      "cum_wall_s": 28.8,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 36,
+      "node_id": 35,
+      "lineage": "FEAT",
+      "phase": "exploit",
+      "auc": 0.841676,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 1.8,
+      "cum_wall_s": 30.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 37,
+      "node_id": 36,
+      "lineage": "BLEND",
+      "phase": "exploit",
+      "auc": 0.839993,
+      "cum_best_auc": 0.84236,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 31.2,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 38,
+      "node_id": 37,
+      "lineage": "BLEND",
+      "phase": "exploit",
+      "auc": 0.843483,
+      "cum_best_auc": 0.843483,
+      "is_new_global_best": true,
+      "wall_s": 0.7,
+      "cum_wall_s": 31.9,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 39,
+      "node_id": 38,
+      "lineage": "BLEND",
+      "phase": "exploit",
+      "auc": 0.843524,
+      "cum_best_auc": 0.843524,
+      "is_new_global_best": true,
+      "wall_s": 0.7,
+      "cum_wall_s": 32.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 40,
+      "node_id": 39,
+      "lineage": "BLEND",
+      "phase": "exploit",
+      "auc": 0.842766,
+      "cum_best_auc": 0.843524,
+      "is_new_global_best": false,
+      "wall_s": 0.4,
+      "cum_wall_s": 32.9,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 41,
+      "node_id": 40,
+      "lineage": "EXTREMEREG",
+      "phase": "explore",
+      "auc": 0.832297,
+      "cum_best_auc": 0.843524,
+      "is_new_global_best": false,
+      "wall_s": 1.7,
+      "cum_wall_s": 34.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 42,
+      "node_id": 41,
+      "lineage": "XGBSHALLOWWIDE",
+      "phase": "explore",
+      "auc": 0.835537,
+      "cum_best_auc": 0.843524,
+      "is_new_global_best": false,
+      "wall_s": 3.7,
+      "cum_wall_s": 38.3,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 43,
+      "node_id": 42,
+      "lineage": "CATDEEP",
+      "phase": "explore",
+      "auc": 0.792092,
+      "cum_best_auc": 0.843524,
+      "is_new_global_best": false,
+      "wall_s": 2.5,
+      "cum_wall_s": 40.8,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 44,
+      "node_id": 43,
+      "lineage": "FEATKITCHEN",
+      "phase": "explore",
+      "auc": 0.839177,
+      "cum_best_auc": 0.843524,
+      "is_new_global_best": false,
+      "wall_s": 1.0,
+      "cum_wall_s": 41.8,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 45,
+      "node_id": 44,
+      "lineage": "KITCHENBLEND",
+      "phase": "explore",
+      "auc": 0.844394,
+      "cum_best_auc": 0.844394,
+      "is_new_global_best": true,
+      "wall_s": 0.4,
+      "cum_wall_s": 42.2,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 46,
+      "node_id": 45,
+      "lineage": "RANKKITCHEN",
+      "phase": "explore",
+      "auc": 0.843849,
+      "cum_best_auc": 0.844394,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 42.9,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 47,
+      "node_id": 46,
+      "lineage": "BLEND",
+      "phase": "explore",
+      "auc": 0.843619,
+      "cum_best_auc": 0.844394,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 43.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 48,
+      "node_id": 47,
+      "lineage": "BLEND",
+      "phase": "explore",
+      "auc": 0.843751,
+      "cum_best_auc": 0.844394,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 44.3,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 49,
+      "node_id": 48,
+      "lineage": "KITCHENBLEND",
+      "phase": "explore",
+      "auc": 0.845034,
+      "cum_best_auc": 0.845034,
+      "is_new_global_best": true,
+      "wall_s": 0.4,
+      "cum_wall_s": 44.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 50,
+      "node_id": 49,
+      "lineage": "KITCHENBLEND",
+      "phase": "explore",
+      "auc": 0.844384,
+      "cum_best_auc": 0.845034,
+      "is_new_global_best": false,
+      "wall_s": 0.4,
+      "cum_wall_s": 45.0,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 51,
+      "node_id": 54,
+      "lineage": "KITCHENBLEND",
+      "phase": "explore",
+      "auc": 0.844949,
+      "cum_best_auc": 0.845034,
+      "is_new_global_best": false,
+      "wall_s": 0.4,
+      "cum_wall_s": 0.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 52,
+      "node_id": 55,
+      "lineage": "KITCHENBLEND",
+      "phase": "explore",
+      "auc": 0.845051,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": true,
+      "wall_s": 0.4,
+      "cum_wall_s": 0.8,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 53,
+      "node_id": 63,
+      "lineage": "RANKKITCHEN",
+      "phase": "explore",
+      "auc": 0.844377,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 1.5,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 54,
+      "node_id": 64,
+      "lineage": "RANKKITCHEN",
+      "phase": "explore",
+      "auc": 0.843768,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 2.2,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 55,
+      "node_id": 69,
+      "lineage": "RANKKITCHEN",
+      "phase": "explore",
+      "auc": 0.844164,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 0.7,
+      "cum_wall_s": 2.9,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 56,
+      "node_id": 70,
+      "lineage": "FEATKITCHEN",
+      "phase": "explore",
+      "auc": 0.839347,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.7,
+      "cum_wall_s": 4.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 57,
+      "node_id": 71,
+      "lineage": "FEATKITCHEN",
+      "phase": "explore",
+      "auc": 0.838131,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.8,
+      "cum_wall_s": 6.5,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 58,
+      "node_id": 72,
+      "lineage": "FEATKITCHEN",
+      "phase": "explore",
+      "auc": 0.83674,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.1,
+      "cum_wall_s": 7.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 59,
+      "node_id": 73,
+      "lineage": "XGBTUNED",
+      "phase": "explore",
+      "auc": 0.834086,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 2.9,
+      "cum_wall_s": 10.5,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 60,
+      "node_id": 74,
+      "lineage": "XGBTUNED",
+      "phase": "explore",
+      "auc": 0.819722,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 2.3,
+      "cum_wall_s": 12.8,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 61,
+      "node_id": 75,
+      "lineage": "XGBTUNED",
+      "phase": "explore",
+      "auc": 0.839203,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.9,
+      "cum_wall_s": 14.7,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 62,
+      "node_id": 76,
+      "lineage": "XGBSHALLOWWIDE",
+      "phase": "explore",
+      "auc": 0.833546,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 3.6,
+      "cum_wall_s": 18.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 63,
+      "node_id": 77,
+      "lineage": "XGBSHALLOWWIDE",
+      "phase": "explore",
+      "auc": 0.834541,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 3.5,
+      "cum_wall_s": 21.9,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 64,
+      "node_id": 78,
+      "lineage": "XGBSHALLOWWIDE",
+      "phase": "explore",
+      "auc": 0.834199,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 3.2,
+      "cum_wall_s": 25.1,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 65,
+      "node_id": 79,
+      "lineage": "SEEDBAG",
+      "phase": "explore",
+      "auc": 0.840982,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.3,
+      "cum_wall_s": 26.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 66,
+      "node_id": 80,
+      "lineage": "SEEDBAG",
+      "phase": "explore",
+      "auc": 0.840789,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 2.2,
+      "cum_wall_s": 28.6,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 67,
+      "node_id": 81,
+      "lineage": "SEEDBAG",
+      "phase": "explore",
+      "auc": 0.841523,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.8,
+      "cum_wall_s": 30.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 68,
+      "node_id": 82,
+      "lineage": "LGBORIG",
+      "phase": "explore",
+      "auc": 0.819783,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 2.0,
+      "cum_wall_s": 32.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 69,
+      "node_id": 83,
+      "lineage": "LGBORIG",
+      "phase": "explore",
+      "auc": 0.832346,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.1,
+      "cum_wall_s": 33.5,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 70,
+      "node_id": 84,
+      "lineage": "LGBORIG",
+      "phase": "explore",
+      "auc": 0.824034,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 2.0,
+      "cum_wall_s": 35.5,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 71,
+      "node_id": 85,
+      "lineage": "EXTREMEREG",
+      "phase": "explore",
+      "auc": 0.830547,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.2,
+      "cum_wall_s": 36.7,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 72,
+      "node_id": 86,
+      "lineage": "EXTREMEREG",
+      "phase": "explore",
+      "auc": 0.831193,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.5,
+      "cum_wall_s": 38.2,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 73,
+      "node_id": 87,
+      "lineage": "EXTREMEREG",
+      "phase": "explore",
+      "auc": 0.832351,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 0.8,
+      "cum_wall_s": 39.1,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 74,
+      "node_id": 88,
+      "lineage": "CATNATIVE",
+      "phase": "explore",
+      "auc": 0.78282,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.3,
+      "cum_wall_s": 40.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 75,
+      "node_id": 89,
+      "lineage": "CATNATIVE",
+      "phase": "explore",
+      "auc": 0.836513,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.4,
+      "cum_wall_s": 41.8,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 76,
+      "node_id": 90,
+      "lineage": "CATNATIVE",
+      "phase": "explore",
+      "auc": 0.779206,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.6,
+      "cum_wall_s": 43.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 77,
+      "node_id": 91,
+      "lineage": "CATDEEP",
+      "phase": "explore",
+      "auc": 0.813761,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 2.0,
+      "cum_wall_s": 45.4,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 78,
+      "node_id": 92,
+      "lineage": "CATDEEP",
+      "phase": "explore",
+      "auc": 0.826381,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 2.5,
+      "cum_wall_s": 48.0,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 79,
+      "node_id": 93,
+      "lineage": "CATDEEP",
+      "phase": "explore",
+      "auc": 0.813954,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 2.3,
+      "cum_wall_s": 50.3,
+      "reused_from_d2": false
+    },
+    {
+      "eval_index": 80,
+      "node_id": 94,
+      "lineage": "CATDEEP",
+      "phase": "explore",
+      "auc": 0.80086,
+      "cum_best_auc": 0.845051,
+      "is_new_global_best": false,
+      "wall_s": 1.9,
+      "cum_wall_s": 52.2,
+      "reused_from_d2": false
+    }
+  ],
+  "prior_usage_summary": {
+    "n_informed": 14,
+    "n_uninformed": 52,
+    "informed_win_rate": 0.2857142857142857,
+    "uninformed_win_rate": 0.4807692307692308
+  },
+  "dedup_rejections": [
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#48)",
+      "dup_id": 49
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#48)",
+      "dup_id": 49
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#48)",
+      "dup_id": 49
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#48)",
+      "dup_id": 49
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#44)",
+      "dup_id": 48
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#44)",
+      "dup_id": 48
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#44)",
+      "dup_id": 48
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#44)",
+      "dup_id": 48
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: queue exhausted & pool fully included, re-run weight search (attempt 12) [PRIOR none -- fallback] (parent=#55)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: queue exhausted & pool fully included, re-run weight search (attempt 13) [PRIOR none -- fallback] (parent=#55)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: queue exhausted & pool fully included, re-run weight search (attempt 14) [PRIOR none -- fallback] (parent=#55)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: queue exhausted & pool fully included, re-run weight search (attempt 15) [PRIOR none -- fallback] (parent=#55)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: queue exhausted & pool fully included, re-run weight search (attempt 16) [PRIOR none -- fallback] (parent=#55)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: queue exhausted & pool fully included, re-run weight search (attempt 17) [PRIOR none -- fallback] (parent=#55)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #42 -> 36-way [PRIOR none -- fallback] (parent=#54)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #42 -> 36-way [PRIOR none -- fallback] (parent=#54)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #42 -> 36-way [PRIOR none -- fallback] (parent=#54)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #42 -> 36-way [PRIOR none -- fallback] (parent=#54)",
+      "dup_id": 55
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #40 -> 35-way [PRIOR none -- fallback] (parent=#49)",
+      "dup_id": 54
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #40 -> 35-way [PRIOR none -- fallback] (parent=#49)",
+      "dup_id": 54
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #40 -> 35-way [PRIOR none -- fallback] (parent=#49)",
+      "dup_id": 54
+    },
+    {
+      "mutation": "[KITCHENBLEND] [PHASE explore] BLEND fallback: add next-best unused pool member #40 -> 35-way [PRIOR none -- fallback] (parent=#49)",
+      "dup_id": 54
+    },
+    {
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#63)",
+      "dup_id": 64
+    },
+    {
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#63)",
+      "dup_id": 64
+    },
+    {
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#63)",
+      "dup_id": 64
+    },
+    {
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #41 -> 34-way [PRIOR none -- fallback] (parent=#63)",
+      "dup_id": 64
+    },
+    {
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#45)",
+      "dup_id": 63
+    },
+    {
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#45)",
+      "dup_id": 63
+    },
+    {
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#45)",
+      "dup_id": 63
+    },
+    {
+      "mutation": "[RANKKITCHEN] [PHASE explore] BLEND fallback: add next-best unused pool member #43 -> 33-way [PRIOR none -- fallback] (parent=#45)",
+      "dup_id": 63
+    }
+  ],
+  "budget": {
+    "target_nodes": 80,
+    "exploit_cutoff": 40,
+    "total_wall_s": 52.2
+  }
+}
