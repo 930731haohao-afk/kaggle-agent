@@ -1,15 +1,20 @@
 """tests/test_tree_harness_v3.py — unit-style coverage for tree_search/harness_v3.py
-(Phase F-1: folding the 11-tree-run lessons into the harness as defaults). Loaded via
-the `load_module` fixture (conftest.py) since tree_search/ is not a package, same
-pattern as test_tree_harness_v2.py.
+(Phase F-1: folding the 11-tree-run lessons into the harness as defaults; Phase H-1:
+the three v3 production-readiness items from Phase F-2's honest ledger -- resume-state
+contract, subprocess eval timeout, burst-seed sanity gate). Loaded via the
+`load_module` fixture (conftest.py) since tree_search/ is not a package, same pattern
+as test_tree_harness_v2.py.
 """
 import os
+import time
 
 import numpy as np
 import pytest
 
 HARNESS_V3_PATH = "tree_search/harness_v3.py"
 HARNESS_V2_PATH = "tree_search/harness_v2.py"
+_DUMMY_EVAL_MODULE_PATH = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "dummy_eval_module.py")
 
 
 @pytest.fixture()
@@ -418,3 +423,327 @@ def test_smoke_s3e3_blend_comparability_v2_vs_v3(hv2, hv3, load_module):
     assert s_v3 == s_v2
     _np.testing.assert_array_equal(w_v3, w_v2)
     assert round(-s_v2, 6) == pytest.approx(0.839448, abs=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# Phase H-1 feature 7: resume-state contract (save_search_state/load_search_state/
+# validate_state)
+# ---------------------------------------------------------------------------
+def test_validate_state_true_for_fresh_and_populated_tree(hv3):
+    tree = hv3.new_tree("c")
+    assert hv3.validate_state(tree) is True
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    lid, _ = hv3.add_node(tree, tree["root_id"], "seed", {"kind": "solo", "v": 1}, 9.0,
+                           "evaluated", 1.0)
+    hv3.init_budget(tree)
+    hv3.update_phase(tree)
+    assert hv3.validate_state(tree) is True
+
+
+def test_validate_state_rejects_unknown_plateaued_lineage_id(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    tree["search_state"]["plateaued"] = [999]  # not a real node id
+    with pytest.raises(AssertionError, match="plateaued"):
+        hv3.validate_state(tree)
+
+
+def test_validate_state_rejects_unknown_active_lineage(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    tree["search_state"]["active_lineage"] = 999
+    with pytest.raises(AssertionError, match="active_lineage"):
+        hv3.validate_state(tree)
+
+
+def test_validate_state_rejects_unknown_budget_phase(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    hv3.init_budget(tree)
+    tree["search_state"]["budget"]["phase"] = "bogus_phase"
+    with pytest.raises(AssertionError, match="phase"):
+        hv3.validate_state(tree)
+
+
+def test_validate_state_rejects_explore_burst_missing_burst_start_eval(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    hv3.init_budget(tree)
+    tree["search_state"]["budget"]["phase"] = "explore_burst"
+    tree["search_state"]["budget"]["burst_start_eval"] = None
+    with pytest.raises(AssertionError, match="burst_start_eval"):
+        hv3.validate_state(tree)
+
+
+def test_validate_state_rejects_stopped_missing_stop_reason(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    hv3.init_budget(tree)
+    tree["search_state"]["budget"]["phase"] = "stopped"
+    tree["search_state"]["budget"]["stop_reason"] = None
+    with pytest.raises(AssertionError, match="stop_reason"):
+        hv3.validate_state(tree)
+
+
+def test_save_load_search_state_round_trip(hv3, tmp_path):
+    tree = hv3.new_tree("c")
+    hv3.init_budget(tree, total_budget=42)  # set BEFORE any add_node call auto-inits defaults
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    hv3.add_node(tree, tree["root_id"], "seed", {"kind": "solo", "v": 1}, 9.0, "evaluated", 1.0)
+    hv3.update_phase(tree)
+    # driver-local bookkeeping that must survive a restart lives under driver_state
+    tree["search_state"]["driver_state"] = {"LINEAGE_NAMES": {"1": "SEEDBAG"},
+                                             "burst_injected": False, "dedup_offset": {}}
+
+    path = str(tmp_path / "tree.json")
+    hv3.save_search_state(tree, path)
+    reloaded = hv3.load_search_state(path)
+
+    assert reloaded["search_state"]["budget"]["total_budget"] == 42
+    assert reloaded["search_state"]["budget"]["phase"] == tree["search_state"]["budget"]["phase"]
+    assert reloaded["search_state"]["driver_state"] == {"LINEAGE_NAMES": {"1": "SEEDBAG"},
+                                                          "burst_injected": False, "dedup_offset": {}}
+    assert len(reloaded["nodes"]) == len(tree["nodes"])
+
+
+def test_save_search_state_refuses_to_write_invalid_state(hv3, tmp_path):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    tree["search_state"]["plateaued"] = [999]  # corrupt before saving
+    path = str(tmp_path / "tree.json")
+    with pytest.raises(AssertionError):
+        hv3.save_search_state(tree, path)
+    assert not os.path.exists(path)  # never wrote the corrupt state to disk
+
+
+def test_load_search_state_raises_on_corrupted_file_on_disk(hv3, tmp_path):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
+    hv3.init_budget(tree)
+    tree["search_state"]["budget"]["phase"] = "bogus_phase"
+    path = str(tmp_path / "tree.json")
+    hv3.save(tree, path)  # bypass save_search_state's own guard to simulate a stale/hand-edited file
+    with pytest.raises(AssertionError, match="phase"):
+        hv3.load_search_state(path)
+
+
+# ---------------------------------------------------------------------------
+# Phase H-1 feature 8: subprocess eval timeout (eval_solo_subprocess)
+# ---------------------------------------------------------------------------
+def test_eval_solo_subprocess_fast_path_returns_real_result(hv3):
+    result = hv3.eval_solo_subprocess(_DUMMY_EVAL_MODULE_PATH, {"score": 0.42, "sleep_s": 0},
+                                       timeout_s=10, node_id=7)
+    assert result["status"] == "evaluated"
+    assert result["score"] == 0.42
+    assert result["result"]["node_id"] == 7
+    assert result["timeout"] is False
+    assert result["error"] is None
+
+
+def test_eval_solo_subprocess_kills_a_deliberate_hang(hv3):
+    t0 = time.time()
+    result = hv3.eval_solo_subprocess(_DUMMY_EVAL_MODULE_PATH, {"sleep_s": 30}, timeout_s=1.0)
+    elapsed = time.time() - t0
+    assert result["status"] == "failed"
+    assert result["timeout"] is True
+    assert result["score"] is None
+    assert "hard-killed" in result["error"]
+    # killed near the timeout, nowhere near the full 30s sleep -- proves it's a real kill,
+    # not just waiting the sleep out
+    assert elapsed < 15.0
+
+
+def test_eval_solo_subprocess_reports_child_crash_as_failed(hv3):
+    result = hv3.eval_solo_subprocess(_DUMMY_EVAL_MODULE_PATH, {"raise": True}, timeout_s=10)
+    assert result["status"] == "failed"
+    assert result["timeout"] is False
+    assert result["score"] is None
+    assert "child process exited" in result["error"]
+
+
+# ---------------------------------------------------------------------------
+# Phase H-1 feature 9: burst-seed sanity gate
+# ---------------------------------------------------------------------------
+def test_burst_seed_sanity_gate_passes_for_plausible_seed(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 340.0, "evaluated", 1.0)
+    # a plausible long-shot seed, somewhat worse than root but not absurd
+    passed, bound = hv3.burst_seed_sanity_gate(tree, 350.0)
+    assert passed is True
+    assert bound > 340.0
+
+
+def test_burst_seed_sanity_gate_rejects_garbage_seed(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 340.0, "evaluated", 1.0)
+    # F-2's actual s3e14 DART burst seed: ~6144-6544 MAE vs a ~340 root/global-best
+    passed, bound = hv3.burst_seed_sanity_gate(tree, 6300.0)
+    assert passed is False
+    assert bound < 6300.0
+
+
+def test_burst_seed_sanity_bound_uses_gap_and_floor(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 340.0, "evaluated", 1.0)
+    # improve the global best via a separate lineage so root != global best (real gap)
+    hv3.add_node(tree, tree["root_id"], "improved", {"kind": "solo", "v": 1}, 330.0,
+                 "evaluated", 1.0)
+    bound = hv3.burst_seed_sanity_bound(tree, factor=3.0)
+    gap = abs(330.0 - 340.0)
+    assert bound == pytest.approx(330.0 + max(gap * 3.0, 0.05 * 330.0))
+
+
+def test_apply_burst_seed_sanity_gate_burns_only_the_seed_lineage(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 340.0, "evaluated", 1.0)
+    # a second, healthy lineage must remain selectable after the garbage one is burned --
+    # otherwise select_next_parent's own "everything plateaued -> reopen once" fallback
+    # (a DIFFERENT, pre-existing harness behavior) would mask what this test checks.
+    healthy_id, _ = hv3.add_node(tree, tree["root_id"], "EXPL_XT healthy seed",
+                                  {"kind": "solo", "v": "xt"}, 345.0, "evaluated", 40.0)
+    garbage_id, dup = hv3.add_node(tree, tree["root_id"], "EXPL_DART garbage seed",
+                                    {"kind": "solo", "v": "dart"}, 6300.0, "evaluated", 130.0)
+    assert dup is None
+
+    passed, bound = hv3.apply_burst_seed_sanity_gate(tree, garbage_id)
+    assert passed is False
+    # the seed's own lineage (itself, as a direct root child) is now excluded from
+    # further selection -- "burn 1 node, not a lineage"
+    assert garbage_id in tree["search_state"]["plateaued"]
+    log = tree["search_state"]["backtrack_log"][-1]
+    assert log["at_node_id"] == garbage_id
+    assert "sanity gate FAILED" in log["reason"]
+
+    # select_next_parent must never offer this lineage's node for further expansion
+    parent_id, lineage_id = hv3.select_next_parent(tree)
+    assert lineage_id != garbage_id
+
+
+def test_apply_burst_seed_sanity_gate_noop_for_healthy_seed(hv3):
+    tree = hv3.new_tree("c")
+    hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 340.0, "evaluated", 1.0)
+    healthy_id, _ = hv3.add_node(tree, tree["root_id"], "EXPL_XT healthy seed",
+                                  {"kind": "solo", "v": "xt"}, 345.0, "evaluated", 40.0)
+    passed, bound = hv3.apply_burst_seed_sanity_gate(tree, healthy_id)
+    assert passed is True
+    assert healthy_id not in tree["search_state"]["plateaued"]
+    assert tree["search_state"]["backtrack_log"] == []
+
+
+# ---------------------------------------------------------------------------
+# Mini end-to-end: a tiny scripted search (synthetic eval fn, ~10 nodes) killed mid-run
+# and resumed via the resume-state contract, finishing with results IDENTICAL to an
+# uninterrupted run. Exercises features 1 (phase machine) + 7 (resume contract)
+# together, using ONLY the tree-persisted state -- no module-level Python globals -- to
+# prove "zero custom code" resume actually holds.
+# ---------------------------------------------------------------------------
+def _synthetic_score(v):
+    return abs(v - 7.0)
+
+
+def _propose(tree, hv3mod, parent_id, lineage_id, queues):
+    idx = hv3mod.lineage_size(tree, lineage_id) - 1  # 0-th call is the first CHILD of the seed
+    seq = queues[lineage_id]
+    v = seq[idx] if idx < len(seq) else seq[-1]
+    return v
+
+
+def _run_scripted_search(tree, hv3mod, queues, iter_cap=50):
+    """Pure function of `tree` (+ the fixed `queues` mutation script) -- no module-level
+    mutable state at all, so calling this again on a tree freshly loaded from disk
+    resumes exactly where the in-memory run would have been."""
+    iterations = 0
+    while not hv3mod.should_stop(tree):
+        budget = hv3mod.init_budget(tree)
+        if hv3mod.n_evaluated(tree) >= budget["total_budget"]:
+            break
+        iterations += 1
+        if iterations > iter_cap:
+            break
+        parent_id, lineage_id = hv3mod.select_next_parent(tree)
+        if parent_id is None:
+            break
+        v = _propose(tree, hv3mod, parent_id, lineage_id, queues)
+        score = _synthetic_score(v)
+        hv3mod.add_node(tree, parent_id, f"mut v={v}", {"kind": "solo", "v": v}, score,
+                         "evaluated", 0.01)
+    return tree
+
+
+def _seed_synthetic_tree(hv3mod):
+    tree = hv3mod.new_tree("synthetic")
+    hv3mod.init_budget(tree, total_budget=10, explore_burst_size=2, post_burst_patience=2)
+    hv3mod.add_root(tree, "root", {"kind": "solo", "v": 0.0}, _synthetic_score(0.0),
+                     "evaluated", 0.01)
+    lid_a, _ = hv3mod.add_node(tree, tree["root_id"], "seedA", {"kind": "solo", "v": 3.0},
+                                _synthetic_score(3.0), "evaluated", 0.01)
+    lid_b, _ = hv3mod.add_node(tree, tree["root_id"], "seedB", {"kind": "solo", "v": 10.0},
+                                _synthetic_score(10.0), "evaluated", 0.01)
+    queues = {
+        lid_a: [5.0, 6.0, 7.0, 7.001, 7.002, 7.003],
+        lid_b: [9.0, 8.0, 7.0, 7.01, 7.02, 7.03],
+    }
+    return tree, queues
+
+
+def _tree_signature(tree):
+    """Comparable summary of a finished search: every node's (parent_id, mutation,
+    config, score, status), plus the final global best and budget/phase state."""
+    gb = None
+    ev = [n for n in tree["nodes"] if n["status"] == "evaluated"]
+    if ev:
+        gb = min(ev, key=lambda n: n["score"])
+    return dict(
+        n_nodes=len(tree["nodes"]),
+        nodes=[(n["parent_id"], n["mutation"], n["config"], n["score"], n["status"])
+               for n in tree["nodes"]],
+        global_best=(gb["id"], gb["score"]) if gb else None,
+        phase=tree["search_state"]["budget"]["phase"],
+    )
+
+
+def test_mini_e2e_uninterrupted_run_reaches_expected_state(hv3):
+    tree, queues = _seed_synthetic_tree(hv3)
+    _run_scripted_search(tree, hv3, queues)
+    assert hv3.n_evaluated(tree) >= 3  # made real progress beyond the 3 seeded nodes
+    gb = hv3.global_best(tree)
+    assert gb["score"] == pytest.approx(0.0, abs=1e-6)  # both lineages converge to v=7
+
+
+def test_mini_e2e_kill_mid_run_and_resume_matches_uninterrupted(hv3, tmp_path):
+    # --- Run A: uninterrupted, straight through to completion ---
+    tree_a, queues_a = _seed_synthetic_tree(hv3)
+    _run_scripted_search(tree_a, hv3, queues_a)
+    sig_a = _tree_signature(tree_a)
+
+    # --- Run B: same script, but "killed" partway and resumed from a FRESH tree object
+    # loaded from disk (simulating a driver process restart) -- the queues dict is
+    # keyed by lineage_id (a value persisted in the tree itself, e.g. the harness's own
+    # `lineage_of`), so it's safe to reconstruct/reuse across the simulated restart
+    # without counting as the kind of module-level state this feature eliminates.
+    tree_b, queues_b = _seed_synthetic_tree(hv3)
+    path = str(tmp_path / "resume_tree.json")
+
+    # run only a couple of steps, then persist and "crash" (drop the in-memory tree_b)
+    for _ in range(2):
+        if hv3.should_stop(tree_b):
+            break
+        parent_id, lineage_id = hv3.select_next_parent(tree_b)
+        if parent_id is None:
+            break
+        v = _propose(tree_b, hv3, parent_id, lineage_id, queues_b)
+        score = _synthetic_score(v)
+        hv3.add_node(tree_b, parent_id, f"mut v={v}", {"kind": "solo", "v": v}, score,
+                     "evaluated", 0.01)
+    hv3.save_search_state(tree_b, path)
+    partial_n_nodes = len(tree_b["nodes"])
+    del tree_b  # simulate the process dying -- nothing but the file on disk survives
+
+    # "restart": a brand-new tree object, reconstructed with ZERO custom code beyond
+    # load_search_state + the same pure _run_scripted_search function.
+    tree_b_resumed = hv3.load_search_state(path)
+    assert len(tree_b_resumed["nodes"]) == partial_n_nodes  # resumed exactly where it stopped
+    _run_scripted_search(tree_b_resumed, hv3, queues_b)
+    sig_b = _tree_signature(tree_b_resumed)
+
+    assert sig_b == sig_a

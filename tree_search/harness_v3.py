@@ -72,9 +72,47 @@ from v2 — see harness_v2.py's own docstring for those.
    derived "blend nodes are near-free" assumption; and E-2 showed that SILENTLY
    coarsening a search to save time just ties (loses real signal) without telling
    anyone, so any coarsening this harness ever does must be loud, not silent.
+
+--- Phase H-1: three v3 production-readiness items (from Phase F-2's honest ledger) ---
+
+7. Resume-state contract (`save_search_state`/`load_search_state`/`validate_state`) — a
+   harness-official persist/restore pair for the FULL driver-visible search state (phase
+   machine, plateau flags, lineage bookkeeping, budget counters, plus a free-form
+   `search_state["driver_state"]` dict reserved for whatever per-driver bookkeeping needs
+   to survive a restart), with a self-consistency check run before every save/after every
+   load. Evidence: F-2's s3e7 run needed 3 restarts, two of which were resume bugs — a
+   `KeyError` from dispatching a blend-vs-solo lineage on its literal name instead of its
+   `kind`, and module-level driver state (id->name maps, burst-injected flags, per-node
+   result dicts) that silently did NOT survive a process restart because nothing put it
+   inside the persisted tree. `search_state["driver_state"]` gives every future driver one
+   documented place to put that bookkeeping so this class of bug can't recur.
+
+8. Subprocess eval timeout (`eval_solo_subprocess`) — runs a per-comp evaluator's
+   `evaluate(config, node_id=..., timeout_s=...)` in a child process and hard-kills
+   (SIGKILL, whole process group) it on timeout, returning a `status="failed"` result
+   instead of hanging the search loop. Evidence: F-2's s3e7 run hit a CatBoost fit (depth
+   9, bagging_temperature 2.0) that hung 28 minutes at 313% CPU — `signal.alarm`
+   (SIGALRM), the mechanism every eval_*.py in this repo uses today, cannot interrupt a
+   native (non-Python-bytecode) fit() call; only an OS-level process boundary can.
+
+9. Burst-seed sanity gate (`burst_seed_sanity_gate`/`apply_burst_seed_sanity_gate`) —
+   before a freshly-evaluated explore-burst long-shot seed is allowed to spawn a full
+   mutation lineage, its score must fall within a configurable sanity band relative to
+   the gap between the root's score and the current global best (default factor 3x that
+   gap, with an absolute-magnitude floor so a root==global-best gap of 0 doesn't fail-
+   gate everything). Failing the gate marks that seed's own lineage plateaued
+   immediately (excluded from `select_next_parent`) — it burns exactly the one seed node
+   that already cost real compute, not a whole lineage of children descending from it.
+   Evidence: F-2's s3e14 run — a DART long-shot seed scored 6144-6544 MAE against a
+   ~340 root/global-best (~18x the gap), and the driver spent ~12 minutes (6 evals)
+   training further DART children off that single garbage seed before giving up.
 """
+import json
 import os
+import signal
+import subprocess
 import sys
+import tempfile
 import time
 
 import numpy as np
@@ -512,3 +550,307 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
             members=members, original_k=k, coarsened_k=None,
             original_wall_s=round(wall, 2), coarsened_wall_s=None, warning=warning))
     return best_w, best_s, oofs, warning
+
+
+# ---------------------------------------------------------------------------
+# Phase H-1 feature 7: resume-state contract
+# ---------------------------------------------------------------------------
+# `search_state` keys this contract knows about and validates. Not exhaustive by
+# construction -- any key not listed here is left alone (drivers may add their own
+# top-level search_state keys, e.g. run_s3e7_v3.py's "dedup_streak"/"node_results"/
+# "cost_guard_log"), but a driver's own PER-RUN bookkeeping that doesn't already have a
+# blessed spot (id->name maps, "have I injected the burst yet" flags, dedup offsets, ...)
+# should go under "driver_state" specifically so it round-trips through save/load with
+# zero custom reconstruction code.
+_KNOWN_BUDGET_PHASES = ("exploit", "explore_burst", "stopped")
+
+
+def validate_state(tree: dict) -> bool:
+    """Self-check that `tree["search_state"]` is internally consistent enough to safely
+    resume a search from. Raises `AssertionError` (with a specific, actionable message)
+    on the first inconsistency found, so a driver can do `assert hv3.validate_state(tree)`
+    at its own resume point and get a real diagnostic instead of a mysterious KeyError
+    three iterations later. Returns True on success (never False).
+
+    Checks performed (deliberately about STRUCTURE, not driver policy -- e.g. it does
+    NOT assert `n_evaluated(tree) < budget["total_budget"]` while phase != "stopped",
+    since a driver's own extra safety caps, like a wall-clock guard, may legitimately
+    stop a run before the phase machine itself would have):
+      - every lineage id referenced by `plateaued`, `streak`'s keys, and
+        `active_lineage` is a real node id present in the tree.
+      - if `search_state["budget"]` exists: `phase` is one of the three known values;
+        `phase == "explore_burst"` implies `burst_start_eval` has been recorded;
+        `phase == "stopped"` implies `stop_reason` has been recorded.
+      - `dedup_streak`'s keys parse as ints referring to real node ids (parent ids the
+        dedup-consumes-budget bookkeeping, feature 2, tracks per-parent streaks for).
+    """
+    st = tree.get("search_state", {})
+    node_ids = {n["id"] for n in tree.get("nodes", [])}
+
+    for lid in st.get("plateaued", []):
+        assert lid in node_ids, (
+            f"validate_state: search_state['plateaued'] references lineage id {lid!r} "
+            f"which is not a known node id in this tree")
+    for lid_key in st.get("streak", {}):
+        lid = int(lid_key)
+        assert lid in node_ids, (
+            f"validate_state: search_state['streak'] references lineage id {lid!r} "
+            f"which is not a known node id in this tree")
+    active = st.get("active_lineage")
+    if active is not None:
+        assert active in node_ids, (
+            f"validate_state: search_state['active_lineage']={active!r} is not a known "
+            f"node id in this tree")
+    for pid_key in st.get("dedup_streak", {}):
+        pid = int(pid_key)
+        assert pid in node_ids, (
+            f"validate_state: search_state['dedup_streak'] references parent id "
+            f"{pid!r} which is not a known node id in this tree")
+
+    budget = st.get("budget")
+    if budget is not None:
+        phase = budget.get("phase")
+        assert phase in _KNOWN_BUDGET_PHASES, (
+            f"validate_state: search_state['budget']['phase']={phase!r} is not one of "
+            f"the known phases {_KNOWN_BUDGET_PHASES}")
+        if phase == "explore_burst":
+            assert budget.get("burst_start_eval") is not None, (
+                "validate_state: budget phase is 'explore_burst' but 'burst_start_eval' "
+                "was never recorded -- inconsistent phase-machine state")
+        if phase == "stopped":
+            assert budget.get("stop_reason") is not None, (
+                "validate_state: budget phase is 'stopped' but 'stop_reason' was never "
+                "recorded -- inconsistent phase-machine state")
+    return True
+
+
+def save_search_state(tree: dict, tree_path: str) -> None:
+    """Persist the ENTIRE driver-visible search state to `tree_path` (the whole tree --
+    nodes + search_state -- exactly like `save()`), after first validating it with
+    `validate_state`. This is the harness's own named entry point for the resume
+    contract (feature 7): a driver that always writes through `save_search_state`
+    instead of a bespoke persistence path can never silently write a corrupt or
+    incomplete state to disk, and never needs its own recovery logic on the read side
+    (see `load_search_state`).
+
+    Any driver-local bookkeeping that must survive a restart (an id->name lineage map,
+    a "burst already injected" flag, per-lineage dedup offsets, ...) belongs in
+    `tree["search_state"]["driver_state"]` -- a free-form dict this function persists
+    and `validate_state` never inspects, reserved specifically so it stops living in
+    module-level Python globals that don't survive a process restart (F-2's failure #1/
+    #2 -- see module docstring feature 7)."""
+    validate_state(tree)
+    save(tree, tree_path)
+
+
+def load_search_state(tree_path: str) -> dict:
+    """Load a tree from `tree_path` (see `load`) and validate its `search_state`
+    (`validate_state`) before returning it, so a driver resuming mid-run gets back the
+    exact phase machine / plateau flags / lineage bookkeeping / budget counters /
+    `driver_state` it left off with -- zero custom reconstruction code required. Raises
+    `AssertionError` (via `validate_state`) rather than silently resuming from an
+    inconsistent state."""
+    tree = load(tree_path)
+    tree.setdefault("search_state", {})
+    validate_state(tree)
+    return tree
+
+
+# ---------------------------------------------------------------------------
+# Phase H-1 feature 8: subprocess eval timeout
+# ---------------------------------------------------------------------------
+def _json_default(o):
+    if isinstance(o, np.integer):
+        return int(o)
+    if isinstance(o, np.floating):
+        return float(o)
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    return str(o)
+
+
+def _kill_process_group(proc: subprocess.Popen) -> None:
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except (ProcessLookupError, PermissionError, OSError):
+        pass  # already dead, or we're not its group leader for some reason -- best effort
+    try:
+        proc.kill()  # belt-and-suspenders in case killpg didn't reach the leader itself
+    except OSError:
+        pass
+
+
+def eval_solo_subprocess(eval_module_path: str, config: dict, timeout_s: float, *,
+                          node_id: int = None, cmd_prefix: list = None) -> dict:
+    """Run a per-comp evaluator's `evaluate(config, node_id=..., timeout_s=...) -> dict`
+    (the `{"score", "status", "wall_s", "result", "error"}` contract every eval_*.py in
+    this repo already implements) in a CHILD PROCESS, and hard-kill (SIGKILL, whole
+    process group) it if it exceeds `timeout_s` wall-clock -- instead of hanging the
+    search loop, which is what happens today: every eval_*.py uses `signal.alarm`
+    (SIGALRM) for its in-process timeout, and SIGALRM CANNOT interrupt a native-code
+    fit() call (CatBoost/LightGBM/XGBoost) that never returns to the Python bytecode
+    interpreter to notice the pending signal (F-2's s3e7 run: a CatBoost fit hung 28
+    minutes at 313% CPU past its 200s in-process timeout). A subprocess boundary is
+    immune to that -- the OS can always kill it.
+
+    `eval_module_path` is a per-comp evaluator module path (e.g.
+    "tree_search/eval_s3e7.py"), loaded in the child the same way tests/conftest.py's
+    `load_module` fixture loads it (importlib, by file path -- these modules aren't a
+    package). `config` is passed to the child via a temp JSON file (numpy scalars/arrays
+    coerced to native JSON types), not argv/stdin, so arbitrary config nesting survives.
+
+    `cmd_prefix` (default `[sys.executable]`) is the subprocess command to run the child
+    interpreter with -- pass `["uv", "run", "python3"]` if the child needs its own fresh
+    `uv run` environment resolution; the default reuses the CURRENT interpreter (already
+    uv-managed when the parent itself was launched via `uv run ...`), which is cheaper
+    and sufficient for the common case.
+
+    On a clean, on-time finish: returns the evaluator's own result dict, verbatim (plus
+    `timeout=False`, `error=None` defaults if the evaluator's own dict omitted them).
+    On timeout, or if the child crashes/exits nonzero without producing a result:
+    returns `{"score": None, "status": "failed", "wall_s": <measured>, "result": None,
+    "timeout": <bool>, "error": <human-readable message>}` -- NEVER raises, NEVER hangs.
+    This matches the existing `status="failed"` contract exactly, so a driver's
+    `eval_and_add` needs zero special-casing beyond calling this instead of
+    `ev.evaluate(...)` directly for a solo eval it wants subprocess-isolated.
+    """
+    cmd_prefix = list(cmd_prefix) if cmd_prefix else [sys.executable]
+    eval_module_path = os.path.abspath(eval_module_path)
+    module_dir = os.path.dirname(eval_module_path)
+
+    with tempfile.TemporaryDirectory() as td:
+        cfg_path = os.path.join(td, "config.json")
+        out_path = os.path.join(td, "result.json")
+        with open(cfg_path, "w") as f:
+            json.dump(config, f, default=_json_default)
+
+        runner = (
+            "import importlib.util, json, sys\n"
+            f"sys.path.insert(0, {module_dir!r})\n"
+            f"spec = importlib.util.spec_from_file_location('_eval_solo_subprocess_mod', {eval_module_path!r})\n"
+            "mod = importlib.util.module_from_spec(spec)\n"
+            "spec.loader.exec_module(mod)\n"
+            f"with open({cfg_path!r}) as f:\n"
+            "    config = json.load(f)\n"
+            f"result = mod.evaluate(config, node_id={node_id!r}, timeout_s={timeout_s!r})\n"
+            f"with open({out_path!r}, 'w') as f:\n"
+            "    json.dump(result, f, default=str)\n"
+        )
+
+        t0 = time.time()
+        proc = subprocess.Popen(cmd_prefix + ["-c", runner], stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, start_new_session=True)
+        timed_out = False
+        try:
+            _, stderr = proc.communicate(timeout=timeout_s)
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            _kill_process_group(proc)
+            _, stderr = proc.communicate()
+        wall = time.time() - t0
+
+        if timed_out:
+            return dict(score=None, status="failed", wall_s=round(wall, 2), result=None,
+                        timeout=True,
+                        error=(f"eval_solo_subprocess: hard-killed (SIGKILL) after "
+                               f"exceeding timeout_s={timeout_s}s -- a native-code fit() "
+                               f"in the child ignored its own in-process SIGALRM timeout "
+                               f"(see harness_v3 module docstring feature 8 / F-2 s3e7 "
+                               f"CatBoost hang)"))
+        if proc.returncode != 0 or not os.path.exists(out_path):
+            stderr_txt = (stderr or b"").decode(errors="replace")[-2000:]
+            return dict(score=None, status="failed", wall_s=round(wall, 2), result=None,
+                        timeout=False,
+                        error=(f"eval_solo_subprocess: child process exited "
+                               f"{proc.returncode} without producing a result "
+                               f"(stderr tail: {stderr_txt})"))
+        with open(out_path) as f:
+            result = json.load(f)
+        result.setdefault("timeout", False)
+        result.setdefault("error", None)
+        return result
+
+
+# ---------------------------------------------------------------------------
+# Phase H-1 feature 9: burst-seed sanity gate
+# ---------------------------------------------------------------------------
+DEFAULT_SANITY_FACTOR = 3.0        # "no worse than 3x the root-to-global-best gap"
+DEFAULT_SANITY_MIN_BAND_FRAC = 0.05  # absolute floor so a 0-width gap doesn't fail-gate everything
+
+
+def _root_node(tree: dict) -> dict:
+    root_id = tree["root_id"]
+    return next(n for n in tree["nodes"] if n["id"] == root_id)
+
+
+def burst_seed_sanity_bound(tree: dict, *, factor: float = DEFAULT_SANITY_FACTOR,
+                             min_band_frac: float = DEFAULT_SANITY_MIN_BAND_FRAC) -> float:
+    """The max allowable (lower-is-better) score for a fresh explore-burst long-shot seed
+    node, computed from THIS tree's own state -- no comp-specific metric knowledge
+    needed, since every node score in this harness already follows the lower-is-better
+    sign convention (module docstring, harness_v2/v1). Band = `global_best_score +
+    max(factor * |global_best_score - root_score|, min_band_frac * |global_best_score|)`
+    -- the `max(...)` floor guarantees a non-degenerate band even when the root happens
+    to equal the current global best (gap 0), which would otherwise fail-gate every
+    single burst seed by construction.
+
+    Evidence (module docstring feature 9): F-2's s3e14 DART burst seeds scored
+    6144-6544 MAE against a ~340 root/global-best (~18x the gap) -- this bound is sized
+    to catch exactly that order-of-magnitude blowup while still tolerating a genuinely
+    worse-but-plausible long-shot (e.g. 2x the gap is a normal, allowed exploratory
+    result, not a bug)."""
+    gb = global_best(tree)
+    root = _root_node(tree)
+    gb_score = gb["score"] if gb is not None else root["score"]
+    root_score = root["score"]
+    gap = abs(gb_score - root_score)
+    band = max(gap * factor, min_band_frac * abs(gb_score))
+    return gb_score + band
+
+
+def burst_seed_sanity_gate(tree: dict, seed_score, *, factor: float = DEFAULT_SANITY_FACTOR,
+                            min_band_frac: float = DEFAULT_SANITY_MIN_BAND_FRAC):
+    """Does `seed_score` (lower-is-better, a just-evaluated burst long-shot seed node's
+    score) pass the sanity band (`burst_seed_sanity_bound`)? Pure predicate, no
+    search_state side effects -- see `apply_burst_seed_sanity_gate` for the version that
+    also acts on a failure. Returns `(passed: bool, bound: float)`."""
+    bound = burst_seed_sanity_bound(tree, factor=factor, min_band_frac=min_band_frac)
+    return seed_score <= bound, bound
+
+
+def apply_burst_seed_sanity_gate(tree: dict, seed_node_id: int, *,
+                                  factor: float = DEFAULT_SANITY_FACTOR,
+                                  min_band_frac: float = DEFAULT_SANITY_MIN_BAND_FRAC):
+    """Run the sanity gate against an already-evaluated burst seed node (`seed_node_id`,
+    expected to be a direct child of root -- i.e. its own lineage). On failure,
+    immediately marks that lineage `plateaued` (so `select_next_parent` never selects it
+    for further expansion) and appends a `backtrack_log` entry explaining why -- burning
+    exactly the one seed node's already-sunk evaluation cost instead of letting a full
+    mutation queue train children off a garbage seed (the fix for F-2's s3e14 lesson:
+    ~12 minutes / 6 evals spent chasing one 6144-6544-MAE DART seed against a ~340
+    root/global-best).
+
+    A no-op (returns `(True, bound)` without touching `search_state`) if the node is
+    missing, not yet evaluated, or scoreless -- safe to call unconditionally right after
+    every burst seed's `add_node`/`eval_and_add` call. Returns `(passed: bool, bound:
+    float or None)`."""
+    node = next((n for n in tree["nodes"] if n["id"] == seed_node_id), None)
+    if node is None or node["status"] != "evaluated" or node["score"] is None:
+        return True, None
+
+    passed, bound = burst_seed_sanity_gate(tree, node["score"], factor=factor,
+                                            min_band_frac=min_band_frac)
+    if not passed:
+        st = tree.setdefault("search_state", {})
+        plateaued = st.setdefault("plateaued", [])
+        if seed_node_id not in plateaued:
+            plateaued.append(seed_node_id)
+            st.setdefault("backtrack_log", []).append(dict(
+                at_node_id=seed_node_id, plateaued_lineage=seed_node_id,
+                reason=(f"burst-seed sanity gate FAILED: node #{seed_node_id}'s score "
+                        f"{node['score']!r} exceeds the sanity bound {bound:.6g} "
+                        f"(factor={factor}x the root-to-global-best gap, floor="
+                        f"{min_band_frac:.0%} of |global best|) -- burning this seed's "
+                        f"own already-sunk evaluation cost only, NOT opening a mutation "
+                        f"lineage on top of it (feature 9; F-2 s3e14 lesson)")))
+    return passed, bound
