@@ -57,11 +57,14 @@ Run from project root (`/home/tjyen/ai_agents/kaggle`), in order:
    Must exit 0. If it flags numbers: fix the report. Do not add numbers to
    facts.json by hand — facts.json is generated only by collect.py.
 
-5. **PDF (deterministic)**
+5. **PDF (deterministic)** — PDF filename MUST be `<short>_REPORT.pdf` where `<short>` is the
+   competition's short id (folder name minus any series prefix, e.g. `playground-series-s3e16`
+   → `s3e16`), so multiple open reports are distinguishable:
    ```bash
-   bash .claude/skills/kaggle-report/assets/md2pdf.sh competitions/<name>/REPORT.md
+   bash .claude/skills/kaggle-report/assets/md2pdf.sh competitions/<name>/REPORT.md \
+        competitions/<name>/<short>_REPORT.pdf
    ```
    If chromium is unavailable, keep REPORT.md as the deliverable and tell the
    user the PDF step was skipped (MD is the primary artifact).
 
-6. Show the user where REPORT.md / REPORT.pdf landed and summarize rubric result.
+6. Show the user where REPORT.md / `<short>_REPORT.pdf` landed and summarize rubric result.
