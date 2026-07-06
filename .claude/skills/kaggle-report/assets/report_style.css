@@ -1,15 +1,25 @@
-@page { margin: 14mm; }
+/* kaggle-report PDF 樣式 v2 — 可讀性優先:清晰層級、斑馬表格、call-out 區塊 */
+/* 表格必須收合進頁寬(width:100% + word-break),寬表曾在 PDF 右緣被裁 */
+@page { margin: 16mm 14mm; }
 body {
   font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
-  font-size: 11pt; line-height: 1.6; color: #1a1a1a; max-width: 100%;
+  font-size: 10.5pt; line-height: 1.7; color: #222; max-width: 100%;
 }
-h1 { font-size: 20pt; border-bottom: 2px solid #333; padding-bottom: 6px; }
-h2 { font-size: 14pt; margin-top: 1.4em; border-bottom: 1px solid #bbb; padding-bottom: 3px; }
-/* 表格必須收合進頁寬:寬表(10+ 欄)曾在 PDF 右緣被裁掉 */
-table { border-collapse: collapse; margin: 0.8em 0; width: 100%; max-width: 100%; }
-th, td { border: 1px solid #999; padding: 3px 6px; font-size: 8.5pt; word-break: break-word; overflow-wrap: break-word; }
-th { background: #f0f0f0; }
-code { font-family: "DejaVu Sans Mono", monospace; font-size: 9.5pt; background: #f5f5f5; padding: 1px 4px; }
-pre { background: #f5f5f5; padding: 10px; overflow-x: auto; border: 1px solid #ddd; }
+h1 { font-size: 19pt; color: #1a3a5c; border-bottom: 3px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 6px; }
+h2 { font-size: 13.5pt; color: #fff; background: #2c5a85; padding: 5px 12px; margin-top: 1.6em; margin-bottom: 0.6em; border-radius: 2px; }
+h3 { font-size: 11.5pt; color: #2c5a85; border-left: 4px solid #2c5a85; padding-left: 9px; margin-top: 1.3em; margin-bottom: 0.4em; }
+h4 { font-size: 10.5pt; color: #444; margin-top: 1em; margin-bottom: 0.3em; }
+p { margin: 0.3em 0 0.8em; }
+ul, ol { margin: 0.3em 0 0.8em; padding-left: 1.6em; }
+li { margin-bottom: 0.25em; }
+strong { color: #1a3a5c; }
+table { border-collapse: collapse; margin: 0.6em 0 1em; width: 100%; max-width: 100%; }
+th { background: #2c5a85; color: #fff; font-weight: 600; }
+th, td { border: 1px solid #c5d0da; padding: 4px 8px; font-size: 9pt; word-break: break-word; overflow-wrap: break-word; }
+tbody tr:nth-child(even) td { background: #f2f6fa; }
+code { font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; background: #f4f6f8; padding: 1px 4px; border-radius: 2px; }
+pre { background: #f6f8fa; border: 1px solid #dde3e9; border-left: 4px solid #2c5a85; padding: 9px 12px; overflow-x: auto; font-size: 8.5pt; line-height: 1.5; }
 pre code { background: none; padding: 0; }
-blockquote { color: #555; border-left: 3px solid #bbb; margin-left: 0; padding-left: 12px; }
+blockquote { background: #fdf6e3; border-left: 4px solid #d9a400; margin: 0.8em 0; padding: 8px 14px; color: #4a3f10; font-size: 9.5pt; }
+blockquote p { margin: 0.2em 0; }
+hr { border: none; border-top: 1px solid #c5d0da; margin: 1.2em 0; }
