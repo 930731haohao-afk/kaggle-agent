@@ -3,11 +3,13 @@
 > 產生方式:`docs/scripts/build_benchmark_table.py`(數字來自 `docs/benchmark_facts.json`,
 > 敘述由 agent 撰寫)。涵蓋本週末批次的 10 個 playground-series 競賽,每場比較四層分數:
 >
-> - **tier1** — generic baseline(`competitions/run_competition.py` 批次腳本,單純 LGB+XGB+CAT blend,無特徵工程)
+> - **tier1** — generic baseline:**以 Claude Code 直接執行、未引入 kaggle-agent skill**(`competitions/run_competition.py` 通用批次腳本,固定 LGB+XGB+CAT blend,無 EDA、無特徵工程、無 LLM 逐場決策)
 > - **tier2** — 完整 skill 流程最佳分數(Phase A,`Phase B 自我改進迭代` commit 之前)
 > - **tier3** — 線性迭代最終最佳分數(Phase A + Phase B 自我改進迭代後,**不含樹搜尋**)
 > - **tier4** — 樹搜尋(tree-search,Phase D–G)後之最佳分數,即 tier3 之上再疊加 Phase
 >   G-1a/G-1b 入帳的樹搜尋結果(9/10 場樹搜尋勝過或追平 tier3,見下方「樹搜尋」段落)
+>
+> 四層構成一組消融對照(ablation):tier1→tier2 隔離出 skill 六階段流程的價值、tier2→tier3 隔離出自我改進迭代與經驗庫的價值、tier3→tier4 隔離出搜尋式設計(對應 Aygün 等人的樹搜尋主張)的價值。
 
 ## 主表(10 場競賽)
 

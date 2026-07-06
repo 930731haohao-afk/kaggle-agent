@@ -116,10 +116,12 @@ ledger 自身結尾宣告「A~H,43 單元」也只有在 Phase C 取 5(而非 4)
 `docs/benchmark_summary.md`(`docs/scripts/build_benchmark_table.py` 產生,數字源自
 `docs/benchmark_facts.json`)建立四層對照:
 
-- **tier1** — generic baseline(`run_competition.py` 批次腳本,單純 LGB+XGB+CAT blend,無特徵工程)
+- **tier1** — generic baseline:**以 Claude Code 直接執行、未引入 kaggle-agent skill**(`run_competition.py` 通用批次腳本,固定 LGB+XGB+CAT blend,無 EDA、無特徵工程、無 LLM 逐場決策)
 - **tier2** — 完整 skill 流程最佳分數(Phase A)
 - **tier3** — 線性迭代最終最佳分數(Phase A + Phase B 自我改進迭代,不含樹搜尋)
 - **tier4** — 樹搜尋收割後最佳分數(Phase G-1a/G-1b 併入 `experiments.json` 的樹搜尋結果)
+
+四層構成一組消融對照(ablation):tier1→tier2 隔離出 skill 六階段流程的價值、tier2→tier3 隔離出自我改進迭代與經驗庫的價值、tier3→tier4 隔離出搜尋式設計(對應 Aygün 等人的樹搜尋主張)的價值。
 
 ### 主表(10 場競賽)
 
