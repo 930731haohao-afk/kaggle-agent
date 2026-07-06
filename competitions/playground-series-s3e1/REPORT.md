@@ -1,264 +1,206 @@
 # 競賽分析報告:playground-series-s3e1
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-04(Phase G-1a 樹搜尋成果入帳後更新)
+> 素材等級:full | 產生日期:2026-07-06
+> 本報告所有數字皆出自 facts.json,經 verify_report.py 驗證。
 
 ## 1. 競賽目的
 
-**What**:本競賽要求根據加州人口普查區塊(block group)的 8 個統計特徵(收入中位數、屋齡、
-平均房間數、平均臥室數、人口、平均入住人數、緯度、經度),預測該區塊的房屋價值中位數
-(`MedHouseVal`)——這是經典 California Housing 資料集的 Kaggle Playground 版本
-(competition.notes: "Aygun et al. Nature 2026 Kaggle Playground benchmark (Season 3 Episode 1).")。
+**What**:依加州人口普查區塊(block group)的 8 個統計特徵(收入中位數、屋齡、平均房間數、
+平均臥室數、人口、平均入住人數、緯度、經度)預測該區塊的房屋價值中位數(`MedHouseVal`),
+為連續數值輸出的迴歸問題,即經典 California Housing 資料集的 Kaggle Playground 版本。
 
-**Why**:目標欄位是連續型實數(房價中位數),用 RMSE(均方根誤差,minimize)作為評估指標是
-合理的——RMSE 以原始單位(房價)呈現誤差幅度,並對較大誤差給予更高的懲罰,適合房價這類
-不允許出現離譜誤差的迴歸任務。
+**Why**:評估指標為 **RMSE(minimize)**。房價中位數為連續實數,RMSE 以原始單位呈現誤差
+幅度並對大誤差施以平方懲罰,能引導模型優先壓制嚴重錯估,適合房價這類不允許離譜誤差的
+迴歸任務。
 
 | 項目 | 值 |
 |------|-----|
 | 競賽 | playground-series-s3e1 |
-| URL | https://www.kaggle.com/competitions/playground-series-s3e1 |
 | 問題型別 | regression |
 | 評估指標 | rmse(minimize) |
 | 目標欄位 | MedHouseVal |
-| id 欄位 | id |
+| 素材等級 | full |
 
-## 2. 流程(how):五大元件
+## 2. 使用工具與環境
 
-### 2.1 資料規格
+| 工具 | 用途 |
+|------|------|
+| LightGBM / XGBoost / CatBoost | 三個梯度提升樹基礎模型,構成 exp1–exp7 blend 主體與 exp8 7-way blend 的核心成員 |
+| Optuna | exp4 對 LGB 做 TPE 超參搜尋(fold-0 proxy,詳見訓練規格節) |
+| 自建樹搜尋 harness | Phase D-4 搜尋成員/權重組合空間,於 node #14 找到 exp8 之 7-way blend |
+| 5-fold CV 框架(scikit-learn) | KFold(shuffle,seed 42)5 折交叉驗證;另供 KMeans geo_cluster 與 KNN 距離特徵計算 |
+| uv | Python 套件與虛擬環境管理,所有腳本皆以 `uv run` 執行 |
 
-本場已完整執行 EDA(素材等級:full)。特徵工程前的原始特徵數為 8(experiments[0].n_features
-= 8);線性迭代最終採用模型(experiment_id=7)使用 26 個特徵(較先前版本報告記載的 24 個
-新增 2 個:`knn_mean_dist_10`、`coastal_dist`,見第 3 節)。目前 facts.json 的 best(依 OOF
-score 選出,見第 2.2 節)為 experiment_id=8——一筆樹搜尋(tree-search)結果,其 facts.json
-紀錄未附 features/n_features 欄位(notes 註明訓練於與 experiment_id=7 相同的 26-特徵集上,
-無新增特徵工程)。
+本場工具鏈組合邏輯:Claude Code(LLM)負責決策——提出特徵工程假設(地理距離、比例、log
+轉換)、判讀探針結果決定採納與否、決定何時停止迭代;Auto-ML 工具(Optuna、樹搜尋 harness)
+負責系統化執行超參搜尋與 blend 組合空間探索,兩者分工互補。
 
-**特別規則**(competition.special_rules):
-- 不允許外部資料(external_data_allowed: false)
-- 不允許預訓練模型(pretrained_models_allowed: false)
-- 不允許存取網路(internet_access_allowed: false)
-- 每日提交上限:5 次(daily_submission_limit: 5)
+## 3. 流程(how):五大元件
 
-### 2.2 模型規格
+### 3.1 資料規格
 
-**facts.json 目前的 best 是 experiment_id=8——一筆樹搜尋(tree-search)結果**,而非本節原本
-描述的線性迭代最終回合(experiment_id=7)。兩者都在下面完整說明;第 2.5/3 節的分數總表與
-軌跡表以 facts.json 的 experiments 陣列(1–8)逐筆列出。
+| 項目 | 值 |
+|------|-----|
+| train 列數 | 37,137 |
+| test 列數 | 24,759 |
+| 原始欄位數 | 8 |
+| 特別規則摘要 | 禁外部資料/禁預訓練模型/禁網路存取;每日提交上限 5 次 |
 
-#### 2.2a 線性迭代最佳(experiment_id=7,7 輪迭代之終點)
+8 個原始特徵皆為數值型、無類別欄位;train/test 皆無缺失值、train 無重複列,facts.eda 亦無
+高共線特徵對紀錄。目標 `MedHouseVal` 右偏(skew 0.97,mean 2.08、median 1.808),且在
+5.00001 處被 top-code(佔 train 4.92%)——此為資料本身的誤差天花板,非建模可修復。
 
-「5-way blend on 26 features (+knn_mean_dist_10 +coastal_dist)」——LGB、XGB、CAT 三個原始
-基模型,加上兩個以 Optuna 調參之 LightGBM 衍生成員(`LGB_TUNED`:Optuna fold-0-proxy 調參
-版;`LGB_TUNED_SEED2024`:同超參、僅 random_state 改為 seed bagging 版)。各 base model 的
-OOF 分數:
+`MedInc` 為最強線性預測子(Pearson 0.70);緯度/經度單看相關性弱,但 EDA 快速 LGB 的重要度
+排名將其列為前二,顯示地理訊號為非線性,此觀察驅動了後續的地理特徵工程。train/test 分佈
+幾乎一致(平均值差異最大者為 Population 的 1.12%),無 covariate shift 疑慮。
 
-| 模型 | OOF RMSE |
-|------|----------|
-| LGB | 0.56073 |
-| XGB | 0.56133 |
-| CAT | 0.56106 |
-| LGB_TUNED | 0.55887 |
-| LGB_TUNED_SEED2024 | 0.55881 |
+### 3.2 實驗總表
 
-**Ensemble 權重**:LGB=0.2、XGB=0.1、CAT=0.25、LGB_TUNED=0.25、LGB_TUNED_SEED2024=0.2,
-ensemble score = 0.557088。
+> **語意澄清(本報告全文適用)**:本場指標為連續 RMSE,無取整議題,「決策分數」即(原始)
+> OOF RMSE,兩欄恆相等。exp3、exp6 為 **LGB 單模探針**,其分數與 exp2 之 LGB 成員
+> (0.56109)相比,不與 blend 分數相比;其餘各列為 blend 分數。
 
-**選型理由**:五個成員彼此 OOF 分數相近(0.5588–0.5613 區間),顯示模型間存在互補的預測
-誤差,適合以 OOF 網格搜尋(grid search)尋找凸組合權重做加權平均;搜尋結果給予兩個
-Optuna 調參衍生的 LGB 成員合計 0.45 權重(0.25+0.2),高於三個原始基模型各自的權重,反映
-調參後的模型品質較高,但三個原始基模型權重皆非零(未被完全淘汰),代表 ensemble 多樣性
-仍有貢獻——這與 knowledge/experience.md 記載的「調參後的單模應加入 pool 而非替換原成員」
-經驗一致(見第 3 節)。
+| exp | 階段 | 模型/成員 | 特徵數 | 原始 OOF | 決策分數 | 採納 |
+|-----|------|-----------|--------|----------|----------|------|
+| 1 | Baseline(通用批次) | LGB/XGB/CAT(.2/.2/.6) | 8 | 0.56166 | 0.56166 | 是,後由 exp2 取代 |
+| 2 | Phase A(手刻管線) | LGB/XGB/CAT(.45/.15/.40) | 24 | 0.558768 | 0.558768 | 是,Phase A 最佳 |
+| 3 | 迭代探針(geo TE) | LGB 單模(+geo_te) | 25 | 0.561017 | 0.561017 | 否,雜訊等級 |
+| 4 | Phase B round1 | +LGB_TUNED(4-way) | 24 | 0.557977 | 0.557977 | 是 |
+| 5 | Phase B round2 | +LGB_TUNED_SEED2024(5-way) | 24 | 0.557859 | 0.557859 | 是 |
+| 6 | Phase B round3 探針 | LGB 單模(+2 個 geo 特徵) | 26 | 0.560444 | 0.560444 | 是,特徵獲採納 |
+| 7 | Phase B round4 | 5-way blend(26 特徵) | 26 | 0.557088 | 0.557088 | 是,線性迭代最佳 |
+| 8 | Phase D-4 樹搜尋(best) | 7-way blend(node #14) | 26 | **0.556329** | **0.556329** | 是,本場最佳(OOF-only) |
 
-#### 2.2b 樹搜尋最佳(best, experiment_id=8)——本次更新新增
+> **誠實但書**:exp8 為樹搜尋之 OOF-only 結果——未產生 test 預測、未提交 Kaggle,
+> facts.json 本筆無 submission 欄位;其特徵數 26 出自 notes(與 exp7 同一特徵集),
+> 非結構化欄位。
 
-Phase D-4(harness v2,2026-07-04)樹搜尋在 experiment_id=7 的相同 26-特徵集上另闢節點空間,
-於 `experiments_tree.json` 的 node #14 找到 RMSE 更低的 7-way blend:「LGBORIG / XGBORIG /
-CATORIG / SEEDBAG / REGNUDGE / XGB_deep / CEILING」(best.base_models):
+**best 成員表(exp8,7-way blend)**
 
-| 模型 | OOF RMSE | 權重 |
-|------|----------|------|
-| LGBORIG | 0.560732 | 0.150 |
-| XGBORIG | 0.561331 | 0.036 |
-| CATORIG | 0.561063 | 0.249 |
-| SEEDBAG | 0.558812 | 0.186 |
-| REGNUDGE | 0.558208 | 0.050 |
-| XGB_deep | 無紀錄(僅權重,無 solo 分數) | 0.041 |
-| CEILING | 0.561227 | 0.289 |
+| 成員 | 權重 | solo 分數 | 備註 |
+|------|------|-----------|------|
+| LGBORIG | 0.150 | 0.560732 | — |
+| XGBORIG | 0.036 | 0.561331 | — |
+| CATORIG | 0.249 | 0.561063 | — |
+| SEEDBAG | 0.186 | 0.558812 | 即 LGB_TUNED_SEED2024,root 之 seed-bag 同胞 |
+| REGNUDGE | 0.050 | 0.558208 | 正則化微調之 tuned-LGB;全樹最佳 solo |
+| XGB_deep | 0.041 | 無紀錄 | 刻意多樣性成員 |
+| CEILING | 0.289 | 0.561227 | top-code 感知兩階段 hybrid;solo 最弱但權重最大,單筆最大增益 |
 
-**Ensemble 權重**(best.ensemble):同上表,method = "harness_v2 clip-aware
-dirichlet(k=800)+coordinate-ascent weight search",score = 0.556329。
+選型理由:三樹模型 solo 分數相近、誤差互補,適合 OOF 權重搜尋的凸組合;Phase B 依經驗庫
+「調參後單模加入 pool 而非替換」原則逐步擴充成員。exp8 由 harness v2 之 clip-aware
+dirichlet(k=800)+coordinate-ascent 權重搜尋找到(22 個評估節點,wall 190.3s),CEILING
+成員印證「blend 貢獻 ≠ solo 分數」。
 
-**選型理由/來源說明**(best.notes):這是 Phase D-4 樹搜尋(harness v2)結果,不是線性
-迭代的第 8 輪。CEILING(一個 top-code 感知的兩階段 ceiling-classifier hybrid)solo 分數
-是全池最差(0.561227,比 root 差 0.0024),卻在 blend 拿到最大權重(0.289)並貢獻全樹
-單筆最大增益——「blend 貢獻 ≠ solo 分數」。另一關鍵槓桿是 clip-aware 權重搜尋(在
-metric_fn 內部即對 OOF 做裁切評分,而非僅在 submission 階段裁切)。完整節點鏈與誠實
-增減記錄見 `competitions/playground-series-s3e1/STATUS.md`〈Appendix: Phase D-4
-tree-search v2 sweep〉。
+### 3.3 訓練規格表
 
-> **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
-> 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。best 是以 OOF score 最小者選出
-> (本場 metric 為 rmse,minimize),與是否已提交至 Kaggle 無關;本場(experiment_id=7 與
-> experiment_id=8 皆同)未提交至 Kaggle(見第 2.5 節),因此沒有 leaderboard 分數可與 best
-> 對照。
+| exp | CV 方案 | folds | seed |
+|-----|---------|-------|------|
+| 1 | 5fold | 5 | 無紀錄 |
+| 2 | KFold(shuffle) | 5 | 42 |
+| 3 | KFold(shuffle) | 5 | 42 |
+| 4 | KFold(shuffle) | 5 | 42 |
+| 5 | KFold(shuffle) | 5 | 42 |
+| 6 | KFold(shuffle) | 5 | 42 |
+| 7 | KFold(shuffle) | 5 | 42 |
+| 8 | KFold(shuffle) | 5 | 42 |
 
-### 2.3 訓練規格
+目標為連續值、各列為獨立普查區塊(無群組/時間結構),且 train/test 分佈近乎一致,標準
+KFold 即為教科書式正解;自 exp2 起 CV 全程固定,確保跨實驗分數可直接比較。
 
-**CV 方案**(best.cv):
+Objective 一律為 RMSE。exp4 之 LGB_TUNED 以 Optuna TPE fold-0 proxy 調參(50 trials,搜尋
+74.3s、全 CV 復驗 13.2s),關鍵超參:learning_rate≈0.0116、num_leaves=121、max_depth=10、
+min_child_samples=82;seed-bag 成員僅將 random_state 由 42 改為 2024。exp8 新增成員
+(REGNUDGE、XGB_deep、CEILING)之 params 無紀錄。
 
-| scheme | n_splits | shuffle | seed |
-|--------|----------|---------|------|
-| KFold | 5 | true | 42 |
+### 3.4 推論表
 
-**為何用此 CV**:目標為連續值且無自然分層依據,資料列彼此獨立(每列為一個普查區塊,無
-時間或群組結構),故標準 KFold 為合理選擇,無需 Stratified/Group/Time-based 切分。此 CV
-方案自 experiment_id=2 起全程未變(experiment_id=8 的樹搜尋結果同樣使用 KFold/5/shuffle
-true/seed 42),確保跨實驗分數可直接比較(knowledge/experience.md「CV 設計」節的鐵律)。
+| exp | 後處理 | submission 檔 | 已提交 |
+|-----|--------|---------------|--------|
+| 1 | 無後處理紀錄 | sub_generic_0.56166_20260703_120212.csv | 否 |
+| 2 | clip_to_train_target_range | sub_lgb_xgb_cat_blend_0.55877_20260703_182947.csv | 否 |
+| 3 | 無後處理紀錄 | 無紀錄(單模探針) | 否 |
+| 4 | clip_to_train_target_range | sub_lgb_xgb_cat_lgbtuned_blend_0.55798_20260703_212430.csv | 否 |
+| 5 | clip_to_train_target_range | sub_5way_seedbag_blend_0.55786_20260703_212521.csv | 否 |
+| 6 | 無後處理紀錄 | 無紀錄(單模探針) | 否 |
+| 7 | clip_to_train_target_range | sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv | 否 |
+| 8 | clip(於 metric_fn 內對 OOF 裁切評分) | 無紀錄(OOF-only,未產生 test 預測) | 否 |
 
-**Objective 與關鍵超參**:facts.json 本筆 best(experiment_id=8,樹搜尋)的 base_models
-僅附 score/weight/note,**未附 params 欄位——無紀錄**,不臆測。以下為線性迭代
-experiment_id=7 記錄的參考超參(exp8 的 LGBORIG/XGBORIG/CATORIG 三個原始基模型與
-exp7 的 LGB/XGB/CAT 為同一組訓練設定,見 STATUS.md Appendix):
+`id_column = id`、`target_column = MedHouseVal`。exp8 與 exp2–exp7 的差異在裁切時點:線性
+各輪僅於 submission 階段裁切,exp8 於權重搜尋的 metric_fn 內部即以裁切後 OOF 評分。本場為
+無人值守批次執行,所有 submission 檔皆未上傳 Kaggle。
 
-| 模型 | 關鍵超參(exp7 紀錄) |
-|------|----------|
-| LGB_TUNED(Optuna fold-0-proxy 調參,50 trials) | learning_rate≈0.0116, num_leaves=121, max_depth=10, min_child_samples=82, subsample≈0.652, colsample_bytree≈0.549, reg_alpha≈0.546, reg_lambda≈0.058, n_estimators=2000, random_state=42 |
-| LGB_TUNED_SEED2024(同超參,seed bagging) | 同上,唯 random_state=2024 |
+### 3.5 評估指標 / 排行榜
 
-> facts.json 的 experiment_id=7 紀錄的 base_models 未附 LGB/XGB/CAT 的 params 欄位;其
-> 超參與 experiment_id=2 紀錄的 LGB(num_leaves=63 等)、XGB(max_depth=7 等)、
-> CAT(depth=8 等)完全相同,僅訓練資料的特徵集從 24 擴充為 26 欄。experiment_id=8(樹
-> 搜尋 best)新增的 SEEDBAG/REGNUDGE/XGB_deep/CEILING 四個成員亦無 params 紀錄——無紀錄
-> 之處在此明確標註,不臆測。
+指標定義:RMSE = 預測誤差平方平均之平方根,單位與 `MedHouseVal` 相同。
 
-### 2.4 推論程序
+本場無 LB 紀錄(未提交)——facts.json 之 `leaderboard` 為 null、missing 含 "leaderboard",
+故無排行榜表,亦無 CV↔LB gap 可計。全場分數的唯一錨點為同一固定 CV 下的 OOF RMSE,最佳為
+exp8 之 **0.556329**(各實驗與各成員分數見 3.2 節)。
 
-**後處理步驟**(best.postprocess,experiment_id=8):`clip_to_train_target_range`——將
-預測值裁切至訓練集目標欄位的觀察範圍內(涵蓋 EDA 已知的目標欄位 top-code 上限,細節見
-STATUS.md EDA 節,數值未記入 facts.json)。與 experiment_id=7 的差異在於樹搜尋版本於
-**metric_fn 內部對 OOF 直接做裁切評分**,而非僅在 submission 階段裁切(見第 2.2b 節)。
+## 4. 實驗軌跡
 
-**Submission 格式**:id 欄位為 `id`,目標欄位為 `MedHouseVal`(competition.id_column /
-target_column)。
+| exp | 時間 | 決策分數 | 階段 | 一句話摘要 |
+|-----|------|----------|------|------------|
+| 1 | 2026-07-03T12:02:12 | 0.56166 | Baseline(通用批次) | 8 原始特徵三模型 blend,固定權重基線 |
+| 2 | 2026-07-03T18:29:47 | 0.558768 | Phase A | 24 工程化特徵+OOF 權重搜尋,全場最大單筆躍升 |
+| 3 | 2026-07-03T18:31:02 | 0.561017 | 迭代探針 | geo target-encoding 探針,增益屬雜訊未採納 |
+| 4 | 2026-07-03T21:24:30 | 0.557977 | Phase B round1 | Optuna 調參 LGB 加入 pool,4-way blend 改善 |
+| 5 | 2026-07-03T21:25:21 | 0.557859 | Phase B round2 | seed-bag 調參 LGB 為第 5 成員,續改善 |
+| 6 | 2026-07-03T21:26:27 | 0.560444 | Phase B round3 探針 | KNN 鄰距+海岸距離特徵,LGB 探針過門檻採納 |
+| 7 | 2026-07-03T21:28:11 | 0.557088 | Phase B round4 | 5 成員 pool 於 26 特徵全量重訓,線性迭代最佳 |
+| 8 | 2026-07-04T11:59:43 | **0.556329** | Phase D-4 樹搜尋 | 7-way clip-aware blend(node #14),本場最佳 |
 
-**Submission 檔名**(best.submission):**無紀錄**——experiment_id=8 是樹搜尋(OOF-only)
-結果,facts.json 本筆未附 submission 欄位,未產生 test 預測、未提交 Kaggle(見第 2.2b 節
-澄清)。線性迭代最終回合(experiment_id=7)有提交檔案供參考:
-`sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv`(該檔案對應 OOF 0.557088,
-非目前 best 的 0.556329)。
+- **突破點 1(exp1→exp2)**:特徵工程(比例、log 轉換、城市距離、geo_cluster)加上 OOF
+  權重搜尋,0.56166→0.558768,為全場最大單筆增益。
+- **突破點 2(exp3 vs exp6)**:粗粒度地理 target-encoding 無效(exp3,雜訊等級),但非
+  target-encoding 的幾何特徵(KNN 密度、海岸距離)帶來真實增益(exp6)——同一「地理」
+  槓桿、不同機制,結局相反。
+- **突破點 3(exp7→exp8)**:樹搜尋以 clip-aware 評分與 CEILING hybrid 成員把分數推至
+  0.556329;CEILING solo 最弱卻拿最大權重,是全樹單筆最大增益來源。
 
-### 2.5 評估指標
+facts.unparsed 為空陣列,無法解析之紀錄:無。
 
-**指標定義**:RMSE(Root Mean Squared Error)= 預測誤差平方之平均值的平方根,誤差單位與
-目標欄位相同(房價中位數)。
+## 5. 效能對照:四層消融
 
-**分數總表**:
-
-| 實驗 | 說明 | OOF RMSE |
-|------|------|----------|
-| experiment_id=1 | baseline: generic LGB+XGB+CAT blend | 0.56166 |
-| experiment_id=2 | LGB+XGB+CAT weight-searched blend(24 個工程化特徵) | 0.558768 |
-| experiment_id=3 | LGB 單模型探針:+smoothed geo_cluster_50 target-encoding(未採納) | 0.561017 |
-| experiment_id=4 | +Optuna 調參 LGB,4-way blend | 0.557977 |
-| experiment_id=5 | +seed-bagged 調參 LGB,5-way blend | 0.557859 |
-| experiment_id=6 | LGB 單模型探針:+knn_mean_dist_10 +coastal_dist(採納) | 0.560444 |
-| experiment_id=7 | 5-way blend,26 個特徵(含 KNN/海岸距離)——線性迭代終點 | 0.557088 |
-| experiment_id=8(best) | 樹搜尋 v2(node #14)7-way blend,clip-aware+ceiling-hybrid | 0.556329 |
-
-facts.json 的 `leaderboard` 欄位為 null,且 `missing` 列表包含 `"leaderboard"`——**無紀錄**。
-本場並未提交至 Kaggle,因此無 Public/Private LB 分數可供比對,亦無法計算 CV↔LB gap。
-
-exp7→exp8(樹搜尋 best)相對 exp-2 blend 與 exp-1 baseline 的改善幅度:
-
-```
-exp7 -> exp8:  0.557088 - 0.556329 = 0.000759   (絕對改善)
-               0.000759 / 0.557088 = 0.0013624...
-               0.0013624 * 100 ≈ 0.136%         (相對改善百分比)
-
-exp2 -> exp8:  0.558768 - 0.556329 = 0.002439   (絕對改善)
-               0.002439 / 0.558768 = 0.0043655...
-               0.0043655 * 100 ≈ 0.437%         (相對改善百分比)
-
-exp1 -> exp8:  0.56166 - 0.556329 = 0.005331    (絕對改善)
-               0.005331 / 0.56166 = 0.0094915...
-               0.0094915 * 100 ≈ 0.949%         (相對改善百分比)
-```
-
-## 3. 實驗軌跡
-
-| experiment_id | timestamp | score | source_format |
-|---------------|-----------|-------|----------------|
-| 1 | 2026-07-03T12:02:12 | 0.56166 | generic_batch |
-| 2 | 2026-07-03T18:29:47 | 0.558768 | v2 |
-| 3 | 2026-07-03T18:31:02 | 0.561017 | v2 |
-| 4 | 2026-07-03T21:24:30 | 0.557977 | v2 |
-| 5 | 2026-07-03T21:25:21 | 0.557859 | v2 |
-| 6 | 2026-07-03T21:26:27 | 0.560444 | v2 |
-| 7 | 2026-07-03T21:28:11 | 0.557088 | v2 |
-| 8 | 2026-07-04T11:59:43 | 0.556329 | v2 |
-
-**突破點 1(exp 1→2)**:分數躍升發生在 experiment_id=2——由 baseline 的 8 個原始特徵改為
-24 個工程化特徵(新增 households、bedroom_ratio、rooms_per_person、log 轉換、與主要城市的
-距離、geo_cluster 等),並以 OOF 網格搜尋權重取代固定權重,使分數由 0.56166 降至 0.558768。
-
-**Phase B 自我改進迭代(本次更新,4 輪)**:
-
-- **Round 1(exp 4)**:對最強單模 LGB 執行 Optuna TPE 超參搜尋,採用 knowledge/experience.md
-  記載的「fold-0 代理目標」調參法(避免完整 5-fold × 50 trials 逾時),再以全 5-fold 驗證
-  得 LGB_TUNED 單模 OOF(優於原 LGB 的 0.56109)。依經驗庫建議「調參後的單模應加入 pool
-  而非替換」,將其加為第 4 個 blend 成員,4-way 權重搜尋後 blend 降至 0.557977(較 exp 2
-  的 0.558768 之改善見下方程式)。
-- **Round 2(exp 5)**:對 Round 1 的調參超參執行 seed bagging(random_state 由 42 改為
-  2024,其餘超參不變),新增第 5 個 blend 成員,5-way 權重搜尋後 blend 降至
-  0.557859——符合經驗庫「seed bagging 是調參之後最便宜的殘餘增益」的預期。
-- **Round 3(exp 6,探針)**:延續「地理座標資料」既有經驗(exp 3 曾證實粗粒度地理 target
-  encoding 對此資料無增益),改測試兩個非 target-encoding 的原始幾何特徵:
-  `knn_mean_dist_10`(對 train+test 合併座標做 KNN 平均鄰距,作為區塊密度代理)與
-  `coastal_dist`(至加州海岸線錨點的最近距離)。以與 exp 3 相同的單模型探針法驗證,LGB
-  單模 OOF 由 0.56109 降至 0.560444,判定為真實增益(高於既定雜訊門檻,見下方程式)而非
-  雜訊,予以採納;探針腳本輸出顯示 `coastal_dist` 與目標的相關係數為新特徵中最強者之一
-  (未記入 facts.json,細節見 `scripts/geo_knn_probe.py` 執行紀錄)。
-- **Round 4(exp 7,best)**:在 Round 3 採納的 26 特徵集上,重新訓練 Round 2 的完整 5 成員
-  pool(LGB、XGB、CAT、LGB_TUNED、LGB_TUNED_SEED2024),重新做 5-way 權重搜尋,blend 降至
-  0.557088(較 Round 2 之改善見下方程式)。
-
-各輪改善幅度(皆由 facts.json 中已列出的 score 相減而得,逐輪皆為改善,無需觸發「連續 2
-輪未改善」停止準則;迭代在第 4 輪後停止,落在 protocol 建議的 2–4 輪區間上限,且訓練總
-耗時遠低於 30 分鐘預算):
+| 層級 | 配置 | 分數 | 相對改善 |
+|------|------|------|----------|
+| tier1 | 基線(Claude Code 直接執行,未引入 skill;exp1 通用批次 blend) | 0.56166 | —(基線) |
+| tier2 | + kaggle-agent skill 六階段流程(exp2 Phase A 手刻管線) | 0.558768 | 見下方算式 |
+| tier3 | + self-improvement 線性迭代(exp7 Phase B 四輪終點) | 0.557088 | 見下方算式 |
+| tier4 | + 樹搜尋(exp8,node #14 7-way blend) | **0.556329** | 見下方算式 |
 
 ```
-Round1: exp2 0.558768 - exp4 0.557977 = 0.000791   (改善)
-Round2: exp4 0.557977 - exp5 0.557859 = 0.000118   (改善)
-Round3 探針: exp2-LGB 0.56109 - exp6 0.560444 = 0.000646
-            門檻(noise-level cutoff 採用) 0.0005 → 0.000646 > 0.0005,判定為真實增益
-Round4: exp5 0.557859 - exp7 0.557088 = 0.000771   (改善)
+tier1→tier2: 0.56166 − 0.558768 = 0.002892,相對改善 0.002892 / 0.56166 = 0.5149%
+tier2→tier3: 0.558768 − 0.557088 = 0.001680,相對改善 0.001680 / 0.558768 = 0.3007%
+tier3→tier4: 0.557088 − 0.556329 = 0.000759,相對改善 0.000759 / 0.557088 = 0.1362%
 ```
 
-**experiment_id=3 反思(exp 2 之後、Phase B 之前)**:假設「以較細緻的 50-cluster 平滑
-target encoding 取代 experiment 2 中粗略的 25-cluster geo_cluster id,應能進一步改善
-分數」,因 EDA 階段的快速 LGB 模型顯示 Longitude/Latitude 為最重要的兩個原始特徵。實驗
-結果顯示 LGB 單模型 OOF 從 0.56109 變為 0.56102(delta -0.00007,屬雜訊等級,未帶來實質
-改善,見 experiments.json experiment_id=3 之 notes),故未被採納。此結果與 Round 3 的對照
-凸顯了關鍵區別:粗粒度地理**target encoding**無效,但非 target-encoding 的**幾何距離
-特徵**(KNN 密度、海岸距離)仍能提供樹模型難以自行從原始座標切分推導出的訊號。
+本場由導入報告功能後之版本執行,分數自 tier2 起未低於前一層——符合計畫書目標三(效能不退步)。
 
-**突破點 2(exp 7→8,本次更新新增)**:experiment_id=8 不是線性迭代的延續回合,而是 Phase
-D-4(2026-07-04)以 harness v2 執行的**樹搜尋(tree-search)**結果——來源
-`experiments_tree.json` 的 node #14(22 個評估節點/23 節點含 1 個失敗,wall 190.3s)。
-樹搜尋在 exp7 的相同 26-特徵集上另闢節點空間(而非新特徵工程),找到 RMSE 更低的 7-way
-blend,分數由 0.557088 降至 0.556329(相對改善百分比見上方 exp7→exp8 程式區塊)。**誠實
-CV-only
-警語**:此結果為 OOF-only 搜尋產物——tree_search harness 未產生任何 test 預測檔,facts.json
-本筆亦無 submission 欄位,**未提交至 Kaggle**;不可與 exp7 實際提交的 submission 檔案
-混淆(見第 2.4 節)。完整節點鏈、backtrack/dedup 統計、與「什麼真正起作用」的誠實歸因見
-`competitions/playground-series-s3e1/STATUS.md`〈Appendix: Phase D-4 tree-search v2
-sweep〉。
+## 6. 總結
 
-facts.json 的 `unparsed` 列表為空——無法解析之紀錄:無。
+本場資料乾淨(無缺失、無重複列)且全為數值特徵,建模的兩個結構性事實在 EDA 即已確立:
+目標在 5.00001 處被 top-code(佔 train 4.92%),構成誤差天花板;地理訊號強但非線性,
+單變量相關性看不出來。這兩點分別決定了後段的裁切後處理與前段的地理特徵工程方向。
 
-## 4. 重現指令
+關鍵決策有二。其一是自 exp2 起固定 KFold(5 折、shuffle、seed 42)不再變動,使全場八個
+實驗的 OOF 分數可直接比較;其二是探針紀律——新想法先以 LGB 單模探針驗證,過雜訊門檻才
+併入 pool(exp6 採納、exp3 否決),避免把雜訊當進步。
+
+增益來源逐層遞減且各有歸屬:tier1→tier2 靠特徵工程與權重搜尋(0.56166→0.558768),是
+最大單筆增益;tier2→tier3 靠 Phase B 四輪線性迭代(調參、seed bagging、幾何特徵)推進至
+0.557088;tier3→tier4 靠樹搜尋的兩個本場專屬槓桿——clip-aware 評分與 top-code 感知的
+CEILING 成員——收於 0.556329。
+
+結果的可信度建立在同一固定 CV 的 OOF 之上,且逐層皆為正向改善;但須誠實註記:本場全程
+未提交 Kaggle,無 LB 外部驗證,且 exp8 為 OOF-only 搜尋產物、未產生 test 預測,目前可直接
+提交的最佳檔案仍是 exp7 的 submission。
+
+**重現本實驗的最短路徑**:見第 7 節。
+
+## 7. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle
@@ -269,34 +211,33 @@ uv run python3 competitions/playground-series-s3e1/scripts/eda.py
 # Stage 2: Feature engineering (writes train_processed.csv / test_processed.csv)
 uv run python3 competitions/playground-series-s3e1/scripts/features.py
 
-# Stage 3: Modeling (LGB/XGB/CatBoost, 5-fold KFold, OOF weight-searched blend,
-# writes submission CSV to submissions/ and logs to experiments.json)
+# Stage 3: Modeling — exp2 (LGB/XGB/CatBoost, 5-fold KFold, OOF weight-searched blend)
 uv run python3 competitions/playground-series-s3e1/scripts/train.py
 
-# Stage 3b (optional, informational only — probe not adopted into final model):
+# exp3 (optional, informational only — probe not adopted):
 uv run python3 competitions/playground-series-s3e1/scripts/tune_geo_te.py
 
-# Phase B iteration round 1: Optuna fold-0-proxy tuning of LGB, add to pool (4-way blend)
+# Phase B round1 — exp4: Optuna fold-0-proxy tuning of LGB, add to pool (4-way blend)
 uv run python3 competitions/playground-series-s3e1/scripts/tune_lgb_optuna.py
 
-# Phase B iteration round 2: seed bagging of the tuned LGB (5-way blend)
+# Phase B round2 — exp5: seed bagging of the tuned LGB (5-way blend)
 uv run python3 competitions/playground-series-s3e1/scripts/seed_bag_round2.py
 
-# Phase B iteration round 3: KNN-density + coastal-distance geo feature probe
+# Phase B round3 — exp6: KNN-density + coastal-distance geo feature probe
 # (writes train_processed_v2.csv / test_processed_v2.csv if adopted)
 uv run python3 competitions/playground-series-s3e1/scripts/geo_knn_probe.py
 
-# Phase B iteration round 4: full 5-member pool retrain on the 26-feature set (exp 7)
+# Phase B round4 — exp7: full 5-member pool retrain on the 26-feature set
 uv run python3 competitions/playground-series-s3e1/scripts/round4_full_retrain.py
 
-# Phase D-4 tree-search v2 sweep (best, exp 8) — resumable; tree state in experiments_tree.json
+# Phase D-4 tree search — exp8 (resumable; tree state in experiments_tree.json; OOF-only)
 uv run python3 tree_search/run_s3e1.py
 
 # Report generation
 uv run python3 .claude/skills/kaggle-report/assets/collect.py playground-series-s3e1
 ```
 
-本場未提交至 Kaggle。若要手動提交本次產生的最佳 submission 檔案:
+本場未提交至 Kaggle。若要手動提交目前可提交的最佳 submission 檔(exp7):
 
 ```bash
 export KAGGLE_API_TOKEN=$(python3 -c "import json; print(json.load(open('/home/tjyen/.kaggle/kaggle.json'))['key'])")
@@ -304,3 +245,5 @@ uv run kaggle competitions submit -c playground-series-s3e1 \
   -f competitions/playground-series-s3e1/submissions/sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv \
   -m "5-way blend (Optuna-tuned LGB + seed bag + KNN/coastal geo features), OOF 0.557088"
 ```
+
+執行目錄為專案根目錄 `/home/tjyen/ai_agents/kaggle`;所有 Python 執行皆透過 `uv run`。
