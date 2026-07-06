@@ -66,15 +66,19 @@ Phase D–G 對全部 10 場競賽跑了 harness v2/v3 樹搜尋(node 空間 = �
 5. **精確追平也是誠實產出**:s3e9 的樹搜尋在噪音已飽和的資料上精確追平(而非打敗)線性
    最佳(12.070034),是該場資料噪音上限已被線性迭代摸到頂的獨立驗證,而非搜尋失敗。
 
-**誠實限制(tier4 全場適用)**:tier4 的每一筆分數皆為 **OOF-only 的樹搜尋產物**——
-未產生任何 test 預測、未提交 Kaggle,facts.json 對應筆記錄皆無 `submission` 欄位。s3e19
-的 tier4 額外繼承 tier2/tier3 既有的 fold-5 double-dip 警語,並新增其自身的
-scale-parameter/seed-selection OOF-fitting 警語(見上方主表註與各競賽 REPORT.md)。
-s3e20 的 tier4 明確**不採用** node #28 的手足 BLEND 節點分數 21.0332(STATUS.md 記為
-3 折 CV 下的低信心邊際發現),而是採用穩健的純結構節點 21.0589。s3e16 的 tier4
-(1.33563)延續 tier2/tier3 既有的「取整口徑」——且是本場的第二次 raw/rounded 反轉案例:
-該節點的 raw OOF MAE(1.35712)其實比線性冠軍的 raw 1.35589 更差,但 rounded OOF MAE
-更好,再次證明本場的決策指標必須是取整分數。
+**誠實限制(tier4,9/10 場適用;s3e16 已是唯一例外)**:9 場的 tier4 分數皆為
+**OOF-only 的樹搜尋產物**——未產生任何 test 預測、未提交 Kaggle,facts.json 對應筆
+記錄皆無 `submission` 欄位。s3e19 的 tier4 額外繼承 tier2/tier3 既有的 fold-5
+double-dip 警語,並新增其自身的 scale-parameter/seed-selection OOF-fitting 警語
+(見上方主表註與各競賽 REPORT.md)。s3e20 的 tier4 明確**不採用** node #28 的手足
+BLEND 節點分數 21.0332(STATUS.md 記為 3 折 CV 下的低信心邊際發現),而是採用穩健的
+純結構節點 21.0589。s3e16 的 tier4(1.33563)延續 tier2/tier3 既有的「取整口徑」——
+且是本場的第二次 raw/rounded 反轉案例:該節點的 raw OOF MAE(1.35712)其實比線性
+冠軍的 raw 1.35589 更差,但 rounded OOF MAE 更好,再次證明本場的決策指標必須是取整
+分數。**s3e16 的 tier4 現已不再是 OOF-only**:該節點已重建 test 預測並於 2026-07-06
+實際提交 Kaggle,取得 Public 1.34315 / Private 1.33859,雙榜皆優於 tier2/tier3 對應
+的線性冠軍提交(Public 1.34356 / Private 1.34075)——是本表 10 場中唯一同時具備
+tier2「與」tier4 兩筆真實 LB 錨點的競賽(詳見下方「誠實附註與可比性限制」)。
 
 ## 各賽一句話:關鍵差異來自哪裡
 
@@ -97,10 +101,32 @@ s3e20 的 tier4 明確**不採用** node #28 的手足 BLEND 節點分數 21.033
 
 ## 誠實附註與可比性限制
 
-- **CV-only,除 s3e16 外**:本表所有分數(含 tier4)皆為 Out-of-Fold 交叉驗證分數,未提交 Kaggle 排行榜(多數為已關閉或無憑證環境)。唯一例外是 s3e16,tier2/tier3 對應的線性迭代結果已實際提交,CV↔LB gap 極小、CV 可信賴;**s3e16 的 tier4(樹搜尋)本身仍是 CV-only,未提交**,不可與該場已提交的 LB 分數混為一談。
-- **tier4 全場皆 CV-only、未提交**:9/10 場的 tier4 是 Phase G-1a/G-1b 以 `log_experiment_v2` 入帳的樹搜尋(tree-search)結果,全數為 OOF-only 搜尋產物——tree_search harness 未對任何一場產生 test 預測檔,對應 experiments.json 筆記皆無 `submission` 欄位,不可誤認為已提交的分數(細節與逐場 caveat 見上方「樹搜尋(tier4)」段落與各競賽 REPORT.md)。
+- **CV-only,除 s3e16 外(tier2「與」tier4 皆已 LB 驗證)**:本表其餘分數(含其餘 9 場的
+  tier4)皆為 Out-of-Fold 交叉驗證分數,未提交 Kaggle 排行榜(多數為已關閉或無憑證環境)。
+  s3e16 是唯一例外,且例外現已擴大到 tier4:tier2/tier3 對應的線性迭代結果已於
+  2026-07-03 實際提交(Public 1.34356 / Private 1.34075,CV↔LB gap 極小、CV 可信賴);
+  **s3e16 的 tier4(樹搜尋 node #15)也已於 2026-07-06 重建 test 預測並實際提交**,取得
+  Public 1.34315 / Private 1.33859,雙榜皆優於 tier2/tier3 的提交——不再是 CV-only,是
+  這套樹搜尋配方第一次獲得的外部(真實排行榜)驗證,細節見下方「s3e16 的取整口徑」條目。
+- **tier4 幾乎全場 CV-only、未提交(s3e16 除外)**:9/10 場的 tier4 是 Phase G-1a/G-1b 以
+  `log_experiment_v2` 入帳的樹搜尋(tree-search)結果,全數為 OOF-only 搜尋產物——
+  tree_search harness 未對這 9 場產生 test 預測檔,對應 experiments.json 筆記皆無
+  `submission` 欄位,不可誤認為已提交的分數(細節與逐場 caveat 見上方「樹搜尋(tier4)」
+  段落與各競賽 REPORT.md)。**s3e16 的 tier4 是這 10 場中唯一的例外**——見上一條目與下方
+  「s3e16 的取整口徑」條目。
 - **s3e19 的 CV 方案差異(現涵蓋 tier2、tier3、tier4)**:generic baseline(tier1,5.31891)使用隨機 shuffle KFold,而 skill 流程(tier2/tier3)與樹搜尋(tier4)皆使用 TimeSeriesSplit——因為 test 是嚴格未來期,隨機 KFold 是內插式的樂觀估計,兩者**不可直接比較**(knowledge/experience.md 的 CV 設計鐵律)。主表因此把 s3e19 的 tier1 標為「無可比 generic」,相對變化欄改報 tier2→tier3 與 tier2→tier4;上方另附一組同 CV 方案(plain KFold)的診斷對照(無 tier4,因樹搜尋僅在誠實 TimeSeriesSplit 軌跡上執行),單獨呈現、不併入主表的相對變化計算。tier4(9.75707)額外帶有 fold-5 double-dip 與 scale/seed 皆為 OOF-fitted 的警語,真實預期的 2022 SMAPE 應讀作「明顯低於 10.02」而非字面上的 9.76(見各競賽 REPORT.md)。
-- **s3e16 的取整口徑(現涵蓋 tier2、tier3、tier4)**:tier2/tier3 的 1.33812 是「四捨五入到整數後」的 OOF MAE,不是 collect.py 一般 adapter 直接輸出的 raw blend_oof_mae(1.35589)。Phase B 依驗證過的配方跑了 Optuna 調參 + seed bagging,raw OOF 確實變好,但 rounded OOF 連續兩輪變差,故 tier2 與 tier3 數值相同——這是配方邊界被驗證到,而非迭代被省略。tier4 的樹搜尋結果(1.33563)同樣只在取整口徑下才是贏家:其 raw OOF MAE(1.35712)比線性冠軍的 raw 1.35589 更差,是本場第二起 raw/rounded 反轉案例,決策必須以取整分數為準。
+- **s3e16 的取整口徑(現涵蓋 tier2、tier3、tier4;tier2 與 tier4 皆已真實 LB 驗證)**:
+  tier2/tier3 的 1.33812 是「四捨五入到整數後」的 OOF MAE,不是 collect.py 一般 adapter
+  直接輸出的 raw blend_oof_mae(1.35589)。Phase B 依驗證過的配方跑了 Optuna 調參 +
+  seed bagging,raw OOF 確實變好,但 rounded OOF 連續兩輪變差,故 tier2 與 tier3 數值
+  相同——這是配方邊界被驗證到,而非迭代被省略。tier4 的樹搜尋結果(1.33563)同樣只在
+  取整口徑下才是贏家:其 raw OOF MAE(1.35712)比線性冠軍的 raw 1.35589 更差,是本場
+  第二起 raw/rounded 反轉案例,決策必須以取整分數為準。**更新(2026-07-06)**:tier4
+  節點已重建 test 預測並實際提交 Kaggle,取得 Public 1.34315 / Private 1.33859,雙榜
+  皆優於 tier2/tier3 對應提交(2026-07-03,Public 1.34356 / Private 1.34075)——這是
+  這套樹搜尋配方在 s3e16 上第一次獲得的真實排行榜驗證,而非僅 OOF 內部比較(對應
+  `experiments.json` #5 的 `leaderboard` 欄位;完整算式見
+  `competitions/playground-series-s3e16/REPORT.md` §6)。
 - **s3e20 無真正的 generic 基線**:此賽是 2023 已關閉、於本週末批次之前的舊 session(2026-02-14)完成的舊有競賽,不在 `run_competition.py` 這輪批次範圍內,沒有生成 `sub_generic_*` 檔案。其自身最早兩筆紀錄用單一 time-based split、無 CatBoost、無 target encoding,與後續 Leave-One-Year-Out CV 的紀錄不可比,因此未被誤標為 tier1。主表 tier1(28.3424)是同一 CV 方案下、加入 location-week target encoding 之前的 GBDT blend,做為近似對照,而非嚴格意義的 generic-batch 基線。此賽 Late Submission 已關閉,tier1–tier4 全數無法實際提交。
 - **s3e20 的 tier4 明確排除低信心的 GBDT-blend 節點**:node #28(21.0589,本表採用)之手足 BLEND 節點(21.0332,本表不採用)只在 3 折 Leave-One-Year-Out CV 下、且 GBDT 權重直接對同一份 OOF 擬合才勝出,STATUS.md 明確記為 CV 噪音範圍內的邊際發現、非穩健結論——tier4 採用純結構節點是刻意的保守選擇,而非疏漏。
 - **s3e9 的 tier4 = tier3(平手,非缺漏)**:s3e9 的樹搜尋(harness v2)精確追平(而非打敗)線性迭代最佳 12.070034,顯示該場資料噪音上限已被線性迭代摸到頂;`docs/scripts/build_benchmark_table.py` 的 `is_tree_entry()` 偵測到 s3e9 的 experiments.json 中並無任何樹搜尋筆記錄,因此 tier4 機械式地等於 tier3,如實反映此一平手結果。

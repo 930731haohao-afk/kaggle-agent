@@ -270,7 +270,12 @@
       "tier2": {
         "value": 1.33812,
         "experiment_id": 1,
-        "label": "skill pipeline best, pre-Phase-B (rounded OOF MAE, from experiments.json notes text — raw/unrounded blend_oof_mae=1.35589)"
+        "label": "skill pipeline best, pre-Phase-B (rounded OOF MAE, from experiments.json notes text — raw/unrounded blend_oof_mae=1.35589)",
+        "leaderboard": {
+          "public": 1.34356,
+          "private": 1.34075,
+          "submitted": "2026-07-03"
+        }
       },
       "tier3": {
         "value": 1.33812,
@@ -280,11 +285,16 @@
       "tier4": {
         "value": 1.33563,
         "experiment_id": 5,
-        "label": "best after tree-search harvest (Phase G-1a, node #15, ROUNDED OOF MAE — this is a raw-vs-rounded INVERSION case: the node's raw OOF MAE (1.35712) is WORSE than the linear champion's raw 1.35589, but its ROUNDED OOF MAE (1.33563) is better; decision metric on this comp is the rounded score, per this comp's own boundary-case finding)"
+        "label": "best after tree-search harvest (Phase G-1a, node #15, ROUNDED OOF MAE — this is a raw-vs-rounded INVERSION case: the node's raw OOF MAE (1.35712) is WORSE than the linear champion's raw 1.35589, but its ROUNDED OOF MAE (1.33563) is better; decision metric on this comp is the rounded score, per this comp's own boundary-case finding). Rebuilt into a real test submission and submitted to Kaggle on 2026-07-06 (sub_tree_best_1.33563_20260706_115200.csv) — no longer CV-only, see leaderboard field.",
+        "leaderboard": {
+          "public": 1.34315,
+          "private": 1.33859,
+          "submitted": "2026-07-06"
+        }
       },
       "relative_pct": 1.2027377234367669,
       "relative_pct_tier1_tier4": 1.3865816111812375,
-      "note": "Decision metric is ROUNDED OOF MAE (validated against real Kaggle LB, CV-LB gap ~0.006), not the raw blend_oof_mae exposed by collect.py's generic adapter. Phase B attempted the validated Optuna-tune+seed-bag recipe but it did not survive the rounding step (raw OOF improved 1.35589->1.35533, rounded OOF worsened 1.33812->1.33893) — a documented boundary case, not a missing iteration. tier4's tree-search entry is likewise rounded-MAE-only-comparable: raw OOF is worse than the linear champion, rounded OOF is better — see tier4 label. All tiers are CV-only; none of these scores were submitted to Kaggle."
+      "note": "Decision metric is ROUNDED OOF MAE (validated against real Kaggle LB, CV-LB gap ~0.006), not the raw blend_oof_mae exposed by collect.py's generic adapter. Phase B attempted the validated Optuna-tune+seed-bag recipe but it did not survive the rounding step (raw OOF improved 1.35589->1.35533, rounded OOF worsened 1.33812->1.33893) — a documented boundary case, not a missing iteration. tier4's tree-search entry is likewise rounded-MAE-only-comparable: raw OOF is worse than the linear champion, rounded OOF is better — see tier4 label. tier1/tier2/tier3 report OOF metrics only (though the tier2/tier3 champion experiment #1 was itself submitted to Kaggle on 2026-07-03, Public 1.34356/Private 1.34075 — see tier2.leaderboard). tier4 is now ALSO real-LB-validated: the tree-search entry (experiment #5) was rebuilt and submitted on 2026-07-06, Public 1.34315/Private 1.33859 (see tier4.leaderboard) — improving on experiment #1's LB on BOTH boards, the first external validation of this comp's tree-search recipe."
     },
     {
       "comp": "s3e20",

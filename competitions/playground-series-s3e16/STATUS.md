@@ -11,13 +11,27 @@
 - [x] Stage 3 Modeling + CV — `scripts/train.py` (LGB/XGB/CatBoost, MAE objective)
 - [x] Stage 5 First submission generated — `submissions/sub_blend_20260703_091840.csv`
 - [x] Submitted to Kaggle leaderboard — **Public 1.34356 / Private 1.34075** (2026-07-03)
+- [x] Tree-search v2 best blend rebuilt + submitted — **Public 1.34315 / Private 1.33859**
+      (2026-07-06, `submissions/sub_tree_best_1.33563_20260706_115200.csv`) — beats
+      submission #1 on **both** boards
 
-## Leaderboard result (submission #1)
-| | OOF MAE | Public LB | Private LB |
-|-|---------|-----------|------------|
-| Blend (rounded) | 1.33812 | **1.34356** | **1.34075** |
+## Leaderboard result (two real submissions)
+| # | Submitted | Source | Rounded OOF MAE | Public LB | Private LB |
+|---|-----------|--------|------------------|-----------|-------------|
+| 1 | 2026-07-03 | Blend 0.6/0.3/0.1 LGB/XGB/CAT (linear champion, `experiments.json` #1) | 1.33812 | 1.34356 | 1.34075 |
+| 2 | 2026-07-06 | Tree-search v2 best, node #15, 8-way blend (`experiments.json` #5) | 1.33563 | **1.34315** | **1.33859** |
 
-CV↔LB gap ~0.006 → **CV is trustworthy** (slightly optimistic, as expected). Safe to iterate on OOF.
+Improvement (#2 vs #1): Public `1.34356 − 1.34315 = 0.00041`, Private
+`1.34075 − 1.33859 = 0.00216` — both boards improved.
+
+CV↔LB gap, submission #1: Public `1.34356 − 1.33812 = 0.00544`, Private
+`1.34075 − 1.33812 = 0.00263`.
+CV↔LB gap, submission #2: Public `1.34315 − 1.33563 = 0.00752`, Private
+`1.33859 − 1.33563 = 0.00296`.
+Both submissions show the same-sign, same-order-of-magnitude gap (rounded OOF MAE slightly
+better/lower than LB, ~0.003–0.0075) → **CV is trustworthy and this consistency holds across
+two independent real-LB checks**, not just one. Safe to keep iterating on OOF for future
+rounds.
 
 > ⚠️ **Auth note**: valid Kaggle token is `KGAT_7...` in `~/.kaggle/kaggle_api_token.txt`,
 > NOT the `KGAT_2...` in `~/.kaggle/kaggle.json` (that one 403s). Submit with:
@@ -241,6 +255,13 @@ raw 1.357118 / **rounded 1.335634 → 1.33563 exactly**.
 **Submission**: `submissions/sub_tree_best_1.33563_20260706_115200.csv` — 49,368 rows,
 format/id-order verified vs `data/sample_submission.csv`, integer Age in [4, 19]
 (train range [1, 29]). Blend→round→clip(≥1), same convention as `pool_lib.write_submission`.
-NOT yet submitted — awaiting controller LB validation.
 Full audit trail: `scripts/rebuild_tree_best_result.json` (per-member gate rows +
 recovered full-precision weights). Total rebuild wall time: 435.6s.
+
+**Submitted to Kaggle (2026-07-06): Public 1.34315 / Private 1.33859** — beats submission
+#1 (the 2026-07-03 linear champion, Public 1.34356 / Private 1.34075) on both boards, and
+the CV↔LB gap (Public 0.00752, Private 0.00296 vs the tree-search's own 1.33563 rounded
+OOF) is the same sign and order of magnitude as submission #1's gap (Public 0.00544,
+Private 0.00263) — the first real-leaderboard validation of the tree-search recipe on this
+comp. See `experiments.json` #5 (`leaderboard`/`submission` fields) and
+`competitions/playground-series-s3e16/REPORT.md` §6/§7 for the full writeup.

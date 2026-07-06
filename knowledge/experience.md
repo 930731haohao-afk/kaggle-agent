@@ -89,6 +89,7 @@
 - 嚴重類別不平衡的序數/分類目標 → 對 label 直接 StratifiedKFold,避免 fold 內極端類為零。 | 證據:s3e5(69.9x 不平衡), 5-fold Stratified on quality,per-fold std 0.033。
 - 無時間/群組結構、目標連續、train/test 分布近同 → 普通 shuffle KFold 即正解,不必過度設計。 | 證據:s3e1、s3e11、s3e14(s3e14 各欄 train/test 均值差 <1%)。
 - CV↔LB gap 實測紀錄:s3e16 OOF 1.33812 → Public 1.34356 / Private 1.34075,gap ~0.006(CV 輕微樂觀、可信賴)。 | 證據:s3e16, exp #1 Kaggle 提交。
+- **樹搜尋(tree-search)發現的 OOF 增益可以真的轉移到真實 LB,不只是 OOF 內部比較的產物**:s3e16 樹搜尋 v2(node #15)在 OOF 上把取整後 MAE 從 1.33812 推進到 1.33563,當時只是 CV-only 的推論;重建 test 預測並實際提交後,Private LB 從 1.34075 進步到 1.33859(Public 1.34356→1.34315),雙榜皆改善,是這套樹搜尋配方第一次獲得的外部(真實排行榜)驗證。同時 CV↔LB gap 在兩次獨立提交間維持同一數量級且同方向(約 0.003–0.0075,LB 略劣於 OOF)——不僅增益本身可信,gap 的穩定性也隨提交次數增加而更受信賴。 | 證據:s3e16, exp #5(`experiments.json` leaderboard 欄位),Public 1.34315/Private 1.33859,提交 2026-07-06,對照 exp #1 的 Public 1.34356/Private 1.34075。
 - 固定 seed + 固定 fold 才能跨實驗比較;revert 後重跑應可 byte-identical 重現。 | 證據:s3e9, exp #4 重現 exp #2 的 12.07347 分毫不差。
 
 ---

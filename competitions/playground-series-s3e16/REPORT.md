@@ -1,8 +1,9 @@
 # 競賽分析報告:playground-series-s3e16
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-04(Phase G-1a 樹搜尋成果入帳後更新;本次同時補上先前
-> 未重產報告的 Phase B 迭代 exp 3、4,詳見第 3、6、7 節)
+> 素材等級:full | 產生日期:2026-07-06(真實 Kaggle LB 驗證入帳後更新;實驗 5 樹搜尋
+> 最佳 blend 已提交排行榜,取得 Public 1.34315 / Private 1.33859,詳見第 3a、5、6、7 節。
+> 先前 2026-07-04 版本涵蓋 Phase G-1a 樹搜尋成果入帳、Phase B 迭代 exp 3、4 補記)
 
 ## 1. 競賽目的
 
@@ -133,11 +134,12 @@ weight search, decided directly on ROUNDED MAE",取整後 score = **1.33563**
 lineage 的誠實歸因見 `competitions/playground-series-s3e16/STATUS.md`〈Appendix — Tree-search
 v2(Phase E-3,harness_v2,2026-07-04)〉。
 
-> **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
-> 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。此結果**不可與已提交的 LB 分數
-> 混淆**——本場官方排行榜結果仍是實驗 1 的 Public 1.34356 / Private 1.34075(見第 5、6
-> 節),facts.best 挑中實驗 5 純粹是「取整後 OOF MAE 數字最小」,與是否已提交至 Kaggle
-> 無關。
+> **更新(2026-07-06)**:best.notes 描述的是樹搜尋當下(2026-07-04)的狀態——彼時確為
+> OOF-only、未提交。此後 `scripts/rebuild_tree_best.py` 重建出 test 預測並實際提交
+> Kaggle(`best.submission` = `sub_tree_best_1.33563_20260706_115200.csv`),取得
+> `best.leaderboard`:**Public 1.34315 / Private 1.33859**(提交:2026-07-06)。此結果
+> 已是本場**兩筆真實 LB 提交之一**,與實驗 1 的 Public 1.34356 / Private 1.34075 併陳於
+> 第 6 節(含改善算式與 CV↔LB gap 一致性檢查)。
 
 ## 4. 訓練規格
 
@@ -165,9 +167,10 @@ StratifiedKFold(將高齡樣本合併為單一分箱以避免箱內樣本過少)
 ## 5. 推論程序
 
 `facts.best`(實驗 5,樹搜尋)之 `postprocess`(來源:`best.postprocess`):`["round"]`
-(對取整後 MAE 做決策,見第 3a 節)。**Submission 檔名(best.submission):無紀錄**——
-實驗 5 是樹搜尋(OOF-only)結果,facts.json 本筆未附 submission 欄位,未產生 test 預測、
-**未提交 Kaggle**。
+(對取整後 MAE 做決策,見第 3a 節)。**Submission 檔名(best.submission)**:
+`sub_tree_best_1.33563_20260706_115200.csv`——由 `scripts/rebuild_tree_best.py` 重建
+8 個成員的 test 預測、以同一組全精度權重混合後產生(2026-07-06),已提交 Kaggle 排行榜
+(`best.leaderboard`,結果見第 6 節)。
 
 實驗 2(通用批次管線,原始 OOF 分數在實驗 1、2 中最低者)之 `postprocess` 欄位未記錄任何後
 處理步驟,故此欄寫「無後處理紀錄」。其 submission 檔名為
@@ -188,21 +191,24 @@ StratifiedKFold(將高齡樣本合併為單一分箱以避免箱內樣本過少)
 
 | 項目 | 分數 | 語意 |
 |------|------|------|
-| 實驗 1 Ensemble(已提交 LB 之線性冠軍) | 1.35589 | 原始 OOF MAE |
+| 實驗 1 Ensemble(2026-07-03 提交#1,線性冠軍) | 1.35589 | 原始 OOF MAE |
 | 實驗 2 Ensemble | 1.35441 | 原始 OOF MAE |
 | 實驗 3 Ensemble(Phase B round1,未採納) | 1.3385 | 取整後 OOF MAE(`experiments[2].score`) |
 | 實驗 4 Ensemble(Phase B round2,未採納) | 1.33893 | 取整後 OOF MAE(`experiments[3].score`) |
-| 實驗 5 樹搜尋 Ensemble(facts.best) | **1.33563** | 取整後 OOF MAE(`best.score`) |
+| 實驗 5 樹搜尋 Ensemble(facts.best,2026-07-06 提交#2) | **1.33563** | 取整後 OOF MAE(`best.score`) |
 | 實驗 5 樹搜尋 Ensemble,同一組權重 | 1.35712 | 原始 OOF MAE(`best.ensemble.score`,劣於實驗 1) |
-| Public LB(實驗 1 之提交,本場官方結果) | 1.34356 | 取整後(提交檔已四捨五入) |
-| Private LB(實驗 1 之提交,本場官方結果) | 1.34075 | 取整後(提交檔已四捨五入) |
+| Public LB — 提交#1(實驗 1,2026-07-03) | 1.34356 | 取整後(提交檔已四捨五入) |
+| Private LB — 提交#1(實驗 1,2026-07-03) | 1.34075 | 取整後(提交檔已四捨五入) |
+| Public LB — 提交#2(實驗 5 樹搜尋最佳,2026-07-06) | **1.34315** | 取整後(提交檔已四捨五入) |
+| Private LB — 提交#2(實驗 5 樹搜尋最佳,2026-07-06) | **1.33859** | 取整後(提交檔已四捨五入) |
 
-(來源:`experiments[].ensemble.score`、`experiments[].score`、`facts.leaderboard`。
-`facts.leaderboard` 對應的是實驗 1 的提交結果,而非 facts.best 指向的實驗 5——因為只有
-實驗 1 實際提交過排行榜,實驗 5(樹搜尋)為 OOF-only、未提交。)
+(來源:`experiments[].ensemble.score`、`experiments[].score`、`experiments[0].leaderboard`、
+`experiments[4].leaderboard`。本場現有**兩筆**真實 Kaggle 提交:實驗 1(2026-07-03)與
+實驗 5(2026-07-06);`facts.leaderboard`(`collect.py` 規則:取最後一筆帶 `leaderboard`
+欄位的實驗)現指向較新的實驗 5。)
 
-**CV↔LB gap**(僅實驗 1 有排行榜可比較,差值以內嵌算式呈現;實驗 1 的 1.35589 為其原始 OOF,
-LB 分數則是對應提交檔取整後的官方結果,兩者本非同一把尺,此處僅依循原報告既有比較方式):
+**CV↔LB gap(提交#1,實驗 1,差值以內嵌算式呈現;實驗 1 的 1.35589 為其原始 OOF,
+LB 分數則是對應提交檔取整後的官方結果,兩者本非同一把尺,此處僅依循原報告既有比較方式):**
 
 ```
 實驗 1 原始 OOF MAE − Public LB  = 1.35589 − 1.34356 = 0.01233
@@ -224,8 +230,34 @@ OOF 分數略高於(即劣於)Public/Private LB,顯示交叉驗證分數並未�
   1.35712 − 1.35589 = 0.00123    (劣化,方向與上面相反)
 ```
 
-**本場排行榜結果仍以實驗 1 的 Public 1.34356 / Private 1.34075 為官方唯一提交紀錄**;實驗 5
-的 1.33563 是未提交的 OOF-only 樹搜尋發現,兩者不可混為一談。
+**雙 LB 錨點改善(提交#2 相對提交#1,以內嵌算式呈現)**:
+
+```
+Public  改善:提交#1(1.34356) − 提交#2(1.34315) = 0.00041
+Private 改善:提交#1(1.34075) − 提交#2(1.33859) = 0.00216
+```
+
+兩個榜(Public、Private)皆改善(MAE 降低),且改善方向一致——樹搜尋在 OOF 上發現的
+取整後增益,此次首度獲得真實 LB 的雙榜獨立驗證,不再只是 OOF-only 的內部比較。
+
+**CV↔LB gap 一致性檢查(提交#2,實驗 5 樹搜尋最佳,取整後 OOF vs 真實 LB,以內嵌算式呈現)**:
+
+```
+Public LB  − 實驗5取整後OOF = 1.34315 − 1.33563 = 0.00752
+Private LB − 實驗5取整後OOF = 1.33859 − 1.33563 = 0.00296
+
+對照提交#1(實驗1,取整後OOF 1.33812,未記入實驗1結構化欄位,取自
+experiments[2/3/4].notes 文字紀錄,此處僅供敘述脈絡):
+Public LB  − 實驗1取整後OOF = 1.34356 − 1.33812 = 0.00544
+Private LB − 實驗1取整後OOF = 1.34075 − 1.33812 = 0.00263
+```
+
+兩筆提交的 Public/Private gap(見上方算式)皆為正值、同一數量級,即真實 LB 分數略劣於
+(數字略高於)取整後 OOF——同一方向、同一量級的差距在兩次獨立提交間穩定重現,顯示取整後
+OOF MAE 對這個決策指標而言是可信賴的排序依據,未見對 Public LB 過擬合的跡象。
+**本場排行榜結果現有兩筆真實提交紀錄**:實驗 1 的 Public 1.34356 / Private 1.34075
+(2026-07-03),以及實驗 5 樹搜尋最佳的 Public 1.34315 / Private 1.33859(2026-07-06,
+雙榜皆優於提交#1)。
 
 ## 7. 實驗軌跡
 
@@ -260,12 +292,16 @@ Phase E-3(2026-07-04)以 harness v2 對「取整整數 MAE」做的酸性測試�
 `experiments_tree.json` 的 node #15(27 節點總計,24 已評估,3 個失敗但無害,wall
 1409.4s)。此節點的**原始** OOF MAE(1.35712)延續 exp3/4 的退步趨勢、比實驗 1 的
 1.35589 更差,但其**取整後** OOF MAE(1.33563)首次真正**優於**實驗 1 的取整後 1.33812
-(見第 3a、6 節之反轉現象與內嵌算式)。**誠實 CV-only 警語**:此結果為 OOF-only 搜尋
-產物——tree_search harness 未產生任何 test 預測檔,facts.json 本筆亦無 submission
-欄位,**未提交至 Kaggle**;本場排行榜官方結果仍是實驗 1 的 Public 1.34356 / Private
-1.34075,不可與此樹搜尋發現混淆。完整節點鏈、8-way blend 組成、與各 lineage 的誠實
-歸因見 `competitions/playground-series-s3e16/STATUS.md`〈Appendix — Tree-search v2
-(Phase E-3, harness_v2, 2026-07-04)〉。
+(見第 3a、6 節之反轉現象與內嵌算式)。**更新(2026-07-06,不再是 CV-only)**:
+`scripts/rebuild_tree_best.py` 重建出此節點的 test 預測(8 個成員逐一 gate 驗證,重建
+OOF 與快取數字逐位一致,詳見 STATUS.md〈Rebuild verification〉節),並實際提交至
+Kaggle:`sub_tree_best_1.33563_20260706_115200.csv`(`best.submission`),取得
+`best.leaderboard`:**Public 1.34315 / Private 1.33859**(提交:2026-07-06)——雙榜皆
+優於實驗 1 的 Public 1.34356 / Private 1.34075(改善算式、CV↔LB gap 一致性檢查見第 6
+節)。此為這套樹搜尋配方首次獲得的外部(真實排行榜)驗證,而非僅 OOF-only 推論。完整
+節點鏈、8-way blend 組成、與各 lineage 的誠實歸因見
+`competitions/playground-series-s3e16/STATUS.md`〈Appendix — Tree-search v2
+(Phase E-3, harness_v2, 2026-07-04)〉與〈Rebuild verification〉節。
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 

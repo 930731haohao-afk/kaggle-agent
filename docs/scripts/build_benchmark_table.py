@@ -267,6 +267,14 @@ def build_s3e16_row():
         "s3e16 tree-search entry missing or score drifted from the expected 1.33563"
     tier4_value = min(float(rounded_best), tree_e["score"])
 
+    # Tree-search node #15 (tier4) was rebuilt into a real test submission and
+    # submitted to Kaggle on 2026-07-06 — pulled mechanically (not hand-listed)
+    # from experiments.json #5's own "leaderboard" field, same as champion_e
+    # below for experiment_id 1's 2026-07-03 submission.
+    champion_e = by_id(exps, 1)
+    tier4_leaderboard = tree_e.get("leaderboard")
+    tier2_leaderboard = champion_e.get("leaderboard")
+
     return {
         "comp": "s3e16",
         "metric": exps[0]["metric"],
@@ -275,7 +283,8 @@ def build_s3e16_row():
                    "label": "generic batch (run_competition.py), rounded MAE"},
         "tier2": {"value": float(rounded_best), "experiment_id": 1,
                    "label": "skill pipeline best, pre-Phase-B (rounded OOF MAE, from experiments.json "
-                            "notes text — raw/unrounded blend_oof_mae=1.35589)"},
+                            "notes text — raw/unrounded blend_oof_mae=1.35589)",
+                   "leaderboard": tier2_leaderboard},
         "tier3": {"value": float(rounded_best), "experiment_id": 1,
                    "label": "final best — Phase B ran (exp #3/#4: Optuna-tune + seed-bag) but BOTH "
                             "rounds made rounded OOF MAE worse (1.33850, 1.33893); stopped per "
@@ -286,7 +295,11 @@ def build_s3e16_row():
                             "this is a raw-vs-rounded INVERSION case: the node's raw OOF MAE "
                             "(1.35712) is WORSE than the linear champion's raw 1.35589, but its "
                             "ROUNDED OOF MAE (1.33563) is better; decision metric on this comp is "
-                            "the rounded score, per this comp's own boundary-case finding)"},
+                            "the rounded score, per this comp's own boundary-case finding). Rebuilt "
+                            "into a real test submission and submitted to Kaggle on 2026-07-06 "
+                            "(sub_tree_best_1.33563_20260706_115200.csv) — no longer CV-only, see "
+                            "leaderboard field.",
+                   "leaderboard": tier4_leaderboard},
         "relative_pct": relative_pct(tier1_e["score"], float(rounded_best), "minimize"),
         "relative_pct_tier1_tier4": relative_pct(tier1_e["score"], tier4_value, "minimize"),
         "note": ("Decision metric is ROUNDED OOF MAE (validated against real Kaggle LB, CV-LB gap "
@@ -295,8 +308,13 @@ def build_s3e16_row():
                  "the rounding step (raw OOF improved 1.35589->1.35533, rounded OOF worsened "
                  "1.33812->1.33893) — a documented boundary case, not a missing iteration. tier4's "
                  "tree-search entry is likewise rounded-MAE-only-comparable: raw OOF is worse than "
-                 "the linear champion, rounded OOF is better — see tier4 label. All tiers are "
-                 "CV-only; none of these scores were submitted to Kaggle."),
+                 "the linear champion, rounded OOF is better — see tier4 label. tier1/tier2/tier3 "
+                 "report OOF metrics only (though the tier2/tier3 champion experiment #1 was itself "
+                 "submitted to Kaggle on 2026-07-03, Public 1.34356/Private 1.34075 — see "
+                 "tier2.leaderboard). tier4 is now ALSO real-LB-validated: the tree-search entry "
+                 "(experiment #5) was rebuilt and submitted on 2026-07-06, Public 1.34315/Private "
+                 "1.33859 (see tier4.leaderboard) — improving on experiment #1's LB on BOTH boards, "
+                 "the first external validation of this comp's tree-search recipe."),
     }
 
 
