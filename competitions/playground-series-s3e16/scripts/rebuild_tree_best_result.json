@@ -1,0 +1,102 @@
+{
+  "winning_node_id": 15,
+  "target_rounded_mae": 1.33563,
+  "reconstructed_blend_raw_mae": 1.35712,
+  "reconstructed_blend_rounded_mae": 1.33563,
+  "recovered_weights": {
+    "0": 0.019811029373190965,
+    "1": 0.02559175107217855,
+    "2": 0.5061492401934751,
+    "3": 0.007531216053812385,
+    "4": 0.06261867129053005,
+    "5": 0.11167541193823421,
+    "6": 0.000431293006298752,
+    "8": 0.2661913870722801
+  },
+  "recovered_weights_round4_match_tree": true,
+  "gate_pass": true,
+  "members": [
+    {
+      "node_id": 0,
+      "name": "LGB (root)",
+      "raw_mae": 1.3565051667362336,
+      "rounded_mae": 1.3388475510121403,
+      "max_abs_diff": 0.0,
+      "gate_ok": true,
+      "wall_s": 26.315906763076782,
+      "n_feats": 24
+    },
+    {
+      "node_id": 1,
+      "name": "XGB",
+      "raw_mae": 1.3576253788039563,
+      "rounded_mae": 1.3416024091504504,
+      "max_abs_diff": 0.0,
+      "gate_ok": true,
+      "wall_s": 36.46986937522888,
+      "n_feats": 24
+    },
+    {
+      "node_id": 2,
+      "name": "CAT",
+      "raw_mae": 1.3616213263027535,
+      "rounded_mae": 1.3384559290218903,
+      "max_abs_diff": 0.0,
+      "gate_ok": true,
+      "wall_s": 23.32475256919861,
+      "n_feats": 24
+    },
+    {
+      "node_id": 3,
+      "name": "LGB_tuned",
+      "raw_mae": 1.3558286813333595,
+      "rounded_mae": 1.3397928454713643,
+      "max_abs_diff": 0.0,
+      "gate_ok": true,
+      "wall_s": 60.44998478889465,
+      "n_feats": 24
+    },
+    {
+      "node_id": 4,
+      "name": "LGB_tuned_seed2024",
+      "raw_mae": 1.3560412592813584,
+      "rounded_mae": 1.3391446435564678,
+      "max_abs_diff": 0.0,
+      "gate_ok": true,
+      "wall_s": 54.03285527229309,
+      "n_feats": 24
+    },
+    {
+      "node_id": 5,
+      "name": "LGBBOUND",
+      "raw_mae": 1.3558699565499195,
+      "rounded_mae": 1.3394957529270368,
+      "max_abs_diff": 0.0,
+      "gate_ok": true,
+      "wall_s": 125.99643683433533,
+      "n_feats": 24
+    },
+    {
+      "node_id": 6,
+      "name": "TWEEDIE",
+      "raw_mae": 1.3988112030484887,
+      "rounded_mae": 1.3746742110167318,
+      "max_abs_diff": 0.0,
+      "gate_ok": true,
+      "wall_s": 50.32152605056763,
+      "n_feats": 24
+    },
+    {
+      "node_id": 8,
+      "name": "FEATPRUNE",
+      "raw_mae": 1.3573065796888948,
+      "rounded_mae": 1.340251988494416,
+      "max_abs_diff": 0.0,
+      "gate_ok": true,
+      "wall_s": 58.32122039794922,
+      "n_feats": 23
+    }
+  ],
+  "submission_file": "sub_tree_best_1.33563_20260706_115200.csv",
+  "total_wall_s": 435.6
+}

@@ -205,3 +205,42 @@ gain is an OOF-verified finding only.
 
 Scripts: `tree_search/eval_s3e16_v2.py`, `tree_search/run_s3e16_v2.py`.
 Tree: `competitions/playground-series-s3e16/experiments_tree.json`.
+
+## Rebuild verification — tree-search best blend → REAL test submission (2026-07-06)
+
+**Goal**: node #15 (rounded OOF MAE 1.33563) existed only as an OOF evaluation — no test
+predictions were ever generated. `scripts/rebuild_tree_best.py` retrained all 8 members
+from scratch (identical 5-fold StratifiedKFold-on-binned-Age, seed=42, identical params
+from `experiments_tree.json`), gated on exact OOF reproduction, then blended the fresh
+test predictions.
+
+**Gate result: PASS — every member reproduced digit-for-digit (max|diff vs cache| = 0.0
+for all 8), and the blend reproduces 1.33563 exactly.**
+
+| member | model | reconstructed raw / rounded OOF MAE | max abs diff vs cache |
+|--------|-------|-------------------------------------|------------------------|
+| #0 LGB (root) | LGB L1 | 1.356505 / 1.338848 | 0.0 |
+| #1 XGB | XGB absoluteerror | 1.357625 / 1.341602 | 0.0 |
+| #2 CAT | CatBoost MAE | 1.361621 / 1.338456 | 0.0 |
+| #3 LGB_tuned | Optuna LGB | 1.355829 / 1.339793 | 0.0 |
+| #4 LGB_tuned_seed2024 | seed-bag LGB | 1.356041 / 1.339145 | 0.0 |
+| #5 LGBBOUND | LGB lr=0.005 | 1.355870 / 1.339496 | 0.0 |
+| #6 TWEEDIE | Tweedie LGB | 1.398811 / 1.374674 | 0.0 |
+| #8 FEATPRUNE | LGB drop Weight | 1.357307 / 1.340252 | 0.0 |
+
+**Weight-precision gotcha (important for future rebuilds)**: `experiments_tree.json`
+stores blend weights rounded to 4 decimals (they sum to 0.9999). Blending with those
+display-precision weights gives rounded OOF MAE **1.335796, NOT 1.33563** — the ~5e-5
+per-member weight error flips a handful of samples across the 0.5 rounding boundary.
+The exact full-precision weight vector was recovered by replaying the winning node's own
+fully deterministic weight search (harness_v2 dirichlet k=800, rng seed=42, + coordinate
+ascent, scored on rounded MAE) over the gate-verified reconstructed OOFs: recovered
+weights round(4)-match the stored tree weights member-for-member, and score
+raw 1.357118 / **rounded 1.335634 → 1.33563 exactly**.
+
+**Submission**: `submissions/sub_tree_best_1.33563_20260706_115200.csv` — 49,368 rows,
+format/id-order verified vs `data/sample_submission.csv`, integer Age in [4, 19]
+(train range [1, 29]). Blend→round→clip(≥1), same convention as `pool_lib.write_submission`.
+NOT yet submitted — awaiting controller LB validation.
+Full audit trail: `scripts/rebuild_tree_best_result.json` (per-member gate rows +
+recovered full-precision weights). Total rebuild wall time: 435.6s.
