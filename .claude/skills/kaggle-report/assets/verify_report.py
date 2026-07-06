@@ -14,6 +14,20 @@ import sys
 _NUM = re.compile(r"(?<![\w.])-(?:\d+\.\d+|\d{3,})|\d+\.\d+|\d{3,}")
 # 千分位逗號:夾在數字與「剛好 3 位數字 + 邊界」之間 → 移除(74,051 → 74051)
 _GROUP_COMMA = re.compile(r"(?<=\d),(?=\d{3}\b)")
+# Markdown 節次編號(章節結構,非資料數字):標題行開頭的 `### 2.1`、`#### 2.2a.` 等 —
+# 章節樹編號本身不是 facts.json 的資料,不受 Hard Rule 1 拘束(cf. 既有的年份豁免)。
+_HEADING_NUM = re.compile(r"^(#{1,6}[ \t]+)\d+(?:\.\d+)*[a-z]?\.?(?=[ \t])", re.M)
+# 內文節次交叉引用(章節結構,非資料數字):「見第 2.1 節」「第 3、2.2a 節」「見節 4、2.5」
+# 「見 2.2a 節」「見 2.2a 小節」等 — 同上豁免理由;僅豁免緊鄰「第」/「節」/「見」/「小節」
+# 的編號本身,不吃掉周圍任何其他數字。
+_TOKEN = r"\d+(?:\.\d+)*[a-z]?"
+_TOKENLIST = rf"{_TOKEN}(?:\s*[、/,]\s*{_TOKEN})*"
+_SECTION_REF = re.compile(
+    rf"第\s*{_TOKENLIST}(?=\s*節)"      # 「第 2.1、2.2a 節」
+    rf"|(?<=節)\s*{_TOKENLIST}"          # 「見節 4、2.5」(節在前,無「第」)
+    rf"|見\s*{_TOKENLIST}(?=\s*節)"      # 「見 2.2a 節」(無「第」)
+    rf"|{_TOKEN}(?=\s*小節)"             # 「見(本節末的)? 2.2a 小節」
+)
 
 
 def _normalize(text: str) -> str:
@@ -46,6 +60,8 @@ def find_suspects(report_text: str, facts: dict) -> list:
         for nd in range(1, 7):          # 容許四捨五入到 1–6 位小數的變體
             variants.add(round(v, nd))
     text = re.sub(r"```.*?```", "", report_text, flags=re.S)   # code block 豁免
+    text = _HEADING_NUM.sub(lambda m: m.group(1), text)         # 節次編號豁免(標題)
+    text = _SECTION_REF.sub("", text)                           # 節次編號豁免(內文交叉引用)
     text = _normalize(text)                                     # 千分位正規化
     suspects = []
     for tok in _NUM.findall(text):

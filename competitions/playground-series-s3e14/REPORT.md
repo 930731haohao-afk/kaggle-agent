@@ -19,7 +19,9 @@
 | 評估指標 | mae(minimize) |
 | 目標欄位 | yield |
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 本場已完整執行 EDA(`scripts/eda.py`)與特徵工程(`scripts/features.py`),`facts.json` 的
 `material_level` 為 `full`,`status_md_present` 為 `true`(競賽層 `STATUS.md` 已建立,記錄 EDA
@@ -30,19 +32,19 @@ narrative 發現)。
   (來源:`experiments[1].n_features`);第 3 筆(特徵剪枝 iteration 2)起至第 7 筆(線性迭代
   終點)均使用 21 個特徵(來源:`experiments[2].n_features` / `experiments[6].n_features`)。
   第 4–7 筆為 Phase B 自我改進迭代(Optuna 調參、blend 成員擴充、isotonic 校準試驗、seed bagging)。
-  **第 8 筆(facts.best,Phase G-1b 樹搜尋)不是線性迭代的延續回合**,細節見第 3 節末小節。
+  **第 8 筆(facts.best,Phase G-1b 樹搜尋)不是線性迭代的延續回合**,細節見第 2.2 節末小節。
 - 原始資料列數/欄位型別、缺漏值計數等具體數值未被 `collect.py` 收錄進 `facts.json`(該檔僅記錄
   competition 中繼資料與 experiments 結構化欄位,不解析 EDA 腳本輸出),故此類細項為
   **無紀錄**。
 - 特別規則:不可使用外部資料、不可使用預訓練模型、不可存取網路;每日提交上限 5 次(來源:
   `competition.special_rules`)。
 
-## 3. 模型規格
+### 2.2 模型規格
 
 **facts.json 目前的 best 是 experiment_id=8——一筆樹搜尋(tree-search)結果**(細節見
-3b 小節),而非本節原本描述的線性迭代終點(experiment_id=7)。兩者皆完整說明如下。
+2.2b 小節),而非本節原本描述的線性迭代終點(experiment_id=7)。兩者皆完整說明如下。
 
-### 3a. 線性迭代最佳(experiment_id=7,Phase B round 4 之終點)
+#### 2.2a 線性迭代最佳(experiment_id=7,Phase B round 4 之終點)
 
 五個 base model 分數:
 
@@ -67,7 +69,7 @@ LGB 0.2 / LGB_TUNED 0.15 / XGB 0.2 / CAT 0.25 / LGB_SEED2024 0.2,Ensemble 分數
 一個 seed 多樣化的 LGB(相同超參、random_state 2024)作為第 5 個成員,取得 340.59891
 (線性迭代終點)。
 
-### 3b. 樹搜尋最佳(best,experiment_id=8)——本次更新(Phase G-1b)新增
+#### 2.2b 樹搜尋最佳(best,experiment_id=8)——本次更新(Phase G-1b)新增
 
 Phase F-2(harness v3,2026-07-04,預設自動策略驗證跑)樹搜尋在 experiment_id=7 的相同
 21-特徵集上另闢節點空間,於 `experiments_tree_v3.json` 的 node #44 找到 MAE 更低的
@@ -128,7 +130,7 @@ schema)——`experiments_tree_v3.json` 僅記錄成員清單與 raw/snap 兩個
 
 **選型理由/來源說明**(`best.notes`):這是 Phase F-2 樹搜尋(harness v3 預設自動策略驗證
 跑)結果,不是線性迭代的延續回合。較 experiment_id=7(340.59891)改善 -0.24319(約
--0.071% 相對改善,詳見第 6 節程式區塊),也優於先前 harness v1-proto 樹的結果(Phase
+-0.071% 相對改善,詳見第 2.5 節程式區塊),也優於先前 harness v1-proto 樹的結果(Phase
 C-2b,340.52635)。explore-burst(評估 39–44)貢獻了 exploit 階段結束後全部的增益
 (340.45150 → 340.35572);本輪 60 次評估在硬預算上限停止,並非透過 patience 自動停止
 機制觸發。完整節點鏈、phase machine 行為、與誠實操作記錄(含 6 次災難性 DART 評估)見
@@ -138,7 +140,7 @@ validation run〉。
 > **重要澄清**:`best.notes` 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
 > 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。best 是以 OOF score 最小者選出
 > (本場 metric 為 mae,minimize),與是否已提交至 Kaggle 無關;本場(experiment_id=7 與
-> experiment_id=8 皆同)未提交至 Kaggle(見第 6 節),因此沒有 leaderboard 分數可與 best
+> experiment_id=8 皆同)未提交至 Kaggle(見第 2.5 節),因此沒有 leaderboard 分數可與 best
 > 對照。
 
 作為對照,第 1 筆實驗(通用批次基線)的 base model 分數為:
@@ -152,7 +154,7 @@ validation run〉。
 （來源:`experiments[0].base_models`,ensemble 權重 LGB 0.3 / XGB 0.3 / CAT 0.4,分數
 341.40782,來源:`experiments[0].ensemble`。）
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 | 實驗 | source_format | CV scheme | n_splits | seed |
 |------|----------------|-----------|----------|------|
@@ -178,7 +180,7 @@ validation run〉。
 EDA 脈絡,目標為連續值且無分組/時間結構,train/test 各欄位分布差異小,故不需分層抽樣(與
 s3e16 的離散 Age 目標不同),一般 i.i.d. KFold 即為合適的驗證方案。
 
-## 5. 推論程序
+### 2.4 推論程序
 
 **facts.json 現在的 best 是 experiment_id=8(樹搜尋)**,其 `postprocess` 欄位記錄
 `"snap_to_grid (applied inside metric_fn on the raw blend OOF, not just at submission
@@ -198,12 +200,12 @@ time)"`——與 experiment_id=7 的差異在於樹搜尋版本於 **metric_fn �
 
 **Submission 檔名(best.submission,experiment_id=8)**:**無紀錄**——experiment_id=8 是
 樹搜尋(OOF-only)結果,facts.json 本筆未附 submission 欄位,未產生 test 預測、未提交
-Kaggle(見 3b 節澄清)。線性迭代終點(experiment_id=7)有提交檔案供參考:
+Kaggle(見 2.2b 節澄清)。線性迭代終點(experiment_id=7)有提交檔案供參考:
 `sub_blend_v6_340.59891_20260703_211503.csv`(對應 OOF 340.59891,非目前 best 的
 340.35572),對應 `id_column = id`、`target_column = yield`(來源:
 `competition.id_column` / `competition.target_column`)。
 
-## 6. 評估指標
+### 2.5 評估指標
 
 **指標定義**:MAE(Mean Absolute Error)= 預測值與真實值絕對差的平均,單位與目標欄位相同
 (此處為產量)。
@@ -266,7 +268,7 @@ experiments.json,見 STATUS.md)的改善:
 即最佳實驗較基線有小幅但一致的下降(對絕對誤差指標而言為改善方向),Phase B 4 輪迭代再貢獻
 上方第二個算式所示的額外改善,樹搜尋(Phase G-1b 入帳)再貢獻第三個算式所示的額外改善。
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 | experiment_id | timestamp | score | source_format |
 |---------------|-----------|-------|----------------|
@@ -294,16 +296,16 @@ experiments.json,見 STATUS.md)的改善:
 `experiments_tree_v3.json` 的 node #44,harness v3 的 explore-burst 機制強制觸發的
 「kitchen-sink mega-blend」,把整場搜尋累積的全部 34 個 solo 成員一次納入權重搜尋
 (60-評估硬上限中的第 44 次評估)。樹搜尋在 exp7 的相同 21-特徵集上另闢節點空間,分數由
-340.59891 降至 340.35572(相對改善見上方第 6 節程式區塊)。**誠實 CV-only 警語**:此結果
+340.59891 降至 340.35572(相對改善見上方第 2.5 節程式區塊)。**誠實 CV-only 警語**:此結果
 為 OOF-only 搜尋產物——tree_search harness 未產生任何 test 預測檔,facts.json 本筆亦無
-submission 欄位,**未提交至 Kaggle**;不可與 exp7 實際提交的 submission 檔案混淆(見第 5
+submission 欄位,**未提交至 Kaggle**;不可與 exp7 實際提交的 submission 檔案混淆(見第 2.4
 節)。完整節點鏈、explore-burst 機制、與誠實操作記錄(含 6 次災難性 DART 評估)見
 `competitions/playground-series-s3e14/STATUS.md`〈Appendix: Phase F-2 harness v3
 validation run〉。
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 
-## 8. 重現指令
+## 4. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle

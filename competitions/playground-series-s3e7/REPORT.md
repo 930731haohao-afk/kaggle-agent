@@ -19,7 +19,9 @@
 | 評估指標 | roc_auc(maximize) |
 | 目標欄位 | booking_status |
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 facts.json 僅記錄各實驗使用的特徵數,未記錄訓練/測試集的實際列數與欄位型別分佈,故列數/欄位型別
 概述為**無紀錄**。可回溯的資料規模資訊來自 `experiments[].n_features`:
@@ -37,12 +39,12 @@ facts.json 僅記錄各實驗使用的特徵數,未記錄訓練/測試集的實�
 false)、不允許預訓練模型(pretrained_models_allowed: false)、不允許存取網路
 (internet_access_allowed: false)、每日提交上限 5 次(daily_submission_limit: 5)。
 
-## 3. 模型規格
+### 2.2 模型規格
 
-**facts.json 目前的 best 是 experiment_id=7——一筆樹搜尋(tree-search)結果**(見 3b 節),
+**facts.json 目前的 best 是 experiment_id=7——一筆樹搜尋(tree-search)結果**(見 2.2b 節),
 而非本節原本描述的線性迭代最終回合(exp 6)。兩者皆完整說明。
 
-### 3a. 線性迭代最佳(experiment_id=6,3 輪 Phase B 迭代之終點)
+#### 2.2a 線性迭代最佳(experiment_id=6,3 輪 Phase B 迭代之終點)
 
 由三個基模型加權混合而成(來源:`experiments[5].base_models`,即 exp 6):
 
@@ -62,7 +64,7 @@ LGB 單模由 0.898824 升至 0.899215,成為最強單模。Round 2 以同法調
 與調參 LGB 相似的淺樹結構,喪失 ensemble 多樣性,故保留手設 XGB。CatBoost 單模最弱
 (0.896709),權重搜尋僅給 0.06。
 
-### 3b. 樹搜尋最佳(best, experiment_id=7)——本次更新新增
+#### 2.2b 樹搜尋最佳(best, experiment_id=7)——本次更新新增
 
 Phase F-2(harness v3 驗證跑,2026-07-04)在 `experiments_tree_v3.json`(全新樹,D-3 的
 22-節點 v2 掃描樹 `experiments_tree.json` 未被觸碰)的 node #48 找到本場目前最佳 ROC-AUC:
@@ -92,9 +94,9 @@ D-3 的 22-節點 v2 掃描延伸。全部超越 v2 重現高原(0.900054)的增
 > **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
 > 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。facts.best 是以 OOF score 最大者
 > 選出(本場 metric 為 roc_auc,maximize),與是否已提交至 Kaggle 無關;本場所有實驗(含
-> 實驗 7)皆未提交至 Kaggle(見第 5/6 節)。
+> 實驗 7)皆未提交至 Kaggle(見第 2.4/2.5 節)。
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 CV 方案(來源:`best.cv`,experiment_id=7 為現在的 best;7 個實驗全程固定同一方案,分數可
 直接比較):
@@ -122,7 +124,7 @@ score/weight/note,**未附 params 欄位——無紀錄**,不臆測。以下為�
 reg_alpha≈2.14),num_leaves=178 在 depth=3 之下實際不起作用;這與跨競賽經驗
 「小/中型資料獎勵正則化而非容量」一致。
 
-## 5. 推論程序
+### 2.4 推論程序
 
 **後處理步驟**:facts.json 之 `best`(experiment_id=7,樹搜尋)未記錄 `postprocess` 欄位 →
 **無後處理紀錄**(ROC-AUC 為排序型指標,不需要機率門檻轉換)。
@@ -134,7 +136,7 @@ facts.json 本筆未附 submission 欄位,未產生 test 預測、未提交 Kagg
 線性迭代終點(exp 6)有提交檔案供參考:`sub_blend_0.89989_20260703_205132.csv`(來源:
 `experiments[5].submission`),對應 OOF 0.899893,非目前 best 的 0.900455。
 
-## 6. 評估指標
+### 2.5 評估指標
 
 **指標定義**:ROC-AUC 衡量模型將正類(取消)排在隨機一筆負類(未取消)之前的機率,數值介於
 0.5(隨機)到 1(完美排序)之間,越高越好(maximize)。
@@ -160,7 +162,7 @@ exp7(樹搜尋 best)相對 exp6(線性迭代終點)之改善:
 exp7 - exp6:  0.900455 - 0.899893 = 0.000562   (絕對改善)
 ```
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 逐實驗分數表(來源:`trajectory`):
 
@@ -213,14 +215,14 @@ exp 6 的 0.899893 升至 0.900455(見上方程式,絕對改善 +0.000562)。全
 (0.900054)的增益皆來自 harness v3 的強制 explore-burst 機制(kitchen-sink mega-blend)。
 **誠實 CV-only 警語**:此結果為 OOF-only 搜尋產物——tree_search harness 未產生任何 test
 預測檔,facts.json 本筆亦無 submission 欄位,**未提交至 Kaggle**;不可與 exp 6 實際提交的
-submission 檔案混淆(見第 5 節)。完整節點鏈、policy 行為誠實記錄(phase machine/burst
+submission 檔案混淆(見第 2.4 節)。完整節點鏈、policy 行為誠實記錄(phase machine/burst
 payoff/boundary-push/dedup/reopen-blend)、與操作面問題(3 次重啟)見
 `competitions/playground-series-s3e7/STATUS.md`〈Appendix: Phase F-2 harness v3
 validation run〉。
 
 `unparsed`:facts.json 之 `unparsed` 清單為空,無法解析之紀錄:無。
 
-## 8. 重現指令
+## 4. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle

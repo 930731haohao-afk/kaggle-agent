@@ -23,7 +23,9 @@
 | 目標欄位 | Strength |
 | ID 欄位 | id |
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 facts.json 未記錄列數/欄位數(row/column counts),故列數與欄位數寫「無紀錄」。可從
 `experiments[].n_features` 得知特徵數量的演變:baseline(experiment_id 1)使用 8 個原始特徵,
@@ -42,7 +44,7 @@ facts.json 未記錄列數/欄位數(row/column counts),故列數與欄位數寫
 本場素材等級為 `full`(非 baseline-only),故 EDA 與特徵工程階段皆已執行(細節見
 STATUS.md,惟本節數字僅取自 facts.json)。
 
-## 3. 模型規格
+### 2.2 模型規格
 
 最佳實驗(experiment_id 8)是 7 成員加權 blend:「7-way blend: Round-3 pool + CAT_seed2 +
 LGB_tuned_seed3 (seed-bag expansion)」。7 個成員 = experiment_id 7 的 5 成員 pool(orig
@@ -87,7 +89,7 @@ LGB_tuned_seed2 + LGB_tuned_seed3 權重合計: 0.127 + 0.129 = 0.256
 0——本輪增益完全來自 seed bagging(以不同 random seed 重訓同超參模型再平均)的變異數
 縮減,而非調參本身。
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 **CV 方案**(來源:`best.cv`):
 
@@ -119,7 +121,7 @@ StratifiedKFold(`5fold_stratified_strength_decile`)。相較於單純 KFold,對�
 可讓每個 fold 的目標分布更一致,在資料量較小時能降低 fold 間變異——這與 baseline
 (experiment_id 1)僅記錄 `cv.scheme = "5fold"`(未分層)形成對比。
 
-## 5. 推論程序
+### 2.4 推論程序
 
 **後處理**:`best.postprocess` 未記錄 → 無後處理紀錄。
 
@@ -131,7 +133,7 @@ StratifiedKFold(`5fold_stratified_strength_decile`)。相較於單純 KFold,對�
 | ID 欄位 | id |
 | 目標欄位 | Strength |
 
-## 6. 評估指標
+### 2.5 評估指標
 
 **指標定義**:RMSE(Root Mean Squared Error)是預測值與真實值差異平方之平均值,再開根號,
 數值與目標欄位同單位,對大誤差的懲罰重於 MAE。
@@ -148,7 +150,7 @@ StratifiedKFold(`5fold_stratified_strength_decile`)。相較於單純 KFold,對�
 | **最佳 Ensemble(experiment_id 8,7-way seed-bag)** | **12.070034** |
 
 `facts.missing` 記錄 `["leaderboard"]`,即本場 **未提交至 Kaggle,無 Public/Private LB
-分數**,故無法計算 CV↔LB gap(僅當 leaderboard 存在時才計算,依規格第 6 節)。
+分數**,故無法計算 CV↔LB gap(僅當 leaderboard 存在時才計算,依規格第 2.5 節)。
 
 以下為 baseline / 前一輪最佳與最佳 CV 分數的改善量(衍生計算,數字皆逐字取自
 facts.json,置於 code block 中):
@@ -166,7 +168,7 @@ Phase B 迭代增益:
 = 0.003440
 ```
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 **逐實驗分數表**(來源:`trajectory`):
 
@@ -182,7 +184,7 @@ Phase B 迭代增益:
 | 8 | 2026-07-03T23:51:20 | 12.070034 | v2 |
 
 **突破點敘述**:主要分數躍升發生在 experiment_id 2(timestamp 2026-07-03T19:10:07),
-score 由 baseline 的 12.54287 降至 12.073474。依 `experiments[2].notes`(逐字節錄同第 4
+score 由 baseline 的 12.54287 降至 12.073474。依 `experiments[2].notes`(逐字節錄同第 2.3
 節),此次變動同時改了兩件事:(a) 對 LGB/XGB 加入明確正則化超參數
 (num_leaves=15/depth5/L1=2/L2=4 與 depth4/L1=2/L2=4),(b) 從 8 個原始特徵擴充為 22 個
 工程特徵(含 log_age、water/binder 比值等)。experiment_id 3 是延伸嘗試(加入 3 個
@@ -201,13 +203,13 @@ experiment_id 4 以相同 22 特徵重新執行,score 完全重現為 12.073474�
 - Round 4(experiment_id 8):seed-bag 權重最大的 CatBoost(seed 1042)+ 第 3 個調參 LGB
   seed(2042),7-way 權重搜尋 → **12.070034**(最終最佳)。
 
-整個 Phase B 的增益(第 6 節 code block 中的 12.073474 − 12.070034 衍生計算)完全來自
+整個 Phase B 的增益(第 2.5 節 code block 中的 12.073474 − 12.070034 衍生計算)完全來自
 seed bagging,調參與去噪(dup-smoothing)本身皆未直接貢獻——與 STATUS.md 的標籤噪音
 天花板診斷一致:分數已貼近噪音上限時,對獨立 seed 的模型取平均是僅存的「免費」改善方向。
 
 `facts.unparsed` 為空陣列,無「無法解析之紀錄」。
 
-## 8. 重現指令
+## 4. 重現指令
 
 以下命令序列參考 STATUS.md 的 Reproduce 節,並依 `competitions/playground-series-s3e9/scripts/`
 實際檔名組成。執行目錄為專案根目錄,需先安裝 `uv`。

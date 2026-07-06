@@ -14,7 +14,7 @@ Aygun et al.(Nature 2026)Kaggle Playground 基準之一(來源:`competition.note
 通常關心「相對誤差」而非絕對誤差——把一筆高成本活動預測差一截,與把一筆低成本活動預測差
 同樣金額,對業務的意義不同;RMSLE 在對數空間計算平方誤差,懲罰的是比例偏差,並且天然
 壓抑大數值樣本對損失的支配,是成本/金額類目標的合理選擇。實務上這也決定了訓練策略:
-對 log1p(cost) 以 RMSE objective 訓練,即可直接優化 RMSLE(見節 4)。
+對 log1p(cost) 以 RMSE objective 訓練,即可直接優化 RMSLE(見節 2.3)。
 
 | 項目 | 值 |
 |------|-----|
@@ -23,7 +23,9 @@ Aygun et al.(Nature 2026)Kaggle Playground 基準之一(來源:`competition.note
 | 評估指標 | rmsle(minimize) |
 | 目標欄位 | cost |
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 - 訓練/測試列數:facts.json 未記載,**無紀錄**(實際形狀見 `scripts/eda.py` 執行輸出)。
 - 原始特徵 15 欄(來源:`experiments[0].n_features`、`experiments[1].features`):門市屬性
@@ -40,12 +42,12 @@ Aygun et al.(Nature 2026)Kaggle Playground 基準之一(來源:`competition.note
   `store_sqft` 加五個設施旗標組成的「store profile」組合——其組平均對目標的解釋力遠高於
   任何單一欄位,是特徵工程主攻方向(需 out-of-fold 編碼防洩漏)。
 
-## 3. 模型規格
+### 2.2 模型規格
 
 本場共九筆實驗:前三筆(Phase A)為 LightGBM + XGBoost + CatBoost 三模型加權集成,差別在
 特徵集與訓練方法;第 4–8 筆(Phase B 自我改進迭代 R1–R5)在最佳特徵集上調整模型池組成
 (刪除 XGBoost、Optuna 調參 CatBoost、seed bagging、特徵消融);**第 9 筆(facts.best,
-Phase G-1b 樹搜尋)不是線性迭代的延續回合**,細節見 3a 小節。
+Phase G-1b 樹搜尋)不是線性迭代的延續回合**,細節見 2.2a 小節。
 
 **實驗 1(`generic_batch`,通用批次基線;15 原始特徵)— base models:**
 
@@ -120,7 +122,7 @@ random_strength=0.09160286047373326;搜尋耗時 319.3s(40 trials,timeout guard 
 權重搜尋把全部權重給了調參 CatBoost 家族——調參後單模(0.29579)已勝 Phase A 三模型
 blend(0.296143),LGB 與原參數 CatBoost 淪為冗餘。
 
-### 3a. 樹搜尋最佳(facts.best,實驗 9)——本次更新(Phase G-1b)新增
+#### 2.2a 樹搜尋最佳(facts.best,實驗 9)——本次更新(Phase G-1b)新增
 
 Phase D-6(harness v2,2026-07-04,「SCALE case,sweep finale」)樹搜尋在實驗 8 的相同
 21-特徵集上另闢節點空間,於 `experiments_tree.json` 的 node #20(24 個評估節點:12
@@ -140,7 +142,7 @@ solo/12 blend,其中 5 個 solo 直接複用線性迭代自己的 npz cache 而�
 
 **Ensemble**(best.ensemble):harness_v2 dirichlet phase-2 權重搜尋(BLEND2 re-seed,
 在發現 depth-12 家族後重開 blend lineage,零重訓,於快取 OOF 上進行),score = **0.29528**。
-較實驗 8 改善 -0.000368(約 -0.124% 相對改善,詳見第 6 節程式區塊)。
+較實驗 8 改善 -0.000368(約 -0.124% 相對改善,詳見第 2.5 節程式區塊)。
 
 **兩個關鍵槓桿(best.notes)**:(1) 把 CatBoost depth 推到 12,**超出**線性迭代 Optuna 自身
 的搜尋上限 10(該次 Optuna 搜尋空間本就止於 depth=10,其選出的最優解恰好落在邊界上)——
@@ -152,10 +154,10 @@ sweep〉。
 
 > **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
 > 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。本場的「現行最佳提交」仍是實驗
-> 8 對應的 submission 檔(見第 5 節);facts.best 是以 OOF score 最小者選出,與是否已
+> 8 對應的 submission 檔(見第 2.4 節);facts.best 是以 OOF score 最小者選出,與是否已
 > 提交至 Kaggle 無關。
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 | 實驗 | CV scheme | n_splits | seed |
 |------|-----------|----------|------|
@@ -176,9 +178,9 @@ XGB `reg:squarederror`、CAT `RMSE`),因為 RMSLE 即「log1p 空間的 RMSE」,
 讓任何 fold 缺少某個 profile,故採標準 5-fold KFold(shuffle, seed=42)。實驗 2 與 3 使用同一
 組 fold 切分,分數可直接比較。target encoding 在 fold 迴圈內計算,與 CV 方案一致、無洩漏。
 
-## 5. 推論程序
+### 2.4 推論程序
 
-**facts.best 現為實驗 9(樹搜尋,見 3a 節)**,其 `postprocess`/`submission` 欄位皆未記錄
+**facts.best 現為實驗 9(樹搜尋,見 2.2a 節)**,其 `postprocess`/`submission` 欄位皆未記錄
 (OOF-only 結果,未產生 test 預測)。以下描述線性迭代終點實驗 8 的推論流程:`postprocess`
 欄位未記錄 → **無後處理紀錄**;惟各實驗 notes
 記載推論流程本身包含「expm1 逆轉換 + clip 至非負」,這是 log 目標訓練的必要配套步驟而非
@@ -194,7 +196,7 @@ facts.best)未產生任何 submission 檔**——樹搜尋為 OOF-only 搜尋,�
 **注意**:本場為週末自主批次執行,九筆實驗皆**未提交** Kaggle 排行榜(`facts.missing` 含
 `leaderboard`),無 Public/Private LB 分數。
 
-## 6. 評估指標
+### 2.5 評估指標
 
 **指標定義**:RMSLE = sqrt(mean((log1p(pred) − log1p(actual))²)),衡量對數空間的均方根誤差,
 懲罰相對(比例)偏差。
@@ -227,12 +229,12 @@ Phase B(自我改進迭代):
 實驗 8 − 實驗 3:0.296143 − 0.295648 = 0.000495  (Phase B 總增益,~0.17% 相對改善)
 
 Phase G-1b(樹搜尋 v2,node #20):
-實驗 8 − 實驗 9:0.295648 − 0.29528  = 0.000368  (~0.124% 相對改善,詳見第 3a 節兩槓桿)
+實驗 8 − 實驗 9:0.295648 − 0.29528  = 0.000368  (~0.124% 相對改善,詳見第 2.2a 節兩槓桿)
 ```
 
 CV↔LB gap:無排行榜紀錄,無法計算。
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 | experiment_id | timestamp | score | source_format |
 |---------------|-----------|-------|----------------|
@@ -250,7 +252,7 @@ CV↔LB gap:無排行榜紀錄,無法計算。
 
 **突破點(Phase A)**:主要改善發生在第 2 → 第 3 筆之間。第 2 筆只是把通用基線的方法論換成
 「log1p 目標 + early stopping + 權重搜尋」,分數僅微幅改善;第 3 筆加入 6 個工程特徵——尤其是
-store profile 的 K-fold target encoding(`store_te`)——帶來 Phase A 絕大部分的增益(見節 6 的
+store profile 的 K-fold target encoding(`store_te`)——帶來 Phase A 絕大部分的增益(見節 2.5 的
 衍生算式)。這與 EDA 的判讀一致:單欄位訊號極弱,但 store profile 組合的組平均是資料中
 最強的可用結構;在低訊號 playground 資料集上,能把這類「組合層級」訊號餵給模型的特徵
 工程,比模型/超參數調整更有價值。
@@ -266,16 +268,16 @@ store profile 的 K-fold target encoding(`store_te`)——帶來 Phase A 絕大�
 (2026-07-04)以 harness v2 執行的**樹搜尋(tree-search)**結果——來源 `experiments_tree.json`
 的 node #20。樹搜尋在實驗 8 的相同 21-特徵集與 CV 折上另闢節點空間,把 CatBoost depth
 推到線性迭代 Optuna 搜尋上限(10)之外的 12,並在發現這個新的高容量家族後重開已 plateau
-的 blend lineage,兩者複合把分數從 0.295648 降至 0.29528(詳見 3a 節)。**誠實 CV-only
+的 blend lineage,兩者複合把分數從 0.295648 降至 0.29528(詳見 2.2a 節)。**誠實 CV-only
 警語**:此結果為 OOF-only 搜尋產物——tree_search harness 未產生任何 test 預測檔,facts.json
 本筆亦無 submission 欄位,**未提交至 Kaggle**;不可與實驗 8 實際提交的 submission 檔案
-混淆(見第 5 節)。完整節點鏈、backtrack/dedup 統計、與「什麼真正起作用」的誠實歸因見
+混淆(見第 2.4 節)。完整節點鏈、backtrack/dedup 統計、與「什麼真正起作用」的誠實歸因見
 `competitions/playground-series-s3e11/STATUS.md`〈Appendix: Phase D-6 tree-search v2
 sweep〉。
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 
-## 8. 重現指令
+## 4. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle

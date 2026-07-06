@@ -2,7 +2,7 @@
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
 > 素材等級:full | 產生日期:2026-07-06(真實 Kaggle LB 驗證入帳後更新;實驗 5 樹搜尋
-> 最佳 blend 已提交排行榜,取得 Public 1.34315 / Private 1.33859,詳見第 3a、5、6、7 節。
+> 最佳 blend 已提交排行榜,取得 Public 1.34315 / Private 1.33859,詳見第 2.2a、2.4、2.5、3 節。
 > 先前 2026-07-04 版本涵蓋 Phase G-1a 樹搜尋成果入帳、Phase B 迭代 exp 3、4 補記)
 
 ## 1. 競賽目的
@@ -22,7 +22,9 @@
 | 評估指標 | mae(minimize) |
 | 目標欄位 | Age |
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 - 訓練集 74,051 列、測試集 49,368 列;共 8 個原始欄位(1 個類別型 `Sex`,其餘 7 個為連續型的
   尺寸/重量量測值)加上目標欄位 `Age`(來源:`competition.notes`)。
@@ -35,7 +37,7 @@
 - 實驗 2(`generic_batch` 通用批次管線)僅使用原始 8 個欄位,未套用上述特徵工程(來源:
   `experiments[1].n_features`)。
 
-## 3. 模型規格
+### 2.2 模型規格
 
 本場現有 5 筆實驗紀錄。**重要語意澄清(本節通篇適用)**:實驗 1、2 的 `score` 欄位是「原始
 （未取整)OOF MAE」(source_format 分別為 `skill_train`/`generic_batch`,`collect.py` 正規化時
@@ -70,7 +72,7 @@ Ensemble 分數(來源:`experiments[1].ensemble.score`):**1.35441**(原始 OOF M
 普遍穩健,各自的歸納偏誤不同,故以加權集成降低單一模型的方差。實驗 1 額外投入特徵工程(24
 個特徵)並針對 MAE 目標調整訓練細節;實驗 2 為通用批次管線的預設跑法,未套用上述特徵工程但
 集成權重不同,結果原始 OOF 分數反而略低——惟此結果僅為內部原始 OOF 比較,實驗 2 並未提交至
-Kaggle 排行榜驗證(見節 5、6)。
+Kaggle 排行榜驗證(見節 2.4、2.5)。
 
 **實驗 3(Phase B round 1,加入 Optuna fold0-proxy 調參 LGB 為第 4 個池成員)— base models:**
 
@@ -103,9 +105,9 @@ LGB_tuned 0.4 / LGB_tuned_seed2024 0.2,原始 Ensemble 分數(來源:
 `experiments[3].score`(取整後)= **1.33893**,同樣劣於實驗 1 的取整後 1.33812——連續兩輪
 取整分數未改善,依 Phase B 停止準則(連 2 輪無改善即停)於此輪後停止線性迭代。
 
-**實驗 5(Phase E-3 樹搜尋,`facts.best`)**:見 3a 節。
+**實驗 5(Phase E-3 樹搜尋,`facts.best`)**:見 2.2a 節。
 
-### 3a. 樹搜尋最佳(best, experiment_id=5)——本次更新新增
+#### 2.2a 樹搜尋最佳(best, experiment_id=5)——本次更新新增
 
 Phase E-3(harness v2 於「取整整數 MAE」上的酸性測試,2026-07-04)在 `experiments_tree.json`
 的 node #15 找到本場目前最佳**取整後**OOF MAE:8-way blend(來源:`best.base_models`):
@@ -139,9 +141,9 @@ v2(Phase E-3,harness_v2,2026-07-04)〉。
 > Kaggle(`best.submission` = `sub_tree_best_1.33563_20260706_115200.csv`),取得
 > `best.leaderboard`:**Public 1.34315 / Private 1.33859**(提交:2026-07-06)。此結果
 > 已是本場**兩筆真實 LB 提交之一**,與實驗 1 的 Public 1.34356 / Private 1.34075 併陳於
-> 第 6 節(含改善算式與 CV↔LB gap 一致性檢查)。
+> 第 2.5 節(含改善算式與 CV↔LB gap 一致性檢查)。
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 | 實驗 | CV scheme | n_splits | seed |
 |------|-----------|----------|------|
@@ -164,13 +166,13 @@ trials、300s timeout,依 Hard Rule 1 不作為表格數字引用)。
 StratifiedKFold(將高齡樣本合併為單一分箱以避免箱內樣本過少),使各 fold 的年齡分布更一致,
 讓交叉驗證分數更能反映模型的真實泛化能力。
 
-## 5. 推論程序
+### 2.4 推論程序
 
 `facts.best`(實驗 5,樹搜尋)之 `postprocess`(來源:`best.postprocess`):`["round"]`
-(對取整後 MAE 做決策,見第 3a 節)。**Submission 檔名(best.submission)**:
+(對取整後 MAE 做決策,見第 2.2a 節)。**Submission 檔名(best.submission)**:
 `sub_tree_best_1.33563_20260706_115200.csv`——由 `scripts/rebuild_tree_best.py` 重建
 8 個成員的 test 預測、以同一組全精度權重混合後產生(2026-07-06),已提交 Kaggle 排行榜
-(`best.leaderboard`,結果見第 6 節)。
+(`best.leaderboard`,結果見第 2.5 節)。
 
 實驗 2(通用批次管線,原始 OOF 分數在實驗 1、2 中最低者)之 `postprocess` 欄位未記錄任何後
 處理步驟,故此欄寫「無後處理紀錄」。其 submission 檔名為
@@ -181,10 +183,10 @@ StratifiedKFold(將高齡樣本合併為單一分箱以避免箱內樣本過少)
 實際提交排行榜者為實驗 1,其 `postprocess` 記錄為 `["round"]`(即對預測值四捨五入,因目標
 `Age` 為整數),submission 檔名為 `sub_blend_20260703_091840.csv`(來源:
 `experiments[0].submission`),同樣對應 `id_column = id`、`target_column = Age`。此筆之排行榜
-結果見節 6。實驗 3、4(Phase B 迭代)之 submission 欄位在 facts.json 中亦無紀錄(見第 3
+結果見節 2.5。實驗 3、4(Phase B 迭代)之 submission 欄位在 facts.json 中亦無紀錄(見第 2.2
 節,兩輪皆未通過「取整分數需改善」的採納門檻,故未產生正式提交檔)。
 
-## 6. 評估指標
+### 2.5 評估指標
 
 **指標定義**:MAE(Mean Absolute Error)= 預測值與真實值絕對差的平均,單位與目標欄位相同
 (此處為年齡)。
@@ -219,7 +221,7 @@ OOF 分數略高於(即劣於)Public/Private LB,顯示交叉驗證分數並未�
 反而比 OOF 更好,CV 具參考價值,可安心依 OOF 排序後續實驗。
 
 **樹搜尋(實驗 5)相對已提交線性冠軍(實驗 1)之取整後 MAE 改善,以及同一節點原始 OOF 之
-劣化(見第 3a 節「反轉」現象),以內嵌算式呈現:**
+劣化(見第 2.2a 節「反轉」現象),以內嵌算式呈現:**
 
 ```
 實驗5取整後 − 實驗1取整後(1.33812,未記入實驗1結構化欄位,取自 experiments[2/3/4].notes
@@ -259,7 +261,7 @@ OOF MAE 對這個決策指標而言是可信賴的排序依據,未見對 Public 
 (2026-07-03),以及實驗 5 樹搜尋最佳的 Public 1.34315 / Private 1.33859(2026-07-06,
 雙榜皆優於提交#1)。
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 | experiment_id | timestamp | score | source_format |
 |---------------|-----------|-------|----------------|
@@ -270,14 +272,14 @@ OOF MAE 對這個決策指標而言是可信賴的排序依據,未見對 Public 
 | 5 | 2026-07-04T11:59:43 | 1.33563 | v2 |
 
 （來源：`facts.trajectory`；注意實驗 1、2 之 score 為原始 OOF MAE,實驗 3–5 之 score 為
-取整後 OOF MAE,兩者非同一把尺,見第 3 節開頭澄清。）
+取整後 OOF MAE,兩者非同一把尺,見第 2.2 節開頭澄清。）
 
 **突破點 1(exp 1→2)**:第 2 筆實驗(`generic_batch`,通用批次管線)的原始 OOF 分數
 (1.35441)低於第 1 筆(`skill_train`,含特徵工程,1.35589)。第 2 筆僅使用原始 8 個欄位、
 未套用第 1 筆的 24 個工程特徵,但集成權重不同(LGB 0.3 / XGB 0.2 / CAT 0.5,相較第 1 筆之
 LGB 0.6 / XGB 0.3 / CAT 0.1 更偏重 CatBoost),使內部原始 OOF 分數略優於第 1 筆。惟此結果
 僅為原始 OOF 內部比較,第 2 筆並未提交 Kaggle 排行榜驗證,無法確認其是否真的更能泛化
-(見節 5)。
+(見節 2.4)。
 
 **Phase B 自我改進迭代(exp 3、4,先前執行但未重產報告,本次補上)**:兩輪皆針對 LightGBM
 做 Optuna 調參(exp 3:fold0-proxy,21/50 trials,300s timeout 觸發;exp 4:加碼 seed=2024
@@ -292,12 +294,12 @@ Phase E-3(2026-07-04)以 harness v2 對「取整整數 MAE」做的酸性測試�
 `experiments_tree.json` 的 node #15(27 節點總計,24 已評估,3 個失敗但無害,wall
 1409.4s)。此節點的**原始** OOF MAE(1.35712)延續 exp3/4 的退步趨勢、比實驗 1 的
 1.35589 更差,但其**取整後** OOF MAE(1.33563)首次真正**優於**實驗 1 的取整後 1.33812
-(見第 3a、6 節之反轉現象與內嵌算式)。**更新(2026-07-06,不再是 CV-only)**:
+(見第 2.2a、2.5 節之反轉現象與內嵌算式)。**更新(2026-07-06,不再是 CV-only)**:
 `scripts/rebuild_tree_best.py` 重建出此節點的 test 預測(8 個成員逐一 gate 驗證,重建
 OOF 與快取數字逐位一致,詳見 STATUS.md〈Rebuild verification〉節),並實際提交至
 Kaggle:`sub_tree_best_1.33563_20260706_115200.csv`(`best.submission`),取得
 `best.leaderboard`:**Public 1.34315 / Private 1.33859**(提交:2026-07-06)——雙榜皆
-優於實驗 1 的 Public 1.34356 / Private 1.34075(改善算式、CV↔LB gap 一致性檢查見第 6
+優於實驗 1 的 Public 1.34356 / Private 1.34075(改善算式、CV↔LB gap 一致性檢查見第 2.5
 節)。此為這套樹搜尋配方首次獲得的外部(真實排行榜)驗證,而非僅 OOF-only 推論。完整
 節點鏈、8-way blend 組成、與各 lineage 的誠實歸因見
 `competitions/playground-series-s3e16/STATUS.md`〈Appendix — Tree-search v2
@@ -305,7 +307,7 @@ Kaggle:`sub_tree_best_1.33563_20260706_115200.csv`(`best.submission`),取得
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 
-## 8. 重現指令
+## 4. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle

@@ -19,7 +19,9 @@
 | 評估指標 | roc_auc(maximize) |
 | 目標欄位 | Attrition |
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 - 依 `competition.notes`,本場為 Aygün et al. Nature 2026 Kaggle Playground benchmark(Season 3
   Episode 3)。原始欄位數依實驗紀錄:實驗 1(`generic_batch`)使用 33 個特徵(來源:
@@ -31,10 +33,10 @@
 - `material_level` 為 `full`,EDA 已完整執行(細節見 STATUS.md,本節數字仍僅列 facts.json 所載
   之特徵數與規則)。
 
-## 3. 模型規格
+### 2.2 模型規格
 
 本場累計 8 筆實驗紀錄,**`facts.best` 現為實驗 8——一筆樹搜尋(tree-search)結果**,而非
-線性迭代終點(實驗 7)。實驗 1–7(線性迭代)先完整說明如下,實驗 8 見本節末的 3a 小節。
+線性迭代終點(實驗 7)。實驗 1–7(線性迭代)先完整說明如下,實驗 8 見本節末的 2.2a 小節。
 
 **實驗 1(`generic_batch`,通用批次管線)— base models:**
 
@@ -128,7 +130,7 @@ CV ROC-AUC 直接優化(實驗 4),將調參版加入而非取代原池、再做�
 上結構性偏弱」為穩定結論而非單純缺乏原生類別支援。實驗 7 最終改採 rank-average(而非機率空間
 權重混合)在相同權重下取得線性迭代最終分數 0.83814。
 
-### 3a. 樹搜尋最佳(best, experiment_id=8)——本次更新新增
+#### 2.2a 樹搜尋最佳(best, experiment_id=8)——本次更新新增
 
 Phase E-5「規模實驗」(scaling experiment,2026-07-04)以 80-節點預算跑了一棵**與 Phase D-2
 的 22-節點 v2 掃描不同的全新樹**(來源:`experiments_tree_scale.json`,D-2 的
@@ -150,9 +152,9 @@ D-2 v2 掃描的延伸。所有 3 次 eval-40 之後的全域最佳刷新皆來�
 > **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
 > 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。facts.best 是以 OOF score
 > 最大者選出(本場 metric 為 roc_auc,maximize),與是否已提交至 Kaggle 無關;本場所有
-> 實驗(含實驗 8)皆未提交至 Kaggle(見第 5/6 節)。
+> 實驗(含實驗 8)皆未提交至 Kaggle(見第 2.4/2.5 節)。
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 | 實驗 | CV scheme | n_splits | seed |
 |------|-----------|----------|------|
@@ -178,7 +180,7 @@ K-fold 切分,各 fold 之正負樣本比例可能不一致,導致驗證 AUC 分
 StratifiedKFold(依 `Attrition` 分層抽樣),確保每個 fold 的類別比例與整體一致,使交叉驗證分數
 更能反映模型的真實泛化能力;Phase B 迭代(實驗 4–7)延續同一 CV 方案以維持跨實驗可比性。
 
-## 5. 推論程序
+### 2.4 推論程序
 
 `facts.best`(實驗 8,樹搜尋)之 `postprocess` 欄位未記錄任何後處理步驟,故此欄寫「無後處理
 紀錄」。**Submission 檔名(best.submission)：無紀錄**——實驗 8 是樹搜尋(OOF-only)結果,
@@ -194,7 +196,7 @@ best 的 0.845051。
 ——本場所有實驗(含實驗 8)皆**未提交至 Kaggle 排行榜**(依指示本次為僅產生 submission
 檔案之無人值守批次執行,未觸碰 Kaggle 憑證或執行提交)。
 
-## 6. 評估指標
+### 2.5 評估指標
 
 **指標定義**:ROC-AUC(Receiver Operating Characteristic - Area Under Curve)= 模型將正樣本
 排序高於負樣本的機率,數值愈高代表排序能力愈好(下界為隨機猜測、上界為完美排序),不受決策
@@ -226,7 +228,7 @@ Private LB 兩欄皆寫「無紀錄」,無法計算 CV↔LB gap。)
 實驗 8 OOF ROC-AUC − 實驗 3 OOF ROC-AUC = 0.845051 − 0.832925 = 0.012126
 ```
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 | experiment_id | timestamp | score | source_format |
 |---------------|-----------|-------|----------------|
@@ -260,13 +262,13 @@ seed=2024 的第二次訓練(seed bagging),5-way 權重搜尋 blend 再升至 0.
 與 Phase D-2 的 22-節點 v2 掃描樹(`experiments_tree.json`)是各自獨立的兩棵樹。分數由實驗 7
 的 0.83814 升至 0.845051(見上方程式,絕對提升 0.006911)。**誠實 CV-only 警語**:此結果為
 OOF-only 搜尋產物——tree_search harness 未產生任何 test 預測檔,facts.json 本筆亦無
-submission 欄位,**未提交至 Kaggle**;不可與實驗 7 實際提交的 submission 檔案混淆(見第 5
+submission 欄位,**未提交至 Kaggle**;不可與實驗 7 實際提交的 submission 檔案混淆(見第 2.4
 節)。完整曲線表(每 evals 5/10/…/80 的 best-so-far AUC)、遲來的 backtrack 是否值得、與
 跨賽事校準見 `docs/scaling_experiment.md`。
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 
-## 8. 重現指令
+## 4. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle

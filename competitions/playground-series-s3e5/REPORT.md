@@ -21,7 +21,9 @@
 | 評估指標 | quadratic_weighted_kappa(maximize) |
 | 目標欄位 | quality |
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 - 依 `competition.notes` 記載,本場為 Aygun et al. Nature 2026 論文所評測之 Kaggle Playground
   benchmark(Season 3 Episode 5)。
@@ -35,11 +37,11 @@
 - 實驗 4–11(Phase B 自我改進迭代)沿用與實驗 2、3 完全相同的 21 個特徵(來源:
   `experiments[3..10].features`,逐筆核對欄位清單一致),本輪迭代未新增特徵工程。
 
-## 3. 模型規格
+### 2.2 模型規格
 
 本場共 12 筆實驗紀錄,**`facts.best` 現為實驗 12——一筆樹搜尋(tree-search)結果**,而非
 線性迭代最佳(實驗 8/11,並列 0.56769)。實驗 1–11(線性迭代)先完整說明如下,實驗 12
-見本節末的 3a 小節。
+見本節末的 2.2a 小節。
 
 **實驗 1(`generic_batch`,通用批次管線,11 特徵)— base models:**
 
@@ -135,7 +137,7 @@ Ensemble 分數(來源:`experiments[7].ensemble.score`):**0.56769**。此為 `fa
 判斷——此為避免序數/離散化指標特有的「原始分數進步但離散化後不進步」陷阱。另嘗試 seed-bagging
 (實驗 6、9)與多分類期望值解碼頭(實驗 11)兩種候選改動,皆未通過此判準,故未採用。
 
-### 3a. 樹搜尋最佳(best, experiment_id=12)——本次更新新增
+#### 2.2a 樹搜尋最佳(best, experiment_id=12)——本次更新新增
 
 Phase E-2(harness v2 自適應 plateau 首測,2026-07-04)在 `experiments_tree_v2.json`(v1 的
 `experiments_tree.json`/node #11、0.56766,未被觸碰)的 node #17 找到本場目前最佳 QWK:
@@ -165,11 +167,11 @@ k=800(+coordinate-ascent)權重搜尋預算,對照組 k=200 粗搜在同一組 4
 > **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
 > 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。facts.best 是以 OOF score 最大者
 > 選出(本場 metric 為 quadratic_weighted_kappa,maximize),與是否已提交至 Kaggle 無關;
-> 本場所有實驗(含實驗 12)皆未提交至 Kaggle(見第 5/6 節)。best.notes 亦記載風險註記:
+> 本場所有實驗(含實驗 12)皆未提交至 Kaggle(見第 2.4/2.5 節)。best.notes 亦記載風險註記:
 > 權重與切點皆直接對全 OOF 做搜尋、無巢狀驗證,本結果未重跑巢狀切點診斷(對照實驗 7/10
 > 的巢狀驗證模式)。
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 | 實驗 | CV scheme | n_splits | seed |
 |------|-----------|----------|------|
@@ -190,9 +192,9 @@ k=800(+coordinate-ascent)權重搜尋預算,對照組 k=200 粗搜在同一組 4
 樣本過少甚至掛零,使該 fold 的 QWK 計算不穩定。全部 12 筆實驗皆改用「依 `quality` 標籤分層
 抽樣」的 StratifiedKFold,且 folds/seed 固定不變,使各實驗分數可直接比較。
 
-## 5. 推論程序
+### 2.4 推論程序
 
-`facts.best`(實驗 12,樹搜尋)之 `postprocess` 見第 3a 節。**Submission 檔名
+`facts.best`(實驗 12,樹搜尋)之 `postprocess` 見第 2.2a 節。**Submission 檔名
 (best.submission):無紀錄**——實驗 12 是樹搜尋(OOF-only)結果,facts.json 本筆未附
 submission 欄位,未產生 test 預測、未提交 Kaggle。
 
@@ -214,7 +216,7 @@ applied to held-out fold)`(來源:`experiments[6].postprocess`、`experiments[9]
 **本場所有實驗均未提交至 Kaggle 排行榜**(此執行環境未設定 Kaggle 憑證,`facts.json` 中
 `leaderboard` 欄位為 null,且列於 `facts.missing`)。
 
-## 6. 評估指標
+### 2.5 評估指標
 
 **指標定義**:quadratic_weighted_kappa(QWK)= 觀察一致性與隨機期望一致性之差,並以「預測與
 真實等級距離的平方」作為誤差權重,數值愈接近 1 表示模型排序與真實等級愈一致。
@@ -261,14 +263,14 @@ applied to held-out fold)`(來源:`experiments[6].postprocess`、`experiments[9]
 ```
 
 `facts.best`(實驗 12,樹搜尋)相對線性迭代最佳(實驗 8/11,0.56769)與樹搜尋 v1
-(node #11,0.56766,見第 7 節)之增益:
+(node #11,0.56766,見第 3 節)之增益:
 
 ```
 實驗 12 OOF QWK − 實驗 8 OOF QWK = 0.57066 − 0.56769 = 0.00297
 實驗 12 OOF QWK − 樹搜尋v1 OOF QWK = 0.57066 − 0.56766 = 0.00300
 ```
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 | experiment_id | timestamp | score | source_format |
 |---------------|-----------|-------|----------------|
@@ -304,13 +306,13 @@ CatBoost 加入集成池,`experiments[7].notes`)。實驗 4(更細緻權重搜�
 分數由線性迭代最佳 0.56769 升至 0.57066(見上方程式,絕對提升 0.00297)。**誠實 CV-only
 警語**:此結果為 OOF-only 搜尋產物——tree_search harness 未產生任何 test 預測檔,facts.json
 本筆亦無 submission 欄位,**未提交至 Kaggle**;不可與實驗 1 的 submission 檔案(唯一有紀錄
-的 submission)混淆(見第 5 節)。完整節點鏈、自適應 plateau 機制為何本場未觸發、與誠實風險
+的 submission)混淆(見第 2.4 節)。完整節點鏈、自適應 plateau 機制為何本場未觸發、與誠實風險
 註記見 `competitions/playground-series-s3e5/STATUS.md`〈Appendix — 樹搜尋 v2(harness_v2,
 Phase E-2,自適應 plateau 首測,2026-07-04)〉。
 
 `facts.unparsed` 為空陣列,無法解析之紀錄:無。
 
-## 8. 重現指令
+## 4. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle

@@ -27,7 +27,9 @@
 > ⚠️ 本競賽 Late Submission 已關閉,無法上傳提交;全程僅以本地 CV(OOF)評估,
 > leaderboard 無紀錄。
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 - 檔案:`train.csv` / `test.csv` / `sample_submission.csv`。
 - 時序結構:train 為 2019–2021 三個年度、test 為 2022 年;`week_no` 0–52。
@@ -41,9 +43,9 @@
 - 關鍵資料性質(EDA 驗證,見 STATUS.md):同一 `(latitude, longitude, week_no)` 的
   emission 跨年近乎恆定 —— 這是全場最重要的結構訊號。
 
-## 3. 模型規格
+### 2.2 模型規格
 
-**facts.json 目前的 best 是實驗 9——一筆樹搜尋(tree-search)結果**(細節見 3a 小節),
+**facts.json 目前的 best 是實驗 9——一筆樹搜尋(tree-search)結果**(細節見 2.2a 小節),
 而非本節原本描述的 Phase-B 手調終點(exp #7)。兩者皆完整說明如下。
 
 exp #7(`train_v5.py`,Phase-B 手調終點)為 4 成員 blend:三個 GBDT + 一個「去噪後的
@@ -79,7 +81,7 @@ Ensemble(OOF simplex 粗網格權重搜尋):
 
 GBDT 保留在 pool 中僅作對照,每輪權重搜尋均自動淘汰(權重 0)。
 
-### 3a. 樹搜尋最佳(best,實驗 9)——本次更新(Phase G-1b)新增
+#### 2.2a 樹搜尋最佳(best,實驗 9)——本次更新(Phase G-1b)新增
 
 Phase E-4(harness v2,2026-07-04)樹搜尋把 exp #7 手調的 4 個結構純量超參
 (alpha/w2020/wnb/window)當成節點空間,測試「結構完全主導、評估成本近乎零」的地形上
@@ -102,7 +104,7 @@ Phase-B 從未試過的**新軸 year_weights**(依年度訊噪比差異降權/�
 | year_weights[2021] | 1.2 |
 
 **分數(best.score)**:**21.0589**,較 exp #7(21.1487)改善 -0.0898(約 -0.42% 相對改善,
-詳見第 6 節程式區塊)。
+詳見第 2.5 節程式區塊)。
 
 > **重要:不採用 21.0332 的 blend 版本**(best.notes 明確說明)。node #28 有一個手足
 > BLEND 節點(#29,本報告不採用其分數):把此結構節點與一個診斷用 GBDT 混合,GBDT 僅拿到
@@ -118,7 +120,7 @@ Phase-B 從未試過的**新軸 year_weights**(依年度訊噪比差異降權/�
 > (facts.json 本筆無 submission 欄位)。本場 Late Submission 已關閉,exp #7 與 exp #9
 > 皆未、也無法提交至 Kaggle。
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 | 項目 | 值 |
 |------|-----|
@@ -133,9 +135,9 @@ Phase-B 從未試過的**新軸 year_weights**(依年度訊噪比差異降權/�
 - GBDT 詳細超參:facts.json 無紀錄(與 v2 一致未改動;實際數值見
   `scripts/train_v5.py` 的 `run_models`)。
 - TE 超參(exp #7):alpha=1.0、w2020=0.24、wnb=0.28(在同一 LOYO CV 上以網格 pre-sweep 選定)。
-- 樹搜尋 best(實驗 9)使用同一 LOYO(3 折、seed 42)CV 方案,超參見 3a 節表格。
+- 樹搜尋 best(實驗 9)使用同一 LOYO(3 折、seed 42)CV 方案,超參見 2.2a 節表格。
 
-## 5. 推論程序
+### 2.4 推論程序
 
 **facts.json 現在的 best 是實驗 9(樹搜尋)**,其 `postprocess`/`submission` 欄位皆未記錄
 (OOF-only 結果,未產生 test 預測)。以下描述 exp #7(Phase-B 手調終點)的推論流程:
@@ -148,7 +150,7 @@ Phase-B 從未試過的**新軸 year_weights**(依年度訊噪比差異降權/�
 - 註:競賽已關閉,此檔為 artifact,無法實際上傳;實驗 9(現行 best)未產生任何 submission
   檔——樹搜尋為 OOF-only 搜尋,不可與此檔案混淆。
 
-## 6. 評估指標
+### 2.5 評估指標
 
 RMSE = 預測誤差平方均值的平方根,對大誤差施以平方級懲罰。
 
@@ -173,7 +175,7 @@ CV↔LB gap:無紀錄(無 LB 分數可比)。
 0.0898 / 21.1487 × 100 ≈ 0.4247...%(約 -0.42% 相對改善)
 ```
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 | exp # | timestamp | OOF RMSE | source_format |
 |-------|-----------|----------|---------------|
@@ -203,16 +205,16 @@ CV↔LB gap:無紀錄(無 LB 分數可比)。
   (alpha/w2020/wnb/window)當成節點空間,重掃描已調軸(w2020、wnb)僅誠實打平既有最優,
   但(a)一個全新軸 year_weights(異常年降權概念推廣到 2019/2021)獨力貢獻增益、(b)
   JOINT lineage 把 4+1 個軸一步到位共同移動,複合出 -0.0898 的總增益(21.1487→21.0589,
-  詳見第 3a 節與第 6 節程式區塊)。**誠實 CV-only 警語**:此結果為 OOF-only 搜尋產物,
+  詳見第 2.2a 節與第 2.5 節程式區塊)。**誠實 CV-only 警語**:此結果為 OOF-only 搜尋產物,
   facts.json 本筆亦無 submission 欄位,**未提交至 Kaggle**(本場 Late Submission 亦已
   關閉,實務上無法提交)。**明確不採用**該節點手足 BLEND 節點的 21.0332(2.17% GBDT
   權重、僅 3 折 CV 直接對同一份 OOF 擬合,STATUS.md 記為低信心、CV 噪音範圍內的邊際發現,
-  非穩健結論)——見第 3a 節澄清。完整節點鏈、backtrack 記錄、與誠實地形對比討論見
+  非穩健結論)——見第 2.2a 節澄清。完整節點鏈、backtrack 記錄、與誠實地形對比討論見
   `competitions/playground-series-s3e20/STATUS.md`〈Appendix: Phase E-4 樹搜尋 v2〉。
 
 無法解析之紀錄:無。
 
-## 8. 重現指令
+## 4. 重現指令
 
 ```bash
 # 執行目錄:專案根目錄 /home/tjyen/ai_agents/kaggle(依 CLAUDE.md 使用 uv 管理環境)

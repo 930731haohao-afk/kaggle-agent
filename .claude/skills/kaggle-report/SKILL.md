@@ -28,7 +28,7 @@ reproduce the pipeline **without reading the code**.
    the generic batch baseline; mark EDA/feature sections as 未執行. Never
    fabricate analysis that did not happen.
 4. **facts.missing / facts.unparsed** → write 無紀錄 for missing items and list
-   unparsed entries verbatim in section 7. Never guess.
+   unparsed entries verbatim in section 3 (實驗軌跡). Never guess.
 
 ## Pipeline
 

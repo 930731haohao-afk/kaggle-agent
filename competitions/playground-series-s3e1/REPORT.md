@@ -23,12 +23,14 @@
 | 目標欄位 | MedHouseVal |
 | id 欄位 | id |
 
-## 2. 資料規格
+## 2. 流程(how):五大元件
+
+### 2.1 資料規格
 
 本場已完整執行 EDA(素材等級:full)。特徵工程前的原始特徵數為 8(experiments[0].n_features
 = 8);線性迭代最終採用模型(experiment_id=7)使用 26 個特徵(較先前版本報告記載的 24 個
-新增 2 個:`knn_mean_dist_10`、`coastal_dist`,見第 7 節)。目前 facts.json 的 best(依 OOF
-score 選出,見第 3 節)為 experiment_id=8——一筆樹搜尋(tree-search)結果,其 facts.json
+新增 2 個:`knn_mean_dist_10`、`coastal_dist`,見第 3 節)。目前 facts.json 的 best(依 OOF
+score 選出,見第 2.2 節)為 experiment_id=8——一筆樹搜尋(tree-search)結果,其 facts.json
 紀錄未附 features/n_features 欄位(notes 註明訓練於與 experiment_id=7 相同的 26-特徵集上,
 無新增特徵工程)。
 
@@ -38,13 +40,13 @@ score 選出,見第 3 節)為 experiment_id=8——一筆樹搜尋(tree-search)�
 - 不允許存取網路(internet_access_allowed: false)
 - 每日提交上限:5 次(daily_submission_limit: 5)
 
-## 3. 模型規格
+### 2.2 模型規格
 
 **facts.json 目前的 best 是 experiment_id=8——一筆樹搜尋(tree-search)結果**,而非本節原本
-描述的線性迭代最終回合(experiment_id=7)。兩者都在下面完整說明;第 6/7 節的分數總表與
+描述的線性迭代最終回合(experiment_id=7)。兩者都在下面完整說明;第 2.5/3 節的分數總表與
 軌跡表以 facts.json 的 experiments 陣列(1–8)逐筆列出。
 
-### 3a. 線性迭代最佳(experiment_id=7,7 輪迭代之終點)
+#### 2.2a 線性迭代最佳(experiment_id=7,7 輪迭代之終點)
 
 「5-way blend on 26 features (+knn_mean_dist_10 +coastal_dist)」——LGB、XGB、CAT 三個原始
 基模型,加上兩個以 Optuna 調參之 LightGBM 衍生成員(`LGB_TUNED`:Optuna fold-0-proxy 調參
@@ -67,9 +69,9 @@ ensemble score = 0.557088。
 Optuna 調參衍生的 LGB 成員合計 0.45 權重(0.25+0.2),高於三個原始基模型各自的權重,反映
 調參後的模型品質較高,但三個原始基模型權重皆非零(未被完全淘汰),代表 ensemble 多樣性
 仍有貢獻——這與 knowledge/experience.md 記載的「調參後的單模應加入 pool 而非替換原成員」
-經驗一致(見第 7 節)。
+經驗一致(見第 3 節)。
 
-### 3b. 樹搜尋最佳(best, experiment_id=8)——本次更新新增
+#### 2.2b 樹搜尋最佳(best, experiment_id=8)——本次更新新增
 
 Phase D-4(harness v2,2026-07-04)樹搜尋在 experiment_id=7 的相同 26-特徵集上另闢節點空間,
 於 `experiments_tree.json` 的 node #14 找到 RMSE 更低的 7-way blend:「LGBORIG / XGBORIG /
@@ -99,10 +101,10 @@ tree-search v2 sweep〉。
 > **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
 > 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。best 是以 OOF score 最小者選出
 > (本場 metric 為 rmse,minimize),與是否已提交至 Kaggle 無關;本場(experiment_id=7 與
-> experiment_id=8 皆同)未提交至 Kaggle(見第 6 節),因此沒有 leaderboard 分數可與 best
+> experiment_id=8 皆同)未提交至 Kaggle(見第 2.5 節),因此沒有 leaderboard 分數可與 best
 > 對照。
 
-## 4. 訓練規格
+### 2.3 訓練規格
 
 **CV 方案**(best.cv):
 
@@ -131,23 +133,23 @@ exp7 的 LGB/XGB/CAT 為同一組訓練設定,見 STATUS.md Appendix):
 > 搜尋 best)新增的 SEEDBAG/REGNUDGE/XGB_deep/CEILING 四個成員亦無 params 紀錄——無紀錄
 > 之處在此明確標註,不臆測。
 
-## 5. 推論程序
+### 2.4 推論程序
 
 **後處理步驟**(best.postprocess,experiment_id=8):`clip_to_train_target_range`——將
 預測值裁切至訓練集目標欄位的觀察範圍內(涵蓋 EDA 已知的目標欄位 top-code 上限,細節見
 STATUS.md EDA 節,數值未記入 facts.json)。與 experiment_id=7 的差異在於樹搜尋版本於
-**metric_fn 內部對 OOF 直接做裁切評分**,而非僅在 submission 階段裁切(見第 3b 節)。
+**metric_fn 內部對 OOF 直接做裁切評分**,而非僅在 submission 階段裁切(見第 2.2b 節)。
 
 **Submission 格式**:id 欄位為 `id`,目標欄位為 `MedHouseVal`(competition.id_column /
 target_column)。
 
 **Submission 檔名**(best.submission):**無紀錄**——experiment_id=8 是樹搜尋(OOF-only)
-結果,facts.json 本筆未附 submission 欄位,未產生 test 預測、未提交 Kaggle(見第 3b 節
+結果,facts.json 本筆未附 submission 欄位,未產生 test 預測、未提交 Kaggle(見第 2.2b 節
 澄清)。線性迭代最終回合(experiment_id=7)有提交檔案供參考:
 `sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv`(該檔案對應 OOF 0.557088,
 非目前 best 的 0.556329)。
 
-## 6. 評估指標
+### 2.5 評估指標
 
 **指標定義**:RMSE(Root Mean Squared Error)= 預測誤差平方之平均值的平方根,誤差單位與
 目標欄位相同(房價中位數)。
@@ -184,7 +186,7 @@ exp1 -> exp8:  0.56166 - 0.556329 = 0.005331    (絕對改善)
                0.0094915 * 100 ≈ 0.949%         (相對改善百分比)
 ```
 
-## 7. 實驗軌跡
+## 3. 實驗軌跡
 
 | experiment_id | timestamp | score | source_format |
 |---------------|-----------|-------|----------------|
@@ -250,13 +252,13 @@ blend,分數由 0.557088 降至 0.556329(相對改善百分比見上方 exp7→e
 CV-only
 警語**:此結果為 OOF-only 搜尋產物——tree_search harness 未產生任何 test 預測檔,facts.json
 本筆亦無 submission 欄位,**未提交至 Kaggle**;不可與 exp7 實際提交的 submission 檔案
-混淆(見第 5 節)。完整節點鏈、backtrack/dedup 統計、與「什麼真正起作用」的誠實歸因見
+混淆(見第 2.4 節)。完整節點鏈、backtrack/dedup 統計、與「什麼真正起作用」的誠實歸因見
 `competitions/playground-series-s3e1/STATUS.md`〈Appendix: Phase D-4 tree-search v2
 sweep〉。
 
 facts.json 的 `unparsed` 列表為空——無法解析之紀錄:無。
 
-## 8. 重現指令
+## 4. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle
