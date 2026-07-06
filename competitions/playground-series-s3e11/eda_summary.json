@@ -1,0 +1,254 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 360336,
+  "n_rows_test": 240224,
+  "n_features": 15,
+  "numeric_features": [
+    "store_sales(in millions)",
+    "unit_sales(in millions)",
+    "total_children",
+    "num_children_at_home",
+    "avg_cars_at home(approx).1",
+    "gross_weight",
+    "recyclable_package",
+    "low_fat",
+    "units_per_case",
+    "store_sqft",
+    "coffee_bar",
+    "video_store",
+    "salad_bar",
+    "prepared_food",
+    "florist"
+  ],
+  "categorical_features": [],
+  "duplicate_rows_train": 0,
+  "target": {
+    "name": "cost",
+    "dtype": "float64",
+    "n_unique": 328,
+    "missing": 0,
+    "mean": 99.614729,
+    "std": 29.939435,
+    "min": 50.79,
+    "p25": 70.32,
+    "median": 98.81,
+    "p75": 126.62,
+    "max": 149.75,
+    "skew": 0.019132,
+    "kurtosis": -1.263302,
+    "is_integer_valued": false,
+    "log_transform_candidate": false
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "store_sales(in millions)": {
+      "mean": 6.337376,
+      "std": 3.30798,
+      "min": 0.51,
+      "max": 22.92,
+      "skew": 0.661492,
+      "zeros": 0.0
+    },
+    "unit_sales(in millions)": {
+      "mean": 3.043881,
+      "std": 0.784676,
+      "min": 1.0,
+      "max": 6.0,
+      "skew": -0.107998,
+      "zeros": 0.0
+    },
+    "total_children": {
+      "mean": 2.456482,
+      "std": 1.488992,
+      "min": 0.0,
+      "max": 5.0,
+      "skew": 0.035134,
+      "zeros": 36441.0
+    },
+    "num_children_at_home": {
+      "mean": 0.68939,
+      "std": 1.214732,
+      "min": 0.0,
+      "max": 5.0,
+      "skew": 1.848681,
+      "zeros": 243555.0
+    },
+    "avg_cars_at home(approx).1": {
+      "mean": 2.203813,
+      "std": 1.084293,
+      "min": 0.0,
+      "max": 4.0,
+      "skew": -0.073436,
+      "zeros": 18537.0
+    },
+    "gross_weight": {
+      "mean": 13.822071,
+      "std": 4.614792,
+      "min": 6.0,
+      "max": 21.9,
+      "skew": 0.093305,
+      "zeros": 0.0
+    },
+    "recyclable_package": {
+      "mean": 0.568086,
+      "std": 0.495343,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": -0.274908,
+      "zeros": 155634.0
+    },
+    "low_fat": {
+      "mean": 0.327797,
+      "std": 0.469411,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": 0.733703,
+      "zeros": 242219.0
+    },
+    "units_per_case": {
+      "mean": 18.972706,
+      "std": 10.212912,
+      "min": 1.0,
+      "max": 36.0,
+      "skew": -0.102009,
+      "zeros": 0.0
+    },
+    "store_sqft": {
+      "mean": 28180.333442,
+      "std": 5968.874074,
+      "min": 20319.0,
+      "max": 39696.0,
+      "skew": 0.392699,
+      "zeros": 0.0
+    },
+    "coffee_bar": {
+      "mean": 0.564839,
+      "std": 0.495779,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": -0.261568,
+      "zeros": 156804.0
+    },
+    "video_store": {
+      "mean": 0.277394,
+      "std": 0.447713,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": 0.99442,
+      "zeros": 260381.0
+    },
+    "salad_bar": {
+      "mean": 0.504807,
+      "std": 0.499978,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": -0.019227,
+      "zeros": 178436.0
+    },
+    "prepared_food": {
+      "mean": 0.504832,
+      "std": 0.499977,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": -0.019327,
+      "zeros": 178427.0
+    },
+    "florist": {
+      "mean": 0.503191,
+      "std": 0.499991,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": -0.012766,
+      "zeros": 179018.0
+    }
+  },
+  "categorical_stats": {},
+  "target_correlation": {
+    "store_sales(in millions)": {
+      "pearson": -0.012387,
+      "spearman": -0.012879
+    },
+    "unit_sales(in millions)": {
+      "pearson": -0.026509,
+      "spearman": -0.023748
+    },
+    "total_children": {
+      "pearson": -0.007482,
+      "spearman": -0.007564
+    },
+    "num_children_at_home": {
+      "pearson": -0.001727,
+      "spearman": -0.003285
+    },
+    "avg_cars_at home(approx).1": {
+      "pearson": 0.027098,
+      "spearman": 0.023549
+    },
+    "gross_weight": {
+      "pearson": -0.000116,
+      "spearman": -0.000225
+    },
+    "recyclable_package": {
+      "pearson": -0.001455,
+      "spearman": -0.001501
+    },
+    "low_fat": {
+      "pearson": -0.001975,
+      "spearman": -0.0019
+    },
+    "units_per_case": {
+      "pearson": 0.00018,
+      "spearman": 0.000202
+    },
+    "store_sqft": {
+      "pearson": -0.049201,
+      "spearman": -0.056494
+    },
+    "coffee_bar": {
+      "pearson": -0.052086,
+      "spearman": -0.050371
+    },
+    "video_store": {
+      "pearson": -0.106786,
+      "spearman": -0.105361
+    },
+    "salad_bar": {
+      "pearson": -0.09881,
+      "spearman": -0.095058
+    },
+    "prepared_food": {
+      "pearson": -0.098843,
+      "spearman": -0.095091
+    },
+    "florist": {
+      "pearson": -0.110414,
+      "spearman": -0.106779
+    }
+  },
+  "high_collinearity_pairs": [
+    [
+      "salad_bar",
+      "prepared_food",
+      0.999839
+    ]
+  ],
+  "train_test_mean_shift_pct": {
+    "store_sales(in millions)": 0.259361,
+    "unit_sales(in millions)": 0.001596,
+    "total_children": -0.099474,
+    "num_children_at_home": -0.581494,
+    "avg_cars_at home(approx).1": -0.255883,
+    "gross_weight": 0.045645,
+    "recyclable_package": -0.411818,
+    "low_fat": -0.264991,
+    "units_per_case": -0.067322,
+    "store_sqft": -0.020172,
+    "coffee_bar": -0.117918,
+    "video_store": -0.629783,
+    "salad_bar": -0.081363,
+    "prepared_food": -0.07971,
+    "florist": -0.273553
+  },
+  "validation_hint": "continuous i.i.d. target -> standard KFold (check train/test shift first)"
+}

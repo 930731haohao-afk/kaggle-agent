@@ -1,0 +1,474 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 1677,
+  "n_rows_test": 1119,
+  "n_features": 33,
+  "numeric_features": [
+    "Age",
+    "DailyRate",
+    "DistanceFromHome",
+    "Education",
+    "EmployeeCount",
+    "EnvironmentSatisfaction",
+    "HourlyRate",
+    "JobInvolvement",
+    "JobLevel",
+    "JobSatisfaction",
+    "MonthlyIncome",
+    "MonthlyRate",
+    "NumCompaniesWorked",
+    "PercentSalaryHike",
+    "PerformanceRating",
+    "RelationshipSatisfaction",
+    "StandardHours",
+    "StockOptionLevel",
+    "TotalWorkingYears",
+    "TrainingTimesLastYear",
+    "WorkLifeBalance",
+    "YearsAtCompany",
+    "YearsInCurrentRole",
+    "YearsSinceLastPromotion",
+    "YearsWithCurrManager"
+  ],
+  "categorical_features": [
+    "BusinessTravel",
+    "Department",
+    "EducationField",
+    "Gender",
+    "JobRole",
+    "MaritalStatus",
+    "Over18",
+    "OverTime"
+  ],
+  "duplicate_rows_train": 0,
+  "target": {
+    "name": "Attrition",
+    "dtype": "int64",
+    "n_unique": 2,
+    "missing": 0,
+    "mean": 0.119261,
+    "std": 0.324192,
+    "min": 0.0,
+    "p25": 0.0,
+    "median": 0.0,
+    "p75": 0.0,
+    "max": 1.0,
+    "skew": 2.351659,
+    "kurtosis": 3.534515,
+    "is_integer_valued": true,
+    "log_transform_candidate": true,
+    "value_counts": {
+      "0": 1477,
+      "1": 200
+    }
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "Age": {
+      "mean": 36.036971,
+      "std": 8.507112,
+      "min": 18.0,
+      "max": 60.0,
+      "skew": 0.454093,
+      "zeros": 0.0
+    },
+    "DailyRate": {
+      "mean": 892.749553,
+      "std": 374.496259,
+      "min": 107.0,
+      "max": 3921.0,
+      "skew": 0.161611,
+      "zeros": 0.0
+    },
+    "DistanceFromHome": {
+      "mean": 8.683959,
+      "std": 7.826143,
+      "min": 1.0,
+      "max": 29.0,
+      "skew": 1.071588,
+      "zeros": 0.0
+    },
+    "Education": {
+      "mean": 2.937984,
+      "std": 1.039078,
+      "min": 1.0,
+      "max": 15.0,
+      "skew": 0.596937,
+      "zeros": 0.0
+    },
+    "EmployeeCount": {
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0,
+      "skew": 0.0,
+      "zeros": 0.0
+    },
+    "EnvironmentSatisfaction": {
+      "mean": 2.757901,
+      "std": 1.086835,
+      "min": 1.0,
+      "max": 4.0,
+      "skew": -0.343569,
+      "zeros": 0.0
+    },
+    "HourlyRate": {
+      "mean": 67.79845,
+      "std": 19.435928,
+      "min": 30.0,
+      "max": 100.0,
+      "skew": -0.120302,
+      "zeros": 0.0
+    },
+    "JobInvolvement": {
+      "mean": 2.782349,
+      "std": 0.650664,
+      "min": 1.0,
+      "max": 4.0,
+      "skew": -0.699153,
+      "zeros": 0.0
+    },
+    "JobLevel": {
+      "mean": 1.998807,
+      "std": 1.083065,
+      "min": 1.0,
+      "max": 7.0,
+      "skew": 1.170339,
+      "zeros": 0.0
+    },
+    "JobSatisfaction": {
+      "mean": 2.79189,
+      "std": 1.097396,
+      "min": 1.0,
+      "max": 4.0,
+      "skew": -0.422074,
+      "zeros": 0.0
+    },
+    "MonthlyIncome": {
+      "mean": 6196.049493,
+      "std": 4520.050754,
+      "min": 1010.0,
+      "max": 19973.0,
+      "skew": 1.55141,
+      "zeros": 0.0
+    },
+    "MonthlyRate": {
+      "mean": 14770.048301,
+      "std": 7112.203888,
+      "min": 636.0,
+      "max": 26999.0,
+      "skew": -0.061418,
+      "zeros": 0.0
+    },
+    "NumCompaniesWorked": {
+      "mean": 2.574836,
+      "std": 2.480215,
+      "min": 0.0,
+      "max": 9.0,
+      "skew": 1.11221,
+      "zeros": 253.0
+    },
+    "PercentSalaryHike": {
+      "mean": 14.903399,
+      "std": 3.420801,
+      "min": 11.0,
+      "max": 25.0,
+      "skew": 0.91451,
+      "zeros": 0.0
+    },
+    "PerformanceRating": {
+      "mean": 3.127609,
+      "std": 0.333753,
+      "min": 3.0,
+      "max": 4.0,
+      "skew": 2.2342,
+      "zeros": 0.0
+    },
+    "RelationshipSatisfaction": {
+      "mean": 2.751342,
+      "std": 1.077905,
+      "min": 1.0,
+      "max": 4.0,
+      "skew": -0.349424,
+      "zeros": 0.0
+    },
+    "StandardHours": {
+      "mean": 80.0,
+      "std": 0.0,
+      "min": 80.0,
+      "max": 80.0,
+      "skew": 0.0,
+      "zeros": 0.0
+    },
+    "StockOptionLevel": {
+      "mean": 0.721527,
+      "std": 0.771259,
+      "min": 0.0,
+      "max": 3.0,
+      "skew": 1.031377,
+      "zeros": 732.0
+    },
+    "TotalWorkingYears": {
+      "mean": 10.7096,
+      "std": 7.255135,
+      "min": 0.0,
+      "max": 41.0,
+      "skew": 1.145234,
+      "zeros": 13.0
+    },
+    "TrainingTimesLastYear": {
+      "mean": 2.732856,
+      "std": 1.145271,
+      "min": 0.0,
+      "max": 6.0,
+      "skew": 0.570959,
+      "zeros": 50.0
+    },
+    "WorkLifeBalance": {
+      "mean": 2.769827,
+      "std": 0.647721,
+      "min": 1.0,
+      "max": 4.0,
+      "skew": -0.633121,
+      "zeros": 0.0
+    },
+    "YearsAtCompany": {
+      "mean": 6.806798,
+      "std": 5.883282,
+      "min": 0.0,
+      "max": 41.0,
+      "skew": 1.738288,
+      "zeros": 54.0
+    },
+    "YearsInCurrentRole": {
+      "mean": 4.144305,
+      "std": 3.583398,
+      "min": 0.0,
+      "max": 18.0,
+      "skew": 0.942663,
+      "zeros": 307.0
+    },
+    "YearsSinceLastPromotion": {
+      "mean": 1.978533,
+      "std": 3.045716,
+      "min": 0.0,
+      "max": 15.0,
+      "skew": 2.080754,
+      "zeros": 726.0
+    },
+    "YearsWithCurrManager": {
+      "mean": 4.186643,
+      "std": 3.576189,
+      "min": 0.0,
+      "max": 17.0,
+      "skew": 0.817765,
+      "zeros": 298.0
+    }
+  },
+  "categorical_stats": {
+    "BusinessTravel": {
+      "cardinality": 3,
+      "top": {
+        "Travel_Rarely": 1290,
+        "Travel_Frequently": 261,
+        "Non-Travel": 126
+      },
+      "unseen_in_test": []
+    },
+    "Department": {
+      "cardinality": 3,
+      "top": {
+        "Research & Development": 1167,
+        "Sales": 471,
+        "Human Resources": 39
+      },
+      "unseen_in_test": []
+    },
+    "EducationField": {
+      "cardinality": 6,
+      "top": {
+        "Life Sciences": 775,
+        "Medical": 549,
+        "Marketing": 152,
+        "Technical Degree": 106,
+        "Other": 82
+      },
+      "unseen_in_test": []
+    },
+    "Gender": {
+      "cardinality": 2,
+      "top": {
+        "Male": 1064,
+        "Female": 613
+      },
+      "unseen_in_test": []
+    },
+    "JobRole": {
+      "cardinality": 9,
+      "top": {
+        "Sales Executive": 355,
+        "Research Scientist": 344,
+        "Laboratory Technician": 334,
+        "Manufacturing Director": 196,
+        "Healthcare Representative": 155
+      },
+      "unseen_in_test": []
+    },
+    "MaritalStatus": {
+      "cardinality": 3,
+      "top": {
+        "Married": 773,
+        "Single": 577,
+        "Divorced": 327
+      },
+      "unseen_in_test": []
+    },
+    "Over18": {
+      "cardinality": 1,
+      "top": {
+        "Y": 1677
+      },
+      "unseen_in_test": []
+    },
+    "OverTime": {
+      "cardinality": 2,
+      "top": {
+        "No": 1277,
+        "Yes": 400
+      },
+      "unseen_in_test": []
+    }
+  },
+  "target_correlation": {
+    "Age": {
+      "pearson": -0.161044,
+      "spearman": -0.168695
+    },
+    "DailyRate": {
+      "pearson": -0.02238,
+      "spearman": -0.021044
+    },
+    "DistanceFromHome": {
+      "pearson": 0.024741,
+      "spearman": 0.030274
+    },
+    "Education": {
+      "pearson": -0.084305,
+      "spearman": -0.082563
+    },
+    "EmployeeCount": {
+      "pearson": null,
+      "spearman": null
+    },
+    "EnvironmentSatisfaction": {
+      "pearson": -0.092426,
+      "spearman": -0.089539
+    },
+    "HourlyRate": {
+      "pearson": -0.03728,
+      "spearman": -0.038222
+    },
+    "JobInvolvement": {
+      "pearson": -0.139929,
+      "spearman": -0.122896
+    },
+    "JobLevel": {
+      "pearson": -0.137238,
+      "spearman": -0.163374
+    },
+    "JobSatisfaction": {
+      "pearson": -0.06101,
+      "spearman": -0.063007
+    },
+    "MonthlyIncome": {
+      "pearson": -0.126896,
+      "spearman": -0.183813
+    },
+    "MonthlyRate": {
+      "pearson": -0.005484,
+      "spearman": -0.004654
+    },
+    "NumCompaniesWorked": {
+      "pearson": 0.037127,
+      "spearman": 0.037208
+    },
+    "PercentSalaryHike": {
+      "pearson": -0.031571,
+      "spearman": -0.054705
+    },
+    "PerformanceRating": {
+      "pearson": 0.013666,
+      "spearman": 0.013666
+    },
+    "RelationshipSatisfaction": {
+      "pearson": -0.087537,
+      "spearman": -0.08262
+    },
+    "StandardHours": {
+      "pearson": null,
+      "spearman": null
+    },
+    "StockOptionLevel": {
+      "pearson": -0.194018,
+      "spearman": -0.227345
+    },
+    "TotalWorkingYears": {
+      "pearson": -0.13874,
+      "spearman": -0.160471
+    },
+    "TrainingTimesLastYear": {
+      "pearson": -0.018595,
+      "spearman": -0.005043
+    },
+    "WorkLifeBalance": {
+      "pearson": -0.045365,
+      "spearman": -0.030169
+    },
+    "YearsAtCompany": {
+      "pearson": -0.12712,
+      "spearman": -0.169959
+    },
+    "YearsInCurrentRole": {
+      "pearson": -0.133466,
+      "spearman": -0.155325
+    },
+    "YearsSinceLastPromotion": {
+      "pearson": -0.038496,
+      "spearman": -0.070709
+    },
+    "YearsWithCurrManager": {
+      "pearson": -0.124712,
+      "spearman": -0.146074
+    }
+  },
+  "high_collinearity_pairs": [],
+  "train_test_mean_shift_pct": {
+    "Age": 0.30658,
+    "DailyRate": -1.030419,
+    "DistanceFromHome": -0.188844,
+    "Education": 0.133695,
+    "EmployeeCount": 0.0,
+    "EnvironmentSatisfaction": -0.780639,
+    "HourlyRate": 0.630759,
+    "JobInvolvement": -1.459764,
+    "JobLevel": 0.014956,
+    "JobSatisfaction": -0.86825,
+    "MonthlyIncome": -0.682674,
+    "MonthlyRate": -0.388639,
+    "NumCompaniesWorked": -1.188429,
+    "PercentSalaryHike": -0.940843,
+    "PerformanceRating": -0.594157,
+    "RelationshipSatisfaction": -1.063787,
+    "StandardHours": 0.0,
+    "StockOptionLevel": 5.153879,
+    "TotalWorkingYears": -0.225658,
+    "TrainingTimesLastYear": 2.286864,
+    "WorkLifeBalance": -0.368986,
+    "YearsAtCompany": 3.087819,
+    "YearsInCurrentRole": 0.960056,
+    "YearsSinceLastPromotion": 4.969401,
+    "YearsWithCurrManager": 2.906104
+  },
+  "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+}

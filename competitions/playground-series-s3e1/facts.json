@@ -21,6 +21,174 @@
   },
   "material_level": "full",
   "status_md_present": true,
+  "status": {
+    "present": true,
+    "sections": {
+      "STATUS — playground-series-s3e1 (California Housing)": "- **Task**: regression, predict `MedHouseVal`; metric **RMSE** (minimize); id col `id`\n- **Data**: 37,137 train / 24,759 test; 8 raw numeric features (MedInc, HouseAge, AveRooms,\n  AveBedrms, Population, AveOccup, Latitude, Longitude); no missing values, no duplicate rows\n- **Rules**: no external data, no pretrained models, no internet; daily submission limit 5",
+      "Progress": "- [x] Stage 0 Setup — config.yaml, data present\n- [x] Stage 1 EDA — `scripts/eda.py`\n- [x] Stage 2 Feature engineering — `scripts/features.py`\n- [x] Stage 3 Modeling + CV — `scripts/train.py` (LGB/XGB/CatBoost, RMSE objective, weight-searched blend)\n- [x] Stage 3b Iteration probe — `scripts/tune_geo_te.py` (geo target-encoding, not adopted)\n- [x] Stage 5 Submission generated — `submissions/sub_lgb_xgb_cat_blend_0.55877_20260703_182947.csv`\n- [x] Stage 6 Self-improvement iteration (Phase B, 4 rounds) — new best submission\n      `submissions/sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv`\n- [ ] Submitted to Kaggle leaderboard — not performed this run (no Kaggle credentials touched; run is offline/unattended)",
+      "Current Best Score": "| | OOF RMSE |\n|-|----------|\n| Baseline (exp 1, generic 8-feature blend) | 0.56166 |\n| Blend (exp 2, engineered features) | 0.55877 |\n| **5-way blend (exp 7: +Optuna-tuned LGB, +seed-bag, +KNN/coastal geo feats)** | **0.55709** |\n\nImprovement over exp-2 blend: 0.55877 − 0.55709 = 0.00168 (≈0.30% further relative RMSE reduction).\nImprovement over exp-1 baseline: 0.56166 − 0.55709 = 0.00457 (≈0.81% relative reduction).\nNo public/private LB available — submission was not made to Kaggle this run.",
+      "EDA key findings": "1. Target `MedHouseVal` is right-skewed (skew 0.97) and **top-coded at 5.00001** for 4.92% of\n   train rows — a known California-Housing artifact (true value ≥5.00001 gets capped). This\n   caps achievable RMSE regardless of modeling; noted as an inherent data limitation, not fixed.\n2. `HouseAge` is also top-coded at 52 for 5.57% of rows.\n3. `MedInc` is by far the strongest linear predictor (Pearson r=0.70); `AveRooms` next (r=0.37).\n   Individually, `Latitude` (r=-0.116) and `Longitude` (r=-0.057) look weak, but a quick 5-fold\n   LGB on raw features ranked **Longitude and Latitude as the top-2 importance features** —\n   geo signal is non-linear (location-based, not distance-from-origin-based).\n4. `Latitude`/`Longitude` are strongly anti-correlated with each other (r=-0.937), as expected\n   for California's NW–SE coastline geography.\n5. Outlier features: `AveRooms` max 28.8 (train)/56.3 (test), `AveOccup` max 503 (train)/230\n   (test), `AveBedrms` max 5.9 (train)/10.5 (test) — long right tails driven by a handful of\n   very low-occupancy blocks.\n6. No missing values in train or test; no duplicate rows; no train/test feature-identical\n   overlap.\n7. Train vs. test distributions closely match (largest mean difference: `Population` at 1.12%,\n   all others <0.5%) — no covariate shift, so no reweighting/adversarial-validation needed.\n8. Quick sanity 5-fold LGB on raw 8 features alone already reached OOF RMSE 0.56693, close to\n   the exp-1 blend (0.56166), confirming the dataset has good baseline signal and this run's\n   gains come primarily from geo/ratio feature engineering rather than model choice.",
+      "CV scheme (fixed first — matters more than the model)": "- **Standard 5-fold KFold** (shuffle=True, seed=42), no stratification/grouping.\n- Justification: target is continuous with no natural strata, no group or time structure in\n  the data (each row is an independent census block), and train/test distributions are\n  near-identical (see EDA finding 7) — plain KFold is the textbook-correct choice here.\n- Fold RMSE range for the winning blend components was ~0.545–0.588 (naturally noisier than\n  a large-N classification task at this scale, but no fold is a systematic outlier).",
+      "Feature engineering (24 features total: 8 raw + 16 engineered)": "- **Ratios**: `households` (= Population/AveOccup), `bedroom_ratio` (AveBedrms/AveRooms),\n  `rooms_per_person` (AveRooms/AveOccup) — normalizes by implied household count.\n- **Log1p transforms**: AveRooms, AveBedrms, Population, AveOccup, households — tames the\n  heavy right-tail outliers found in EDA.\n- **Geo**: Euclidean distance to 5 major CA population centers (LA, SF, San Diego, Sacramento,\n  San Jose) + `dist_nearest_city`; `lat_long` interaction term; `geo_cluster` (KMeans, k=25,\n  fit on train coordinates only, applied to test).\n- New-feature correlation with target: `rooms_per_person` was the strongest new signal\n  (r=0.452), followed by `dist_nearest_city` (r=-0.344) and `log_AveRooms` (r=0.342).\n- Validated: no NaNs introduced, all features numeric, no train/test column mismatch, no\n  suspiciously-perfect (leakage-level) target correlation.",
+      "Model results (OOF RMSE, 5-fold KFold, engineered features)": "| Model | OOF RMSE | Notes |\n|-------|----------|-------|\n| LightGBM (RMSE objective) | 0.56109 | n_estimators=2000 w/ early stopping, lr=0.03 |\n| XGBoost (reg:squarederror) | 0.56297 | max_depth=7, lr=0.03 |\n| CatBoost (RMSE loss) | 0.56188 | depth=8, lr=0.03 |\n| **Blend (weight-searched, grid step 0.05)** | **0.55877** | weights LGB=0.45 / XGB=0.15 / CAT=0.40 |\n\nTotal training wall time (3 models × 5 folds): 45.5s — well within the 15-minute budget.",
+      "Iteration round 1 (self-improvement: reflexion on a surprising near-null result)": "**Hypothesis**: since raw Lat/Long were the top-2 importance features in the EDA sanity model,\na KFold-safe smoothed target-encoding of a finer (50-cluster) geo grouping should beat the\ncoarse 25-cluster categorical id used in the main blend.\n\n**Result**: LGB-only OOF RMSE 0.56102 vs. 0.56109 for the exp-2 LGB component — a -0.00007\ndelta, i.e. noise-level, not a real improvement.\n\n**Decision**: reverted / not adopted. Trees already extract the non-linear geo signal directly\nfrom raw Latitude/Longitude splits plus the distance-to-city features; an explicit target\nencoding of a coarse spatial grouping adds no incremental information here. Kept exp 2's\nfeature set as final.\n\n**Next steps considered but not pursued this run** (time-boxed; diminishing returns expected):\n- Optuna tuning of LGB/CatBoost hyperparameters (main lever left is likely feature granularity,\n  not hyperparameters, given how close the 3 base models already score).\n- Quantile/Huber loss variants to reduce sensitivity to the top-coded target values.\n- Finer geo clustering (k=50-100) used as a raw feature (not target-encoded) rather than k=25.\n\nExperiment log: `experiments.json` (#1 baseline, #2 winning blend, #3 rejected TE probe).",
+      "Phase B self-improvement iteration (4 rounds, all improved — stopped at protocol's 2–4 round upper bound)": "| Round | exp # | Change | OOF RMSE | Delta vs prior |\n|-------|-------|--------|----------|-----------------|\n| 1 | 4 | Optuna TPE fold-0-proxy tuning of LGB (50 trials, 74.3s), added as 4th blend member (not replacing original LGB) | 0.557977 | -0.00079 vs exp 2 (0.558768) |\n| 2 | 5 | Seed bagging: same tuned-LGB hyperparams, random_state 42→2024, added as 5th member | 0.557859 | -0.00012 vs round 1 |\n| 3 | 6 | Probe: +knn_mean_dist_10 (KNN k=10 mean distance, combined train+test coords) +coastal_dist (distance to 12 CA coastline anchor points); LGB-only probe | 0.560444 (solo LGB) | -0.00065 vs exp-2 LGB (0.56109) — above 0.0005 noise threshold, adopted |\n| 4 | 7 | Full retrain of the 5-member pool on the 26-feature set (round-3 features added) | **0.557088** | -0.00077 vs round 2 |\n\n**Total improvement this iteration**: 0.558768 (exp 2) → 0.557088 (exp 7) = -0.00168 (≈0.30% relative).\nCombined with the original feature-engineering win: 0.56166 (exp 1 baseline) → 0.557088 = -0.004572\n(≈0.81% relative reduction overall).\n\n**Reflexion — Round 3 vs. Round-1-era exp #3**: exp #3 showed that *target-encoding* a coarse\ngeo grouping adds nothing once trees already split on raw Lat/Long (-0.00007, noise). Round 3\ntested a different lever — *non-target-encoded* geometric features (KNN local-density distance,\ncoastal distance) — and got a real gain (-0.00065). Lesson: \"geo target-encoding is noise-level\nhere\" does not generalize to \"no more geo feature engineering is possible\" — the two are\ndifferent mechanisms (grouped target leakage-safe averaging vs. raw distance geometry).\n\n**Training time**: Optuna search 74.3s + full-CV revalidation 13.2s + 3-model recompute 45.2s\n(round 1) + 9.7s (round 2 seed bag) + geo probe (~seconds) + 67.2s (round 4 full retrain) — total\nwell under the 30-minute budget.\n\nNew best submission: `submissions/sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv`.\nNot submitted to Kaggle this run (no credentials touched, unattended run).\n\nExperiment log additions: `experiments.json` #4–#7. Scripts: `scripts/tune_lgb_optuna.py` (round 1),\n`scripts/seed_bag_round2.py` (round 2), `scripts/geo_knn_probe.py` (round 3 probe),\n`scripts/round4_full_retrain.py` (round 4).",
+      "Reproduce": "```bash\ncd /home/tjyen/ai_agents/kaggle\nuv run python3 competitions/playground-series-s3e1/scripts/eda.py\nuv run python3 competitions/playground-series-s3e1/scripts/features.py\nuv run python3 competitions/playground-series-s3e1/scripts/train.py",
+      "optional iteration probe (not adopted, informational only):": "uv run python3 competitions/playground-series-s3e1/scripts/tune_geo_te.py",
+      "Phase B iteration (current best pipeline):": "uv run python3 competitions/playground-series-s3e1/scripts/tune_lgb_optuna.py\nuv run python3 competitions/playground-series-s3e1/scripts/seed_bag_round2.py\nuv run python3 competitions/playground-series-s3e1/scripts/geo_knn_probe.py\nuv run python3 competitions/playground-series-s3e1/scripts/round4_full_retrain.py\n```\n\nNo Kaggle submission was made this run (unattended weekend batch — credentials untouched by\ninstruction). To submit the generated file manually:\n```bash\nexport KAGGLE_API_TOKEN=$(python3 -c \"import json; print(json.load(open('/home/tjyen/.kaggle/kaggle.json'))['key'])\")\nuv run kaggle competitions submit -c playground-series-s3e1 \\\n  -f competitions/playground-series-s3e1/submissions/sub_round4_geofeat_5way_blend_0.55709_20260703_212811.csv \\\n  -m \"5-way blend (Optuna-tuned LGB + seed bag + KNN/coastal geo features), OOF 0.557088\"\n```",
+      "Appendix: Phase D-4 tree-search v2 sweep (2026-07-04)": "**Sweep question**: can harness v2 (ensemble-default node space + experience-library\npriors + adaptive plateau + child dedup) match or beat the linear-iteration best\n(0.557088) in fewer evaluations than linear iteration took rounds (7 experiments,\nexp #1–#7)? **Answer for s3e1: BEAT, decisively — matched at evaluation #9 (< linear's\n7 rounds only if counted against linear's 7 experiments: 9 > 7 on raw eval count, but\nevals #1–#8 were just reproducing linear's own pool digit-for-digit; the first NEW idea\nevaluated was already a beat) and finished at 0.556329 by evaluation #14 (−0.000759 vs\nlinear, ≈0.14% relative), wall 190.3s total.** The two levers that moved it —\nclip-aware blend scoring and a ceiling-classifier hybrid as a blend member — are both\ntop-code-aware nodes the linear run never tried, exploiting STATUS.md EDA finding #1\n(4.92% of train targets capped at exactly 5.00001).\n\nBuilt: `tree_search/eval_s3e1.py` (solo: LGB/XGB/CAT + a `ceiling_hybrid` two-stage\nmodel on the exp-#7 26-feature set, KFold(5, shuffle, seed=42); blend:\nharness_v2.eval_blend with clip applied INSIDE metric_fn) + `tree_search/run_s3e1.py`\n(harness_v2 driver). Root = linear winner's strongest solo (exp #4 Optuna\nfold-0-proxy-tuned LGB, OOF 0.558866). OOF cache: `tree_search/cache_s3e1/` (gitignored).\n\n### Reproduction rigor (two engineering findings worth keeping)\nDigit-for-digit reproduction was verified for all 5 linear pool members BEFORE searching\n(LGB 0.560732→.56073, XGB 0.561331→.56133, CAT 0.561063→.56106, LGB_TUNED\n0.558866→.55887, LGB_TUNED_SEED2024 0.558812→.55881; 5-way dirichlet blend 0.557085 vs\nlinear's 0.05-grid 0.557088 — the −0.000003 gap is weight-grid quantization, not model\ndrift). Two findings from getting there:\n1. **LightGBM is chaotically sensitive to ~1e-13 float differences** at num_leaves=121:\n   recomputing the same feature-engineering logic fresh from raw CSVs (instead of\n   loading the linear run's train_processed_v2.csv) shifted LGB_TUNED_SEED2024's OOF\n   from 0.558812 to 0.558552 — a real 0.00026 delta from pure sub-ULP noise (confirmed:\n   round-tripping the fresh features through a CSV text buffer alone restores 0.558812).\n   eval_s3e1.py therefore loads the on-disk processed_v2 CSVs (exact byte-identical\n   artifact) and only falls back to fresh recomputation if they're missing.\n2. **Explicit `n_jobs=-1` on the LGB/XGB sklearn wrappers is a ~10-50x SLOWDOWN** on\n   this 20-core sandbox (17–27s/fold vs 1.6–2s/fold with n_jobs left at default) —\n   an oversubscription quirk. The linear scripts never set n_jobs; matching them fixed it.\n\n### Node/backtrack/dedup summary\n- **22 evaluated nodes** (15 solo / 7 blend), 23 total (1 failed), wall=190.3s.\n- **1 failed node** (#13): grid_simplex weight search on an 8-member blend — exceeds\n  harness_v2's documented 5-member combinatorial limit, ValueError captured cleanly as\n  status=failed in 0.0s (no compute wasted, search loop unaffected).\n- **3 backtracks**: 1 forced (BLEND lineage's mutation space genuinely exhausted after\n  the pool was fully blended) + 2 genuine 3-strike plateaus (SEEDBAG at node #18,\n  REGNUDGE at #21). tie_rate stayed 0.000 — RMSE is continuous, the adaptive-plateau\n  discretization branch never fired (as designed).\n- **Dedup: 1 rejection**, and it validated the s3e7 lesson end-to-end: after #13 failed,\n  the retry slot re-proposed the identical grid_simplex config; find_dup caught it\n  against the failed node and the queue advanced instead of re-running a known-broken\n  eval. Zero live-lock (the s3e7 proposer-side fixes — pre-check find_dup, hash blend\n  members order-insensitively — were inherited verbatim).\n\n### Best vs linear, evaluations-to-match/beat\n| | OOF RMSE | evaluations |\n|---|---|---|\n| Linear-iteration best (exp #7, 5-way 0.05-grid blend) | 0.557088 | 7 experiments |\n| Tree v2: node #8 (BLEND seed = linear's 5-member pool, dirichlet) | 0.557085 | 9 (match/hair-beat) |\n| Tree v2: node #11 (7-way + clip-aware weight search) | 0.556931 | 12 (first structural beat) |\n| Tree v2: node #12 (+ceiling_hybrid member) | 0.556333 | 13 |\n| Tree v2: node #14 (global best: −root member, w=0.023) | **0.556329** | **14** |\n\nWinning chain: #8 5-way 0.557085 → #9 +REGNUDGE 0.557083 → #10 +XGB_deep 0.557054 →\n#11 clip=True **0.556931** → #12 +CEILING **0.556333** → #14 −LGB_tuned(root, w=0.023)\n**0.556329**. Final: 7 members, clip=True, weights LGBORIG .150 / XGBORIG .036 /\nCATORIG .249 / SEEDBAG .186 / REGNUDGE .050 / XGB_deep .041 / CEILING .289.\n\n### What actually moved it — and what didn't (honest ledger)\n- **Top-code-aware clip (OOF-level, inside the weight search)**: +0.000123 at the 7-way\n  layer (0.557054→0.556931), re-confirmed at the final 7-way by #15's reverse toggle\n  (clip=False 0.556407 vs clip=True 0.556329). The linear run only ever clipped the\n  TEST submission — scoring/searching on clipped OOF was free money it left on the table.\n- **Ceiling-classifier hybrid — the run's ONE ambitious node — failed solo, won big in\n  blend**: solo 0.561227 (worse than root by 0.0024; the soft cap-probability nudge\n  mis-hits uncapped rows, exactly the flagged risk) yet as a blend member it took the\n  LARGEST weight (0.289) and delivered the single biggest gain of the whole tree\n  (−0.000598, 0.556931→0.556333). Its cap-classifier (OOF AUC 0.964) contributes a\n  signal direction no pure regressor in the pool has. Third consecutive sweep comp\n  confirming: blend contribution ≠ solo score (s3e7's XGB_deep, now s3e1's CEILING).\n- **Removing the near-zero-weight root member (w=0.023) gained +0.000004** — P14\n  confirmed again; poetic that the discarded member was the root/linear-strongest-solo\n  itself: its seed-bag sibling (#4) plus REGNUDGE variant made it redundant.\n- **Regularization nudges on tuned LGB worked HERE (unlike s3e7)**: the REGNUDGE lineage\n  marched 0.558916→0.558683→0.558339→0.558208 (best solo of the whole tree, beating\n  root by 0.00066). At 37k rows the regularize-further prior paid off where at s3e7's\n  42k it lost 5/5 — the boundary is not a clean row-count threshold. Honest residual:\n  these late REGNUDGE improvements never got re-blended (BLEND lineage had already\n  plateaued/exhausted) — the blend's REGNUDGE member is the weaker seed #5, so a little\n  headroom is knowingly left unharvested.\n- **Seed-bagging kept paying, diminishingly**: seed 777 (#16, 0.558595) beat seed 2024\n  (#4, 0.558812); the two reg-tweaks on top of it lost. Consistent with P8's\n  \"diminishing but real\" phrasing.\n- **XGB_deep (deliberate-diversity, s3e7's lever)**: worst solo (0.565230) but earned\n  0.04–0.09 blend weight and a small real gain (+0.000029 at #10). Transfers, weakly.\n\n### Prior-usage log (idea-injection experiment)\n`suggest_priors({\"metric\":\"rmse\",\"tags\":[\"地理\",\"optuna\",\"ensemble\"]})` returned 20\nbullets (P0–P19). Among the 13 search-loop mutations (first-gen seeds excluded):\n- **5 prior-informed, win rate 5/5 = 100%** (P8 seed-bag ×2: 2W; P6 reg-nudge ×2: 2W;\n  P14 remove-weakest: 1W).\n- **8 uninformed, win rate 5/8 = 62.5%** — but the two LARGEST gains of the run (clip\n  toggle #11, ceiling member #12) were both [PRIOR none]: comp-specific top-code insight\n  from this comp's own EDA, absent from the experience library by construction.\n- Three sweeps in, the pattern sharpens: prior-informed mutations are near-guaranteed\n  small wins (ensemble/tuning mechanics transfer reliably: 62.5%→100% win rates on\n  s3e7/s3e1), while the BIG wins keep coming from comp-local insight (s3e3's next-ideas,\n  s3e1's top-coding). Priors set the floor; local EDA sets the ceiling."
+    }
+  },
+  "eda": {
+    "source": "eda_summary.py",
+    "n_rows_train": 37137,
+    "n_rows_test": 24759,
+    "n_features": 8,
+    "numeric_features": [
+      "MedInc",
+      "HouseAge",
+      "AveRooms",
+      "AveBedrms",
+      "Population",
+      "AveOccup",
+      "Latitude",
+      "Longitude"
+    ],
+    "categorical_features": [],
+    "duplicate_rows_train": 0,
+    "target": {
+      "name": "MedHouseVal",
+      "dtype": "float64",
+      "n_unique": 3723,
+      "missing": 0,
+      "mean": 2.079751,
+      "std": 1.158571,
+      "min": 0.14999,
+      "p25": 1.208,
+      "median": 1.808,
+      "p75": 2.66,
+      "max": 5.00001,
+      "skew": 0.970856,
+      "kurtosis": 0.308504,
+      "is_integer_valued": false,
+      "log_transform_candidate": false
+    },
+    "missing_train": {},
+    "missing_test": {},
+    "numeric_stats": {
+      "MedInc": {
+        "mean": 3.851029,
+        "std": 1.803167,
+        "min": 0.4999,
+        "max": 15.0001,
+        "skew": 1.567604,
+        "zeros": 0.0
+      },
+      "HouseAge": {
+        "mean": 26.057005,
+        "std": 12.158221,
+        "min": 2.0,
+        "max": 52.0,
+        "skew": 0.413457,
+        "zeros": 0.0
+      },
+      "AveRooms": {
+        "mean": 5.163124,
+        "std": 1.206242,
+        "min": 0.851064,
+        "max": 28.837607,
+        "skew": 1.301106,
+        "zeros": 0.0
+      },
+      "AveBedrms": {
+        "mean": 1.062204,
+        "std": 0.09649,
+        "min": 0.5,
+        "max": 5.873181,
+        "skew": 12.965449,
+        "zeros": 0.0
+      },
+      "Population": {
+        "mean": 1660.778919,
+        "std": 1302.469608,
+        "min": 3.0,
+        "max": 35682.0,
+        "skew": 5.796582,
+        "zeros": 0.0
+      },
+      "AveOccup": {
+        "mean": 2.831243,
+        "std": 2.702413,
+        "min": 0.95,
+        "max": 502.99061,
+        "skew": 170.89013,
+        "zeros": 0.0
+      },
+      "Latitude": {
+        "mean": 35.57003,
+        "std": 2.083179,
+        "min": 32.55,
+        "max": 41.95,
+        "skew": 0.439251,
+        "zeros": 0.0
+      },
+      "Longitude": {
+        "mean": -119.554329,
+        "std": 1.974028,
+        "min": -124.35,
+        "max": -114.55,
+        "skew": -0.313242,
+        "zeros": 0.0
+      }
+    },
+    "categorical_stats": {},
+    "target_correlation": {
+      "MedInc": {
+        "pearson": 0.701925,
+        "spearman": 0.697265
+      },
+      "HouseAge": {
+        "pearson": 0.10321,
+        "spearman": 0.062783
+      },
+      "AveRooms": {
+        "pearson": 0.366727,
+        "spearman": 0.309516
+      },
+      "AveBedrms": {
+        "pearson": -0.067487,
+        "spearman": -0.121262
+      },
+      "Population": {
+        "pearson": -0.038479,
+        "spearman": -0.042108
+      },
+      "AveOccup": {
+        "pearson": -0.048475,
+        "spearman": -0.224818
+      },
+      "Latitude": {
+        "pearson": -0.116499,
+        "spearman": -0.132997
+      },
+      "Longitude": {
+        "pearson": -0.056742,
+        "spearman": -0.113271
+      }
+    },
+    "high_collinearity_pairs": [],
+    "train_test_mean_shift_pct": {
+      "MedInc": -0.478086,
+      "HouseAge": -0.059272,
+      "AveRooms": 0.109718,
+      "AveBedrms": 0.131267,
+      "Population": 1.116863,
+      "AveOccup": -0.015358,
+      "Latitude": 0.078653,
+      "Longitude": 0.013282
+    },
+    "validation_hint": "continuous i.i.d. target -> standard KFold (check train/test shift first)"
+  },
   "experiments": [
     {
       "experiment_id": 1,

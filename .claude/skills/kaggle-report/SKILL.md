@@ -34,22 +34,34 @@ reproduce the pipeline **without reading the code**.
 
 Run from project root (`/home/tjyen/ai_agents/kaggle`), in order:
 
-1. **Collect facts (deterministic)**
+1. **Summarize EDA (deterministic, optional but recommended)**
+   ```bash
+   uv run python3 .claude/skills/kaggle-report/assets/eda_summary.py <competition-name>
+   ```
+   Reads `data/train.csv`+`test.csv`+`config.yaml`; writes
+   `competitions/<name>/eda_summary.json` (target distribution, feature stats,
+   target correlations, collinearity, train/test shift, validation hint). This
+   turns EDA into a structured, saved source that collect.py wires into facts.json.
+   If data files are absent, skip — collect.py records `missing: [eda_summary]`.
+
+2. **Collect facts (deterministic)**
    ```bash
    uv run python3 .claude/skills/kaggle-report/assets/collect.py <competition-name>
    ```
-   Writes `competitions/<name>/facts.json`. On error: report the message to the
-   user and stop — do not improvise around missing inputs.
+   Writes `competitions/<name>/facts.json`, wiring in four sources: `config.yaml`
+   (→`competition`), `experiments.json` (→`experiments`/`best`), `STATUS.md`
+   (→`status.sections`, verbatim prose), and `eda_summary.json` (→`eda`). On error:
+   report the message to the user and stop — do not improvise around missing inputs.
 
-2. **Write the report (you)**
+3. **Write the report (you)**
    - Read `competitions/<name>/facts.json` and [references/report_structure.md](references/report_structure.md).
    - Copy `assets/report_template.md` to `competitions/<name>/REPORT.md`, fill every
      section per the structure spec, embedding numbers/tables from facts.json verbatim.
 
-3. **Rubric self-check** — walk [references/rubric.md](references/rubric.md) item by
+4. **Rubric self-check** — walk [references/rubric.md](references/rubric.md) item by
    item; fix any gap before proceeding.
 
-4. **Verify number traceability (deterministic)**
+5. **Verify number traceability (deterministic)**
    ```bash
    uv run python3 .claude/skills/kaggle-report/assets/verify_report.py \
        competitions/<name>/REPORT.md competitions/<name>/facts.json
@@ -57,7 +69,7 @@ Run from project root (`/home/tjyen/ai_agents/kaggle`), in order:
    Must exit 0. If it flags numbers: fix the report. Do not add numbers to
    facts.json by hand — facts.json is generated only by collect.py.
 
-5. **PDF (deterministic)** — PDF filename MUST be `<short>_REPORT.pdf` where `<short>` is the
+6. **PDF (deterministic)** — PDF filename MUST be `<short>_REPORT.pdf` where `<short>` is the
    competition's short id (folder name minus any series prefix, e.g. `playground-series-s3e16`
    → `s3e16`), so multiple open reports are distinguishable:
    ```bash

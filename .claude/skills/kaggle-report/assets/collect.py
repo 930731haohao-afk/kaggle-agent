@@ -110,6 +110,41 @@ def normalize(e: dict, idx: int, default_metric, default_direction):
     return n
 
 
+def load_eda(comp_dir: str):
+    """Wire in the structured EDA artifact if eda_summary.py has produced it."""
+    path = os.path.join(comp_dir, "eda_summary.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        return json.load(open(path))
+    except (json.JSONDecodeError, OSError):
+        return None      # never let a bad EDA file break fact collection
+
+
+def parse_status(comp_dir: str):
+    """Turn STATUS.md prose into a structured {heading: text} map (## sections).
+
+    Faithful, not interpretive: we only split on H1/H2 headings and keep the text
+    verbatim so the report can cite context without the LLM inventing structure.
+    """
+    path = os.path.join(comp_dir, "STATUS.md")
+    if not os.path.exists(path):
+        return {"present": False}
+    text = open(path, encoding="utf-8").read()
+    sections, cur, buf = {}, "_intro", []
+    for line in text.splitlines():
+        m = re.match(r"^#{1,2}\s+(.*)", line)
+        if m:
+            if buf:
+                sections[cur] = "\n".join(buf).strip()
+            cur, buf = m.group(1).strip(), []
+        else:
+            buf.append(line)
+    if buf:
+        sections[cur] = "\n".join(buf).strip()
+    return {"present": True, "sections": {k: v for k, v in sections.items() if v}}
+
+
 def build_facts(comp_dir: str) -> dict:
     cfg_path = os.path.join(comp_dir, "config.yaml")
     exp_path = os.path.join(comp_dir, "experiments.json")
@@ -142,6 +177,8 @@ def build_facts(comp_dir: str) -> dict:
                       else "baseline-only")
     leaderboard = next((e["leaderboard"] for e in reversed(experiments)
                         if e.get("leaderboard")), None)
+    eda = load_eda(comp_dir)
+    status = parse_status(comp_dir)
     missing = []
     if leaderboard is None:
         missing.append("leaderboard")
@@ -150,11 +187,15 @@ def build_facts(comp_dir: str) -> dict:
     if not any(isinstance(e.get("cv"), dict) and e["cv"].get("seed") is not None
                for e in experiments):
         missing.append("cv_seed")
+    if eda is None:
+        missing.append("eda_summary")
 
     return {
         "competition": config,
         "material_level": material_level,
-        "status_md_present": os.path.exists(os.path.join(comp_dir, "STATUS.md")),
+        "status_md_present": status["present"],   # kept for backward compat
+        "status": status,
+        "eda": eda,
         "experiments": experiments,
         "best": best,
         "trajectory": trajectory,

@@ -1,0 +1,280 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 42100,
+  "n_rows_test": 28068,
+  "n_features": 17,
+  "numeric_features": [
+    "no_of_adults",
+    "no_of_children",
+    "no_of_weekend_nights",
+    "no_of_week_nights",
+    "type_of_meal_plan",
+    "required_car_parking_space",
+    "room_type_reserved",
+    "lead_time",
+    "arrival_year",
+    "arrival_month",
+    "arrival_date",
+    "market_segment_type",
+    "repeated_guest",
+    "no_of_previous_cancellations",
+    "no_of_previous_bookings_not_canceled",
+    "avg_price_per_room",
+    "no_of_special_requests"
+  ],
+  "categorical_features": [],
+  "duplicate_rows_train": 562,
+  "target": {
+    "name": "booking_status",
+    "dtype": "int64",
+    "n_unique": 2,
+    "missing": 0,
+    "mean": 0.392019,
+    "std": 0.488207,
+    "min": 0.0,
+    "p25": 0.0,
+    "median": 0.0,
+    "p75": 1.0,
+    "max": 1.0,
+    "skew": 0.442379,
+    "kurtosis": -1.804387,
+    "is_integer_valued": true,
+    "log_transform_candidate": false,
+    "value_counts": {
+      "0": 25596,
+      "1": 16504
+    }
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "no_of_adults": {
+      "mean": 1.920713,
+      "std": 0.52495,
+      "min": 0.0,
+      "max": 4.0,
+      "skew": -0.244259,
+      "zeros": 167.0
+    },
+    "no_of_children": {
+      "mean": 0.141093,
+      "std": 0.450128,
+      "min": 0.0,
+      "max": 9.0,
+      "skew": 3.574864,
+      "zeros": 37786.0
+    },
+    "no_of_weekend_nights": {
+      "mean": 0.884632,
+      "std": 0.885693,
+      "min": 0.0,
+      "max": 7.0,
+      "skew": 0.552292,
+      "zeros": 18137.0
+    },
+    "no_of_week_nights": {
+      "mean": 2.398005,
+      "std": 1.42733,
+      "min": 0.0,
+      "max": 17.0,
+      "skew": 1.396208,
+      "zeros": 1937.0
+    },
+    "type_of_meal_plan": {
+      "mean": 0.239192,
+      "std": 0.587674,
+      "min": 0.0,
+      "max": 3.0,
+      "skew": 2.309319,
+      "zeros": 35463.0
+    },
+    "required_car_parking_space": {
+      "mean": 0.025249,
+      "std": 0.156884,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": 6.052554,
+      "zeros": 41037.0
+    },
+    "room_type_reserved": {
+      "mean": 0.428931,
+      "std": 0.832605,
+      "min": 0.0,
+      "max": 6.0,
+      "skew": 2.567605,
+      "zeros": 29853.0
+    },
+    "lead_time": {
+      "mean": 103.888029,
+      "std": 81.069343,
+      "min": 0.0,
+      "max": 443.0,
+      "skew": 0.823738,
+      "zeros": 827.0
+    },
+    "arrival_year": {
+      "mean": 2017.856295,
+      "std": 0.350795,
+      "min": 2017.0,
+      "max": 2018.0,
+      "skew": -2.031451,
+      "zeros": 0.0
+    },
+    "arrival_month": {
+      "mean": 7.593539,
+      "std": 2.829395,
+      "min": 1.0,
+      "max": 12.0,
+      "skew": -0.377745,
+      "zeros": 0.0
+    },
+    "arrival_date": {
+      "mean": 15.902945,
+      "std": 8.888582,
+      "min": 1.0,
+      "max": 31.0,
+      "skew": -0.016271,
+      "zeros": 0.0
+    },
+    "market_segment_type": {
+      "mean": 0.728504,
+      "std": 0.633529,
+      "min": 0.0,
+      "max": 4.0,
+      "skew": 1.33414,
+      "zeros": 14306.0
+    },
+    "repeated_guest": {
+      "mean": 0.029192,
+      "std": 0.168347,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": 5.593549,
+      "zeros": 40871.0
+    },
+    "no_of_previous_cancellations": {
+      "mean": 0.019715,
+      "std": 0.325837,
+      "min": 0.0,
+      "max": 13.0,
+      "skew": 27.386688,
+      "zeros": 41755.0
+    },
+    "no_of_previous_bookings_not_canceled": {
+      "mean": 0.175772,
+      "std": 1.732121,
+      "min": 0.0,
+      "max": 58.0,
+      "skew": 16.856332,
+      "zeros": 40993.0
+    },
+    "avg_price_per_room": {
+      "mean": 104.566377,
+      "std": 37.139165,
+      "min": 0.0,
+      "max": 540.0,
+      "skew": 0.885375,
+      "zeros": 641.0
+    },
+    "no_of_special_requests": {
+      "mean": 0.571734,
+      "std": 0.775041,
+      "min": 0.0,
+      "max": 5.0,
+      "skew": 1.234138,
+      "zeros": 24554.0
+    }
+  },
+  "categorical_stats": {},
+  "target_correlation": {
+    "no_of_adults": {
+      "pearson": 0.07976,
+      "spearman": 0.08284
+    },
+    "no_of_children": {
+      "pearson": 0.00426,
+      "spearman": 0.003101
+    },
+    "no_of_weekend_nights": {
+      "pearson": 0.044279,
+      "spearman": 0.044118
+    },
+    "no_of_week_nights": {
+      "pearson": 0.058506,
+      "spearman": 0.053529
+    },
+    "type_of_meal_plan": {
+      "pearson": 0.04598,
+      "spearman": 0.06644
+    },
+    "required_car_parking_space": {
+      "pearson": -0.093262,
+      "spearman": -0.093262
+    },
+    "room_type_reserved": {
+      "pearson": -0.023087,
+      "spearman": -0.008663
+    },
+    "lead_time": {
+      "pearson": 0.374865,
+      "spearman": 0.390167
+    },
+    "arrival_year": {
+      "pearson": 0.178326,
+      "spearman": 0.178326
+    },
+    "arrival_month": {
+      "pearson": 0.007639,
+      "spearman": -0.015129
+    },
+    "arrival_date": {
+      "pearson": 0.003124,
+      "spearman": 0.003107
+    },
+    "market_segment_type": {
+      "pearson": 0.112648,
+      "spearman": 0.18718
+    },
+    "repeated_guest": {
+      "pearson": -0.136065,
+      "spearman": -0.136065
+    },
+    "no_of_previous_cancellations": {
+      "pearson": -0.045599,
+      "spearman": -0.069752
+    },
+    "no_of_previous_bookings_not_canceled": {
+      "pearson": -0.080166,
+      "spearman": -0.130126
+    },
+    "avg_price_per_room": {
+      "pearson": 0.157484,
+      "spearman": 0.201343
+    },
+    "no_of_special_requests": {
+      "pearson": -0.220278,
+      "spearman": -0.217766
+    }
+  },
+  "high_collinearity_pairs": [],
+  "train_test_mean_shift_pct": {
+    "no_of_adults": -0.281134,
+    "no_of_children": -0.156258,
+    "no_of_weekend_nights": 0.467799,
+    "no_of_week_nights": -0.435611,
+    "type_of_meal_plan": -2.124809,
+    "required_car_parking_space": 6.956349,
+    "room_type_reserved": 0.405021,
+    "lead_time": -0.040885,
+    "arrival_year": 2e-05,
+    "arrival_month": -0.126895,
+    "arrival_date": -0.221987,
+    "market_segment_type": -0.350349,
+    "repeated_guest": 5.202488,
+    "no_of_previous_cancellations": 26.680729,
+    "no_of_previous_bookings_not_canceled": 11.927115,
+    "avg_price_per_room": 0.074673,
+    "no_of_special_requests": 0.333829
+  },
+  "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+}

@@ -21,6 +21,306 @@
   },
   "material_level": "full",
   "status_md_present": true,
+  "status": {
+    "present": true,
+    "sections": {
+      "STATUS — playground-series-s3e7 (Hotel Reservation Cancellation)": "- **Task**: binary classification, predict `booking_status` (1 = cancelled); metric **ROC-AUC** (maximize); id col `id`\n- **Data**: 42,100 train / 28,068 test; 17 raw features, all already integer/float-encoded\n  (meal plan, room type, market segment are pre-label-encoded); no missing values, no\n  duplicate rows/ids, no train/test id overlap\n- **Rules**: no external data, no pretrained models, no internet; daily submission limit 5\n- **Class balance**: 60.8% not-cancelled / 39.2% cancelled (mild imbalance) → StratifiedKFold",
+      "Progress": "- [x] Stage 0 Setup — config.yaml, data present; `experiments.json` seeded with 1\n      generic-baseline entry (blend AUC 0.89882) to beat\n- [x] Stage 1 EDA — `scripts/eda.py`\n- [x] Stage 2 Feature engineering — `scripts/features.py` (two variants, see below)\n- [x] Stage 3 Modeling + CV — `scripts/train.py` (LGB/XGB/CatBoost, 5-fold StratifiedKFold,\n      OOF weight-searched blend)\n- [x] Stage 4 Evaluation/iteration — 1 reflexion-driven iteration (feature trimming)\n- [x] Stage 5 Submission generated — `submissions/sub_blend_0.89939_20260703_190223.csv`\n- [x] **Phase B self-improvement iteration (2026-07-03 evening)** — 3 rounds, new best\n      OOF 0.899893 (exp 6); final submission `submissions/sub_blend_0.89989_20260703_205132.csv`\n- [x] **Phase D-3 tree-search v2 sweep (2026-07-04)** — `tree_search/run_s3e7.py`, new best\n      OOF **0.900242** (+0.000349 over linear best; see appendix at end of this file)\n- [ ] Not submitted to Kaggle leaderboard (no credentials in this run; local CV only)",
+      "Best result vs baseline": "| | OOF ROC-AUC | vs baseline (0.89882) |\n|-|-------------|------------------------|\n| Generic baseline blend (exp 1, raw 17 features) | 0.89882 | — |\n| Iter1: 17 raw + 14 engineered features (exp 2) | 0.89788 | −0.00094 |\n| Iter2: 17 raw + 8 trimmed engineered features (exp 3) | 0.89939 | +0.00057 |\n| Phase B R1: Optuna-tuned LGB + hand-set XGB/CAT (exp 4) | 0.899891 | +0.00107 |\n| Phase B R2: + Optuna-tuned XGB (exp 5, REJECTED) | 0.899722 | +0.00090 |\n| **Phase B R3: exp-4 bases, 0.01-grid prob blend (exp 6, FINAL)** | **0.899893** | **+0.00107** |\n\nCV is local-only this run (no Kaggle submission), so no CV↔LB gap to report.",
+      "Phase B self-improvement iteration (3 rounds, same CV: 5-fold StratifiedKFold seed=42)": "- **Round 1 (exp 4, KEPT)**: Optuna-tuned LGB (50 trials, TPE, fold-0 proxy objective —\n  a first attempt tuning on full 5-fold per trial blew a 25-min timeout with zero results;\n  fold-0 tuning took 300s). Winner is shallow + regularized: max_depth=3, lr=0.068,\n  reg_alpha=2.14, colsample=0.53 vs hand-set depth-unlimited num_leaves=63/lr=0.03.\n  LGB solo 0.898824 → 0.899215; blend 0.899395 → **0.899891** (+0.000496).\n- **Round 2 (exp 5, REJECTED)**: same recipe applied to XGB (50 trials, fold-0 proxy).\n  XGB solo improved 0.898765 → 0.898860, but blend REGRESSED to 0.899722 (−0.000169):\n  tuned XGB converged to shallow trees (depth 4, colsample 0.5) similar to tuned LGB,\n  losing ensemble diversity. Kept hand-set XGB.\n- **Round 3 (exp 6, FINAL)**: ensemble-stage-only change on exp-4 base models.\n  Fine 0.01 weight grid 0.899893 (weights LGB 0.54/XGB 0.40/CAT 0.06); rank-average\n  blend 0.899884 (worse). Delta +0.000002 vs exp 4 — noise-level. Counted together\n  with Round 2 as two consecutive rounds without meaningful improvement → STOP.\n- Scripts: `scripts/optuna_lgb.py` (R1), `scripts/optuna_xgb.py` (R2),\n  `scripts/blend_refine.py` (R3). Total Phase B wall time ≈ 45 min (25 of which was\n  the aborted full-5-fold tuning attempt).",
+      "EDA key findings": "1. `lead_time` is the single strongest predictor (single-feature AUC 0.73, |corr| 0.375):\n   cancellation rate rises monotonically from 11% (≤7 days) to 68% (>180 days lead time).\n2. `no_of_special_requests`, `repeated_guest`, `required_car_parking_space` are strongly\n   *protective*: repeated guests cancel only 0.9% of the time vs 40% for new guests.\n3. `market_segment_type` matters a lot: segment 1 (likely \"Online\") cancels 50.5% of the\n   time vs 1.6% for segment 4.\n4. `avg_price_per_room` has a non-monotonic relationship with target (rises then dips in\n   the top price quintile) — kept raw, not binned.\n5. No missing values, no duplicate rows/ids, no train/test id overlap, no train/test\n   distribution shift (all normalized shifts < 0.02), no leakage (all single-feature\n   AUCs < 0.85, max was `lead_time` at 0.73 — a legitimately strong, non-leaky signal).\n6. `arrival_date`/`arrival_month` have near-zero raw correlation with target (0.003, 0.008).",
+      "CV scheme (fixed first)": "- **5-fold StratifiedKFold on `booking_status` directly** (binary target, no binning\n  needed), shuffle, seed=42. Fold AUCs stable across all 3 models (0.893–0.901 range).",
+      "Feature engineering — two iterations": "**Iter1 (14 engineered, on top of 17 raw)**: total_nights, total_guests, has_children,\nweekend_ratio, price_per_person, price_per_night, lead_time_log, prior_cancel_rate,\nhas_prior_history, month_sin/cos, date_sin/cos, no_special_and_price. **Result: OOF 0.89788,\nbelow the 0.89882 generic baseline** (delta −0.00094) — a flat/slightly-negative signal.\n\n**Iter2 (reflexion)**: Hypothesis — the cyclical month/date encodings and the\nspecial_requests×price interaction were adding noise rather than signal, since their\nunderlying raw columns (`arrival_date`, `arrival_month`) have near-zero raw correlation\nwith the target and GBMs can already learn interactions/splits natively. Trimmed to 8\nengineered features: total_nights, total_guests, has_children, weekend_ratio,\nprice_per_person, lead_time_log, prior_cancel_rate, has_prior_history. **Result: OOF\n0.89939, now +0.00057 over baseline** — hypothesis confirmed, kept as final.\n\nPer the self-improvement decision framework, +0.00057 is a small-but-real \"flat→positive\"\nsignal (not a plateau — only 2 iterations run); stopped after iter2 given the 15-minute\ntraining budget and diminishing expected returns from a 3rd micro-tweak.",
+      "Model results (OOF AUC, 5-fold, Phase A iter2 feature set — 25 features)": "| Model | OOF AUC | time |\n|-------|---------|------|\n| LightGBM (binary, num_leaves=63, lr=0.03) | 0.89882 | 30.3s |\n| XGBoost (binary:logistic, depth=6, lr=0.03) | 0.89876 | 31.2s |\n| CatBoost (Logloss/AUC, depth=7, lr=0.03) | 0.89671 | 47.1s |\n| Blend 0.5/0.4/0.1 (weight-searched, grid step 0.05) | 0.89939 | — |\n\nTotal training time (all 3 models, iter2 run): ~109s. Well within the 15-minute budget\nacross both iterations combined (~3m37s wall time for train.py × 2 runs).\n\nExperiment log: `experiments.json` (#1 generic baseline, #2 iter1, #3 iter2,\n#4 Phase B R1/tuned-LGB, #5 Phase B R2/rejected, #6 Phase B R3/final).",
+      "Model results (OOF AUC, 5-fold, Phase B final — exp 6)": "| Model | OOF AUC | notes |\n|-------|---------|-------|\n| LightGBM (Optuna-tuned: depth=3, lr=0.068, reg_alpha=2.14) | 0.899215 | strongest single |\n| XGBoost (hand-set: depth=6, lr=0.03 — kept for diversity) | 0.898765 | |\n| CatBoost (hand-set: depth=7, lr=0.03) | 0.896709 | |\n| **Blend 0.54/0.40/0.06 (prob, 0.01 grid)** | **0.899893** | FINAL |",
+      "Next ideas (not tried — future work)": "- Target/frequency encoding for `market_segment_type` given its large rate spread (1.6–50.5%).\n- CatBoost native categorical handling for the 3 label-encoded categorical cols\n  (meal_plan 4 lv / room_type 7 lv / market_segment 5 lv) — CAT is the weakest base\n  model (0.8967) and only carries 0.06 blend weight, so expected blend gain is small.\n- Optuna-tune CAT (same fold-0 proxy recipe) — but see the Round-2 diversity caveat.\n- Threshold-free ranking metric (AUC) means no post-processing/threshold tuning applies.",
+      "Files": "```\ncompetitions/playground-series-s3e7/\n├── config.yaml\n├── experiments.json        # 6 entries (see above)\n├── STATUS.md                # this file\n├── data/                    # train.csv, test.csv, sample_submission.csv\n├── scripts/\n│   ├── eda.py\n│   ├── features.py          # build_features() + feature_columns(variant=\"trimmed\"|\"full\")\n│   ├── train.py              # LGB/XGB/CAT, 5-fold CV, weight-search blend, logs experiment\n│   ├── optuna_lgb.py          # Phase B R1: Optuna LGB (fold-0 proxy) + blend → exp 4\n│   ├── optuna_xgb.py          # Phase B R2: Optuna XGB (rejected) → exp 5\n│   └── blend_refine.py        # Phase B R3: fine-grid + rank blend → exp 6 (final)\n└── submissions/\n    ├── sub_generic_0.89882_20260703_120542.csv   # pre-existing baseline\n    ├── sub_blend_0.89788_20260703_185938.csv     # iter1 (kept for audit trail)\n    ├── sub_blend_0.89939_20260703_190223.csv     # iter2 (Phase A best)\n    ├── sub_blend_0.89989_20260703_203932.csv     # Phase B R1 (exp 4)\n    └── sub_blend_0.89989_20260703_205132.csv     # Phase B R3 (exp 6) — FINAL best local CV\n```",
+      "Reproduce": "```bash\ncd /home/tjyen/ai_agents/kaggle\nuv run python3 competitions/playground-series-s3e7/scripts/eda.py\nuv run python3 competitions/playground-series-s3e7/scripts/train.py        # Phase A pipeline\nuv run python3 competitions/playground-series-s3e7/scripts/optuna_lgb.py    # Phase B R1\nuv run python3 competitions/playground-series-s3e7/scripts/blend_refine.py  # Phase B R3 (final)",
+      "Not submitted to Kaggle in this run (no credentials available). To submit:": "export KAGGLE_API_TOKEN=$(python3 -c \"import json; print(json.load(open('/home/tjyen/.kaggle/kaggle.json'))['key'])\")\nuv run kaggle competitions submit -c playground-series-s3e7 \\\n  -f competitions/playground-series-s3e7/submissions/sub_blend_0.89989_20260703_205132.csv \\\n  -m \"Optuna-tuned LGB + XGB + CAT blend (0.54/0.40/0.06), OOF 0.899893\"\n```",
+      "Appendix: Phase D-3 tree-search v2 sweep (2026-07-04)": "**Sweep question**: can harness v2 (ensemble-default node space + experience-library\npriors + adaptive plateau + child dedup) match or beat the linear-iteration best\n(0.899893) in fewer evaluations than linear iteration took rounds (6 experiments,\nexp #1–#6)? s3e7 was flagged as the HARDEST sweep case (linear squeezed only +0.0005\ntotal; suspected near-zero headroom). **Answer for s3e7: split. Evals-to-match: NO —\nmatching took 8 evaluations (> linear's 6), and the \"match\" was literally the blend\nseed reproducing linear's own 3-model trio. Headroom: YES — the tree then found a real\n+0.000349 beyond the linear ceiling (0.900242 by evaluation #13, wall 405.8s), via two\nlevers the linear run never tried (seed-bagging the tuned LGB; a deliberately-diverse\ndeep XGB).** The suspected near-zero headroom was real for solo models (no solo mutation\nbeat the root) but NOT for the ensemble pool.\n\nBuilt: `tree_search/eval_s3e7.py` (solo: LGB/XGB/CAT on the iter2 trimmed 25-feature set\nvia scripts/features.py unmodified, StratifiedKFold(5, seed=42) — digit-for-digit\nreproduction verified for all 3 known configs before searching: root LGB_tuned 0.899215,\nXGB_hand 0.898765, CAT_hand 0.896709, all exact; the blend seed then reproduced exp #6's\n0.899893 with weights 0.5397/0.4021/0.0582 ≈ the linear 0.54/0.40/0.06) +\n`tree_search/run_s3e7.py` (harness_v2 driver). Root = linear winner's strongest solo\n(exp #4 Optuna fold-0-proxy-tuned LGB). OOF cache: `tree_search/cache_s3e7/` (gitignored).\n\n### Node/backtrack/dedup summary\n- **22 evaluated nodes** (13 solo / 9 blend), 22 total (0 failed), wall=405.8s.\n- **3 backtracks**: 1 forced (BLEND lineage's mutation space genuinely exhausted — queue\n  done and every remaining candidate a duplicate) + 2 genuine 3-strike plateaus (SEEDBAG\n  at node #18, FEATPRUNE at #21). tie_rate peaked at 0.10 < 0.15 threshold, so the\n  adaptive-plateau discretization branch never fired (AUC is continuous — as predicted).\n- **Dedup**: 0 rejections in the final run — but only because the FIRST full run of this\n  driver exposed a live-lock the dedup safety-net alone cannot prevent: after the blend\n  queue exhausted, the old fallback re-proposed the same \"add member #4\" config 73\n  consecutive times (every one correctly rejected as a duplicate of node #14, zero\n  compute wasted) until the iteration safety cap killed the run at 15/22 nodes.\n  **Harness-level lesson: rejection-only dedup is necessary but not sufficient — the\n  mutation PROPOSER must consult `find_dup` before proposing, and blend member lists\n  must be hashed order-insensitively (same member SET == same search space).** Both\n  fixes are in run_s3e7.py (`blend_fallback` pre-checks every candidate; `strip_result`\n  sorts members), plus a forced-backtrack path when a lineage's proposal space is\n  genuinely exhausted.\n\n### Best vs linear, evaluations-to-match/beat\n| | OOF AUC | evaluations |\n|---|---|---|\n| Linear-iteration best (exp #6, prob 0.01-grid blend) | 0.899893 | 6 experiments |\n| Tree v2: node #7 (BLEND seed = linear's trio reproduced) | 0.899893 | 8 (match, not fewer) |\n| Tree v2: node #8 (+SEEDBAG member) | 0.900054 | 9 (first genuine beat) |\n| Tree v2: node #13 (global best: 5-way rank blend, CAT removed) | **0.900242** | **13** |\n\nWinning chain: #7 trio 0.899893 → #8 +LGB_seed2024 0.900054 → #9 +FEATPRUNE 0.900057 →\n#11 +XGB_deep 0.900224 → #12 prob→rank 0.900238 → #13 −CAT(w=0.007) **0.900242**.\nFinal members/weights (rank space): LGB_tuned .057 / XGB_hand .134 / LGB_seed2024 .506 /\nLGB_featprune .014 / XGB_deep .288.\n\n### What actually moved it — and what didn't (honest ledger)\n- **Seed-bagging the Optuna-tuned LGB** (seed 42→2024, untried by linear): solo 0.899448\n  even beat the root 0.899215; +0.000161 as blend member. The 4-comp \"add-to-pool +\n  seed-bag\" recipe transfers to s3e7; the linear run simply stopped before this step.\n- **Deliberate-diversity deep XGB** (depth 8, lr 0.05 — pushed AWAY from the tuned-LGB\n  optimum in direct response to exp #5's diversity-loss rejection): worst-but-one solo\n  (0.898199) yet the second-largest single blend gain (+0.000167, 0.27–0.29 weight).\n  Confirms exp #5's lesson from the constructive side: blend contribution ≠ solo score.\n- **Feature pruning did NOT transfer to s3e7** (s3e3's winning lever, this brief's\n  specific hypothesis): dropping the 2 measured-weakest engineered features\n  (prior_cancel_rate gain-importance 0.000, has_children 59.5) LOST to the intact root\n  solo (0.899146 vs 0.899215), and both further-prune and restore-one mutations stayed\n  below root. The 8-feature iter2 set appears already pruned to its optimum — but the\n  pruned variant still earned 1–8% blend weight as a cheap diversity member.\n- **Regularization nudges: all 5 lost** (REGNUDGE seed + queue, SEEDBAG reg push,\n  XGBHAND nudge never reached). 42k rows is not the <10k regime the\n  regularize-over-capacity prior is validated on.\n- **rank vs prob stayed noise-level** (±0.00002 both directions across #12/#15),\n  re-confirming P18 — though this time rank happened to sit on top.\n- **Removing the near-zero-weight CAT member cost nothing and gained +0.000004** (P16\n  confirmed); re-adding REGNUDGE (#14) and swapping back to prob (#15) both lost.\n\n### Prior-usage log (idea-injection experiment)\n`suggest_priors({\"metric\":\"auc\",\"tags\":[\"特徵\",\"共線性\",\"ensemble\",\"optuna\"]})` returned\n20 bullets (P0–P19; the Optuna/ensemble sections are rich for this comp family). Among\nthe 14 search-loop mutations (first-gen seeds excluded, no in-lineage parent):\n- **8 prior-informed, win rate 5/8 = 62.5%** (P2 seed-bag ×2: 1W1L; P9 add-to-pool ×3:\n  2W1L; P18 rank-swap 1W; P16 remove-weakest 1W; P3 further-prune 1L).\n- **6 uninformed, win rate 1/6 = 16.7%** (fallbacks and hand-nudges).\n- Unlike s3e3 (where informed tied uninformed at 14.3% and the best move came from the\n  comp's own next-ideas), on s3e7 the experience-library priors materially outperformed:\n  every blend-layer prior (P9/P16/P18) did exactly what its evidence line predicted, and\n  the two biggest gains (#8, #11) were P2/P9-shaped moves. Small n; but two sweeps in,\n  the pattern is \"priors excel at ensemble mechanics, comp-specific feature insight\n  still has to be earned locally\" (s3e7's P3 pruning transfer failed, s3e3's did too in\n  reverse — its winner was local, not transferred).",
+      "Appendix: Phase F-2 harness v3 validation run (2026-07-04)": "**Validation question**: does harness_v3's DEFAULT automatic policy (budget/phase machine\n+ auto-stop + dedup-consumes-budget + reopen-blend trigger + boundary-push + k=800+\ncoordinate-ascent blend search + blend-cost guard) run end-to-end in the wild with no\nregression vs the v2 sweep — and does the policy machinery do real work? **Answer: yes on\nboth. New best OOF 0.900455 (+0.000213 over v2's 0.900242, +0.000562 over linear), and\nthe ENTIRE gain beyond the v2-reproduction plateau came from the phase machine's\nmandatory explore burst (kitchen-sink mega-blend), the exact mechanism E-5 predicted.**\n\nBuilt: `tree_search/run_s3e7_v3.py` (driver; `eval_s3e7.py` reused byte-for-byte\nunmodified) → `experiments_tree_v3.json` (prior `experiments_tree.json` untouched).\nRoot + the 6 v2 solo seeds + 1 v2 node were reused from `cache_s3e7/` via the\ndigit-verify path (recomputed AUC from cached OOF must equal the v2 tree's stored score\nto 6dp; root asserted == 0.899215 before anything else ran). 44 solos trained fresh.\n\n### v3 vs v2 vs linear 對照\n| | OOF AUC | evals | best found at |\n|---|---|---|---|\n| Linear iteration (exp #6) | 0.899893 | 6 experiments | — |\n| Tree v2 (harness_v2, D-3) | 0.900242 | 22 | eval 13 |\n| **Tree v3 (this run)** | **0.900455** | 60 (cap) | **eval 46** |\n\nWinning node #48: rank-space Dirichlet(k=800)+coordinate-ascent blend over the FULL\n38-member solo pool (injected as the explore burst's kitchen-sink long-shot, node #44\nprob-space 0.900432 → #48 rank swap 0.900455). Weight search zeroed 29/38 members; the\n9 survivors: SEEDBAG .358, XGBDIV family .459 (4 nodes), **EXPL_BOUND2 .114 (the\nboundary-push-derived depth-2 LGB — solo only 0.897541, yet 3rd-largest weight)**, root\n.038, FEATPRUNE-child .018, XGBHAND-child .013. Confirms (at 38-member scale) the v2\nlesson that blend contribution ≠ solo score. Honest caveat shared with every prior tree\nrun: weights are fit on the full OOF (no nested validation), so ~0.0002-level gains\ncarry OOF-weight-overfit risk; the direction (burst mega-blend > hand-grown blend) is\nthe robust part, the 6th decimal is not.\n\n### Policy behavior (the v3 features, honestly scored)\n- **Phase machine**: exploit evals 1–39 (all 9 first-gen lineages 3-strike-plateaued in\n  sequence, pre-burst best 0.900054 = v2's 4-way SEEDBAG blend reproduced at eval 11);\n  `explore_burst` auto-fired at eval 39 → 5 long-shot solos (DART/extra-trees/deep-CAT/\n  lossguide-XGB/depth2-LGB, all solo-worse as expected) + the mega-blend (the winner);\n  stopped at the **hard cap 60/60** (`stop_reason`: \"hard budget cap reached\"),\n  `evals_since_burst_improve`=13 < patience 20 at cap — the burst improving the best at\n  evals 45/46 reset the patience counter, so the numeric backstop did its job. Idle\n  tail: 14 evals (46→60), within the ≤~20 target.\n- **Burst payoff**: +0.000401 over the pre-burst plateau (0.900054 → 0.900455). Without\n  the burst this run would have ended a v2-regression; with it, a v2-beat. Second comp\n  (after E-5 s3e3-scale) where the mandatory burst supplied every post-plateau gain.\n- **Boundary-push (feature 4)**: `boundary_candidates()` flagged the root's max_depth=3\n  sitting on its Optuna box's own low edge [3,12] → auto-seeded BOUNDARYPUSH (depth 2,\n  solo 0.896441, worse) and the burst's paired-compensation variant EXPL_BOUND2\n  (depth 2 + lr 0.1, solo 0.897541) — which earned 0.114 weight in the winning blend.\n  The mutation type paid rent via diversity, not solo score.\n- **Dedup-consumes-budget (feature 2)**: fired 3× (nodes #45–47, `status=failed`\n  placeholders burned under the root after 2-in-a-row dedup rejections of replayed\n  burst-seed proposals during a crash-resume). Worked as designed; zero evaluated-node\n  budget wasted.\n- **Reopen-blend-on-solo-breakthrough (feature 3)**: never fired — correct, no solo node\n  ever became global best after blends existed (blends led from eval 10 onward).\n- **Cost guard (feature 6)**: never fired — the 38-member AUC blend cost 11.4s < 45s\n  threshold. k=800+ascent (feature 5) was the default throughout.\n- **Prior usage**: informed 7 (win 28.6%) vs uninformed 3 (33.3%) — small n, no edge\n  this run; the two decisive moves (burst injection, mega-blend) were harness-policy\n  moves, not experience-library transfers.\n\n### Honest operational ledger (things that went wrong)\n- Sum of eval wall over the 60 nodes: 1593s (26.6 min) — within budget. But the run\n  needed 3 restarts: (1) a `KeyError` on the burst's mega-blend lineage (driver bug:\n  `propose_child` dispatched blend-vs-solo on the literal name \"BLEND\"; fixed to\n  dispatch on the lineage's first-gen node `kind`), (2) module-level driver state\n  (`LINEAGE_NAMES`/burst flag/node results) not surviving resume (fixed: node_results\n  moved into `search_state`, burst state re-derived from the tree), and (3) one\n  EXPL_CATDEEP CatBoost eval (depth 9, bagging_temperature 2.0, seed 4001) hung 28 min\n  at 313% CPU — `signal.alarm`-based timeouts cannot interrupt a native fit() that\n  never returns to Python bytecode; killed + resumed, the retry completed in 54.8s.\n  Lesson for the harness backlog: eval timeouts need a subprocess boundary, not SIGALRM.\n- All three fixes are driver-level; `harness_v3.py` itself needed zero changes.\n\nReproduce: `uv run python3 tree_search/run_s3e7_v3.py` (resumes from\n`experiments_tree_v3.json`; delete it + the non-v2 `cache_s3e7/solo_*.npz` entries for\na from-scratch run)."
+    }
+  },
+  "eda": {
+    "source": "eda_summary.py",
+    "n_rows_train": 42100,
+    "n_rows_test": 28068,
+    "n_features": 17,
+    "numeric_features": [
+      "no_of_adults",
+      "no_of_children",
+      "no_of_weekend_nights",
+      "no_of_week_nights",
+      "type_of_meal_plan",
+      "required_car_parking_space",
+      "room_type_reserved",
+      "lead_time",
+      "arrival_year",
+      "arrival_month",
+      "arrival_date",
+      "market_segment_type",
+      "repeated_guest",
+      "no_of_previous_cancellations",
+      "no_of_previous_bookings_not_canceled",
+      "avg_price_per_room",
+      "no_of_special_requests"
+    ],
+    "categorical_features": [],
+    "duplicate_rows_train": 562,
+    "target": {
+      "name": "booking_status",
+      "dtype": "int64",
+      "n_unique": 2,
+      "missing": 0,
+      "mean": 0.392019,
+      "std": 0.488207,
+      "min": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 1.0,
+      "max": 1.0,
+      "skew": 0.442379,
+      "kurtosis": -1.804387,
+      "is_integer_valued": true,
+      "log_transform_candidate": false,
+      "value_counts": {
+        "0": 25596,
+        "1": 16504
+      }
+    },
+    "missing_train": {},
+    "missing_test": {},
+    "numeric_stats": {
+      "no_of_adults": {
+        "mean": 1.920713,
+        "std": 0.52495,
+        "min": 0.0,
+        "max": 4.0,
+        "skew": -0.244259,
+        "zeros": 167.0
+      },
+      "no_of_children": {
+        "mean": 0.141093,
+        "std": 0.450128,
+        "min": 0.0,
+        "max": 9.0,
+        "skew": 3.574864,
+        "zeros": 37786.0
+      },
+      "no_of_weekend_nights": {
+        "mean": 0.884632,
+        "std": 0.885693,
+        "min": 0.0,
+        "max": 7.0,
+        "skew": 0.552292,
+        "zeros": 18137.0
+      },
+      "no_of_week_nights": {
+        "mean": 2.398005,
+        "std": 1.42733,
+        "min": 0.0,
+        "max": 17.0,
+        "skew": 1.396208,
+        "zeros": 1937.0
+      },
+      "type_of_meal_plan": {
+        "mean": 0.239192,
+        "std": 0.587674,
+        "min": 0.0,
+        "max": 3.0,
+        "skew": 2.309319,
+        "zeros": 35463.0
+      },
+      "required_car_parking_space": {
+        "mean": 0.025249,
+        "std": 0.156884,
+        "min": 0.0,
+        "max": 1.0,
+        "skew": 6.052554,
+        "zeros": 41037.0
+      },
+      "room_type_reserved": {
+        "mean": 0.428931,
+        "std": 0.832605,
+        "min": 0.0,
+        "max": 6.0,
+        "skew": 2.567605,
+        "zeros": 29853.0
+      },
+      "lead_time": {
+        "mean": 103.888029,
+        "std": 81.069343,
+        "min": 0.0,
+        "max": 443.0,
+        "skew": 0.823738,
+        "zeros": 827.0
+      },
+      "arrival_year": {
+        "mean": 2017.856295,
+        "std": 0.350795,
+        "min": 2017.0,
+        "max": 2018.0,
+        "skew": -2.031451,
+        "zeros": 0.0
+      },
+      "arrival_month": {
+        "mean": 7.593539,
+        "std": 2.829395,
+        "min": 1.0,
+        "max": 12.0,
+        "skew": -0.377745,
+        "zeros": 0.0
+      },
+      "arrival_date": {
+        "mean": 15.902945,
+        "std": 8.888582,
+        "min": 1.0,
+        "max": 31.0,
+        "skew": -0.016271,
+        "zeros": 0.0
+      },
+      "market_segment_type": {
+        "mean": 0.728504,
+        "std": 0.633529,
+        "min": 0.0,
+        "max": 4.0,
+        "skew": 1.33414,
+        "zeros": 14306.0
+      },
+      "repeated_guest": {
+        "mean": 0.029192,
+        "std": 0.168347,
+        "min": 0.0,
+        "max": 1.0,
+        "skew": 5.593549,
+        "zeros": 40871.0
+      },
+      "no_of_previous_cancellations": {
+        "mean": 0.019715,
+        "std": 0.325837,
+        "min": 0.0,
+        "max": 13.0,
+        "skew": 27.386688,
+        "zeros": 41755.0
+      },
+      "no_of_previous_bookings_not_canceled": {
+        "mean": 0.175772,
+        "std": 1.732121,
+        "min": 0.0,
+        "max": 58.0,
+        "skew": 16.856332,
+        "zeros": 40993.0
+      },
+      "avg_price_per_room": {
+        "mean": 104.566377,
+        "std": 37.139165,
+        "min": 0.0,
+        "max": 540.0,
+        "skew": 0.885375,
+        "zeros": 641.0
+      },
+      "no_of_special_requests": {
+        "mean": 0.571734,
+        "std": 0.775041,
+        "min": 0.0,
+        "max": 5.0,
+        "skew": 1.234138,
+        "zeros": 24554.0
+      }
+    },
+    "categorical_stats": {},
+    "target_correlation": {
+      "no_of_adults": {
+        "pearson": 0.07976,
+        "spearman": 0.08284
+      },
+      "no_of_children": {
+        "pearson": 0.00426,
+        "spearman": 0.003101
+      },
+      "no_of_weekend_nights": {
+        "pearson": 0.044279,
+        "spearman": 0.044118
+      },
+      "no_of_week_nights": {
+        "pearson": 0.058506,
+        "spearman": 0.053529
+      },
+      "type_of_meal_plan": {
+        "pearson": 0.04598,
+        "spearman": 0.06644
+      },
+      "required_car_parking_space": {
+        "pearson": -0.093262,
+        "spearman": -0.093262
+      },
+      "room_type_reserved": {
+        "pearson": -0.023087,
+        "spearman": -0.008663
+      },
+      "lead_time": {
+        "pearson": 0.374865,
+        "spearman": 0.390167
+      },
+      "arrival_year": {
+        "pearson": 0.178326,
+        "spearman": 0.178326
+      },
+      "arrival_month": {
+        "pearson": 0.007639,
+        "spearman": -0.015129
+      },
+      "arrival_date": {
+        "pearson": 0.003124,
+        "spearman": 0.003107
+      },
+      "market_segment_type": {
+        "pearson": 0.112648,
+        "spearman": 0.18718
+      },
+      "repeated_guest": {
+        "pearson": -0.136065,
+        "spearman": -0.136065
+      },
+      "no_of_previous_cancellations": {
+        "pearson": -0.045599,
+        "spearman": -0.069752
+      },
+      "no_of_previous_bookings_not_canceled": {
+        "pearson": -0.080166,
+        "spearman": -0.130126
+      },
+      "avg_price_per_room": {
+        "pearson": 0.157484,
+        "spearman": 0.201343
+      },
+      "no_of_special_requests": {
+        "pearson": -0.220278,
+        "spearman": -0.217766
+      }
+    },
+    "high_collinearity_pairs": [],
+    "train_test_mean_shift_pct": {
+      "no_of_adults": -0.281134,
+      "no_of_children": -0.156258,
+      "no_of_weekend_nights": 0.467799,
+      "no_of_week_nights": -0.435611,
+      "type_of_meal_plan": -2.124809,
+      "required_car_parking_space": 6.956349,
+      "room_type_reserved": 0.405021,
+      "lead_time": -0.040885,
+      "arrival_year": 2e-05,
+      "arrival_month": -0.126895,
+      "arrival_date": -0.221987,
+      "market_segment_type": -0.350349,
+      "repeated_guest": 5.202488,
+      "no_of_previous_cancellations": 26.680729,
+      "no_of_previous_bookings_not_canceled": 11.927115,
+      "avg_price_per_room": 0.074673,
+      "no_of_special_requests": 0.333829
+    },
+    "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+  },
   "experiments": [
     {
       "experiment_id": 1,

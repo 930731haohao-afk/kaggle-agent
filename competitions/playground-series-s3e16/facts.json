@@ -21,6 +21,223 @@
   },
   "material_level": "full",
   "status_md_present": true,
+  "status": {
+    "present": true,
+    "sections": {
+      "STATUS — playground-series-s3e16 (Crab Age)": "- **Task**: regression, predict `Age`; metric **MAE** (minimize); id col `id`\n- **Data**: 74,051 train / 49,368 test; 8 features (1 cat `Sex` + 7 continuous size/weight); no missing, no dups\n- **Rules**: no external data, no pretrained, no internet; daily submission limit 5",
+      "Progress": "- [x] Stage 0 Setup — config.yaml, data downloaded\n- [x] Stage 1 EDA — `scripts/eda.py`\n- [x] Stage 2 Feature engineering — `scripts/features.py`\n- [x] Stage 3 Modeling + CV — `scripts/train.py` (LGB/XGB/CatBoost, MAE objective)\n- [x] Stage 5 First submission generated — `submissions/sub_blend_20260703_091840.csv`\n- [x] Submitted to Kaggle leaderboard — **Public 1.34356 / Private 1.34075** (2026-07-03)\n- [x] Tree-search v2 best blend rebuilt + submitted — **Public 1.34315 / Private 1.33859**\n      (2026-07-06, `submissions/sub_tree_best_1.33563_20260706_115200.csv`) — beats\n      submission #1 on **both** boards",
+      "Leaderboard result (two real submissions)": "| # | Submitted | Source | Rounded OOF MAE | Public LB | Private LB |\n|---|-----------|--------|------------------|-----------|-------------|\n| 1 | 2026-07-03 | Blend 0.6/0.3/0.1 LGB/XGB/CAT (linear champion, `experiments.json` #1) | 1.33812 | 1.34356 | 1.34075 |\n| 2 | 2026-07-06 | Tree-search v2 best, node #15, 8-way blend (`experiments.json` #5) | 1.33563 | **1.34315** | **1.33859** |\n\nImprovement (#2 vs #1): Public `1.34356 − 1.34315 = 0.00041`, Private\n`1.34075 − 1.33859 = 0.00216` — both boards improved.\n\nCV↔LB gap, submission #1: Public `1.34356 − 1.33812 = 0.00544`, Private\n`1.34075 − 1.33812 = 0.00263`.\nCV↔LB gap, submission #2: Public `1.34315 − 1.33563 = 0.00752`, Private\n`1.33859 − 1.33563 = 0.00296`.\nBoth submissions show the same-sign, same-order-of-magnitude gap (rounded OOF MAE slightly\nbetter/lower than LB, ~0.003–0.0075) → **CV is trustworthy and this consistency holds across\ntwo independent real-LB checks**, not just one. Safe to keep iterating on OOF for future\nrounds.\n\n> ⚠️ **Auth note**: valid Kaggle token is `KGAT_7...` in `~/.kaggle/kaggle_api_token.txt`,\n> NOT the `KGAT_2...` in `~/.kaggle/kaggle.json` (that one 403s). Submit with:\n> `export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')`",
+      "EDA key findings": "1. `Sex='I'` (infant) → mean age 7.6 vs M 10.9 / F 11.3. Strong signal → `is_infant` flag.\n2. `Shell Weight` best correlated with Age (Spearman 0.74); `Shucked Weight` weakest (0.61).\n3. Severe collinearity (0.86–0.99) among size/weight; `Weight≈Shucked+Viscera+Shell` (r=0.993).\n4. `Height==0` in 24 train rows (invalid) → treated as missing, imputed with median.\n5. Train/test distributions near-identical (<0.4% mean diff) → no covariate shift.\n6. Target integer 1–29, right-skewed (skew 1.09). **Rounding OOF preds improves MAE.**",
+      "CV scheme (fixed first — matters more than the model)": "- **5-fold StratifiedKFold on binned Age** (ages ≥20 merged into one bin), shuffle, seed=42.\n- Fold MAE very stable (1.34–1.37) → CV is trustworthy.",
+      "Feature engineering (24 features)": "Sex one-hot + `is_infant`; part weight ratios; `weight_resid = Weight − Σparts`; size ratios\n(diam/len, height/len, height/diam); `volume`, `density`, `shell_density`; `meat_to_shell`, `shucked_to_shell`.",
+      "Model results (OOF MAE, 5-fold)": "| Model | OOF MAE | rounded | time |\n|-------|---------|---------|------|\n| LightGBM (L1) | 1.35651 | 1.33885 | 31s |\n| XGBoost (reg:absoluteerror) | 1.35763 | 1.34160 | 37s |\n| CatBoost (MAE) | 1.36162 | 1.33846 | 24s |\n| **Blend 0.6/0.3/0.1 (round)** | **1.35589** | **1.33812** | — |\n\nExperiment log: `experiments.json` (#1).",
+      "Iteration round — Phase B self-improvement (2026-07-03)": "Goal: push CV further via the validated \"Optuna fold-proxy → add to pool → seed bag\" recipe\n(knowledge/experience.md). Result: **no improvement — best stays 1.33812 rounded**. STOPPED after\n2 consecutive non-improving rounds, per protocol.\n\n| Round | Change | Raw OOF MAE | Rounded OOF MAE | vs best (1.33812) |\n|-------|--------|-------------|------------------|--------------------|\n| — | baseline (LGB/XGB/CAT 0.6/0.3/0.1) | 1.35589 | **1.33812** | — |\n| 1 | + Optuna fold0-proxy tuned LGB (21/50 trials, 300s timeout) as 4th pool member | 1.35541 | 1.33850 | worse (+0.00038) |\n| 2 | + seed-bagged tuned LGB (seed=2024) as 5th pool member | 1.35533 | 1.33893 | worse (+0.00081) |\n\nBoth rounds improved the **raw** OOF MAE (1.35589 → 1.35541 → 1.35533, a real but small gain from\ntuning+bagging) but made the **rounded** OOF MAE worse. Root cause: LGB_tuned and\nLGB_tuned_seed2024 only differ from the original LGB in depth/lr/reg (same objective, features,\nfolds) → low ensemble diversity → the small raw-MAE gain isn't large enough to shift the discrete\nrounding boundary favorably. New insight logged to `knowledge/experience.md`: the\nOptuna→pool→seed-bag recipe (previously validated on RMSE-scale targets s3e1/s3e7/s3e11/s3e14)\ndoes **not** reliably transfer when the final metric is **rounded integer MAE** — decide on the\npost-rounded score, not raw OOF, or the \"improvement\" can be illusory.\nScripts: `scripts/tune_lgb_optuna.py`, `scripts/pool_lib.py`, `scripts/round1.py`, `scripts/round2.py`.\nExperiment log: `experiments.json` (#3, #4).",
+      "Next ideas (updated after this iteration)": "- Optuna+seed-bagging tried — didn't survive rounding (see above); not worth more trials on LGB alone.\n- Untried: Tweedie/Poisson-objective LGB as a genuinely diverse pool member (different loss\n  surface, not just different hyperparams) — `pool_lib.train_lgb_tweedie()` and `scripts/round3.py`\n  are scaffolded but not yet run (stopped early per 2-non-improving-round rule).\n- Untried: collinear feature pruning (Weight≈Shucked+Viscera+Shell, r 0.86–0.99) or a stacking\n  meta-model on OOF.",
+      "Reproduce": "```bash\ncd /home/tjyen/ai_agents/kaggle\nuv run python3 competitions/playground-series-s3e16/scripts/eda.py\nuv run python3 competitions/playground-series-s3e16/scripts/train.py",
+      "submit (use the huangweihaohuang token; kaggle.json 403s):": "export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')\nuv run kaggle competitions submit -c playground-series-s3e16 -f <submission.csv> -m \"<msg>\"\n```",
+      "Appendix — Tree-search v2 (Phase E-3, harness_v2, 2026-07-04)": "**Goal**: s3e16 is the acid test for tree_search v2 on a ROUNDED-INTEGER-MAE metric — the\nonly comp in the harness_v2 lineup with a REAL Kaggle LB anchor, and the one place Phase\nB's linear iteration already hit the recipe's own documented failure mode (raw OOF MAE\nimproved monotonically 1.35589→1.35541→1.35533 across 2 rounds; ROUNDED OOF MAE got WORSE\nboth times, 1.33812→1.33850→1.33893 — see `knowledge/experience.md`'s \"MAE/整數目標\"\nboundary-condition bullet). Question: can v2's mechanisms (metric-aware plateau, ensemble-\ndefault node space, child dedup, k=800+coordinate-ascent weight search — all decisions on\nthe ROUNDED score, per the rule `metric_fn = MAE(round(clip(blend)))` applied inside every\nnode's own scoring path) find a gain that survives rounding where the linear recipe could\nnot?\n\n**Result: YES — the rounding-boundary failure mode was OVERCOME.**\n\n| | Rounded OOF MAE | vs previous best (1.33812) |\n|-|------------------|------------------------------|\n| Linear-iteration best (blend 0.6/0.3/0.1 LGB/XGB/CAT, coarse simplex grid step=0.1) | 1.33812 | — |\n| **v2 tree-search best (node #15, 8-way blend)** | **1.33563** | **−0.00249 (−0.186% relative)** |\n\n- **Nodes**: 27 total, 24 evaluated (target ≥18 met with margin), 3 failed (all\n  fast/harmless — see \"known limitation\" below), 4 backtrack events, 2 dedup rejections.\n- **Wall-clock**: 1409.4s (~23.5 min), within the ~28 min / 30 min budget.\n- **Prior usage**: 13 informed (mutations tagged `[PRIOR ...]`) vs 1 uninformed\n  child-of-root comparison; informed win rate 38.5% (5/13), uninformed win rate 0%\n  (0/1, n too small to read much into). Most of this run's real wins came from the\n  BLEND lineage's own weight-search mechanics (harness-level, not individually\n  prior-tagged mutations), not from any single authored mutation idea outperforming.\n\n### The headline finding: a genuine raw-vs-rounded INVERSION (the strongest possible confirmation of the \"decide on rounded, not raw\" rule)\n\nThe winning 8-way blend (node #15) has **raw OOF MAE 1.35712** — WORSE than the linear\nchampion's raw 1.35589 — but **rounded OOF MAE 1.33563**, BETTER than the champion's\n1.33812. Independently re-verified digit-for-digit outside the tree (loading the 8 cached\nmember OOFs and recomputing both raw and rounded MAE from the stored weight vector). This\nis the exact mirror image of Phase B's failure (there: raw improved, rounded worsened;\nhere: raw worsened, rounded improved) — together the two results are the cleanest possible\ndemonstration that raw OOF MAE and rounded OOF MAE are genuinely different optimization\ntargets on this comp, and every decision must be made on the rounded number.\n\n### Winning composition (node #15)\n8-way blend, weights (dirichlet k=800 + coordinate-ascent refinement, searched directly\nagainst rounded MAE):\n\n| member | model | weight | solo rounded MAE |\n|--------|-------|--------|-------------------|\n| #0 root | LGB (plain L1) | 0.0198 | 1.33885 |\n| #1 XGB | XGB (reg:absoluteerror) | 0.0256 | 1.34160 |\n| #2 CAT | CatBoost (MAE) | **0.5061** (dominant) | 1.33846 |\n| #3 LGB_tuned | Optuna fold0-proxy LGB | 0.0075 | 1.33979 |\n| #4 LGB_tuned_seed2024 | seed-bagged LGB_tuned | 0.0626 | 1.33914 |\n| #5 LGBBOUND | boundary-pushed LGB (lr=0.005) | 0.1117 | 1.33950 |\n| #6 TWEEDIE | Tweedie-objective LGB | 0.0004 (~inert) | 1.37467 |\n| #8 FEATPRUNE | LGB, drop `Weight` | 0.2662 | 1.34025 |\n\nPOISSON (#7, solo 1.37501) was tried but never made it into the winning composition (a\nsibling 9-way blend with POISSON added scored 1.33584, slightly worse).\n\nNotably, the search's biggest single lever was NOT any new lineage's solo strength — it\nwas **weight-search precision on the ORIGINAL 3-way composition**: reproducing the linear\nchampion's exact members (root LGB + XGB + CAT) with k=800+coordinate-ascent instead of\nthe champion's coarse (step=0.1) simplex grid already found 1.33640 (node #9), beating\n1.33812 before any new model was added — a direct within-comp confirmation of the E-2\nlesson (\"coarse grids silently tie/lose to finer search\"). Every subsequent member\naddition (LGB_tuned, LGB_tuned_seed2024, LGBBOUND, TWEEDIE, FEATPRUNE) then chipped the\nscore down further: 1.33640→1.33635→1.33625→1.33616→1.33567→1.33563.\n\n### Per-lineage findings\n- **LGBBOUND (boundary-push)**: LGB_tuned's Optuna learning_rate=0.0102 sat almost exactly\n  on `tune_lgb_optuna.py`'s own search-box lower edge ([0.01, 0.06] log) — every other\n  tuned hyperparam was comfortably interior. Pushing to lr=0.005 gave a real, if modest,\n  solo improvement over LGB_tuned (1.33979→1.33950), confirming the box-edge distrust\n  lever partially transfers here — but pushing further to lr=0.003 reversed (1.34085,\n  worse), so the true optimum sits between the box edge and the first push, not\n  monotonically further out. LGBBOUND's best variant also contributed a real blend gain\n  (11.17% final weight).\n- **TWEEDIE / POISSON (diverse-objective heads)**: both scored badly SOLO (1.37467 /\n  1.37501, far worse than every other pool member) — the count-like-objective hypothesis\n  did not pay off as a strong single model on this feature-engineered dataset. But TWEEDIE\n  still contributed real blend value once added (7-way 1.33616→1.33567, the run's single\n  largest blend improvement) despite its own near-zero final weight (0.04%) — the\n  coordinate-ascent re-optimizes every other member's weight jointly, so a weak-but-\n  differently-wrong member can still improve the blend's error correlation structure even\n  at ~0 weight. POISSON's marginal contribution was negative (9-way with POISSON: 1.33584,\n  worse than the 8-way's 1.33563) and it was excluded from the final best.\n- **FEATPRUNE (drop `Weight`, the near-perfect collinearity r=0.993 with\n  Shucked+Viscera+Shell)**: solo score 1.34025 (worse than root) but the single highest-\n  weighted new member in the final blend (26.62%) — the biggest confirmed \"Untried\" idea\n  from Phase B's list, and the addition that produced the actual global-best node (#15).\n- **CAT dominance**: the deeper weight search shifted dominant weight to CAT (50.6%)\n  rather than the linear champion's LGB-dominant 60/30/10 split — a genuinely different\n  point on the weight simplex, not just a refinement of the same one.\n\n### Known limitation (harmless, documented for honesty)\n`eval_s3e16_v2.py` only implements a fresh-training runner for `model=\"lgb\"` (XGB/CAT are\nreused read-only from Phase B's cache, per the module's stated scope). The legacy XGB/CAT/\nLGB_tuned/LGB_tuned_seed2024 lineages have no authored mutation queue, so once selected for\nfurther expansion they immediately fall through to `solo_fallback`'s seed-variation retry —\nwhich raises `ValueError` for `model=\"xgb\"/\"cat\"` (caught by `evaluate()`, status=\"failed\",\n~0s each). This produced 3 fast \"failed\" nodes on the CAT lineage (18, 19, 20) before it\ncorrectly self-plateaued via the harness's \"expansion budget exhausted\" rule — no time or\ncorrectness cost, just a slightly untidy-looking tree. Not fixed in this run (would not\nhave changed the result; XGB/CAT retraining was out of scope by design).\n\n### Verdict\n**The rounding-boundary failure mode diagnosed in Phase B was overcome.** v2's combination\nof (1) a properly-budgeted k=800+coordinate-ascent weight search decided directly on the\nrounded metric, and (2) genuinely diverse new pool members (a feature-pruned LGB, boundary-\npushed LGB, and — despite poor solo scores — Tweedie-objective LGB) found a real,\nindependently-verified 0.00249 rounded-MAE improvement over the best Kaggle-anchored\nsubmission on record for this comp. Not submitted to Kaggle per this run's constraints; the\ngain is an OOF-verified finding only.\n\nScripts: `tree_search/eval_s3e16_v2.py`, `tree_search/run_s3e16_v2.py`.\nTree: `competitions/playground-series-s3e16/experiments_tree.json`.",
+      "Rebuild verification — tree-search best blend → REAL test submission (2026-07-06)": "**Goal**: node #15 (rounded OOF MAE 1.33563) existed only as an OOF evaluation — no test\npredictions were ever generated. `scripts/rebuild_tree_best.py` retrained all 8 members\nfrom scratch (identical 5-fold StratifiedKFold-on-binned-Age, seed=42, identical params\nfrom `experiments_tree.json`), gated on exact OOF reproduction, then blended the fresh\ntest predictions.\n\n**Gate result: PASS — every member reproduced digit-for-digit (max|diff vs cache| = 0.0\nfor all 8), and the blend reproduces 1.33563 exactly.**\n\n| member | model | reconstructed raw / rounded OOF MAE | max abs diff vs cache |\n|--------|-------|-------------------------------------|------------------------|\n| #0 LGB (root) | LGB L1 | 1.356505 / 1.338848 | 0.0 |\n| #1 XGB | XGB absoluteerror | 1.357625 / 1.341602 | 0.0 |\n| #2 CAT | CatBoost MAE | 1.361621 / 1.338456 | 0.0 |\n| #3 LGB_tuned | Optuna LGB | 1.355829 / 1.339793 | 0.0 |\n| #4 LGB_tuned_seed2024 | seed-bag LGB | 1.356041 / 1.339145 | 0.0 |\n| #5 LGBBOUND | LGB lr=0.005 | 1.355870 / 1.339496 | 0.0 |\n| #6 TWEEDIE | Tweedie LGB | 1.398811 / 1.374674 | 0.0 |\n| #8 FEATPRUNE | LGB drop Weight | 1.357307 / 1.340252 | 0.0 |\n\n**Weight-precision gotcha (important for future rebuilds)**: `experiments_tree.json`\nstores blend weights rounded to 4 decimals (they sum to 0.9999). Blending with those\ndisplay-precision weights gives rounded OOF MAE **1.335796, NOT 1.33563** — the ~5e-5\nper-member weight error flips a handful of samples across the 0.5 rounding boundary.\nThe exact full-precision weight vector was recovered by replaying the winning node's own\nfully deterministic weight search (harness_v2 dirichlet k=800, rng seed=42, + coordinate\nascent, scored on rounded MAE) over the gate-verified reconstructed OOFs: recovered\nweights round(4)-match the stored tree weights member-for-member, and score\nraw 1.357118 / **rounded 1.335634 → 1.33563 exactly**.\n\n**Submission**: `submissions/sub_tree_best_1.33563_20260706_115200.csv` — 49,368 rows,\nformat/id-order verified vs `data/sample_submission.csv`, integer Age in [4, 19]\n(train range [1, 29]). Blend→round→clip(≥1), same convention as `pool_lib.write_submission`.\nFull audit trail: `scripts/rebuild_tree_best_result.json` (per-member gate rows +\nrecovered full-precision weights). Total rebuild wall time: 435.6s.\n\n**Submitted to Kaggle (2026-07-06): Public 1.34315 / Private 1.33859** — beats submission\n#1 (the 2026-07-03 linear champion, Public 1.34356 / Private 1.34075) on both boards, and\nthe CV↔LB gap (Public 0.00752, Private 0.00296 vs the tree-search's own 1.33563 rounded\nOOF) is the same sign and order of magnitude as submission #1's gap (Public 0.00544,\nPrivate 0.00263) — the first real-leaderboard validation of the tree-search recipe on this\ncomp. See `experiments.json` #5 (`leaderboard`/`submission` fields) and\n`competitions/playground-series-s3e16/REPORT.md` §6/§7 for the full writeup."
+    }
+  },
+  "eda": {
+    "source": "eda_summary.py",
+    "n_rows_train": 74051,
+    "n_rows_test": 49368,
+    "n_features": 8,
+    "numeric_features": [
+      "Length",
+      "Diameter",
+      "Height",
+      "Weight",
+      "Shucked Weight",
+      "Viscera Weight",
+      "Shell Weight"
+    ],
+    "categorical_features": [
+      "Sex"
+    ],
+    "duplicate_rows_train": 0,
+    "target": {
+      "name": "Age",
+      "dtype": "int64",
+      "n_unique": 28,
+      "missing": 0,
+      "mean": 9.967806,
+      "std": 3.175189,
+      "min": 1.0,
+      "p25": 8.0,
+      "median": 10.0,
+      "p75": 11.0,
+      "max": 29.0,
+      "skew": 1.092919,
+      "kurtosis": 2.296641,
+      "is_integer_valued": true,
+      "log_transform_candidate": true,
+      "value_counts": {
+        "1": 16,
+        "2": 14,
+        "3": 213,
+        "4": 948,
+        "5": 1913,
+        "6": 4532,
+        "7": 6574,
+        "8": 9966,
+        "9": 12473,
+        "10": 11480,
+        "11": 8746,
+        "12": 4747,
+        "13": 3720,
+        "14": 2305,
+        "15": 1836,
+        "16": 1281,
+        "17": 1012,
+        "18": 693,
+        "19": 588,
+        "20": 415,
+        "21": 241,
+        "22": 98,
+        "23": 120,
+        "24": 29,
+        "25": 21,
+        "26": 19,
+        "27": 33,
+        "29": 18
+      }
+    },
+    "missing_train": {},
+    "missing_test": {},
+    "numeric_stats": {
+      "Length": {
+        "mean": 1.31746,
+        "std": 0.287757,
+        "min": 0.1875,
+        "max": 2.012815,
+        "skew": -0.844377,
+        "zeros": 0.0
+      },
+      "Diameter": {
+        "mean": 1.024496,
+        "std": 0.237396,
+        "min": 0.1375,
+        "max": 1.6125,
+        "skew": -0.812866,
+        "zeros": 0.0
+      },
+      "Height": {
+        "mean": 0.348089,
+        "std": 0.092034,
+        "min": 0.0,
+        "max": 2.825,
+        "skew": 0.086578,
+        "zeros": 24.0
+      },
+      "Weight": {
+        "mean": 23.385217,
+        "std": 12.648153,
+        "min": 0.056699,
+        "max": 80.101512,
+        "skew": 0.231465,
+        "zeros": 0.0
+      },
+      "Shucked Weight": {
+        "mean": 10.10427,
+        "std": 5.618025,
+        "min": 0.028349,
+        "max": 42.184056,
+        "skew": 0.349472,
+        "zeros": 0.0
+      },
+      "Viscera Weight": {
+        "mean": 5.058386,
+        "std": 2.792729,
+        "min": 0.042524,
+        "max": 21.54562,
+        "skew": 0.286383,
+        "zeros": 0.0
+      },
+      "Shell Weight": {
+        "mean": 6.72387,
+        "std": 3.584372,
+        "min": 0.042524,
+        "max": 28.491248,
+        "skew": 0.277459,
+        "zeros": 0.0
+      }
+    },
+    "categorical_stats": {
+      "Sex": {
+        "cardinality": 3,
+        "top": {
+          "M": 27084,
+          "I": 23957,
+          "F": 23010
+        },
+        "unseen_in_test": []
+      }
+    },
+    "target_correlation": {
+      "Length": {
+        "pearson": 0.612843,
+        "spearman": 0.668712
+      },
+      "Diameter": {
+        "pearson": 0.621256,
+        "spearman": 0.678574
+      },
+      "Height": {
+        "pearson": 0.638067,
+        "spearman": 0.704478
+      },
+      "Weight": {
+        "pearson": 0.601195,
+        "spearman": 0.689562
+      },
+      "Shucked Weight": {
+        "pearson": 0.50332,
+        "spearman": 0.612696
+      },
+      "Viscera Weight": {
+        "pearson": 0.576808,
+        "spearman": 0.67696
+      },
+      "Shell Weight": {
+        "pearson": 0.663473,
+        "spearman": 0.736481
+      }
+    },
+    "high_collinearity_pairs": [
+      [
+        "Length",
+        "Diameter",
+        0.989437
+      ],
+      [
+        "Weight",
+        "Shucked Weight",
+        0.971267
+      ],
+      [
+        "Weight",
+        "Viscera Weight",
+        0.971062
+      ],
+      [
+        "Weight",
+        "Shell Weight",
+        0.965525
+      ]
+    ],
+    "train_test_mean_shift_pct": {
+      "Length": 0.177255,
+      "Diameter": 0.181671,
+      "Height": 0.173287,
+      "Weight": 0.339574,
+      "Shucked Weight": 0.256823,
+      "Viscera Weight": 0.281302,
+      "Shell Weight": 0.327274
+    },
+    "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+  },
   "experiments": [
     {
       "experiment_id": 1,

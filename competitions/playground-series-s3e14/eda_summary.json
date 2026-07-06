@@ -1,0 +1,343 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 15289,
+  "n_rows_test": 10194,
+  "n_features": 16,
+  "numeric_features": [
+    "clonesize",
+    "honeybee",
+    "bumbles",
+    "andrena",
+    "osmia",
+    "MaxOfUpperTRange",
+    "MinOfUpperTRange",
+    "AverageOfUpperTRange",
+    "MaxOfLowerTRange",
+    "MinOfLowerTRange",
+    "AverageOfLowerTRange",
+    "RainingDays",
+    "AverageRainingDays",
+    "fruitset",
+    "fruitmass",
+    "seeds"
+  ],
+  "categorical_features": [],
+  "duplicate_rows_train": 14,
+  "target": {
+    "name": "yield",
+    "dtype": "float64",
+    "n_unique": 776,
+    "missing": 0,
+    "mean": 6025.193999,
+    "std": 1337.05685,
+    "min": 1945.53061,
+    "p25": 5128.16351,
+    "median": 6117.4759,
+    "p75": 7019.69438,
+    "max": 8969.40184,
+    "skew": -0.291195,
+    "kurtosis": -0.436564,
+    "is_integer_valued": false,
+    "log_transform_candidate": false
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "clonesize": {
+      "mean": 19.70469,
+      "std": 6.595211,
+      "min": 10.0,
+      "max": 40.0,
+      "skew": 0.049861,
+      "zeros": 0.0
+    },
+    "honeybee": {
+      "mean": 0.389314,
+      "std": 0.361643,
+      "min": 0.0,
+      "max": 18.43,
+      "skew": 41.613244,
+      "zeros": 16.0
+    },
+    "bumbles": {
+      "mean": 0.286768,
+      "std": 0.059917,
+      "min": 0.0,
+      "max": 0.585,
+      "skew": 0.815571,
+      "zeros": 5.0
+    },
+    "andrena": {
+      "mean": 0.492675,
+      "std": 0.148115,
+      "min": 0.0,
+      "max": 0.75,
+      "skew": 0.162047,
+      "zeros": 8.0
+    },
+    "osmia": {
+      "mean": 0.592355,
+      "std": 0.139489,
+      "min": 0.0,
+      "max": 0.75,
+      "skew": -0.845196,
+      "zeros": 6.0
+    },
+    "MaxOfUpperTRange": {
+      "mean": 82.169887,
+      "std": 9.146703,
+      "min": 69.7,
+      "max": 94.6,
+      "skew": 0.007359,
+      "zeros": 0.0
+    },
+    "MinOfUpperTRange": {
+      "mean": 49.673281,
+      "std": 5.546405,
+      "min": 39.0,
+      "max": 57.2,
+      "skew": 0.002006,
+      "zeros": 0.0
+    },
+    "AverageOfUpperTRange": {
+      "mean": 68.656256,
+      "std": 7.641807,
+      "min": 58.2,
+      "max": 79.0,
+      "skew": -0.004707,
+      "zeros": 0.0
+    },
+    "MaxOfLowerTRange": {
+      "mean": 59.229538,
+      "std": 6.61064,
+      "min": 50.2,
+      "max": 68.2,
+      "skew": 0.00245,
+      "zeros": 0.0
+    },
+    "MinOfLowerTRange": {
+      "mean": 28.660553,
+      "std": 3.195367,
+      "min": 24.3,
+      "max": 33.0,
+      "skew": 0.004846,
+      "zeros": 0.0
+    },
+    "AverageOfLowerTRange": {
+      "mean": 48.5685,
+      "std": 5.390545,
+      "min": 41.2,
+      "max": 55.9,
+      "skew": 0.005105,
+      "zeros": 0.0
+    },
+    "RainingDays": {
+      "mean": 18.660865,
+      "std": 11.657582,
+      "min": 1.0,
+      "max": 34.0,
+      "skew": -0.261968,
+      "zeros": 0.0
+    },
+    "AverageRainingDays": {
+      "mean": 0.324176,
+      "std": 0.163905,
+      "min": 0.06,
+      "max": 0.56,
+      "skew": 0.081863,
+      "zeros": 0.0
+    },
+    "fruitset": {
+      "mean": 0.502741,
+      "std": 0.07439,
+      "min": 0.192732,
+      "max": 0.652144,
+      "skew": -0.426606,
+      "zeros": 0.0
+    },
+    "fruitmass": {
+      "mean": 0.446553,
+      "std": 0.037035,
+      "min": 0.311921,
+      "max": 0.53566,
+      "skew": -0.055531,
+      "zeros": 0.0
+    },
+    "seeds": {
+      "mean": 36.16495,
+      "std": 4.031087,
+      "min": 22.079199,
+      "max": 46.585105,
+      "skew": 0.015387,
+      "zeros": 0.0
+    }
+  },
+  "categorical_stats": {},
+  "target_correlation": {
+    "clonesize": {
+      "pearson": -0.382619,
+      "spearman": -0.382427
+    },
+    "honeybee": {
+      "pearson": -0.118001,
+      "spearman": -0.296517
+    },
+    "bumbles": {
+      "pearson": 0.161145,
+      "spearman": 0.166779
+    },
+    "andrena": {
+      "pearson": 0.073969,
+      "spearman": 0.054845
+    },
+    "osmia": {
+      "pearson": 0.198264,
+      "spearman": 0.149967
+    },
+    "MaxOfUpperTRange": {
+      "pearson": -0.022517,
+      "spearman": -0.017136
+    },
+    "MinOfUpperTRange": {
+      "pearson": -0.021929,
+      "spearman": -0.016883
+    },
+    "AverageOfUpperTRange": {
+      "pearson": -0.02194,
+      "spearman": -0.017126
+    },
+    "MaxOfLowerTRange": {
+      "pearson": -0.022197,
+      "spearman": -0.017086
+    },
+    "MinOfLowerTRange": {
+      "pearson": -0.022319,
+      "spearman": -0.017075
+    },
+    "AverageOfLowerTRange": {
+      "pearson": -0.022081,
+      "spearman": -0.017023
+    },
+    "RainingDays": {
+      "pearson": -0.477191,
+      "spearman": -0.503789
+    },
+    "AverageRainingDays": {
+      "pearson": -0.48387,
+      "spearman": -0.500978
+    },
+    "fruitset": {
+      "pearson": 0.885967,
+      "spearman": 0.881168
+    },
+    "fruitmass": {
+      "pearson": 0.826481,
+      "spearman": 0.823011
+    },
+    "seeds": {
+      "pearson": 0.868853,
+      "spearman": 0.875557
+    }
+  },
+  "high_collinearity_pairs": [
+    [
+      "MaxOfUpperTRange",
+      "MinOfUpperTRange",
+      0.998599
+    ],
+    [
+      "MaxOfUpperTRange",
+      "AverageOfUpperTRange",
+      0.999806
+    ],
+    [
+      "MaxOfUpperTRange",
+      "MaxOfLowerTRange",
+      0.999503
+    ],
+    [
+      "MaxOfUpperTRange",
+      "MinOfLowerTRange",
+      0.999829
+    ],
+    [
+      "MaxOfUpperTRange",
+      "AverageOfLowerTRange",
+      0.999772
+    ],
+    [
+      "MinOfUpperTRange",
+      "AverageOfUpperTRange",
+      0.999004
+    ],
+    [
+      "MinOfUpperTRange",
+      "MaxOfLowerTRange",
+      0.998199
+    ],
+    [
+      "MinOfUpperTRange",
+      "MinOfLowerTRange",
+      0.998953
+    ],
+    [
+      "MinOfUpperTRange",
+      "AverageOfLowerTRange",
+      0.99904
+    ],
+    [
+      "AverageOfUpperTRange",
+      "MaxOfLowerTRange",
+      0.999465
+    ],
+    [
+      "AverageOfUpperTRange",
+      "MinOfLowerTRange",
+      0.999973
+    ],
+    [
+      "AverageOfUpperTRange",
+      "AverageOfLowerTRange",
+      0.999974
+    ],
+    [
+      "MaxOfLowerTRange",
+      "MinOfLowerTRange",
+      0.999489
+    ],
+    [
+      "MaxOfLowerTRange",
+      "AverageOfLowerTRange",
+      0.999423
+    ],
+    [
+      "MinOfLowerTRange",
+      "AverageOfLowerTRange",
+      0.999963
+    ],
+    [
+      "RainingDays",
+      "AverageRainingDays",
+      0.990864
+    ]
+  ],
+  "train_test_mean_shift_pct": {
+    "clonesize": 0.463183,
+    "honeybee": 0.588541,
+    "bumbles": -0.160492,
+    "andrena": -0.273437,
+    "osmia": 0.146249,
+    "MaxOfUpperTRange": 0.045183,
+    "MinOfUpperTRange": 0.04816,
+    "AverageOfUpperTRange": 0.045968,
+    "MaxOfLowerTRange": 0.045462,
+    "MinOfLowerTRange": 0.049636,
+    "AverageOfLowerTRange": 0.049708,
+    "RainingDays": -0.822601,
+    "AverageRainingDays": -0.516612,
+    "fruitset": -0.185412,
+    "fruitmass": -0.046581,
+    "seeds": -0.079086
+  },
+  "validation_hint": "continuous i.i.d. target -> standard KFold (check train/test shift first)"
+}

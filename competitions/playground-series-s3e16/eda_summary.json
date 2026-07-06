@@ -1,0 +1,199 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 74051,
+  "n_rows_test": 49368,
+  "n_features": 8,
+  "numeric_features": [
+    "Length",
+    "Diameter",
+    "Height",
+    "Weight",
+    "Shucked Weight",
+    "Viscera Weight",
+    "Shell Weight"
+  ],
+  "categorical_features": [
+    "Sex"
+  ],
+  "duplicate_rows_train": 0,
+  "target": {
+    "name": "Age",
+    "dtype": "int64",
+    "n_unique": 28,
+    "missing": 0,
+    "mean": 9.967806,
+    "std": 3.175189,
+    "min": 1.0,
+    "p25": 8.0,
+    "median": 10.0,
+    "p75": 11.0,
+    "max": 29.0,
+    "skew": 1.092919,
+    "kurtosis": 2.296641,
+    "is_integer_valued": true,
+    "log_transform_candidate": true,
+    "value_counts": {
+      "1": 16,
+      "2": 14,
+      "3": 213,
+      "4": 948,
+      "5": 1913,
+      "6": 4532,
+      "7": 6574,
+      "8": 9966,
+      "9": 12473,
+      "10": 11480,
+      "11": 8746,
+      "12": 4747,
+      "13": 3720,
+      "14": 2305,
+      "15": 1836,
+      "16": 1281,
+      "17": 1012,
+      "18": 693,
+      "19": 588,
+      "20": 415,
+      "21": 241,
+      "22": 98,
+      "23": 120,
+      "24": 29,
+      "25": 21,
+      "26": 19,
+      "27": 33,
+      "29": 18
+    }
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "Length": {
+      "mean": 1.31746,
+      "std": 0.287757,
+      "min": 0.1875,
+      "max": 2.012815,
+      "skew": -0.844377,
+      "zeros": 0.0
+    },
+    "Diameter": {
+      "mean": 1.024496,
+      "std": 0.237396,
+      "min": 0.1375,
+      "max": 1.6125,
+      "skew": -0.812866,
+      "zeros": 0.0
+    },
+    "Height": {
+      "mean": 0.348089,
+      "std": 0.092034,
+      "min": 0.0,
+      "max": 2.825,
+      "skew": 0.086578,
+      "zeros": 24.0
+    },
+    "Weight": {
+      "mean": 23.385217,
+      "std": 12.648153,
+      "min": 0.056699,
+      "max": 80.101512,
+      "skew": 0.231465,
+      "zeros": 0.0
+    },
+    "Shucked Weight": {
+      "mean": 10.10427,
+      "std": 5.618025,
+      "min": 0.028349,
+      "max": 42.184056,
+      "skew": 0.349472,
+      "zeros": 0.0
+    },
+    "Viscera Weight": {
+      "mean": 5.058386,
+      "std": 2.792729,
+      "min": 0.042524,
+      "max": 21.54562,
+      "skew": 0.286383,
+      "zeros": 0.0
+    },
+    "Shell Weight": {
+      "mean": 6.72387,
+      "std": 3.584372,
+      "min": 0.042524,
+      "max": 28.491248,
+      "skew": 0.277459,
+      "zeros": 0.0
+    }
+  },
+  "categorical_stats": {
+    "Sex": {
+      "cardinality": 3,
+      "top": {
+        "M": 27084,
+        "I": 23957,
+        "F": 23010
+      },
+      "unseen_in_test": []
+    }
+  },
+  "target_correlation": {
+    "Length": {
+      "pearson": 0.612843,
+      "spearman": 0.668712
+    },
+    "Diameter": {
+      "pearson": 0.621256,
+      "spearman": 0.678574
+    },
+    "Height": {
+      "pearson": 0.638067,
+      "spearman": 0.704478
+    },
+    "Weight": {
+      "pearson": 0.601195,
+      "spearman": 0.689562
+    },
+    "Shucked Weight": {
+      "pearson": 0.50332,
+      "spearman": 0.612696
+    },
+    "Viscera Weight": {
+      "pearson": 0.576808,
+      "spearman": 0.67696
+    },
+    "Shell Weight": {
+      "pearson": 0.663473,
+      "spearman": 0.736481
+    }
+  },
+  "high_collinearity_pairs": [
+    [
+      "Length",
+      "Diameter",
+      0.989437
+    ],
+    [
+      "Weight",
+      "Shucked Weight",
+      0.971267
+    ],
+    [
+      "Weight",
+      "Viscera Weight",
+      0.971062
+    ],
+    [
+      "Weight",
+      "Shell Weight",
+      0.965525
+    ]
+  ],
+  "train_test_mean_shift_pct": {
+    "Length": 0.177255,
+    "Diameter": 0.181671,
+    "Height": 0.173287,
+    "Weight": 0.339574,
+    "Shucked Weight": 0.256823,
+    "Viscera Weight": 0.281302,
+    "Shell Weight": 0.327274
+  },
+  "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+}

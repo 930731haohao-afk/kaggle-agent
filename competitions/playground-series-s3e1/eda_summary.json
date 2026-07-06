@@ -1,0 +1,150 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 37137,
+  "n_rows_test": 24759,
+  "n_features": 8,
+  "numeric_features": [
+    "MedInc",
+    "HouseAge",
+    "AveRooms",
+    "AveBedrms",
+    "Population",
+    "AveOccup",
+    "Latitude",
+    "Longitude"
+  ],
+  "categorical_features": [],
+  "duplicate_rows_train": 0,
+  "target": {
+    "name": "MedHouseVal",
+    "dtype": "float64",
+    "n_unique": 3723,
+    "missing": 0,
+    "mean": 2.079751,
+    "std": 1.158571,
+    "min": 0.14999,
+    "p25": 1.208,
+    "median": 1.808,
+    "p75": 2.66,
+    "max": 5.00001,
+    "skew": 0.970856,
+    "kurtosis": 0.308504,
+    "is_integer_valued": false,
+    "log_transform_candidate": false
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "MedInc": {
+      "mean": 3.851029,
+      "std": 1.803167,
+      "min": 0.4999,
+      "max": 15.0001,
+      "skew": 1.567604,
+      "zeros": 0.0
+    },
+    "HouseAge": {
+      "mean": 26.057005,
+      "std": 12.158221,
+      "min": 2.0,
+      "max": 52.0,
+      "skew": 0.413457,
+      "zeros": 0.0
+    },
+    "AveRooms": {
+      "mean": 5.163124,
+      "std": 1.206242,
+      "min": 0.851064,
+      "max": 28.837607,
+      "skew": 1.301106,
+      "zeros": 0.0
+    },
+    "AveBedrms": {
+      "mean": 1.062204,
+      "std": 0.09649,
+      "min": 0.5,
+      "max": 5.873181,
+      "skew": 12.965449,
+      "zeros": 0.0
+    },
+    "Population": {
+      "mean": 1660.778919,
+      "std": 1302.469608,
+      "min": 3.0,
+      "max": 35682.0,
+      "skew": 5.796582,
+      "zeros": 0.0
+    },
+    "AveOccup": {
+      "mean": 2.831243,
+      "std": 2.702413,
+      "min": 0.95,
+      "max": 502.99061,
+      "skew": 170.89013,
+      "zeros": 0.0
+    },
+    "Latitude": {
+      "mean": 35.57003,
+      "std": 2.083179,
+      "min": 32.55,
+      "max": 41.95,
+      "skew": 0.439251,
+      "zeros": 0.0
+    },
+    "Longitude": {
+      "mean": -119.554329,
+      "std": 1.974028,
+      "min": -124.35,
+      "max": -114.55,
+      "skew": -0.313242,
+      "zeros": 0.0
+    }
+  },
+  "categorical_stats": {},
+  "target_correlation": {
+    "MedInc": {
+      "pearson": 0.701925,
+      "spearman": 0.697265
+    },
+    "HouseAge": {
+      "pearson": 0.10321,
+      "spearman": 0.062783
+    },
+    "AveRooms": {
+      "pearson": 0.366727,
+      "spearman": 0.309516
+    },
+    "AveBedrms": {
+      "pearson": -0.067487,
+      "spearman": -0.121262
+    },
+    "Population": {
+      "pearson": -0.038479,
+      "spearman": -0.042108
+    },
+    "AveOccup": {
+      "pearson": -0.048475,
+      "spearman": -0.224818
+    },
+    "Latitude": {
+      "pearson": -0.116499,
+      "spearman": -0.132997
+    },
+    "Longitude": {
+      "pearson": -0.056742,
+      "spearman": -0.113271
+    }
+  },
+  "high_collinearity_pairs": [],
+  "train_test_mean_shift_pct": {
+    "MedInc": -0.478086,
+    "HouseAge": -0.059272,
+    "AveRooms": 0.109718,
+    "AveBedrms": 0.131267,
+    "Population": 1.116863,
+    "AveOccup": -0.015358,
+    "Latitude": 0.078653,
+    "Longitude": 0.013282
+  },
+  "validation_hint": "continuous i.i.d. target -> standard KFold (check train/test shift first)"
+}

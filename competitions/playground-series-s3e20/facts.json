@@ -21,6 +21,1449 @@
   },
   "material_level": "full",
   "status_md_present": true,
+  "status": {
+    "present": true,
+    "sections": {
+      "Playground Series S3E20 - Competition Report": "**Competition**: Predict CO2 Emissions in Rwanda\n**Status**: Model trained and validated ✅ · Phase-B 迭代完成\n**Date**: 2026-02-14 (v1) · 2026-07-03 (v2 improved) · 2026-07-04 (Phase B v3–v5) · 2026-07-04 (Phase E-4 樹搜尋 v2)\n\n---",
+      "🌲 Phase E-4 樹搜尋 v2(2026-07-04)— `tree_search/eval_s3e20_v2.py` / `run_s3e20_v2.py`": "**問題**:s3e20 是目前唯一「結構完全主宰」的競賽——Phase-B 已證明純 location-week 歷史\n均值(去噪後)完勝所有 GBDT(權重搜尋每輪皆給 GBDT 0)。這個結構管線本身有 4 個純量超參\n(EB 收縮 α、COVID 降權 W2020、鄰週平滑權重 WNB、平滑窗寬),Phase-B 是「一次一項」手動\n調校(偶爾為新增旋鈕做一次 scratch 聯合重調,從未存檔)。本輪把這 4 個(+ 幾個 Phase-B\n從未試過的新結構想法)當成樹搜尋節點空間,測試:在單一結構訊號主宰、且評估成本近乎零\n(純 groupby 均值,無 GBDT 訓練)的地形上,樹搜尋還有沒有價值?\n\n**根節點驗證**:`ROOT_CONFIG`(α=1.0, W2020=0.24, WNB=0.28, window=1)獨立重算得\nOOF RMSE **21.148726**,與 `scripts/train_v5.py` / `experiments.json` #7 的 21.1487\n逐位吻合(root 驗證於搜尋前完成,腳本內建 assert)。\n\n**節點空間**(9 條一代 lineage + 1 條 JOINT + 1 條 BLEND):\n\n| Lineage | 想法 | 結果 |\n|---------|------|------|\n| ALPHA | α 精細再掃描(Phase-B 已用 α=1.0) | 局部最優 α≈0.98-0.99,微幅改善(21.1487→21.146) |\n| W2020 | W2020 精細再掃描(Phase-B 已用 0.24) | **確認 0.24 已是單軸最優**,任何方向移動皆變差(誠實的「打平」結果) |\n| WNB | WNB 精細再掃描(Phase-B 已用 0.28) | **確認 0.28 已是單軸最優**,同上 |\n| WINDOW | 窗寬 ±2/±3 改用「衰減權重」(wnb^d)而非 Phase-B 的平權 | 仍變差(21.23/21.59),衰減沒能救回寬窗 |\n| **YEARWEIGHTS**(新想法) | Phase-B 只降權 2020(COVID);本想法把「異常年降權」概念推廣到其他年度(2019 起漲年降權、2021 貼近測試年升權) | **真實增益**:2019 降權至 0.6-0.7 單獨即達 21.0951→21.0808(疊代後),為本輪最大單軸增益來源 |\n| PERLOCALPHA(新想法) | 全域純量 α 換成逐地點經驗貝葉斯 α(依該地點週間訊噪比) | 最佳 k=4 得 21.10 左右,**接近但不如**單純全域 α=1.0(誠實負向新想法) |\n| CIRCULAR(新想法) | 週索引跨年首尾環繞平滑(week 52↔week 0) | 變差(21.28-21.33)——Rwanda 週 0/52 季節並不真的相似 |\n| MONTHFALLBACK(新想法) | 為缺失 cell 加一層地點-月均值 fallback | **與根節點精確打平(21.1487)**——資料集是完美平衡面板(497 地點×53 週×3 年,每個 (地點,週) 組合在每個 LOYO 折都存在),此 fallback 數學上永遠不會觸發;誠實記錄為 no-op |\n| GBDT(唯一診斷) | 單一輕量 LGB(非 3 模型全集成),重新確認 GBDT 對此結構訊號的價值 | solo OOF RMSE 51.40(遠劣於結構預測器) |\n| **JOINT**(本輪核心論點) | 從根節點一步同時移動 α+W2020(2 參數),接著疊加 WNB+YEARWEIGHTS(4 參數共 2 步),再局部微調 | **21.1487 → 21.0589**(−0.0898,−0.42%),為全樹最佳純結構節點 |\n| BLEND | 全樹最佳結構節點(#28)+ GBDT 診斷(#9)做權重搜尋 | GBDT 獲得極小非零權重 2.17%,OOF RMSE 21.0589→**21.0332**(−0.0257);**僅 3 折 LOYO CV 且權重直接對同一份 OOF 擬合,信心低,視為 CV 噪音範圍內的邊際發現,非穩健結論** |\n\n**規模**:38 個已評估節點(37 solo + 1 blend)、0 個去重拒絕、15 次 backtrack 事件(含 1 次\n「全部 lineage 都 plateaued → 重開一次」的 fallback)、全程 wall-clock 僅 **33.3 秒**\n(相較其他 harness_v2 競賽動輒需 GBDT 訓練的 20-30 分鐘量級,快兩個數量級)。\nPrior 使用率:12 個節點標註 `[PRIOR ...]`,勝率 33.3%;14 個 `[PRIOR none]`,勝率\n42.9%——**本輪 prior 標註的節點勝率反而略低於無 prior 節點**,誠實記錄(prior 只指向\n「往結構去噪方向試」這個大方向,不預測具體哪個數值組合會贏,故未展現預測力優勢)。\n\n**最終結果**:v2 樹搜尋最佳(純結構)21.0589,加上邊際 GBDT 混合 21.0332,雙雙 **BEAT**\nPhase-B 手調基準 21.1487(改善 0.42%~0.55%)。\n\n**地形對比觀察(regime observation)**——這是本輪要回答的核心問題:\n\n1. **在已被人工調到位的軸上(W2020、WNB),樹搜尋只能誠實地「打平」**——重掃描確認\n   Phase-B 的單軸最優解已經是真最優,自動化搜尋沒有額外增益。這是預期中「不丟臉」的\n   結果,證明 Phase-B 的手動一次一項調校本身沒有留下明顯的單軸漏洞。\n2. **樹搜尋的價值來自兩處,都不是「重掃描已知軸」**:(a) 一個 Phase-B 從未想過的\n   全新結構軸(YEARWEIGHTS:異常年降權概念推廣到 2019/2021),獨力貢獻約 −0.05 RMSE;\n   (b) **JOINT lineage 把 4 個結構旋鈕(α, W2020, WNB, 多年權重)一步到位共同移動**,\n   複合出 −0.09 RMSE 的總增益——這正是 Phase-B「一次一項」協定結構性難以觸及的區域\n   (Phase-B 偶爾手動 scratch 重調 2-3 個「已知」軸,但從未把新軸與舊軸一起在同一步\n   探索;樹搜尋把這種聯合移動變成一等公民的 mutation,而非另開手稿的例外操作)。\n3. **評估成本是本輪最大的地形差異**:結構超參地形每個節點僅需幾個 groupby 均值運算\n   (~0.1 秒/節點),比模型/blend 地形(每節點常需分鐘級 GBDT 訓練)便宜 2-3 個數量級。\n   這讓 38 節點 + 15 次 backtrack 的完整搜尋 33 秒內跑完——「結構主宰」與「模型主宰」\n   地形不只解的形狀不同,搜尋預算的稀缺程度也天差地遠:在此地形上,「多跑幾個節點」\n   幾乎沒有機會成本,樹搜尋的價值瓶頸從「能負擔多少次評估」轉移到「有沒有想到夠多元\n   的結構性想法可供評估」。\n4. **GBDT 依然是零/近零權重**——即使結構預測器本身被樹搜尋進一步優化(21.1487→\n   21.0589),GBDT 混合貢獻的極小權重(2.17%)大機率是 3 折 LOYO CV 的噪音,而非真實\n   訊號;與 Phase-B 殘差診斷(exp #8)的結論一致:感測器特徵對此目標本質上不含結構\n   之外的可預測訊號,不因換了搜尋方法而改變。\n5. **總結**:在結構主宰的地形上,樹搜尋不會無中生有出模型層級的巨大增益,但仍然\n   透過(a) 誠實驗證已調校軸、(b) 系統性探索新結構軸、(c) 一等公民的聯合移動,\n   拿到 Phase-B 手動迭代協定結構性難以觸及的 0.4-0.55% 增量——比模型/blend 地形上\n   常見的樹搜尋增益幅度小,但並非零,且成本極低。\n\n- 交付物:`tree_search/eval_s3e20_v2.py`、`tree_search/run_s3e20_v2.py`、\n  `competitions/playground-series-s3e20/experiments_tree.json`(38 節點)。\n  Cache:`tree_search/cache_s3e20/`(gitignored,可由 run 腳本重建)。\n- 未觸碰:`scripts/train_v5.py`、`experiments.json`(遵循任務限制)。\n\n---",
+      "🚀 Phase-B 自我改進迭代 (2026-07-04) — `scripts/train_v3.py` / `train_v4.py` / `train_v5.py`": "v2 已確立「純 location-week 歷史均值(TE)完勝 GBDT」(22.6488,GBDT 權重全 0)。\nPhase-B 針對 TE 本身做三輪去噪改進 + 一輪負向診斷,CV 方案不變(Leave-One-Year-Out\n2019/2020/2021,與 v2 完全同折):\n\n| Round | 改動(一次一項) | TE OOF RMSE | Δ | exp # |\n|-------|----------------|------------|---|-------|\n| — | v2 baseline(純 loc-week 均值) | 22.6488 | — | #4 |\n| 1 | **經驗貝葉斯收縮**:cell 均值(每折僅 n=2 觀測)向 loc 均值(~106 觀測)收縮,`α=0.935`(pre-sweep 網格選定) | **22.4897** | −0.159 | #5 |\n| 2 | **COVID 年降權**:計算歷史均值時 2020 年觀測權重降至 `W2020=0.29`(α 聯合重調至 0.945;W2020=0 完全排除反而更差) | **21.6317** | −0.858 | #6 |\n| 3 | **鄰週平滑**:cell 均值與同地點 week±1 的 cell 均值加權平均(`WNB=0.28`);α 聯合重調後收斂到 1.0 —— 鄰週平滑把 Round-1 的 loc-mean 收縮「吸收」了(兩者攻擊同一噪音源) | **21.1487** | −0.483 | #7 |\n| 4a | 加寬平滑窗至 ±2/±3 週 → 全部變差(21.23/21.32/21.51),±1 即最優 | 21.1487 | 0 | #8 |\n| 4b | **殘差診斷**:LGB 訓練於 (y − TE_v5) 殘差,以 1.0/0.5/0.25/0.1 比例加回 → 22.07/21.39/21.21/21.16,單調趨近 TE-only | 21.1487 | 0 | #8 |\n\n**最終:OOF RMSE 22.6488 → 21.1487(−6.6%)**;三個 GBDT 在每一輪權重搜尋中仍全為 0。\n\n**Round 4b 的價值(負向結果)**:感測器特徵連「殘差」都解釋不了 —— 結構(平滑後的\nloc-week 均值)已飽和全部可預測訊號。與 s3e19 反例合併,確認「目標跨年近恆定 →\n結構勝 GBDT」邊界條件在殘差層面同樣成立。\n\n- 最終 artifact:`submissions/sub_v5_blend_21.1487_20260704_011931.csv`(comp closed,不可上傳)。\n- 迭代紀錄:`experiments.json` #5–#8;各輪腳本 `scripts/train_v{3,4,5}.py`(v5 為最終版)。\n\n---",
+      "🔄 v2 Improved Experiment (2026-07-03) — `scripts/train_v2.py`": "**Motivation**: v1 (RMSE 33.21) relied on satellite sensor features and a single\ntime-based split. A quick check revealed the real signal.\n\n**Key insight (verified)**: emission is near-constant across years for a given\n`(latitude, longitude, week_no)` — cross-year std median ≈ 3.1. A pure\nlocation-week historical mean predictor scores **RMSE ~19.8 on a 2021 holdout**,\nfar better than the v1 model.\n\n**What v2 does**:\n- Adds a **location-week target encoding** (`te_locweek`) computed per fold from the\n  *other* training years → no leakage (this is exactly how the 2022 test is meant\n  to be predicted from 2019–2021 history).\n- **Leave-One-Year-Out CV** (hold out 2019 / 2020 / 2021 in turn) instead of one split.\n- Adds **CatBoost** as a 3rd tree model; OOF **weight-optimized 4-way blend**\n  (LGB / XGB / CatBoost / pure loc-week-mean).\n- log1p target; drops 7 sensor cols with >90% missing (keep 63).\n\n**Results (LOYO OOF RMSE)**:\n\n| Member | OOF RMSE |\n|--------|----------|\n| LightGBM (log1p) | 32.58 |\n| XGBoost (log1p) | 28.40 |\n| CatBoost (log1p) | 28.95 |\n| **Pure location-week mean (TE)** | **22.65** |\n| **Optimal blend** | **22.65** (weights: TE=1.0, trees=0.0) |\n\n**Finding**: the weight search assigns **100% to the location-week mean** — the\ngradient-boosted trees add *nothing* beyond it. The satellite sensor features are\nessentially noise for this target. Understanding the data beat model complexity.\n\n- **v1 → v2: RMSE 33.21 → 22.65** (−31.8%); vs LOYO global-mean baseline **144.4 → −84.3%**.\n- Submission artifact: `submissions/sub_v2_blend_22.6488_*.csv` (comp closed, cannot upload).\n- Experiment log: `experiments.json` #4.\n\n> ⚠️ s3e20 Late Submission is **closed** — no online LB score possible; local CV only.\n\n---",
+      "Competition Overview": "- **Problem Type**: Regression\n- **Evaluation Metric**: RMSE (Root Mean Squared Error)\n- **Dataset Size**: 79,023 train samples, 24,353 test samples\n- **Features**: 75 original features (satellite sensor data)\n- **Target**: CO2 emissions (continuous, range: 0-3,168)\n\n---",
+      "Pipeline Summary": "### Stage 1: EDA ✅\n**Key Findings**:\n- Target extremely right-skewed (skewness: 10.17)\n- 7 features with 99.4% missing values\n- 21 features with 10-90% missing (SulphurDioxide, NitrogenDioxide groups)\n- 497 unique geographic locations\n- Strong temporal component (2019-2021 train, 2022 test)\n- Location-based emission variation (some areas 10× higher)\n\n**Recommendations**:\n- Drop ultra-high missing features\n- Log1p transformation for target\n- Time-based validation (2019-2020 train, 2021 val)\n- Location-based aggregations\n\n### Stage 2: Feature Engineering ✅\n**Actions Taken**:\n- Dropped 7 features with >90% missing\n- Created 21 missing indicators for medium-missing features\n- Imputed remaining missing with median\n- **Created 36 new features**:\n  - Geographic: lat×lon, lat², lon²\n  - Temporal: cyclical week encoding (sin/cos), season\n  - Location aggregates: mean, median, std emission by location\n  - Temporal: year_week, weeks_since_start\n\n**Result**: 68 → **102 features**\n\n### Stage 3: Modeling ✅\n**Models Trained**:\n\n| Model | Val RMSE | vs Baseline |\n|-------|----------|-------------|\n| Baseline (mean) | 155.54 | - |\n| Ridge Regression | 23,917.63 | ❌ Failed |\n| XGBoost | 34.44 | -121.10 (77.9%) |\n| LightGBM | 32.75 | -122.79 (78.9%) |\n| **Ensemble (50/50)** | **33.21** | **-122.33 (78.6%)** ⭐ |\n\n**Model Configuration**:\n- **Target**: log1p transformed\n- **Validation**: Time-based split (2019-2020 train, 2021 val)\n- **Training**: GPU-accelerated (NVIDIA)\n- **Ensemble**: 50% LightGBM + 50% XGBoost\n\n**LightGBM Params**:\n```python\n{\n  'learning_rate': 0.05,\n  'num_leaves': 31,\n  'subsample': 0.8,\n  'colsample_bytree': 0.8,\n  'reg_alpha': 0.1,\n  'reg_lambda': 0.1,\n  'num_boost_round': 700\n}\n```\n\n**XGBoost Params**:\n```python\n{\n  'learning_rate': 0.05,\n  'max_depth': 6,\n  'subsample': 0.8,\n  'colsample_bytree': 0.8,\n  'num_boost_round': 200\n}\n```\n\n### Stage 4: Evaluation ✅\n**Validation Results**:\n- **Validation RMSE**: 33.21\n- **Improvement**: 78.6% over baseline\n- **Prediction range**: [-0.02, 2,731.10]\n- **Prediction mean**: 87.68 (vs train mean 81.94)\n\n**Model Analysis**:\n- LightGBM slightly outperformed XGBoost (32.75 vs 34.44)\n- 50/50 ensemble provides stable predictions\n- Ridge failed catastrophically (likely due to log-transformed target scale)\n- Time-based validation critical for preventing temporal leakage\n\n### Stage 5: Submission ✅\n**Submission File**: `submission_final_33.2056_20260214_161743.csv`\n- **Format**: ID, emission predictions\n- **Size**: 24,353 predictions\n- **Status**: Generated successfully ✅\n- **Kaggle Submission**: Competition closed (2023), cannot submit\n\n---",
+      "Key Learnings": "1. **Log transformation essential**: Target skewness (10.17 → -0.61)\n2. **Time-based validation critical**: Random CV would leak future information\n3. **Location matters**: Geographic aggregates were valuable features\n4. **Missing value handling**: Dropping 99%+ missing features, creating indicators for others\n5. **GPU acceleration**: Significantly faster training (LightGBM, XGBoost)\n6. **Simple ensemble wins**: 50/50 weighted average of top 2 models\n\n---",
+      "Files Created": "### Data\n- `data/train_processed.csv` - Engineered features (79,023 × 104)\n- `data/test_processed.csv` - Engineered features (24,353 × 103)\n\n### Scripts\n- `scripts/initial_inspection.py` - Data exploration\n- `scripts/eda.py` - Comprehensive EDA\n- `scripts/feature_engineering.py` - Feature creation\n- `scripts/train_model.py` - Model training\n- `scripts/create_submission.py` - Final submission generation\n\n### Outputs\n- `submissions/submission_final_33.2056_20260214_161743.csv` - Final predictions\n- `experiments.json` - Experiment tracking\n- `config.yaml` - Competition metadata\n\n---",
+      "Performance Summary": "**Baseline → Final Model**\n- RMSE: 155.54 → **33.21**\n- Improvement: **78.6%** ⭐\n- Training time: ~3 minutes (GPU)\n\n**Model Ranking**:\n1. 🥇 LightGBM: 32.75\n2. 🥈 XGBoost: 34.44\n3. 🥉 Ensemble: 33.21\n\n**Why Ensemble scored between individual models**: The 50/50 weighting wasn't optimized. Individual models performed better, but ensemble provides stability.\n\n---",
+      "Potential Improvements": "1. **Optimize ensemble weights** - Use validation RMSE for inverse-variance weighting\n2. **More feature engineering**:\n   - Lagged features (previous week's emission by location)\n   - Rolling statistics (3-week, 4-week windows)\n   - Interaction terms (sensor readings × location)\n3. **Hyperparameter tuning** - Optuna for LightGBM/XGBoost\n4. **Stacking** - Meta-model on out-of-fold predictions\n5. **CatBoost** - Add third tree model to ensemble\n6. **Feature selection** - Remove low-importance features\n\n---",
+      "Conclusion": "Successfully completed full Kaggle competition pipeline:\n- ✅ Data exploration and understanding\n- ✅ Feature engineering (102 features)\n- ✅ Model training with time-based validation\n- ✅ Ensemble creation\n- ✅ Submission file generation\n\n**Final Val RMSE: 33.21** (78.6% better than baseline)\n\nThe model is production-ready and the submission file is formatted correctly for Kaggle."
+    }
+  },
+  "eda": {
+    "source": "eda_summary.py",
+    "n_rows_train": 79023,
+    "n_rows_test": 24353,
+    "n_features": 74,
+    "numeric_features": [
+      "latitude",
+      "longitude",
+      "year",
+      "week_no",
+      "SulphurDioxide_SO2_column_number_density",
+      "SulphurDioxide_SO2_column_number_density_amf",
+      "SulphurDioxide_SO2_slant_column_number_density",
+      "SulphurDioxide_cloud_fraction",
+      "SulphurDioxide_sensor_azimuth_angle",
+      "SulphurDioxide_sensor_zenith_angle",
+      "SulphurDioxide_solar_azimuth_angle",
+      "SulphurDioxide_solar_zenith_angle",
+      "SulphurDioxide_SO2_column_number_density_15km",
+      "CarbonMonoxide_CO_column_number_density",
+      "CarbonMonoxide_H2O_column_number_density",
+      "CarbonMonoxide_cloud_height",
+      "CarbonMonoxide_sensor_altitude",
+      "CarbonMonoxide_sensor_azimuth_angle",
+      "CarbonMonoxide_sensor_zenith_angle",
+      "CarbonMonoxide_solar_azimuth_angle",
+      "CarbonMonoxide_solar_zenith_angle",
+      "NitrogenDioxide_NO2_column_number_density",
+      "NitrogenDioxide_tropospheric_NO2_column_number_density",
+      "NitrogenDioxide_stratospheric_NO2_column_number_density",
+      "NitrogenDioxide_NO2_slant_column_number_density",
+      "NitrogenDioxide_tropopause_pressure",
+      "NitrogenDioxide_absorbing_aerosol_index",
+      "NitrogenDioxide_cloud_fraction",
+      "NitrogenDioxide_sensor_altitude",
+      "NitrogenDioxide_sensor_azimuth_angle",
+      "NitrogenDioxide_sensor_zenith_angle",
+      "NitrogenDioxide_solar_azimuth_angle",
+      "NitrogenDioxide_solar_zenith_angle",
+      "Formaldehyde_tropospheric_HCHO_column_number_density",
+      "Formaldehyde_tropospheric_HCHO_column_number_density_amf",
+      "Formaldehyde_HCHO_slant_column_number_density",
+      "Formaldehyde_cloud_fraction",
+      "Formaldehyde_solar_zenith_angle",
+      "Formaldehyde_solar_azimuth_angle",
+      "Formaldehyde_sensor_zenith_angle",
+      "Formaldehyde_sensor_azimuth_angle",
+      "UvAerosolIndex_absorbing_aerosol_index",
+      "UvAerosolIndex_sensor_altitude",
+      "UvAerosolIndex_sensor_azimuth_angle",
+      "UvAerosolIndex_sensor_zenith_angle",
+      "UvAerosolIndex_solar_azimuth_angle",
+      "UvAerosolIndex_solar_zenith_angle",
+      "Ozone_O3_column_number_density",
+      "Ozone_O3_column_number_density_amf",
+      "Ozone_O3_slant_column_number_density",
+      "Ozone_O3_effective_temperature",
+      "Ozone_cloud_fraction",
+      "Ozone_sensor_azimuth_angle",
+      "Ozone_sensor_zenith_angle",
+      "Ozone_solar_azimuth_angle",
+      "Ozone_solar_zenith_angle",
+      "UvAerosolLayerHeight_aerosol_height",
+      "UvAerosolLayerHeight_aerosol_pressure",
+      "UvAerosolLayerHeight_aerosol_optical_depth",
+      "UvAerosolLayerHeight_sensor_zenith_angle",
+      "UvAerosolLayerHeight_sensor_azimuth_angle",
+      "UvAerosolLayerHeight_solar_azimuth_angle",
+      "UvAerosolLayerHeight_solar_zenith_angle",
+      "Cloud_cloud_fraction",
+      "Cloud_cloud_top_pressure",
+      "Cloud_cloud_top_height",
+      "Cloud_cloud_base_pressure",
+      "Cloud_cloud_base_height",
+      "Cloud_cloud_optical_depth",
+      "Cloud_surface_albedo",
+      "Cloud_sensor_azimuth_angle",
+      "Cloud_sensor_zenith_angle",
+      "Cloud_solar_azimuth_angle",
+      "Cloud_solar_zenith_angle"
+    ],
+    "categorical_features": [],
+    "duplicate_rows_train": 0,
+    "target": {
+      "name": "emission",
+      "dtype": "float64",
+      "n_unique": 76533,
+      "missing": 0,
+      "mean": 81.940552,
+      "std": 144.299648,
+      "min": 0.0,
+      "p25": 9.797995,
+      "median": 45.593445,
+      "p75": 109.549595,
+      "max": 3167.768,
+      "skew": 10.173826,
+      "kurtosis": 157.568167,
+      "is_integer_valued": false,
+      "log_transform_candidate": true
+    },
+    "missing_train": {
+      "SulphurDioxide_SO2_column_number_density": 14609,
+      "SulphurDioxide_SO2_column_number_density_amf": 14609,
+      "SulphurDioxide_SO2_slant_column_number_density": 14609,
+      "SulphurDioxide_cloud_fraction": 14609,
+      "SulphurDioxide_sensor_azimuth_angle": 14609,
+      "SulphurDioxide_sensor_zenith_angle": 14609,
+      "SulphurDioxide_solar_azimuth_angle": 14609,
+      "SulphurDioxide_solar_zenith_angle": 14609,
+      "SulphurDioxide_SO2_column_number_density_15km": 14609,
+      "CarbonMonoxide_CO_column_number_density": 2122,
+      "CarbonMonoxide_H2O_column_number_density": 2122,
+      "CarbonMonoxide_cloud_height": 2122,
+      "CarbonMonoxide_sensor_altitude": 2122,
+      "CarbonMonoxide_sensor_azimuth_angle": 2122,
+      "CarbonMonoxide_sensor_zenith_angle": 2122,
+      "CarbonMonoxide_solar_azimuth_angle": 2122,
+      "CarbonMonoxide_solar_zenith_angle": 2122,
+      "NitrogenDioxide_NO2_column_number_density": 18320,
+      "NitrogenDioxide_tropospheric_NO2_column_number_density": 18320,
+      "NitrogenDioxide_stratospheric_NO2_column_number_density": 18320,
+      "NitrogenDioxide_NO2_slant_column_number_density": 18320,
+      "NitrogenDioxide_tropopause_pressure": 18320,
+      "NitrogenDioxide_absorbing_aerosol_index": 18320,
+      "NitrogenDioxide_cloud_fraction": 18320,
+      "NitrogenDioxide_sensor_altitude": 18320,
+      "NitrogenDioxide_sensor_azimuth_angle": 18320,
+      "NitrogenDioxide_sensor_zenith_angle": 18320,
+      "NitrogenDioxide_solar_azimuth_angle": 18320,
+      "NitrogenDioxide_solar_zenith_angle": 18320,
+      "Formaldehyde_tropospheric_HCHO_column_number_density": 7277,
+      "Formaldehyde_tropospheric_HCHO_column_number_density_amf": 7277,
+      "Formaldehyde_HCHO_slant_column_number_density": 7277,
+      "Formaldehyde_cloud_fraction": 7277,
+      "Formaldehyde_solar_zenith_angle": 7277,
+      "Formaldehyde_solar_azimuth_angle": 7277,
+      "Formaldehyde_sensor_zenith_angle": 7277,
+      "Formaldehyde_sensor_azimuth_angle": 7277,
+      "UvAerosolIndex_absorbing_aerosol_index": 539,
+      "UvAerosolIndex_sensor_altitude": 539,
+      "UvAerosolIndex_sensor_azimuth_angle": 539,
+      "UvAerosolIndex_sensor_zenith_angle": 539,
+      "UvAerosolIndex_solar_azimuth_angle": 539,
+      "UvAerosolIndex_solar_zenith_angle": 539,
+      "Ozone_O3_column_number_density": 548,
+      "Ozone_O3_column_number_density_amf": 548,
+      "Ozone_O3_slant_column_number_density": 548,
+      "Ozone_O3_effective_temperature": 548,
+      "Ozone_cloud_fraction": 548,
+      "Ozone_sensor_azimuth_angle": 548,
+      "Ozone_sensor_zenith_angle": 548,
+      "Ozone_solar_azimuth_angle": 548,
+      "Ozone_solar_zenith_angle": 548,
+      "UvAerosolLayerHeight_aerosol_height": 78584,
+      "UvAerosolLayerHeight_aerosol_pressure": 78584,
+      "UvAerosolLayerHeight_aerosol_optical_depth": 78584,
+      "UvAerosolLayerHeight_sensor_zenith_angle": 78584,
+      "UvAerosolLayerHeight_sensor_azimuth_angle": 78584,
+      "UvAerosolLayerHeight_solar_azimuth_angle": 78584,
+      "UvAerosolLayerHeight_solar_zenith_angle": 78584,
+      "Cloud_cloud_fraction": 484,
+      "Cloud_cloud_top_pressure": 484,
+      "Cloud_cloud_top_height": 484,
+      "Cloud_cloud_base_pressure": 484,
+      "Cloud_cloud_base_height": 484,
+      "Cloud_cloud_optical_depth": 484,
+      "Cloud_surface_albedo": 484,
+      "Cloud_sensor_azimuth_angle": 484,
+      "Cloud_sensor_zenith_angle": 484,
+      "Cloud_solar_azimuth_angle": 484,
+      "Cloud_solar_zenith_angle": 484
+    },
+    "missing_test": {
+      "SulphurDioxide_SO2_column_number_density": 6142,
+      "SulphurDioxide_SO2_column_number_density_amf": 6142,
+      "SulphurDioxide_SO2_slant_column_number_density": 6142,
+      "SulphurDioxide_cloud_fraction": 6142,
+      "SulphurDioxide_sensor_azimuth_angle": 6142,
+      "SulphurDioxide_sensor_zenith_angle": 6142,
+      "SulphurDioxide_solar_azimuth_angle": 6142,
+      "SulphurDioxide_solar_zenith_angle": 6142,
+      "SulphurDioxide_SO2_column_number_density_15km": 6142,
+      "CarbonMonoxide_CO_column_number_density": 1337,
+      "CarbonMonoxide_H2O_column_number_density": 1337,
+      "CarbonMonoxide_cloud_height": 1337,
+      "CarbonMonoxide_sensor_altitude": 1337,
+      "CarbonMonoxide_sensor_azimuth_angle": 1337,
+      "CarbonMonoxide_sensor_zenith_angle": 1337,
+      "CarbonMonoxide_solar_azimuth_angle": 1337,
+      "CarbonMonoxide_solar_zenith_angle": 1337,
+      "NitrogenDioxide_NO2_column_number_density": 5655,
+      "NitrogenDioxide_tropospheric_NO2_column_number_density": 5655,
+      "NitrogenDioxide_stratospheric_NO2_column_number_density": 5655,
+      "NitrogenDioxide_NO2_slant_column_number_density": 5655,
+      "NitrogenDioxide_tropopause_pressure": 5655,
+      "NitrogenDioxide_absorbing_aerosol_index": 5655,
+      "NitrogenDioxide_cloud_fraction": 5655,
+      "NitrogenDioxide_sensor_altitude": 5655,
+      "NitrogenDioxide_sensor_azimuth_angle": 5655,
+      "NitrogenDioxide_sensor_zenith_angle": 5655,
+      "NitrogenDioxide_solar_azimuth_angle": 5655,
+      "NitrogenDioxide_solar_zenith_angle": 5655,
+      "Formaldehyde_tropospheric_HCHO_column_number_density": 3393,
+      "Formaldehyde_tropospheric_HCHO_column_number_density_amf": 3393,
+      "Formaldehyde_HCHO_slant_column_number_density": 3393,
+      "Formaldehyde_cloud_fraction": 3393,
+      "Formaldehyde_solar_zenith_angle": 3393,
+      "Formaldehyde_solar_azimuth_angle": 3393,
+      "Formaldehyde_sensor_zenith_angle": 3393,
+      "Formaldehyde_sensor_azimuth_angle": 3393,
+      "UvAerosolIndex_absorbing_aerosol_index": 147,
+      "UvAerosolIndex_sensor_altitude": 147,
+      "UvAerosolIndex_sensor_azimuth_angle": 147,
+      "UvAerosolIndex_sensor_zenith_angle": 147,
+      "UvAerosolIndex_solar_azimuth_angle": 147,
+      "UvAerosolIndex_solar_zenith_angle": 147,
+      "Ozone_O3_column_number_density": 147,
+      "Ozone_O3_column_number_density_amf": 147,
+      "Ozone_O3_slant_column_number_density": 147,
+      "Ozone_O3_effective_temperature": 147,
+      "Ozone_cloud_fraction": 147,
+      "Ozone_sensor_azimuth_angle": 147,
+      "Ozone_sensor_zenith_angle": 147,
+      "Ozone_solar_azimuth_angle": 147,
+      "Ozone_solar_zenith_angle": 147,
+      "UvAerosolLayerHeight_aerosol_height": 22260,
+      "UvAerosolLayerHeight_aerosol_pressure": 22260,
+      "UvAerosolLayerHeight_aerosol_optical_depth": 22260,
+      "UvAerosolLayerHeight_sensor_zenith_angle": 22260,
+      "UvAerosolLayerHeight_sensor_azimuth_angle": 22260,
+      "UvAerosolLayerHeight_solar_azimuth_angle": 22260,
+      "UvAerosolLayerHeight_solar_zenith_angle": 22260,
+      "Cloud_cloud_fraction": 166,
+      "Cloud_cloud_top_pressure": 166,
+      "Cloud_cloud_top_height": 166,
+      "Cloud_cloud_base_pressure": 166,
+      "Cloud_cloud_base_height": 166,
+      "Cloud_cloud_optical_depth": 166,
+      "Cloud_surface_albedo": 166,
+      "Cloud_sensor_azimuth_angle": 166,
+      "Cloud_sensor_zenith_angle": 166,
+      "Cloud_solar_azimuth_angle": 166,
+      "Cloud_solar_zenith_angle": 166
+    },
+    "numeric_stats": {
+      "latitude": {
+        "mean": -1.891072,
+        "std": 0.694522,
+        "min": -3.299,
+        "max": -0.51,
+        "skew": -0.025052,
+        "zeros": 0.0
+      },
+      "longitude": {
+        "mean": 29.880155,
+        "std": 0.810375,
+        "min": 28.228,
+        "max": 31.532,
+        "skew": 0.005806,
+        "zeros": 0.0
+      },
+      "year": {
+        "mean": 2020.0,
+        "std": 0.816502,
+        "min": 2019.0,
+        "max": 2021.0,
+        "skew": 0.0,
+        "zeros": 0.0
+      },
+      "week_no": {
+        "mean": 26.0,
+        "std": 15.297155,
+        "min": 0.0,
+        "max": 52.0,
+        "skew": 0.0,
+        "zeros": 1491.0
+      },
+      "SulphurDioxide_SO2_column_number_density": {
+        "mean": 4.8e-05,
+        "std": 0.000272,
+        "min": -0.000996,
+        "max": 0.004191,
+        "skew": 2.387599,
+        "zeros": 0.0
+      },
+      "SulphurDioxide_SO2_column_number_density_amf": {
+        "mean": 0.834848,
+        "std": 0.185382,
+        "min": 0.241822,
+        "max": 1.885239,
+        "skew": 0.754174,
+        "zeros": 0.0
+      },
+      "SulphurDioxide_SO2_slant_column_number_density": {
+        "mean": 3.5e-05,
+        "std": 0.000206,
+        "min": -0.000887,
+        "max": 0.004236,
+        "skew": 2.54366,
+        "zeros": 0.0
+      },
+      "SulphurDioxide_cloud_fraction": {
+        "mean": 0.158418,
+        "std": 0.071364,
+        "min": 0.0,
+        "max": 0.299998,
+        "skew": -0.259305,
+        "zeros": 2045.0
+      },
+      "SulphurDioxide_sensor_azimuth_angle": {
+        "mean": -7.92587,
+        "std": 64.263368,
+        "min": -179.537059,
+        "max": 122.0952,
+        "skew": -0.100563,
+        "zeros": 0.0
+      },
+      "SulphurDioxide_sensor_zenith_angle": {
+        "mean": 37.436189,
+        "std": 14.14995,
+        "min": 0.099237,
+        "max": 66.242012,
+        "skew": -0.258991,
+        "zeros": 0.0
+      },
+      "SulphurDioxide_solar_azimuth_angle": {
+        "mean": -83.833174,
+        "std": 38.103737,
+        "min": -157.289337,
+        "max": -19.836636,
+        "skew": -0.170244,
+        "zeros": 0.0
+      },
+      "SulphurDioxide_solar_zenith_angle": {
+        "mean": 27.722311,
+        "std": 5.506244,
+        "min": 8.227846,
+        "max": 42.887123,
+        "skew": -0.316316,
+        "zeros": 0.0
+      },
+      "SulphurDioxide_SO2_column_number_density_15km": {
+        "mean": 1.5e-05,
+        "std": 8.9e-05,
+        "min": -0.001319,
+        "max": 0.001956,
+        "skew": 2.76107,
+        "zeros": 0.0
+      },
+      "CarbonMonoxide_CO_column_number_density": {
+        "mean": 0.033158,
+        "std": 0.006023,
+        "min": 0.015793,
+        "max": 0.07299,
+        "skew": 1.040585,
+        "zeros": 0.0
+      },
+      "CarbonMonoxide_H2O_column_number_density": {
+        "mean": 2113.906233,
+        "std": 619.561233,
+        "min": 276.370929,
+        "max": 9193.168945,
+        "skew": 1.440341,
+        "zeros": 0.0
+      },
+      "CarbonMonoxide_cloud_height": {
+        "mean": 2821.590722,
+        "std": 792.480084,
+        "min": -368.845684,
+        "max": 4999.379883,
+        "skew": -0.218095,
+        "zeros": 0.0
+      },
+      "CarbonMonoxide_sensor_altitude": {
+        "mean": 829938.633762,
+        "std": 172.521518,
+        "min": 829253.6875,
+        "max": 830487.875,
+        "skew": -0.103764,
+        "zeros": 0.0
+      },
+      "CarbonMonoxide_sensor_azimuth_angle": {
+        "mean": -7.331051,
+        "std": 46.890763,
+        "min": -98.300018,
+        "max": 76.580513,
+        "skew": -0.081095,
+        "zeros": 0.0
+      },
+      "CarbonMonoxide_sensor_zenith_angle": {
+        "mean": 37.846794,
+        "std": 10.584376,
+        "min": 1.107561,
+        "max": 65.389618,
+        "skew": -0.250608,
+        "zeros": 0.0
+      },
+      "CarbonMonoxide_solar_azimuth_angle": {
+        "mean": -86.04958,
+        "std": 37.893299,
+        "min": -156.620575,
+        "max": -21.99968,
+        "skew": -0.094108,
+        "zeros": 0.0
+      },
+      "CarbonMonoxide_solar_zenith_angle": {
+        "mean": 27.767024,
+        "std": 4.912692,
+        "min": 9.028073,
+        "max": 42.779541,
+        "skew": -0.310297,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_NO2_column_number_density": {
+        "mean": 4.4e-05,
+        "std": 1e-05,
+        "min": -1.3e-05,
+        "max": 0.000217,
+        "skew": 1.025666,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_tropospheric_NO2_column_number_density": {
+        "mean": 1.2e-05,
+        "std": 8e-06,
+        "min": -2.8e-05,
+        "max": 0.000173,
+        "skew": 1.119332,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_stratospheric_NO2_column_number_density": {
+        "mean": 3.2e-05,
+        "std": 4e-06,
+        "min": 2.2e-05,
+        "max": 4.5e-05,
+        "skew": 0.539962,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_NO2_slant_column_number_density": {
+        "mean": 9.7e-05,
+        "std": 1.9e-05,
+        "min": 3.3e-05,
+        "max": 0.000226,
+        "skew": 0.505906,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_tropopause_pressure": {
+        "mean": 8922.568995,
+        "std": 892.457113,
+        "min": 7311.868446,
+        "max": 13031.054757,
+        "skew": 0.621766,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_absorbing_aerosol_index": {
+        "mean": -1.812155,
+        "std": 0.687334,
+        "min": -4.60367,
+        "max": 1.37217,
+        "skew": 0.451984,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_cloud_fraction": {
+        "mean": 0.097008,
+        "std": 0.057601,
+        "min": 0.0,
+        "max": 0.765748,
+        "skew": 1.800164,
+        "zeros": 878.0
+      },
+      "NitrogenDioxide_sensor_altitude": {
+        "mean": 829994.224471,
+        "std": 220.146974,
+        "min": 829248.037829,
+        "max": 830581.5625,
+        "skew": -0.273453,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_sensor_azimuth_angle": {
+        "mean": -15.937696,
+        "std": 68.01701,
+        "min": -179.537059,
+        "max": 122.0952,
+        "skew": 0.065865,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_sensor_zenith_angle": {
+        "mean": 36.852637,
+        "std": 15.11766,
+        "min": 0.099237,
+        "max": 66.241872,
+        "skew": -0.197939,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_solar_azimuth_angle": {
+        "mean": -84.260082,
+        "std": 37.305199,
+        "min": -158.883316,
+        "max": -19.863918,
+        "skew": -0.128813,
+        "zeros": 0.0
+      },
+      "NitrogenDioxide_solar_zenith_angle": {
+        "mean": 28.316388,
+        "std": 5.602123,
+        "min": 8.227524,
+        "max": 42.981857,
+        "skew": -0.338904,
+        "zeros": 0.0
+      },
+      "Formaldehyde_tropospheric_HCHO_column_number_density": {
+        "mean": 0.000127,
+        "std": 9.1e-05,
+        "min": -0.000445,
+        "max": 0.001174,
+        "skew": 0.414823,
+        "zeros": 0.0
+      },
+      "Formaldehyde_tropospheric_HCHO_column_number_density_amf": {
+        "mean": 1.254134,
+        "std": 0.274884,
+        "min": 0.376463,
+        "max": 2.760419,
+        "skew": 0.734045,
+        "zeros": 0.0
+      },
+      "Formaldehyde_HCHO_slant_column_number_density": {
+        "mean": 8.4e-05,
+        "std": 9.7e-05,
+        "min": -0.000647,
+        "max": 0.000856,
+        "skew": -0.004657,
+        "zeros": 0.0
+      },
+      "Formaldehyde_cloud_fraction": {
+        "mean": 0.228801,
+        "std": 0.099622,
+        "min": 0.0,
+        "max": 0.558128,
+        "skew": 0.060358,
+        "zeros": 1043.0
+      },
+      "Formaldehyde_solar_zenith_angle": {
+        "mean": 27.887813,
+        "std": 5.490569,
+        "min": 8.459617,
+        "max": 42.733612,
+        "skew": -0.305651,
+        "zeros": 0.0
+      },
+      "Formaldehyde_solar_azimuth_angle": {
+        "mean": -84.605844,
+        "std": 38.046843,
+        "min": -157.362152,
+        "max": -19.718948,
+        "skew": -0.139534,
+        "zeros": 0.0
+      },
+      "Formaldehyde_sensor_zenith_angle": {
+        "mean": 40.478057,
+        "std": 12.737188,
+        "min": 0.099237,
+        "max": 66.241966,
+        "skew": -0.370981,
+        "zeros": 0.0
+      },
+      "Formaldehyde_sensor_azimuth_angle": {
+        "mean": -9.396089,
+        "std": 58.158933,
+        "min": -135.562535,
+        "max": 106.133474,
+        "skew": -0.061887,
+        "zeros": 0.0
+      },
+      "UvAerosolIndex_absorbing_aerosol_index": {
+        "mean": -1.342787,
+        "std": 0.443335,
+        "min": -3.248241,
+        "max": 1.080224,
+        "skew": 0.000291,
+        "zeros": 0.0
+      },
+      "UvAerosolIndex_sensor_altitude": {
+        "mean": 829974.542096,
+        "std": 137.183197,
+        "min": 829350.383516,
+        "max": 830498.368631,
+        "skew": 0.207509,
+        "zeros": 0.0
+      },
+      "UvAerosolIndex_sensor_azimuth_angle": {
+        "mean": -12.739997,
+        "std": 26.303312,
+        "min": -99.808195,
+        "max": 74.349663,
+        "skew": -0.125114,
+        "zeros": 0.0
+      },
+      "UvAerosolIndex_sensor_zenith_angle": {
+        "mean": 39.962875,
+        "std": 5.694265,
+        "min": 3.969079,
+        "max": 66.450478,
+        "skew": -0.178903,
+        "zeros": 0.0
+      },
+      "UvAerosolIndex_solar_azimuth_angle": {
+        "mean": -86.548895,
+        "std": 37.491634,
+        "min": -158.132324,
+        "max": -26.558869,
+        "skew": -0.061772,
+        "zeros": 0.0
+      },
+      "UvAerosolIndex_solar_zenith_angle": {
+        "mean": 28.052553,
+        "std": 4.326584,
+        "min": 15.071316,
+        "max": 39.473399,
+        "skew": -0.303137,
+        "zeros": 0.0
+      },
+      "Ozone_O3_column_number_density": {
+        "mean": 0.117343,
+        "std": 0.003217,
+        "min": 0.106192,
+        "max": 0.12608,
+        "skew": -0.594693,
+        "zeros": 0.0
+      },
+      "Ozone_O3_column_number_density_amf": {
+        "mean": 2.60989,
+        "std": 0.137674,
+        "min": 2.11182,
+        "max": 3.640139,
+        "skew": 1.024578,
+        "zeros": 0.0
+      },
+      "Ozone_O3_slant_column_number_density": {
+        "mean": 0.310802,
+        "std": 0.017414,
+        "min": 0.24604,
+        "max": 0.418492,
+        "skew": 0.609222,
+        "zeros": 0.0
+      },
+      "Ozone_O3_effective_temperature": {
+        "mean": 228.625917,
+        "std": 2.411096,
+        "min": 208.137089,
+        "max": 237.868655,
+        "skew": -0.522588,
+        "zeros": 0.0
+      },
+      "Ozone_cloud_fraction": {
+        "mean": 0.569107,
+        "std": 0.196082,
+        "min": 0.002124,
+        "max": 1.0,
+        "skew": -0.213518,
+        "zeros": 0.0
+      },
+      "Ozone_sensor_azimuth_angle": {
+        "mean": -13.108799,
+        "std": 26.295063,
+        "min": -99.685563,
+        "max": 74.364489,
+        "skew": -0.11543,
+        "zeros": 0.0
+      },
+      "Ozone_sensor_zenith_angle": {
+        "mean": 39.807404,
+        "std": 5.689562,
+        "min": 3.372145,
+        "max": 66.235573,
+        "skew": -0.188215,
+        "zeros": 0.0
+      },
+      "Ozone_solar_azimuth_angle": {
+        "mean": -86.529414,
+        "std": 37.390642,
+        "min": -157.937073,
+        "max": -26.556996,
+        "skew": -0.061749,
+        "zeros": 0.0
+      },
+      "Ozone_solar_zenith_angle": {
+        "mean": 28.104019,
+        "std": 4.31056,
+        "min": 15.07285,
+        "max": 39.473399,
+        "skew": -0.291181,
+        "zeros": 0.0
+      },
+      "UvAerosolLayerHeight_aerosol_height": {
+        "mean": 3582.971238,
+        "std": 1475.338534,
+        "min": 1164.338745,
+        "max": 12948.073199,
+        "skew": 1.468528,
+        "zeros": 0.0
+      },
+      "UvAerosolLayerHeight_aerosol_pressure": {
+        "mean": 66718.981285,
+        "std": 11501.504673,
+        "min": 10920.485315,
+        "max": 88296.703125,
+        "skew": -0.895783,
+        "zeros": 0.0
+      },
+      "UvAerosolLayerHeight_aerosol_optical_depth": {
+        "mean": 0.732535,
+        "std": 0.509865,
+        "min": -0.377114,
+        "max": 2.142224,
+        "skew": 0.657068,
+        "zeros": 0.0
+      },
+      "UvAerosolLayerHeight_sensor_zenith_angle": {
+        "mean": 30.474482,
+        "std": 18.746587,
+        "min": 0.238394,
+        "max": 66.165047,
+        "skew": 0.147305,
+        "zeros": 0.0
+      },
+      "UvAerosolLayerHeight_sensor_azimuth_angle": {
+        "mean": 45.267888,
+        "std": 64.614132,
+        "min": -105.004929,
+        "max": 80.415855,
+        "skew": -1.784877,
+        "zeros": 0.0
+      },
+      "UvAerosolLayerHeight_solar_azimuth_angle": {
+        "mean": -70.819717,
+        "std": 42.181747,
+        "min": -151.315323,
+        "max": -20.66552,
+        "skew": -0.575198,
+        "zeros": 0.0
+      },
+      "UvAerosolLayerHeight_solar_zenith_angle": {
+        "mean": 27.172657,
+        "std": 3.7924,
+        "min": 14.832418,
+        "max": 40.45266,
+        "skew": -0.25755,
+        "zeros": 0.0
+      },
+      "Cloud_cloud_fraction": {
+        "mean": 0.597468,
+        "std": 0.196503,
+        "min": 0.001813,
+        "max": 1.0,
+        "skew": -0.257702,
+        "zeros": 0.0
+      },
+      "Cloud_cloud_top_pressure": {
+        "mean": 53086.835772,
+        "std": 8776.569588,
+        "min": 21320.212919,
+        "max": 89289.925148,
+        "skew": 0.177647,
+        "zeros": 0.0
+      },
+      "Cloud_cloud_top_height": {
+        "mean": 5592.377478,
+        "std": 1428.503002,
+        "min": 1050.661782,
+        "max": 12384.239458,
+        "skew": 0.158314,
+        "zeros": 0.0
+      },
+      "Cloud_cloud_base_pressure": {
+        "mean": 59420.297456,
+        "std": 9051.163609,
+        "min": 24779.033704,
+        "max": 89291.615576,
+        "skew": -0.014968,
+        "zeros": 0.0
+      },
+      "Cloud_cloud_base_height": {
+        "mean": 4670.430869,
+        "std": 1359.251583,
+        "min": 1050.496816,
+        "max": 11384.239458,
+        "skew": 0.301466,
+        "zeros": 0.0
+      },
+      "Cloud_cloud_optical_depth": {
+        "mean": 19.139241,
+        "std": 13.547047,
+        "min": 1.844529,
+        "max": 250.0,
+        "skew": 2.178819,
+        "zeros": 0.0
+      },
+      "Cloud_surface_albedo": {
+        "mean": 0.27146,
+        "std": 0.049434,
+        "min": 0.017697,
+        "max": 0.736514,
+        "skew": -0.313437,
+        "zeros": 0.0
+      },
+      "Cloud_sensor_azimuth_angle": {
+        "mean": -10.784832,
+        "std": 30.374462,
+        "min": -102.739731,
+        "max": 78.223037,
+        "skew": 0.046929,
+        "zeros": 0.0
+      },
+      "Cloud_sensor_zenith_angle": {
+        "mean": 40.436976,
+        "std": 6.428216,
+        "min": 2.998873,
+        "max": 65.951248,
+        "skew": -0.114517,
+        "zeros": 0.0
+      },
+      "Cloud_solar_azimuth_angle": {
+        "mean": -86.800583,
+        "std": 37.837269,
+        "min": -153.464211,
+        "max": -22.65317,
+        "skew": -0.068206,
+        "zeros": 0.0
+      },
+      "Cloud_solar_zenith_angle": {
+        "mean": 27.925981,
+        "std": 4.403835,
+        "min": 10.818288,
+        "max": 42.060436,
+        "skew": -0.320412,
+        "zeros": 0.0
+      }
+    },
+    "categorical_stats": {},
+    "target_correlation": {
+      "latitude": {
+        "pearson": 0.017851,
+        "spearman": 0.03016
+      },
+      "longitude": {
+        "pearson": 0.102746,
+        "spearman": 0.29104
+      },
+      "year": {
+        "pearson": -0.013244,
+        "spearman": -0.021343
+      },
+      "week_no": {
+        "pearson": 0.007086,
+        "spearman": 0.018309
+      },
+      "SulphurDioxide_SO2_column_number_density": {
+        "pearson": -0.019126,
+        "spearman": -0.061804
+      },
+      "SulphurDioxide_SO2_column_number_density_amf": {
+        "pearson": 0.000347,
+        "spearman": 0.045196
+      },
+      "SulphurDioxide_SO2_slant_column_number_density": {
+        "pearson": -0.021959,
+        "spearman": -0.0644
+      },
+      "SulphurDioxide_cloud_fraction": {
+        "pearson": 0.006195,
+        "spearman": 0.017144
+      },
+      "SulphurDioxide_sensor_azimuth_angle": {
+        "pearson": -0.025079,
+        "spearman": -0.017259
+      },
+      "SulphurDioxide_sensor_zenith_angle": {
+        "pearson": -0.005704,
+        "spearman": -0.003034
+      },
+      "SulphurDioxide_solar_azimuth_angle": {
+        "pearson": -0.032338,
+        "spearman": -0.043501
+      },
+      "SulphurDioxide_solar_zenith_angle": {
+        "pearson": -0.001401,
+        "spearman": -0.010522
+      },
+      "SulphurDioxide_SO2_column_number_density_15km": {
+        "pearson": -0.022011,
+        "spearman": -0.066248
+      },
+      "CarbonMonoxide_CO_column_number_density": {
+        "pearson": -0.041328,
+        "spearman": -0.079384
+      },
+      "CarbonMonoxide_H2O_column_number_density": {
+        "pearson": -0.043217,
+        "spearman": -0.114125
+      },
+      "CarbonMonoxide_cloud_height": {
+        "pearson": -0.010431,
+        "spearman": -0.077763
+      },
+      "CarbonMonoxide_sensor_altitude": {
+        "pearson": -0.001865,
+        "spearman": -0.009547
+      },
+      "CarbonMonoxide_sensor_azimuth_angle": {
+        "pearson": -0.003252,
+        "spearman": -0.013848
+      },
+      "CarbonMonoxide_sensor_zenith_angle": {
+        "pearson": -0.000816,
+        "spearman": 0.00683
+      },
+      "CarbonMonoxide_solar_azimuth_angle": {
+        "pearson": -0.026282,
+        "spearman": -0.023339
+      },
+      "CarbonMonoxide_solar_zenith_angle": {
+        "pearson": -0.018803,
+        "spearman": -0.014842
+      },
+      "NitrogenDioxide_NO2_column_number_density": {
+        "pearson": -0.00592,
+        "spearman": -0.011362
+      },
+      "NitrogenDioxide_tropospheric_NO2_column_number_density": {
+        "pearson": 0.002513,
+        "spearman": 0.004135
+      },
+      "NitrogenDioxide_stratospheric_NO2_column_number_density": {
+        "pearson": -0.01548,
+        "spearman": -0.035114
+      },
+      "NitrogenDioxide_NO2_slant_column_number_density": {
+        "pearson": -0.013575,
+        "spearman": -0.035818
+      },
+      "NitrogenDioxide_tropopause_pressure": {
+        "pearson": -0.001886,
+        "spearman": -0.032505
+      },
+      "NitrogenDioxide_absorbing_aerosol_index": {
+        "pearson": 0.020905,
+        "spearman": 0.046991
+      },
+      "NitrogenDioxide_cloud_fraction": {
+        "pearson": 0.022456,
+        "spearman": 0.05727
+      },
+      "NitrogenDioxide_sensor_altitude": {
+        "pearson": 0.02754,
+        "spearman": 0.022239
+      },
+      "NitrogenDioxide_sensor_azimuth_angle": {
+        "pearson": -0.027104,
+        "spearman": -0.017278
+      },
+      "NitrogenDioxide_sensor_zenith_angle": {
+        "pearson": -0.007445,
+        "spearman": -0.016311
+      },
+      "NitrogenDioxide_solar_azimuth_angle": {
+        "pearson": -0.033417,
+        "spearman": -0.047422
+      },
+      "NitrogenDioxide_solar_zenith_angle": {
+        "pearson": 0.005469,
+        "spearman": -0.004938
+      },
+      "Formaldehyde_tropospheric_HCHO_column_number_density": {
+        "pearson": -0.033333,
+        "spearman": -0.064197
+      },
+      "Formaldehyde_tropospheric_HCHO_column_number_density_amf": {
+        "pearson": 0.040263,
+        "spearman": 0.133646
+      },
+      "Formaldehyde_HCHO_slant_column_number_density": {
+        "pearson": -0.022874,
+        "spearman": -0.031925
+      },
+      "Formaldehyde_cloud_fraction": {
+        "pearson": 0.001254,
+        "spearman": 0.003647
+      },
+      "Formaldehyde_solar_zenith_angle": {
+        "pearson": -0.00378,
+        "spearman": -0.011856
+      },
+      "Formaldehyde_solar_azimuth_angle": {
+        "pearson": -0.030815,
+        "spearman": -0.034633
+      },
+      "Formaldehyde_sensor_zenith_angle": {
+        "pearson": -0.004879,
+        "spearman": -0.008573
+      },
+      "Formaldehyde_sensor_azimuth_angle": {
+        "pearson": -0.021216,
+        "spearman": -0.015161
+      },
+      "UvAerosolIndex_absorbing_aerosol_index": {
+        "pearson": 0.00702,
+        "spearman": -0.005003
+      },
+      "UvAerosolIndex_sensor_altitude": {
+        "pearson": -0.003532,
+        "spearman": -0.017323
+      },
+      "UvAerosolIndex_sensor_azimuth_angle": {
+        "pearson": 0.008299,
+        "spearman": 0.012081
+      },
+      "UvAerosolIndex_sensor_zenith_angle": {
+        "pearson": -0.009557,
+        "spearman": -0.012403
+      },
+      "UvAerosolIndex_solar_azimuth_angle": {
+        "pearson": -0.024812,
+        "spearman": -0.02141
+      },
+      "UvAerosolIndex_solar_zenith_angle": {
+        "pearson": -0.02197,
+        "spearman": -0.02194
+      },
+      "Ozone_O3_column_number_density": {
+        "pearson": 0.013811,
+        "spearman": 0.016674
+      },
+      "Ozone_O3_column_number_density_amf": {
+        "pearson": -0.013846,
+        "spearman": -0.018622
+      },
+      "Ozone_O3_slant_column_number_density": {
+        "pearson": -0.005834,
+        "spearman": -0.012328
+      },
+      "Ozone_O3_effective_temperature": {
+        "pearson": -0.008182,
+        "spearman": -0.01216
+      },
+      "Ozone_cloud_fraction": {
+        "pearson": 0.000569,
+        "spearman": -0.040806
+      },
+      "Ozone_sensor_azimuth_angle": {
+        "pearson": 0.007774,
+        "spearman": 0.01014
+      },
+      "Ozone_sensor_zenith_angle": {
+        "pearson": -0.005931,
+        "spearman": -0.009425
+      },
+      "Ozone_solar_azimuth_angle": {
+        "pearson": -0.024847,
+        "spearman": -0.021491
+      },
+      "Ozone_solar_zenith_angle": {
+        "pearson": -0.02249,
+        "spearman": -0.021821
+      },
+      "UvAerosolLayerHeight_aerosol_height": {
+        "pearson": 0.069008,
+        "spearman": -0.00769
+      },
+      "UvAerosolLayerHeight_aerosol_pressure": {
+        "pearson": -0.068138,
+        "spearman": 0.011003
+      },
+      "UvAerosolLayerHeight_aerosol_optical_depth": {
+        "pearson": 0.040156,
+        "spearman": 0.08455
+      },
+      "UvAerosolLayerHeight_sensor_zenith_angle": {
+        "pearson": -0.010928,
+        "spearman": -0.011301
+      },
+      "UvAerosolLayerHeight_sensor_azimuth_angle": {
+        "pearson": 0.035142,
+        "spearman": 0.05189
+      },
+      "UvAerosolLayerHeight_solar_azimuth_angle": {
+        "pearson": -0.027214,
+        "spearman": 0.009917
+      },
+      "UvAerosolLayerHeight_solar_zenith_angle": {
+        "pearson": 0.002333,
+        "spearman": 0.041973
+      },
+      "Cloud_cloud_fraction": {
+        "pearson": 0.001249,
+        "spearman": -0.045721
+      },
+      "Cloud_cloud_top_pressure": {
+        "pearson": -0.013932,
+        "spearman": 0.02329
+      },
+      "Cloud_cloud_top_height": {
+        "pearson": 0.005374,
+        "spearman": -0.02657
+      },
+      "Cloud_cloud_base_pressure": {
+        "pearson": -0.012997,
+        "spearman": 0.02284
+      },
+      "Cloud_cloud_base_height": {
+        "pearson": 0.004032,
+        "spearman": -0.026919
+      },
+      "Cloud_cloud_optical_depth": {
+        "pearson": 0.001784,
+        "spearman": -0.004651
+      },
+      "Cloud_surface_albedo": {
+        "pearson": 0.046587,
+        "spearman": 0.073752
+      },
+      "Cloud_sensor_azimuth_angle": {
+        "pearson": 0.007758,
+        "spearman": 0.00431
+      },
+      "Cloud_sensor_zenith_angle": {
+        "pearson": -0.016042,
+        "spearman": -0.018051
+      },
+      "Cloud_solar_azimuth_angle": {
+        "pearson": -0.024205,
+        "spearman": -0.020423
+      },
+      "Cloud_solar_zenith_angle": {
+        "pearson": -0.021889,
+        "spearman": -0.019059
+      }
+    },
+    "high_collinearity_pairs": [
+      [
+        "week_no",
+        "UvAerosolLayerHeight_solar_azimuth_angle",
+        0.983164
+      ],
+      [
+        "SulphurDioxide_SO2_column_number_density",
+        "SulphurDioxide_SO2_slant_column_number_density",
+        0.967078
+      ],
+      [
+        "SulphurDioxide_SO2_slant_column_number_density",
+        "SulphurDioxide_SO2_column_number_density_15km",
+        0.956979
+      ],
+      [
+        "SulphurDioxide_solar_azimuth_angle",
+        "CarbonMonoxide_solar_azimuth_angle",
+        0.990943
+      ],
+      [
+        "SulphurDioxide_solar_azimuth_angle",
+        "NitrogenDioxide_solar_azimuth_angle",
+        0.996042
+      ],
+      [
+        "SulphurDioxide_solar_azimuth_angle",
+        "Formaldehyde_solar_azimuth_angle",
+        0.995284
+      ],
+      [
+        "SulphurDioxide_solar_azimuth_angle",
+        "UvAerosolIndex_solar_azimuth_angle",
+        0.990365
+      ],
+      [
+        "SulphurDioxide_solar_azimuth_angle",
+        "Ozone_solar_azimuth_angle",
+        0.990493
+      ],
+      [
+        "SulphurDioxide_solar_azimuth_angle",
+        "UvAerosolLayerHeight_solar_azimuth_angle",
+        0.992911
+      ],
+      [
+        "SulphurDioxide_solar_azimuth_angle",
+        "Cloud_solar_azimuth_angle",
+        0.988781
+      ],
+      [
+        "CarbonMonoxide_solar_azimuth_angle",
+        "NitrogenDioxide_solar_azimuth_angle",
+        0.989442
+      ],
+      [
+        "CarbonMonoxide_solar_azimuth_angle",
+        "Formaldehyde_solar_azimuth_angle",
+        0.991907
+      ],
+      [
+        "CarbonMonoxide_solar_azimuth_angle",
+        "UvAerosolIndex_solar_azimuth_angle",
+        0.995174
+      ],
+      [
+        "CarbonMonoxide_solar_azimuth_angle",
+        "Ozone_solar_azimuth_angle",
+        0.995251
+      ],
+      [
+        "CarbonMonoxide_solar_azimuth_angle",
+        "UvAerosolLayerHeight_solar_azimuth_angle",
+        0.98989
+      ],
+      [
+        "CarbonMonoxide_solar_azimuth_angle",
+        "Cloud_solar_azimuth_angle",
+        0.994015
+      ],
+      [
+        "NitrogenDioxide_solar_azimuth_angle",
+        "Formaldehyde_solar_azimuth_angle",
+        0.993363
+      ],
+      [
+        "NitrogenDioxide_solar_azimuth_angle",
+        "UvAerosolIndex_solar_azimuth_angle",
+        0.989048
+      ],
+      [
+        "NitrogenDioxide_solar_azimuth_angle",
+        "Ozone_solar_azimuth_angle",
+        0.989121
+      ],
+      [
+        "NitrogenDioxide_solar_azimuth_angle",
+        "UvAerosolLayerHeight_solar_azimuth_angle",
+        0.992976
+      ],
+      [
+        "NitrogenDioxide_solar_azimuth_angle",
+        "Cloud_solar_azimuth_angle",
+        0.987182
+      ],
+      [
+        "Formaldehyde_solar_azimuth_angle",
+        "UvAerosolIndex_solar_azimuth_angle",
+        0.991474
+      ],
+      [
+        "Formaldehyde_solar_azimuth_angle",
+        "Ozone_solar_azimuth_angle",
+        0.991596
+      ],
+      [
+        "Formaldehyde_solar_azimuth_angle",
+        "UvAerosolLayerHeight_solar_azimuth_angle",
+        0.992112
+      ],
+      [
+        "Formaldehyde_solar_azimuth_angle",
+        "Cloud_solar_azimuth_angle",
+        0.990566
+      ],
+      [
+        "UvAerosolIndex_sensor_azimuth_angle",
+        "Ozone_sensor_azimuth_angle",
+        0.99217
+      ],
+      [
+        "UvAerosolIndex_sensor_zenith_angle",
+        "Ozone_sensor_zenith_angle",
+        0.986915
+      ],
+      [
+        "UvAerosolIndex_solar_azimuth_angle",
+        "Ozone_solar_azimuth_angle",
+        0.999904
+      ],
+      [
+        "UvAerosolIndex_solar_azimuth_angle",
+        "UvAerosolLayerHeight_solar_azimuth_angle",
+        0.99104
+      ],
+      [
+        "UvAerosolIndex_solar_azimuth_angle",
+        "Cloud_solar_azimuth_angle",
+        0.998596
+      ],
+      [
+        "UvAerosolIndex_solar_zenith_angle",
+        "Ozone_solar_zenith_angle",
+        0.997812
+      ],
+      [
+        "UvAerosolIndex_solar_zenith_angle",
+        "Cloud_solar_zenith_angle",
+        0.95708
+      ],
+      [
+        "Ozone_solar_azimuth_angle",
+        "UvAerosolLayerHeight_solar_azimuth_angle",
+        0.991084
+      ],
+      [
+        "Ozone_solar_azimuth_angle",
+        "Cloud_solar_azimuth_angle",
+        0.998679
+      ],
+      [
+        "Ozone_solar_zenith_angle",
+        "Cloud_solar_zenith_angle",
+        0.959162
+      ],
+      [
+        "UvAerosolLayerHeight_aerosol_height",
+        "UvAerosolLayerHeight_aerosol_pressure",
+        0.993702
+      ],
+      [
+        "UvAerosolLayerHeight_solar_azimuth_angle",
+        "Cloud_solar_azimuth_angle",
+        0.986591
+      ],
+      [
+        "Cloud_cloud_top_pressure",
+        "Cloud_cloud_top_height",
+        0.950352
+      ],
+      [
+        "Cloud_cloud_top_pressure",
+        "Cloud_cloud_base_pressure",
+        0.992816
+      ],
+      [
+        "Cloud_cloud_top_height",
+        "Cloud_cloud_base_pressure",
+        0.954555
+      ],
+      [
+        "Cloud_cloud_top_height",
+        "Cloud_cloud_base_height",
+        0.99616
+      ],
+      [
+        "Cloud_cloud_base_pressure",
+        "Cloud_cloud_base_height",
+        0.954694
+      ]
+    ],
+    "train_test_mean_shift_pct": {
+      "latitude": -0.0,
+      "longitude": -0.0,
+      "year": 0.09901,
+      "week_no": -7.692308,
+      "SulphurDioxide_SO2_column_number_density": -71.693357,
+      "SulphurDioxide_SO2_column_number_density_amf": -5.064179,
+      "SulphurDioxide_SO2_slant_column_number_density": -74.200286,
+      "SulphurDioxide_cloud_fraction": -12.119711,
+      "SulphurDioxide_sensor_azimuth_angle": -217.312698,
+      "SulphurDioxide_sensor_zenith_angle": -3.370754,
+      "SulphurDioxide_solar_azimuth_angle": -6.034669,
+      "SulphurDioxide_solar_zenith_angle": -6.417337,
+      "SulphurDioxide_SO2_column_number_density_15km": -79.193653,
+      "CarbonMonoxide_CO_column_number_density": -0.911969,
+      "CarbonMonoxide_H2O_column_number_density": -14.808466,
+      "CarbonMonoxide_cloud_height": -4.665842,
+      "CarbonMonoxide_sensor_altitude": -0.001223,
+      "CarbonMonoxide_sensor_azimuth_angle": -44.225428,
+      "CarbonMonoxide_sensor_zenith_angle": -3.596793,
+      "CarbonMonoxide_solar_azimuth_angle": -6.440168,
+      "CarbonMonoxide_solar_zenith_angle": -2.163153,
+      "NitrogenDioxide_NO2_column_number_density": 14.519492,
+      "NitrogenDioxide_tropospheric_NO2_column_number_density": -2.586166,
+      "NitrogenDioxide_stratospheric_NO2_column_number_density": 21.029287,
+      "NitrogenDioxide_NO2_slant_column_number_density": 13.014822,
+      "NitrogenDioxide_tropopause_pressure": 2.518255,
+      "NitrogenDioxide_absorbing_aerosol_index": -48.951451,
+      "NitrogenDioxide_cloud_fraction": -7.454089,
+      "NitrogenDioxide_sensor_altitude": -0.002709,
+      "NitrogenDioxide_sensor_azimuth_angle": -43.702469,
+      "NitrogenDioxide_sensor_zenith_angle": -3.198817,
+      "NitrogenDioxide_solar_azimuth_angle": -7.158928,
+      "NitrogenDioxide_solar_zenith_angle": -3.027948,
+      "Formaldehyde_tropospheric_HCHO_column_number_density": 2.945826,
+      "Formaldehyde_tropospheric_HCHO_column_number_density_amf": -2.458595,
+      "Formaldehyde_HCHO_slant_column_number_density": 6.984798,
+      "Formaldehyde_cloud_fraction": -3.126805,
+      "Formaldehyde_solar_zenith_angle": -4.925867,
+      "Formaldehyde_solar_azimuth_angle": -5.64021,
+      "Formaldehyde_sensor_zenith_angle": -4.035022,
+      "Formaldehyde_sensor_azimuth_angle": -134.823105,
+      "UvAerosolIndex_absorbing_aerosol_index": -44.698328,
+      "UvAerosolIndex_sensor_altitude": -5.9e-05,
+      "UvAerosolIndex_sensor_azimuth_angle": 14.23752,
+      "UvAerosolIndex_sensor_zenith_angle": -0.980387,
+      "UvAerosolIndex_solar_azimuth_angle": -4.849291,
+      "UvAerosolIndex_solar_zenith_angle": -0.722205,
+      "Ozone_O3_column_number_density": 1.747968,
+      "Ozone_O3_column_number_density_amf": -0.203466,
+      "Ozone_O3_slant_column_number_density": 1.536926,
+      "Ozone_O3_effective_temperature": 0.806933,
+      "Ozone_cloud_fraction": 8.730397,
+      "Ozone_sensor_azimuth_angle": 4.663488,
+      "Ozone_sensor_zenith_angle": -0.483344,
+      "Ozone_solar_azimuth_angle": -4.755622,
+      "Ozone_solar_zenith_angle": -0.979731,
+      "UvAerosolLayerHeight_aerosol_height": -19.691687,
+      "UvAerosolLayerHeight_aerosol_pressure": 9.139586,
+      "UvAerosolLayerHeight_aerosol_optical_depth": 103.718506,
+      "UvAerosolLayerHeight_sensor_zenith_angle": 0.89842,
+      "UvAerosolLayerHeight_sensor_azimuth_angle": -59.796617,
+      "UvAerosolLayerHeight_solar_azimuth_angle": 4.02624,
+      "UvAerosolLayerHeight_solar_zenith_angle": -3.914997,
+      "Cloud_cloud_fraction": 11.836974,
+      "Cloud_cloud_top_pressure": -1.498424,
+      "Cloud_cloud_top_height": 4.616702,
+      "Cloud_cloud_base_pressure": -0.850798,
+      "Cloud_cloud_base_height": 4.404607,
+      "Cloud_cloud_optical_depth": -4.805936,
+      "Cloud_surface_albedo": -5.688217,
+      "Cloud_sensor_azimuth_angle": 47.527402,
+      "Cloud_sensor_zenith_angle": -0.885406,
+      "Cloud_solar_azimuth_angle": -5.056852,
+      "Cloud_solar_zenith_angle": 0.211201
+    },
+    "validation_hint": "continuous i.i.d. target -> standard KFold (check train/test shift first)"
+  },
   "experiments": [
     {
       "experiment_id": 1,

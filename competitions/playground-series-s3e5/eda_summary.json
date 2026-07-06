@@ -1,0 +1,200 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 2056,
+  "n_rows_test": 1372,
+  "n_features": 11,
+  "numeric_features": [
+    "fixed acidity",
+    "volatile acidity",
+    "citric acid",
+    "residual sugar",
+    "chlorides",
+    "free sulfur dioxide",
+    "total sulfur dioxide",
+    "density",
+    "pH",
+    "sulphates",
+    "alcohol"
+  ],
+  "categorical_features": [],
+  "duplicate_rows_train": 0,
+  "target": {
+    "name": "quality",
+    "dtype": "int64",
+    "n_unique": 6,
+    "missing": 0,
+    "mean": 5.720817,
+    "std": 0.853146,
+    "min": 3.0,
+    "p25": 5.0,
+    "median": 6.0,
+    "p75": 6.0,
+    "max": 8.0,
+    "skew": 0.266307,
+    "kurtosis": 0.049584,
+    "is_integer_valued": true,
+    "log_transform_candidate": false,
+    "value_counts": {
+      "3": 12,
+      "4": 55,
+      "5": 839,
+      "6": 778,
+      "7": 333,
+      "8": 39
+    }
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "fixed acidity": {
+      "mean": 8.365175,
+      "std": 1.70539,
+      "min": 5.0,
+      "max": 15.9,
+      "skew": 0.959832,
+      "zeros": 0.0
+    },
+    "volatile acidity": {
+      "mean": 0.527601,
+      "std": 0.173164,
+      "min": 0.18,
+      "max": 1.58,
+      "skew": 0.668343,
+      "zeros": 0.0
+    },
+    "citric acid": {
+      "mean": 0.265058,
+      "std": 0.188267,
+      "min": 0.0,
+      "max": 0.76,
+      "skew": 0.246571,
+      "zeros": 211.0
+    },
+    "residual sugar": {
+      "mean": 2.398881,
+      "std": 0.858824,
+      "min": 1.2,
+      "max": 14.0,
+      "skew": 3.756802,
+      "zeros": 0.0
+    },
+    "chlorides": {
+      "mean": 0.081856,
+      "std": 0.023729,
+      "min": 0.012,
+      "max": 0.414,
+      "skew": 5.262627,
+      "zeros": 0.0
+    },
+    "free sulfur dioxide": {
+      "mean": 16.955982,
+      "std": 10.00971,
+      "min": 1.0,
+      "max": 68.0,
+      "skew": 0.681219,
+      "zeros": 0.0
+    },
+    "total sulfur dioxide": {
+      "mean": 49.236868,
+      "std": 32.961141,
+      "min": 7.0,
+      "max": 289.0,
+      "skew": 1.267906,
+      "zeros": 0.0
+    },
+    "density": {
+      "mean": 0.996748,
+      "std": 0.001827,
+      "min": 0.99007,
+      "max": 1.00369,
+      "skew": 0.202606,
+      "zeros": 0.0
+    },
+    "pH": {
+      "mean": 3.310569,
+      "std": 0.142321,
+      "min": 2.74,
+      "max": 3.78,
+      "skew": 0.216976,
+      "zeros": 0.0
+    },
+    "sulphates": {
+      "mean": 0.641308,
+      "std": 0.137942,
+      "min": 0.39,
+      "max": 1.95,
+      "skew": 1.802854,
+      "zeros": 0.0
+    },
+    "alcohol": {
+      "mean": 10.414972,
+      "std": 1.028825,
+      "min": 8.7,
+      "max": 14.0,
+      "skew": 0.786872,
+      "zeros": 0.0
+    }
+  },
+  "categorical_stats": {},
+  "target_correlation": {
+    "fixed acidity": {
+      "pearson": 0.073852,
+      "spearman": 0.065743
+    },
+    "volatile acidity": {
+      "pearson": -0.219287,
+      "spearman": -0.247774
+    },
+    "citric acid": {
+      "pearson": 0.141797,
+      "spearman": 0.155695
+    },
+    "residual sugar": {
+      "pearson": 0.048156,
+      "spearman": 0.03467
+    },
+    "chlorides": {
+      "pearson": -0.046624,
+      "spearman": -0.07601
+    },
+    "free sulfur dioxide": {
+      "pearson": -0.060217,
+      "spearman": -0.070532
+    },
+    "total sulfur dioxide": {
+      "pearson": -0.22567,
+      "spearman": -0.227188
+    },
+    "density": {
+      "pearson": -0.153198,
+      "spearman": -0.171373
+    },
+    "pH": {
+      "pearson": 0.016378,
+      "spearman": 0.022598
+    },
+    "sulphates": {
+      "pearson": 0.366939,
+      "spearman": 0.456985
+    },
+    "alcohol": {
+      "pearson": 0.482833,
+      "spearman": 0.504246
+    }
+  },
+  "high_collinearity_pairs": [],
+  "train_test_mean_shift_pct": {
+    "fixed acidity": 0.052973,
+    "volatile acidity": -0.623475,
+    "citric acid": 2.078843,
+    "residual sugar": 0.710512,
+    "chlorides": -0.670909,
+    "free sulfur dioxide": 1.218177,
+    "total sulfur dioxide": -0.299739,
+    "density": -0.007803,
+    "pH": 0.04996,
+    "sulphates": 0.9291,
+    "alcohol": 0.55793
+  },
+  "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+}

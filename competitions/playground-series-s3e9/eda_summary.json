@@ -1,0 +1,150 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 5407,
+  "n_rows_test": 3605,
+  "n_features": 8,
+  "numeric_features": [
+    "CementComponent",
+    "BlastFurnaceSlag",
+    "FlyAshComponent",
+    "WaterComponent",
+    "SuperplasticizerComponent",
+    "CoarseAggregateComponent",
+    "FineAggregateComponent",
+    "AgeInDays"
+  ],
+  "categorical_features": [],
+  "duplicate_rows_train": 2401,
+  "target": {
+    "name": "Strength",
+    "dtype": "float64",
+    "n_unique": 843,
+    "missing": 0,
+    "mean": 35.452071,
+    "std": 16.401896,
+    "min": 2.33,
+    "p25": 23.64,
+    "median": 33.95,
+    "p75": 45.85,
+    "max": 82.6,
+    "skew": 0.380732,
+    "kurtosis": -0.356449,
+    "is_integer_valued": false,
+    "log_transform_candidate": false
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "CementComponent": {
+      "mean": 299.168189,
+      "std": 105.537682,
+      "min": 102.0,
+      "max": 540.0,
+      "skew": 0.341278,
+      "zeros": 0.0
+    },
+    "BlastFurnaceSlag": {
+      "mean": 58.610579,
+      "std": 83.417801,
+      "min": 0.0,
+      "max": 359.4,
+      "skew": 1.121204,
+      "zeros": 3166.0
+    },
+    "FlyAshComponent": {
+      "mean": 31.872795,
+      "std": 54.605003,
+      "min": 0.0,
+      "max": 200.1,
+      "skew": 1.304692,
+      "zeros": 3927.0
+    },
+    "WaterComponent": {
+      "mean": 185.076235,
+      "std": 18.517583,
+      "min": 121.8,
+      "max": 247.0,
+      "skew": -0.215282,
+      "zeros": 0.0
+    },
+    "SuperplasticizerComponent": {
+      "mean": 4.108441,
+      "std": 5.692296,
+      "min": 0.0,
+      "max": 32.2,
+      "skew": 1.411689,
+      "zeros": 3143.0
+    },
+    "CoarseAggregateComponent": {
+      "mean": 992.000718,
+      "std": 77.14801,
+      "min": 801.0,
+      "max": 1145.0,
+      "skew": -0.081453,
+      "zeros": 0.0
+    },
+    "FineAggregateComponent": {
+      "mean": 771.219974,
+      "std": 78.725253,
+      "min": 594.0,
+      "max": 992.6,
+      "skew": -0.447378,
+      "zeros": 0.0
+    },
+    "AgeInDays": {
+      "mean": 51.751618,
+      "std": 70.006975,
+      "min": 1.0,
+      "max": 365.0,
+      "skew": 2.74687,
+      "zeros": 0.0
+    }
+  },
+  "categorical_stats": {},
+  "target_correlation": {
+    "CementComponent": {
+      "pearson": 0.158,
+      "spearman": 0.160321
+    },
+    "BlastFurnaceSlag": {
+      "pearson": 0.057506,
+      "spearman": 0.091013
+    },
+    "FlyAshComponent": {
+      "pearson": 0.031606,
+      "spearman": 0.036283
+    },
+    "WaterComponent": {
+      "pearson": -0.113678,
+      "spearman": -0.113488
+    },
+    "SuperplasticizerComponent": {
+      "pearson": 0.208249,
+      "spearman": 0.195738
+    },
+    "CoarseAggregateComponent": {
+      "pearson": -0.09841,
+      "spearman": -0.097199
+    },
+    "FineAggregateComponent": {
+      "pearson": -0.0739,
+      "spearman": -0.083597
+    },
+    "AgeInDays": {
+      "pearson": 0.334204,
+      "spearman": 0.604157
+    }
+  },
+  "high_collinearity_pairs": [],
+  "train_test_mean_shift_pct": {
+    "CementComponent": 0.259163,
+    "BlastFurnaceSlag": -4.789759,
+    "FlyAshComponent": 3.000551,
+    "WaterComponent": -0.394653,
+    "SuperplasticizerComponent": 2.088124,
+    "CoarseAggregateComponent": -0.179273,
+    "FineAggregateComponent": 0.455945,
+    "AgeInDays": -5.020558
+  },
+  "validation_hint": "continuous i.i.d. target -> standard KFold (check train/test shift first)"
+}
