@@ -1,237 +1,262 @@
 # 競賽分析報告:playground-series-s3e9
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-03
+> 素材等級:full | 產生日期:2026-07-06
+> 本報告所有數字皆出自 facts.json,經 verify_report.py 驗證。
 
 ## 1. 競賽目的
 
-**What**:本競賽要解決的問題是「Predict concrete compressive strength」——根據混凝土配方
-中各成分的用量(水泥、爐渣、飛灰、水、減水劑、粗細骨材)與養護天數,預測混凝土的抗壓強度
-(`Strength`)。這是一個 regression 任務。
+**What**:依混凝土配方中八種成分用量(水泥、爐渣、飛灰、水、減水劑、粗骨材、細骨材)與
+養護天數(`AgeInDays`)預測混凝土抗壓強度(`Strength`),為連續數值輸出的迴歸問題,即
+經典 Concrete Compressive Strength 資料集的 Kaggle Playground 版本。
 
-**Why**:評估指標為 rmse,以 minimize 為優化方向。RMSE 對誤差取平方後開根號,會放大對「大幅
-偏離」預測的懲罰,這對混凝土抗壓強度預測是合理的選擇——工程上嚴重低估或高估強度的後果(結構
-安全風險、材料浪費)遠比小誤差嚴重,因此比起對離群誤差不敏感的 MAE,RMSE 更能反映此任務中
-「避免大誤差」優先於「平均誤差小」的實務考量。
+**Why**:評估指標為 **RMSE(minimize)**。抗壓強度為工程安全量,嚴重錯估的後果(結構
+風險、材料浪費)遠重於小誤差;RMSE 以原始單位呈現誤差並對大誤差施以平方懲罰,能引導
+模型優先壓制離譜預測,適合此任務。
 
 | 項目 | 值 |
 |------|-----|
 | 競賽 | playground-series-s3e9 |
-| URL | https://www.kaggle.com/competitions/playground-series-s3e9 |
 | 問題型別 | regression |
 | 評估指標 | rmse(minimize) |
 | 目標欄位 | Strength |
-| ID 欄位 | id |
+| 素材等級 | full |
 
-## 2. 流程(how):五大元件
+## 2. 使用工具與環境
 
-### 2.1 資料規格
-
-facts.json 未記錄列數/欄位數(row/column counts),故列數與欄位數寫「無紀錄」。可從
-`experiments[].n_features` 得知特徵數量的演變:baseline(experiment_id 1)使用 8 個原始特徵,
-最佳實驗(experiment_id 8)使用 22 個特徵(8 原始 + 14 工程特徵,與 experiment_id 2 相同
-特徵清單)。
-
-**特別規則**(來源:`competition.special_rules`):
-- 外部資料:不允許(`external_data_allowed: false`)
-- 預訓練模型:不允許(`pretrained_models_allowed: false`)
-- 網路存取:不允許(`internet_access_allowed: false`)
-- 每日提交上限:5 次(`daily_submission_limit: 5`)
-
-`competition.notes` 記載:「Aygun et al. Nature 2026 Kaggle Playground benchmark
-(Season 3 Episode 9).」
-
-本場素材等級為 `full`(非 baseline-only),故 EDA 與特徵工程階段皆已執行(細節見
-STATUS.md,惟本節數字僅取自 facts.json)。
-
-### 2.2 模型規格
-
-最佳實驗(experiment_id 8)是 7 成員加權 blend:「7-way blend: Round-3 pool + CAT_seed2 +
-LGB_tuned_seed3 (seed-bag expansion)」。7 個成員 = experiment_id 7 的 5 成員 pool(orig
-LGB / orig XGB / orig CAT / Optuna 調參 LGB / 調參 LGB 第 2 seed)再加 2 個 seed-bag 成員。
-各成員單模 OOF 分數(來源:`experiments[]` 中 experiment_id 6/7/8 的 `base_models`):
-
-| Model | RMSE | 訓練時間(s) | 來源實驗 |
-|-------|------|--------------|----------|
-| LGB(orig,正則化) | 12.11061 | 6.6 | experiment_id 6 |
-| XGB(orig,正則化) | 12.12086 | 6.6 | experiment_id 6 |
-| CAT(orig) | 12.07459 | 2.7 | experiment_id 6 |
-| LGB_tuned(Optuna) | 12.12074 | 371.6 | experiment_id 6 |
-| LGB_tuned_seed2(seed 1042) | 12.10843 | 4.4 | experiment_id 7 |
-| CAT_seed2(seed 1042) | 12.07852 | 2.7 | experiment_id 8 |
-| LGB_tuned_seed3(seed 2042) | 12.0977 | 6.0 | experiment_id 8 |
-
-**Ensemble 權重**(來源:`best.ensemble.weights`,方法
-`oof_weight_search(dirichlet8000+coord_descent_fine)`):
-
-| Model | 權重 |
-|-------|------|
-| LGB | 0.0 |
-| XGB | 0.0 |
-| CAT | 0.478 |
-| LGB_tuned | 0.0 |
-| LGB_tuned_seed2 | 0.127 |
-| CAT_seed2 | 0.265 |
-| LGB_tuned_seed3 | 0.129 |
-
-Ensemble 後最終分數(來源:`best.score`):**12.070034**。
-
-**選型理由**(敘述,參考 STATUS.md 脈絡):七個成員皆為梯度提升樹,適合小型表格資料。
-CatBoost 的 ordered boosting 正則化機制在本資料集上單模型最強(12.07459),其原 seed 與
-第 2 seed 的合計權重(衍生計算,置於 code block):
-
-```
-CAT + CAT_seed2 權重合計: 0.478 + 0.265 = 0.743
-LGB_tuned_seed2 + LGB_tuned_seed3 權重合計: 0.127 + 0.129 = 0.256
-```
-
-值得注意的是:調參 LGB 的「原 seed」(LGB_tuned,單模 12.12074)與 orig LGB/XGB 權重皆為
-0——本輪增益完全來自 seed bagging(以不同 random seed 重訓同超參模型再平均)的變異數
-縮減,而非調參本身。
-
-### 2.3 訓練規格
-
-**CV 方案**(來源:`best.cv`):
-
-| 欄位 | 值 |
-|------|-----|
-| strategy | 5fold_stratified_strength_decile |
-| seed | 42 |
-| n_splits | 無紀錄(best.cv 未記錄此欄位) |
-
-**Objective 與關鍵超參**:facts.json 的 `best.base_models` 未提供結構化的 `params` 欄位。
-orig 三模型超參記載於 experiment_id 2 的 notes(逐字節錄):
-
-> "Regularized LGB(num_leaves=15,depth5,L1=2/L2=4)/XGB(depth4,L1=2/L2=4) + CatBoost(depth6,l2=6)
-> with 8 engineered features (log_age, water/binder ratios) vs baseline exp#1 (generic untuned
-> blend, RMSE 12.54287, CatBoost 100% weight)."
-
-Optuna 調參 LGB 的超參記載於 experiment_id 6 的 `base_models[3].note`(逐字節錄):
-
-> "Optuna 60-trial full-5fold-CV objective tuned LGB; params={'learning_rate':
-> 0.019795655587585677, 'num_leaves': 11, 'max_depth': 3, 'min_child_samples': 31,
-> 'subsample': 0.6018504151952752, 'colsample_bytree': 0.5006835428888052,
-> 'reg_alpha': 0.1120861378640153, 'reg_lambda': 0.3020804107290036, 'n_estimators': 3000}"
-
-seed-bag 成員與原成員超參完全相同,僅更換 random seed(1042 / 2042;見 experiment_id 7/8
-的 `base_models[].note`)。
-
-**為何用此 CV**:strategy 名稱顯示此為「以 Strength 十分位數分層」的 5-fold
-StratifiedKFold(`5fold_stratified_strength_decile`)。相較於單純 KFold,對迴歸目標分層
-可讓每個 fold 的目標分布更一致,在資料量較小時能降低 fold 間變異——這與 baseline
-(experiment_id 1)僅記錄 `cv.scheme = "5fold"`(未分層)形成對比。
-
-### 2.4 推論程序
-
-**後處理**:`best.postprocess` 未記錄 → 無後處理紀錄。
-
-**Submission 格式**(來源:`best.submission`、`competition.id_column`/`target_column`):
-
-| 欄位 | 值 |
-|------|-----|
-| Submission 檔名 | sub_blend_12.07003_20260703_235120.csv |
-| ID 欄位 | id |
-| 目標欄位 | Strength |
-
-### 2.5 評估指標
-
-**指標定義**:RMSE(Root Mean Squared Error)是預測值與真實值差異平方之平均值,再開根號,
-數值與目標欄位同單位,對大誤差的懲罰重於 MAE。
-
-**分數總表**(來源:`best.*`、各實驗紀錄):
-
-| 項目 | RMSE |
+| 工具 | 用途 |
 |------|------|
-| Baseline blend(experiment_id 1) | 12.54287 |
-| 3-way blend(experiment_id 2,前一輪最佳) | 12.073474 |
-| Phase B Round 1:dup-smoothing(experiment_id 5) | 12.081216 |
-| Phase B Round 2:+Optuna LGB(experiment_id 6) | 12.073474 |
-| Phase B Round 3:+seed-bag 調參 LGB(experiment_id 7) | 12.071429 |
-| **最佳 Ensemble(experiment_id 8,7-way seed-bag)** | **12.070034** |
+| LightGBM / XGBoost / CatBoost | 三個梯度提升樹基模型,構成 exp1–8 加權 blend 主體;seed-bag 變體為 exp7/exp8 的新增成員 |
+| Optuna | exp6 對 LGB 做 TPE 超參搜尋(60 trials,完整 5-fold CV 為目標函式,371.6s) |
+| 自建樹搜尋 harness(v1/v2) | Phase C-2a 單模節點空間搜尋、Phase E-1 ensemble-default 節點空間「復仇戰」;結果為 OOF-only,不進 experiments.json |
+| 5-fold CV 框架(scikit-learn) | 以 `Strength` 十分位分層的 StratifiedKFold,5 折交叉驗證 |
+| uv | Python 套件與虛擬環境管理,所有腳本皆以 `uv run` 執行 |
 
-`facts.missing` 記錄 `["leaderboard"]`,即本場 **未提交至 Kaggle,無 Public/Private LB
-分數**,故無法計算 CV↔LB gap(僅當 leaderboard 存在時才計算,依規格第 2.5 節)。
+本場工具鏈組合邏輯:Claude Code(LLM)負責決策——診斷重複配方列的標籤噪音結構、提出並
+否決假設(交互特徵、重複群組平滑)、決定每輪只改一件事與何時停損;Auto-ML 工具(Optuna、
+樹搜尋 harness)負責系統化執行超參搜尋與成員/權重組合空間探索,兩者分工互補。
 
-以下為 baseline / 前一輪最佳與最佳 CV 分數的改善量(衍生計算,數字皆逐字取自
-facts.json,置於 code block 中):
+## 3. 流程(how):五大元件
+
+### 3.1 資料規格
+
+| 項目 | 值 |
+|------|-----|
+| train 列數 | 5,407 |
+| test 列數 | 3,605 |
+| 原始欄位數 | 8 |
+| 特別規則摘要 | 禁外部資料/禁預訓練模型/禁網路存取;每日提交上限 5 次 |
+
+8 個特徵全為數值型、無類別欄位;train/test 皆無缺失值。目標 `Strength` 近似對稱
+(mean 35.45、median 33.95、skew 0.38),非 log 轉換候選。`AgeInDays` 為最強關聯特徵
+(pearson 0.334、spearman 0.604)且右偏(skew 2.75),支持 log 養護時間類特徵;爐渣、
+飛灰、減水劑為零膨脹欄位(零值列數 3,166 / 3,927 / 3,143),屬配方選用而非缺失。
+
+> **語意澄清(重複列口徑)**:facts.eda 記錄 train 重複列 2,401——此為「特徵完全相同、
+> 但量測 `Strength` 不同」的非首見重複列數(佔比 44.4%,exp5 notes 之 dup_frac 0.4441);
+> STATUS.md 的「約 56% 列屬於某重複群組」是同一結構的含首列口徑,兩者不矛盾。此為量測/
+> 重抽樣噪音而非洩漏,構成本場 CV 分數的不可約噪音上限,並懲罰高容量模型。
+
+train/test 分佈接近(平均值差異最大者為 `AgeInDays` 的 -5.02% 與 `BlastFurnaceSlag` 的
+-4.79%),無 covariate shift 疑慮;facts.eda 無高共線特徵對紀錄。
+
+### 3.2 實驗總表
+
+> **語意澄清(本報告全文適用)**:本場指標為連續 RMSE,無取整/門檻類後處理,「原始 OOF」
+> 即「決策分數」,兩欄恆相等;且全部決策皆以本機 OOF 為準(未提交 Kaggle,見 3.4 節)。
+
+| exp | 階段 | 模型/成員 | 特徵數 | 原始 OOF | 決策分數 | 採納 |
+|-----|------|-----------|--------|----------|----------|------|
+| 1 | Baseline(通用批次) | LGB/XGB/CAT(0/0/1.0) | 8 | 12.54287 | 12.54287 | 基線參照 |
+| 2 | Phase A(正則化+特徵工程) | LGB/XGB/CAT(0.15/0/0.85) | 22 | 12.073474 | 12.073474 | 是,Phase A 最佳 |
+| 3 | 迭代(交互特徵探索) | 同 exp2 成員,+3 交互特徵 | 25 | 12.094826 | 12.094826 | 否,變差後還原 |
+| 4 | 還原確認重跑 | 同 exp2 | 22 | 12.073474 | 12.073474 | 是,逐位元重現 exp2 |
+| 5 | Phase B R1(dup 群組平滑) | LGB/XGB/CAT(0.05/0.1/0.85) | 22 | 12.081216 | 12.081216 | 否,變差後還原 |
+| 6 | Phase B R2(+Optuna LGB) | 4-way(調參 LGB 權重 0) | 22 | 12.073474 | 12.073474 | 持平,成員保留 |
+| 7 | Phase B R3(seed-bag 調參 LGB) | 5-way(CAT 0.773/seed2 0.227) | 22 | 12.071429 | 12.071429 | 是 |
+| 8 | Phase B R4(seed-bag 擴充) | 7-way seed-bag blend | 22 | **12.070034** | **12.070034** | 是,本場最佳 |
+
+**best 成員表(exp8,7-way blend;權重搜尋 dirichlet8000+coord_descent_fine)**
+
+| 成員 | 權重 | solo 分數 | 備註 |
+|------|------|-----------|------|
+| LGB(orig,正則化) | 0.0 | 12.11061 | 權重歸零 |
+| XGB(orig,正則化) | 0.0 | 12.12086 | 權重歸零 |
+| CAT(orig) | 0.478 | 12.07459 | 最強單模,權重最大 |
+| LGB_tuned(Optuna) | 0.0 | 12.12074 | 調參原 seed 權重歸零 |
+| LGB_tuned_seed2 | 0.127 | 12.10843 | 調參 LGB 之 seed 1042 變體 |
+| CAT_seed2 | 0.265 | 12.07852 | CAT 之 seed 1042 變體 |
+| LGB_tuned_seed3 | 0.129 | 12.0977 | 調參 LGB 之 seed 2042 變體 |
+
+選型脈絡:小型噪音資料獎勵正則化而非容量——exp1 未正則化時 LGB(13.2055)/XGB
+(12.98156)過擬合嚴重、權重全數歸零由 CAT 獨拿;exp2 對兩者施加淺深度+強 L1/L2 後
+LGB 才取回 0.15 權重。Phase B 四輪中,去噪(exp5)與調參(exp6)皆未改善,全部增益
+來自 seed bagging 的變異數縮減:調參 LGB 原 seed 權重為 0,其 seed 變體卻合計拿下約
+四分之一權重,CAT 的 seed-bag(exp8)則貢獻單輪最大增益。
+
+### 3.3 訓練規格表
+
+| exp | CV 方案 | folds | seed |
+|-----|---------|-------|------|
+| 1 | 5fold | 5 | 無紀錄 |
+| 2–8 | 5fold_stratified_strength_decile(StratifiedKFold on `Strength` 十分位) | 5 | 42 |
+
+目標為連續值且資料量小、噪音大,對 `Strength` 十分位分層可讓每折目標分佈一致、降低折間
+變異;exp2 起 CV 全程固定,八個實驗分數可直接比較,樹搜尋兩輪亦沿用完全相同的折。
+
+Objective 一律為 RMSE。關鍵超參(節錄自 exp2/exp6 notes):
 
 ```
-12.54287 (baseline blend_score, experiment_id 1)
-- 12.070034 (best score, experiment_id 8)
-= 0.472836
-
-相對改善: 0.472836 / 12.54287 * 100 = 3.769758...%
-
-Phase B 迭代增益:
-12.073474 (experiment_id 2/4, 前一輪最佳)
-- 12.070034 (experiment_id 8)
-= 0.003440
+LGB(手設正則化): num_leaves=15, max_depth=5, reg_alpha(L1)=2, reg_lambda(L2)=4
+XGB(手設正則化): max_depth=4, reg_alpha(L1)=2, reg_lambda(L2)=4
+CAT(手設):      depth=6, l2_leaf_reg=6
+LGB_tuned(Optuna 60-trial): learning_rate≈0.0198, num_leaves=11, max_depth=3,
+    min_child_samples=31, subsample≈0.602, colsample_bytree≈0.501,
+    reg_alpha≈0.112, reg_lambda≈0.302, n_estimators=3000
+seed-bag 成員超參與原成員完全相同,僅換 random seed(1042 / 2042)
 ```
 
-## 3. 實驗軌跡
+### 3.4 推論表
 
-**逐實驗分數表**(來源:`trajectory`):
+| exp | 後處理 | submission 檔 | 已提交 |
+|-----|--------|---------------|--------|
+| 1 | 無後處理紀錄 | sub_generic_12.54287_20260703_120632.csv | 否 |
+| 2 | 無後處理紀錄 | sub_blend_12.07347_20260703_191007.csv | 否 |
+| 3 | 無後處理紀錄 | sub_blend_12.09483_20260703_191047.csv | 否 |
+| 4 | 無後處理紀錄 | sub_blend_12.07347_20260703_191124.csv | 否 |
+| 5 | 無後處理紀錄 | 無紀錄 | 否 |
+| 6 | 無後處理紀錄 | 無紀錄 | 否 |
+| 7 | 無後處理紀錄 | 無紀錄 | 否 |
+| 8 | 無後處理紀錄 | sub_blend_12.07003_20260703_235120.csv | 否 |
 
-| experiment_id | timestamp | score | source_format |
-|---------------|-----------|-------|----------------|
-| 1 | 2026-07-03T12:06:32 | 12.54287 | generic_batch |
-| 2 | 2026-07-03T19:10:07 | 12.073474 | v2 |
-| 3 | 2026-07-03T19:10:47 | 12.094826 | v2 |
-| 4 | 2026-07-03T19:11:24 | 12.073474 | v2 |
-| 5 | 2026-07-03T23:41:35 | 12.081216 | v2 |
-| 6 | 2026-07-03T23:49:50 | 12.073474 | v2 |
-| 7 | 2026-07-03T23:49:55 | 12.071429 | v2 |
-| 8 | 2026-07-03T23:51:20 | 12.070034 | v2 |
+`id_column = id`、`target_column = Strength`。本場無任何後處理紀錄(迴歸原值直接輸出)。
+所有 submission 檔皆為本機產出、未上傳 Kaggle(本次執行無 API 憑證);exp3 之劣化
+submission 檔記錄後已自 submissions/ 刪除(STATUS.md),僅保留最佳與基線檔案。
 
-**突破點敘述**:主要分數躍升發生在 experiment_id 2(timestamp 2026-07-03T19:10:07),
-score 由 baseline 的 12.54287 降至 12.073474。依 `experiments[2].notes`(逐字節錄同第 2.3
-節),此次變動同時改了兩件事:(a) 對 LGB/XGB 加入明確正則化超參數
-(num_leaves=15/depth5/L1=2/L2=4 與 depth4/L1=2/L2=4),(b) 從 8 個原始特徵擴充為 22 個
-工程特徵(含 log_age、water/binder 比值等)。experiment_id 3 是延伸嘗試(加入 3 個
-interaction 特徵,`n_features` 從 22 增至 25),score 反而變差(12.094826),隨後
-experiment_id 4 以相同 22 特徵重新執行,score 完全重現為 12.073474。
+### 3.5 評估指標 / 排行榜
 
-**Phase B 自我改進迭代(experiment_id 5–8)**:每輪僅改一件事,fold/seed/特徵不變:
-- Round 1(experiment_id 5):fold-safe 重複列群組目標平滑(訓練目標改為訓練 fold 內同
-  配方群組的平均 Strength;驗證目標與指標不動)→ 12.081216,劣於 12.073474,棄用。依
-  notes:GBDT 平方損失本就隱含以群組均值擬合重複列,顯式平滑無新資訊。
-- Round 2(experiment_id 6):Optuna(TPE 60 trials,完整 5-fold CV 為目標函式,實際
-  371.6s)調參 LGB 加入 pool 為第 4 成員 → 12.073474(持平;調參 LGB 單模 12.12074 劣於
-  orig LGB 12.11061,權重搜尋給 0)。
-- Round 3(experiment_id 7):調參 LGB 以第 2 個 seed(1042)重訓、加為第 5 成員 →
-  **12.071429**(改善;權重 CAT 0.773 / LGB_tuned_seed2 0.227)。
-- Round 4(experiment_id 8):seed-bag 權重最大的 CatBoost(seed 1042)+ 第 3 個調參 LGB
-  seed(2042),7-way 權重搜尋 → **12.070034**(最終最佳)。
+指標定義:RMSE = 預測誤差平方平均之平方根,單位與 `Strength` 相同,對大誤差懲罰重於 MAE。
 
-整個 Phase B 的增益(第 2.5 節 code block 中的 12.073474 − 12.070034 衍生計算)完全來自
-seed bagging,調參與去噪(dup-smoothing)本身皆未直接貢獻——與 STATUS.md 的標籤噪音
-天花板診斷一致:分數已貼近噪音上限時,對獨立 seed 的模型取平均是僅存的「免費」改善方向。
+| 項目 | OOF RMSE |
+|------|----------|
+| LGB(exp2 成員,正則化) | 12.11061 |
+| XGB(exp2 成員,正則化) | 12.12086 |
+| CAT(exp2 成員) | 12.07459 |
+| Ensemble(exp2,Phase A 最佳) | 12.073474 |
+| Ensemble(exp8,本場最佳) | **12.070034** |
+| Public / Private LB | 無紀錄(未提交) |
 
-`facts.unparsed` 為空陣列,無「無法解析之紀錄」。
+本場無排行榜表(leaderboard 為 null、列於 facts.missing),CV↔LB gap 無法計算。全場
+唯一分數錨點為同一固定 CV 下的 OOF RMSE。整體與 Phase B 改善量:
 
-## 4. 重現指令
+```
+exp1 → exp8:12.54287 − 12.070034 = 0.472836,相對改善 0.472836 / 12.54287 = 3.7698%
+Phase B 增益:12.073474(exp2/4)− 12.070034(exp8)= 0.003440
+```
 
-以下命令序列參考 STATUS.md 的 Reproduce 節,並依 `competitions/playground-series-s3e9/scripts/`
-實際檔名組成。執行目錄為專案根目錄,需先安裝 `uv`。
+## 4. 實驗軌跡
+
+| exp | 時間 | 決策分數 | 階段 | 一句話摘要 |
+|-----|------|----------|------|------------|
+| 1 | 2026-07-03T12:06:32 | 12.54287 | Baseline(通用批次) | 8 原始特徵未調參 blend,LGB/XGB 過擬合權重歸零 |
+| 2 | 2026-07-03T19:10:07 | 12.073474 | Phase A | 正則化+22 工程特徵,全場最大單筆躍升 |
+| 3 | 2026-07-03T19:10:47 | 12.094826 | 迭代探索 | 加入 3 個交互特徵反而變差,還原 |
+| 4 | 2026-07-03T19:11:24 | 12.073474 | 還原確認 | 還原後重跑,逐位元重現 exp2,確認決定論 |
+| 5 | 2026-07-03T23:41:35 | 12.081216 | Phase B R1 | 重複群組目標平滑無效,還原 |
+| 6 | 2026-07-03T23:49:50 | 12.073474 | Phase B R2 | Optuna 調參 LGB 入 pool,權重 0 持平 |
+| 7 | 2026-07-03T23:49:55 | 12.071429 | Phase B R3 | seed-bag 調參 LGB 為第 5 成員,改善 |
+| 8 | 2026-07-03T23:51:20 | **12.070034** | Phase B R4 | seed-bag CAT + 第 3 個調參 LGB seed,7-way 本場最佳 |
+
+- **突破點 1(exp1→exp2)**:同時施加明確正則化(淺深度+L1/L2)與 22 個工程特徵
+  (log_age、water/binder 比值等),12.54287→12.073474,佔全場改善的絕大部分。
+- **突破點 2(exp3/exp5 的負面結果)**:交互特徵(樹模型本可自行學得,徒增過擬合面)與
+  重複群組平滑(平方損失本就隱含擬合群組均值)先後失敗,確立「標籤噪音上限」診斷——
+  正確的診斷不保證顯式修正有效。
+- **突破點 3(exp6→exp7→exp8)**:Phase B 全部增益來自 seed bagging(−0.00204、
+  −0.00140,報酬遞減);在噪音上限處,對獨立 seed 模型取平均是僅存的「免費」方向。
+
+facts.unparsed 為空陣列,無法解析之紀錄:無。
+
+## 5. 效能對照:四層消融
+
+| 層級 | 配置 | 分數 | 相對改善 |
+|------|------|------|----------|
+| tier1 | 基線(Claude Code 直接執行,未引入 skill;exp1 通用批次 blend) | 12.54287 | —(基線) |
+| tier2 | + kaggle-agent skill 六階段流程(exp2 Phase A) | 12.073474 | 見下方算式 |
+| tier3 | + self-improvement 線性迭代(exp8,Phase B 四輪終點) | **12.070034** | 見下方算式 |
+| tier4 | + 樹搜尋(無樹搜尋節點超越線性最佳,與 tier3 同為 exp8) | **12.070034** | 0%(樹搜尋追平,未超越) |
+
+```
+tier1→tier2: 12.54287 − 12.073474 = 0.469396,相對改善 0.469396 / 12.54287 = 3.7423%
+tier2→tier3: 12.073474 − 12.070034 = 0.003440,相對改善 0.003440 / 12.073474 = 0.0285%
+tier3→tier4: 12.070034 − 12.070034 = 0,相對改善 0%(追平,依協定誠實標記)
+```
+
+本場由導入報告功能後之版本執行,分數自 tier2 起未低於前一層——符合計畫書目標三(效能不退步)。
+
+> **誠實但書(tier4 口徑)**:tier4 之 12.070034 即 exp8 本身——docs/benchmark_facts.json
+> 註記「no tree-search entry beat the linear best — tie with tier3」。實際樹搜尋跑了兩輪
+> (STATUS.md,OOF-only、不產生 submission):v1(Phase C-2a,單模節點空間,20 節點)
+> 最佳僅 12.07459(即已知的 CAT 單模),輸給線性最佳;v2(Phase E-1「復仇戰」,
+> ensemble-default 節點空間,26 節點)以 13-way blend(node #13)在第 14 個評估節點
+> 精確追平 12.070034(至小數第 6 位),其後所有變異僅追平或變差。兩條獨立路徑收斂於
+> 同一分數,與第 3.1 節的標籤噪音上限診斷一致——本場為噪音上限場次。
+
+## 6. 總結
+
+本場資料小而噪:5,407 列、8 個數值配方特徵,`AgeInDays` 為對數線性主訊號;最關鍵的
+結構性事實是 2,401 列非首見重複配方列帶有不同量測 `Strength`——不可約標籤噪音直接
+劃定 CV 分數上限,並使本場全程獎勵正則化而懲罰容量。
+
+關鍵決策有三:其一,exp2 起固定 `Strength` 十分位分層的 5-fold CV(seed 42),使八個
+實驗與兩輪樹搜尋分數全部可直接比較;其二,exp1 的權重歸零異常被正確歸因為過擬合,
+以「正則化+特徵工程」一次修正,成為全場最大躍升;其三,反思紀律——交互特徵(exp3)
+與重複群組平滑(exp5)變差即還原,exp4 並以逐位元重現確認管線決定論。
+
+增益來源逐層遞減且歸屬清楚:tier1→tier2 靠正則化與特徵工程(12.54287→12.073474);
+tier2→tier3 靠 Phase B 線性迭代,且全部來自 seed bagging(12.070034),調參與去噪
+皆未直接貢獻;tier3→tier4 為 0%——樹搜尋 v1 因單模節點空間結構性搆不到 blend 而落敗,
+v2 擴充 ensemble-default 節點空間後精確追平線性最佳,但 26 節點內無任何變異超越之。
+
+可信度方面須誠實:本場全程未提交 Kaggle,無 LB 外部錨點,所有結論建立在同一固定 CV 的
+OOF 之上。但「線性迭代與 v2 樹搜尋兩條獨立方法收斂於同一分數、且去噪/調參/交互特徵
+全數失敗」共同支持噪音上限解讀:12.070034 很可能已貼近本資料可達的下限,而非搜尋不足。
+
+**重現本實驗的最短路徑**:見第 7 節。
+
+## 7. 重現指令
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle
 
-# 1. EDA
+# Stage 1:EDA
 uv run python3 competitions/playground-series-s3e9/scripts/eda.py
 
-# 2. 特徵工程 + 訓練 + 5-fold CV + OOF weight-search blend(3-way,exp #2)
-#    (features.py 由 train.py 匯入呼叫,無需獨立執行步驟)
+# Phase A:特徵工程+建模(LGB/XGB/CAT,5-fold 十分位分層 CV,OOF 權重搜尋 blend)→ exp2
+#(features.py 由 train.py 匯入呼叫,無需獨立執行)
 uv run python3 competitions/playground-series-s3e9/scripts/train.py
 
-# 3. Phase B 自我改進迭代(依序執行;round 4 讀取 round 2/3 產生的 npz checkpoint)
-uv run python3 competitions/playground-series-s3e9/scripts/train_dup_smooth.py      # round 1(負面結果)
-uv run python3 competitions/playground-series-s3e9/scripts/train_optuna_pool.py     # rounds 2+3
-uv run python3 competitions/playground-series-s3e9/scripts/train_round4_seedbag.py  # round 4 → 最佳 submission
+# Phase B 自我改進迭代(依序執行;round 4 讀取 round 2/3 產生的 npz checkpoint)
+uv run python3 competitions/playground-series-s3e9/scripts/train_dup_smooth.py      # R1 → exp5(負面結果)
+uv run python3 competitions/playground-series-s3e9/scripts/train_optuna_pool.py     # R2+R3 → exp6/exp7
+uv run python3 competitions/playground-series-s3e9/scripts/train_round4_seedbag.py  # R4 → exp8 最佳 + submission
 
-# 4. 提交至 Kaggle(本次執行未提交;需要有效 KAGGLE_API_TOKEN 憑證)
+# 樹搜尋(OOF-only,不產生 submission;樹狀態各自持久化,可中斷續跑)
+uv run python3 tree_search/run_s3e9.py       # v1 Phase C-2a → experiments_tree.json
+uv run python3 tree_search/run_s3e9_v2.py    # v2 Phase E-1 → experiments_tree_v2.json
+
+# 報告產生(本檔)
+uv run python3 .claude/skills/kaggle-report/assets/collect.py playground-series-s3e9
+uv run python3 .claude/skills/kaggle-report/assets/verify_report.py \
+    competitions/playground-series-s3e9/REPORT.md competitions/playground-series-s3e9/facts.json
+bash .claude/skills/kaggle-report/assets/md2pdf.sh competitions/playground-series-s3e9/REPORT.md \
+    competitions/playground-series-s3e9/s3e9_REPORT.pdf
+
+# 提交至 Kaggle(本場未執行;需先設定有效之 KAGGLE_API_TOKEN)
 export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')
 uv run kaggle competitions submit -c playground-series-s3e9 \
   -f competitions/playground-series-s3e9/submissions/sub_blend_12.07003_20260703_235120.csv \
-  -m "<msg>"
+  -m "7-way seed-bag blend, OOF RMSE 12.070034"
 ```
+
+執行目錄為專案根目錄 `/home/tjyen/ai_agents/kaggle`;所有 Python 執行皆透過 `uv run`。

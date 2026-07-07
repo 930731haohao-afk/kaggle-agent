@@ -1,286 +1,312 @@
 # 競賽分析報告:playground-series-s3e19
 
 > 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-03(2026-07-04 更新:Phase B 自我改進迭代,實驗 #4–#7;
-> 2026-07-04 再更新:Phase G-1b 樹搜尋成果入帳,實驗 #8)
+> 素材等級:full | 產生日期:2026-07-06
+> 本報告所有數字皆出自 facts.json,經 verify_report.py 驗證。
 
 ## 1. 競賽目的
 
-**What(解什麼問題)**:本競賽為 Kaggle Playground Series Season 3 Episode 19(Aygun et al. Nature 2026 Kaggle Playground benchmark),任務是「Forecast mini-course sales」——依日期(date)、國家(country)、店面(store)、產品(product)四個維度,預測每日課程銷量 `num_sold`。訓練資料涵蓋 2017 至 2021 年,測試集為整個 2022 年,屬於典型的零售銷售時間序列外推問題。
+**What**:Playground Series S3E19「Forecast mini-course sales」——依日期(date)、國家
+(country)、店面(store)、產品(product)四個維度,預測每日課程銷量 `num_sold`。
+訓練資料為 2017–2021 年,測試集為整個 2022 年,是典型的多序列銷售時間序列外推問題。
 
-**Why(為何重要、指標為何合理)**:銷售預測是零售與電商的核心營運問題,直接影響備貨與行銷決策。評估指標為 **SMAPE**(symmetric mean absolute percentage error,minimize):各序列的銷量規模差異大(不同國家/店面/產品的量級不同),絕對誤差類指標會被大量級序列主導;SMAPE 以「真值與預測值的平均」作分母,將誤差正規化為相對比例,使大小序列的預測品質獲得同等權重,對此類多序列、多量級的銷售預測是合理選擇。
+**Why**:銷售預測直接影響備貨與行銷決策。評估指標為 **SMAPE(minimize)**:各序列量級
+差異大(不同國家/店面/產品),絕對誤差類指標會被大量級序列主導;SMAPE 以真值與預測的
+平均作分母,把誤差正規化為相對比例,讓大小序列的預測品質獲得同等權重,適合此類任務。
 
 | 項目 | 值 |
 |------|-----|
 | 競賽 | playground-series-s3e19 |
-| URL | https://www.kaggle.com/competitions/playground-series-s3e19 |
 | 問題型別 | regression |
 | 評估指標 | smape(minimize) |
 | 目標欄位 | num_sold |
-| ID 欄位 | id |
+| 素材等級 | full |
 
-## 2. 流程(how):五大元件
+## 2. 使用工具與環境
 
-### 2.1 資料規格
+| 工具 | 用途 |
+|------|------|
+| LightGBM / XGBoost / CatBoost | 三個梯度提升樹基模型;LGB 為全程主力,XGB 於 exp 4 起因權重歸零而移除 |
+| Optuna | Phase B 超參搜尋(TPE,fold-5 代理目標):exp 7 調出更淺、更強正則的 LGB |
+| 自建樹搜尋 harness(v2) | Phase D-5 搜尋 seed/特徵子集/混合權重組合空間,於 node #17 找到 exp 8 的 10-way blend |
+| 時序 CV 框架(scikit-learn) | TimeSeriesSplit 5 折(於排序後的唯一日期上切分)為決策量尺;另以 shuffled KFold 執行一次對照診斷 |
+| uv | Python 套件與虛擬環境管理,所有腳本皆以 `uv run` 執行 |
 
-- **檔案**:train.csv、test.csv、sample_submission.csv。
-- **列數**:facts.json 無紀錄(依 STATUS.md 敘述脈絡:訓練集為 2017-01-01 至 2021-12-31 的每日資料,測試集為 2022 全年;精確列數此處不引數字)。
-- **欄位**:原始特徵為 date 加三個類別欄(country、store、product),目標為整數 `num_sold`;無缺失值、無重複列。基線實驗(#1)使用 8 個通用特徵,本場工程後為 20 個特徵(清單見第 2.3 節)。
-- **序列結構**(EDA `scripts/eda.py` 執行結果,定性描述):5 國 × 3 店 × 5 產品共 75 條完整日序列;店面與產品占年度總量的比例逐年幾乎恆定,國家占比則逐年緩慢漂移;週末(尤其週日)與 12 月/1 月有明顯季節性抬升,1 月 1 日有單日尖峰;目標右偏、log1p 後接近對稱;年度總量非單調(2020 年下滑、2021 年回升)。
+本場工具鏈組合邏輯:Claude Code(LLM)負責決策——選擇誠實的時序 CV、設計 Reflexion
+診斷分離「特徵 vs CV 方案」效應、否決比例分解成員、決定調參代理折與何時停損;Auto-ML
+工具(Optuna、樹搜尋 harness)負責系統化執行超參搜尋與組合空間探索,兩者分工互補。
 
-**特別規則**:
+## 3. 流程(how):五大元件
 
-| 規則 | 值 |
+### 3.1 資料規格
+
+| 項目 | 值 |
 |------|-----|
-| 外部資料 | 不允許 |
-| 預訓練模型 | 不允許 |
-| 網路存取 | 不允許 |
-| 每日提交上限 | 5 |
+| train 列數 | 136,950 |
+| test 列數 | 27,375 |
+| 原始欄位數 | 4(date/country/store/product;另有 id 與目標欄) |
+| 特別規則摘要 | 禁外部資料/禁預訓練模型/禁網路存取;每日提交上限 5 次 |
 
-### 2.2 模型規格
+目標 `num_sold` 為整數(mean 165.522636、median 98、max 1380),右偏(skew 1.747438),
+為 log 轉換候選——全程以 log1p 目標訓練、expm1 反轉。train/test 皆無缺失值、無重複列;
+date 有 1,826 個唯一日期,test 的 2022 年日期**全部未在 train 出現**,facts.eda 的
+validation_hint 亦提示應採時間切分驗證以避免洩漏。
 
-本場共八筆實驗;**facts.json 的 best(分數最佳)為實驗 #3(診斷用 KFold 重跑),但那是內插式 CV 的樂觀量尺,不可與時間序實驗直接比較**。在誠實的 TimeSeriesSplit 量尺下,**實驗 #8(Phase G-1b,樹搜尋 v2,blend SMAPE 9.75707)** 現為新的最佳,勝過先前的線性迭代終點實驗 #7(10.019463);但實驗 #8 是 OOF-only 的樹搜尋產物,**未產生提交檔、未提交至 Kaggle**,故「現行最佳提交」仍是實驗 #7 對應的 submission 檔(見第 2.4 節)。兩種 CV 方案(TimeSeriesSplit vs KFold)的分數不可跨方案比較(詳見第 2.3、3 節)。
+EDA(`scripts/eda.py`)關鍵定性發現:5 國 × 3 店 × 5 產品共 75 條完整日序列;店面與
+產品占年度總量的比例逐年幾乎恆定,國家占比則逐年漂移(外推最難的部分);週末與 12 月/
+1 月有明顯季節抬升、1 月 1 日單日尖峰;年度總量非單調(2020 下滑、2021 回升),無可靠
+線性趨勢。
 
-#### 實驗 #2 — 提交所用(TimeSeriesSplit 5-fold)
+### 3.2 實驗總表
 
-| Base model | OOF SMAPE |
-|------------|-----------|
-| LightGBM | 10.17758 |
-| XGBoost | 10.46 |
-| CatBoost | 10.73064 |
+> **語意澄清(本報告全文適用)**:本場同時存在兩種 CV 方案——(時序)= TimeSeriesSplit
+> 5 折(每折驗證區塊嚴格晚於訓練窗,模擬 train 2017–21 → test 2022 的外推缺口)與
+> (隨機)= shuffled KFold 5 折(內插式,對本任務系統性樂觀)。**兩種方案的分數不可互相
+> 比較**;所有 keep/reject 決策一律以(時序)分數為準。SMAPE 無取整/門檻類後處理,故
+> 各實驗「原始 OOF」即「決策分數」,兩欄同值。
 
-Ensemble:OOF 加權平均網格搜尋(grid_step 0.1),最佳權重 **LGB 0.9 / XGB 0.0 / CAT 0.1**,blend SMAPE **10.175397**。
+| exp | 階段 | 模型/成員 | 特徵數 | 原始 OOF | 決策分數 | 採納 |
+|-----|------|-----------|--------|----------|----------|------|
+| 1 | Baseline(通用批次) | LGB/XGB/CAT(0.7/0.0/0.3) | 8 | 5.31891(隨機) | 5.31891(隨機) | 基線參照;與(時序)各實驗不可比 |
+| 2 | Phase A(skill 六階段) | LGB/XGB/CAT(0.9/0.0/0.1) | 20 | 10.175397(時序) | 10.175397(時序) | 是,Phase A 最佳 |
+| 3 | Reflexion 診斷 | LGB/XGB/CAT(0.4/0.2/0.4) | 20 | 4.281421(隨機) | 4.281421(隨機) | 否,僅診斷用,不入決策 |
+| 4 | Phase B R1 | LGB/CAT/RatioDecomp(0.95/0.05/0.0) | 20 | 10.17489(時序) | 10.17489(時序) | RD 成員棄用(權重 0;微幅增益僅來自較細權重網格) |
+| 5 | Phase B R2 | LGB seed 42/2024 + CAT(0.65/0.3/0.05) | 20 | 10.166045(時序) | 10.166045(時序) | 是 |
+| 6 | Phase B R3 | LGB×3 seeds + CAT×2 seeds(5-way) | 20 | 10.157212(時序) | 10.157212(時序) | 是 |
+| 7 | Phase B R4(線性終點) | 6-way + Optuna 調參 LGB(權重 0.5) | 20 | 10.019463(時序) | 10.019463(時序) | 是,線性迭代最終;現行最佳提交檔 |
+| 8 | Phase D-5 樹搜尋(best) | 10-way blend + auto_scale ×1.02(node #17) | 20(池內含特徵子集探針) | **9.75707**(時序) | **9.75707**(時序) | 是,本場誠實口徑最佳(OOF-only) |
 
-#### 實驗 #3 — facts.best(診斷用,shuffled KFold,未產生提交檔)
+**best 成員表(exp 8,dirichlet 權重搜尋 + auto_scale 全域乘數 1.02)**
 
-| Base model | OOF SMAPE |
-|------------|-----------|
-| LightGBM | 4.31618 |
-| XGBoost | 4.33201 |
-| CatBoost | 4.3239 |
+| 成員 | 權重 | solo 分數 | 備註 |
+|------|------|-----------|------|
+| SEEDBAG_TUNED_S3000 | 0.2559 | 9.990227 | 調參 LGB 之 seed 3000 變體 |
+| SEEDBAG_TUNED_S2024 | 0.2448 | 9.974778 | 調參 LGB 之 seed 2024 變體;solo 即勝過 exp 7 全 blend |
+| LGB_S7 | 0.1989 | 10.19448 | 手設 LGB,seed 7 |
+| CALSUBSET | 0.1781 | 10.137705 | 刪 weekofyear 等冗餘欄之特徵子集探針 |
+| DEEPLGB | 0.0746 | 10.347073 | 刻意多樣化之深/輕正則 LGB;solo 弱但有貢獻 |
+| LGB_S42 | 0.0238 | 10.177577 | 手設 LGB,seed 42 |
+| LGB_S2024 | 0.0115 | 10.210617 | 手設 LGB,seed 2024 |
+| LGB_TUNED_ROOT | 0.0089 | 10.148325 | 搜尋根節點 = exp 7 之 Optuna 調參 LGB |
+| CAT_S2024 | 0.0032 | 10.983835 | 手設 CatBoost,seed 2024 |
+| CAT_S42 | 0.0003 | 10.730642 | 手設 CatBoost,seed 42 |
 
-Ensemble:同樣的權重網格搜尋,最佳權重 **LGB 0.4 / XGB 0.2 / CAT 0.4**,blend SMAPE **4.281421**。
+選型脈絡:三種梯度提升樹是中型表格資料的標準組合,皆原生支援類別特徵。外推情境下
+LGB 明顯領先,XGB 兩度被權重搜尋歸零後移除;exp 4 的結構式比例分解成員(solo 14.75038)
+也被歸零——GBDT 的原生類別分裂已學走佔比結構,真正瓶頸(總量一年外推)對所有方法一視
+同仁。exp 8 的兩個決定性槓桿:對調參 LGB 做 seed bagging(調參目標是 fold-5 代理而非
+全 OOF,留有真實 seed 變異可平均消除),與修正時序 OOF 系統性偏低約 2% 的全域 ×1.02
+乘數(每折驗證區塊皆晚於訓練窗、序列成長至 2021,此偏差結構上與真實 2022 缺口同型)。
 
-**選型理由**:LGB/XGB/CatBoost 三種梯度提升樹是中型表格資料的標準組合,皆原生支援類別特徵並可用早停控制訓練成本。外推情境(實驗 #2)下 LGB 明顯領先、XGB 權重被搜到 0——與基線實驗 #1(權重 LGB 0.7 / XGB 0.0 / CAT 0.3)的型態一致;內插情境(實驗 #3)三模型幾乎同分,blend 分散權重。真實測試集(2022 年)為外推情境,故 Phase B 以降的所有決策皆以 TimeSeriesSplit 分數為準。
+> **誠實但書(exp 8 與 facts.best;全文其他引用處不再重複)**:
+> 1. facts.json 的 `best` 欄位以分數最小選出,落在 exp 3(4.281421)——那是(隨機)
+>    診斷量尺的產物,不可作為本場最佳;誠實口徑((時序))的最佳為 exp 8。
+> 2. exp 8 為 OOF-only 樹搜尋結果:未產生 test 預測、無 submission 檔、未提交 Kaggle;
+>    「現行最佳提交檔」屬 exp 7(見 3.4 節)。
+> 3. **9.75707 帶雙重但書**:(a)與 exp 2–7 相同,fold 5 既是 Optuna 調參目標又佔
+>    OOF 的 1/5,分數含 fold-5 double-dip 樂觀成分;(b)exp 8 額外的 scale 乘數與
+>    seed 挑選皆直接對 OOF 擬合(無巢狀驗證)。各為 1 至數個參數、擬合於 114,000 列
+>    OOF,單項過擬風險低,但真實可期望的 2022 SMAPE 應解讀為「明顯低於 10.02」,
+>    而非字面上的 9.76。
 
-#### Phase B 自我改進迭代(實驗 #4–#7,皆 TimeSeriesSplit 5-fold)
+### 3.3 訓練規格表
 
-**實驗 #4 — 比例分解成員(棄用)**:新增「每日總量調和線性迴歸 × country 佔比線性趨勢外推(歸一化)× 國內店/產品固定佔比」的結構式成員(RatioDecomp),與 LGB、CAT 三方權重搜尋(XGB 因兩度權重 0 而移除)。
+| exp | CV 方案 | folds | seed |
+|-----|---------|-------|------|
+| 1 | 5fold(隨機) | 5 | 無紀錄 |
+| 2 | TimeSeriesSplit-5fold-on-unique-dates | 5 | 無紀錄 |
+| 3 | KFold-5fold-shuffled-seed42 | 5 | 無紀錄(方案名含 seed42) |
+| 4–7 | TimeSeriesSplit-5fold-on-unique-dates(與 exp 2 同折) | 5 | 無紀錄 |
+| 8 | TimeSeriesSplit-5fold-on-unique-dates(逐位驗證與 exp 2–7 同折) | 5 | 無紀錄 |
 
-| Base model | OOF SMAPE |
-|------------|-----------|
-| LightGBM | 10.17758 |
-| CatBoost | 10.73064 |
-| RatioDecomp | 14.75038 |
+**為何用此 CV**:測試期(2022)完全落在訓練期之後、零日期重疊,模型實際面對「外推到
+未見年份」;隨機 KFold 讓驗證日夾在已見季節循環之間,對本任務系統性樂觀。故主軌跡在
+排序後的唯一日期上做 TimeSeriesSplit,每折以擴張窗訓練、驗證嚴格較晚的日期區塊。
+exp 3 刻意改回與基線同型態的隨機 KFold,僅作為特徵集有效性的對照診斷,不用於選模。
 
-權重搜尋(grid_step 0.05)結果 **LGB 0.95 / CAT 0.05 / RD 0.0**,blend 10.17489——RD 權重歸零,增益僅來自更細的權重網格。結論:結構信號在此輸給 GBDT(詳見第 3 節)。
-
-**實驗 #5 — seed bagging**:LGB 加第二 seed(2024)。LGB_s42 10.17758 / LGB_s2024 10.21062 / CAT_s42 10.73064;權重 **0.65 / 0.3 / 0.05**,blend **10.166045**。
-
-**實驗 #6 — 擴充 seed bagging**:再加 LGB seed 7 與 CAT seed 2024。LGB_s7 10.19446 / CAT_s2024 10.98383;五方權重 **LGB_s42 0.4 / LGB_s2024 0.2 / LGB_s7 0.3 / CAT_s42 0.1 / CAT_s2024 0.0**,blend **10.157212**。
-
-**實驗 #7 — Optuna fold-5 代理調參 LGB(線性迭代終點)**:以 TimeSeriesSplit 最後一折(訓練窗最大、最接近真實 2022 外推情境)為 Optuna 目標(TPE、40 trials),調參版 LGB solo OOF **10.14833**(最佳單模),依「加入池不替換」原則進六方權重搜尋:**LGB_s42 0.0 / LGB_s2024 0.1 / LGB_s7 0.4 / CAT_s42 0.0 / CAT_s2024 0.0 / LGB_tuned 0.5**,blend **10.019463**。誠實註記:fold 5 既是調參目標又佔 OOF 的 1/5,此分數含部分樂觀成分(方向性增益仍真實,未被調參的 folds 2–3 上調參版亦小勝原版)。
-
-#### 2.2c 樹搜尋最佳(best under TimeSeriesSplit,實驗 #8)——本次更新(Phase G-1b)新增
-
-Phase D-5(harness v2,2026-07-04)樹搜尋在實驗 #7 的相同 20-特徵集上另闢節點空間,於
-`experiments_tree.json` 的 node #17(22 個評估節點:13 solo/9 blend,0 失敗,總 wall
-321.0s;此節點於第 18/22 次評估找到,node wall_s=21.8s)找到 SMAPE 更低的 10-way blend
-(best.base_models):
-
-| 模型 | OOF SMAPE | 權重 |
-|------|-----------|------|
-| LGB_TUNED_ROOT | 10.148325 | 0.0089 |
-| LGB_S42 | 10.177577 | 0.0238 |
-| LGB_S2024 | 10.210617 | 0.0115 |
-| LGB_S7 | 10.19448 | 0.1989 |
-| CAT_S42 | 10.730642 | 0.0003 |
-| CAT_S2024 | 10.983835 | 0.0032 |
-| SEEDBAG_TUNED_S2024 | 9.974778 | 0.2448 |
-| DEEPLGB | 10.347073 | 0.0746 |
-| CALSUBSET | 10.137705 | 0.1781 |
-| SEEDBAG_TUNED_S3000 | 9.990227 | 0.2559 |
-
-**Ensemble**(best.ensemble):dirichlet 權重搜尋 + `auto_scale` 全域乘數(scale_used =
-1.02,在 metric_fn 內部對 OOF 直接套用,而非僅在 submission 階段套用),score = 9.75707。
-較實驗 #7 改善 -0.262393(約 -2.6% 相對改善,詳細計算見第 2.5 節程式區塊)——是目前為止所有已跑樹搜尋競賽中相對margin
-最大的一場。
-
-**兩個關鍵槓桿(best.notes)**:(1) 對 Optuna 調參後的 LGB 本身做 seed bagging
-(SEEDBAG_TUNED_S2024,solo 9.974778)——STATUS.md 明確列為「未試」且原本擔心可能中性
-(依 s3e5 對「直接調參目標」做 seed bagging 可能無效的前例),但因本場調參目標是 fold-5
-代理(而非全 OOF),仍留有真實 seed 變異可供平均消除,結果單一 solo 就打敗整個線性 6-way
-blend;(2) 全域 ×1.02 的 OOF-fitted 乘數(auto_scale),修正 TimeSeriesSplit OOF 系統性
-偏低約 2%(每折驗證區塊皆晚於其訓練窗、序列持續成長至 2021 年)——本輪單筆最大增益
-(-0.168,發生於 8-way 層的 node #15)。
-
-> **誠實警語(逐字引用 STATUS.md〈Appendix: Phase D-5 tree-search v2 sweep — the
-> TIME-SERIES case〉)**:「like the linear 10.01946, the 9.75707 carries fold-5
-> double-dip optimism, PLUS the scale parameter and the seed selection are
-> OOF-fitted. All are 1-to-few-parameter fits on 114k rows (low overfit risk
-> individually), but the true expected 2022 SMAPE is best read as "meaningfully
-> below 10.02", not literally 9.76.」完整節點鏈、TimeSeriesSplit 折重現驗證、與
-> backtrack/dedup 記錄見 `competitions/playground-series-s3e19/STATUS.md` 同一 Appendix。
->
-> **重要澄清**:best.notes 明確記載這是 **OOF-only 搜尋結果——未產生任何 test 預測,亦
-> 未提交至 Kaggle**(facts.json 本筆無 submission 欄位)。本場的「現行最佳提交」仍是實驗
-> #7 對應的 submission 檔(見第 2.4 節)。
-
-### 2.3 訓練規格
-
-| 實驗 | CV 方案 | n_splits | seed |
-|------|---------|----------|------|
-| #2 | TimeSeriesSplit-5fold-on-unique-dates | 5 | 無紀錄 |
-| #3(診斷) | KFold-5fold-shuffled-seed42 | 5 | 無紀錄(方案字串內含 seed42) |
-| #4–#7(Phase B) | TimeSeriesSplit-5fold-on-unique-dates(與 #2 同折) | 5 | 無紀錄 |
-| #8(樹搜尋,Phase G-1b) | TimeSeriesSplit-5fold-on-unique-dates(與 #2/#4–#7 同折) | 5 | 無紀錄 |
-
-**Objective 與關鍵超參**(實驗 #2 紀錄):目標經 log1p 轉換後以迴歸目標訓練,預測以 expm1 反轉後計算 SMAPE。
-
-| 模型 | 關鍵超參 |
-|------|----------|
-| LightGBM | n_estimators 2000、learning_rate 0.03、num_leaves 63、min_child_samples 20、subsample 0.9、colsample_bytree 0.8、reg_lambda 1.0 |
-| XGBoost | n_estimators 2000、learning_rate 0.03、max_depth 7、subsample 0.9、colsample_bytree 0.8、reg_lambda 1.0 |
-| CatBoost | iterations 2000、learning_rate 0.05、depth 8、l2_leaf_reg 3.0 |
-
-三模型皆對各 fold 的驗證區塊做早停。
-
-**為何用此 CV**:測試期(2022)完全落在訓練期(2017–2021)之後、零重疊,模型實際面對的是「外推到未見年份」;隨機 KFold 會讓驗證日夾在已見的季節循環之間,對此任務系統性樂觀。因此主實驗(#2)採 TimeSeriesSplit 於排序後的唯一日期上切分,每折以擴張窗訓練、驗證嚴格較晚的日期區塊,忠實模擬 train→test 的時間缺口。實驗 #3 刻意改用與基線相同型態的隨機 KFold,只作為「特徵集是否有效」的對照診斷,不用於選模。
-
-**特徵(20 個)**:year、month、day、dow、day_of_year、weekofyear、quarter、is_weekend、is_month_start、is_month_end、is_new_year、month_sin、month_cos、dow_sin、dow_cos、doy_sin、doy_cos、country_cat、store_cat、product_cat。
-
-### 2.4 推論程序
-
-- **最終模型(實驗 #7)**:六個成員(LGB seeds 42/2024/7、CAT seeds 42/2024、Optuna 調參版 LGB)以各自超參在 100% 訓練資料上重訓,按權重 0.0 / 0.1 / 0.4 / 0.0 / 0.0 / 0.5 加權平均。
-- **後處理**:facts.json 的 postprocess 欄位無紀錄;依實驗 notes,預測值由 log1p 空間經 expm1 反轉回原始銷量尺度(訓練腳本另將負值截斷為 0)。
-- **Submission(現行最佳)**:`sub_6way_optuna_blend_10.01946_20260704_002039.csv`,格式為兩欄(`id`, `num_sold`),與 sample_submission.csv 之形狀、id 順序逐一驗證通過。Phase B 前的提交檔為 `sub_lgb_xgb_cat_blend_10.17540_20260703_194908.csv`。本場為無人值守批次執行,**未**實際提交至 Kaggle。
-
-### 2.5 評估指標
-
-**定義**:SMAPE = 100% × 平均(|真值 − 預測| / ((|真值| + |預測|)/2)),對稱化的相對誤差,越低越好。
-
-#### 分數總表
-
-| 實驗 | CV 方案 | Blend SMAPE |
-|------|---------|-------------|
-| #1 基線 | 5fold | 5.31891 |
-| #2 | TimeSeriesSplit 5-fold | 10.175397 |
-| #3 診斷 | shuffled KFold 5-fold | 4.281421 |
-| #4 +RatioDecomp(棄用) | TimeSeriesSplit 5-fold | 10.17489 |
-| #5 seed bagging | TimeSeriesSplit 5-fold | 10.166045 |
-| #6 擴充 seed bagging | TimeSeriesSplit 5-fold | 10.157212 |
-| #7 +Optuna 調參 LGB(線性迭代終點) | TimeSeriesSplit 5-fold | 10.019463 |
-| #8 樹搜尋 v2(node #17,best) | TimeSeriesSplit 5-fold | **9.75707** |
-
-(#2/#3 的 per-model OOF 見第 2.2 節前段,#4–#7 的見第 2.2 節 Phase B 小節,#8 見第 2.2c 節;#1 的 per-model 分數為 LGB 5.45633 / XGB 7.41858 / CAT 6.09778。)
-
-Public/Private LB:無紀錄(未提交,facts.missing 含 leaderboard),故無 CV↔LB gap 可計算。
-
-同方案(隨機 KFold)下,工程後特徵相對基線的改善幅度:
+Objective:log1p(num_sold) 迴歸,預測經 expm1 反轉後計 SMAPE。關鍵超參(有紀錄者):
 
 ```
-5.31891 − 4.281421 = 1.037489
-1.037489 / 5.31891 × 100 ≈ 19.5%(SMAPE 下降)
+LGB(手設,exp 2):  n_estimators=2000, learning_rate=0.03, num_leaves=63,
+                     min_child_samples=20, subsample=0.9, colsample_bytree=0.8, reg_lambda=1.0
+XGB(手設,exp 2):  n_estimators=2000, learning_rate=0.03, max_depth=7,
+                     subsample=0.9, colsample_bytree=0.8, reg_lambda=1.0
+CAT(手設,exp 2):  iterations=2000, learning_rate=0.05, depth=8, l2_leaf_reg=3.0
+LGB_tuned(Optuna,exp 7):learning_rate≈0.0371, num_leaves=20, min_child_samples=38,
+                     subsample≈0.61, colsample_bytree≈0.90, reg_alpha≈0.001,
+                     reg_lambda≈0.43, n_estimators=2000
 ```
 
-跨方案的差距(同特徵、同模型,僅 CV 方案不同):
+調參版比手設更淺、更強正則(num_leaves 63 → 20),與「外推情境獎勵正則化」的跨賽
+經驗一致。特徵 20 個:year、month、day、dow、day_of_year、weekofyear、quarter、
+is_weekend、is_month_start、is_month_end、is_new_year、month/dow/doy 之 sin/cos、
+country_cat、store_cat、product_cat(類別欄原生餵入三模型)。
+
+### 3.4 推論表
+
+| exp | 後處理 | submission 檔 | 已提交 |
+|-----|--------|---------------|--------|
+| 1 | 無後處理紀錄 | sub_generic_5.31891_20260703_121406.csv | 否 |
+| 2 | expm1 反轉 | sub_lgb_xgb_cat_blend_10.17540_20260703_194908.csv | 否 |
+| 3 | expm1 反轉 | 無(診斷用,未產生提交檔) | 否 |
+| 4 | expm1 反轉 | sub_lgb_cat_rd_blend_10.17489_20260704_000355.csv | 否 |
+| 5 | expm1 反轉 | sub_lgb_seedbag_cat_blend_10.16605_20260704_000957.csv | 否 |
+| 6 | expm1 反轉 | sub_lgb3seed_cat2seed_blend_10.15721_20260704_001501.csv | 否 |
+| 7 | expm1 反轉、負值截 0 | sub_6way_optuna_blend_10.01946_20260704_002039.csv | 否 |
+| 8 | expm1 反轉 + auto_scale ×1.02(OOF 內擬合) | 無(OOF-only,未產生 test 預測) | 否 |
+
+facts 各實驗無 postprocess 欄位,表中後處理描述取自各實驗 notes。submission 為兩欄
+格式(id 欄 `id`、目標欄 `num_sold`)。本場為無人值守批次執行,全程未提交 Kaggle
+(leaderboard 列於 facts.missing);exp 7 檔案為現行最佳提交檔,其成員以各自超參在
+100% 訓練資料上重訓後按權重加權平均,預測 mean 178.2 / max 1432.9,對成長中的 2022
+屬合理範圍。
+
+### 3.5 評估指標
+
+指標定義:SMAPE = 對每筆取 |真值 − 預測| 除以兩者絕對值之平均,再對全體取平均並以
+百分比表示;對稱化的相對誤差,越低越好。
+
+| 項目 | OOF SMAPE(時序) |
+|------|-------------------|
+| LGB_tuned(exp 7 成員,最佳單模) | 10.14833 |
+| LGB_s42(exp 7 成員) | 10.17758 |
+| LGB_s2024(exp 7 成員) | 10.21059 |
+| LGB_s7(exp 7 成員) | 10.19446 |
+| CAT_s42(exp 7 成員) | 10.73064 |
+| CAT_s2024(exp 7 成員) | 10.98383 |
+| Ensemble(exp 7,線性迭代終點) | 10.019463 |
+| Ensemble(exp 8,樹搜尋 best) | **9.75707** |
+| Public / Private LB | 無紀錄(未提交) |
+
+本場無排行榜表(leaderboard 為空),CV↔LB gap 無法計算。主要改善幅度:
 
 ```
-10.175397 − 4.281421 = 5.893976
+Phase B 淨改善(同折時序):  10.175397 − 10.019463 = 0.155934,0.155934 / 10.175397 ≈ 1.53%
+樹搜尋再改善(同折時序):  10.019463 − 9.75707 = 0.262393,0.262393 / 10.019463 ≈ 2.62%
+跨方案差距(同特徵同模型):10.175397 − 4.281421 = 5.893976 —— 全部來自外推 vs 內插
+                            的驗證難度差,不是模型退步
 ```
 
-此差距全部來自「外推 vs 內插」的驗證難度差異,不是模型退步(見第 3 節)。
+## 4. 實驗軌跡
 
-Phase B 淨改善(同一 TimeSeriesSplit 方案、同折):
+| exp | 時間 | 決策分數 | 階段 | 一句話摘要 |
+|-----|------|----------|------|------------|
+| 1 | 2026-07-03T12:14:06 | 5.31891(隨機) | Baseline(通用批次) | 8 通用特徵三模型 blend,隨機 KFold 口徑 |
+| 2 | 2026-07-03T19:49:08 | 10.175397(時序) | Phase A | 20 特徵 + log1p 目標,改採誠實的時序 CV |
+| 3 | 2026-07-03T19:53:27 | 4.281421(隨機) | Reflexion 診斷 | 同特徵改回隨機 KFold,證明變差來自 CV 方案而非特徵 |
+| 4 | 2026-07-04T00:03:25 | 10.17489(時序) | Phase B R1 | 比例分解成員權重歸零,結構信號輸給 GBDT |
+| 5 | 2026-07-04T00:09:24 | 10.166045(時序) | Phase B R2 | LGB seed bagging(+seed 2024) |
+| 6 | 2026-07-04T00:13:58 | 10.157212(時序) | Phase B R3 | 擴充 seed bagging(+LGB s7、+CAT s2024) |
+| 7 | 2026-07-04T00:19:34 | 10.019463(時序) | Phase B R4 | Optuna fold-5 代理調參 LGB 入池,線性最大單輪增益 |
+| 8 | 2026-07-04T12:18:09 | **9.75707**(時序) | Phase D-5 樹搜尋 | 10-way blend + auto_scale,node #17(22 節點,wall 321.0s) |
+
+- **突破點 1(exp 2→3,關鍵轉折)**:exp 2 表面上大幅變差(5.31891 → 10.175397),
+  診斷以完全相同的特徵/模型改回隨機 KFold 得 4.281421——優於基線,證明特徵工程有效、
+  差距純粹來自「時序驗證是更誠實的量尺」;教訓:不同 CV 方案的分數永不互比。
+- **突破點 2(exp 6→7)**:時序折不可互換,故以訓練窗最大、最接近 2022 外推情境的
+  fold 5 作 Optuna 代理目標;調參 LGB solo 10.14833(最佳單模)入池後拿 0.5 權重,
+  blend 10.157212 → 10.019463,線性階段最大增益。
+- **突破點 3(exp 7→8)**:樹搜尋兩槓桿——seed-bag 調參 LGB(SEEDBAG_TUNED_S2024
+  solo 9.974778,單模即勝過 exp 7 全 blend)與 auto_scale ×1.02(單筆最大增益
+  -0.168)——合計把分數推至 9.75707(但書見 3.2 節)。
+
+無法解析之紀錄:無(facts.unparsed 為空陣列)。
+
+## 5. 效能對照:四層消融
+
+| 層級 | 配置 | 分數 | 相對改善 |
+|------|------|------|----------|
+| tier1 | 基線(Claude Code 直接執行,未引入 skill;exp 1 通用批次) | 無可比 generic(隨機 KFold 口徑,見下方 call-out) | —(基線;無可比) |
+| tier2 | + kaggle-agent skill 六階段流程(exp 2,時序 CV) | 10.175397 | —(本場消融比較的錨點) |
+| tier3 | + self-improvement 線性迭代(exp 7,Phase B 四輪終點) | 10.019463 | 見下方算式(tier2→tier3) |
+| tier4 | + 樹搜尋(exp 8,harness v2 node #17) | **9.75707** | 見下方算式(tier3→tier4) |
 
 ```
-10.175397 − 10.019463 = 0.155934
-0.155934 / 10.175397 × 100 ≈ 1.53%(SMAPE 下降)
+tier2→tier3: 10.175397 − 10.019463 = 0.155934,相對改善 0.155934 / 10.175397 ≈ 1.53%
+tier3→tier4: 10.019463 − 9.75707  = 0.262393,相對改善 0.262393 / 10.019463 ≈ 2.62%
+tier2→tier4: 10.175397 − 9.75707  = 0.418327,相對改善 0.418327 / 10.175397 ≈ 4.11%
+(與 benchmark_facts.json 主表口徑一致:該表相對變化欄改報 tier2→tier3 與 tier2→tier4)
+
+同 CV 方案(隨機 KFold)側寫診斷對(僅供 CV-scheme 偏誤參考,不併入上表):
+generic 5.31891 → 同特徵同模型診斷重跑 4.281421,改善 ≈ 19.51%
 ```
 
-樹搜尋(exp #8)相對線性迭代終點(exp #7)的改善(同一 TimeSeriesSplit 方案、同折):
+本場由導入報告功能後之版本執行,分數自 tier2 起未低於前一層——符合計畫書目標三(效能不退步)。
 
-```
-10.019463 − 9.75707 = 0.262393
-0.262393 / 10.019463 × 100 ≈ 2.6188...%(SMAPE 下降,約 -2.6%,四捨五入至第一位小數)
-```
+> **CV 口徑注記(s3e19 特殊場次)**:tier1 的 generic 批次實驗(exp 1,5.31891)使用
+> 隨機 KFold,而 tier2/tier3/tier4 皆使用 TimeSeriesSplit——test 為嚴格未來期,時序
+> CV 才是誠實量尺,兩方案分數**不可比**(見 3.2 節澄清),故 tier1 標「無可比
+> generic」,消融算式改以 tier2 為錨點報 tier2→tier3 與 tier3→tier4(另附 tier2→tier4)。
+> skill 特徵/模型層面的真實增益由上方**同 KFold 診斷對**(5.31891 → 4.281421)單獨
+> 呈現,僅作側面診斷,不併入主表任何 tier 計算。tier4 的 9.75707 另帶雙重但書
+> (fold-5 double-dip + scale/seed OOF 擬合),詳見 3.2 節 call-out,此處不重複;
+> 依該但書,真實可期望的 2022 SMAPE 應讀作「明顯低於 10.02」,而非字面上的 9.76。
 
-## 3. 實驗軌跡
+## 6. 總結
 
-| id | timestamp | score (SMAPE) | source_format |
-|----|-----------|---------------|---------------|
-| 1 | 2026-07-03T12:14:06 | 5.31891 | generic_batch |
-| 2 | 2026-07-03T19:49:08 | 10.175397 | v2 |
-| 3 | 2026-07-03T19:53:27 | 4.281421 | v2 |
-| 4 | 2026-07-04T00:03:25 | 10.17489 | v2 |
-| 5 | 2026-07-04T00:09:24 | 10.166045 | v2 |
-| 6 | 2026-07-04T00:13:58 | 10.157212 | v2 |
-| 7 | 2026-07-04T00:19:34 | 10.019463 | v2 |
-| 8 | 2026-07-04T12:18:09 | 9.75707 | v2 |
+本場資料乾淨而結構鮮明:75 條完整日序列、無缺失無重複,店面/產品年度佔比近乎恆定、
+國家佔比逐年漂移,目標右偏經 log1p 對稱化;測試期為嚴格未來的 2022 年,決定了本場
+最重要的一步——以 TimeSeriesSplit 取代隨機 KFold 作為唯一決策量尺。
 
-**軌跡敘述與突破點**:
+關鍵決策有三:其一,exp 3 的 Reflexion 診斷把「分數變差」歸因到 CV 方案而非特徵,
+避免誤判退步;其二,exp 4 誠實棄用比例分解——結構要贏 GBDT,目標須在該維度跨年近乎
+恆定,而本場總量本身不可外推;其三,exp 7 以 fold-5 代理調參,選出更淺更正則的 LGB。
 
-- **#1 → #2**:加入 20 個日曆/週期/類別特徵並改採 log1p 目標,但同時把 CV 從隨機 5-fold 換成時間序 TimeSeriesSplit。分數表面上大幅變差(5.31891 → 10.175397),一度像是退步。
-- **#2 → #3(Reflexion 診斷,本場的關鍵轉折)**:為釐清變差來自「特徵」還是「CV 方案」,以完全相同的 20 個特徵與三模型、改回與基線同型態的隨機 KFold 重測,得到 **4.281421**——優於基線的 5.31891。結論:特徵工程確實有效(同方案下最佳分數出現在實驗 #3),實驗 #2 的分數純粹反映時間序驗證是更誠實、更困難的量尺;預期實際 LB 落在兩個數字之間、偏向時間序估計。
-- **#4(Phase B round 1,比例分解——最高期望值的假說,實測失敗)**:EDA 顯示店/產品年度佔比極穩、且僅用三個類別欄的加法 OLS 就能解釋 log 目標絕大部分變異,理應適合「總量 × 佔比」分解;但結構式成員 solo OOF 14.75038,權重搜尋歸零。追加 oracle 診斷(餵入真實每日總量)顯示佔比部分與 GBDT 相當而非更好——GBDT 的原生類別分裂已把佔比結構學走,真正瓶頸是「總量一年外推」(5 年序列含 2020 下滑、2021 回升,無可靠趨勢),而該瓶頸對所有方法一視同仁。與 s3e20(結構信號完勝 GBDT)對照,界定了該模式的邊界條件:結構要贏,目標須跨年近恆定。
-- **#5、#6(round 2–3,seed bagging)**:轉用跨賽驗證過的低成本配方,兩輪皆有小幅實質增益(10.17489 → 10.166045 → 10.157212),與過往競賽「遞減但為正」的型態一致。
-- **#7(round 4,Optuna fold-5 代理調參,本場最大單輪增益)**:TimeSeriesSplit 折不可互換,故以最後一折(訓練窗最大、最接近 2022 外推情境)取代慣用的 fold-0 作為調參代理目標;調出的 LGB 更淺更強正則(num_leaves 63 → 20),再次印證「外推情境獎勵正則化」。調參版加入池(不替換)後拿下 0.5 權重,blend 10.157212 → **10.019463**。註記:fold 5 兼作調參目標與 1/5 的 OOF,此數字含部分樂觀成分。
-- **教訓**:不同 CV 方案的分數不可直接比較;v2 schema 的 `cv.strategy` 欄位讓每筆實驗的方案都可回溯,本場正是靠它避免誤判。Phase B 全程鎖定同一 TimeSeriesSplit 折,確保 keep/reject 決策在誠實量尺上進行。
-- **#7 → #8(Phase G-1b,本次更新新增)**:實驗 #8 不是線性迭代的延續回合,而是 Phase D-5
-  (2026-07-04)以 harness v2 執行的**樹搜尋(tree-search)**結果——來源 `experiments_tree.json`
-  的 node #17(22 個評估節點/13 solo+9 blend,wall 321.0s)。樹搜尋在 exp #7 的相同
-  TimeSeriesSplit 折與 20-特徵集上另闢節點空間,找到 SMAPE 更低的 10-way blend,分數由
-  10.019463 降至 9.75707(相對改善見上方第 2.5 節程式區塊,約 -2.6%,本輪相對margin 為所有已跑
-  樹搜尋競賽中最大)。決定性槓桿為(1)對 Optuna 調參 LGB 做 seed bagging(STATUS.md 原列
-  為「未試」)、(2)修正 TimeSeriesSplit OOF 系統性偏低的全域 ×1.02 乘數(詳見第 2.2c 節)。
-  **誠實 CV-only 警語**(逐字):「like the linear 10.01946, the 9.75707 carries fold-5
-  double-dip optimism, PLUS the scale parameter and the seed selection are OOF-fitted.
-  All are 1-to-few-parameter fits on 114k rows (low overfit risk individually), but the
-  true expected 2022 SMAPE is best read as "meaningfully below 10.02", not literally
-  9.76.」此結果為 OOF-only 搜尋產物,**未提交至 Kaggle**;不可與 exp #7 實際提交的
-  submission 檔案混淆(見第 2.4 節)。完整節點鏈見
-  `competitions/playground-series-s3e19/STATUS.md`〈Appendix: Phase D-5 tree-search v2
-  sweep〉。
+增益來源清楚分層:Phase A 建立時序口徑基準(10.175397);Phase B 靠 seed bagging 與
+Optuna 調參推進至 10.019463(約 1.53%);樹搜尋再以「seed-bag 調參 LGB」與「auto_scale
+×1.02 修正時序 OOF 系統性偏低」兩槓桿推至 9.75707(約 2.62%)——後者是所有已跑樹搜尋
+場次中相對幅度最大的一場,且兩個槓桿都是線性階段明確列為「未試」的想法。
 
-**無法解析之紀錄**:無(facts.unparsed 為空)。
+可信度方面須誠實:全程未提交 Kaggle、無排行榜錨點;9.75707 帶雙重但書(見 3.2 節),
+真實可期望的 2022 SMAPE 應解讀為「明顯低於 10.02」,而非字面上的 9.76。方向性結論
+(時序口徑下逐層改善、變異縮減類槓桿在時序 CV 下報酬放大)是穩健的部分。
 
-## 4. 重現指令
+**重現本實驗的最短路徑**:見第 7 節。
+
+## 7. 重現指令
 
 ```bash
 # 環境:Linux + uv(Python 由 uv 管理);執行目錄:專案根目錄
 cd /home/tjyen/ai_agents/kaggle
 
 # 0) 資料下載(需 KAGGLE_API_TOKEN;本場資料已在 data/ 內,可略過)
-export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')
 uv run kaggle competitions download -c playground-series-s3e19 \
     -p competitions/playground-series-s3e19/data
 unzip -o competitions/playground-series-s3e19/data/playground-series-s3e19.zip \
     -d competitions/playground-series-s3e19/data
 
-# 1) EDA(輸出資料概況與 CV 方案決策依據)
+# 1) EDA(輸出資料概況與時序 CV 決策依據)
 uv run python3 competitions/playground-series-s3e19/scripts/eda.py
 
 # 2) 特徵工程(產出 data/train_processed.csv、data/test_processed.csv)
 uv run python3 competitions/playground-series-s3e19/scripts/features.py
 
-# 3) 主訓練:TimeSeriesSplit 5-fold CV + OOF 權重搜尋 + 全量重訓 + 產出 submission
-#    (submission 寫入 competitions/playground-series-s3e19/submissions/,並記錄 experiments.json)
+# 3) 主訓練:TimeSeriesSplit 5 折 + OOF 權重搜尋 + 全量重訓 + submission(exp 2)
 uv run python3 competitions/playground-series-s3e19/scripts/train.py
 
-# 4) (選用)Reflexion 診斷:同特徵改用 shuffled KFold,對照基線
+# 4) (選用)Reflexion 診斷:同特徵改用 shuffled KFold(exp 3)
 uv run python3 competitions/playground-series-s3e19/scripts/diagnostic_kfold.py
 
-# 5) Phase B 迭代(依序;#7 產出現行最佳 submission)
-uv run python3 competitions/playground-series-s3e19/scripts/train_ratio.py     # exp #4(RD 棄用)
-uv run python3 competitions/playground-series-s3e19/scripts/train_seedbag.py   # exp #5
-uv run python3 competitions/playground-series-s3e19/scripts/train_seedbag2.py  # exp #6
-uv run python3 competitions/playground-series-s3e19/scripts/train_optuna.py    # exp #7(現行最佳提交對應版本)
+# 5) Phase B 迭代(依序;exp 7 產出現行最佳 submission)
+uv run python3 competitions/playground-series-s3e19/scripts/train_ratio.py     # exp 4(RD 棄用)
+uv run python3 competitions/playground-series-s3e19/scripts/train_seedbag.py   # exp 5
+uv run python3 competitions/playground-series-s3e19/scripts/train_seedbag2.py  # exp 6
+uv run python3 competitions/playground-series-s3e19/scripts/train_optuna.py    # exp 7
 
-# 5b) Phase D-5 樹搜尋 v2(best under TimeSeriesSplit,exp #8)— resumable;軌跡存於 experiments_tree.json
+# 6) Phase D-5 樹搜尋 harness v2(exp 8,OOF-only;軌跡存 experiments_tree.json)
 uv run python3 tree_search/run_s3e19.py
 
-# 6) (選用)提交至 Kaggle
+# 7) 報告產生與驗證(本檔)
+uv run python3 .claude/skills/kaggle-report/assets/collect.py playground-series-s3e19
+uv run python3 .claude/skills/kaggle-report/assets/verify_report.py \
+    competitions/playground-series-s3e19/REPORT.md competitions/playground-series-s3e19/facts.json
+bash .claude/skills/kaggle-report/assets/md2pdf.sh competitions/playground-series-s3e19/REPORT.md \
+    competitions/playground-series-s3e19/s3e19_REPORT.pdf
+
+# 8) (選用)提交至 Kaggle(本場未執行;需有效之 KAGGLE_API_TOKEN)
 uv run kaggle competitions submit -c playground-series-s3e19 \
     -f competitions/playground-series-s3e19/submissions/sub_6way_optuna_blend_10.01946_20260704_002039.csv \
     -m "6-way blend: LGB seeds + CAT seeds + Optuna fold-5-proxy tuned LGB, time-based CV"
 ```
+
+執行目錄為專案根目錄 `/home/tjyen/ai_agents/kaggle`;所有 Python 執行皆透過 `uv run`。
