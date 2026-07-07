@@ -213,6 +213,24 @@ tier3→tier4: 0.57066 − 0.56769 = 0.00297,相對改善 0.00297 / 0.56769 = 0.
 
 本場由導入報告功能後之版本執行,分數自 tier2 起未低於前一層——符合計畫書目標三(效能不退步)。
 
+### 子刻度分解(選填)
+
+依 §5 附錄子刻度分類法(僅作分類字典,不強制逐級測量),下表僅列本場 experiments.json
+天然存在對應中間紀錄之子刻度;無對應紀錄之子刻度不列,分數逐字引用自 facts.json。
+
+| 子刻度 | 優化辦法 | 分數 | 出處(exp# 或 tree node) |
+|--------|----------|------|--------------------------|
+| 1.a | 單模預設參數(tier1 三模型中最佳者:XGB) | 0.46995 | exp1 |
+| 1.b | 多模+OOF 權重搜尋 blend(tier1 三模型混合) | 0.47871 | exp1 |
+| 2.c | 指標感知後處理前:naive round(四捨五入,對照組) | 0.47191 | exp2 |
+| 2.c | 指標感知後處理後:OptimizedRounder(對 OOF QWK 調切點) | 0.52687 | exp3 |
+| 3.b | Optuna 直接優化 post-rounder QWK 調參 LGB,加入 pool | 0.56293 | exp5 |
+| 3.d | seed bagging(LGB_tuned seed 2024,無增益) | 0.56293 | exp6 |
+| 3.b | Optuna 直接優化 post-rounder QWK 調參 CatBoost,加入 pool(線性迭代最佳) | 0.56769 | exp8 |
+| 3.d | seed bagging(CAT_tuned seed 2024,退步未採用) | 0.56716 | exp9 |
+| 4.a | 樹搜尋 harness v1(node #11,首版樹搜尋最佳) | 0.56766 | exp12 notes 引用 |
+| 4.b | 樹搜尋 harness v2(node #17,邊界推進成員 LGBBOUND 入池,本場最佳) | 0.57066 | exp12 |
+
 ## 6. 總結
 
 本場資料乾淨(無缺失、無重複、無共線問題),真正的難點在目標本身:`quality` 是 6 級、嚴重
