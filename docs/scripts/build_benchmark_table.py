@@ -104,6 +104,41 @@ STANDARD_COMPS = {
     "s3e14": {"phase_a_ids": [1, 2, 3]},
 }
 
+# ---------------------------------------------------------------------------
+# Cross-season generalization cohort (seasons 4-6). Unlike the 10 same-season
+# S3 weekend-batch comps above, these use the explicit four-STAGE framing
+# (stage1 prior-season/generic baseline -> stage2 skill -> stage3 linear
+# iteration -> stage4 tree search), logged as schema_version-2 records. The
+# stage->experiment_id boundary is NOT mechanically derivable (stage1 is a
+# reused Feb ensemble on some comps, a generic batch on others; stage ids
+# differ per comp), so each comp's four stage ids are hardcoded below and the
+# expected score is asserted verbatim against experiments.json (via collect.py
+# normalize()), exactly like the s3e16/s3e19/s3e20 special cases. Every one of
+# these five is CV-only (competition closed to late submission). Sources: each
+# comp's own REPORT.md section 5 ladder + committed experiments.json.
+# ---------------------------------------------------------------------------
+CROSS_SEASON_COMPS = {
+    "s4e1":  {"stages": {1: 6, 2: 10, 3: 14, 4: 17},
+              "expect": {1: 0.8922, 2: 0.894302, 3: 0.894354, 4: 0.894393},
+              "stage1_label": "generic batch (run_competition.py, 3-model blend)"},
+    # s4e11 was committed earlier (8d8398e) with a raw experiment_id scheme
+    # starting at 3 — collect.py exposes ids 3..14 (12 records), i.e. the
+    # report's "第 N 次實驗" display number + 2. Stage ids below are the ACTUAL
+    # collect experiment_ids (report 第1/5/11/12 次 = ids 3/7/13/14), score-verified.
+    "s4e11": {"stages": {1: 3, 2: 7, 3: 13, 4: 14},
+              "expect": {1: 0.93955, 2: 0.939488, 3: 0.9399, 4: 0.940235},
+              "stage1_label": "generic 3-model blend (18 raw features)"},
+    "s5e10": {"stages": {1: 4, 2: 8, 3: 14, 4: 15},
+              "expect": {1: 0.056074, 2: 0.056027, 3: 0.055976, 4: 0.055968},
+              "stage1_label": "Feb weighted ensemble (reused prior-season record)"},
+    "s6e1":  {"stages": {1: 4, 2: 8, 3: 14, 4: 15},
+              "expect": {1: 0.786414, 2: 0.786793, 3: 0.787060, 4: 0.787183},
+              "stage1_label": "Feb weighted ensemble (reused prior-season record)"},
+    "s6e2":  {"stages": {1: 1, 2: 9, 3: 15, 4: 16},
+              "expect": {1: 0.95498, 2: 0.955197, 3: 0.955510, 4: 0.955529},
+              "stage1_label": "Feb v1 weighted ensemble (reused, same-folds anchor)"},
+}
+
 
 def build_standard_row(comp_key, cfg):
     comp_dir = os.path.join(COMPETITIONS_DIR, f"playground-series-{comp_key}")
@@ -142,6 +177,51 @@ def build_standard_row(comp_key, cfg):
         "relative_pct": relative_pct(tier1_e["score"], tier3_e["score"], direction),
         "relative_pct_tier1_tier4": relative_pct(tier1_e["score"], tier4_e["score"], direction),
         "note": None,
+    }
+
+
+def build_crossseason_row(comp_key, cfg):
+    """Cross-season four-STAGE row. Each stage's experiment_id is hardcoded in
+    CROSS_SEASON_COMPS (not mechanically derivable) and its score is asserted
+    verbatim against experiments.json (loaded via collect.py), so every number
+    in the output is still traceable to the competition's own record."""
+    comp_dir = os.path.join(COMPETITIONS_DIR, f"playground-series-{comp_key}")
+    facts = collect.build_facts(comp_dir)
+    exps = facts["experiments"]
+    direction = exps[0]["direction"]
+    metric = exps[0]["metric"]
+    stages = cfg["stages"]
+
+    vals = {}
+    for stage, exp_id in stages.items():
+        e = by_id(exps, exp_id)
+        score = e["score"]
+        expected = cfg["expect"][stage]
+        assert score is not None and round(score, 6) == round(expected, 6), \
+            f"{comp_key}: stage {stage} (experiment_id {exp_id}) score {score} != expected {expected}"
+        vals[stage] = (score, exp_id)
+
+    return {
+        "comp": comp_key,
+        "cohort": "cross-season-generalization",
+        "metric": metric,
+        "direction": direction,
+        "tier1": {"value": vals[1][0], "experiment_id": vals[1][1],
+                   "label": f"stage 1 — {cfg['stage1_label']}"},
+        "tier2": {"value": vals[2][0], "experiment_id": vals[2][1],
+                   "label": "stage 2 — kaggle-agent skill six-stage blend"},
+        "tier3": {"value": vals[3][0], "experiment_id": vals[3][1],
+                   "label": "stage 3 — linear self-iteration (best, excludes tree search)"},
+        "tier4": {"value": vals[4][0], "experiment_id": vals[4][1],
+                   "label": "stage 4 — tree search v3"},
+        "relative_pct": relative_pct(vals[1][0], vals[3][0], direction),
+        "relative_pct_tier1_tier4": relative_pct(vals[1][0], vals[4][0], direction),
+        "note": ("Cross-season generalization cohort (season 4-6, five different metrics); ALL "
+                 "stages CV-only — the competition is closed to late submission, so every score is "
+                 "OOF-only (the stage-4 winner still passed the OOF digit-reproduction gate before a "
+                 "403-blocked submission attempt). Stage 1 is the reused prior-season baseline (or a "
+                 "generic batch where noted); the four-stage ladder uses ONE fixed fold set "
+                 "throughout, so all four stages are directly comparable within this comp."),
     }
 
 
@@ -377,23 +457,40 @@ def build_s3e20_row():
 
 
 def main():
-    rows = []
+    # Cohort 1 — 10 same-season S3 weekend-batch comps (the main benchmark).
+    s3_rows = []
     for comp_key, cfg in STANDARD_COMPS.items():
-        rows.append(build_standard_row(comp_key, cfg))
-    rows.extend(build_s3e19_rows())
-    rows.append(build_s3e16_row())
-    rows.append(build_s3e20_row())
+        s3_rows.append(build_standard_row(comp_key, cfg))
+    s3_rows.extend(build_s3e19_rows())
+    s3_rows.append(build_s3e16_row())
+    s3_rows.append(build_s3e20_row())
+    for r in s3_rows:
+        r.setdefault("cohort", "s3-weekend-batch")
+
+    # Cohort 2 — 5 cross-season generalization comps (seasons 4-6, four-stage).
+    cross_rows = [build_crossseason_row(k, cfg) for k, cfg in CROSS_SEASON_COMPS.items()]
+
+    rows = s3_rows + cross_rows
 
     out = {
         "generated_by": "docs/scripts/build_benchmark_table.py",
         "source": "collect.py (imported by path) over each competitions/<name>/experiments.json",
+        "cohorts": {
+            "s3-weekend-batch": "10 same-season S3 competitions run as one weekend batch — the main "
+                                "benchmark (tier1 = generic run_competition.py batch baseline).",
+            "cross-season-generalization": "5 competitions from seasons 4-6 (five different metrics), "
+                                "testing whether the same four-stage recipe transfers across seasons. "
+                                "Stage 1 is a reused prior-season baseline; all stages CV-only.",
+        },
         "tier_definitions": {
-            "tier1": "generic baseline (competitions/run_competition.py batch run)",
-            "tier2": "best skill-pipeline score BEFORE the Phase B self-improvement commit",
-            "tier3": "final best score after Phase B linear self-improvement iteration "
-                     "(excludes tree-search entries, frozen at the Phase C-1 benchmark meaning)",
-            "tier4": "best score after tree-search harvest (Phase G-1a/G-1b), i.e. best over "
-                     "ALL experiment_ids including tree-search entries",
+            "tier1": "S3 batch: generic baseline (run_competition.py). Cross-season: stage-1 "
+                     "prior-season/generic baseline.",
+            "tier2": "best skill-pipeline score BEFORE the Phase B self-improvement commit "
+                     "(cross-season: stage 2, kaggle-agent skill six-stage blend)",
+            "tier3": "final best score after linear self-improvement iteration "
+                     "(excludes tree-search entries)",
+            "tier4": "best score after tree-search harvest, i.e. best over ALL experiment_ids "
+                     "including tree-search entries (cross-season: stage 4, tree search v3)",
         },
         "rows": rows,
     }

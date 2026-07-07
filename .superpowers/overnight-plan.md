@@ -48,11 +48,14 @@ s4e1 → s4e11 → s5e10 → s6e1 → s6e2(小→大/舊→新;s6e2 有既有訓
 - [x] SUMMARY 精簡改版(6→4頁+跨季節;5c8bda6)
 - [x] 跨季 s4e1(2e504bf)、s4e11(8d8398e)單元完成(四階段+報告,LB關閉CV-only)
 - [x] Phase J J-1 idea_bank(24條[EXT]真實出處,0條來源待查;9f263a8)
-- [~] s5e10 單元3/5(2026-07-07):**階段1-4全數完成**——四階梯 0.056074→0.056027→0.055976→0.055968(node#29 全池21成員mega-blend,樹搜尋正常停於耐心準則、39評估節點/3308s;RMSE越小越好單調下降,1→4 +0.19%)。⚠️搜尋17:42就結束但監看bp45b4q1c壞了(pgrep-f自我匹配,見記憶watcher-pgrep-selfmatch)18:07才發現、已修並殺掉。**REPORT.md已寫好**(對齊s4e11:兩先驗檢驗交互項確認/貼格點否決,mega-blend奪冠對比s4e11落敗)。剩:重現閘門(背景b84b1irt0跑中重訓14成員)→確認號+提交(預期CV-only;二月階段1有真LB錨點Pub0.05558/Pri0.05583優於CV)→verify+PDF→commit
+- [x] s5e10 單元3/5(2026-07-07,**commit bb1f96b**):四階梯 0.056074→0.056027→0.055976→0.055968(node#29 全池14有效成員mega-blend,樹搜尋停於耐心準則、39評估節點/3308s;1→4 +0.19%)。重現閘門逐位通過(21成員max|dOOF|~1e-15,recovered==target)、提交403記CV-only、二月階段1真LB錨點Pub0.05558/Pri0.05583優於CV。兩先驗檢驗:交互項(s3e9)確認、貼格點(s3e14)否決;mega-blend本場奪冠對比s4e11落敗。exp#15入帳+collect重生facts+verify通過+PDF。⚠️過程抓到監看bp45b4q1c壞bug(pgrep自我匹配),已修+存記憶watcher-pgrep-selfmatch
+- [x] s6e1 單元4/5(2026-07-07,**commit 7f3f505**,背景agent a40468f8全單元):R2迴歸四階梯 0.786414→0.786793→0.787060→0.787183(node#27 全池17成員mega-blend,46評估節點/60,1→4 +0.098%)。閘門**位元級**逐位通過(max|dOOF|=0.0)、提交403 CV-only(二月LB是RMSE非R2故無R2錨點,誠實註)。交互項先驗本場**否決**(與s5e10相反,同先驗跨場相反判決)。新建run_s6e1_v3/eval_s6e1;verify OK+PDF。🔧agent診斷修LightGBM跨進程非決定性(pin deterministic/force_row_wise/num_threads),達位元級重現→存記憶lgbm-determinism-oof-gate。共用檔全未動、無data/submissions誤入(已核)
+- [x] s6e2 單元5/5(2026-07-08 01:2x,**commit 81f968b**):AUC四階梯 0.95498→0.955197→0.955510→0.955529(node#43 mega-blend 8非零成員全LGB家族,60/60滿預算,1→4 +0.058%)。閘門**位元級**(max|dOOF|=0.0,determinism前置生效沒重踩s6e1坑)、提交403 CV-only。兩先驗確認:交互項(與s6e1相反、與s5e10一致)、is_unbalance有害(第三場佐證)。二月紀錄自訂格式→只v1同折給階段1錨點、v2-5非同折入notes不搶best(守住不跨CV方案比較)。verify OK+PDF。⚠️agent中途又交還一次,我SendMessage喚回+自掛kill-0後備監看bzjbnyiid,喚回後跑到底。教訓:委派detached計算一律主控自掛kill-0監看
+- ✅**五場跨季全完成**(s4e1/s4e11/s5e10/s6e1/s6e2),四階段階梯場場成立、全CV-only;跨季發現:交互項先驗判決逐場翻轉、贏家形狀mega-blend↔solo各異、determinism紀律
 - [x] Phase J J-2a v4注入鉤(2026-07-07):harness_v4(import v3為超集)+[INT]/[EXT]併池去重;5/5測試,mode='off'==v3.suggest_priors逐字、mode='ext'注入11條淨新[EXT](04/09/11/12/14/17/18/19/20/23/24);commit 2daf362(v3未動、s5e10未擾,已實測)
 - [x] Phase J J-2b 重組(recombination)mutation(2026-07-07):harness_v4加recombine——特徵家族∪成員聯集+高分親代超參繼承+provenance記兩親代id;掛explore_burst相位;6/6測試+J-2a回歸5/5;commit 0330b70(v3未動、s5e10未擾,已實測)
 - [!] J-4待辦:EXT-16 purge/embargo 目前保守suppress(基本時序split已[INT]實證);若要注入其novel變體=改一行suppress-parse,J-4 wiring時決定
-- [ ] 佇列:s5e10收尾 → s6e1/s6e2 → benchmark擴15場 → J-3 tier5歸因 → J-4 schema五層 → J-5報告/記憶 → 交付層 → 延伸方向
+- [ ] 佇列:~~s5e10~~✓ → ~~s6e1~~✓ → s6e2(跑中)→ benchmark擴15場(5跨季場全到齊:s4e1/s4e11/s5e10/s6e1/s6e2)→ J-3 tier5歸因 → J-4 schema五層 → J-5報告/記憶 → 交付層 → 延伸方向
 
 ## 併行 session 協定(2026-07-06 16:50 使用者指示:與 VS Code session 同時跑)
 每次 commit 前必做:
