@@ -1,0 +1,763 @@
+[
+ {
+  "experiment_id": 1,
+  "timestamp": "2026-02-10T15:25:48.450733",
+  "model": "LightGBM",
+  "n_features": 27,
+  "params": {
+   "n_estimators": "800",
+   "learning_rate": "0.05",
+   "num_leaves": "63",
+   "max_depth": "-1",
+   "min_child_samples": "30",
+   "subsample": "0.8",
+   "colsample_bytree": "0.8",
+   "reg_alpha": "0.1",
+   "reg_lambda": "0.1"
+  },
+  "cv_strategy": "5-fold",
+  "cv_scores": [
+   0.056245,
+   0.056113,
+   0.056163,
+   0.056011,
+   0.05595
+  ],
+  "cv_mean": 0.056096,
+  "cv_std": 0.000105,
+  "eval_metric": "RMSE",
+  "notes": "Tuned LightGBM"
+ },
+ {
+  "experiment_id": 2,
+  "timestamp": "2026-02-10T15:26:15.953828",
+  "model": "XGBoost",
+  "n_features": 27,
+  "params": {
+   "n_estimators": "800",
+   "learning_rate": "0.05",
+   "max_depth": "7",
+   "subsample": "0.8",
+   "colsample_bytree": "0.8",
+   "reg_alpha": "0.1",
+   "reg_lambda": "1.0"
+  },
+  "cv_strategy": "5-fold",
+  "cv_scores": [
+   0.056317,
+   0.056185,
+   0.056269,
+   0.056074,
+   0.056019
+  ],
+  "cv_mean": 0.056173,
+  "cv_std": 0.000113,
+  "eval_metric": "RMSE",
+  "notes": "Tuned XGBoost"
+ },
+ {
+  "experiment_id": 3,
+  "timestamp": "2026-02-10T15:28:13.951095",
+  "model": "LightGBM_v2",
+  "n_features": 27,
+  "params": {
+   "n_estimators": "1200",
+   "learning_rate": "0.03",
+   "num_leaves": "127",
+   "max_depth": "-1",
+   "min_child_samples": "20",
+   "subsample": "0.7",
+   "colsample_bytree": "0.7",
+   "reg_alpha": "0.5",
+   "reg_lambda": "0.5"
+  },
+  "cv_strategy": "5-fold",
+  "cv_scores": [
+   0.05626,
+   0.056114,
+   0.056193,
+   0.056016,
+   0.055977
+  ],
+  "cv_mean": 0.056112,
+  "cv_std": 0.000106,
+  "eval_metric": "RMSE",
+  "notes": "LightGBM more trees + regularization"
+ },
+ {
+  "experiment_id": 4,
+  "timestamp": "2026-02-10T15:28:14.221931",
+  "model": "WeightedEnsemble",
+  "n_features": 27,
+  "params": {
+   "weights": "LGBM=0.5+XGB=0.1+LGBMv2=0.4"
+  },
+  "cv_strategy": "5-fold",
+  "cv_scores": [
+   0.056074
+  ],
+  "cv_mean": 0.056074,
+  "cv_std": 0.0,
+  "eval_metric": "RMSE",
+  "notes": "Weighted ensemble, OOF RMSE=0.056074"
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 5,
+  "timestamp": "2026-07-07T15:04:53",
+  "model": "LGB (stage2 solo)",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.056069,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int",
+   "curvature_x_speed",
+   "curvature_x_lighting",
+   "speed_x_lighting",
+   "curvature_x_weather",
+   "speed_x_weather",
+   "curvature_x_accidents",
+   "speed_x_accidents",
+   "curvature_sq",
+   "speed_sq",
+   "curvature_x_speed_sq",
+   "night_rain",
+   "night_fog",
+   "high_speed_curve",
+   "lanes_x_speed",
+   "lanes_x_curvature"
+  ],
+  "n_features": 27,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "notes": "stage2 skill six-stage pipeline; Feb 27-feature set on Feb-identical KFold(5,shuffle,seed42) folds; early-stopped boosting. {'mean_best_iter': 402}"
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 6,
+  "timestamp": "2026-07-07T15:04:53",
+  "model": "XGB (stage2 solo)",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.056071,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int",
+   "curvature_x_speed",
+   "curvature_x_lighting",
+   "speed_x_lighting",
+   "curvature_x_weather",
+   "speed_x_weather",
+   "curvature_x_accidents",
+   "speed_x_accidents",
+   "curvature_sq",
+   "speed_sq",
+   "curvature_x_speed_sq",
+   "night_rain",
+   "night_fog",
+   "high_speed_curve",
+   "lanes_x_speed",
+   "lanes_x_curvature"
+  ],
+  "n_features": 27,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "notes": "stage2 skill six-stage pipeline; Feb 27-feature set on Feb-identical KFold(5,shuffle,seed42) folds; early-stopped boosting. {}"
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 7,
+  "timestamp": "2026-07-07T15:04:53",
+  "model": "CAT (stage2 solo)",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.056061,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int",
+   "curvature_x_speed",
+   "curvature_x_lighting",
+   "speed_x_lighting",
+   "curvature_x_weather",
+   "speed_x_weather",
+   "curvature_x_accidents",
+   "speed_x_accidents",
+   "curvature_sq",
+   "speed_sq",
+   "curvature_x_speed_sq",
+   "night_rain",
+   "night_fog",
+   "high_speed_curve",
+   "lanes_x_speed",
+   "lanes_x_curvature"
+  ],
+  "n_features": 27,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "notes": "stage2 skill six-stage pipeline; Feb 27-feature set on Feb-identical KFold(5,shuffle,seed42) folds; early-stopped boosting. {} CAT is new vs Feb (Feb's third member was a second LGBM)."
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 8,
+  "timestamp": "2026-07-07T15:04:53",
+  "model": "stage2 LGB+XGB+CAT blend",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.056027,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int",
+   "curvature_x_speed",
+   "curvature_x_lighting",
+   "speed_x_lighting",
+   "curvature_x_weather",
+   "speed_x_weather",
+   "curvature_x_accidents",
+   "speed_x_accidents",
+   "curvature_sq",
+   "speed_sq",
+   "curvature_x_speed_sq",
+   "night_rain",
+   "night_fog",
+   "high_speed_curve",
+   "lanes_x_speed",
+   "lanes_x_curvature"
+  ],
+  "n_features": 27,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "base_models": [
+   {
+    "name": "LGB",
+    "score": 0.056069
+   },
+   {
+    "name": "XGB",
+    "score": 0.056071
+   },
+   {
+    "name": "CAT",
+    "score": 0.056061
+   }
+  ],
+  "ensemble": {
+   "weights": {
+    "LGB": 0.3,
+    "XGB": 0.25,
+    "CAT": 0.45
+   },
+   "score": 0.056027
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "submission": "stage2_blend_0.05603_20260707_150452.csv",
+  "notes": "stage2 skill six-stage pipeline blend; simplex grid weight search (step 0.05) scored directly against clipped-OOF RMSE; folds identical to Feb stage-1 records so scores are directly comparable."
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 9,
+  "timestamp": "2026-07-07T15:06:53",
+  "model": "LGB base-12-features (stage3 r1 prior check)",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.056061,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int"
+  ],
+  "n_features": 12,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "notes": "Prior check A: experience-library prior 'explicit product/poly columns add nothing for GBDT' (s3e9) vs Feb's claim that interactions are key. Same params/folds LGB, 12 raw encoded features 0.056061 vs 27-feature stage2 LGB 0.056069, delta -0.000008 -> prior CONFIRMED here: interaction block adds nothing; adopting the 12-feature LGB as the pool member. Prior check B (zero-cost): snap-to-0.01-grid (s3e14 MAE prior) on stage2 blend OOF: clip 0.056027 vs snap 0.056095, delta +0.000068 -> snap REJECTED for RMSE (squared error wants the conditional mean, not a grid point); post-processing stays clip-only."
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 10,
+  "timestamp": "2026-07-07T15:06:54",
+  "model": "stage3 r1 3-way blend",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.056017,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int",
+   "curvature_x_speed",
+   "curvature_x_lighting",
+   "speed_x_lighting",
+   "curvature_x_weather",
+   "speed_x_weather",
+   "curvature_x_accidents",
+   "speed_x_accidents",
+   "curvature_sq",
+   "speed_sq",
+   "curvature_x_speed_sq",
+   "night_rain",
+   "night_fog",
+   "high_speed_curve",
+   "lanes_x_speed",
+   "lanes_x_curvature"
+  ],
+  "n_features": 27,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "base_models": [
+   {
+    "name": "LGB",
+    "score": 0.056061
+   },
+   {
+    "name": "XGB",
+    "score": 0.056071
+   },
+   {
+    "name": "CAT",
+    "score": 0.056061
+   }
+  ],
+  "ensemble": {
+   "weights": {
+    "LGB": 0.388,
+    "XGB": 0.272,
+    "CAT": 0.34
+   },
+   "score": 0.056017
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "submission": "stage3_r1_blend_0.05602_20260707_150653.csv",
+  "notes": "stage3 round1: both priors resolved (A: LGB=base12; B: snap rejected/adopted per r1 prior-check entry), blend re-weighted with Dirichlet search (finer than stage2's 0.05 grid)."
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 11,
+  "timestamp": "2026-07-07T15:19:34",
+  "model": "LGB Optuna-tuned (stage3 r2, fold-0 proxy, direct-metric objective)",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.055998,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int"
+  ],
+  "n_features": 12,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "notes": "Optuna TPE 40 trials on fold-0 proxy (630.4s), objective = fold-0 clipped RMSE DIRECTLY, best fold0 0.056139, params={'num_leaves': 230, 'max_depth': 11, 'learning_rate': 0.03397401986724901, 'min_child_samples': 10, 'feature_fraction': 0.8743294455456313, 'bagging_fraction': 0.7574852070104716, 'reg_alpha': 0.001018040230614477, 'reg_lambda': 0.0010256547221221199}. Full-5fold OOF 0.055998 vs untuned pool LGB 0.056061 (delta -0.000063). Added to pool (not replacing), per experience-library convention."
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 12,
+  "timestamp": "2026-07-07T15:19:35",
+  "model": "stage3 r2 4-way blend",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.055982,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int",
+   "curvature_x_speed",
+   "curvature_x_lighting",
+   "speed_x_lighting",
+   "curvature_x_weather",
+   "speed_x_weather",
+   "curvature_x_accidents",
+   "speed_x_accidents",
+   "curvature_sq",
+   "speed_sq",
+   "curvature_x_speed_sq",
+   "night_rain",
+   "night_fog",
+   "high_speed_curve",
+   "lanes_x_speed",
+   "lanes_x_curvature"
+  ],
+  "n_features": 27,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "base_models": [
+   {
+    "name": "LGB",
+    "score": 0.056061
+   },
+   {
+    "name": "LGB_tuned",
+    "score": 0.055998
+   },
+   {
+    "name": "XGB",
+    "score": 0.056071
+   },
+   {
+    "name": "CAT",
+    "score": 0.056061
+   }
+  ],
+  "ensemble": {
+   "weights": {
+    "LGB": 0.008,
+    "LGB_tuned": 0.65,
+    "XGB": 0.111,
+    "CAT": 0.232
+   },
+   "score": 0.055982
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "submission": "stage3_r2_blend_0.05598_20260707_151935.csv",
+  "notes": "stage3 round2: Optuna fold-0-proxy tuned LGB (direct-metric objective) added to pool (not replacing)."
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 13,
+  "timestamp": "2026-07-07T16:46:01",
+  "model": "LGB_tuned_seed2024 (stage3 r3 seed-bag)",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.055991,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int"
+  ],
+  "n_features": 12,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "notes": "Seed-bagging member: same Optuna-tuned params as r2's LGB_tuned, seed=2024. Added to pool."
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 14,
+  "timestamp": "2026-07-07T16:46:02",
+  "model": "stage3 r3 5-way blend",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.055976,
+  "features": [
+   "num_lanes",
+   "curvature",
+   "speed_limit",
+   "num_reported_accidents",
+   "road_type_enc",
+   "lighting_enc",
+   "weather_enc",
+   "time_of_day_enc",
+   "road_signs_int",
+   "public_road_int",
+   "holiday_int",
+   "school_season_int",
+   "curvature_x_speed",
+   "curvature_x_lighting",
+   "speed_x_lighting",
+   "curvature_x_weather",
+   "speed_x_weather",
+   "curvature_x_accidents",
+   "speed_x_accidents",
+   "curvature_sq",
+   "speed_sq",
+   "curvature_x_speed_sq",
+   "night_rain",
+   "night_fog",
+   "high_speed_curve",
+   "lanes_x_speed",
+   "lanes_x_curvature"
+  ],
+  "n_features": 27,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "base_models": [
+   {
+    "name": "LGB",
+    "score": 0.056061
+   },
+   {
+    "name": "LGB_tuned",
+    "score": 0.055998
+   },
+   {
+    "name": "LGB_tuned_seed2024",
+    "score": 0.055991
+   },
+   {
+    "name": "XGB",
+    "score": 0.056071
+   },
+   {
+    "name": "CAT",
+    "score": 0.056061
+   }
+  ],
+  "ensemble": {
+   "weights": {
+    "LGB": 0.007,
+    "LGB_tuned": 0.309,
+    "LGB_tuned_seed2024": 0.408,
+    "XGB": 0.059,
+    "CAT": 0.217
+   },
+   "score": 0.055976
+  },
+  "postprocess": [
+   "clip[0,1]"
+  ],
+  "submission": "stage3_r3_blend_0.05598_20260707_164602.csv",
+  "notes": "stage3 r3_seed_bag: seed-bagged Optuna-tuned LGB (seed=2024) added to pool."
+ },
+ {
+  "schema_version": 2,
+  "experiment_id": 15,
+  "timestamp": "2026-07-07T18:27:44",
+  "model": "tree-search v3 blend (node #29, 14-member kitchen-sink mega-blend of the 21-solo pool via explore-burst; dirichlet weight search; dominant member node#15, weight 0.3359)",
+  "metric": "RMSE",
+  "direction": "minimize",
+  "score": 0.055968,
+  "cv": {
+   "scheme": "5fold",
+   "n_splits": 5,
+   "seed": 42
+  },
+  "base_models": [
+   {
+    "name": "node#15 (lgb)",
+    "weight": 0.3359,
+    "solo_rmse": 0.055987
+   },
+   {
+    "name": "node#17 (lgb)",
+    "weight": 0.0984,
+    "solo_rmse": 0.056007
+   },
+   {
+    "name": "node#6 (lgb)",
+    "weight": 0.0898,
+    "solo_rmse": 0.056015
+   },
+   {
+    "name": "node#19 (lgb)",
+    "weight": 0.0892,
+    "solo_rmse": 0.056007
+   },
+   {
+    "name": "node#0 (lgb)",
+    "weight": 0.0658,
+    "solo_rmse": 0.055991
+   },
+   {
+    "name": "node#20 (xgb)",
+    "weight": 0.0609,
+    "solo_rmse": 0.056058
+   },
+   {
+    "name": "node#4 (lgb)",
+    "weight": 0.0485,
+    "solo_rmse": 0.056005
+   },
+   {
+    "name": "node#26 (cat)",
+    "weight": 0.0457,
+    "solo_rmse": 0.056082
+   },
+   {
+    "name": "node#23 (lgb)",
+    "weight": 0.0428,
+    "solo_rmse": 0.056076
+   },
+   {
+    "name": "node#24 (lgb)",
+    "weight": 0.0349,
+    "solo_rmse": 0.056076
+   },
+   {
+    "name": "node#28 (cat)",
+    "weight": 0.0342,
+    "solo_rmse": 0.056083
+   },
+   {
+    "name": "node#2 (xgb)",
+    "weight": 0.0213,
+    "solo_rmse": 0.056066
+   },
+   {
+    "name": "node#14 (lgb)",
+    "weight": 0.0201,
+    "solo_rmse": 0.056006
+   },
+   {
+    "name": "node#1 (lgb)",
+    "weight": 0.0125,
+    "solo_rmse": 0.056077
+   }
+  ],
+  "ensemble": {
+   "method": "harness_v3 eval_blend defaults (dirichlet k=800 seed=42 + coordinate-ascent refine), minimizing clipped OOF RMSE",
+   "weights": {
+    "0": 0.0658,
+    "1": 0.0125,
+    "2": 0.0213,
+    "4": 0.0485,
+    "6": 0.0898,
+    "14": 0.0201,
+    "15": 0.3359,
+    "17": 0.0984,
+    "19": 0.0892,
+    "20": 0.0609,
+    "23": 0.0428,
+    "24": 0.0349,
+    "26": 0.0457,
+    "28": 0.0342
+   }
+  },
+  "postprocess": "clip[0,1] only (snap-to-0.01-grid prior tested and rejected: raised RMSE)",
+  "submission": {
+   "file": "sub_tree_best_0.05597_20260707_182744.csv",
+   "status": "CV-only (competition closed to late submission)"
+  },
+  "tree_search": {
+   "wall_s": 3308.1,
+   "n_evaluated": 39,
+   "total_budget": 60,
+   "stop_reason": "20 evals without improvement post-burst (patience=20)"
+  },
+  "notes": "Stage-4 tree-search winner (harness_v3, node #29). Source: experiments_tree_v3.json, 39 evaluated nodes of 60 budget, total wall 3308.1s, stop_reason='20 evals without improvement post-burst (patience=20)'. Gate-verified digit-for-digit (06_rebuild_tree_best.py): all 21 members retrained with max|dOOF|~1e-15 vs cached OOFs, recovered blend OOF RMSE 0.055968 == target, weights == tree-stored round(4). Winner is the explore-burst kitchen-sink mega-blend of the full 21-solo pool -- mega-blend WON here, the opposite of s4e11 where the lineage-grown blend beat the mega-blend. Submission built (clip[0,1]) but competition closed to late submission -> CV-only."
+ }
+]
