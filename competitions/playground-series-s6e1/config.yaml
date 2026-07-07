@@ -1,0 +1,22 @@
+name: playground-series-s6e1
+url: https://www.kaggle.com/competitions/playground-series-s6e1
+description: Predict student exam scores from study habits and demographics
+problem_type: regression
+evaluation_metric: R2
+optimization_direction: maximize
+target_column: exam_score
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 5
+notes: |
+  630K train / 270K test. Target: exam_score (19.6-100, mean=62.5).
+  Features: age, gender, course, study_hours, class_attendance, internet_access,
+  sleep_hours, sleep_quality, study_method, facility_rating, exam_difficulty.
+  study_hours strongest predictor (r=0.76). No missing values.
+  All features numeric or low-cardinality categorical.

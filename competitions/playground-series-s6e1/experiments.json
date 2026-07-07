@@ -1,0 +1,767 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-10T15:18:49.333401",
+    "model": "LightGBM",
+    "n_features": 22,
+    "params": {
+      "n_estimators": "800",
+      "learning_rate": "0.05",
+      "num_leaves": "63",
+      "max_depth": "-1",
+      "min_child_samples": "30",
+      "subsample": "0.8",
+      "colsample_bytree": "0.8",
+      "reg_alpha": "0.1",
+      "reg_lambda": "0.1"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.78424,
+      0.785397,
+      0.785981,
+      0.786284,
+      0.785023
+    ],
+    "cv_mean": 0.785385,
+    "cv_std": 0.000722,
+    "eval_metric": "R2",
+    "notes": "Tuned LightGBM"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-10T15:19:28.129034",
+    "model": "XGBoost",
+    "n_features": 22,
+    "params": {
+      "n_estimators": "800",
+      "learning_rate": "0.05",
+      "max_depth": "7",
+      "subsample": "0.8",
+      "colsample_bytree": "0.8",
+      "reg_alpha": "0.1",
+      "reg_lambda": "1.0"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.785047,
+      0.785735,
+      0.786294,
+      0.786822,
+      0.785753
+    ],
+    "cv_mean": 0.78593,
+    "cv_std": 0.000596,
+    "eval_metric": "R2",
+    "notes": "Tuned XGBoost"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-10T15:20:30.958581",
+    "model": "LightGBM_v2",
+    "n_features": 22,
+    "params": {
+      "n_estimators": "1200",
+      "learning_rate": "0.03",
+      "num_leaves": "127",
+      "max_depth": "-1",
+      "min_child_samples": "20",
+      "subsample": "0.7",
+      "colsample_bytree": "0.7",
+      "reg_alpha": "0.5",
+      "reg_lambda": "0.5"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.784864,
+      0.785812,
+      0.786282,
+      0.786622,
+      0.785482
+    ],
+    "cv_mean": 0.785812,
+    "cv_std": 0.000614,
+    "eval_metric": "R2",
+    "notes": "LightGBM with more trees and regularization"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-10T15:20:31.435363",
+    "model": "WeightedEnsemble",
+    "n_features": 22,
+    "params": {
+      "weights": "LGBM=0.1+XGB=0.5+LGBMv2=0.4"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.786414
+    ],
+    "cv_mean": 0.786414,
+    "cv_std": 0.0,
+    "eval_metric": "R2",
+    "notes": "Weighted ensemble, OOF R2=0.786414"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-07T19:53:40",
+    "model": "LGB (stage2 solo)",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.785938,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "notes": "stage2 skill six-stage pipeline; Feb 22-feature set on Feb-identical KFold(5,shuffle,seed42) folds; early-stopped boosting; bit-reproducible training (LGB deterministic+force_row_wise, all models num_threads=16) so the stage-4 OOF-reproduction gate holds cross-process. {'mean_best_iter': 1428}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-07T19:53:40",
+    "model": "XGB (stage2 solo)",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.786026,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "notes": "stage2 skill six-stage pipeline; Feb 22-feature set on Feb-identical KFold(5,shuffle,seed42) folds; early-stopped boosting; bit-reproducible training (LGB deterministic+force_row_wise, all models num_threads=16) so the stage-4 OOF-reproduction gate holds cross-process. {}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-07T19:53:40",
+    "model": "CAT (stage2 solo)",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.785979,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "notes": "stage2 skill six-stage pipeline; Feb 22-feature set on Feb-identical KFold(5,shuffle,seed42) folds; early-stopped boosting; bit-reproducible training (LGB deterministic+force_row_wise, all models num_threads=16) so the stage-4 OOF-reproduction gate holds cross-process. {} CAT is new vs Feb (Feb's third member was a second LGBM)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-07T19:53:40",
+    "model": "stage2 LGB+XGB+CAT blend",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.786793,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.785938
+      },
+      {
+        "name": "XGB",
+        "score": 0.786026
+      },
+      {
+        "name": "CAT",
+        "score": 0.785979
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.3,
+        "XGB": 0.35,
+        "CAT": 0.35
+      },
+      "score": 0.786793
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "submission": "stage2_blend_0.78679_20260707_195340.csv",
+    "notes": "stage2 skill six-stage pipeline blend; simplex grid weight search (step 0.05) scored directly against clipped-OOF R2; folds identical to Feb stage-1 records so scores are directly comparable."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-07T19:55:07",
+    "model": "LGB base-11-features (stage3 r1 prior check)",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.785844,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc"
+    ],
+    "n_features": 11,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "notes": "Prior check A: experience-library prior 'explicit product/poly columns add nothing for GBDT' (s3e9) + 'too many features regress' (s3e7/s3e14) vs Feb's claim that interactions are key. Same params/folds LGB, 11 base encoded features 0.785844 vs 22-feature stage2 LGB 0.785938, delta -0.000094 -> prior REJECTED here (interactions genuinely help at this scale/metric); keeping the 22-feature set.  Prior check B (zero-cost): clip-to-[0,100] (s3e1/s3e11 safety-net prior) on stage2 blend OOF: raw 0.786792 vs clip 0.786793, delta +0.000000 -> clip ADOPTED as the decision metric (helps or harmless safety net)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-07T19:55:09",
+    "model": "stage3 r1 3-way blend",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.786794,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.785938
+      },
+      {
+        "name": "XGB",
+        "score": 0.786026
+      },
+      {
+        "name": "CAT",
+        "score": 0.785979
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.311,
+        "XGB": 0.368,
+        "CAT": 0.321
+      },
+      "score": 0.786794
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "submission": "stage3_r1_blend_0.78679_20260707_195509.csv",
+    "notes": "stage3 round1: both priors resolved (A: LGB=full22; B: clip adopted/rejected per r1 prior-check entry), blend re-weighted with Dirichlet search (finer than stage2's 0.05 grid)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-07T20:09:54",
+    "model": "LGB Optuna-tuned (stage3 r2, fold-0 proxy, direct-metric objective)",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.786647,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "notes": "Optuna TPE 40 trials on fold-0 proxy (715.9s), objective = fold-0 clipped R2 DIRECTLY, best fold0 0.785731, params={'num_leaves': 251, 'max_depth': 6, 'learning_rate': 0.030172470849741753, 'min_child_samples': 103, 'feature_fraction': 0.8156367309350179, 'bagging_fraction': 0.7450195084164045, 'reg_alpha': 0.00288455586579094, 'reg_lambda': 2.695111035183784}. Full-5fold OOF 0.786647 vs untuned pool LGB 0.785938 (delta +0.000709). Added to pool (not replacing), per experience-library convention."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-07T20:09:56",
+    "model": "stage3 r2 4-way blend",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.786998,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.785938
+      },
+      {
+        "name": "LGB_tuned",
+        "score": 0.786647
+      },
+      {
+        "name": "XGB",
+        "score": 0.786026
+      },
+      {
+        "name": "CAT",
+        "score": 0.785979
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.058,
+        "LGB_tuned": 0.47,
+        "XGB": 0.259,
+        "CAT": 0.213
+      },
+      "score": 0.786998
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "submission": "stage3_r2_blend_0.78700_20260707_200956.csv",
+    "notes": "stage3 round2: Optuna fold-0-proxy tuned LGB (direct-metric objective) added to pool (not replacing)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 13,
+    "timestamp": "2026-07-07T20:12:42",
+    "model": "LGB_tuned_seed2024 (stage3 r3 seed-bag)",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.786613,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "notes": "Seed-bagging member: same Optuna-tuned params as r2's LGB_tuned, seed=2024. Added to pool."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 14,
+    "timestamp": "2026-07-07T20:12:44",
+    "model": "stage3 r3 5-way blend",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.78706,
+    "features": [
+      "age",
+      "study_hours",
+      "class_attendance",
+      "sleep_hours",
+      "sleep_quality_ord",
+      "facility_rating_ord",
+      "exam_difficulty_ord",
+      "gender_enc",
+      "course_enc",
+      "internet_enc",
+      "study_method_enc",
+      "study_x_attendance",
+      "study_x_sleep_quality",
+      "study_x_facility",
+      "attendance_x_sleep",
+      "study_sq",
+      "attendance_sq",
+      "total_effort",
+      "study_method_score",
+      "method_x_hours",
+      "sleep_deficit",
+      "sleep_x_quality"
+    ],
+    "n_features": 22,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.785938
+      },
+      {
+        "name": "LGB_tuned",
+        "score": 0.786647
+      },
+      {
+        "name": "LGB_tuned_seed2024",
+        "score": 0.786613
+      },
+      {
+        "name": "XGB",
+        "score": 0.786026
+      },
+      {
+        "name": "CAT",
+        "score": 0.785979
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.064,
+        "LGB_tuned": 0.284,
+        "LGB_tuned_seed2024": 0.275,
+        "XGB": 0.218,
+        "CAT": 0.158
+      },
+      "score": 0.78706
+    },
+    "postprocess": [
+      "clip[0,100]"
+    ],
+    "submission": "stage3_r3_blend_0.78706_20260707_201244.csv",
+    "notes": "stage3 r3_seed_bag: seed-bagged Optuna-tuned LGB (seed=2024) added to pool."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 15,
+    "timestamp": "2026-07-07T22:14:51",
+    "model": "tree-search v3 blend (node #27, 21-member kitchen-sink mega-blend of the 21-solo pool via explore-burst; dirichlet weight search; 17 non-zero members; dominant member node#16, weight 0.1126)",
+    "metric": "R2",
+    "direction": "maximize",
+    "score": 0.787183,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "node#16 (lgb)",
+        "weight": 0.1126,
+        "solo_r2": 0.786584
+      },
+      {
+        "name": "node#5 (lgb)",
+        "weight": 0.0998,
+        "solo_r2": 0.786492
+      },
+      {
+        "name": "node#12 (lgb)",
+        "weight": 0.0983,
+        "solo_r2": 0.786656
+      },
+      {
+        "name": "node#23 (xgb)",
+        "weight": 0.0817,
+        "solo_r2": 0.785704
+      },
+      {
+        "name": "node#13 (lgb)",
+        "weight": 0.0696,
+        "solo_r2": 0.786684
+      },
+      {
+        "name": "node#25 (cat)",
+        "weight": 0.0635,
+        "solo_r2": 0.785771
+      },
+      {
+        "name": "node#19 (lgb)",
+        "weight": 0.0633,
+        "solo_r2": 0.786359
+      },
+      {
+        "name": "node#17 (lgb)",
+        "weight": 0.0615,
+        "solo_r2": 0.786553
+      },
+      {
+        "name": "node#18 (lgb)",
+        "weight": 0.0593,
+        "solo_r2": 0.78633
+      },
+      {
+        "name": "node#4 (lgb)",
+        "weight": 0.0588,
+        "solo_r2": 0.786613
+      },
+      {
+        "name": "node#20 (lgb)",
+        "weight": 0.0569,
+        "solo_r2": 0.786327
+      },
+      {
+        "name": "node#14 (lgb)",
+        "weight": 0.0552,
+        "solo_r2": 0.786642
+      },
+      {
+        "name": "node#2 (xgb)",
+        "weight": 0.0376,
+        "solo_r2": 0.785698
+      },
+      {
+        "name": "node#0 (lgb)",
+        "weight": 0.0303,
+        "solo_r2": 0.786647
+      },
+      {
+        "name": "node#15 (lgb)",
+        "weight": 0.0232,
+        "solo_r2": 0.786541
+      },
+      {
+        "name": "node#22 (xgb)",
+        "weight": 0.0218,
+        "solo_r2": 0.785674
+      },
+      {
+        "name": "node#24 (cat)",
+        "weight": 0.0066,
+        "solo_r2": 0.785669
+      }
+    ],
+    "ensemble": {
+      "method": "harness_v3 eval_blend defaults (dirichlet k=800 seed=42 + coordinate-ascent refine), maximizing clipped OOF R2 (harness minimizes -R2)",
+      "weights": {
+        "16": 0.1126,
+        "5": 0.0998,
+        "12": 0.0983,
+        "23": 0.0817,
+        "13": 0.0696,
+        "25": 0.0635,
+        "19": 0.0633,
+        "17": 0.0615,
+        "18": 0.0593,
+        "4": 0.0588,
+        "20": 0.0569,
+        "14": 0.0552,
+        "2": 0.0376,
+        "0": 0.0303,
+        "15": 0.0232,
+        "22": 0.0218,
+        "24": 0.0066
+      }
+    },
+    "postprocess": "clip[0,100] only (metric-aware safety net; adopted in stage 3 r1 prior check B)",
+    "submission": {
+      "file": "sub_tree_best_0.78718_20260707_221451.csv",
+      "status": "CV-only (competition closed to late submission; Kaggle returned 403 Forbidden)"
+    },
+    "tree_search": {
+      "wall_s": 4592.9,
+      "n_evaluated": 46,
+      "total_budget": 60,
+      "stop_reason": "20 evals without improvement post-burst (patience=20)",
+      "dedup_rejections": 4,
+      "root": "LGB_tuned (stage-3 strongest solo, OOF R2 0.786647, digit-for-digit re-verified)"
+    },
+    "notes": "Stage-4 tree-search winner (harness_v3, node #27). Source: experiments_tree_v3.json, 46 evaluated nodes of 60 budget, total wall 4592.9s, stop_reason='20 evals without improvement post-burst (patience=20)'. R2 is MAXIMIZE: eval_s6e1 negates (-R2) for the lower-is-better harness, root pick uses max cached R2, global_best = min(-R2). Gate-verified digit-for-digit (06_rebuild_tree_best.py): all 21 members retrained with max|dOOF|=0e+00 vs cached OOFs (bit-identical thanks to deterministic LGB force_row_wise + fixed num_threads=16 across all models), recovered blend OOF R2 0.787183 == target, weights == tree-stored round(4) member-for-member. Winner is the explore-burst kitchen-sink mega-blend of the full 21-solo pool (17 non-zero weights) -- mega-blend WON here, same as s5e10 and the opposite of s4e11 where the lineage-grown blend beat the mega-blend. Submission built (clip[0,100]) but competition closed to late submission (403) -> CV-only."
+  }
+]
