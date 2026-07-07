@@ -1,0 +1,849 @@
+[
+  {
+    "id": 1,
+    "name": "Majority Class Baseline",
+    "model": "majority",
+    "cv_score": 0.5,
+    "cv_std": 0.0,
+    "notes": "AUC=0.5 (random), Accuracy=0.78840"
+  },
+  {
+    "id": 2,
+    "name": "LightGBM Baseline",
+    "model": "lightgbm",
+    "params": {
+      "objective": "binary",
+      "metric": "auc",
+      "learning_rate": 0.05,
+      "num_leaves": 63,
+      "max_depth": -1,
+      "min_child_samples": 30,
+      "feature_fraction": 0.8,
+      "bagging_fraction": 0.8,
+      "bagging_freq": 1,
+      "verbose": -1,
+      "n_jobs": -1,
+      "seed": 42,
+      "is_unbalance": true
+    },
+    "n_features": 28,
+    "cv_score": 0.89653,
+    "cv_std": 0.00104,
+    "cv_folds": [
+      0.89653,
+      0.89638,
+      0.89739,
+      0.89774,
+      0.89474
+    ],
+    "mean_best_iteration": 159,
+    "training_time_sec": 113.6,
+    "notes": "28 features, stratified 5-fold, surname target encoding, is_unbalance=True. Feb 2026 run (STATUS.md): submission lgbm_baseline_20260219_150434.csv -> Public LB 0.88716 / Private LB 0.89179."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-07T10:05:28",
+    "model": "LGB (tier1 generic)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.89097,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "tier1 generic run_competition.py: raw columns label-encoded incl. CustomerId/Surname as plain ints (no domain feature engineering, no early stopping \u2014 n_estimators fixed 2000/2000/2500), no skill applied."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-07T10:05:28",
+    "model": "XGB (tier1 generic)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.89068,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "tier1 generic run_competition.py: raw columns label-encoded incl. CustomerId/Surname as plain ints (no domain feature engineering, no early stopping \u2014 n_estimators fixed 2000/2000/2500), no skill applied."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-07T10:05:28",
+    "model": "CAT (tier1 generic)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.8913,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "tier1 generic run_competition.py: raw columns label-encoded incl. CustomerId/Surname as plain ints (no domain feature engineering, no early stopping \u2014 n_estimators fixed 2000/2000/2500), no skill applied."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-07T10:05:28",
+    "model": "tier1 generic LGB+XGB+CAT blend",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.8922,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.89097
+      },
+      {
+        "name": "XGB",
+        "score": 0.89068
+      },
+      {
+        "name": "CAT",
+        "score": 0.8913
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.3,
+        "XGB": 0.2,
+        "CAT": 0.5
+      },
+      "score": 0.8922
+    },
+    "submission": "sub_generic_0.89220_20260707_100440.csv",
+    "notes": "Tier1 baseline: competitions/run_competition.py (generic tabular pipeline, no kaggle-agent skill, no manual feature engineering). Reference point for tier1 vs tier2-4 ablation (report \u00a75)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-07T10:06:41",
+    "model": "LGB (tier2 solo)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.89365,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline + fold-safe surname TE correction); {'mean_best_iter': 166} LGB drops is_unbalance vs Feb baseline (AUC-ranking-metric prior, knowledge/experience.md, see tier3 for ablation)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-07T10:06:41",
+    "model": "XGB (tier2 solo)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.893965,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline + fold-safe surname TE correction); {}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-07T10:06:41",
+    "model": "CAT (tier2 solo)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.893913,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline + fold-safe surname TE correction); {}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-07T10:06:41",
+    "model": "tier2 LGB+XGB+CAT blend",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.894302,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.89365
+      },
+      {
+        "name": "XGB",
+        "score": 0.893965
+      },
+      {
+        "name": "CAT",
+        "score": 0.893913
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.2,
+        "XGB": 0.4,
+        "CAT": 0.4
+      },
+      "score": 0.894302
+    },
+    "submission": "tier2_blend_0.89430_20260707_100641.csv",
+    "notes": "tier2 skill 6-stage pipeline blend; simplex grid weight search (step 0.05)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-07T10:08:35",
+    "model": "LGB is_unbalance=True (tier3 r1 ablation)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.893235,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "Apples-to-apples re-test of knowledge/experience.md AUC-ranking prior (s3e3: removing imbalance weighting improved AUC) on s4e1's 165k-row cross-season churn data, SAME corrected fold-safe features/folds as tier2's no-imbalance LGB (cached score 0.893650). Delta=-0.000415. Prior HOLDS: is_unbalance hurts AUC here too."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-07T10:08:59",
+    "model": "tier3 r1 LGB+XGB+CAT blend (LGB=no_imbalance)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.894302,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.89365
+      },
+      {
+        "name": "XGB",
+        "score": 0.893965
+      },
+      {
+        "name": "CAT",
+        "score": 0.893913
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.196,
+        "XGB": 0.37,
+        "CAT": 0.434
+      },
+      "score": 0.894302
+    },
+    "submission": "tier3_r1_blend_0.89430_20260707_100859.csv",
+    "notes": "tier3 round1: is_unbalance ablation resolved (LGB=no_imbalance), blend re-weighted."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 13,
+    "timestamp": "2026-07-07T10:20:23",
+    "model": "LGB Optuna-tuned (tier3 r2, fold-0 proxy, 50 trials)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.894171,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "Optuna TPE 50 trials on fold-0 proxy (678.0s), best fold0 AUC 0.893833, params={'is_unbalance': False, 'num_leaves': 242, 'max_depth': 5, 'learning_rate': 0.012318259626952582, 'min_child_samples': 11, 'feature_fraction': 0.748276052431001, 'bagging_fraction': 0.8815984331980434, 'reg_alpha': 0.01567812629395391, 'reg_lambda': 3.2697008961494207}. Full-5fold OOF 0.894171 vs untuned pool LGB 0.893650 (delta +0.000521). Added to pool (not replacing), per experience.md convention."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 14,
+    "timestamp": "2026-07-07T10:20:42",
+    "model": "tier3 r2 4-way blend (+LGB_tuned)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.894354,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.89365
+      },
+      {
+        "name": "LGB_tuned",
+        "score": 0.894171
+      },
+      {
+        "name": "XGB",
+        "score": 0.893965
+      },
+      {
+        "name": "CAT",
+        "score": 0.893913
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.124,
+        "LGB_tuned": 0.338,
+        "XGB": 0.231,
+        "CAT": 0.307
+      },
+      "score": 0.894354
+    },
+    "submission": "tier3_r2_blend_0.89435_20260707_102041.csv",
+    "notes": "tier3 round2: Optuna fold-0-proxy tuned LGB added to pool (not replacing)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 15,
+    "timestamp": "2026-07-07T10:21:52",
+    "model": "LGB_tuned seed=2024 (tier3 r3 seed-bag)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.894137,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "Seed-bagging member: same Optuna-tuned params as r2's LGB_tuned, random_state=2024. Added to pool."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 16,
+    "timestamp": "2026-07-07T10:22:21",
+    "model": "tier3 r3 5-way blend (+LGB_tuned seed-bag)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.894354,
+    "features": [
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "is_female",
+      "geo_Germany",
+      "geo_Spain",
+      "age_sq",
+      "age_decade",
+      "age_40_60",
+      "has_balance",
+      "balance_salary_ratio",
+      "products_gt2",
+      "products_eq1",
+      "age_x_products",
+      "age_x_balance",
+      "age_x_active",
+      "geo_gender",
+      "active_x_balance",
+      "active_x_products",
+      "credit_age_ratio",
+      "surname_target_enc"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.89365
+      },
+      {
+        "name": "LGB_tuned",
+        "score": 0.894171
+      },
+      {
+        "name": "LGB_tuned_s2024",
+        "score": 0.894137
+      },
+      {
+        "name": "XGB",
+        "score": 0.893965
+      },
+      {
+        "name": "CAT",
+        "score": 0.893913
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.122,
+        "LGB_tuned": 0.257,
+        "LGB_tuned_s2024": 0.098,
+        "XGB": 0.21,
+        "CAT": 0.312
+      },
+      "score": 0.894354
+    },
+    "submission": "tier3_r3_blend_0.89435_20260707_102221.csv",
+    "notes": "tier3 round3: seed-bagged Optuna-tuned LGB (seed=2024) added to pool."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 17,
+    "timestamp": "2026-07-07T11:58:44",
+    "model": "tree-search v3 blend (node #44, 37-member kitchen-sink mega-blend from the mandatory explore burst)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.894393,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "node#18 (lgb)",
+        "weight": 0.1848,
+        "solo_auc": 0.894191
+      },
+      {
+        "name": "node#42 (xgb)",
+        "weight": 0.1685,
+        "solo_auc": 0.89369
+      },
+      {
+        "name": "node#15 (lgb)",
+        "weight": 0.1254,
+        "solo_auc": 0.894184
+      },
+      {
+        "name": "node#33 (cat)",
+        "weight": 0.077,
+        "solo_auc": 0.893612
+      },
+      {
+        "name": "node#23 (lgb)",
+        "weight": 0.0558,
+        "solo_auc": 0.89417
+      },
+      {
+        "name": "node#1 (lgb)",
+        "weight": 0.0496,
+        "solo_auc": 0.893825
+      },
+      {
+        "name": "node#28 (lgb)",
+        "weight": 0.0481,
+        "solo_auc": 0.893967
+      },
+      {
+        "name": "node#31 (cat)",
+        "weight": 0.0435,
+        "solo_auc": 0.89354
+      },
+      {
+        "name": "node#40 (xgb)",
+        "weight": 0.0424,
+        "solo_auc": 0.89354
+      },
+      {
+        "name": "node#5 (lgb)",
+        "weight": 0.0423,
+        "solo_auc": 0.894171
+      },
+      {
+        "name": "node#17 (lgb)",
+        "weight": 0.0268,
+        "solo_auc": 0.89417
+      },
+      {
+        "name": "node#39 (xgb)",
+        "weight": 0.025,
+        "solo_auc": 0.893552
+      },
+      {
+        "name": "node#27 (lgb)",
+        "weight": 0.0228,
+        "solo_auc": 0.893932
+      },
+      {
+        "name": "node#32 (cat)",
+        "weight": 0.0224,
+        "solo_auc": 0.893585
+      },
+      {
+        "name": "node#29 (cat)",
+        "weight": 0.018,
+        "solo_auc": 0.893563
+      },
+      {
+        "name": "node#24 (lgb)",
+        "weight": 0.0149,
+        "solo_auc": 0.893934
+      },
+      {
+        "name": "node#26 (lgb)",
+        "weight": 0.0141,
+        "solo_auc": 0.893947
+      },
+      {
+        "name": "node#30 (cat)",
+        "weight": 0.0138,
+        "solo_auc": 0.893557
+      },
+      {
+        "name": "(+19 members with weight < 0.01)",
+        "weight": null,
+        "solo_auc": null
+      }
+    ],
+    "ensemble": {
+      "method": "harness_v3 eval_blend defaults (dirichlet k=800 seed=42 + coordinate-ascent refine), maximizing OOF ROC-AUC",
+      "weights": {
+        "0": 0.0,
+        "1": 0.0496,
+        "2": 0.0,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 0.0423,
+        "6": 0.0,
+        "14": 0.0,
+        "15": 0.1254,
+        "16": 0.0048,
+        "17": 0.0268,
+        "18": 0.1848,
+        "19": 0.0,
+        "20": 0.0,
+        "21": 0.0,
+        "22": 0.0,
+        "23": 0.0558,
+        "24": 0.0149,
+        "25": 0.0,
+        "26": 0.0141,
+        "27": 0.0228,
+        "28": 0.0481,
+        "29": 0.018,
+        "30": 0.0138,
+        "31": 0.0435,
+        "32": 0.0224,
+        "33": 0.077,
+        "34": 0.0,
+        "35": 0.0,
+        "36": 0.0,
+        "37": 0.0,
+        "38": 0.0,
+        "39": 0.025,
+        "40": 0.0424,
+        "41": 0.0,
+        "42": 0.1685,
+        "43": 0.0
+      },
+      "score": 0.894393
+    },
+    "submission": "sub_tree_best_0.89439_20260707_115813.csv",
+    "notes": "Tree-search result (tier4, harness_v3 FIRST cross-season production run, 2026-07-07) \u2014 NOT a linear-iteration round. Source: experiments_tree_v3.json node #44 (60 evaluated nodes = full 60-node v3 budget, 0 failed, total wall 2687.4s; stop_reason='hard budget cap reached (60/60 evaluated nodes)'). Run resumed after the previous agent was externally killed mid-seeding: load_search_state() (H-1 resume contract, first real-world recovery) restored the 5-node seeded state with scores digit-identical to experiments.json counterparts (root LGB_tuned 0.894171, SEEDBAG 0.894137), and the driver completed the missing BOUNDARYPUSH/FEATPRUNE/BLEND seed lineages idempotently before entering the main loop. One driver-side gap found and fixed during the resume: an exhausted BLEND lineage (propose_child -> None forever) silently spun without consuming budget; the driver now marks such lineages plateaued (backtrack_log entry) and moves on. Winner is the explore-burst kitchen-sink mega-blend of the ENTIRE 37-member solo pool (0.894393), beating tier3's 5-way blend 0.894354 by +0.000039 \u2014 consistent with the E-5/S3 prior that post-plateau gains come from mandatory mega-blends, not hand-written long-shot solos (both burst long-shot solos, DEEPLGB 0.89419 / DEEPCAT 0.893317, passed the sanity gate but neither beat the pre-burst best solo). OOF digit-reproduction gate PASSED before submission build (scripts/06_rebuild_tree_best.py, s3e16 precedent): all 37 members retrained from tree configs with max|dOOF| = 0.0 vs the search's cached OOFs, weight-search replay recovered blend AUC 0.894393 exactly and weights matching stored round(4) values; test predictions blended with the recovered full-precision weights. CV-only: Late Submission for playground-series-s4e1 is CLOSED for this account \u2014 kaggle CLI probes on 2026-07-07 returned userHasEntered=False, 403 on ListSubmissions, and 403 on CreateSubmission (tested with both the tier3 blend CSV and this rebuilt tier4 CSV). No leaderboard field is set. External-validity anchor: the Feb-2026 run of this same dataset family DID submit (CV 0.89653 -> Private LB 0.89179, gap ~0.005), and the fold-safe surname-TE correction this run applies makes the current CV numbers strictly more conservative than Feb's."
+  }
+]

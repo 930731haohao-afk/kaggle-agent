@@ -1,0 +1,29 @@
+name: playground-series-s4e1
+url: https://www.kaggle.com/competitions/playground-series-s4e1
+description: Bank customer churn prediction (Playground Series Season 4, Episode 1)
+problem_type: binary_classification
+evaluation_metric: auc
+optimization_direction: maximize
+target_column: Exited
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes: |
+  - Bank churn prediction (binary 0/1); target Exited, 21.2% positive (churned)
+  - 165,034 train rows / 110,023 test rows; 12 features excl. id/target
+  - Sample submission has 0.5 values -> expects probability predictions (AUC metric)
+  - No missing values in train or test; clean tabular dataset
+  - Features: CustomerId, Surname, CreditScore, Geography (France/Spain/Germany),
+    Gender, Age, Tenure, Balance, NumOfProducts, HasCrCard, IsActiveMember, EstimatedSalary
+  - CustomerId and Surname are likely non-predictive identifiers as raw IDs, but
+    Surname carries geographic/cultural signal usable via target encoding (see Feb 2026 STATUS.md)
+  - Cross-season note: this is the S4E1 counterpart of the same bank-churn dataset family;
+    Feb 2026 run (STATUS.md) already has EDA + a 28-feature LGBM baseline
+    (CV AUC 0.89653, Public LB 0.88716, Private LB 0.89179) — treated as prior-season
+    reference, not re-derived from scratch this run.

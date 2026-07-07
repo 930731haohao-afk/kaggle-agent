@@ -1,0 +1,1370 @@
+{
+  "competition": {
+    "name": "playground-series-s4e1",
+    "url": "https://www.kaggle.com/competitions/playground-series-s4e1",
+    "description": "Bank customer churn prediction (Playground Series Season 4, Episode 1)",
+    "problem_type": "binary_classification",
+    "evaluation_metric": "auc",
+    "optimization_direction": "maximize",
+    "target_column": "Exited",
+    "id_column": "id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false,
+      "daily_submission_limit": 5
+    },
+    "notes": "- Bank churn prediction (binary 0/1); target Exited, 21.2% positive (churned)\n- 165,034 train rows / 110,023 test rows; 12 features excl. id/target\n- Sample submission has 0.5 values -> expects probability predictions (AUC metric)\n- No missing values in train or test; clean tabular dataset\n- Features: CustomerId, Surname, CreditScore, Geography (France/Spain/Germany),\n  Gender, Age, Tenure, Balance, NumOfProducts, HasCrCard, IsActiveMember, EstimatedSalary\n- CustomerId and Surname are likely non-predictive identifiers as raw IDs, but\n  Surname carries geographic/cultural signal usable via target encoding (see Feb 2026 STATUS.md)\n- Cross-season note: this is the S4E1 counterpart of the same bank-churn dataset family;\n  Feb 2026 run (STATUS.md) already has EDA + a 28-feature LGBM baseline\n  (CV AUC 0.89653, Public LB 0.88716, Private LB 0.89179) — treated as prior-season\n  reference, not re-derived from scratch this run.\n"
+  },
+  "material_level": "full",
+  "status_md_present": true,
+  "status": {
+    "present": true,
+    "sections": {
+      "Playground Series S4E1 — Bank Churn Prediction": "**Date**: 2026-02-19",
+      "Competition Info": "- URL: https://www.kaggle.com/competitions/playground-series-s4e1\n- Problem: Binary classification (predict bank churn)\n- Metric: ROC AUC (probability predictions)\n- Train: 165,034 rows, 14 columns | Test: 110,023 rows\n- Target: `Exited` (0/1, 21.2% positive)",
+      "Key EDA Findings": "- Clean tabular dataset — no missing values, no train-test shift\n- Age is the strongest predictor (r=+0.34), churn peaks in 40s-50s then drops\n- NumOfProducts: 3-4 products → ~88% churn, 2 products → 6%, 1 product → 35%\n- Geography: Germany 37.9% churn vs France 16.5% vs Spain 17.2%\n- Gender: Female 28.0% vs Male 15.9%\n- IsActiveMember: inactive 29.7% vs active 12.5%\n- Surname is predictive (McGregor 75.9% churn, Davey 0%) — target encoded\n- Balance: 54.3% zero balance, non-zero → higher churn (27.1% vs 16.2%)\n- No cross-correlations above 0.3 among features\n- 54 duplicates in train (minimal)",
+      "Feature Engineering": "- 28 features total\n- Binary/dummy encodings: is_female, geo_Germany, geo_Spain\n- Age features: age_sq, age_decade, age_40_60 (peak churn indicator)\n- Balance features: has_balance, balance_salary_ratio\n- NumOfProducts features: products_gt2, products_eq1\n- Interactions: age_x_products, age_x_balance, age_x_active, geo_gender, active_x_balance, active_x_products, credit_age_ratio\n- Surname target encoding (OOF with smoothing=20)",
+      "Experiment Results": "| # | Model | CV AUC | Notes |\n|---|-------|--------|-------|\n| 1 | Majority Class | 0.50000 | Random baseline |\n| 2 | LightGBM | 0.89653 | 28 features, 5-fold, surname target enc |",
+      "Submissions": "- `lgbm_baseline_20260219_150434.csv` → Public LB: **0.88716**, Private LB: **0.89179**",
+      "Model Details": "- **Best model**: LightGBM (binary, AUC metric, is_unbalance=True, lr=0.05, num_leaves=63, ~159 iterations)\n- Validation: Stratified 5-Fold CV\n- Top features: Age (dominant), NumOfProducts, surname_target_enc, active_x_products, age_sq",
+      "Lessons Learned": "- Age and NumOfProducts dominate — together they largely determine churn risk\n- Surname target encoding is the 3rd most important feature — surnames carry geographic/cultural signal\n- Short training (159 iterations avg) — model converges quickly on clean data\n- CV AUC (0.897) closely matches Private LB (0.892) — reliable validation",
+      "Potential Improvements": "- XGBoost / CatBoost ensemble\n- Hyperparameter tuning with Optuna\n- More interaction features (e.g., Geography x Age, Balance x NumOfProducts)\n- Feature selection\n- Stacking with different model types\n\n---",
+      "2026-07-07 跨季泛化四層重跑(過夜單元 1/5)": "二月紀錄(上文)如實保留,作為前季參照。本次重跑目的:驗證 S3 十場蒸餾出的經驗庫配方\n是否跨季(S4)成立,以四層消融(tier1 generic → tier2 skill → tier3 線性迭代 → tier4\n樹搜尋 v3)全流程執行,全部四層共用同一 28 特徵集(features.py)與同一 canonical 5-fold\nStratifiedKFold(seed=42)。",
+      "關鍵方法修正(對二月版)": "- **surname 目標編碼折修正**:二月版 TE 用獨立 seed=99 折計 OOF,與模型訓練折(seed=42)\n  不同——姓氏分組跨兩種折劃分共享,是「看似避免洩漏、實為另一種洩漏路徑」;本次改為\n  fold-safe(TE 折 == 模型折)。同配方 solo LGB 由二月的 0.89653 降至 0.8937 量級,\n  差距主要來源即此洩漏修正(詳 knowledge/experience.md AUC 節新條目)。",
+      "四層結果(全部 fold-safe 修正後、同折可比)": "| tier | 配置 | OOF AUC |\n|------|------|---------|\n| tier1 | generic run_competition.py 3-model blend(raw 欄位 label-encode) | 0.8922 |\n| tier2 | skill 六階段(28 特徵 + fold-safe surname TE)3-model blend | 0.894302 |\n| tier3 | + 線性迭代 3 輪(is_unbalance 消融 / Optuna fold-0 50 trials / seed-bag)5-way blend | 0.894354 |\n| tier4 | + 樹搜尋 harness_v3(60 節點滿預算,node #44 全池 37 成員 mega-blend) | **0.894393** |",
+      "tier3 迭代摘要": "- r1 is_unbalance 消融:大樣本上結論與 s3e3 同向(移除加權較優,Δ−0.000415),blend 不變 0.894302\n- r2 Optuna(fold-0 proxy,50 trials,678s):LGB_tuned solo 0.894171(本場最強 solo),4-way blend 0.894354\n- r3 seed-bag(seed=2024):solo 0.894137,5-way blend 0.894354(+0.000000,增益歸零)——依協定停止",
+      "tier4 樹搜尋(v3 預算策略首次跨季實戰 + H-1 resume 契約首次真實復原)": "- 前代 agent 被外部 kill 於播種中(5/8 個第一代 lineage 完成);resume 以\n  `load_search_state()`(H-1 契約)載回 5 節點狀態,種子分數與 experiments.json 對應項\n  逐位元一致(0.894171/0.894137 等),續播 BOUNDARYPUSH/FEATPRUNE/BLEND 後進主迴圈。\n- **resume 實戰發現一個 driver 缺口**(非 harness 缺口):BLEND lineage 的 fallback 提案\n  空間耗盡後 `propose_child` 永遠回 None,而 `select_next_parent` 只在 MAX_CHILDREN 滿時\n  才 plateau——搜尋卡在同一 lineage 空轉直到 ITER_SAFETY_CAP。修正:driver 在提案耗盡時\n  自行標 plateau(寫入 backtrack_log)後繼續。修正後跑滿 60 節點預算。\n- 相位機:exploit 44 評估 → 全 lineage plateau → 強制 explore burst(mega-blend +\n  DEEPLGB + DEEPCAT 長射,sanity gate 全 PASS)→ burst 內 mega-blend(node #44,37 成員,\n  0.894393)即為全域最佳 → 60/60 hard cap 停止。0 失敗節點、0 dedup burn。\n- 教訓與 S3 一致(07_tree_search.md §3 先驗再驗證):**plateau 後的增益來自強制\n  kitchen-sink mega-blend,不來自手寫長射 solo**。",
+      "提交(Late Submission 關閉,CV-only)": "- kaggle CLI 實測:`userHasEntered: False`、ListSubmissions 403、CreateSubmission 403\n  (以 tier3 blend CSV 與 tier4 rebuild CSV 各實測一次)——本場 Late Submission 不開放,\n  四層全部 CV-only,無 LB 錨點。CV 可信度依據:同資料族的二月版曾實提交\n  (CV 0.89653 → Private 0.89179,gap ~0.005,方向與 S3 各場一致)。\n- tier4 最佳 blend 已依 s3e16 前例走 OOF 逐位元重現閘門重建 test 預測\n  (scripts/06_rebuild_tree_best.py → rebuild_tree_best_result.json)。",
+      "Reproduce(2026-07 版)": "```bash\ncd /home/tjyen/ai_agents/kaggle\nuv run python3 competitions/run_competition.py playground-series-s4e1        # tier1\nuv run python3 competitions/playground-series-s4e1/scripts/04_train_blend.py # tier2\nuv run python3 competitions/playground-series-s4e1/scripts/05_iterate.py r1_unbalance_ablation\nuv run python3 competitions/playground-series-s4e1/scripts/05_iterate.py r2_optuna_lgb\nuv run python3 competitions/playground-series-s4e1/scripts/05_iterate.py r3_seed_bag     # tier3\nuv run python3 tree_search/run_s4e1_v3.py                                     # tier4(可中斷續跑)\nuv run python3 competitions/playground-series-s4e1/scripts/06_rebuild_tree_best.py  # 重建+閘門\n```"
+    }
+  },
+  "eda": {
+    "source": "eda_summary.py",
+    "n_rows_train": 165034,
+    "n_rows_test": 110023,
+    "n_features": 12,
+    "numeric_features": [
+      "CustomerId",
+      "CreditScore",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary"
+    ],
+    "categorical_features": [
+      "Surname",
+      "Geography",
+      "Gender"
+    ],
+    "duplicate_rows_train": 0,
+    "target": {
+      "name": "Exited",
+      "dtype": "int64",
+      "n_unique": 2,
+      "missing": 0,
+      "mean": 0.211599,
+      "std": 0.408443,
+      "min": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "max": 1.0,
+      "skew": 1.412215,
+      "kurtosis": -0.00565,
+      "is_integer_valued": true,
+      "log_transform_candidate": true,
+      "value_counts": {
+        "0": 130113,
+        "1": 34921
+      }
+    },
+    "missing_train": {},
+    "missing_test": {},
+    "numeric_stats": {
+      "CustomerId": {
+        "mean": 15692005.019026,
+        "std": 71397.816791,
+        "min": 15565701.0,
+        "max": 15815690.0,
+        "skew": -0.02294,
+        "zeros": 0.0
+      },
+      "CreditScore": {
+        "mean": 656.454373,
+        "std": 80.10334,
+        "min": 350.0,
+        "max": 850.0,
+        "skew": -0.059291,
+        "zeros": 0.0
+      },
+      "Age": {
+        "mean": 38.125888,
+        "std": 8.867205,
+        "min": 18.0,
+        "max": 92.0,
+        "skew": 0.968063,
+        "zeros": 0.0
+      },
+      "Tenure": {
+        "mean": 5.020353,
+        "std": 2.806159,
+        "min": 0.0,
+        "max": 10.0,
+        "skew": 0.00649,
+        "zeros": 5007.0
+      },
+      "Balance": {
+        "mean": 55478.086689,
+        "std": 62817.663278,
+        "min": 0.0,
+        "max": 250898.09,
+        "skew": 0.38202,
+        "zeros": 89648.0
+      },
+      "NumOfProducts": {
+        "mean": 1.554455,
+        "std": 0.547154,
+        "min": 1.0,
+        "max": 4.0,
+        "skew": 0.368278,
+        "zeros": 0.0
+      },
+      "HasCrCard": {
+        "mean": 0.753954,
+        "std": 0.430707,
+        "min": 0.0,
+        "max": 1.0,
+        "skew": -1.179255,
+        "zeros": 40606.0
+      },
+      "IsActiveMember": {
+        "mean": 0.49777,
+        "std": 0.499997,
+        "min": 0.0,
+        "max": 1.0,
+        "skew": 0.00892,
+        "zeros": 82885.0
+      },
+      "EstimatedSalary": {
+        "mean": 112574.822734,
+        "std": 50292.865585,
+        "min": 11.58,
+        "max": 199992.48,
+        "skew": -0.309022,
+        "zeros": 0.0
+      }
+    },
+    "categorical_stats": {
+      "Surname": {
+        "cardinality": 2797,
+        "top": {
+          "Hsia": 2456,
+          "T'ien": 2282,
+          "Hs?": 1611,
+          "Kao": 1577,
+          "Maclean": 1577
+        },
+        "unseen_in_test": [
+          "Armit",
+          "Asher",
+          "Bardin",
+          "Barwell",
+          "Beach",
+          "Bibb",
+          "Birch",
+          "Bonham",
+          "Brodney",
+          "Bruche",
+          "Burgin",
+          "Bustard",
+          "Caraway",
+          "Cecil",
+          "Chadwick",
+          "Charteris",
+          "Colon",
+          "Cran",
+          "Creel",
+          "Daigle"
+        ]
+      },
+      "Geography": {
+        "cardinality": 3,
+        "top": {
+          "France": 94215,
+          "Spain": 36213,
+          "Germany": 34606
+        },
+        "unseen_in_test": []
+      },
+      "Gender": {
+        "cardinality": 2,
+        "top": {
+          "Male": 93150,
+          "Female": 71884
+        },
+        "unseen_in_test": []
+      }
+    },
+    "target_correlation": {
+      "CustomerId": {
+        "pearson": -0.009947,
+        "spearman": -0.009826
+      },
+      "CreditScore": {
+        "pearson": -0.027383,
+        "spearman": -0.02912
+      },
+      "Age": {
+        "pearson": 0.340768,
+        "spearman": 0.354665
+      },
+      "Tenure": {
+        "pearson": -0.019565,
+        "spearman": -0.019354
+      },
+      "Balance": {
+        "pearson": 0.129743,
+        "spearman": 0.126417
+      },
+      "NumOfProducts": {
+        "pearson": -0.214554,
+        "spearman": -0.266771
+      },
+      "HasCrCard": {
+        "pearson": -0.022141,
+        "spearman": -0.022141
+      },
+      "IsActiveMember": {
+        "pearson": -0.210237,
+        "spearman": -0.210237
+      },
+      "EstimatedSalary": {
+        "pearson": 0.018827,
+        "spearman": 0.019997
+      }
+    },
+    "high_collinearity_pairs": [],
+    "train_test_mean_shift_pct": {
+      "CustomerId": 0.000584,
+      "CreditScore": 0.011641,
+      "Age": -0.009659,
+      "Tenure": -0.472403,
+      "Balance": -0.260419,
+      "NumOfProducts": -0.073002,
+      "HasCrCard": -0.120854,
+      "IsActiveMember": -0.509742,
+      "EstimatedSalary": -0.230669
+    },
+    "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+  },
+  "experiments": [
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-07T10:05:28",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "LGB (tier1 generic)",
+      "score": 0.89097,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "notes": "tier1 generic run_competition.py: raw columns label-encoded incl. CustomerId/Surname as plain ints (no domain feature engineering, no early stopping — n_estimators fixed 2000/2000/2500), no skill applied."
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-07T10:05:28",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "XGB (tier1 generic)",
+      "score": 0.89068,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "notes": "tier1 generic run_competition.py: raw columns label-encoded incl. CustomerId/Surname as plain ints (no domain feature engineering, no early stopping — n_estimators fixed 2000/2000/2500), no skill applied."
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-07T10:05:28",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "CAT (tier1 generic)",
+      "score": 0.8913,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "notes": "tier1 generic run_competition.py: raw columns label-encoded incl. CustomerId/Surname as plain ints (no domain feature engineering, no early stopping — n_estimators fixed 2000/2000/2500), no skill applied."
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-07T10:05:28",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "tier1 generic LGB+XGB+CAT blend",
+      "score": 0.8922,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.89097
+        },
+        {
+          "name": "XGB",
+          "score": 0.89068
+        },
+        {
+          "name": "CAT",
+          "score": 0.8913
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.3,
+          "XGB": 0.2,
+          "CAT": 0.5
+        },
+        "score": 0.8922
+      },
+      "submission": "sub_generic_0.89220_20260707_100440.csv",
+      "notes": "Tier1 baseline: competitions/run_competition.py (generic tabular pipeline, no kaggle-agent skill, no manual feature engineering). Reference point for tier1 vs tier2-4 ablation (report §5)."
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-07T10:06:41",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "LGB (tier2 solo)",
+      "score": 0.89365,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline + fold-safe surname TE correction); {'mean_best_iter': 166} LGB drops is_unbalance vs Feb baseline (AUC-ranking-metric prior, knowledge/experience.md, see tier3 for ablation)."
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-07T10:06:41",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "XGB (tier2 solo)",
+      "score": 0.893965,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline + fold-safe surname TE correction); {}"
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-07T10:06:41",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "CAT (tier2 solo)",
+      "score": 0.893913,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline + fold-safe surname TE correction); {}"
+    },
+    {
+      "experiment_id": 10,
+      "timestamp": "2026-07-07T10:06:41",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "tier2 LGB+XGB+CAT blend",
+      "score": 0.894302,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.89365
+        },
+        {
+          "name": "XGB",
+          "score": 0.893965
+        },
+        {
+          "name": "CAT",
+          "score": 0.893913
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.2,
+          "XGB": 0.4,
+          "CAT": 0.4
+        },
+        "score": 0.894302
+      },
+      "submission": "tier2_blend_0.89430_20260707_100641.csv",
+      "notes": "tier2 skill 6-stage pipeline blend; simplex grid weight search (step 0.05)."
+    },
+    {
+      "experiment_id": 11,
+      "timestamp": "2026-07-07T10:08:35",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "LGB is_unbalance=True (tier3 r1 ablation)",
+      "score": 0.893235,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "notes": "Apples-to-apples re-test of knowledge/experience.md AUC-ranking prior (s3e3: removing imbalance weighting improved AUC) on s4e1's 165k-row cross-season churn data, SAME corrected fold-safe features/folds as tier2's no-imbalance LGB (cached score 0.893650). Delta=-0.000415. Prior HOLDS: is_unbalance hurts AUC here too."
+    },
+    {
+      "experiment_id": 12,
+      "timestamp": "2026-07-07T10:08:59",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "tier3 r1 LGB+XGB+CAT blend (LGB=no_imbalance)",
+      "score": 0.894302,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.89365
+        },
+        {
+          "name": "XGB",
+          "score": 0.893965
+        },
+        {
+          "name": "CAT",
+          "score": 0.893913
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.196,
+          "XGB": 0.37,
+          "CAT": 0.434
+        },
+        "score": 0.894302
+      },
+      "submission": "tier3_r1_blend_0.89430_20260707_100859.csv",
+      "notes": "tier3 round1: is_unbalance ablation resolved (LGB=no_imbalance), blend re-weighted."
+    },
+    {
+      "experiment_id": 13,
+      "timestamp": "2026-07-07T10:20:23",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "LGB Optuna-tuned (tier3 r2, fold-0 proxy, 50 trials)",
+      "score": 0.894171,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "notes": "Optuna TPE 50 trials on fold-0 proxy (678.0s), best fold0 AUC 0.893833, params={'is_unbalance': False, 'num_leaves': 242, 'max_depth': 5, 'learning_rate': 0.012318259626952582, 'min_child_samples': 11, 'feature_fraction': 0.748276052431001, 'bagging_fraction': 0.8815984331980434, 'reg_alpha': 0.01567812629395391, 'reg_lambda': 3.2697008961494207}. Full-5fold OOF 0.894171 vs untuned pool LGB 0.893650 (delta +0.000521). Added to pool (not replacing), per experience.md convention."
+    },
+    {
+      "experiment_id": 14,
+      "timestamp": "2026-07-07T10:20:42",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "tier3 r2 4-way blend (+LGB_tuned)",
+      "score": 0.894354,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.89365
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.894171
+        },
+        {
+          "name": "XGB",
+          "score": 0.893965
+        },
+        {
+          "name": "CAT",
+          "score": 0.893913
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.124,
+          "LGB_tuned": 0.338,
+          "XGB": 0.231,
+          "CAT": 0.307
+        },
+        "score": 0.894354
+      },
+      "submission": "tier3_r2_blend_0.89435_20260707_102041.csv",
+      "notes": "tier3 round2: Optuna fold-0-proxy tuned LGB added to pool (not replacing)."
+    },
+    {
+      "experiment_id": 15,
+      "timestamp": "2026-07-07T10:21:52",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "LGB_tuned seed=2024 (tier3 r3 seed-bag)",
+      "score": 0.894137,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "notes": "Seed-bagging member: same Optuna-tuned params as r2's LGB_tuned, random_state=2024. Added to pool."
+    },
+    {
+      "experiment_id": 16,
+      "timestamp": "2026-07-07T10:22:21",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "tier3 r3 5-way blend (+LGB_tuned seed-bag)",
+      "score": 0.894354,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "CreditScore",
+        "Geography",
+        "Gender",
+        "Age",
+        "Tenure",
+        "Balance",
+        "NumOfProducts",
+        "HasCrCard",
+        "IsActiveMember",
+        "EstimatedSalary",
+        "is_female",
+        "geo_Germany",
+        "geo_Spain",
+        "age_sq",
+        "age_decade",
+        "age_40_60",
+        "has_balance",
+        "balance_salary_ratio",
+        "products_gt2",
+        "products_eq1",
+        "age_x_products",
+        "age_x_balance",
+        "age_x_active",
+        "geo_gender",
+        "active_x_balance",
+        "active_x_products",
+        "credit_age_ratio",
+        "surname_target_enc"
+      ],
+      "n_features": 28,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.89365
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.894171
+        },
+        {
+          "name": "LGB_tuned_s2024",
+          "score": 0.894137
+        },
+        {
+          "name": "XGB",
+          "score": 0.893965
+        },
+        {
+          "name": "CAT",
+          "score": 0.893913
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.122,
+          "LGB_tuned": 0.257,
+          "LGB_tuned_s2024": 0.098,
+          "XGB": 0.21,
+          "CAT": 0.312
+        },
+        "score": 0.894354
+      },
+      "submission": "tier3_r3_blend_0.89435_20260707_102221.csv",
+      "notes": "tier3 round3: seed-bagged Optuna-tuned LGB (seed=2024) added to pool."
+    },
+    {
+      "experiment_id": 17,
+      "timestamp": "2026-07-07T11:58:44",
+      "source_format": "v2",
+      "metric": "auc",
+      "direction": "maximize",
+      "model": "tree-search v3 blend (node #44, 37-member kitchen-sink mega-blend from the mandatory explore burst)",
+      "score": 0.894393,
+      "cv": {
+        "scheme": "5fold_stratified",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "base_models": [
+        {
+          "name": "node#18 (lgb)",
+          "weight": 0.1848,
+          "solo_auc": 0.894191
+        },
+        {
+          "name": "node#42 (xgb)",
+          "weight": 0.1685,
+          "solo_auc": 0.89369
+        },
+        {
+          "name": "node#15 (lgb)",
+          "weight": 0.1254,
+          "solo_auc": 0.894184
+        },
+        {
+          "name": "node#33 (cat)",
+          "weight": 0.077,
+          "solo_auc": 0.893612
+        },
+        {
+          "name": "node#23 (lgb)",
+          "weight": 0.0558,
+          "solo_auc": 0.89417
+        },
+        {
+          "name": "node#1 (lgb)",
+          "weight": 0.0496,
+          "solo_auc": 0.893825
+        },
+        {
+          "name": "node#28 (lgb)",
+          "weight": 0.0481,
+          "solo_auc": 0.893967
+        },
+        {
+          "name": "node#31 (cat)",
+          "weight": 0.0435,
+          "solo_auc": 0.89354
+        },
+        {
+          "name": "node#40 (xgb)",
+          "weight": 0.0424,
+          "solo_auc": 0.89354
+        },
+        {
+          "name": "node#5 (lgb)",
+          "weight": 0.0423,
+          "solo_auc": 0.894171
+        },
+        {
+          "name": "node#17 (lgb)",
+          "weight": 0.0268,
+          "solo_auc": 0.89417
+        },
+        {
+          "name": "node#39 (xgb)",
+          "weight": 0.025,
+          "solo_auc": 0.893552
+        },
+        {
+          "name": "node#27 (lgb)",
+          "weight": 0.0228,
+          "solo_auc": 0.893932
+        },
+        {
+          "name": "node#32 (cat)",
+          "weight": 0.0224,
+          "solo_auc": 0.893585
+        },
+        {
+          "name": "node#29 (cat)",
+          "weight": 0.018,
+          "solo_auc": 0.893563
+        },
+        {
+          "name": "node#24 (lgb)",
+          "weight": 0.0149,
+          "solo_auc": 0.893934
+        },
+        {
+          "name": "node#26 (lgb)",
+          "weight": 0.0141,
+          "solo_auc": 0.893947
+        },
+        {
+          "name": "node#30 (cat)",
+          "weight": 0.0138,
+          "solo_auc": 0.893557
+        },
+        {
+          "name": "(+19 members with weight < 0.01)",
+          "weight": null,
+          "solo_auc": null
+        }
+      ],
+      "ensemble": {
+        "method": "harness_v3 eval_blend defaults (dirichlet k=800 seed=42 + coordinate-ascent refine), maximizing OOF ROC-AUC",
+        "weights": {
+          "0": 0.0,
+          "1": 0.0496,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0423,
+          "6": 0.0,
+          "14": 0.0,
+          "15": 0.1254,
+          "16": 0.0048,
+          "17": 0.0268,
+          "18": 0.1848,
+          "19": 0.0,
+          "20": 0.0,
+          "21": 0.0,
+          "22": 0.0,
+          "23": 0.0558,
+          "24": 0.0149,
+          "25": 0.0,
+          "26": 0.0141,
+          "27": 0.0228,
+          "28": 0.0481,
+          "29": 0.018,
+          "30": 0.0138,
+          "31": 0.0435,
+          "32": 0.0224,
+          "33": 0.077,
+          "34": 0.0,
+          "35": 0.0,
+          "36": 0.0,
+          "37": 0.0,
+          "38": 0.0,
+          "39": 0.025,
+          "40": 0.0424,
+          "41": 0.0,
+          "42": 0.1685,
+          "43": 0.0
+        },
+        "score": 0.894393
+      },
+      "submission": "sub_tree_best_0.89439_20260707_115813.csv",
+      "notes": "Tree-search result (tier4, harness_v3 FIRST cross-season production run, 2026-07-07) — NOT a linear-iteration round. Source: experiments_tree_v3.json node #44 (60 evaluated nodes = full 60-node v3 budget, 0 failed, total wall 2687.4s; stop_reason='hard budget cap reached (60/60 evaluated nodes)'). Run resumed after the previous agent was externally killed mid-seeding: load_search_state() (H-1 resume contract, first real-world recovery) restored the 5-node seeded state with scores digit-identical to experiments.json counterparts (root LGB_tuned 0.894171, SEEDBAG 0.894137), and the driver completed the missing BOUNDARYPUSH/FEATPRUNE/BLEND seed lineages idempotently before entering the main loop. One driver-side gap found and fixed during the resume: an exhausted BLEND lineage (propose_child -> None forever) silently spun without consuming budget; the driver now marks such lineages plateaued (backtrack_log entry) and moves on. Winner is the explore-burst kitchen-sink mega-blend of the ENTIRE 37-member solo pool (0.894393), beating tier3's 5-way blend 0.894354 by +0.000039 — consistent with the E-5/S3 prior that post-plateau gains come from mandatory mega-blends, not hand-written long-shot solos (both burst long-shot solos, DEEPLGB 0.89419 / DEEPCAT 0.893317, passed the sanity gate but neither beat the pre-burst best solo). OOF digit-reproduction gate PASSED before submission build (scripts/06_rebuild_tree_best.py, s3e16 precedent): all 37 members retrained from tree configs with max|dOOF| = 0.0 vs the search's cached OOFs, weight-search replay recovered blend AUC 0.894393 exactly and weights matching stored round(4) values; test predictions blended with the recovered full-precision weights. CV-only: Late Submission for playground-series-s4e1 is CLOSED for this account — kaggle CLI probes on 2026-07-07 returned userHasEntered=False, 403 on ListSubmissions, and 403 on CreateSubmission (tested with both the tier3 blend CSV and this rebuilt tier4 CSV). No leaderboard field is set. External-validity anchor: the Feb-2026 run of this same dataset family DID submit (CV 0.89653 -> Private LB 0.89179, gap ~0.005), and the fold-safe surname-TE correction this run applies makes the current CV numbers strictly more conservative than Feb's."
+    }
+  ],
+  "best": {
+    "experiment_id": 17,
+    "timestamp": "2026-07-07T11:58:44",
+    "source_format": "v2",
+    "metric": "auc",
+    "direction": "maximize",
+    "model": "tree-search v3 blend (node #44, 37-member kitchen-sink mega-blend from the mandatory explore burst)",
+    "score": 0.894393,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "node#18 (lgb)",
+        "weight": 0.1848,
+        "solo_auc": 0.894191
+      },
+      {
+        "name": "node#42 (xgb)",
+        "weight": 0.1685,
+        "solo_auc": 0.89369
+      },
+      {
+        "name": "node#15 (lgb)",
+        "weight": 0.1254,
+        "solo_auc": 0.894184
+      },
+      {
+        "name": "node#33 (cat)",
+        "weight": 0.077,
+        "solo_auc": 0.893612
+      },
+      {
+        "name": "node#23 (lgb)",
+        "weight": 0.0558,
+        "solo_auc": 0.89417
+      },
+      {
+        "name": "node#1 (lgb)",
+        "weight": 0.0496,
+        "solo_auc": 0.893825
+      },
+      {
+        "name": "node#28 (lgb)",
+        "weight": 0.0481,
+        "solo_auc": 0.893967
+      },
+      {
+        "name": "node#31 (cat)",
+        "weight": 0.0435,
+        "solo_auc": 0.89354
+      },
+      {
+        "name": "node#40 (xgb)",
+        "weight": 0.0424,
+        "solo_auc": 0.89354
+      },
+      {
+        "name": "node#5 (lgb)",
+        "weight": 0.0423,
+        "solo_auc": 0.894171
+      },
+      {
+        "name": "node#17 (lgb)",
+        "weight": 0.0268,
+        "solo_auc": 0.89417
+      },
+      {
+        "name": "node#39 (xgb)",
+        "weight": 0.025,
+        "solo_auc": 0.893552
+      },
+      {
+        "name": "node#27 (lgb)",
+        "weight": 0.0228,
+        "solo_auc": 0.893932
+      },
+      {
+        "name": "node#32 (cat)",
+        "weight": 0.0224,
+        "solo_auc": 0.893585
+      },
+      {
+        "name": "node#29 (cat)",
+        "weight": 0.018,
+        "solo_auc": 0.893563
+      },
+      {
+        "name": "node#24 (lgb)",
+        "weight": 0.0149,
+        "solo_auc": 0.893934
+      },
+      {
+        "name": "node#26 (lgb)",
+        "weight": 0.0141,
+        "solo_auc": 0.893947
+      },
+      {
+        "name": "node#30 (cat)",
+        "weight": 0.0138,
+        "solo_auc": 0.893557
+      },
+      {
+        "name": "(+19 members with weight < 0.01)",
+        "weight": null,
+        "solo_auc": null
+      }
+    ],
+    "ensemble": {
+      "method": "harness_v3 eval_blend defaults (dirichlet k=800 seed=42 + coordinate-ascent refine), maximizing OOF ROC-AUC",
+      "weights": {
+        "0": 0.0,
+        "1": 0.0496,
+        "2": 0.0,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 0.0423,
+        "6": 0.0,
+        "14": 0.0,
+        "15": 0.1254,
+        "16": 0.0048,
+        "17": 0.0268,
+        "18": 0.1848,
+        "19": 0.0,
+        "20": 0.0,
+        "21": 0.0,
+        "22": 0.0,
+        "23": 0.0558,
+        "24": 0.0149,
+        "25": 0.0,
+        "26": 0.0141,
+        "27": 0.0228,
+        "28": 0.0481,
+        "29": 0.018,
+        "30": 0.0138,
+        "31": 0.0435,
+        "32": 0.0224,
+        "33": 0.077,
+        "34": 0.0,
+        "35": 0.0,
+        "36": 0.0,
+        "37": 0.0,
+        "38": 0.0,
+        "39": 0.025,
+        "40": 0.0424,
+        "41": 0.0,
+        "42": 0.1685,
+        "43": 0.0
+      },
+      "score": 0.894393
+    },
+    "submission": "sub_tree_best_0.89439_20260707_115813.csv",
+    "notes": "Tree-search result (tier4, harness_v3 FIRST cross-season production run, 2026-07-07) — NOT a linear-iteration round. Source: experiments_tree_v3.json node #44 (60 evaluated nodes = full 60-node v3 budget, 0 failed, total wall 2687.4s; stop_reason='hard budget cap reached (60/60 evaluated nodes)'). Run resumed after the previous agent was externally killed mid-seeding: load_search_state() (H-1 resume contract, first real-world recovery) restored the 5-node seeded state with scores digit-identical to experiments.json counterparts (root LGB_tuned 0.894171, SEEDBAG 0.894137), and the driver completed the missing BOUNDARYPUSH/FEATPRUNE/BLEND seed lineages idempotently before entering the main loop. One driver-side gap found and fixed during the resume: an exhausted BLEND lineage (propose_child -> None forever) silently spun without consuming budget; the driver now marks such lineages plateaued (backtrack_log entry) and moves on. Winner is the explore-burst kitchen-sink mega-blend of the ENTIRE 37-member solo pool (0.894393), beating tier3's 5-way blend 0.894354 by +0.000039 — consistent with the E-5/S3 prior that post-plateau gains come from mandatory mega-blends, not hand-written long-shot solos (both burst long-shot solos, DEEPLGB 0.89419 / DEEPCAT 0.893317, passed the sanity gate but neither beat the pre-burst best solo). OOF digit-reproduction gate PASSED before submission build (scripts/06_rebuild_tree_best.py, s3e16 precedent): all 37 members retrained from tree configs with max|dOOF| = 0.0 vs the search's cached OOFs, weight-search replay recovered blend AUC 0.894393 exactly and weights matching stored round(4) values; test predictions blended with the recovered full-precision weights. CV-only: Late Submission for playground-series-s4e1 is CLOSED for this account — kaggle CLI probes on 2026-07-07 returned userHasEntered=False, 403 on ListSubmissions, and 403 on CreateSubmission (tested with both the tier3 blend CSV and this rebuilt tier4 CSV). No leaderboard field is set. External-validity anchor: the Feb-2026 run of this same dataset family DID submit (CV 0.89653 -> Private LB 0.89179, gap ~0.005), and the fold-safe surname-TE correction this run applies makes the current CV numbers strictly more conservative than Feb's."
+  },
+  "trajectory": [
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-07T10:05:28",
+      "score": 0.89097,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-07T10:05:28",
+      "score": 0.89068,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-07T10:05:28",
+      "score": 0.8913,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-07T10:05:28",
+      "score": 0.8922,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-07T10:06:41",
+      "score": 0.89365,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-07T10:06:41",
+      "score": 0.893965,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-07T10:06:41",
+      "score": 0.893913,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 10,
+      "timestamp": "2026-07-07T10:06:41",
+      "score": 0.894302,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 11,
+      "timestamp": "2026-07-07T10:08:35",
+      "score": 0.893235,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 12,
+      "timestamp": "2026-07-07T10:08:59",
+      "score": 0.894302,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 13,
+      "timestamp": "2026-07-07T10:20:23",
+      "score": 0.894171,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 14,
+      "timestamp": "2026-07-07T10:20:42",
+      "score": 0.894354,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 15,
+      "timestamp": "2026-07-07T10:21:52",
+      "score": 0.894137,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 16,
+      "timestamp": "2026-07-07T10:22:21",
+      "score": 0.894354,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 17,
+      "timestamp": "2026-07-07T11:58:44",
+      "score": 0.894393,
+      "source_format": "v2"
+    }
+  ],
+  "leaderboard": null,
+  "missing": [
+    "leaderboard"
+  ],
+  "unparsed": [
+    {
+      "id": 1,
+      "name": "Majority Class Baseline",
+      "model": "majority",
+      "cv_score": 0.5,
+      "cv_std": 0.0,
+      "notes": "AUC=0.5 (random), Accuracy=0.78840"
+    },
+    {
+      "id": 2,
+      "name": "LightGBM Baseline",
+      "model": "lightgbm",
+      "params": {
+        "objective": "binary",
+        "metric": "auc",
+        "learning_rate": 0.05,
+        "num_leaves": 63,
+        "max_depth": -1,
+        "min_child_samples": 30,
+        "feature_fraction": 0.8,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 1,
+        "verbose": -1,
+        "n_jobs": -1,
+        "seed": 42,
+        "is_unbalance": true
+      },
+      "n_features": 28,
+      "cv_score": 0.89653,
+      "cv_std": 0.00104,
+      "cv_folds": [
+        0.89653,
+        0.89638,
+        0.89739,
+        0.89774,
+        0.89474
+      ],
+      "mean_best_iteration": 159,
+      "training_time_sec": 113.6,
+      "notes": "28 features, stratified 5-fold, surname target encoding, is_unbalance=True. Feb 2026 run (STATUS.md): submission lgbm_baseline_20260219_150434.csv -> Public LB 0.88716 / Private LB 0.89179."
+    }
+  ]
+}

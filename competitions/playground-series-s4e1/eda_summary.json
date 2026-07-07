@@ -1,0 +1,222 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 165034,
+  "n_rows_test": 110023,
+  "n_features": 12,
+  "numeric_features": [
+    "CustomerId",
+    "CreditScore",
+    "Age",
+    "Tenure",
+    "Balance",
+    "NumOfProducts",
+    "HasCrCard",
+    "IsActiveMember",
+    "EstimatedSalary"
+  ],
+  "categorical_features": [
+    "Surname",
+    "Geography",
+    "Gender"
+  ],
+  "duplicate_rows_train": 0,
+  "target": {
+    "name": "Exited",
+    "dtype": "int64",
+    "n_unique": 2,
+    "missing": 0,
+    "mean": 0.211599,
+    "std": 0.408443,
+    "min": 0.0,
+    "p25": 0.0,
+    "median": 0.0,
+    "p75": 0.0,
+    "max": 1.0,
+    "skew": 1.412215,
+    "kurtosis": -0.00565,
+    "is_integer_valued": true,
+    "log_transform_candidate": true,
+    "value_counts": {
+      "0": 130113,
+      "1": 34921
+    }
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "CustomerId": {
+      "mean": 15692005.019026,
+      "std": 71397.816791,
+      "min": 15565701.0,
+      "max": 15815690.0,
+      "skew": -0.02294,
+      "zeros": 0.0
+    },
+    "CreditScore": {
+      "mean": 656.454373,
+      "std": 80.10334,
+      "min": 350.0,
+      "max": 850.0,
+      "skew": -0.059291,
+      "zeros": 0.0
+    },
+    "Age": {
+      "mean": 38.125888,
+      "std": 8.867205,
+      "min": 18.0,
+      "max": 92.0,
+      "skew": 0.968063,
+      "zeros": 0.0
+    },
+    "Tenure": {
+      "mean": 5.020353,
+      "std": 2.806159,
+      "min": 0.0,
+      "max": 10.0,
+      "skew": 0.00649,
+      "zeros": 5007.0
+    },
+    "Balance": {
+      "mean": 55478.086689,
+      "std": 62817.663278,
+      "min": 0.0,
+      "max": 250898.09,
+      "skew": 0.38202,
+      "zeros": 89648.0
+    },
+    "NumOfProducts": {
+      "mean": 1.554455,
+      "std": 0.547154,
+      "min": 1.0,
+      "max": 4.0,
+      "skew": 0.368278,
+      "zeros": 0.0
+    },
+    "HasCrCard": {
+      "mean": 0.753954,
+      "std": 0.430707,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": -1.179255,
+      "zeros": 40606.0
+    },
+    "IsActiveMember": {
+      "mean": 0.49777,
+      "std": 0.499997,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": 0.00892,
+      "zeros": 82885.0
+    },
+    "EstimatedSalary": {
+      "mean": 112574.822734,
+      "std": 50292.865585,
+      "min": 11.58,
+      "max": 199992.48,
+      "skew": -0.309022,
+      "zeros": 0.0
+    }
+  },
+  "categorical_stats": {
+    "Surname": {
+      "cardinality": 2797,
+      "top": {
+        "Hsia": 2456,
+        "T'ien": 2282,
+        "Hs?": 1611,
+        "Kao": 1577,
+        "Maclean": 1577
+      },
+      "unseen_in_test": [
+        "Armit",
+        "Asher",
+        "Bardin",
+        "Barwell",
+        "Beach",
+        "Bibb",
+        "Birch",
+        "Bonham",
+        "Brodney",
+        "Bruche",
+        "Burgin",
+        "Bustard",
+        "Caraway",
+        "Cecil",
+        "Chadwick",
+        "Charteris",
+        "Colon",
+        "Cran",
+        "Creel",
+        "Daigle"
+      ]
+    },
+    "Geography": {
+      "cardinality": 3,
+      "top": {
+        "France": 94215,
+        "Spain": 36213,
+        "Germany": 34606
+      },
+      "unseen_in_test": []
+    },
+    "Gender": {
+      "cardinality": 2,
+      "top": {
+        "Male": 93150,
+        "Female": 71884
+      },
+      "unseen_in_test": []
+    }
+  },
+  "target_correlation": {
+    "CustomerId": {
+      "pearson": -0.009947,
+      "spearman": -0.009826
+    },
+    "CreditScore": {
+      "pearson": -0.027383,
+      "spearman": -0.02912
+    },
+    "Age": {
+      "pearson": 0.340768,
+      "spearman": 0.354665
+    },
+    "Tenure": {
+      "pearson": -0.019565,
+      "spearman": -0.019354
+    },
+    "Balance": {
+      "pearson": 0.129743,
+      "spearman": 0.126417
+    },
+    "NumOfProducts": {
+      "pearson": -0.214554,
+      "spearman": -0.266771
+    },
+    "HasCrCard": {
+      "pearson": -0.022141,
+      "spearman": -0.022141
+    },
+    "IsActiveMember": {
+      "pearson": -0.210237,
+      "spearman": -0.210237
+    },
+    "EstimatedSalary": {
+      "pearson": 0.018827,
+      "spearman": 0.019997
+    }
+  },
+  "high_collinearity_pairs": [],
+  "train_test_mean_shift_pct": {
+    "CustomerId": 0.000584,
+    "CreditScore": 0.011641,
+    "Age": -0.009659,
+    "Tenure": -0.472403,
+    "Balance": -0.260419,
+    "NumOfProducts": -0.073002,
+    "HasCrCard": -0.120854,
+    "IsActiveMember": -0.509742,
+    "EstimatedSalary": -0.230669
+  },
+  "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+}
