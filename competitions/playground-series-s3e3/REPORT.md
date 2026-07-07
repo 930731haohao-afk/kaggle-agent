@@ -45,10 +45,10 @@
 | 1.1 | 單模型基線 | 使用 |
 | 1.2 | 三模型 blend | 使用 |
 | **2** | kaggle-agent skill | 使用 |
-| 2.1 | EDA 驅動 CV 設計 | 使用(併入 exp2/3,無獨立分數) |
-| 2.2 | EDA 驅動特徵工程 | 使用(併入 exp2/3,無獨立分數) |
+| 2.1 | EDA 驅動 CV 設計 | 使用(併入 第 2、3 次實驗,無獨立分數) |
+| 2.2 | EDA 驅動特徵工程 | 使用(併入 第 2、3 次實驗,無獨立分數) |
 | 2.3 | 指標感知後處理 | 本場未使用(ROC-AUC 無需後處理) |
-| 2.4 | 場內反思回退 | 使用(exp2→exp3,移除不平衡加權並加強正則化) |
+| 2.4 | 場內反思回退 | 使用(第 2 次實驗→第 3 次實驗,移除不平衡加權並加強正則化) |
 | **3** | +線性自我迭代 | 使用 |
 | 3.1 | 經驗庫先驗 | 本場未使用(經驗庫晚於本場建立) |
 | 3.2 | Optuna 超參搜尋 | 使用 |
@@ -82,21 +82,21 @@
 特徵工程時剔除。
 
 高共線特徵對清單為空(未達自動門檻),但另一份進度筆記記錄年資類特徵彼此相關
-0.75–0.79、`JobLevel`↔`MonthlyIncome` r=0.91,屬中高度冗餘。特徵數上,exp1 使用 33 個
-原始欄位,exp2–5/7 經特徵工程展開為 48 個,exp6 改用 40 個(類別欄保留原始字串供
+0.75–0.79、`JobLevel`↔`MonthlyIncome` r=0.91,屬中高度冗餘。特徵數上,第 1 次實驗 使用 33 個
+原始欄位,第 2–5、7 次實驗 經特徵工程展開為 48 個,第 6 次實驗 改用 40 個(類別欄保留原始字串供
 CatBoost 原生處理)。
 
 ### 3.2 實驗總表
 
 > **語意澄清(本報告全文適用)**:本場指標 ROC-AUC 為連續排序指標,無取整等後處理,故各
-> 實驗的「原始 OOF」即「決策分數」。另,最佳解紀錄以 OOF 分數最大者選出:最佳解為 exp8
+> 實驗的「原始 OOF」即「決策分數」。另,最佳解紀錄以 OOF 分數最大者選出:最佳解為 第 8 次實驗
 > 之樹搜尋結果,**只算出 OOF 分數、未產生 test 預測**;本場所有實驗皆未提交 Kaggle 排行榜,
 > 下文不再重複解釋。
 
-| exp | 階段 | 模型/成員 | 特徵數 | 原始 OOF | 決策分數 | 是否採納 |
+| 實驗編號 | 階段 | 模型/成員 | 特徵數 | 原始 OOF | 決策分數 | 是否採納 |
 |-----|------|-----------|--------|----------|----------|------|
 | 1 | 1.2 | LGB+XGB+CAT blend | 33 | 0.81624 | 0.81624 | 基線 |
-| 2 | **2** | LGB+XGB+CAT blend | 48 | 0.819008 | 0.819008 | 否,旋被 exp3 取代 |
+| 2 | **2** | LGB+XGB+CAT blend | 48 | 0.819008 | 0.819008 | 否,旋被 第 3 次實驗 取代 |
 | 3 | 2.4 | LGB+XGB+CAT blend | 48 | 0.832925 | 0.832925 | 是,階段 2 冠軍 |
 | 4 | 3.2 | LGB_tuned(Optuna,solo) | 48 | 0.837305 | 0.837305 | 是,入池 |
 | 5 | 3.4 | 5-way blend(+seed bag) | 48 | 0.837776 | 0.837776 | 是 |
@@ -104,21 +104,21 @@ CatBoost 原生處理)。
 | 7 | **3** | 6-way rank-average blend | 48 | 0.83814 | 0.83814 | 是,線性迭代冠軍 |
 | 8 | 4.2 | KITCHENBLEND(全 solo 池混合) | 無紀錄 | **0.845051** | **0.845051** | 是,本場最佳 |
 
-**最佳解成員表**:exp8 之 KITCHENBLEND 為「當時已評估之所有 solo 節點」的全池混合
+**最佳解成員表**:第 8 次實驗 之 KITCHENBLEND 為「當時已評估之所有 solo 節點」的全池混合
 (權重由演算法在 OOF 上搜尋而得),成員隨搜尋進度變動,該筆實驗紀錄未附結構化
-的成員清單——成員/權重/solo 分數無紀錄,依規範不逐一列出。線性迭代冠軍 exp7 之權重搜尋
+的成員清單——成員/權重/solo 分數無紀錄,依規範不逐一列出。線性迭代冠軍 第 7 次實驗 之權重搜尋
 結果為 LGB_orig 0.3、LGB_tuned 0.7,其餘成員(XGB/CAT_orig/LGB_tuned_seed2024/
 CAT_native)權重皆為 0,以 rank-average 合併。
 
 選型理由:三個梯度提升樹在表格資料上穩健,以權重搜尋決定集成比例;各輪權重搜尋一致將
-CatBoost 權重收斂為 0(exp6 原生類別處理將其 solo 由 0.762684 拉升至 0.814259,仍為最弱
+CatBoost 權重收斂為 0(第 6 次實驗 原生類別處理將其 solo 由 0.762684 拉升至 0.814259,仍為最弱
 成員),確認其在此小樣本資料上結構性偏弱。階段 3 的線性迭代聚焦 LightGBM:Optuna 直接以
-完整 5-fold CV AUC 為目標(exp4)、調參版入池加 seed bagging(exp5)、終以 rank-average
-收尾(exp7)。
+完整 5-fold CV AUC 為目標(第 4 次實驗)、調參版入池加 seed bagging(第 5 次實驗)、終以 rank-average
+收尾(第 7 次實驗)。
 
 ### 3.3 訓練規格表
 
-| exp | CV 方案 | folds | seed |
+| 實驗編號 | CV 方案 | folds | seed |
 |-----|---------|-------|------|
 | 1 | 5fold | 5 | 無紀錄 |
 | 2 | StratifiedKFold | 5 | 42 |
@@ -129,15 +129,15 @@ CatBoost 權重收斂為 0(exp6 原生類別處理將其 solo 由 0.762684 拉�
 | 7 | StratifiedKFold | 5 | 42 |
 | 8 | StratifiedKFold | 5 | 42 |
 
-類別不平衡下,一般隨機 K-fold 會使各折正負比例不穩、驗證 AUC 波動;exp2 起改用依
-`Attrition` 分層的 StratifiedKFold(seed=42),且 exp2–8(含樹搜尋)沿用同一組固定折,
-跨實驗分數可直接比較。exp4 之 Optuna 設定(TPE、50 trials、實際耗時 111.3 秒)與最佳
+類別不平衡下,一般隨機 K-fold 會使各折正負比例不穩、驗證 AUC 波動;第 2 次實驗 起改用依
+`Attrition` 分層的 StratifiedKFold(seed=42),且 第 2–8 次實驗(含樹搜尋)沿用同一組固定折,
+跨實驗分數可直接比較。第 4 次實驗 之 Optuna 設定(TPE、50 trials、實際耗時 111.3 秒)與最佳
 超參(num_leaves=3、max_depth=4 等)僅記於實驗紀錄的文字備註;其餘模型之損失函數/超參
 無結構化紀錄。
 
 ### 3.4 推論表
 
-| exp | 後處理 | submission 檔 | 是否已提交 |
+| 實驗編號 | 後處理 | submission 檔 | 是否已提交 |
 |-----|--------|---------------|--------|
 | 1 | 無後處理紀錄 | sub_generic_0.81624_20260703_120255.csv | 否 |
 | 2 | 無後處理紀錄 | sub_blend_0.81901_20260703_183757.csv | 否 |
@@ -149,19 +149,19 @@ CatBoost 權重收斂為 0(exp6 原生類別處理將其 solo 由 0.762684 拉�
 | 8 | 無後處理紀錄 | 無紀錄(僅 OOF 分數,未產生 test 預測) | 否 |
 
 `id_column = id`、`target_column = Attrition`。本場為無人值守批次執行,僅產生 submission
-檔案、未觸碰 Kaggle 憑證;exp8 為樹搜尋結果,只算出 OOF 分數、未產生 test 預測。
+檔案、未觸碰 Kaggle 憑證;第 8 次實驗 為樹搜尋結果,只算出 OOF 分數、未產生 test 預測。
 
 ### 3.5 評估指標 / 排行榜
 
 指標定義:ROC-AUC = 模型將正樣本(離職)排序高於負樣本(留任)之機率,愈高愈好,不受決策
-門檻影響。各實驗決策分數已列於第 3.2 節,本場最佳為 exp8 之 **0.845051**(OOF)。
+門檻影響。各實驗決策分數已列於第 3.2 節,本場最佳為 第 8 次實驗 之 **0.845051**(OOF)。
 
 本場未提交 Kaggle,無排行榜紀錄:Public/Private LB 皆無紀錄,故本場無排行榜表,亦無法
 計算 CV↔LB gap。
 
 ## 4. 實驗軌跡
 
-| exp | 時間 | 決策分數 | 階段 | 摘要 |
+| 實驗編號 | 時間 | 決策分數 | 階段 | 摘要 |
 |-----|------|----------|------|------------|
 | 1 | 2026-07-03T12:02:55 | 0.81624 | 1.2 | 33 原始特徵三模型 blend 基線 |
 | 2 | 2026-07-03T18:37:57 | 0.819008 | **2** | 48 特徵 + 不平衡加權,XGB/CAT 反而退步 |
@@ -172,22 +172,22 @@ CatBoost 權重收斂為 0(exp6 原生類別處理將其 solo 由 0.762684 拉�
 | 7 | 2026-07-03T23:33:03 | 0.83814 | **3** | 6-way rank-average,線性迭代冠軍 |
 | 8 | 2026-07-04T11:59:43 | **0.845051** | 4.2 | KITCHENBLEND node #55,本場最佳(僅 OOF 分數) |
 
-- **轉折 1(exp2→exp3)**:診斷出 scale_pos_weight/class_weights 對排序指標無益反害
+- **轉折 1(第 2 次實驗→第 3 次實驗)**:診斷出 scale_pos_weight/class_weights 對排序指標無益反害
   (AUC 非門檻敏感),移除加權並加強 LGB 正則化,0.819008 → 0.832925,為單筆最大躍升。
-- **轉折 2(exp3→exp7)**:階段 3 的線性迭代四輪各改一事(Optuna 直接 CV-AUC 調參、入池
+- **轉折 2(第 3 次實驗→第 7 次實驗)**:階段 3 的線性迭代四輪各改一事(Optuna 直接 CV-AUC 調參、入池
   + seed bag、CatBoost 原生類別診斷、rank-average),0.832925 → 0.83814,增益遞減後依
   協定停止。
-- **轉折 3(exp7→exp8)**:樹搜尋規模實驗(80-節點預算)之 KITCHENBLEND lineage 於
+- **轉折 3(第 7 次實驗→第 8 次實驗)**:樹搜尋規模實驗(80-節點預算)之 KITCHENBLEND lineage 於
   node #55 混合當時全部 solo 節點(含個別已被淘汰的 CatBoost 變體),0.83814 → 0.845051。
 
 ## 5. 效能對照(逐階段)
 
 | 階段 | 配置 | 分數 | 相對改善 |
 |------|------|------|----------|
-| **1** | 基線(Claude Code 直接執行,未引入 skill;exp1 通用批次 3 模型 blend) | 0.81624 | —(基線) |
-| **2** | + kaggle-agent skill 六階段流程(exp3,階段 2 冠軍) | 0.832925 | 見下方算式 |
-| **3** | + self-improvement 線性迭代(exp7,6-way rank-average blend) | 0.83814 | 見下方算式 |
-| **4** | + 樹搜尋(exp8,KITCHENBLEND node #55) | **0.845051** | 見下方算式 |
+| **1** | 基線(Claude Code 直接執行,未引入 skill;第 1 次實驗 通用批次 3 模型 blend) | 0.81624 | —(基線) |
+| **2** | + kaggle-agent skill 六階段流程(第 3 次實驗,階段 2 冠軍) | 0.832925 | 見下方算式 |
+| **3** | + self-improvement 線性迭代(第 7 次實驗,6-way rank-average blend) | 0.83814 | 見下方算式 |
+| **4** | + 樹搜尋(第 8 次實驗,KITCHENBLEND node #55) | **0.845051** | 見下方算式 |
 
 ```
 階段1→2: 0.832925 − 0.81624 = 0.016685,相對改善 0.016685 / 0.81624 = 2.0441%
@@ -201,22 +201,22 @@ CatBoost 權重收斂為 0(exp6 原生類別處理將其 solo 由 0.762684 拉�
 
 | 子階段 | 分數 | 出處 |
 |--------|------|------|
-| 1.1(最佳單模:LGB) | 0.81362 | exp1 |
-| 1.2(三模權重 blend) | 0.81624 | exp1 |
-| 2.4(場內反思前:48 特徵 + 類別不平衡加權,XGB/CAT 反而退步) | 0.819008 | exp2 |
-| 2.4(場內反思後:移除加權 + 加強 LGB 正則化) | 0.832925 | exp3 |
-| 3.2(Optuna 直接優化完整 5-fold CV AUC) | 0.837305 | exp4 |
-| 3.4(調參版入池 + seed bagging) | 0.837776 | exp5 |
-| 4.2(樹搜尋,較早 22-節點掃描之最佳) | 0.841442 | exp8 紀錄的文字備註引用 |
-| 4.2(樹搜尋擴大規模版,80-節點,KITCHENBLEND node #55,本場最佳) | **0.845051** | exp8 |
+| 1.1(最佳單模:LGB) | 0.81362 | 第 1 次實驗 |
+| 1.2(三模權重 blend) | 0.81624 | 第 1 次實驗 |
+| 2.4(場內反思前:48 特徵 + 類別不平衡加權,XGB/CAT 反而退步) | 0.819008 | 第 2 次實驗 |
+| 2.4(場內反思後:移除加權 + 加強 LGB 正則化) | 0.832925 | 第 3 次實驗 |
+| 3.2(Optuna 直接優化完整 5-fold CV AUC) | 0.837305 | 第 4 次實驗 |
+| 3.4(調參版入池 + seed bagging) | 0.837776 | 第 5 次實驗 |
+| 4.2(樹搜尋,較早 22-節點掃描之最佳) | 0.841442 | 第 8 次實驗 紀錄的文字備註引用 |
+| 4.2(樹搜尋擴大規模版,80-節點,KITCHENBLEND node #55,本場最佳) | **0.845051** | 第 8 次實驗 |
 
 ## 6. 總結
 
 本場資料小(1677 列)且嚴重不平衡(離職 200 筆對留任 1477 筆),無缺失、無重複,品質乾淨。
-小樣本決定了兩個貫穿全程的原則:自 exp2 起固定 StratifiedKFold(seed=42)的同一組折以確保
+小樣本決定了兩個貫穿全程的原則:自 第 2 次實驗 起固定 StratifiedKFold(seed=42)的同一組折以確保
 跨實驗可比,以及對模型施加較強正則化,避免在 48 個部分相關的工程特徵上過擬合。
 
-關鍵決策是 exp3 的場內反思迭代:辨識出不平衡加權對 ROC-AUC 這種排序指標是壞交易,移除
+關鍵決策是 第 3 次實驗 的場內反思迭代:辨識出不平衡加權對 ROC-AUC 這種排序指標是壞交易,移除
 加權並收緊 LGB 正則化後,分數由 0.819008 躍升至 0.832925,為全場最大單筆增益。其後階段 3
 的線性迭代每輪只改一件事——Optuna 直接以完整 CV AUC 為目標、調參版入池加 seed bag、
 CatBoost 原生類別診斷、rank-average 合併——使線性迭代收在 0.83814。
@@ -226,8 +226,8 @@ CatBoost 原生類別診斷、rank-average 合併——使線性迭代收在 0.8
 solo 節點突破線性天花板,收在 0.845051。CatBoost 個別結構性偏弱、但其變體在大池混合中
 仍可能貢獻多樣性,是本場最有趣的一組正反證據。
 
-可信度方面,exp2–8 全部使用同一組固定 CV 折,分數排序可直接比較;但本場無任何 Kaggle
-提交,所有分數皆為 OOF,缺乏排行榜外部驗證是本報告最大的補充說明。exp8 更是只算出 OOF
+可信度方面,第 2–8 次實驗 全部使用同一組固定 CV 折,分數排序可直接比較;但本場無任何 Kaggle
+提交,所有分數皆為 OOF,缺乏排行榜外部驗證是本報告最大的補充說明。第 8 次實驗 更是只算出 OOF
 分數、未產生 test 預測,若要採用需先重建預測並提交驗證。
 
 **重現本實驗的最短路徑**:見第 7 節。
@@ -244,28 +244,28 @@ uv run kaggle competitions download -c playground-series-s3e3 \
 # 階段 2:EDA
 uv run python3 competitions/playground-series-s3e3/scripts/eda.py
 
-# exp1(對照組):通用批次管線
+# 第 1 次實驗(對照組):通用批次管線
 uv run python3 competitions/run_competition.py playground-series-s3e3
 
-# exp2:特徵工程 + 不平衡加權(v1)
+# 第 2 次實驗:特徵工程 + 不平衡加權(v1)
 uv run python3 competitions/playground-series-s3e3/scripts/train.py
 
-# exp3(2.4):場內反思迭代,移除加權(階段 2 冠軍)
+# 第 3 次實驗(2.4):場內反思迭代,移除加權(階段 2 冠軍)
 uv run python3 competitions/playground-series-s3e3/scripts/train_v2.py
 
-# exp4(3.2):Optuna 直接優化 5-fold CV AUC
+# 第 4 次實驗(3.2):Optuna 直接優化 5-fold CV AUC
 uv run python3 competitions/playground-series-s3e3/scripts/iterate_round1_optuna_lgb.py
 
-# exp5(3.4):調參版入池 + seed bagging
+# 第 5 次實驗(3.4):調參版入池 + seed bagging
 uv run python3 competitions/playground-series-s3e3/scripts/iterate_round2_pool_seedbag.py
 
-# exp6(階段 3,診斷):CatBoost 原生類別診斷
+# 第 6 次實驗(階段 3,診斷):CatBoost 原生類別診斷
 uv run python3 competitions/playground-series-s3e3/scripts/iterate_round3_catboost_native.py
 
-# exp7(階段 3):6-way rank-average(線性迭代冠軍,產出 submission)
+# 第 7 次實驗(階段 3):6-way rank-average(線性迭代冠軍,產出 submission)
 uv run python3 competitions/playground-series-s3e3/scripts/iterate_round4_add_catnative_blend.py
 
-# exp8(4.2):樹搜尋規模實驗(best;只算 OOF 分數、不產生 submission;可中斷/續跑,
+# 第 8 次實驗(4.2):樹搜尋規模實驗(best;只算 OOF 分數、不產生 submission;可中斷/續跑,
 # 樹狀態存 experiments_tree_scale.json)
 uv run python3 tree_search/run_s3e3_scale.py
 
