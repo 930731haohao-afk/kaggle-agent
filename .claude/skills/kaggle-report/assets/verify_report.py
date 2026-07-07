@@ -54,6 +54,13 @@ def _collect_values(obj, out: set):
 def find_suspects(report_text: str, facts: dict) -> list:
     known = set()
     _collect_values(facts, known)
+    # 算式區塊(fenced code block)內已「列出算式」的推導數視為已證明,允許同一數字
+    # 也出現在表格/內文(例:第 5 節「相對改善」欄的百分比,其算式就列在同節的計算式
+    # 區塊)。這不放寬對「憑空數字」的把關——code block 內容本就整段豁免,此處只是讓
+    # 已在 code block 證明過的數字可被表格引用。
+    code = "\n".join(re.findall(r"```.*?```", report_text, flags=re.S))
+    for tok in _NUM.findall(_normalize(code)):
+        known.add(float(tok))
     variants = set()
     for v in known:
         variants.add(v)
