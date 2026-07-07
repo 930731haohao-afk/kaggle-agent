@@ -1,0 +1,775 @@
+[
+  {
+    "id": 1,
+    "name": "Majority Class Baseline",
+    "model": "majority",
+    "cv_score": 0.81829,
+    "cv_std": 0.0,
+    "notes": "Predict class 0 for all"
+  },
+  {
+    "id": 2,
+    "name": "LightGBM Baseline",
+    "model": "lightgbm",
+    "params": {
+      "objective": "binary",
+      "metric": "binary_logloss",
+      "learning_rate": 0.05,
+      "num_leaves": 63,
+      "max_depth": -1,
+      "min_child_samples": 30,
+      "feature_fraction": 0.8,
+      "bagging_fraction": 0.8,
+      "bagging_freq": 1,
+      "verbose": -1,
+      "n_jobs": -1,
+      "seed": 42,
+      "is_unbalance": true
+    },
+    "n_features": 28,
+    "cv_score": 0.92988,
+    "cv_std": 0.00167,
+    "cv_folds": [
+      0.9286425017768302,
+      0.9280383795309168,
+      0.9294598436389481,
+      0.9328002842928216,
+      0.93045486851457
+    ],
+    "best_threshold": 0.75,
+    "best_threshold_acc": 0.93738,
+    "mean_best_iteration": 1266,
+    "training_time_sec": 171.5,
+    "notes": "28 features, stratified 5-fold, is_unbalance=True"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-07T12:31:46",
+    "model": "generic LGB+XGB+CAT blend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.93955,
+    "features": [
+      "Name",
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness"
+    ],
+    "n_features": 18,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.93881
+      },
+      {
+        "name": "XGB",
+        "score": 0.93862
+      },
+      {
+        "name": "CAT",
+        "score": 0.93928
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.4,
+        "XGB": 0.1,
+        "CAT": 0.5
+      },
+      "score": 0.93955
+    },
+    "submission": "sub_generic_0.93955_20260707_123146.csv"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-07T12:32:48",
+    "model": "LGB (tier2 solo)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.938877,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "threshold=0.50"
+    ],
+    "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline, label-encoding only, no TE so no fold-safety correction needed, see features.py docstring); {'mean_best_iter': 218} LGB drops is_unbalance vs Feb baseline (new ablation for this ACCURACY metric -- re-tested explicitly in tier3 r1, see knowledge/experience.md)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-07T12:32:48",
+    "model": "XGB (tier2 solo)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.939339,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "threshold=0.50"
+    ],
+    "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline, label-encoding only, no TE so no fold-safety correction needed, see features.py docstring); {}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-07T12:32:48",
+    "model": "CAT (tier2 solo)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.93924,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "threshold=0.49"
+    ],
+    "notes": "tier2 skill 6-stage pipeline; 28-feature set (Feb baseline, label-encoding only, no TE so no fold-safety correction needed, see features.py docstring); {}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-07T12:32:48",
+    "model": "tier2 LGB+XGB+CAT blend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.939488,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.938877
+      },
+      {
+        "name": "XGB",
+        "score": 0.939339
+      },
+      {
+        "name": "CAT",
+        "score": 0.93924
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.6,
+        "CAT": 0.4
+      },
+      "score": 0.939488
+    },
+    "postprocess": [
+      "threshold=0.50"
+    ],
+    "submission": "tier2_blend_0.93949_20260707_123248.csv",
+    "notes": "tier2 skill 6-stage pipeline blend; simplex grid weight search (step 0.05) scored directly against threshold-optimized accuracy."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-07T12:35:30",
+    "model": "LGB is_unbalance=True (tier3 r1 ablation)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.937647,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "threshold=0.74"
+    ],
+    "notes": "First test of knowledge/experience.md's AUC-ranking-metric is_unbalance prior on a THRESHOLD metric (Accuracy) -- the prior's stated mechanism (ranking is insensitive to loss-surface reweighting) does not obviously apply here, so this is a genuinely new data point, not a re-confirmation. SAME corrected/comparable features/folds as tier2's no-imbalance LGB (cached score 0.938877 @t=0.50). Delta=-0.001230. is_unbalance still hurts/no-op on accuracy -- prior direction transfers even to a threshold metric."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-07T12:35:47",
+    "model": "tier3 r1 LGB+XGB+CAT blend (LGB=no_imbalance)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.939545,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.938877
+      },
+      {
+        "name": "XGB",
+        "score": 0.939339
+      },
+      {
+        "name": "CAT",
+        "score": 0.93924
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.011,
+        "XGB": 0.66,
+        "CAT": 0.329
+      },
+      "score": 0.939545
+    },
+    "postprocess": [
+      "threshold=0.50"
+    ],
+    "submission": "tier3_r1_blend_0.93955_20260707_123546.csv",
+    "notes": "tier3 round1: is_unbalance ablation resolved (LGB=no_imbalance), blend re-weighted."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-07T12:43:40",
+    "model": "LGB Optuna-tuned (tier3 r2, fold-0 proxy, direct-metric objective)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.939687,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "threshold=0.50"
+    ],
+    "notes": "Optuna TPE 50 trials on fold-0 proxy (437.7s), objective = fold-0 threshold-optimized accuracy DIRECTLY (s3e5 pattern, first transfer to Accuracy), best fold0 accuracy 0.940192, params={'is_unbalance': False, 'num_leaves': 48, 'max_depth': 3, 'learning_rate': 0.06999040855581445, 'min_child_samples': 51, 'feature_fraction': 0.847926170224943, 'bagging_fraction': 0.8898615710512776, 'reg_alpha': 0.013355404257800907, 'reg_lambda': 0.005734715134895114}. Full-5fold OOF 0.939687 vs untuned pool LGB 0.938877 (delta +0.000810). Added to pool (not replacing), per experience.md convention."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-07T12:44:04",
+    "model": "tier3 r2 4-way blend (+LGB_tuned)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.939758,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.938877
+      },
+      {
+        "name": "LGB_tuned",
+        "score": 0.939687
+      },
+      {
+        "name": "XGB",
+        "score": 0.939339
+      },
+      {
+        "name": "CAT",
+        "score": 0.93924
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.041,
+        "LGB_tuned": 0.718,
+        "XGB": 0.108,
+        "CAT": 0.134
+      },
+      "score": 0.939758
+    },
+    "postprocess": [
+      "threshold=0.51"
+    ],
+    "submission": "tier3_r2_blend_0.93976_20260707_124404.csv",
+    "notes": "tier3 round2: Optuna fold-0-proxy tuned LGB (direct-metric objective) added to pool (not replacing)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-07T12:44:32",
+    "model": "LGB_tuned seed=2024 (tier3 r3 seed-bag)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.939872,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "postprocess": [
+      "threshold=0.52"
+    ],
+    "notes": "Seed-bagging member: same Optuna-tuned params as r2's LGB_tuned, random_state=2024. Added to pool."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 13,
+    "timestamp": "2026-07-07T12:44:56",
+    "model": "tier3 r3 5-way blend (+LGB_tuned seed-bag)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.9399,
+    "features": [
+      "Gender",
+      "Age",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Work/Study Hours",
+      "Financial Stress",
+      "Family History of Mental Illness",
+      "is_student",
+      "suicidal_thoughts",
+      "family_history",
+      "is_male",
+      "age_decade",
+      "is_young",
+      "pressure",
+      "satisfaction",
+      "stress_x_pressure",
+      "suicidal_x_student",
+      "age_x_pressure"
+    ],
+    "n_features": 28,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "LGB",
+        "score": 0.938877
+      },
+      {
+        "name": "LGB_tuned",
+        "score": 0.939687
+      },
+      {
+        "name": "LGB_tuned_s2024",
+        "score": 0.939872
+      },
+      {
+        "name": "XGB",
+        "score": 0.939339
+      },
+      {
+        "name": "CAT",
+        "score": 0.93924
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "LGB": 0.072,
+        "LGB_tuned": 0.028,
+        "LGB_tuned_s2024": 0.798,
+        "XGB": 0.099,
+        "CAT": 0.002
+      },
+      "score": 0.9399
+    },
+    "postprocess": [
+      "threshold=0.51"
+    ],
+    "submission": "tier3_r3_blend_0.93990_20260707_124456.csv",
+    "notes": "tier3 round3: seed-bagged Optuna-tuned LGB (seed=2024) added to pool."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 14,
+    "timestamp": "2026-07-07T13:17:26",
+    "model": "tree-search v3 blend (node #26, 8-member blend; BLEND lineage grown from tier3 pool through boundary-push fallback seeds; dominant member node#10, weight 0.603)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.940235,
+    "cv": {
+      "scheme": "5fold_stratified",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "node#2 (xgb)",
+        "weight": 0.0447,
+        "solo_accuracy": 0.939254
+      },
+      {
+        "name": "node#3 (cat)",
+        "weight": 0.0018,
+        "solo_accuracy": 0.939112
+      },
+      {
+        "name": "node#4 (lgb)",
+        "weight": 0.1856,
+        "solo_accuracy": 0.939872
+      },
+      {
+        "name": "node#6 (lgb)",
+        "weight": 0.0432,
+        "solo_accuracy": 0.939119
+      },
+      {
+        "name": "node#9 (lgb)",
+        "weight": 0.061,
+        "solo_accuracy": 0.9399
+      },
+      {
+        "name": "node#10 (lgb)",
+        "weight": 0.603,
+        "solo_accuracy": 0.939943
+      },
+      {
+        "name": "node#11 (lgb)",
+        "weight": 0.0443,
+        "solo_accuracy": 0.939908
+      },
+      {
+        "name": "node#12 (lgb)",
+        "weight": 0.0164,
+        "solo_accuracy": 0.939993
+      }
+    ],
+    "ensemble": {
+      "method": "harness_v3 eval_blend defaults (dirichlet k=800 seed=42 + coordinate-ascent refine), maximizing OOF threshold-optimized accuracy",
+      "weights": {
+        "2": 0.0447,
+        "3": 0.0018,
+        "4": 0.1856,
+        "6": 0.0432,
+        "9": 0.061,
+        "10": 0.603,
+        "11": 0.0443,
+        "12": 0.0164
+      },
+      "score": 0.940235
+    },
+    "postprocess": [
+      "threshold=0.49"
+    ],
+    "submission": "sub_tree_best_0.94024_20260707_131655.csv",
+    "notes": "Tree-search result (tier4, harness_v3, first cross-season run for s4e11) -- NOT a linear-iteration round. Source: experiments_tree_v3.json node #26 (60 evaluated nodes = full v3 budget, 0 failed, 0 dedup rejections, total wall 1656.1s; stop_reason='hard budget cap reached (60/60 evaluated nodes)'). Root = LGB_tuned (tier3 r2 cache, 0.939687), retrained and digit-verified before search began. Winner emerged from the BLEND lineage's own exploit-phase growth (node 7->19->20->...->26), progressively absorbing BOUNDARYPUSH-lineage fallback-seed members (nodes 9/10/11/12, all LGB variants with an alternate seed) -- NOT from the mandatory explore-burst kitchen-sink mega-blend, which is the opposite of the pattern documented in knowledge/experience.md and observed in most prior tree-search runs (mega-blend of the full 30-member solo pool scored 0.940028, and both explore-burst long-shot solos -- deep LGB 0.939026, deep CatBoost 0.938962 -- scored below the pre-burst best; burst contributed zero improvement here). is_unbalance/Optuna/seed-bag priors were re-used from tier3's pool (LGB_tuned, LGB_tuned_seed2024 both entered as blend candidates). OOF digit-reproduction gate PASSED before submission build (06_rebuild_tree_best.py, s3e16/s4e1 precedent): all 8 members retrained from tree configs with max|dOOF| <= 5.53e-14 vs the search's cached OOFs (well under the 1e-9 tolerance), weight-search replay recovered blend accuracy 0.940235 exactly and weights matching stored round(4) values, decision threshold re-derived at 0.49. Accuracy requires a hard 0/1 label (unlike s4e1's AUC submission of raw probabilities); final test predictions were thresholded at 0.49 before writing the submission."
+  }
+]

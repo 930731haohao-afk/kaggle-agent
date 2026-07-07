@@ -1,0 +1,405 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 140700,
+  "n_rows_test": 93800,
+  "n_features": 18,
+  "numeric_features": [
+    "Age",
+    "Academic Pressure",
+    "Work Pressure",
+    "CGPA",
+    "Study Satisfaction",
+    "Job Satisfaction",
+    "Work/Study Hours",
+    "Financial Stress"
+  ],
+  "categorical_features": [
+    "Name",
+    "Gender",
+    "City",
+    "Working Professional or Student",
+    "Profession",
+    "Sleep Duration",
+    "Dietary Habits",
+    "Degree",
+    "Have you ever had suicidal thoughts ?",
+    "Family History of Mental Illness"
+  ],
+  "duplicate_rows_train": 0,
+  "target": {
+    "name": "Depression",
+    "dtype": "int64",
+    "n_unique": 2,
+    "missing": 0,
+    "mean": 0.181713,
+    "std": 0.385609,
+    "min": 0.0,
+    "p25": 0.0,
+    "median": 0.0,
+    "p75": 0.0,
+    "max": 1.0,
+    "skew": 1.650852,
+    "kurtosis": 0.725321,
+    "is_integer_valued": true,
+    "log_transform_candidate": true,
+    "value_counts": {
+      "0": 115133,
+      "1": 25567
+    }
+  },
+  "missing_train": {
+    "Profession": 36630,
+    "Academic Pressure": 112803,
+    "Work Pressure": 27918,
+    "CGPA": 112802,
+    "Study Satisfaction": 112803,
+    "Job Satisfaction": 27910,
+    "Dietary Habits": 4,
+    "Degree": 2,
+    "Financial Stress": 4
+  },
+  "missing_test": {
+    "Profession": 24632,
+    "Academic Pressure": 75033,
+    "Work Pressure": 18778,
+    "CGPA": 75034,
+    "Study Satisfaction": 75033,
+    "Job Satisfaction": 18774,
+    "Dietary Habits": 5,
+    "Degree": 2
+  },
+  "numeric_stats": {
+    "Age": {
+      "mean": 40.388621,
+      "std": 12.384099,
+      "min": 18.0,
+      "max": 60.0,
+      "skew": -0.217977,
+      "zeros": 0.0
+    },
+    "Academic Pressure": {
+      "mean": 3.142273,
+      "std": 1.380457,
+      "min": 1.0,
+      "max": 5.0,
+      "skew": -0.133977,
+      "zeros": 0.0
+    },
+    "Work Pressure": {
+      "mean": 2.998998,
+      "std": 1.405771,
+      "min": 1.0,
+      "max": 5.0,
+      "skew": 0.018515,
+      "zeros": 0.0
+    },
+    "CGPA": {
+      "mean": 7.658636,
+      "std": 1.464466,
+      "min": 5.03,
+      "max": 10.0,
+      "skew": -0.073636,
+      "zeros": 0.0
+    },
+    "Study Satisfaction": {
+      "mean": 2.94494,
+      "std": 1.360197,
+      "min": 1.0,
+      "max": 5.0,
+      "skew": 0.011764,
+      "zeros": 0.0
+    },
+    "Job Satisfaction": {
+      "mean": 2.974404,
+      "std": 1.416078,
+      "min": 1.0,
+      "max": 5.0,
+      "skew": 0.054361,
+      "zeros": 0.0
+    },
+    "Work/Study Hours": {
+      "mean": 6.252679,
+      "std": 3.853615,
+      "min": 0.0,
+      "max": 12.0,
+      "skew": -0.128169,
+      "zeros": 12066.0
+    },
+    "Financial Stress": {
+      "mean": 2.988983,
+      "std": 1.413633,
+      "min": 1.0,
+      "max": 5.0,
+      "skew": 0.035603,
+      "zeros": 0.0
+    }
+  },
+  "categorical_stats": {
+    "Name": {
+      "cardinality": 422,
+      "top": {
+        "Rohan": 3178,
+        "Aarav": 2336,
+        "Rupak": 2176,
+        "Aaradhya": 2045,
+        "Anvi": 2035
+      },
+      "unseen_in_test": [
+        "AHM",
+        "Aalalav",
+        "Aamir",
+        "Aandini",
+        "Aandla",
+        "Aar",
+        "Aarhar",
+        "Aarik",
+        "Aarjun",
+        "Aarod",
+        "Aarohan",
+        "Aaroor",
+        "Aarsha",
+        "Abakression",
+        "Abha",
+        "Abharth",
+        "Abra",
+        "Abrit",
+        "Adib",
+        "Adik"
+      ]
+    },
+    "Gender": {
+      "cardinality": 2,
+      "top": {
+        "Male": 77464,
+        "Female": 63236
+      },
+      "unseen_in_test": []
+    },
+    "City": {
+      "cardinality": 98,
+      "top": {
+        "Kalyan": 6591,
+        "Patna": 5924,
+        "Vasai-Virar": 5765,
+        "Kolkata": 5689,
+        "Ahmedabad": 5613
+      },
+      "unseen_in_test": [
+        "Abhinav",
+        "Aditi",
+        "Avni",
+        "Chemist",
+        "Ghopal",
+        "Golkata",
+        "Hrithik",
+        "Ira",
+        "Is Kanpur",
+        "Lawyer",
+        "Leela",
+        "Less than 5 hours",
+        "Malyan",
+        "Mhopal",
+        "More Delhi",
+        "No.12",
+        "Pratham",
+        "Rolkata",
+        "San Vasai-Virar",
+        "Sara"
+      ]
+    },
+    "Working Professional or Student": {
+      "cardinality": 2,
+      "top": {
+        "Working Professional": 112799,
+        "Student": 27901
+      },
+      "unseen_in_test": []
+    },
+    "Profession": {
+      "cardinality": 64,
+      "top": {
+        "Teacher": 24906,
+        "Content Writer": 7814,
+        "Architect": 4370,
+        "Consultant": 4229,
+        "HR Manager": 4022
+      },
+      "unseen_in_test": [
+        "24th",
+        "3M",
+        "B.Pharm",
+        "City Consultant",
+        "M.Pharm",
+        "M.Tech",
+        "MCA",
+        "MD",
+        "ME",
+        "Manvi",
+        "Name",
+        "No",
+        "Samar",
+        "Simran",
+        "Surat",
+        "Surgeon",
+        "Unhealthy"
+      ]
+    },
+    "Sleep Duration": {
+      "cardinality": 36,
+      "top": {
+        "Less than 5 hours": 38784,
+        "7-8 hours": 36969,
+        "More than 8 hours": 32726,
+        "5-6 hours": 32142,
+        "3-4 hours": 12
+      },
+      "unseen_in_test": [
+        "0",
+        "20-21 hours",
+        "50-75 hours",
+        "6 hours",
+        "60-65 hours",
+        "8-89 hours",
+        "9-10 hours",
+        "Have_you_ever_had_suicidal_thoughts",
+        "Meerut",
+        "Vivan"
+      ]
+    },
+    "Dietary Habits": {
+      "cardinality": 23,
+      "top": {
+        "Moderate": 49705,
+        "Unhealthy": 46227,
+        "Healthy": 44741,
+        "Yes": 2,
+        "More Healthy": 2
+      },
+      "unseen_in_test": [
+        "5 Healthy",
+        "5 Unhealthy",
+        "Academic",
+        "Educational",
+        "Kolkata",
+        "MCA",
+        "Mealy",
+        "Naina",
+        "Prachi",
+        "Raghav",
+        "Resistant",
+        "Soham",
+        "Vivaan"
+      ]
+    },
+    "Degree": {
+      "cardinality": 115,
+      "top": {
+        "Class 12": 14729,
+        "B.Ed": 11691,
+        "B.Arch": 8742,
+        "B.Com": 8113,
+        "B.Pharm": 5856
+      },
+      "unseen_in_test": [
+        "3.0",
+        "5.65",
+        "8.95",
+        "A.Ed",
+        "Aadhya",
+        "B B.Tech",
+        "B BCA",
+        "B Financial Analyst",
+        "B. Gender",
+        "B.BA",
+        "B.CA",
+        "B.H",
+        "B.M.Com",
+        "B.Press",
+        "B.Study_Hours",
+        "B._Pharm",
+        "BHCA",
+        "BTech",
+        "B_Com",
+        "Banchal"
+      ]
+    },
+    "Have you ever had suicidal thoughts ?": {
+      "cardinality": 2,
+      "top": {
+        "No": 71138,
+        "Yes": 69562
+      },
+      "unseen_in_test": []
+    },
+    "Family History of Mental Illness": {
+      "cardinality": 2,
+      "top": {
+        "No": 70758,
+        "Yes": 69942
+      },
+      "unseen_in_test": []
+    }
+  },
+  "target_correlation": {
+    "Age": {
+      "pearson": -0.564671,
+      "spearman": -0.54108
+    },
+    "Academic Pressure": {
+      "pearson": 0.475037,
+      "spearman": 0.472449
+    },
+    "Work Pressure": {
+      "pearson": 0.216634,
+      "spearman": 0.216046
+    },
+    "CGPA": {
+      "pearson": 0.021729,
+      "spearman": 0.021539
+    },
+    "Study Satisfaction": {
+      "pearson": -0.168014,
+      "spearman": -0.16816
+    },
+    "Job Satisfaction": {
+      "pearson": -0.168543,
+      "spearman": -0.170086
+    },
+    "Work/Study Hours": {
+      "pearson": 0.191746,
+      "spearman": 0.192363
+    },
+    "Financial Stress": {
+      "pearson": 0.227237,
+      "spearman": 0.226684
+    }
+  },
+  "high_collinearity_pairs": [
+    [
+      "Academic Pressure",
+      "Job Satisfaction",
+      1.0
+    ],
+    [
+      "CGPA",
+      "Job Satisfaction",
+      1.0
+    ],
+    [
+      "Study Satisfaction",
+      "Job Satisfaction",
+      1.0
+    ]
+  ],
+  "train_test_mean_shift_pct": {
+    "Age": -0.16573,
+    "Academic Pressure": 0.518824,
+    "Work Pressure": 0.426758,
+    "CGPA": 0.200821,
+    "Study Satisfaction": -0.184004,
+    "Job Satisfaction": -0.453319,
+    "Work/Study Hours": -0.085479,
+    "Financial Stress": -0.341923
+  },
+  "validation_hint": "target is discrete/integer -> StratifiedKFold on binned target for stable folds"
+}

@@ -1,0 +1,33 @@
+name: playground-series-s4e11
+url: https://www.kaggle.com/competitions/playground-series-s4e11
+description: Depression prediction from demographic/lifestyle survey data (Playground Series Season 4, Episode 11)
+problem_type: binary_classification
+evaluation_metric: accuracy
+optimization_direction: maximize
+target_column: Depression
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes: |
+  - Depression prediction (binary 0/1); target Depression, 18.2% positive
+  - 140,700 train rows / 93,800 test rows; 18 features excl. id/target
+  - Structured missing values: Working Professional vs Student split creates disjoint
+    feature blocks (Academic Pressure/CGPA/Study Satisfaction ~80% null for
+    professionals; Work Pressure/Job Satisfaction ~20% null for students)
+  - Sample submission expects hard 0/1 labels (Accuracy metric, not probabilities) ->
+    every tier must pick/optimize a decision threshold, not just rank probabilities
+  - Cross-season note: this is the S4E11 counterpart in the same cross-season
+    generalization sweep as S4E1 (unit 2/5). Feb 2026 run (STATUS.md) already has EDA +
+    a 28-feature LGBM baseline (is_unbalance=True, threshold tuned 0.5->0.75) -- CV
+    Accuracy 0.93738, Public LB 0.94093, Private LB 0.93939 -- treated as prior-season
+    reference, not re-derived from scratch this run.
+  - Leakage audit vs s4e1's surname-TE fold-inconsistency lesson: the Feb feature set
+    here used ONLY label encoding for high-cardinality categoricals (City/Profession/
+    Degree), no target encoding of any kind -- so there is no analogous fold-safety bug
+    to correct, and this run's feature set is directly, honestly comparable to Feb's.
