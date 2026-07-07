@@ -54,8 +54,10 @@ s4e1 → s4e11 → s5e10 → s6e1 → s6e2(小→大/舊→新;s6e2 有既有訓
 - ✅**五場跨季全完成**(s4e1/s4e11/s5e10/s6e1/s6e2),四階段階梯場場成立、全CV-only;跨季發現:交互項先驗判決逐場翻轉、贏家形狀mega-blend↔solo各異、determinism紀律
 - [x] Phase J J-2a v4注入鉤(2026-07-07):harness_v4(import v3為超集)+[INT]/[EXT]併池去重;5/5測試,mode='off'==v3.suggest_priors逐字、mode='ext'注入11條淨新[EXT](04/09/11/12/14/17/18/19/20/23/24);commit 2daf362(v3未動、s5e10未擾,已實測)
 - [x] Phase J J-2b 重組(recombination)mutation(2026-07-07):harness_v4加recombine——特徵家族∪成員聯集+高分親代超參繼承+provenance記兩親代id;掛explore_burst相位;6/6測試+J-2a回歸5/5;commit 0330b70(v3未動、s5e10未擾,已實測)
-- [!] J-4待辦:EXT-16 purge/embargo 目前保守suppress(基本時序split已[INT]實證);若要注入其novel變體=改一行suppress-parse,J-4 wiring時決定
-- [ ] 佇列:~~s5e10~~✓ → ~~s6e1~~✓ → s6e2(跑中)→ benchmark擴15場(5跨季場全到齊:s4e1/s4e11/s5e10/s6e1/s6e2)→ J-3 tier5歸因 → J-4 schema五層 → J-5報告/記憶 → 交付層 → 延伸方向
+- [x] benchmark 擴15場(2026-07-08,**commit 66fc3f4**):build_benchmark_table.py加cross-season builder(硬編stage→exp+assert),16列;SUMMARY §6升級verify-traceable五場表。交付層:成果簡報PROJECT_BRIEF(69e1dd3)+頂層README(b24be43)
+- [x] **Phase J J-3 階段5歸因(2026-07-08,關鍵發現,commit待下)**:建run_s3e3_v4.py單一變因(只換suggest_priors_v4(mode)),mode='off'逐字==v3閘門過、ext淨新注入2條[EXT]。**結果 off vs ext 逐位元相同(delta=構造性0)**——根因:`tree['priors']`是**write-only**,搜尋算子(種子/mutation/propose_child/select/評估器)全不讀它,`[PRIOR Pk]`是driver作者手寫。∴階段5注入現行架構下是no-op。詳見docs/phase_j_j3_findings.md+記憶tree-priors-write-only。⚠️此發現同時牽動:(a)Phase J方向(J-4/J-5原schema歸因**前提不成立、暫緩**;真正下一步=把priors接進propose_child/種子);(b)報告「先驗注入」語言需誠實校準(知識有引導但透過手寫種子,非自動plumbing);(c)階段4樹搜尋價值仍真實(來自搜尋機制本身)。**wiring vs 接受誠實負面結果=方向題,留使用者決定,勿自行大改**。brief階段5措辭已誠實校準
+- [!] J-4/J-5暫緩(前提=priors被消費,J-3證明未成立);EXT-16 purge/embargo suppress待決
+- [ ] 佇列:~~s5e10/s6e1/s6e2~~✓ → ~~benchmark15~~✓ → ~~J-3歸因~~✓(得no-op發現)→ **待使用者決策:接線priors消費端 or 接受誠實負面** → 交付層其餘(封裝Skill/使用說明/Docker arm64變數)→ 延伸(統計嚴謹度多種子CI優先)
 
 ## 併行 session 協定(2026-07-06 16:50 使用者指示:與 VS Code session 同時跑)
 每次 commit 前必做:
