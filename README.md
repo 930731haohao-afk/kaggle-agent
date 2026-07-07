@@ -12,8 +12,12 @@ Nature)的 ERA 系統。
 | 5 分鐘看懂全案成果 | [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md)(成果簡報) |
 | 共同方法、工具、專業術語、階段定義 | [docs/PREFACE.md](docs/PREFACE.md)(前言) |
 | 15 場逐階段對照與跨場結論 | [docs/SUMMARY_REPORT.md](docs/SUMMARY_REPORT.md)(總結報告) |
+| 研究式綜合(方法+結果+誠實限制) | [docs/TECH_REPORT.md](docs/TECH_REPORT.md)(技術報告草稿) |
 | 單一場競賽的完整分析 | `competitions/playground-series-<賽>/REPORT.md` |
 | agent 怎麼操作競賽 | [.claude/skills/kaggle-agent/SKILL.md](.claude/skills/kaggle-agent/SKILL.md) |
+
+深入研究文件:統計顯著性 [docs/statistical_rigor.md](docs/statistical_rigor.md);外部注入
+歸因發現 [docs/phase_j_j3_findings.md](docs/phase_j_j3_findings.md)。
 
 每份報告都有對應的 PDF(含目錄與頁碼)。
 

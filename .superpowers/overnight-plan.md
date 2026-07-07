@@ -57,7 +57,8 @@ s4e1 → s4e11 → s5e10 → s6e1 → s6e2(小→大/舊→新;s6e2 有既有訓
 - [x] benchmark 擴15場(2026-07-08,**commit 66fc3f4**):build_benchmark_table.py加cross-season builder(硬編stage→exp+assert),16列;SUMMARY §6升級verify-traceable五場表。交付層:成果簡報PROJECT_BRIEF(69e1dd3)+頂層README(b24be43)
 - [x] **Phase J J-3 階段5歸因(2026-07-08,關鍵發現,commit待下)**:建run_s3e3_v4.py單一變因(只換suggest_priors_v4(mode)),mode='off'逐字==v3閘門過、ext淨新注入2條[EXT]。**結果 off vs ext 逐位元相同(delta=構造性0)**——根因:`tree['priors']`是**write-only**,搜尋算子(種子/mutation/propose_child/select/評估器)全不讀它,`[PRIOR Pk]`是driver作者手寫。∴階段5注入現行架構下是no-op。詳見docs/phase_j_j3_findings.md+記憶tree-priors-write-only。⚠️此發現同時牽動:(a)Phase J方向(J-4/J-5原schema歸因**前提不成立、暫緩**;真正下一步=把priors接進propose_child/種子);(b)報告「先驗注入」語言需誠實校準(知識有引導但透過手寫種子,非自動plumbing);(c)階段4樹搜尋價值仍真實(來自搜尋機制本身)。**wiring vs 接受誠實負面結果=方向題,留使用者決定,勿自行大改**。brief階段5措辭已誠實校準
 - [!] J-4/J-5暫緩(前提=priors被消費,J-3證明未成立);EXT-16 purge/embargo suppress待決
-- [ ] 佇列:~~s5e10/s6e1/s6e2~~✓ → ~~benchmark15~~✓ → ~~J-3歸因~~✓(得no-op發現)→ **待使用者決策:接線priors消費端 or 接受誠實負面** → 交付層其餘(封裝Skill/使用說明/Docker arm64變數)→ 延伸(統計嚴謹度多種子CI優先)
+- [ ] 佇列:~~s5e10/s6e1/s6e2~~✓ → ~~benchmark15~~✓ → ~~J-3歸因~~✓(no-op發現)→ ~~統計嚴謹度196d0c1~~✓ → ~~tech-report草稿~~✓ → **剩餘全部待使用者決策/有風險**:(a)Phase J接線priors消費端 or 接受誠實負面〔方向題〕;(b)Docker arm64〔套件建置風險,不宜4am無人盯〕;(c)統計延伸到10場S3〔缺blend OOF快取,需重訓〕;(d)真實LB〔多數場已關榜〕;(e)對齊Aygün細比〔需論文全文,恐失準〕
+- **📌 過夜session最終狀態(2026-07-08 ~03:4x,主控收束)**:今晚12 commit(idea_bank/J-2a/J-2b/s5e10/s6e1/s6e2/benchmark15/brief/README/J-3/統計/tech-report)+4記憶。git乾淨、無殘留進程、所有交付verify+PDF。**已達「已備妥資料+安全+高價值」的自然邊界**:下一步不是我能單方推的(要嘛你的方向決策,要嘛有arm64/重訓/失準風險)。故轉為輕量監看,待你回來拍板Phase J方向題(接線 vs 接受誠實負面),或指派新的well-defined工作。**不硬做marginal/風險工作充數**——這與本專案誠實高價值的一貫紀律一致
 
 ## 併行 session 協定(2026-07-06 16:50 使用者指示:與 VS Code session 同時跑)
 每次 commit 前必做:
