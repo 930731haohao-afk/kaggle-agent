@@ -1,0 +1,201 @@
+{
+  "source": "eda_summary.py",
+  "n_rows_train": 630000,
+  "n_rows_test": 270000,
+  "n_features": 13,
+  "numeric_features": [
+    "Age",
+    "Sex",
+    "Chest pain type",
+    "BP",
+    "Cholesterol",
+    "FBS over 120",
+    "EKG results",
+    "Max HR",
+    "Exercise angina",
+    "ST depression",
+    "Slope of ST",
+    "Number of vessels fluro",
+    "Thallium"
+  ],
+  "categorical_features": [],
+  "duplicate_rows_train": 0,
+  "target": {
+    "name": "Heart Disease",
+    "dtype": "str",
+    "n_unique": 2,
+    "missing": 0,
+    "class_counts": {
+      "Absence": 347546,
+      "Presence": 282454
+    },
+    "imbalance_ratio": 1.230452,
+    "positive_rate": 0.44834
+  },
+  "missing_train": {},
+  "missing_test": {},
+  "numeric_stats": {
+    "Age": {
+      "mean": 54.136706,
+      "std": 8.256301,
+      "min": 29.0,
+      "max": 77.0,
+      "skew": -0.164011,
+      "zeros": 0.0
+    },
+    "Sex": {
+      "mean": 0.714735,
+      "std": 0.451541,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": -0.951123,
+      "zeros": 179717.0
+    },
+    "Chest pain type": {
+      "mean": 3.312752,
+      "std": 0.851615,
+      "min": 1.0,
+      "max": 4.0,
+      "skew": -1.085939,
+      "zeros": 0.0
+    },
+    "BP": {
+      "mean": 130.497433,
+      "std": 14.975802,
+      "min": 94.0,
+      "max": 200.0,
+      "skew": 0.629283,
+      "zeros": 0.0
+    },
+    "Cholesterol": {
+      "mean": 245.011814,
+      "std": 33.681581,
+      "min": 126.0,
+      "max": 564.0,
+      "skew": 0.27315,
+      "zeros": 0.0
+    },
+    "FBS over 120": {
+      "mean": 0.079987,
+      "std": 0.271274,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": 3.096606,
+      "zeros": 579608.0
+    },
+    "EKG results": {
+      "mean": 0.98166,
+      "std": 0.998783,
+      "min": 0.0,
+      "max": 2.0,
+      "skew": 0.036686,
+      "zeros": 320116.0
+    },
+    "Max HR": {
+      "mean": 152.816763,
+      "std": 19.112927,
+      "min": 71.0,
+      "max": 202.0,
+      "skew": -0.754556,
+      "zeros": 0.0
+    },
+    "Exercise angina": {
+      "mean": 0.273725,
+      "std": 0.44587,
+      "min": 0.0,
+      "max": 1.0,
+      "skew": 1.014983,
+      "zeros": 457553.0
+    },
+    "ST depression": {
+      "mean": 0.716028,
+      "std": 0.948472,
+      "min": 0.0,
+      "max": 6.2,
+      "skew": 1.328429,
+      "zeros": 314939.0
+    },
+    "Slope of ST": {
+      "mean": 1.455871,
+      "std": 0.545192,
+      "min": 1.0,
+      "max": 3.0,
+      "skew": 0.630518,
+      "zeros": 0.0
+    },
+    "Number of vessels fluro": {
+      "mean": 0.45104,
+      "std": 0.798549,
+      "min": 0.0,
+      "max": 3.0,
+      "skew": 1.736669,
+      "zeros": 445862.0
+    },
+    "Thallium": {
+      "mean": 4.618873,
+      "std": 1.950007,
+      "min": 3.0,
+      "max": 7.0,
+      "skew": 0.381173,
+      "zeros": 0.0
+    }
+  },
+  "categorical_stats": {},
+  "train_test_mean_shift_pct": {
+    "Age": 0.042788,
+    "Sex": 0.221046,
+    "Chest pain type": 0.07109,
+    "BP": 0.044181,
+    "Cholesterol": 0.013655,
+    "FBS over 120": 0.080701,
+    "EKG results": -0.322691,
+    "Max HR": -0.0216,
+    "Exercise angina": 0.339815,
+    "ST depression": 0.286923,
+    "Slope of ST": 0.239316,
+    "Number of vessels fluro": 0.8337,
+    "Thallium": 0.019508
+  },
+  "validation_hint": "classification -> StratifiedKFold on the class label",
+  "target_correlation": {
+    "Thallium": {
+      "point_biserial": 0.605776
+    },
+    "Chest pain type": {
+      "point_biserial": 0.460684
+    },
+    "Exercise angina": {
+      "point_biserial": 0.441864
+    },
+    "Max HR": {
+      "point_biserial": -0.440985
+    },
+    "Number of vessels fluro": {
+      "point_biserial": 0.438604
+    },
+    "ST depression": {
+      "point_biserial": 0.430641
+    },
+    "Slope of ST": {
+      "point_biserial": 0.41505
+    },
+    "Sex": {
+      "point_biserial": 0.342446
+    },
+    "EKG results": {
+      "point_biserial": 0.218961
+    },
+    "Age": {
+      "point_biserial": 0.212091
+    },
+    "Cholesterol": {
+      "point_biserial": 0.082753
+    },
+    "FBS over 120": {
+      "point_biserial": 0.03357
+    },
+    "BP": {
+      "point_biserial": -0.005181
+    }
+  }
+}

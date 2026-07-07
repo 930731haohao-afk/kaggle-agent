@@ -1,0 +1,1128 @@
+{
+  "competition": {
+    "competition_name": "playground-series-s6e2",
+    "competition_url": "https://www.kaggle.com/competitions/playground-series-s6e2",
+    "task_type": "binary_classification",
+    "target_column": "Heart Disease",
+    "id_column": "id",
+    "evaluation_metric": "auc-roc",
+    "data_dir": "data",
+    "submission_format": "id,Heart Disease",
+    "n_folds": 5,
+    "random_seed": 42,
+    "notes": "Predicting Heart Disease — Playground Series S6E2. Synthetic dataset based on UCI Heart Disease. 630K train, 270K test, 13 features, no missing values. Target: Presence/Absence -> 1/0 in submission. Deadline: 2026-02-28.\n"
+  },
+  "material_level": "full",
+  "status_md_present": true,
+  "status": {
+    "present": true,
+    "sections": {
+      "Playground Series S6E2 — Predicting Heart Disease": "**Date**: 2026-02 (Feb prior-season run) / 2026-07 (cross-season unit 5/5, final)",
+      "Competition Info": "- URL: https://www.kaggle.com/competitions/playground-series-s6e2\n- Problem: Binary classification (Heart Disease Presence/Absence)\n- Metric (this cross-season unit, per config.yaml): **ROC-AUC (maximize)** — submit\n  raw positive-class probabilities, never hard 0/1 labels\n- Train: 630,000 rows, Test: 270,000 rows, 13 raw UCI numeric features\n- Target: `Heart Disease` (Presence -> 1 / Absence -> 0), positive rate 0.44834",
+      "Key EDA Findings": "- No missing values, no feature-duplicate rows, fairly balanced (imbalance ratio 1.23)\n- Thallium strongest raw predictor (point-biserial 0.605776), then Chest pain type\n  (0.460684), Exercise angina (0.441864), Max HR (-0.440985), Number of vessels fluro\n  (0.438604), ST depression (0.430641)\n- BP near-zero (-0.005181), FBS over 120 (0.033570), Cholesterol (0.082753) weak\n- Binary classification, no time/group structure -> StratifiedKFold on the class label",
+      "Cross-season protocol (unit 5/5, the final cross-season unit)": "- The Feb-2026 run's v1 ensemble (experiments.json exp 1) trained LGB+XGB + an OOF\n  weight-searched ensemble on a 34-feature engineered set with StratifiedKFold(5,\n  shuffle, seed=42): OOF AUC 0.95498. Kept verbatim as the stage-1 record (reuse the\n  fold-identical Feb ensemble, don't retrain). StratifiedKFold's split depends only on\n  the target + seed, so July's folds reproduce Feb v1's exactly and all July scores are\n  directly comparable.\n- Feb's later variants (v2 10-fold, v3 5-seed x 5-fold, v4 10-seed x 10-fold, v5\n  58-feature) used NON-canonical CV schemes and are kept as context only (never ladder\n  rungs — never compare scores across CV schemes). Feb's best real Kaggle submission was\n  v3, Public LB AUC 0.95332.\n- Reproducibility: all July training is bit-reproducible cross-process (LightGBM\n  `deterministic=True` + `force_row_wise=True`, all models `num_threads=16`) so the\n  stage-4 OOF-reproduction gate holds digit-for-digit — pinned from the very first run\n  (the s6e1 hard-won fix, applied here from the start; verified: 3-model cross-process\n  max|diff|=0 before the pipeline began).",
+      "Four-stage run (July, all scores 5-fold OOF AUC, same folds throughout)": "- Stage 2 (kaggle-agent skill six stages): LGB+XGB+CAT blend, OOF AUC 0.955197 (LGB\n  0.955009, XGB 0.955048, CAT 0.955151; blend weights LGB 0.15 / XGB 0.25 / CAT 0.60).\n- Stage 3 (linear self-iteration, 3 rounds):\n  - r1 prior checks (BOTH resolved by controlled same-folds comparison first):\n    (A) s3e9 \"explicit product/threshold columns add nothing for GBDT\" + s3e7/s3e14\n        \"too many features regress\" prior CONFIRMED here — the 13 raw UCI features\n        (0.955238) BEAT the full 33-feature set (0.955009) per solo LGB (delta\n        +0.000229), so the 20 engineered columns do NOT help; base13 adopted for the\n        LGB pool member. This is the OPPOSITE outcome to s6e1 (where interactions\n        helped) and the SAME as s5e10 — same prior, opposite verdict per comp.\n    (B) s3e3/s4e1 AUC prior \"adding class-imbalance weighting hurts a ranking metric\":\n        is_unbalance=True (0.954993) vs default (0.955009), delta -0.000016 -> prior\n        CONFIRMED (weighting hurts AUC), default unweighted kept — a third large-sample\n        confirmation after s3e3 and s4e1. r1 blend 0.955310.\n  - r2 Optuna (fold-0 proxy, direct-AUC objective, 40 trials 515.1s): tuned base13 LGB\n    0.955501 (shallow depth-4, strong regularization) added to pool; 4-way blend\n    0.955501 (tuned LGB dominates).\n  - r3 seed-bag (tuned LGB seed=2024, 0.955501): 5-way blend 0.955510. Stopped after 3\n    rounds (diminishing returns).\n- Stage 4 (tree search v3): first tree-search run for this comp; root = strongest cached\n  solo (LGB_tuned_seed2024, 0.955501), digit-for-digit re-verified. Winner = node #43, a\n  37-member kitchen-sink mega-blend of the full solo pool (8 non-zero weights, dominant\n  member node #14 weight 0.3523), OOF AUC **0.955529** (search stopped on the 60-node\n  hard budget cap, 60 evaluated nodes, wall 7958.9s, 0 failed, 0 dedup). Logged as\n  experiments.json exp 16; see REPORT.md for the full ladder.\n- Four-stage ladder (same folds): 0.95498 -> 0.955197 -> 0.955510 -> 0.955529\n  (stage 1->4 +0.0575%).",
+      "Submissions": "- Feb: v3 got a real Kaggle leaderboard on the SAME AUC metric (Public LB 0.95332) —\n  it confirms the Feb pipeline produced valid ranked test predictions, but is on a\n  different (multi-seed) CV scheme so it is not a numeric anchor for this single-fold\n  July ladder.\n- July best (stage 4): OOF-reproduction gate via scripts/06_rebuild_tree_best.py — all\n  37 members retrained, digit-for-digit OOF check, weight-search replay, then a\n  raw-probability submission. Late-submission attempt expected to return 403\n  (competition closed) -> recorded CV-only.",
+      "Lessons Learned (this run)": "- The s3e9 \"explicit interactions add nothing\" prior got its OPPOSITE verdict vs s6e1:\n  here the 13 raw UCI features BEAT the 33-feature engineered set by 0.000229 AUC, so\n  interactions were rejected (same as s5e10). Feb built 20 engineered columns and\n  believed them essential; a clean same-folds check showed the raw columns alone score\n  higher for LGB. Same prior, opposite outcomes across comps — priors must be\n  re-verified, both confirmations and rejections logged honestly.\n- The AUC imbalance-weighting prior (s3e3/s4e1) held a third time on a large sample:\n  is_unbalance hurt AUC by 0.000016. Small effect (data is fairly balanced), consistent\n  direction.\n- Determinism pinned from the start (the s6e1 fix) meant the stage-4 gate passed without\n  a mid-run scramble: the mega-blend's members reproduce bit-identically cross-process.\n- Extremely stable CV: the whole four-stage ladder moves within a ~0.0006 AUC band, so\n  gains are real but small — an honest \"last-mile\" competition, and the mega-blend still\n  extracted the final 0.000019 over the linear stage's best blend.\n\n---\n\n**Final Status** (cross-season unit 5/5 complete): four-stage ladder\n0.95498 -> 0.955197 -> 0.955510 -> 0.955529, mega-blend winner, gate-verified, CV-only\n(competition closed)."
+    }
+  },
+  "eda": {
+    "source": "eda_summary.py",
+    "n_rows_train": 630000,
+    "n_rows_test": 270000,
+    "n_features": 13,
+    "numeric_features": [
+      "Age",
+      "Sex",
+      "Chest pain type",
+      "BP",
+      "Cholesterol",
+      "FBS over 120",
+      "EKG results",
+      "Max HR",
+      "Exercise angina",
+      "ST depression",
+      "Slope of ST",
+      "Number of vessels fluro",
+      "Thallium"
+    ],
+    "categorical_features": [],
+    "duplicate_rows_train": 0,
+    "target": {
+      "name": "Heart Disease",
+      "dtype": "str",
+      "n_unique": 2,
+      "missing": 0,
+      "class_counts": {
+        "Absence": 347546,
+        "Presence": 282454
+      },
+      "imbalance_ratio": 1.230452,
+      "positive_rate": 0.44834
+    },
+    "missing_train": {},
+    "missing_test": {},
+    "numeric_stats": {
+      "Age": {
+        "mean": 54.136706,
+        "std": 8.256301,
+        "min": 29.0,
+        "max": 77.0,
+        "skew": -0.164011,
+        "zeros": 0.0
+      },
+      "Sex": {
+        "mean": 0.714735,
+        "std": 0.451541,
+        "min": 0.0,
+        "max": 1.0,
+        "skew": -0.951123,
+        "zeros": 179717.0
+      },
+      "Chest pain type": {
+        "mean": 3.312752,
+        "std": 0.851615,
+        "min": 1.0,
+        "max": 4.0,
+        "skew": -1.085939,
+        "zeros": 0.0
+      },
+      "BP": {
+        "mean": 130.497433,
+        "std": 14.975802,
+        "min": 94.0,
+        "max": 200.0,
+        "skew": 0.629283,
+        "zeros": 0.0
+      },
+      "Cholesterol": {
+        "mean": 245.011814,
+        "std": 33.681581,
+        "min": 126.0,
+        "max": 564.0,
+        "skew": 0.27315,
+        "zeros": 0.0
+      },
+      "FBS over 120": {
+        "mean": 0.079987,
+        "std": 0.271274,
+        "min": 0.0,
+        "max": 1.0,
+        "skew": 3.096606,
+        "zeros": 579608.0
+      },
+      "EKG results": {
+        "mean": 0.98166,
+        "std": 0.998783,
+        "min": 0.0,
+        "max": 2.0,
+        "skew": 0.036686,
+        "zeros": 320116.0
+      },
+      "Max HR": {
+        "mean": 152.816763,
+        "std": 19.112927,
+        "min": 71.0,
+        "max": 202.0,
+        "skew": -0.754556,
+        "zeros": 0.0
+      },
+      "Exercise angina": {
+        "mean": 0.273725,
+        "std": 0.44587,
+        "min": 0.0,
+        "max": 1.0,
+        "skew": 1.014983,
+        "zeros": 457553.0
+      },
+      "ST depression": {
+        "mean": 0.716028,
+        "std": 0.948472,
+        "min": 0.0,
+        "max": 6.2,
+        "skew": 1.328429,
+        "zeros": 314939.0
+      },
+      "Slope of ST": {
+        "mean": 1.455871,
+        "std": 0.545192,
+        "min": 1.0,
+        "max": 3.0,
+        "skew": 0.630518,
+        "zeros": 0.0
+      },
+      "Number of vessels fluro": {
+        "mean": 0.45104,
+        "std": 0.798549,
+        "min": 0.0,
+        "max": 3.0,
+        "skew": 1.736669,
+        "zeros": 445862.0
+      },
+      "Thallium": {
+        "mean": 4.618873,
+        "std": 1.950007,
+        "min": 3.0,
+        "max": 7.0,
+        "skew": 0.381173,
+        "zeros": 0.0
+      }
+    },
+    "categorical_stats": {},
+    "train_test_mean_shift_pct": {
+      "Age": 0.042788,
+      "Sex": 0.221046,
+      "Chest pain type": 0.07109,
+      "BP": 0.044181,
+      "Cholesterol": 0.013655,
+      "FBS over 120": 0.080701,
+      "EKG results": -0.322691,
+      "Max HR": -0.0216,
+      "Exercise angina": 0.339815,
+      "ST depression": 0.286923,
+      "Slope of ST": 0.239316,
+      "Number of vessels fluro": 0.8337,
+      "Thallium": 0.019508
+    },
+    "validation_hint": "classification -> StratifiedKFold on the class label",
+    "target_correlation": {
+      "Thallium": {
+        "point_biserial": 0.605776
+      },
+      "Chest pain type": {
+        "point_biserial": 0.460684
+      },
+      "Exercise angina": {
+        "point_biserial": 0.441864
+      },
+      "Max HR": {
+        "point_biserial": -0.440985
+      },
+      "Number of vessels fluro": {
+        "point_biserial": 0.438604
+      },
+      "ST depression": {
+        "point_biserial": 0.430641
+      },
+      "Slope of ST": {
+        "point_biserial": 0.41505
+      },
+      "Sex": {
+        "point_biserial": 0.342446
+      },
+      "EKG results": {
+        "point_biserial": 0.218961
+      },
+      "Age": {
+        "point_biserial": 0.212091
+      },
+      "Cholesterol": {
+        "point_biserial": 0.082753
+      },
+      "FBS over 120": {
+        "point_biserial": 0.03357
+      },
+      "BP": {
+        "point_biserial": -0.005181
+      }
+    }
+  },
+  "experiments": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-02-12T11:51:00",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "Feb v1 LGB+XGB ensemble (stage-1 anchor)",
+      "score": 0.95498,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "n_features": 34,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.95495
+        },
+        {
+          "name": "XGB",
+          "score": 0.95407
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.85,
+          "XGB": 0.15
+        },
+        "score": 0.95498
+      },
+      "postprocess": [],
+      "notes": "Stage-1 record, REUSED not retrained: the Feb-2026 prior-season v1 ensemble (LGB weight 0.85 + XGB weight 0.15) on StratifiedKFold(5, shuffle, random_state=42), 34 engineered features, OOF AUC 0.95498 (Feb Public LB 0.95320). Its folds are byte-identical to this July run's canonical folds (StratifiedKFold's split depends only on the target vector + seed), so 0.95498 is the directly-comparable stage-1 anchor -- exactly as s6e1 reused Feb's fold-identical ensemble. Feb's later variants used NON-canonical CV schemes and are context only (recorded below, unscored), never ladder rungs: never compare scores across CV schemes."
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-02-12T12:08:00",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "Feb v2 LGB+XGB+CatBoost (context, non-canonical 10-fold)",
+      "n_features": 53,
+      "notes": "Feb-2026 context only (NOT on the canonical single fold, so intentionally unscored here): 3-model blend on 10-fold CV, 53 features, OOF AUC 0.95511 (Feb Public LB 0.95318). Feb STATUS concluded 53 features was too many."
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-02-12T13:11:00",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "Feb v3 multiseed LGB+CatBoost (context, non-canonical 5-seed x 5-fold)",
+      "n_features": 33,
+      "notes": "Feb-2026 context only (5-seed x 5-fold averaging, NOT byte-comparable to this single-fold ladder, so unscored here): LGB weight 0.25 + CatBoost weight 0.75, 33 focused features, averaged OOF AUC 0.95526, and Feb's BEST real Kaggle submission -- Public LB AUC 0.95332. Feb STATUS concluded this focused 33-feature set optimal; it is the feature set carried forward into this July run's stages 2-4."
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-02-12T15:30:00",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "Feb v4 GPU multiseed LGB+CatBoost+XGB (context, non-canonical 10-seed x 10-fold)",
+      "n_features": 33,
+      "notes": "Feb-2026 context only (10-seed x 10-fold averaging, unscored here): LGB 0.10 + CatBoost 0.55 + XGB 0.35, 33 features, averaged OOF AUC 0.95528 (Feb Public LB 0.95331). More seeds/folds than v3 for no LB gain -- Feb STATUS flagged the leaderboard as plateaued around 0.9532."
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-02-14T16:57:00",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "Feb v5 enhanced-features stacking (context, rejected by Feb)",
+      "n_features": 58,
+      "notes": "Feb-2026 context only (unscored here): 58 features (33 + 25 new non-linear/3-way/composite), weighted OOF AUC 0.95519 (Feb Public LB 0.95322). Feb REJECTED it -- the extra features hurt (LB 0.95322 < v3's 0.95332), confirming the focused 33-feature set as Feb's final choice."
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-07T22:49:51",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "LGB (stage2 solo)",
+      "score": 0.955009,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium",
+        "Age_decade",
+        "BP_high",
+        "Chol_high",
+        "HR_reserve",
+        "HR_pct_max",
+        "Age_x_MaxHR",
+        "Age_x_STdep",
+        "Age_x_Vessels",
+        "Chol_x_Age",
+        "BP_x_Chol",
+        "BP_x_Age",
+        "STdep_x_Slope",
+        "STdep_x_MaxHR",
+        "Vessels_x_Thallium",
+        "Angina_x_STdep",
+        "ChestPain_x_Angina",
+        "Risk_score",
+        "Chol_per_Age",
+        "BP_per_Age",
+        "Thallium_7"
+      ],
+      "n_features": 33,
+      "postprocess": [],
+      "notes": "stage2 skill six-stage pipeline; Feb focused 33-feature set on Feb-v1-identical StratifiedKFold(5,shuffle,seed42) folds; early-stopped boosting; bit-reproducible training (LGB deterministic+force_row_wise, all models num_threads=16) so the stage-4 OOF-reproduction gate holds cross-process. {'mean_best_iter': 646}"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-07T22:49:51",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "XGB (stage2 solo)",
+      "score": 0.955048,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium",
+        "Age_decade",
+        "BP_high",
+        "Chol_high",
+        "HR_reserve",
+        "HR_pct_max",
+        "Age_x_MaxHR",
+        "Age_x_STdep",
+        "Age_x_Vessels",
+        "Chol_x_Age",
+        "BP_x_Chol",
+        "BP_x_Age",
+        "STdep_x_Slope",
+        "STdep_x_MaxHR",
+        "Vessels_x_Thallium",
+        "Angina_x_STdep",
+        "ChestPain_x_Angina",
+        "Risk_score",
+        "Chol_per_Age",
+        "BP_per_Age",
+        "Thallium_7"
+      ],
+      "n_features": 33,
+      "postprocess": [],
+      "notes": "stage2 skill six-stage pipeline; Feb focused 33-feature set on Feb-v1-identical StratifiedKFold(5,shuffle,seed42) folds; early-stopped boosting; bit-reproducible training (LGB deterministic+force_row_wise, all models num_threads=16) so the stage-4 OOF-reproduction gate holds cross-process. {}"
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-07T22:49:51",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "CAT (stage2 solo)",
+      "score": 0.955151,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium",
+        "Age_decade",
+        "BP_high",
+        "Chol_high",
+        "HR_reserve",
+        "HR_pct_max",
+        "Age_x_MaxHR",
+        "Age_x_STdep",
+        "Age_x_Vessels",
+        "Chol_x_Age",
+        "BP_x_Chol",
+        "BP_x_Age",
+        "STdep_x_Slope",
+        "STdep_x_MaxHR",
+        "Vessels_x_Thallium",
+        "Angina_x_STdep",
+        "ChestPain_x_Angina",
+        "Risk_score",
+        "Chol_per_Age",
+        "BP_per_Age",
+        "Thallium_7"
+      ],
+      "n_features": 33,
+      "postprocess": [],
+      "notes": "stage2 skill six-stage pipeline; Feb focused 33-feature set on Feb-v1-identical StratifiedKFold(5,shuffle,seed42) folds; early-stopped boosting; bit-reproducible training (LGB deterministic+force_row_wise, all models num_threads=16) so the stage-4 OOF-reproduction gate holds cross-process. {} CAT is new vs Feb v1 (whose ensemble was LGB+XGB only)."
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-07T22:49:51",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "stage2 LGB+XGB+CAT blend",
+      "score": 0.955197,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium",
+        "Age_decade",
+        "BP_high",
+        "Chol_high",
+        "HR_reserve",
+        "HR_pct_max",
+        "Age_x_MaxHR",
+        "Age_x_STdep",
+        "Age_x_Vessels",
+        "Chol_x_Age",
+        "BP_x_Chol",
+        "BP_x_Age",
+        "STdep_x_Slope",
+        "STdep_x_MaxHR",
+        "Vessels_x_Thallium",
+        "Angina_x_STdep",
+        "ChestPain_x_Angina",
+        "Risk_score",
+        "Chol_per_Age",
+        "BP_per_Age",
+        "Thallium_7"
+      ],
+      "n_features": 33,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.955009
+        },
+        {
+          "name": "XGB",
+          "score": 0.955048
+        },
+        {
+          "name": "CAT",
+          "score": 0.955151
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.15,
+          "XGB": 0.25,
+          "CAT": 0.6
+        },
+        "score": 0.955197
+      },
+      "postprocess": [],
+      "submission": "stage2_blend_0.95520_20260707_224951.csv",
+      "notes": "stage2 skill six-stage pipeline blend; simplex grid weight search (step 0.05) scored directly against OOF AUC; folds identical to the Feb v1 stage-1 record so scores are directly comparable. No post-processing (AUC is a ranking metric; submit raw probabilities)."
+    },
+    {
+      "experiment_id": 10,
+      "timestamp": "2026-07-07T22:53:09",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "LGB base-13-features (stage3 r1 prior check)",
+      "score": 0.955238,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium"
+      ],
+      "n_features": 13,
+      "postprocess": [],
+      "notes": "Prior check A: experience-library prior 'explicit product/threshold columns add nothing for GBDT' (s3e9) + 'too many features regress' (s3e7/s3e14) vs Feb's claim that the engineered interactions carry the signal. Same params/folds LGB, 13 raw UCI features 0.955238 vs 33-feature stage2 LGB 0.955009, delta +0.000229 -> prior CONFIRMED here: engineered block adds nothing; adopting the 13-feature LGB as the pool member. Prior check B (AUC ranking prior, s3e3/s4e1): LGB is_unbalance=True 0.954993 vs default no-weighting 0.955009, delta -0.000016 -> imbalance weighting HURTS/does-not-help AUC as predicted; keeping the default unweighted objective (a third large-sample confirmation after s3e3 and s4e1)."
+    },
+    {
+      "experiment_id": 11,
+      "timestamp": "2026-07-07T22:54:23",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "stage3 r1 3-way blend",
+      "score": 0.95531,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium",
+        "Age_decade",
+        "BP_high",
+        "Chol_high",
+        "HR_reserve",
+        "HR_pct_max",
+        "Age_x_MaxHR",
+        "Age_x_STdep",
+        "Age_x_Vessels",
+        "Chol_x_Age",
+        "BP_x_Chol",
+        "BP_x_Age",
+        "STdep_x_Slope",
+        "STdep_x_MaxHR",
+        "Vessels_x_Thallium",
+        "Angina_x_STdep",
+        "ChestPain_x_Angina",
+        "Risk_score",
+        "Chol_per_Age",
+        "BP_per_Age",
+        "Thallium_7"
+      ],
+      "n_features": 33,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.955238
+        },
+        {
+          "name": "XGB",
+          "score": 0.955048
+        },
+        {
+          "name": "CAT",
+          "score": 0.955151
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.589,
+          "XGB": 0.055,
+          "CAT": 0.356
+        },
+        "score": 0.95531
+      },
+      "postprocess": [],
+      "submission": "stage3_r1_blend_0.95531_20260707_225422.csv",
+      "notes": "stage3 round1: both priors resolved (A: LGB=base13; B: is_unbalance per r1 prior-check entry), blend re-weighted with Dirichlet search (finer than stage2's 0.05 grid)."
+    },
+    {
+      "experiment_id": 12,
+      "timestamp": "2026-07-07T23:05:34",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "LGB Optuna-tuned (stage3 r2, fold-0 proxy, direct-metric objective)",
+      "score": 0.955501,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium"
+      ],
+      "n_features": 13,
+      "postprocess": [],
+      "notes": "Optuna TPE 40 trials on fold-0 proxy (515.1s), objective = fold-0 OOF AUC DIRECTLY, best fold0 0.955884, params={'num_leaves': 102, 'max_depth': 4, 'learning_rate': 0.01708014518950681, 'min_child_samples': 103, 'feature_fraction': 0.5278406312813502, 'bagging_fraction': 0.5699158117443278, 'reg_alpha': 0.3523294838630977, 'reg_lambda': 0.029726576381404}. Full-5fold OOF 0.955501 vs untuned pool LGB 0.955238 (delta +0.000262). Added to pool (not replacing), per experience-library convention."
+    },
+    {
+      "experiment_id": 13,
+      "timestamp": "2026-07-07T23:06:48",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "stage3 r2 4-way blend",
+      "score": 0.955501,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium",
+        "Age_decade",
+        "BP_high",
+        "Chol_high",
+        "HR_reserve",
+        "HR_pct_max",
+        "Age_x_MaxHR",
+        "Age_x_STdep",
+        "Age_x_Vessels",
+        "Chol_x_Age",
+        "BP_x_Chol",
+        "BP_x_Age",
+        "STdep_x_Slope",
+        "STdep_x_MaxHR",
+        "Vessels_x_Thallium",
+        "Angina_x_STdep",
+        "ChestPain_x_Angina",
+        "Risk_score",
+        "Chol_per_Age",
+        "BP_per_Age",
+        "Thallium_7"
+      ],
+      "n_features": 33,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.955238
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.955501
+        },
+        {
+          "name": "XGB",
+          "score": 0.955048
+        },
+        {
+          "name": "CAT",
+          "score": 0.955151
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.0,
+          "LGB_tuned": 0.99,
+          "XGB": 0.0,
+          "CAT": 0.01
+        },
+        "score": 0.955501
+      },
+      "postprocess": [],
+      "submission": "stage3_r2_blend_0.95550_20260707_230648.csv",
+      "notes": "stage3 round2: Optuna fold-0-proxy tuned LGB (direct-metric objective) added to pool (not replacing)."
+    },
+    {
+      "experiment_id": 14,
+      "timestamp": "2026-07-07T23:09:21",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "LGB_tuned_seed2024 (stage3 r3 seed-bag)",
+      "score": 0.955501,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium"
+      ],
+      "n_features": 13,
+      "postprocess": [],
+      "notes": "Seed-bagging member: same Optuna-tuned params as r2's LGB_tuned, seed=2024. Added to pool."
+    },
+    {
+      "experiment_id": 15,
+      "timestamp": "2026-07-07T23:10:36",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "stage3 r3 5-way blend",
+      "score": 0.95551,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "features": [
+        "Age",
+        "Sex",
+        "Chest pain type",
+        "BP",
+        "Cholesterol",
+        "FBS over 120",
+        "EKG results",
+        "Max HR",
+        "Exercise angina",
+        "ST depression",
+        "Slope of ST",
+        "Number of vessels fluro",
+        "Thallium",
+        "Age_decade",
+        "BP_high",
+        "Chol_high",
+        "HR_reserve",
+        "HR_pct_max",
+        "Age_x_MaxHR",
+        "Age_x_STdep",
+        "Age_x_Vessels",
+        "Chol_x_Age",
+        "BP_x_Chol",
+        "BP_x_Age",
+        "STdep_x_Slope",
+        "STdep_x_MaxHR",
+        "Vessels_x_Thallium",
+        "Angina_x_STdep",
+        "ChestPain_x_Angina",
+        "Risk_score",
+        "Chol_per_Age",
+        "BP_per_Age",
+        "Thallium_7"
+      ],
+      "n_features": 33,
+      "base_models": [
+        {
+          "name": "LGB",
+          "score": 0.955238
+        },
+        {
+          "name": "LGB_tuned",
+          "score": 0.955501
+        },
+        {
+          "name": "LGB_tuned_seed2024",
+          "score": 0.955501
+        },
+        {
+          "name": "XGB",
+          "score": 0.955048
+        },
+        {
+          "name": "CAT",
+          "score": 0.955151
+        }
+      ],
+      "ensemble": {
+        "weights": {
+          "LGB": 0.003,
+          "LGB_tuned": 0.476,
+          "LGB_tuned_seed2024": 0.491,
+          "XGB": 0.005,
+          "CAT": 0.025
+        },
+        "score": 0.95551
+      },
+      "postprocess": [],
+      "submission": "stage3_r3_blend_0.95551_20260707_231035.csv",
+      "notes": "stage3 r3_seed_bag: seed-bagged Optuna-tuned LGB (seed=2024) added to pool."
+    },
+    {
+      "experiment_id": 16,
+      "timestamp": "2026-07-08T02:41:54",
+      "source_format": "v2",
+      "metric": "AUC",
+      "direction": "maximize",
+      "model": "tree-search v3 mega-blend (node #43, 37-member kitchen-sink blend of the 37-solo pool via explore-burst; dirichlet weight search; 8 non-zero members, dominant node#14 weight 0.3523)",
+      "score": 0.955529,
+      "cv": {
+        "scheme": "5fold",
+        "n_splits": 5,
+        "seed": 42
+      },
+      "base_models": [
+        {
+          "name": "node#14 (lgb)",
+          "weight": 0.3523,
+          "solo_auc": 0.955512
+        },
+        {
+          "name": "node#13 (lgb)",
+          "weight": 0.1647,
+          "solo_auc": 0.955504
+        },
+        {
+          "name": "node#27 (lgb)",
+          "weight": 0.1458,
+          "solo_auc": 0.955421
+        },
+        {
+          "name": "node#4 (lgb)",
+          "weight": 0.1118,
+          "solo_auc": 0.955499
+        },
+        {
+          "name": "node#23 (lgb)",
+          "weight": 0.0879,
+          "solo_auc": 0.955421
+        },
+        {
+          "name": "node#0 (lgb)",
+          "weight": 0.0772,
+          "solo_auc": 0.955501
+        },
+        {
+          "name": "node#20 (lgb)",
+          "weight": 0.0397,
+          "solo_auc": 0.955454
+        },
+        {
+          "name": "node#16 (lgb)",
+          "weight": 0.0206,
+          "solo_auc": 0.955497
+        }
+      ],
+      "ensemble": {
+        "method": "harness_v3 eval_blend defaults (dirichlet k=800 seed=42 + coordinate-ascent refine), maximizing OOF AUC (harness minimizes -AUC)",
+        "weights": {
+          "14": 0.3523,
+          "13": 0.1647,
+          "27": 0.1458,
+          "4": 0.1118,
+          "23": 0.0879,
+          "0": 0.0772,
+          "20": 0.0397,
+          "16": 0.0206
+        },
+        "score": 0.955529
+      },
+      "postprocess": [],
+      "submission": {
+        "file": "sub_tree_best_0.95553_20260708_023918.csv",
+        "status": "CV-only (competition closed to late submission; Kaggle returned 403 Forbidden)"
+      },
+      "notes": "Stage-4 tree-search winner (harness_v3, node #43). Source: experiments_tree_v3.json, 60 evaluated nodes of 60 budget, total wall 7958.9s, stop_reason=hard budget cap reached (60/60 evaluated nodes), 0 dedup rejections, 0 failed nodes. AUC is MAXIMIZE: eval_s6e2 negates (-AUC) for the lower-is-better harness, root pick uses max cached AUC, global_best = min(-AUC). Root = LGB_tuned_seed2024 (stage-3 strongest solo, OOF AUC 0.955501, digit-for-digit re-verified). Gate-verified digit-for-digit (06_rebuild_tree_best.py): all 37 members retrained with max|dOOF|=0e+00 vs cached OOFs (bit-identical thanks to deterministic LGB force_row_wise + fixed num_threads=16 across all models, pinned from the first run), recovered blend OOF AUC 0.955529 == target, weights == tree-stored round(4) member-for-member. Winner is the explore-burst kitchen-sink mega-blend of the full 37-solo pool but the dirichlet weight search kept only 8 non-zero members, ALL LGB-family variants of the tuned base13 LGB (seed-bags, feature-prunes, boundary-push, root) -- every XGB and CatBoost member got zero weight, so on this data the mega-blend is really an intra-LGB-family variance reduction: best single member node#14 0.955512, blended 0.955529 (+0.000017). Mega-blend WON here, same as s5e10 and s6e1. Feb context (non-canonical CV, not a ladder anchor): v3 5-seed x 5-fold OOF AUC 0.95526, real Public LB AUC 0.95332. Submission built (raw probabilities, no post-processing) but competition closed to late submission (403) -> CV-only."
+    }
+  ],
+  "best": {
+    "experiment_id": 16,
+    "timestamp": "2026-07-08T02:41:54",
+    "source_format": "v2",
+    "metric": "AUC",
+    "direction": "maximize",
+    "model": "tree-search v3 mega-blend (node #43, 37-member kitchen-sink blend of the 37-solo pool via explore-burst; dirichlet weight search; 8 non-zero members, dominant node#14 weight 0.3523)",
+    "score": 0.955529,
+    "cv": {
+      "scheme": "5fold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "node#14 (lgb)",
+        "weight": 0.3523,
+        "solo_auc": 0.955512
+      },
+      {
+        "name": "node#13 (lgb)",
+        "weight": 0.1647,
+        "solo_auc": 0.955504
+      },
+      {
+        "name": "node#27 (lgb)",
+        "weight": 0.1458,
+        "solo_auc": 0.955421
+      },
+      {
+        "name": "node#4 (lgb)",
+        "weight": 0.1118,
+        "solo_auc": 0.955499
+      },
+      {
+        "name": "node#23 (lgb)",
+        "weight": 0.0879,
+        "solo_auc": 0.955421
+      },
+      {
+        "name": "node#0 (lgb)",
+        "weight": 0.0772,
+        "solo_auc": 0.955501
+      },
+      {
+        "name": "node#20 (lgb)",
+        "weight": 0.0397,
+        "solo_auc": 0.955454
+      },
+      {
+        "name": "node#16 (lgb)",
+        "weight": 0.0206,
+        "solo_auc": 0.955497
+      }
+    ],
+    "ensemble": {
+      "method": "harness_v3 eval_blend defaults (dirichlet k=800 seed=42 + coordinate-ascent refine), maximizing OOF AUC (harness minimizes -AUC)",
+      "weights": {
+        "14": 0.3523,
+        "13": 0.1647,
+        "27": 0.1458,
+        "4": 0.1118,
+        "23": 0.0879,
+        "0": 0.0772,
+        "20": 0.0397,
+        "16": 0.0206
+      },
+      "score": 0.955529
+    },
+    "postprocess": [],
+    "submission": {
+      "file": "sub_tree_best_0.95553_20260708_023918.csv",
+      "status": "CV-only (competition closed to late submission; Kaggle returned 403 Forbidden)"
+    },
+    "notes": "Stage-4 tree-search winner (harness_v3, node #43). Source: experiments_tree_v3.json, 60 evaluated nodes of 60 budget, total wall 7958.9s, stop_reason=hard budget cap reached (60/60 evaluated nodes), 0 dedup rejections, 0 failed nodes. AUC is MAXIMIZE: eval_s6e2 negates (-AUC) for the lower-is-better harness, root pick uses max cached AUC, global_best = min(-AUC). Root = LGB_tuned_seed2024 (stage-3 strongest solo, OOF AUC 0.955501, digit-for-digit re-verified). Gate-verified digit-for-digit (06_rebuild_tree_best.py): all 37 members retrained with max|dOOF|=0e+00 vs cached OOFs (bit-identical thanks to deterministic LGB force_row_wise + fixed num_threads=16 across all models, pinned from the first run), recovered blend OOF AUC 0.955529 == target, weights == tree-stored round(4) member-for-member. Winner is the explore-burst kitchen-sink mega-blend of the full 37-solo pool but the dirichlet weight search kept only 8 non-zero members, ALL LGB-family variants of the tuned base13 LGB (seed-bags, feature-prunes, boundary-push, root) -- every XGB and CatBoost member got zero weight, so on this data the mega-blend is really an intra-LGB-family variance reduction: best single member node#14 0.955512, blended 0.955529 (+0.000017). Mega-blend WON here, same as s5e10 and s6e1. Feb context (non-canonical CV, not a ladder anchor): v3 5-seed x 5-fold OOF AUC 0.95526, real Public LB AUC 0.95332. Submission built (raw probabilities, no post-processing) but competition closed to late submission (403) -> CV-only."
+  },
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-02-12T11:51:00",
+      "score": 0.95498,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-02-12T12:08:00",
+      "score": null,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-02-12T13:11:00",
+      "score": null,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-02-12T15:30:00",
+      "score": null,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-02-14T16:57:00",
+      "score": null,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-07T22:49:51",
+      "score": 0.955009,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-07T22:49:51",
+      "score": 0.955048,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-07T22:49:51",
+      "score": 0.955151,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-07T22:49:51",
+      "score": 0.955197,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 10,
+      "timestamp": "2026-07-07T22:53:09",
+      "score": 0.955238,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 11,
+      "timestamp": "2026-07-07T22:54:23",
+      "score": 0.95531,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 12,
+      "timestamp": "2026-07-07T23:05:34",
+      "score": 0.955501,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 13,
+      "timestamp": "2026-07-07T23:06:48",
+      "score": 0.955501,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 14,
+      "timestamp": "2026-07-07T23:09:21",
+      "score": 0.955501,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 15,
+      "timestamp": "2026-07-07T23:10:36",
+      "score": 0.95551,
+      "source_format": "v2"
+    },
+    {
+      "experiment_id": 16,
+      "timestamp": "2026-07-08T02:41:54",
+      "score": 0.955529,
+      "source_format": "v2"
+    }
+  ],
+  "leaderboard": null,
+  "missing": [
+    "leaderboard"
+  ],
+  "unparsed": []
+}
