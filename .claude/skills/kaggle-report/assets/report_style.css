@@ -13,10 +13,12 @@ body {
   font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
   font-size: 10.5pt; line-height: 1.7; color: #222; max-width: 100%;
 }
-h1 { font-size: 19pt; color: #1a3a5c; border-bottom: 3px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 6px; }
-h2 { font-size: 13.5pt; color: #fff; background: #2c5a85; padding: 5px 12px; margin-top: 1.6em; margin-bottom: 0.6em; border-radius: 2px; }
-h3 { font-size: 11.5pt; color: #2c5a85; border-left: 4px solid #2c5a85; padding-left: 9px; margin-top: 1.3em; margin-bottom: 0.4em; }
-h4 { font-size: 10.5pt; color: #444; margin-top: 1em; margin-bottom: 0.3em; }
+/* 標題階層 v3:深藍粗體 + 全寬細底線 + 左側短重點色線段(取代舊的實心滿版色塊) */
+h1 { font-size: 20pt; color: #16324f; font-weight: 700; margin: 0 0 0.5em; padding-bottom: 9px; border-bottom: 3px solid #16324f; }
+h2 { font-size: 14pt; color: #16324f; font-weight: 700; margin: 1.9em 0 0.75em; padding: 0 0 6px; border-bottom: 2px solid #d9e1ea; position: relative; }
+h2::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 2.2em; height: 2px; background: #2c6ca3; }
+h3 { font-size: 11.5pt; color: #2c6ca3; font-weight: 600; margin: 1.4em 0 0.4em; padding-left: 10px; border-left: 3px solid #9cbcd8; }
+h4 { font-size: 10.5pt; color: #445266; font-weight: 600; margin: 1em 0 0.3em; }
 p { margin: 0.3em 0 0.8em; }
 ul, ol { margin: 0.3em 0 0.8em; padding-left: 1.6em; }
 li { margin-bottom: 0.25em; }
