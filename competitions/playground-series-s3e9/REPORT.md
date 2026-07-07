@@ -90,7 +90,7 @@ train/test 分佈接近(平均值差異最大者為 `AgeInDays` 的 -5.02% 與 `
 
 選型脈絡:小型噪音資料獎勵正則化而非容量——exp1 未正則化時 LGB(13.2055)/XGB
 (12.98156)過擬合嚴重、權重全數歸零由 CAT 獨拿;exp2 對兩者施加淺深度+強 L1/L2 後
-LGB 才取回 0.15 權重。Phase B 四輪中,去噪(exp5)與調參(exp6)皆未改善,全部增益
+LGB 才取回 0.15 權重。線性迭代(Phase B)四輪中,去噪(exp5)與調參(exp6)皆未改善,全部增益
 來自 seed bagging 的變異數縮減:調參 LGB 原 seed 權重為 0,其 seed 變體卻合計拿下約
 四分之一權重,CAT 的 seed-bag(exp8)則貢獻單輪最大增益。
 
@@ -155,6 +155,15 @@ Phase B 增益:12.073474(exp2/4)− 12.070034(exp8)= 0.003440
 ```
 
 ## 4. 實驗軌跡
+
+**實驗階段對照表**(內部代號使用前先定義,R-W8)
+
+| 代號 | 白話名稱 | 對應層級 |
+|------|----------|----------|
+| Phase A | kaggle-agent skill 六階段首跑 | tier2 |
+| Phase B | self-improvement 線性迭代 | tier3 |
+| Phase C-2a | 樹搜尋原型(harness v1,單模節點空間搜尋) | tier4 相關(OOF-only,未入 experiments.json) |
+| Phase E-1 | 樹搜尋執行(harness v2,ensemble-default 復仇戰) | tier4 相關(OOF-only,未入 experiments.json) |
 
 | exp | 時間 | 決策分數 | 階段 | 一句話摘要 |
 |-----|------|----------|------|------------|

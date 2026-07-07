@@ -88,8 +88,8 @@
 | XGB_deep | 0.041 | 無紀錄 | 刻意多樣性成員 |
 | CEILING | 0.289 | 0.561227 | top-code 感知兩階段 hybrid;solo 最弱但權重最大,單筆最大增益 |
 
-選型理由:三樹模型 solo 分數相近、誤差互補,適合 OOF 權重搜尋的凸組合;Phase B 依經驗庫
-「調參後單模加入 pool 而非替換」原則逐步擴充成員。exp8 由 harness v2 之 clip-aware
+選型理由:三樹模型 solo 分數相近、誤差互補,適合 OOF 權重搜尋的凸組合;線性迭代(Phase B)
+依經驗庫「調參後單模加入 pool 而非替換」原則逐步擴充成員。exp8 由 harness v2 之 clip-aware
 dirichlet(k=800)+coordinate-ascent 權重搜尋找到(22 個評估節點,wall 190.3s),CEILING
 成員印證「blend 貢獻 ≠ solo 分數」。
 
@@ -141,6 +141,14 @@ exp8 之 **0.556329**(各實驗與各成員分數見 3.2 節)。
 
 ## 4. 實驗軌跡
 
+**實驗階段對照表**(內部代號使用前先定義,R-W8)
+
+| 代號 | 白話名稱 | 對應層級 |
+|------|----------|----------|
+| Phase A | kaggle-agent skill 六階段首跑 | tier2 |
+| Phase B | self-improvement 線性迭代 | tier3 |
+| Phase D-4 | 樹搜尋執行(harness) | tier4 |
+
 | exp | 時間 | 決策分數 | 階段 | 一句話摘要 |
 |-----|------|----------|------|------------|
 | 1 | 2026-07-03T12:02:12 | 0.56166 | Baseline(通用批次) | 8 原始特徵三模型 blend,固定權重基線 |
@@ -190,7 +198,7 @@ tier3→tier4: 0.557088 − 0.556329 = 0.000759,相對改善 0.000759 / 0.557088
 併入 pool(exp6 採納、exp3 否決),避免把雜訊當進步。
 
 增益來源逐層遞減且各有歸屬:tier1→tier2 靠特徵工程與權重搜尋(0.56166→0.558768),是
-最大單筆增益;tier2→tier3 靠 Phase B 四輪線性迭代(調參、seed bagging、幾何特徵)推進至
+最大單筆增益;tier2→tier3 靠線性迭代(Phase B)四輪(調參、seed bagging、幾何特徵)推進至
 0.557088;tier3→tier4 靠樹搜尋的兩個本場專屬槓桿——clip-aware 評分與 top-code 感知的
 CEILING 成員——收於 0.556329。
 

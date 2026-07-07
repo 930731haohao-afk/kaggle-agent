@@ -23,6 +23,15 @@
 **tier5 預告**:樹搜尋 + 外部想法注入(idea injection,ERA 第二支柱、計畫書 4.1)已於
 Phase J 定義並執行中——本報告暫僅涵蓋 tier1–4,tier5 待收官後另行併入本表。
 
+**實驗階段對照表**(內部代號使用前先定義,R-W8)
+
+| 代號 | 白話名稱 | 對應層級 |
+|------|----------|----------|
+| Phase A | kaggle-agent skill 六階段首跑 | tier2 |
+| Phase B | self-improvement 線性迭代 | tier3 |
+| Phase D–G | 樹搜尋原型/harness 演進(v1→v3)與執行入帳 | tier4 |
+| Phase J | 外部想法注入(規劃中) | tier5(規劃中) |
+
 ## 2. 使用工具與環境
 
 | 工具 | 用途 |

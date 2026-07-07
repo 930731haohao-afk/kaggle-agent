@@ -16,3 +16,4 @@
 | R10 | 工具與環境(第 2 節) | 工具表僅列本場實際用到者(對應 best.base_models/postprocess/cv/tuning);未入 facts.json 的版本號置於 fenced code block 或省略;有 1 段工具鏈組合邏輯敘述 |
 | R11 | 四層消融(第 5 節) | 表格四列(tier1–tier4)齊備,分數對應 docs/benchmark_facts.json 該場 row;相對改善為逐層增量且非既有值者置於 fenced code block;若某層與前層同值誠實標「0%」;表後逐字出現目標三聲明句 |
 | R12 | 敘述性總結(第 6 節) | 3–5 段(每段 ≤4 行)涵蓋資料特性/關鍵決策/增益來源/結果與可信度;不含任何 facts.json 未出現的新數字;末段指向第 7 節 |
+| R13 | 階段代號先定義(R-W8) | 若正文出現內部階段代號(Phase A/B/C…、round N、Batch N 等),第 4 節開頭有「實驗階段對照表」(`代號 \| 白話名稱 \| 對應層級`),且僅列該場實際出現之代號;正文優先用白話,代號僅留在需對應原始紀錄(experiments.json notes、STATUS.md)之處 |

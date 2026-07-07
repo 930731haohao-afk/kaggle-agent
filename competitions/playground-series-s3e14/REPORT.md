@@ -179,6 +179,14 @@ exp8 − exp7:340.59891 − 340.35572 = 0.24319(MAE,越低越好)
 
 ## 4. 實驗軌跡
 
+**實驗階段對照表**(內部代號使用前先定義,R-W8)
+
+| 代號 | 白話名稱 | 對應層級 |
+|------|----------|----------|
+| Phase A | kaggle-agent skill 六階段首跑 | tier2 |
+| Phase B | self-improvement 線性迭代 | tier3 |
+| Phase F-2 | 樹搜尋執行(harness v3) | tier4 |
+
 | exp | 時間 | 決策分數 | 階段 | 一句話摘要 |
 |-----|------|----------|------|------------|
 | 1 | 2026-07-03T12:11:46 | 341.40782 | Baseline(通用批次) | 16 原始特徵三模型固定權重 blend,設定待超越基線 |
@@ -234,7 +242,7 @@ pool 的方式使用調參結果,一步創新低;其三,exp6 的 isotonic 校準
 stack 兩次習得式 meta-model 皆敗給簡單 simplex 權重搜尋,依驗證結果誠實棄用。
 
 各層增益來源分明:tier1→tier2 靠特徵工程 + 貼格後處理(341.40782→340.711795),
-tier2→tier3 靠 Phase B 四輪紀律化迭代(調參入 pool、seed bagging)推至 340.59891,
+tier2→tier3 靠線性迭代四輪紀律化(Phase B;調參入 pool、seed bagging)推至 340.59891,
 tier3→tier4 靠 harness v3 強制 explore-burst 的 34 成員 mega-blend 收於 340.35572,
 且 28/34 成員保留實質權重——廣度平均本身即是這個噪目標上的訊號。
 

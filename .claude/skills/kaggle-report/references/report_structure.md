@@ -67,6 +67,8 @@
 - CV↔LB gap:僅當 leaderboard 存在;差值以內嵌算式呈現並置於 fenced code block 內(Hard Rule 1;verify_report.py 對 code block 豁免,衍生數字一律走此模式)
 
 ## 4. 實驗軌跡
+- 若本節(或全報告)正文會出現內部階段代號(Phase A/B/C…、round N、Batch N 等),節首
+  必須先放「實驗階段對照表」(R-W8);表 schema 與裁剪規則見寫作規範。
 - 逐實驗分數表(id、timestamp、score、source_format)。來源:trajectory
 - 突破點敘述:分數躍升發生在哪筆、當時改了什麼(參考 experiments[].notes、STATUS.md)
 - unparsed 非空 → 原文列出並註明「無法解析之紀錄」
@@ -131,7 +133,20 @@
   - §3.4 推論表:`exp | 後處理 | submission 檔 | 已提交`
   - §3.5 排行榜表:`提交 | 日期 | Public | Private`(僅有 LB 的場次);gap/改善算式一律
     fenced code block
+  - §4 階段對照表(僅代號出現時需要):`代號 | 白話名稱 | 對應層級`(R-W8)
   - §4 軌跡表:`exp | 時間 | 決策分數 | 階段 | 一句話摘要`;之後至多 3 條「突破點」bullet
     (各 ≤3 行)
   - §5 四層消融表:`層級 | 配置 | 分數 | 相對改善`(固定 tier1–tier4 四列)
 - **R-W7 blockquote 僅用於 call-out**(語意澄清/誠實但書),不作一般引文。
+- **R-W8 階段代號先定義**:內部階段代號(Phase A/B/C…、round N、Batch N 等)在報告中
+  出現之前,必須先以固定的「實驗階段對照表」定義;此表放在第 4 節(實驗軌跡)開頭,
+  schema 為 `代號 | 白話名稱 | 對應層級`(欄名一字不差),內容依該場實際出現的代號裁剪
+  (未出現者不列)。常用全集(供裁剪時對照,勿整份照抄):
+  - Phase A = kaggle-agent skill 六階段首跑(tier2)
+  - Phase B = self-improvement 線性迭代(tier3)
+  - Phase C–F = 樹搜尋原型與 harness 演進(v1→v3)
+  - Phase E-*、G = 樹搜尋執行與成果入帳(tier4)
+  - Phase J = 外部想法注入(tier5,規劃中)
+
+  正文優先用白話(「線性迭代第 1 輪」優於「Phase B round 1」);代號僅保留在需要對應
+  原始紀錄(experiments.json notes、STATUS.md)之處。
