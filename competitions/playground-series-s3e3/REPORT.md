@@ -19,9 +19,9 @@
 | 評估指標 | roc_auc(maximize) |
 | 目標欄位 | Attrition |
 
-## 2. 本場工具、術語與採用策略
+## 2. 本場工具、專業術語與採用策略
 
-> 全案共同的研究設計、實驗流程、工具鏈、術語與五階段定義,見《前言》
+> 全案共同的研究設計、實驗流程、工具鏈、專業術語與五階段定義,見《前言》
 > (docs/PREFACE.pdf);本節僅列本場特有的部分。
 
 ### 2.1 本場工具
@@ -29,11 +29,10 @@
 全數為共同工具鏈(見《前言》第 3 節),無本場特有工具;樹搜尋工具本場使用第 2 版。
 交叉驗證採依 `Attrition` 分層的 StratifiedKFold(設計理由見第 3.3 節)。
 
-### 2.2 本場術語
+### 2.2 本場專業術語
 
-| 術語 | 定義 |
+| 專業術語 | 定義 |
 |------|-----------|
-| rank-average | 先將各成員預測轉換為排名再加權平均,降低不同模型分數尺度不一致的影響 |
 | KITCHENBLEND | 本場樹搜尋中「把當時已評估的全部 solo 節點都納入混合」的節點名稱(即《前言》§5 的 mega-blend 作法) |
 
 ### 2.3 採用策略
@@ -91,7 +90,7 @@ CatBoost 原生處理)。
 
 > **語意澄清(本報告全文適用)**:本場指標 ROC-AUC 為連續排序指標,無取整等後處理,故各
 > 實驗的「原始 OOF」即「決策分數」。另,最佳解紀錄以 OOF 分數最大者選出:最佳解為 exp8
-> 之樹搜尋結果,屬 **OOF-only**——未產生 test 預測;本場所有實驗皆未提交 Kaggle 排行榜,
+> 之樹搜尋結果,**只算出 OOF 分數、未產生 test 預測**;本場所有實驗皆未提交 Kaggle 排行榜,
 > 下文不再重複解釋。
 
 | exp | 階段 | 模型/成員 | 特徵數 | 原始 OOF | 決策分數 | 是否採納 |
@@ -147,10 +146,10 @@ CatBoost 權重收斂為 0(exp6 原生類別處理將其 solo 由 0.762684 拉�
 | 5 | 無後處理紀錄 | sub_blend_0.83778_20260703_233044.csv | 否 |
 | 6 | 無後處理紀錄 | 無紀錄 | 否 |
 | 7 | 無後處理紀錄 | sub_blend_0.83814_20260703_233303.csv | 否 |
-| 8 | 無後處理紀錄 | 無紀錄(OOF-only) | 否 |
+| 8 | 無後處理紀錄 | 無紀錄(僅 OOF 分數,未產生 test 預測) | 否 |
 
 `id_column = id`、`target_column = Attrition`。本場為無人值守批次執行,僅產生 submission
-檔案、未觸碰 Kaggle 憑證;exp8 為樹搜尋 OOF-only 結果,未產生 test 預測。
+檔案、未觸碰 Kaggle 憑證;exp8 為樹搜尋結果,只算出 OOF 分數、未產生 test 預測。
 
 ### 3.5 評估指標 / 排行榜
 
@@ -171,7 +170,7 @@ CatBoost 權重收斂為 0(exp6 原生類別處理將其 solo 由 0.762684 拉�
 | 5 | 2026-07-03T23:30:44 | 0.837776 | 3.4 | 調參版入池 + seed bag,5-way blend |
 | 6 | 2026-07-03T23:31:25 | 0.814259 | **3** | CatBoost 原生類別重試,大幅回升仍最弱 |
 | 7 | 2026-07-03T23:33:03 | 0.83814 | **3** | 6-way rank-average,線性迭代冠軍 |
-| 8 | 2026-07-04T11:59:43 | **0.845051** | 4.2 | KITCHENBLEND node #55,本場最佳(OOF-only) |
+| 8 | 2026-07-04T11:59:43 | **0.845051** | 4.2 | KITCHENBLEND node #55,本場最佳(僅 OOF 分數) |
 
 - **轉折 1(exp2→exp3)**:診斷出 scale_pos_weight/class_weights 對排序指標無益反害
   (AUC 非門檻敏感),移除加權並加強 LGB 正則化,0.819008 → 0.832925,為單筆最大躍升。
@@ -228,8 +227,8 @@ solo 節點突破線性天花板,收在 0.845051。CatBoost 個別結構性偏�
 仍可能貢獻多樣性,是本場最有趣的一組正反證據。
 
 可信度方面,exp2–8 全部使用同一組固定 CV 折,分數排序可直接比較;但本場無任何 Kaggle
-提交,所有分數皆為 OOF,缺乏排行榜外部驗證是本報告最大的補充說明。exp8 更是 OOF-only,
-未產生 test 預測,若要採用需先重建預測並提交驗證。
+提交,所有分數皆為 OOF,缺乏排行榜外部驗證是本報告最大的補充說明。exp8 更是只算出 OOF
+分數、未產生 test 預測,若要採用需先重建預測並提交驗證。
 
 **重現本實驗的最短路徑**:見第 7 節。
 
@@ -266,7 +265,7 @@ uv run python3 competitions/playground-series-s3e3/scripts/iterate_round3_catboo
 # exp7(階段 3):6-way rank-average(線性迭代冠軍,產出 submission)
 uv run python3 competitions/playground-series-s3e3/scripts/iterate_round4_add_catnative_blend.py
 
-# exp8(4.2):樹搜尋規模實驗(best;OOF-only;可中斷/續跑,
+# exp8(4.2):樹搜尋規模實驗(best;只算 OOF 分數、不產生 submission;可中斷/續跑,
 # 樹狀態存 experiments_tree_scale.json)
 uv run python3 tree_search/run_s3e3_scale.py
 

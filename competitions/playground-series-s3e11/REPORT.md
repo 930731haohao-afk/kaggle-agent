@@ -20,9 +20,9 @@ log1p 空間計算 RMSE,懲罰比例偏差並壓抑大值樣本對損失的支�
 | 評估指標 | rmsle(minimize) |
 | 目標欄位 | cost |
 
-## 2. 本場工具、術語與採用策略
+## 2. 本場工具、專業術語與採用策略
 
-> 全案共同的研究設計、實驗流程、工具鏈、術語與五階段定義,見《前言》
+> 全案共同的研究設計、實驗流程、工具鏈、專業術語與五階段定義,見《前言》
 > (docs/PREFACE.pdf);本節僅列本場特有的部分。
 
 ### 2.1 本場工具
@@ -30,9 +30,9 @@ log1p 空間計算 RMSE,懲罰比例偏差並壓抑大值樣本對損失的支�
 全數為共同工具鏈(見《前言》第 3 節),無本場特有工具;樹搜尋工具本場使用第 2 版
 (重用線性迭代之 OOF 快取)。交叉驗證採標準 KFold(shuffle)5 折(設計理由見第 3.3 節)。
 
-### 2.2 本場術語
+### 2.2 本場專業術語
 
-| 術語 | 定義 |
+| 專業術語 | 定義 |
 |------|-----------|
 | store profile(門市組合) | `store_sqft` 加五個設施旗標構成的欄位組合;同一組合大量重複出現,是本場最強的訊號來源 |
 
@@ -124,8 +124,8 @@ EDA 已執行:15 個特徵全為數值型,其中多數實為低基數「類別�
 exp7 在 store_te 之上再加門市組合均值特徵全面退步,棄用回退;exp8 以第三個 seed 收在
 0.295648,增益已縮至噪音級,依協定停止線性迭代。
 
-> **補充說明**:最佳解紀錄(exp9)以 OOF 分數最小選出,為 **OOF-only** 樹搜尋結果——未產生
-> test 預測、無 submission 檔、未提交 Kaggle;其權重由權重搜尋直接對全 OOF 擬合
+> **補充說明**:最佳解紀錄(exp9)以 OOF 分數最小選出,為**只算出 OOF 分數**的樹搜尋結果
+> ——未產生 test 預測、無 submission 檔、未提交 Kaggle;其權重由權重搜尋直接對全 OOF 擬合
 > (無巢狀驗證),0.0004 等級的增益帶有 OOF 權重過擬風險,方向性結論(深度突破 Optuna
 > 上界後重開 blend)較第 4 位小數穩健。
 
@@ -148,10 +148,11 @@ exp7 在 store_te 之上再加門市組合均值特徵全面退步,棄用回退;
 跨實驗分數可直接比較。
 
 Objective 與關鍵超參:全程對 log1p(cost) 以 RMSE objective 訓練,預測 expm1 後
-clip ≥ 0(exp2 起)。exp5 之 Optuna(TPE,第 0 折代理評估)最佳 CatBoost 參數:
+clip ≥ 0(exp2 起)。exp5 之 Optuna(TPE,每組參數先只在第 0 折評分以省時)最佳
+CatBoost 參數:
 
 ```
-Optuna:TPE 40 trials(319.3s,timeout guard 480s),fold-0 proxy
+Optuna:TPE 40 trials(319.3s,timeout guard 480s),僅以第 0 折評分挑參
 CatBoost tuned:depth=10, learning_rate≈0.0824, l2_leaf_reg≈5.482,
                min_data_in_leaf=33, random_strength≈0.0916
 exp9 樹搜尋關鍵變體:CAT depth 10→12(Optuna 原搜尋空間上界為 10)、
@@ -172,7 +173,7 @@ exp9 樹搜尋關鍵變體:CAT depth 10→12(Optuna 原搜尋空間上界為 10)
 | 6 | expm1 + clip ≥ 0 | sub_r3_seedbag_0.29571_20260703_223204.csv | 否 |
 | 7 | expm1 + clip ≥ 0 | sub_r4_deepstore_0.29620_20260703_223633.csv(棄用) | 否 |
 | 8 | expm1 + clip ≥ 0 | sub_r5_seedbag3_0.29565_20260703_223829.csv | 否 |
-| 9 | 無(OOF-only) | 無紀錄(未產生 test 預測) | 否 |
+| 9 | 無(僅 OOF 分數) | 無紀錄(未產生 test 預測) | 否 |
 
 「後處理」欄之 expm1 + clip ≥ 0 為 log1p 目標之逆轉換與安全網(各實驗均有註記),
 非指標特化後處理。欄位格式:id 欄 `id`、目標欄 `cost`。本場為無人值守批次執行,僅產生
@@ -214,7 +215,7 @@ exp8 − exp9:0.295648 − 0.29528 = 0.000368
 
 - **突破點 1(exp2→exp3)**:`store_te`(門市組合的 fold-safe 目標編碼)一舉由 0.2971
   降至 0.296143,為階段 2 主要增益來源。
-- **突破點 2(exp4→exp5)**:Optuna(第 0 折代理評估)調參 CatBoost 以「入池不替換」
+- **突破點 2(exp4→exp5)**:Optuna(每組參數先只在第 0 折評分)調參 CatBoost 以「入池不替換」
   加入,0.296143 → 0.295781,為線性迭代階段最大單筆增益。
 - **突破點 3(exp8→exp9)**:樹搜尋把 CAT depth 推到 12——超出 Optuna 自身搜尋上界 10
   ——並在新 solo 家族出現後重開 blend 權重搜尋,0.295648 → 0.29528。
@@ -237,7 +238,7 @@ exp8 − exp9:0.295648 − 0.29528 = 0.000368
 本場由導入報告功能後之版本執行,分數自階段 2 起未低於前一階段——符合計畫書目標三(效能不退步)。
 
 注:指標為 RMSLE(minimize),分數越低越好,各階段逐階下降、無同值階段。階段 4(exp9)為
-OOF-only 樹搜尋結果,本場無任何 Kaggle 提交、無排行榜對照,各階段分數皆為同一組固定折之
+只算出 OOF 分數的樹搜尋結果,本場無任何 Kaggle 提交、無排行榜對照,各階段分數皆為同一組固定折之
 本機 OOF。
 
 **子階段分數表**(定義見第 2.3 節;僅列本場有既有紀錄者)
@@ -248,7 +249,7 @@ OOF-only 樹搜尋結果,本場無任何 Kaggle 提交、無排行榜對照,各�
 | 1.2(三模權重 blend) | 0.29723 | exp1 |
 | 2.2(特徵工程前:15 原始特徵,log1p+RMSE 目標對照組) | 0.2971 | exp2 |
 | 2.2(特徵工程後:21 特徵 + `store_te` fold-safe 目標編碼) | 0.296143 | exp3 |
-| 3.2(Optuna 第 0 折代理調參 CatBoost,加入池) | 0.295781 | exp5 |
+| 3.2(Optuna 調參 CatBoost——僅以第 0 折評分挑參,加入池) | 0.295781 | exp5 |
 | 3.4(seed bagging,tuned CAT seed 2024,4-way) | 0.295715 | exp6 |
 | 3.4(seed bagging 擴充,tuned CAT 第 3 個 seed,5-way,線性迭代終點) | 0.295648 | exp8 |
 | 4.2(樹搜尋 node #20,CAT depth 推進至 12,7-way 再混合,本場最佳) | **0.29528** | exp9 |
@@ -272,7 +273,7 @@ objective 直接等於競賽指標 RMSLE。
 blend 貢獻與 solo 分數脫鉤。
 
 可信度方面須誠實:本場全程僅本機 OOF、未提交 Kaggle,無排行榜外部驗證;exp2–9 使用同一
-組固定折,分數排序可直接比較,但 exp9 為 OOF-only 且權重直接對全 OOF 擬合,0.0004 等級
+組固定折,分數排序可直接比較,但 exp9 僅有 OOF 分數且權重直接對全 OOF 擬合,0.0004 等級
 增益帶有過擬風險。方向性結論(深度突破調參上界、突破後重開 blend)是穩健的部分。
 
 **重現本實驗的最短路徑**:見第 7 節。
@@ -306,7 +307,7 @@ uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r3
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r4   # 退步,棄用
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r5   # exp8,線性迭代最佳
 
-# exp9(4.2):樹搜尋工具第 2 版(本場最佳;OOF-only,重用 scripts/cache/*.npz)
+# exp9(4.2):樹搜尋工具第 2 版(本場最佳;只算 OOF 分數,重用 scripts/cache/*.npz)
 uv run python3 tree_search/run_s3e11.py
 
 # 報告產生(本檔)
