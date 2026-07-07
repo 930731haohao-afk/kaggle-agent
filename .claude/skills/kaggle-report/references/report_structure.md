@@ -98,6 +98,16 @@
     raw blend_oof_mae;需一句話帶過(呼應第 3.5 節已作的 raw/rounded 澄清,不重複解釋)。
   - s3e20:tier1 為同 CV 方案下的 proxy 基線,非嚴格 generic-batch 對照。
 
+
+### §5 附錄:子刻度分類法(選填,2026-07-07 定案)
+四層 tier 之下的細分優化辦法定義(**僅作分類字典;不強制逐級測量**):
+- 1.a 單模預設參數 / 1.b 多模+OOF權重搜尋 blend
+- 2.a EDA 驅動 CV 設計 / 2.b 特徵工程 / 2.c 指標感知目標與後處理 / 2.d 場內 reflexion
+- 3.a 經驗庫先驗 / 3.b Optuna(fold-proxy 或直接優化最終指標)/ 3.c 入池不替換 / 3.d seed bagging / 3.e 結構化去噪
+- 4.a 候選樹+plateau回溯(v1)/ 4.b ensemble節點+OOF快取(v2)/ 4.c 內部先驗+去重 / 4.d 邊界推進 / 4.e 相位機+explore burst+自動停止(v3)
+- 5.a 外部想法庫 / 5.b 重組 mutation
+規則:報告的「子刻度分解」為**選填小節**——僅當 experiments.json 天然含有對應中間紀錄時才呈現(引用既有分數,不得為湊階梯加跑實驗);無資料場次僅呈現 tier 主表。子刻度證據場次見 knowledge/experience.md。
+
 ## 6. 總結(NEW,敘述性)
 - 3–5 段(每段 ≤4 行),完整故事線:資料特性 → 關鍵決策 → 各階段增益來源 → 最終結果與
   可信度。
