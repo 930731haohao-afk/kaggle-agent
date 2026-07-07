@@ -76,7 +76,13 @@ Run from project root (`/home/tjyen/ai_agents/kaggle`), in order:
    bash .claude/skills/kaggle-report/assets/md2pdf.sh competitions/<name>/REPORT.md \
         competitions/<name>/<short>_REPORT.pdf
    ```
-   If chromium is unavailable, keep REPORT.md as the deliverable and tell the
-   user the PDF step was skipped (MD is the primary artifact).
+   md2pdf.sh auto-injects a table of contents (h2+h3, before the first h2) and
+   page numbers (page footer + per-entry TOC pages); do NOT hand-write a TOC in
+   the markdown. Engines: weasyprint (primary; the only engine with page
+   numbers) with chromium fallback (PDF + TOC list, no page numbers — mention
+   this to the user when the fallback fired). Exit codes: 0 = PDF written,
+   2 = both engines unavailable (keep REPORT.md as the deliverable and say the
+   PDF step was skipped), 3 = engine claimed success but no file. Sanity-check
+   the TOC printed: `pdftotext -f 1 -l 1 <pdf> - | grep 目錄`.
 
-6. Show the user where REPORT.md / `<short>_REPORT.pdf` landed and summarize rubric result.
+7. Show the user where REPORT.md / `<short>_REPORT.pdf` landed and summarize rubric result.

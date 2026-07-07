@@ -65,6 +65,10 @@ def find_suspects(report_text: str, facts: dict) -> list:
     text = _normalize(text)                                     # 千分位正規化
     suspects = []
     for tok in _NUM.findall(text):
+        # 階段記號豁免(2026-07-07):子階段採 1.1/3.2 純數字型,與小數同形。
+        # 僅豁免「單位數.單位數」;本專案真實分數皆 ≥3 位小數,誤放風險極低。
+        if re.fullmatch(r"\d\.\d", tok):
+            continue
         if re.fullmatch(r"(19|20)\d{2}", tok):                  # 年份豁免
             continue
         if float(tok) in variants:

@@ -1,6 +1,14 @@
 /* kaggle-report PDF 樣式 v2 — 可讀性優先:清晰層級、斑馬表格、call-out 區塊 */
 /* 表格必須收合進頁寬(width:100% + word-break),寬表曾在 PDF 右緣被裁 */
-@page { margin: 16mm 14mm; }
+/* 頁尾頁碼:需 weasyprint(chromium 不支援 @bottom-center,備援模式無頁碼) */
+@page {
+  margin: 16mm 14mm 18mm;
+  @bottom-center {
+    content: counter(page) " / " counter(pages);
+    font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
+    font-size: 8pt; color: #667;
+  }
+}
 body {
   font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
   font-size: 10.5pt; line-height: 1.7; color: #222; max-width: 100%;
@@ -14,7 +22,7 @@ ul, ol { margin: 0.3em 0 0.8em; padding-left: 1.6em; }
 li { margin-bottom: 0.25em; }
 strong { color: #1a3a5c; }
 table { border-collapse: collapse; margin: 0.6em 0 1em; width: 100%; max-width: 100%; }
-th { background: #2c5a85; color: #fff; font-weight: 600; }
+th { background: #2c5a85; color: #fff; font-weight: 600; white-space: nowrap; }
 th, td { border: 1px solid #c5d0da; padding: 4px 8px; font-size: 9pt; word-break: break-word; overflow-wrap: break-word; }
 tbody tr:nth-child(even) td { background: #f2f6fa; }
 code { font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; background: #f4f6f8; padding: 1px 4px; border-radius: 2px; }
@@ -23,3 +31,11 @@ pre code { background: none; padding: 0; }
 blockquote { background: #fdf6e3; border-left: 4px solid #d9a400; margin: 0.8em 0; padding: 8px 14px; color: #4a3f10; font-size: 9.5pt; }
 blockquote p { margin: 0.2em 0; }
 hr { border: none; border-top: 1px solid #c5d0da; margin: 1.2em 0; }
+/* 目錄:md2pdf 自動注入(h2+h3);各節頁碼由 weasyprint target-counter 產生 */
+.report-toc { background: #f6f8fa; border: 1px solid #dde3e9; padding: 10px 18px 12px; margin: 0.8em 0 1.4em; }
+.report-toc .toc-title { font-size: 12pt; font-weight: 700; color: #1a3a5c; margin-bottom: 0.4em; }
+.report-toc ul { list-style: none; padding-left: 0; margin: 0; }
+.report-toc ul ul { padding-left: 1.5em; }
+.report-toc li { margin: 0.2em 0; font-size: 9.5pt; }
+.report-toc a { color: #222; text-decoration: none; display: block; }
+.report-toc a::after { content: target-counter(attr(href), page); float: right; color: #667; }

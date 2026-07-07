@@ -1,8 +1,7 @@
 # 競賽分析報告:playground-series-s3e11
 
-> 產生方式:kaggle-report skill(數字來自 facts.json,敘述由 agent 撰寫)
-> 素材等級:full | 產生日期:2026-07-06
-> 本報告所有數字皆出自 facts.json,經 verify_report.py 驗證。
+> 本報告由自動化報告流程產生:所有數字直接取自實驗原始紀錄並經自動一致性驗證,敘述由 AI 彙整。
+> 紀錄完整度:完整 | 產生日期:2026-07-06
 
 ## 1. 競賽目的
 
@@ -20,23 +19,54 @@ log1p 空間計算 RMSE,懲罰比例偏差並壓抑大值樣本對損失的支�
 | 問題型別 | regression |
 | 評估指標 | rmsle(minimize) |
 | 目標欄位 | cost |
-| 素材等級 | full |
 
-## 2. 使用工具與環境
+## 2. 本場工具、術語與採用策略
 
-| 工具 | 用途 |
-|------|------|
-| LightGBM / XGBoost / CatBoost | 梯度提升樹基模型:exp1–3 三模型 blend;XGB 於 exp4 起因連兩輪權重 0 被移出池;CatBoost 家族為 Phase B 與樹搜尋主力 |
-| Optuna | Phase B 超參搜尋(TPE、fold-0 proxy):exp5 調 CatBoost,調參版以「入池不替換」方式加入 |
-| 自建樹搜尋 harness(v2) | exp9:結構化搜尋模型/超參/blend 組合空間,重用線性迭代之 OOF 快取 |
-| 5-fold CV 框架(scikit-learn) | KFold(shuffle, seed=42)5 折交叉驗證,exp2 起全程固定同一組折 |
-| uv | Python 套件與虛擬環境管理,所有腳本皆以 `uv run` 執行 |
+> 全案共同的研究設計、實驗流程、工具鏈、術語與五階段定義,見《前言》
+> (docs/PREFACE.pdf);本節僅列本場特有的部分。
 
-本場工具鏈組合邏輯:Claude Code(LLM)負責決策——log1p 目標的選定、store profile 目標編碼
-的設計、尊重零權重裁決移除 XGB、R4 退步後回退、增益縮至噪音級時停損;Auto-ML 工具
-(Optuna、樹搜尋 harness)負責系統化執行超參搜尋與組合空間探索,兩者分工互補。
+### 2.1 本場工具
 
-## 3. 流程(how):五大元件
+全數為共同工具鏈(見《前言》第 3 節),無本場特有工具;樹搜尋工具本場使用第 2 版
+(重用線性迭代之 OOF 快取)。交叉驗證採標準 KFold(shuffle)5 折(設計理由見第 3.3 節)。
+
+### 2.2 本場術語
+
+| 術語 | 定義 |
+|------|-----------|
+| store profile(門市組合) | `store_sqft` 加五個設施旗標構成的欄位組合;同一組合大量重複出現,是本場最強的訊號來源 |
+
+### 2.3 採用策略
+
+各階段與子階段的定義見《前言》第 6 節(編號跨場同義);下表列本場使用情形。
+
+| 階段 | 簡稱 | 本場是否使用 |
+|------|------|------|
+| **1** | 無 skill 基線 | 使用 |
+| 1.1 | 單模型基線 | 使用 |
+| 1.2 | 三模型 blend | 使用 |
+| **2** | kaggle-agent skill | 使用 |
+| 2.1 | EDA 驅動 CV 設計 | 使用(併入 exp2,無獨立分數) |
+| 2.2 | EDA 驅動特徵工程 | 使用(exp2→exp3,`store_te` 目標編碼) |
+| 2.3 | 指標感知後處理 | 使用(log1p 目標對齊 RMSLE,exp2 起全部實驗) |
+| 2.4 | 場內反思回退 | 本場未使用 |
+| **3** | +線性自我迭代 | 使用 |
+| 3.1 | 經驗庫先驗 | 本場未使用(經驗庫晚於本場建立) |
+| 3.2 | Optuna 超參搜尋 | 使用 |
+| 3.3 | 調參入池 | 使用(含於 3.2 之作法,入池不替換) |
+| 3.4 | seed bagging | 使用 |
+| 3.5 | 結構化去噪 | 本場未使用 |
+| **4** | +樹搜尋 | 使用 |
+| 4.1 | 單模型節點樹 | 本場未使用 |
+| 4.2 | ensemble 節點樹 | 使用 |
+| 4.3 | 先驗注入+去重 | 使用(v2 內建) |
+| 4.4 | 邊界推進 mutation | 使用(CAT depth 10→12 突破調參上界) |
+| 4.5 | 預算相位機 | 本場未使用 |
+| **5** | +外部想法注入 | 本場未執行(全案規劃中) |
+| 5.1 | 外部想法庫先驗 | 本場未執行 |
+| 5.2 | 重組 mutation | 本場未執行 |
+
+## 3. 實驗方法
 
 ### 3.1 資料規格
 
@@ -47,55 +77,55 @@ log1p 空間計算 RMSE,懲罰比例偏差並壓抑大值樣本對損失的支�
 | 原始欄位數 | 15(全數值) |
 | 特別規則摘要 | 禁外部資料/禁預訓練模型/禁網路存取;每日提交上限 5 次 |
 
-EDA 已執行(`eda_summary.py`):15 個特徵全為數值型,其中多數實為低基數「類別型偽裝」
+EDA 已執行:15 個特徵全為數值型,其中多數實為低基數「類別型偽裝」
 欄位(五個 0/1 設施旗標、家庭屬性等);train 無缺失值、無重複列;`salad_bar` 與
 `prepared_food` 相關 0.999839,為唯一高共線特徵對(近乎重複欄)。
 
 目標 `cost` ∈ [50.79, 149.75],mean 99.614729、median 98.81、skew 0.019132——分布近乎
-對稱,eda 判定非 log 轉換候選;採 log1p 目標的理由是「RMSLE = log1p 空間之 RMSE,直接
+對稱,EDA 判定非 log 轉換候選;採 log1p 目標的理由是「RMSLE = log1p 空間之 RMSE,直接
 優化競賽指標」,而非矯正偏態,預測經 expm1 後 clip ≥ 0。
 
 低訊號資料集:單變量關聯最強者僅 `florist`(pearson -0.110414)。`store_sqft` 加五個設施
-旗標構成大量重複出現的「store profile」,是最強特徵候選,需以 fold 內 target encoding
-防洩漏;eda 之 validation_hint 為「連續 i.i.d. 目標 → 標準 KFold」。
+旗標構成大量重複出現的 store profile(門市組合),是最強特徵候選,需以 fold-safe 目標
+編碼防洩漏;EDA 的驗證建議為「連續目標、各列獨立 → 標準 KFold」。
 
 ### 3.2 實驗總表
 
 > **語意澄清(本報告全文適用)**:RMSLE 為連續迴歸指標,本場無取整/門檻類後處理,故各
 > 實驗的「原始 OOF」即「決策分數」,兩欄同值;且本場為無人值守批次執行,全程未提交
-> Kaggle(leaderboard 列於 facts.missing),所有決策皆以本機 OOF 為準,下文不再重複解釋。
+> Kaggle,所有決策皆以本機 OOF 為準,下文不再重複解釋。
 
-| exp | 階段 | 模型/成員 | 特徵數 | 原始 OOF | 決策分數 | 採納 |
+| exp | 階段 | 模型/成員 | 特徵數 | 原始 OOF | 決策分數 | 是否採納 |
 |-----|------|-----------|--------|----------|----------|------|
-| 1 | Baseline(通用批次) | LGB/XGB/CAT(0.7/0.0/0.3) | 15 | 0.29723 | 0.29723 | 基線參照 |
-| 2 | Phase A base | LGB/XGB/CAT(0.2/0.0/0.8),log1p 目標 | 15 | 0.2971 | 0.2971 | 方法學對照 |
-| 3 | Phase A engineered | LGB/XGB/CAT(0.2/0.0/0.8)+ store_te | 21 | 0.296143 | 0.296143 | 是,Phase A 最佳 |
-| 4 | Phase B R1 | LGB/CAT_orig(0.2/0.8),移除 XGB | 21 | 0.296143 | 0.296143 | 是,分數不變 |
-| 5 | Phase B R2 | + CAT_tuned(Optuna,0.9 權重) | 21 | 0.295781 | 0.295781 | 是 |
-| 6 | Phase B R3 | + CAT_tuned seed=2024(4-way) | 21 | 0.295715 | 0.295715 | 是 |
-| 7 | Phase B R4 | 4-way pool + per-combo 均值特徵 | 24 | 0.2962 | 0.2962 | 否,退步棄用 |
-| 8 | Phase B R5(線性終點) | + CAT_tuned seed=7(5-way) | 21 | 0.295648 | 0.295648 | 是,線性迭代最佳 |
-| 9 | Phase D-6 樹搜尋(best) | 7-way blend(depth-12 CAT 家族 + DEEPLGB) | 21(同 exp8) | **0.29528** | **0.29528** | 是,本場最佳 |
+| 1 | 1.2 | LGB/XGB/CAT(0.7/0.0/0.3) | 15 | 0.29723 | 0.29723 | 基線參照 |
+| 2 | **2** | LGB/XGB/CAT(0.2/0.0/0.8),log1p 目標 | 15 | 0.2971 | 0.2971 | 同特徵對照組 |
+| 3 | 2.2 | LGB/XGB/CAT(0.2/0.0/0.8)+ store_te | 21 | 0.296143 | 0.296143 | 是,階段 2 最佳 |
+| 4 | **3** | LGB/CAT_orig(0.2/0.8),移除 XGB | 21 | 0.296143 | 0.296143 | 是,分數不變 |
+| 5 | 3.2 | + CAT_tuned(Optuna,0.9 權重) | 21 | 0.295781 | 0.295781 | 是 |
+| 6 | 3.4 | + CAT_tuned seed=2024(4-way) | 21 | 0.295715 | 0.295715 | 是 |
+| 7 | **3** | 4-way pool + 門市組合均值特徵 | 24 | 0.2962 | 0.2962 | 否,退步棄用 |
+| 8 | 3.4 | + CAT_tuned seed=7(5-way) | 21 | 0.295648 | 0.295648 | 是,線性迭代最佳 |
+| 9 | 4.2 | 7-way blend(depth-12 CAT 家族 + DEEPLGB) | 21(同 exp8) | **0.29528** | **0.29528** | 是,本場最佳 |
 
-**best 成員表(exp9,harness v2 node #20,phase-2 純權重再搜尋)**
+**最佳解成員表(exp9,node #20,新成員家族出現後的純權重再搜尋)**
 
 | 成員 | 權重 | solo 分數 | 備註 |
 |------|------|-----------|------|
 | CAT_D12_S7 | 0.2478 | 0.295461 | 調參 CAT depth 10→12(突破 Optuna 搜尋上界),全樹最佳 solo |
 | CAT_D12_S3000 | 0.3187 | 0.295462 | depth-12 家族 seed 變體 |
 | CAT_D12_S3001 | 0.239 | 0.295483 | depth-12 家族 seed 變體 |
-| CAT_S7_D10 | 0.0091 | 0.295779 | 線性迭代之 depth-10 tuned CAT(seed 7),自 npz 快取重用 |
+| CAT_S7_D10 | 0.0091 | 0.295779 | 線性迭代之 depth-10 tuned CAT(seed 7),自快取重用 |
 | CAT_S99 | 0.0031 | 0.295786 | 第 4 個 tuned-CAT seed,線性迭代未嘗試 |
 | CAT_TUNED_ROOT | 0.0039 | 0.29579 | 線性迭代最強 solo(Optuna 調參 CAT,seed 42),快取重用 |
 | DEEPLGB | 0.1783 | 0.295833 | 刻意多樣化之深 LGB(num_leaves 255);solo 平庸但權重第 3 大 |
 
 選型脈絡:exp1–3 三模型權重搜尋連兩輪將 XGB 權重歸 0,exp4 移除 XGB 後 blend 分數不變,
 驗證零權重裁決無代價;exp5 起 Optuna 調參 CatBoost 成為主力,權重全數流向 tuned CAT 家族;
-exp7 在 store_te 之上再加 per-combo 均值特徵全面退步,棄用回退;exp8 以第三個 seed 收在
+exp7 在 store_te 之上再加門市組合均值特徵全面退步,棄用回退;exp8 以第三個 seed 收在
 0.295648,增益已縮至噪音級,依協定停止線性迭代。
 
-> **誠實但書**:facts.best(exp9)以 OOF 分數最小選出,為 **OOF-only** 樹搜尋結果——未產生
-> test 預測、無 submission 檔、未提交 Kaggle;其權重由 dirichlet 搜尋直接對全 OOF 擬合
+> **補充說明**:最佳解紀錄(exp9)以 OOF 分數最小選出,為 **OOF-only** 樹搜尋結果——未產生
+> test 預測、無 submission 檔、未提交 Kaggle;其權重由權重搜尋直接對全 OOF 擬合
 > (無巢狀驗證),0.0004 等級的增益帶有 OOF 權重過擬風險,方向性結論(深度突破 Optuna
 > 上界後重開 blend)較第 4 位小數穩健。
 
@@ -113,12 +143,12 @@ exp7 在 store_te 之上再加 per-combo 均值特徵全面退步,棄用回退;e
 | 8 | 5fold_kfold_shuffle | 5 | 42 |
 | 9 | KFold(shuffle) | 5 | 42 |
 
-目標為連續 i.i.d.、無時間/群組結構(eda validation_hint),且 store profile 大量重複、
+目標為連續值、各列獨立(無時間/群組結構,見 EDA 的驗證建議),且門市組合大量重複、
 隨機切分安全,故用 KFold(shuffle, seed=42);exp2–9(含樹搜尋)沿用同一組固定折,
 跨實驗分數可直接比較。
 
 Objective 與關鍵超參:全程對 log1p(cost) 以 RMSE objective 訓練,預測 expm1 後
-clip ≥ 0(exp2 起,記於 notes)。exp5 之 Optuna(TPE,fold-0 proxy)最佳 CatBoost 參數:
+clip ≥ 0(exp2 起)。exp5 之 Optuna(TPE,第 0 折代理評估)最佳 CatBoost 參數:
 
 ```
 Optuna:TPE 40 trials(319.3s,timeout guard 480s),fold-0 proxy
@@ -132,7 +162,7 @@ exp9 樹搜尋關鍵變體:CAT depth 10→12(Optuna 原搜尋空間上界為 10)
 
 ### 3.4 推論表
 
-| exp | 後處理 | submission 檔 | 已提交 |
+| exp | 後處理 | submission 檔 | 是否已提交 |
 |-----|--------|---------------|--------|
 | 1 | 無後處理紀錄 | sub_generic_0.29723_20260703_121020.csv | 否 |
 | 2 | expm1 + clip ≥ 0 | sub_base_0.29710_20260703_192507.csv | 否 |
@@ -144,9 +174,9 @@ exp9 樹搜尋關鍵變體:CAT depth 10→12(Optuna 原搜尋空間上界為 10)
 | 8 | expm1 + clip ≥ 0 | sub_r5_seedbag3_0.29565_20260703_223829.csv | 否 |
 | 9 | 無(OOF-only) | 無紀錄(未產生 test 預測) | 否 |
 
-「後處理」欄之 expm1 + clip ≥ 0 為 log1p 目標之逆轉換與安全網(記於各實驗 notes),
+「後處理」欄之 expm1 + clip ≥ 0 為 log1p 目標之逆轉換與安全網(各實驗均有註記),
 非指標特化後處理。欄位格式:id 欄 `id`、目標欄 `cost`。本場為無人值守批次執行,僅產生
-本機 submission 檔、未觸碰 Kaggle 憑證,「已提交」一律為否。
+本機 submission 檔、未觸碰 Kaggle 憑證,「是否已提交」一律為否。
 
 ### 3.5 評估指標 / 排行榜
 
@@ -161,8 +191,8 @@ exp9 樹搜尋關鍵變體:CAT depth 10→12(Optuna 原搜尋空間上界為 10)
 | Ensemble(exp9,樹搜尋 best,7-way) | **0.29528** |
 | Public / Private LB | 無紀錄(未提交) |
 
-`facts.leaderboard` 為 null(missing 列出 leaderboard):本場無排行榜表,CV↔LB gap 無法
-計算。exp9 相對 exp8 之改善:
+本場未提交 Kaggle,無排行榜紀錄,故無排行榜表,CV↔LB gap 無法計算。exp9 相對 exp8
+之改善:
 
 ```
 exp8 − exp9:0.295648 − 0.29528 = 0.000368
@@ -170,71 +200,58 @@ exp8 − exp9:0.295648 − 0.29528 = 0.000368
 
 ## 4. 實驗軌跡
 
-**實驗階段對照表**(內部代號使用前先定義,R-W8)
-
-| 代號 | 白話名稱 | 對應層級 |
-|------|----------|----------|
-| Phase A | kaggle-agent skill 六階段首跑 | tier2 |
-| Phase B | self-improvement 線性迭代 | tier3 |
-| Phase D-6 | 樹搜尋執行(harness v2) | tier4 |
-
-| exp | 時間 | 決策分數 | 階段 | 一句話摘要 |
+| exp | 時間 | 決策分數 | 階段 | 摘要 |
 |-----|------|----------|------|------------|
-| 1 | 2026-07-03T12:10:20 | 0.29723 | Baseline(通用批次) | 15 原始特徵三模型 blend,設定待超越基線 |
-| 2 | 2026-07-03T19:25:07 | 0.2971 | Phase A base | 換 log1p 目標 + 調參 + early stop,方法學對照 |
-| 3 | 2026-07-03T19:28:19 | 0.296143 | Phase A engineered | 21 特徵 + store_combo K-fold 目標編碼,Phase A 最佳 |
-| 4 | 2026-07-03T22:23:54 | 0.296143 | Phase B R1 | 移除連兩輪零權重之 XGB,分數不變 |
-| 5 | 2026-07-03T22:31:01 | 0.295781 | Phase B R2 | Optuna 調參 CatBoost 入池,Phase B 主要躍升 |
-| 6 | 2026-07-03T22:32:05 | 0.295715 | Phase B R3 | tuned CAT seed bagging(seed 2024,4-way) |
-| 7 | 2026-07-03T22:36:33 | 0.2962 | Phase B R4 | per-combo 均值特徵全面退步,棄用 |
-| 8 | 2026-07-03T22:38:30 | 0.295648 | Phase B R5 | 第三 seed(7)5-way blend,線性迭代最佳後停止 |
-| 9 | 2026-07-04T12:17:25 | **0.29528** | Phase D-6 樹搜尋 | harness v2 node #20 之 7-way 再混合,本場最佳 |
+| 1 | 2026-07-03T12:10:20 | 0.29723 | 1.2 | 15 原始特徵三模型 blend,設定待超越基線 |
+| 2 | 2026-07-03T19:25:07 | 0.2971 | **2** | 換 log1p 目標 + 調參 + 提前停止,同特徵對照組 |
+| 3 | 2026-07-03T19:28:19 | 0.296143 | 2.2 | 21 特徵 + 門市組合 fold-safe 目標編碼,階段 2 最佳 |
+| 4 | 2026-07-03T22:23:54 | 0.296143 | **3** | 移除連兩輪零權重之 XGB,分數不變 |
+| 5 | 2026-07-03T22:31:01 | 0.295781 | 3.2 | Optuna 調參 CatBoost 入池,線性迭代主要躍升 |
+| 6 | 2026-07-03T22:32:05 | 0.295715 | 3.4 | tuned CAT seed bagging(seed 2024,4-way) |
+| 7 | 2026-07-03T22:36:33 | 0.2962 | **3** | 門市組合均值特徵全面退步,棄用 |
+| 8 | 2026-07-03T22:38:30 | 0.295648 | 3.4 | 第三 seed(7)5-way blend,線性迭代最佳後停止 |
+| 9 | 2026-07-04T12:17:25 | **0.29528** | 4.2 | 樹搜尋 node #20 之 7-way 再混合,本場最佳 |
 
-- **突破點 1(exp2→exp3)**:`store_te`(store_sqft + 五設施旗標之 combo 的 fold 內目標
-  編碼)一舉由 0.2971 降至 0.296143,為 skill 首跑(Phase A)主要增益來源。
-- **突破點 2(exp4→exp5)**:Optuna fold-0 proxy 調參 CatBoost 以「入池不替換」加入,
-  0.296143 → 0.295781,為線性迭代階段最大單筆增益。
+- **突破點 1(exp2→exp3)**:`store_te`(門市組合的 fold-safe 目標編碼)一舉由 0.2971
+  降至 0.296143,為階段 2 主要增益來源。
+- **突破點 2(exp4→exp5)**:Optuna(第 0 折代理評估)調參 CatBoost 以「入池不替換」
+  加入,0.296143 → 0.295781,為線性迭代階段最大單筆增益。
 - **突破點 3(exp8→exp9)**:樹搜尋把 CAT depth 推到 12——超出 Optuna 自身搜尋上界 10
   ——並在新 solo 家族出現後重開 blend 權重搜尋,0.295648 → 0.29528。
 
-無法解析之紀錄:無(facts.unparsed 為空陣列)。
+## 5. 效能對照(逐階段)
 
-## 5. 效能對照:四層消融
-
-| 層級 | 配置 | 分數 | 相對改善 |
+| 階段 | 配置 | 分數 | 相對改善 |
 |------|------|------|----------|
-| tier1 | 基線(Claude Code 直接執行,未引入 skill;exp1 通用批次三模型 blend) | 0.29723 | —(基線) |
-| tier2 | + kaggle-agent skill 六階段流程(exp3,Phase A engineered) | 0.296143 | 見下方算式 |
-| tier3 | + self-improvement 線性迭代(exp8,Phase B R5 之 5-way blend) | 0.295648 | 見下方算式 |
-| tier4 | + 樹搜尋(exp9,harness v2 node #20 之 7-way blend) | **0.29528** | 見下方算式 |
+| **1** | 基線(Claude Code 直接執行,未引入 skill;exp1 通用批次三模型 blend) | 0.29723 | —(基線) |
+| **2** | + kaggle-agent skill 六階段流程(exp3,特徵工程版) | 0.296143 | 見下方算式 |
+| **3** | + self-improvement 線性迭代(exp8,5-way blend) | 0.295648 | 見下方算式 |
+| **4** | + 樹搜尋(exp9,node #20 之 7-way blend) | **0.29528** | 見下方算式 |
 
 ```
-tier1→tier2: 0.29723 − 0.296143 = 0.001087,相對改善 0.001087 / 0.29723 = 0.3657%
-tier2→tier3: 0.296143 − 0.295648 = 0.000495,相對改善 0.000495 / 0.296143 = 0.1671%
-tier3→tier4: 0.295648 − 0.29528 = 0.000368,相對改善 0.000368 / 0.295648 = 0.1245%
+階段1→2: 0.29723 − 0.296143 = 0.001087,相對改善 0.001087 / 0.29723 = 0.3657%
+階段2→3: 0.296143 − 0.295648 = 0.000495,相對改善 0.000495 / 0.296143 = 0.1671%
+階段3→4: 0.295648 − 0.29528 = 0.000368,相對改善 0.000368 / 0.295648 = 0.1245%
 ```
 
-本場由導入報告功能後之版本執行,分數自 tier2 起未低於前一層——符合計畫書目標三(效能不退步)。
+本場由導入報告功能後之版本執行,分數自階段 2 起未低於前一階段——符合計畫書目標三(效能不退步)。
 
-注:指標為 RMSLE(minimize),分數越低越好,四層逐層下降、無同值層。tier4(exp9)為
-OOF-only 樹搜尋結果,本場無任何 Kaggle 提交、無排行榜錨點,四層分數皆為同一組固定折之
+注:指標為 RMSLE(minimize),分數越低越好,各階段逐階下降、無同值階段。階段 4(exp9)為
+OOF-only 樹搜尋結果,本場無任何 Kaggle 提交、無排行榜對照,各階段分數皆為同一組固定折之
 本機 OOF。
 
-### 子刻度分解(選填)
+**子階段分數表**(定義見第 2.3 節;僅列本場有既有紀錄者)
 
-依 §5 附錄子刻度分類法(僅作分類字典,不強制逐級測量),下表僅列本場 experiments.json
-天然存在對應中間紀錄之子刻度;無對應紀錄之子刻度不列,分數逐字引用自 facts.json。
-
-| 子刻度 | 優化辦法 | 分數 | 出處(exp# 或 tree node) |
-|--------|----------|------|--------------------------|
-| 1.a | 單模預設參數(tier1 三模型中最佳者:LGB) | 0.29731 | exp1 |
-| 1.b | 多模+OOF 權重搜尋 blend(tier1 三模型混合) | 0.29723 | exp1 |
-| 2.b | 特徵工程前:raw 15 特徵(方法學對照,log1p+RMSE 目標) | 0.2971 | exp2 |
-| 2.b | 特徵工程後:21 特徵 + store_te(fold-safe 目標編碼) | 0.296143 | exp3 |
-| 3.b | Optuna fold-0 代理調參 CatBoost,加入 pool | 0.295781 | exp5 |
-| 3.d | seed bagging(tuned CAT seed 2024,4-way) | 0.295715 | exp6 |
-| 3.d | seed bagging 擴充(tuned CAT 第 3 個 seed,5-way,線性迭代終點) | 0.295648 | exp8 |
-| 4.b | 樹搜尋 harness v2(node #20,CAT depth 推進至 12,7-way 再混合,本場最佳) | 0.29528 | exp9 |
+| 子階段 | 分數 | 出處 |
+|--------|------|------|
+| 1.1(最佳單模:LGB) | 0.29731 | exp1 |
+| 1.2(三模權重 blend) | 0.29723 | exp1 |
+| 2.2(特徵工程前:15 原始特徵,log1p+RMSE 目標對照組) | 0.2971 | exp2 |
+| 2.2(特徵工程後:21 特徵 + `store_te` fold-safe 目標編碼) | 0.296143 | exp3 |
+| 3.2(Optuna 第 0 折代理調參 CatBoost,加入池) | 0.295781 | exp5 |
+| 3.4(seed bagging,tuned CAT seed 2024,4-way) | 0.295715 | exp6 |
+| 3.4(seed bagging 擴充,tuned CAT 第 3 個 seed,5-way,線性迭代終點) | 0.295648 | exp8 |
+| 4.2(樹搜尋 node #20,CAT depth 推進至 12,7-way 再混合,本場最佳) | **0.29528** | exp9 |
 
 ## 6. 總結
 
@@ -243,13 +260,13 @@ OOF-only 樹搜尋結果,本場無任何 Kaggle 提交、無排行榜錨點,四�
 store profile 中。目標近乎對稱、非 log 轉換候選,採 log1p 目標純粹是為了讓 RMSE
 objective 直接等於競賽指標 RMSLE。
 
-關鍵決策有四:以 fold 內目標編碼 `store_te` 榨取 store profile 訊號(exp3,Phase A 主要
+關鍵決策有四:以 fold-safe 目標編碼 `store_te` 榨取門市組合訊號(exp3,階段 2 主要
 增益);尊重零權重裁決移除 XGB(exp4,分數不變、釋出預算);Optuna 調參 CatBoost 入池
-加 seed bagging(exp5–8);exp7 在 store_te 之上疊 per-combo 均值特徵退步後果斷回退,
+加 seed bagging(exp5–8);exp7 在 store_te 之上疊門市組合均值特徵退步後果斷回退,
 並在增益縮至噪音級時依協定停止線性迭代。
 
-各層增益中 tier1→tier2 最大(特徵工程),tier2→tier3 次之(調參 + seed bagging),
-tier3→tier4 由樹搜尋貢獻:最大單筆發現是把 CAT depth 推到 12——Optuna 的最優解原本就
+各階段增益中階段1→2 最大(特徵工程),階段2→3 次之(調參 + seed bagging),
+階段3→4 由樹搜尋貢獻:最大單筆發現是把 CAT depth 推到 12——Optuna 的最優解原本就
 落在其搜尋上界 10 上,上界本身即是下一個突變方向;而最終 0.29528 來自新 depth-12 家族
 出現後重開的 blend 權重再搜尋,且 solo 平庸的 DEEPLGB 仍拿到 0.1783 權重,再次印證
 blend 貢獻與 solo 分數脫鉤。
@@ -269,19 +286,19 @@ cd /home/tjyen/ai_agents/kaggle
 uv run kaggle competitions download -c playground-series-s3e11 \
   -p competitions/playground-series-s3e11/data
 
-# Stage 1:EDA
+# 階段 2:EDA
 uv run python3 competitions/playground-series-s3e11/scripts/eda.py
 
-# exp1(對照組):通用批次管線
+# exp1(階段 1):通用批次管線
 uv run python3 competitions/run_competition.py playground-series-s3e11
 
-# exp2:skill base(log1p 目標,15 原始特徵,方法學對照)
+# exp2(階段 2):skill base(log1p 目標,15 原始特徵,同特徵對照組)
 uv run python3 competitions/playground-series-s3e11/scripts/train.py base
 
-# exp3:skill engineered(21 特徵 + store_te,Phase A 最佳)
+# exp3(2.2):skill engineered(21 特徵 + store_te,階段 2 最佳)
 uv run python3 competitions/playground-series-s3e11/scripts/train.py engineered
 
-# Phase B(exp4–exp8;checkpointed,cache 命中會跳過已訓練成員)
+# 階段 3(exp4–exp8;checkpointed,cache 命中會跳過已訓練成員)
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r1
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py tune
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r2
@@ -289,7 +306,7 @@ uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r3
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r4   # 退步,棄用
 uv run python3 competitions/playground-series-s3e11/scripts/iterate2.py r5   # exp8,線性迭代最佳
 
-# exp9:樹搜尋 harness v2(本場最佳;OOF-only,重用 scripts/cache/*.npz)
+# exp9(4.2):樹搜尋工具第 2 版(本場最佳;OOF-only,重用 scripts/cache/*.npz)
 uv run python3 tree_search/run_s3e11.py
 
 # 報告產生(本檔)
