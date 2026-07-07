@@ -37,7 +37,21 @@ mutation to `[INT]` vs `[EXT]` (vs no-prior). `prior_texts(priors)` flattens bac
 bare `list[str]` that `suggest_priors` returns — and by construction
 `prior_texts(suggest_priors_v4(cm, mode='off')) == harness_v3.suggest_priors(cm)` exactly, so
 turning injection OFF cannot perturb the stage-4 baseline.
+
+--- J-2b: the recombination mutation (a mechanical two-parent operator) --------------------
+5. `recombine(node_a, node_b)` — a MECHANICAL (no-LLM, pure-function) mutation that fuses the
+   core concepts of TWO already-evaluated high-scoring nodes into one new child config:
+   blend members are set-UNIONED (weights left for eval-time re-search, never fixed here),
+   feature families are set-UNIONED, and hyperparameters+model are INHERITED from the
+   stronger parent (smaller score; lower-is-better). The result carries `provenance='recombine'`
+   and records BOTH parent node ids so J-3/J-4 can trace the child to its two ancestors.
+   `propose_recombinations(tree)` is the selection glue (top-scoring pairs -> non-degenerate,
+   non-duplicate recombination records) and `V4_MUTATION_TYPES` registers recombination as one
+   of v4's optional mutation types alongside v3's `boundary_candidates`. It hooks into v3's
+   budget phase machine WITHOUT modifying v3 — `should_offer_recombination(tree)` only READS
+   the `explore_burst` phase that harness_v3 already maintains.
 """
+import copy
 import os
 import re
 import sys
@@ -332,3 +346,195 @@ def prior_texts(priors: list) -> list:
 def priors_by_provenance(priors: list, provenance: str) -> list:
     """Subset of `priors` whose `provenance` equals `provenance` ('INT' or 'EXT')."""
     return [p for p in priors if p["provenance"] == provenance]
+
+
+# ===========================================================================================
+# J-2b: recombination mutation — synthesize a child from the core concepts of TWO strong nodes
+# ===========================================================================================
+# A deliberate, mechanical fusion of two proven high-scoring solutions (NOT a random
+# perturbation): union their blend members, union their feature families, and inherit the
+# stronger parent's model+hyperparameters. Pure and testable — no LLM call, no training. The
+# result is provenance-tagged and records both parent ids so the J-3/J-4 attribution run can
+# trace every recombined node back to its two ancestors.
+DEFAULT_FEATURE_KEY = "features"          # the config key holding a solo node's feature block
+_FEATURE_INCLUDE_KEYS = ("use", "include", "keep", "families")  # include-list sub-keys
+PROVENANCE_RECOMBINE = "recombine"
+
+
+def _score_is_num(s) -> bool:
+    return isinstance(s, (int, float)) and not isinstance(s, bool)
+
+
+def _order_by_strength(node_a: dict, node_b: dict):
+    """Return `(base, donor)` with `base` = the STRONGER parent. Node scores are
+    lower-is-better (the harness-wide sign convention), so the stronger parent has the
+    SMALLER score; an exact tie breaks to `node_a` (deterministic). Raises `ValueError` if
+    either node lacks a numeric score — recombination fuses two *proven* nodes, not
+    unevaluated ones."""
+    sa, sb = node_a.get("score"), node_b.get("score")
+    if not _score_is_num(sa) or not _score_is_num(sb):
+        raise ValueError(
+            f"recombine requires both nodes to be evaluated with numeric scores (got "
+            f"{sa!r}, {sb!r}) -- it synthesizes from two proven high-scoring nodes")
+    return (node_b, node_a) if sb < sa else (node_a, node_b)
+
+
+def _union_members(cfg_a: dict, cfg_b: dict):
+    """Set-union of both configs' blend `members` (sorted), or None if neither carries any.
+    Weights are intentionally NOT produced here — a recombined blend's weights are re-searched
+    at eval time (harness eval_blend), exactly as for any other blend node."""
+    ma = cfg_a.get("members") or []
+    mb = cfg_b.get("members") or []
+    if not ma and not mb:
+        return None
+    return sorted(set(ma) | set(mb))
+
+
+def _union_feature_families(cfg_a: dict, cfg_b: dict, feature_key: str = DEFAULT_FEATURE_KEY):
+    """Union the two configs' feature families, returning the child's feature block (same
+    representation the parents used), or None if neither parent carries feature info. Two
+    representations are supported (parents within one competition always agree):
+
+      * drop-list  `{"drop":[...]}` — the child drops only what BOTH parents drop, i.e. the
+        set-INTERSECTION of the drop lists. That intersection is provably the UNION of the
+        families each parent KEPT (used), computed without needing the comp's full feature
+        universe: keep = ALL−drop, so (ALL−dropA) ∪ (ALL−dropB) = ALL−(dropA ∩ dropB).
+      * include-list `{"use"/"include"/"keep"/"families":[...]}` or a bare list — plain
+        set-UNION of the listed families.
+    """
+    fa = cfg_a.get(feature_key)
+    fb = cfg_b.get(feature_key)
+    if fa is None and fb is None:
+        return None
+    if isinstance(fa, list) or isinstance(fb, list):        # bare list of family names
+        return sorted(set(fa or []) | set(fb or []))
+    fa = fa if isinstance(fa, dict) else {}
+    fb = fb if isinstance(fb, dict) else {}
+    if not fa and not fb:
+        return None
+    if "drop" in fa or "drop" in fb:                        # drop-list: union-used == intersect-dropped
+        return {"drop": sorted(set(fa.get("drop", [])) & set(fb.get("drop", [])))}
+    for k in _FEATURE_INCLUDE_KEYS:                         # include-list: plain union
+        if k in fa or k in fb:
+            return {k: sorted(set(fa.get(k, [])) | set(fb.get(k, [])))}
+    merged = dict(fb); merged.update(fa)                    # unknown dict form: base-wins shallow merge
+    return merged
+
+
+def recombine(node_a: dict, node_b: dict, *, feature_key: str = DEFAULT_FEATURE_KEY) -> dict:
+    """Mechanically recombine two evaluated nodes into one new child, returning a record::
+
+        {"config":       <child config dict, ready for add_node — provenance-free so
+                          config_hash stays the TRUE model identity>,
+         "mutation":     <human-readable + machine-parseable description string>,
+         "provenance":   "recombine",
+         "parents":      [node_a id, node_b id],      # both ancestors, in call order
+         "base_parent":  <stronger parent's id>,      # whose model+hyperparams were inherited
+         "donor_parent": <weaker parent's id>,
+         "degenerate":   <bool>}                      # True iff the child duplicates a parent
+
+    Construction (see module docstring J-2b):
+      * the child starts as a deep copy of the STRONGER parent's config (`_order_by_strength`)
+        — so `model`, `kind`, and `params` (the hyperparameters) are inherited from it;
+      * `members` present in either parent are set-UNIONED into the child and its `kind` is
+        set to "blend" (weights left for eval-time re-search);
+      * feature families present in either parent are set-UNIONED into the child.
+
+    On the real s5e10-style schema (solo = model/params/features, blend = members/weight_search)
+    the two never mix, so a solo⊕solo recombination yields a solo (stronger model+params on the
+    UNIONed feature families) and a blend⊕blend yields a blend (UNIONed members) — but the
+    operator unions whatever keys are present, so a hybrid config exercises both at once.
+
+    `degenerate=True` flags the meaningless case where the child's config hashes identical to
+    one of its parents (e.g. two config-identical parents, or unions that changed nothing) —
+    `propose_recombinations` skips these so no duplicate node is ever proposed. Raises
+    `ValueError` if the two nodes are the same node id, or if either is unevaluated."""
+    id_a, id_b = node_a.get("id"), node_b.get("id")
+    if id_a is not None and id_a == id_b:
+        raise ValueError(f"recombine: cannot recombine node #{id_a} with itself")
+
+    base, donor = _order_by_strength(node_a, node_b)
+    cfg_base, cfg_donor = base["config"], donor["config"]
+    child = copy.deepcopy(cfg_base)                         # inherit model/kind/hyperparams from stronger
+
+    members = _union_members(cfg_base, cfg_donor)
+    if members is not None:
+        child["members"] = members
+        child["kind"] = "blend"
+        child.setdefault("weight_search",
+                         cfg_base.get("weight_search", cfg_donor.get("weight_search", "dirichlet")))
+
+    fblock = _union_feature_families(cfg_base, cfg_donor, feature_key=feature_key)
+    if fblock is not None:
+        child[feature_key] = fblock
+
+    parents = [id_a, id_b]
+    child_h = config_hash(child)
+    degenerate = child_h in (config_hash(cfg_base), config_hash(cfg_donor))
+    mutation = (f"[recombine] parents={parents} base=#{base.get('id')} "
+                f"(score={base.get('score')}) donor=#{donor.get('id')} "
+                f"(score={donor.get('score')}) -- union(members,feature-families) + "
+                f"inherit base model/hyperparams"
+                + ("  [DEGENERATE: child duplicates a parent]" if degenerate else ""))
+    return dict(config=child, mutation=mutation, provenance=PROVENANCE_RECOMBINE,
+                parents=parents, base_parent=base.get("id"), donor_parent=donor.get("id"),
+                degenerate=degenerate)
+
+
+def record_recombination(tree: dict, child_node_id: int, rec: dict) -> None:
+    """Persist a recombination's provenance under the v3-blessed
+    `search_state["driver_state"]` (harness_v3 feature 7's documented home for driver
+    bookkeeping that must survive a save/load restart), keyed by the child node id — so
+    J-3/J-4 can attribute the child to BOTH parents. Deliberately does NOT touch the child's
+    config, keeping `config_hash` (and therefore child-dedup) equal to the true model identity
+    rather than a provenance-polluted one."""
+    ds = tree.setdefault("search_state", {}).setdefault("driver_state", {})
+    ds.setdefault("recombine_provenance", {})[str(child_node_id)] = dict(
+        provenance=rec["provenance"], parents=list(rec["parents"]),
+        base_parent=rec["base_parent"], donor_parent=rec.get("donor_parent"))
+
+
+def should_offer_recombination(tree: dict) -> bool:
+    """True when harness_v3's budget phase machine is in the `explore_burst` phase — the phase
+    where the driver injects fresh long-shot lineages. Recombination (deliberately fusing two
+    proven strong solutions) is offered as one of those burst mutation types WITHOUT modifying
+    v3: this only READS the phase that `harness_v3.update_phase` already maintains."""
+    return tree.get("search_state", {}).get("budget", {}).get("phase") == "explore_burst"
+
+
+def propose_recombinations(tree: dict, *, top_k: int = 4, max_pairs: int = 6,
+                           feature_key: str = DEFAULT_FEATURE_KEY,
+                           skip_existing: bool = True) -> list:
+    """Selection glue that turns recombination into a usable v4 mutation type: take the
+    `top_k` best-scoring evaluated non-root nodes, form unique pairs (strongest-with-strongest
+    first), `recombine` each, and return the recombination records that are neither degenerate
+    (duplicate a parent) nor — when `skip_existing` — already present in the tree
+    (`find_duplicate_config`). Reads the tree only; mutates nothing. At most `max_pairs`
+    records are returned."""
+    nodes = [n for n in tree.get("nodes", [])
+             if n.get("status") == "evaluated" and n.get("id") != tree.get("root_id")
+             and _score_is_num(n.get("score"))]
+    nodes.sort(key=lambda n: n["score"])
+    top = nodes[:top_k]
+
+    out = []
+    for i in range(len(top)):
+        for j in range(i + 1, len(top)):
+            if len(out) >= max_pairs:
+                return out
+            rec = recombine(top[i], top[j], feature_key=feature_key)
+            if rec["degenerate"]:
+                continue
+            if skip_existing and find_duplicate_config(tree, rec["config"]) is not None:
+                continue
+            out.append(rec)
+    return out
+
+
+# v4's optional harness-level mutation generators (each proposes candidate mutations without
+# an LLM). A driver iterates these the same way it already calls boundary_candidates; recombine
+# is thereby "one of v4's mutation types", offered especially during the explore_burst phase.
+V4_MUTATION_TYPES = {
+    "boundary": boundary_candidates,        # inherited from harness_v3 (feature 4)
+    "recombine": propose_recombinations,    # J-2b: two-parent recombination
+}
