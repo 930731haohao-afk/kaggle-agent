@@ -10,6 +10,7 @@ dependencies = [
     "librosa>=0.11.0",
     "lightgbm>=4.6.0",
     "matplotlib>=3.10.8",
+    "mlflow-skinny>=3.14.0",
     "numpy>=2.4.2",
     "optuna>=4.9.0",
     "pandas>=3.0.0",
