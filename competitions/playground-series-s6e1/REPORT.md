@@ -281,3 +281,7 @@ uv run python3 tree_search/run_s6e1_v3.py
 
 # 重現最佳解(OOF 重現閘門 + 產出提交檔)
 uv run python3 competitions/playground-series-s6e1/scripts/06_rebuild_tree_best.py
+
+# 階段 5:外部想法注入快評(注入候選 vs 階段4,用快取 OOF、不重訓)
+uv run python3 docs/scripts/stage5_sweep.py s6e1
+```
