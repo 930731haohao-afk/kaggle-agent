@@ -62,7 +62,8 @@ s4e1 → s4e11 → s5e10 → s6e1 → s6e2(小→大/舊→新;s6e2 有既有訓
 
 
 - **📌 2026-07-08 使用者決策:Phase J 方向題選 (A) 接線**
-- **✅ 2026-07-08 Phase J 階段5 接線 pilot 完成(收尾)**:建 idea_injection.py(讀idea_bank→篩選去重→翻譯成候選→provenance,plateau觸發限次數)+ stage5_inject_pilot.py(可重現)。實測 EXT-12 rank averaging 在 s3e3/s4e1/s6e2 三AUC場 delta≤1e-5(噪音級)。**誠實結論:機制可行,外部注入無可量測系統性增益(null)**——已寫進 phase_j_j3_findings + 校準 PROJECT_BRIEF/TECH_REPORT/README 階段5定位。stage5第二支柱收尾為嚴謹負面結果。使用者選A後執行,不覆蓋15場。——授權把 priors 接進搜尋消費端。採小規模試點:s3e3(搜尋~17s)、先接 rank-average(EXT-12)這條乾淨映射,同folds/seed 跑「只消費[INT]」vs「消費[INT]+[EXT]」比外部注入有無系統性增益,不動已 commit 的15場。Skill封裝(第7項)已完成 commit f063f16。
+- **✅ 2026-07-08 Phase J 階段5 接線 pilot 完成(收尾)**
+- **✅ 2026-07-08 Phase J 階段5 全15場快評sweep完成**:加 stacking 通用翻譯器(docs/scripts/stage5_sweep.py),15場實測——**外部注入從未勝過階段4(階段5=階段4全持平)**,抓除2假正例(s3e7弱基線/s3e20 CV噪音)。加『為什麼null』合理解釋(權重搜尋近最優/stacking過擬合+指標不對齊/想法已手寫/訊號到噪音地板/新訊號想法難注入)。寫入 findings+SUMMARY§7+tech_report F5,verify+PDF。使用者要求完整15場,已達成。:建 idea_injection.py(讀idea_bank→篩選去重→翻譯成候選→provenance,plateau觸發限次數)+ stage5_inject_pilot.py(可重現)。實測 EXT-12 rank averaging 在 s3e3/s4e1/s6e2 三AUC場 delta≤1e-5(噪音級)。**誠實結論:機制可行,外部注入無可量測系統性增益(null)**——已寫進 phase_j_j3_findings + 校準 PROJECT_BRIEF/TECH_REPORT/README 階段5定位。stage5第二支柱收尾為嚴謹負面結果。使用者選A後執行,不覆蓋15場。——授權把 priors 接進搜尋消費端。採小規模試點:s3e3(搜尋~17s)、先接 rank-average(EXT-12)這條乾淨映射,同folds/seed 跑「只消費[INT]」vs「消費[INT]+[EXT]」比外部注入有無系統性增益,不動已 commit 的15場。Skill封裝(第7項)已完成 commit f063f16。
 
 ## 併行 session 協定(2026-07-06 16:50 使用者指示:與 VS Code session 同時跑)
 每次 commit 前必做:

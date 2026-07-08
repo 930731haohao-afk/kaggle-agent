@@ -40,9 +40,20 @@ def _rank_space_blend(ext, best_members, ctx):
             "weight_search": "dirichlet", "space": "rank"}
 
 
+def _stacking(ext, best_members, ctx):
+    """EXT-09 stacking(Wolpert 1992)-> 在最佳 blend 的成員 OOF 上套一個 meta 模型
+    (迴歸用 ridge、分類用 logistic),以 nested-CV 產出 meta-OOF 再計分。對任何指標適用、
+    且 driver 用的是權重搜尋而非 stacking meta 模型,故為未手寫的外部想法。實際評估在
+    stage5_sweep.py(需 nested-CV,非單純權重搜尋,故回傳一個特殊 kind='stacking' 標記)。"""
+    if not best_members or len(best_members) < 2:
+        return None
+    return {"kind": "stacking", "members": sorted({int(m) for m in best_members})}
+
+
 TRANSLATORS = {
-    "EXT-12": _rank_space_blend,
-    # 15 場鋪開時在此加更多 translator(頻率編碼、對抗驗證等)
+    "EXT-12": _rank_space_blend,   # rank averaging -> rank 空間 blend(AUC/排名場)
+    "EXT-09": _stacking,           # stacking meta 模型(任何指標,由 sweep 以 nested-CV 評)
+    # 續加更多 translator(頻率編碼、對抗驗證等)時在此登錄
 }
 
 
