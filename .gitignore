@@ -25,3 +25,6 @@ tree_search/cache_*/
 # Credentials / secrets
 .env
 kaggle.json
+
+# 打包產物(skill zip 匯出檔,由源檔重新產生)
+*.skill
