@@ -87,4 +87,5 @@
 - [ ] **要決定的方向題**:第五種策略要不要「接線」讓搜尋真的讀先驗(接線 vs 接受誠實負面結果)
 - [x] 封裝 Skill:三個 skill 納入版控 + 安裝說明(commit f063f16;.claude/skills/README.md 含分工表/安裝步驟/相依/憑證注入)
 - [x] 交付層可部署收尾——採**輕量替代**(非 Docker):setup.sh 一鍵建置+自檢、REPRODUCE.md 收攏重現步驟/限制/取捨、README 接入;uv sync 用 --inexact 不刪鎖檔外的 torch。arm64 零風險。(Docker 映像本體評估後不做,理由見 REPRODUCE.md)
-- [ ] (可選延伸)統計嚴謹度延伸到 10 場 S3(缺 blend OOF 快取,需重訓)、對齊 Aygün 論文細比
+- [x] 對齊 Aygün 論文細比:docs/aygun_comparison.md(+PDF)——方法/benchmark/結果/嚴謹度逐項對照,誠實標出本專案非 LLM-code-mutation、第二支柱 no-op、CV-only,並指出本專案 10 場 S3 為 ERA 16 場的子集、統計嚴謹度反較 ERA 主結果保守
+- [ ] (可選延伸)統計嚴謹度延伸到 10 場 S3(缺 blend OOF 快取,需重訓)

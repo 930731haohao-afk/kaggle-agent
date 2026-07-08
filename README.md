@@ -17,7 +17,8 @@ Nature)的 ERA 系統。
 | agent 怎麼操作競賽 | [.claude/skills/kaggle-agent/SKILL.md](.claude/skills/kaggle-agent/SKILL.md) |
 
 深入研究文件:統計顯著性 [docs/statistical_rigor.md](docs/statistical_rigor.md);外部注入
-歸因發現 [docs/phase_j_j3_findings.md](docs/phase_j_j3_findings.md)。
+歸因發現 [docs/phase_j_j3_findings.md](docs/phase_j_j3_findings.md);與 Aygün 等人 ERA 系統的
+方法對照 [docs/aygun_comparison.md](docs/aygun_comparison.md)。
 
 每份報告都有對應的 PDF(含目錄與頁碼)。
 
@@ -28,7 +29,7 @@ Nature)的 ERA 系統。
 1. **階段 1** 無 skill 基線 → 2. **+ kaggle-agent skill**(結構化六階段)→
 3. **+ 線性自我迭代**(經驗庫先驗、Optuna、seed bagging)→
 4. **+ 樹搜尋**(候選樹取代線性單路徑;ERA 第一支柱)→
-5. **+ 外部想法注入**(文獻想法庫;ERA 第二支柱,注入 hook 建置完成;J-3 歸因發現先驗尚未被搜尋消費,接線進行中——見 docs/phase_j_j3_findings.md)
+5. **+ 外部想法注入**(文獻想法庫;ERA 第二支柱,注入機制已建置並實測——但外部注入在測試場無可量測系統性增益(誠實 null,見 docs/phase_j_j3_findings.md))
 
 ## 主要成果
 
