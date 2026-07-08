@@ -1,0 +1,201 @@
+[
+ {
+  "comp": "s3e1",
+  "metric": "rmse",
+  "members": 7,
+  "stage4": 0.556329,
+  "candidates": {
+   "EXT-09(stacking)": 0.5563689549834299
+  },
+  "stage5_best": 0.5563689549834299,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -3.995498342990178e-05,
+  "helped": false
+ },
+ {
+  "comp": "s3e3",
+  "metric": "auc",
+  "members": 3,
+  "stage4": 0.845051,
+  "candidates": {
+   "EXT-12(rank)": 0.8397698036560596,
+   "EXT-09(stacking)": 0.8365402843601895
+  },
+  "stage5_best": 0.8397698036560596,
+  "stage5_source": "EXT-12(rank)",
+  "delta": -0.00528119634394042,
+  "helped": false
+ },
+ {
+  "comp": "s3e5",
+  "metric": "qwk",
+  "members": 3,
+  "stage4": 0.57066,
+  "candidates": {
+   "EXT-09(stacking)": 0.47723945236099474
+  },
+  "stage5_best": 0.47723945236099474,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -0.0934205476390052,
+  "helped": false
+ },
+ {
+  "comp": "s3e7",
+  "metric": "auc",
+  "members": 38,
+  "stage4": 0.900455,
+  "candidates": {
+   "EXT-12(rank)": 0.9000224220743258,
+   "EXT-09(stacking)": 0.9004370584707969
+  },
+  "stage5_best": 0.9004370584707969,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -1.7941529203091555e-05,
+  "helped": false
+ },
+ {
+  "comp": "s3e9",
+  "metric": "rmse",
+  "members": 13,
+  "stage4": 12.070034,
+  "candidates": {
+   "EXT-09(stacking)": 12.094464504759713
+  },
+  "stage5_best": 12.094464504759713,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -0.024430504759713756,
+  "helped": false
+ },
+ {
+  "comp": "s3e11",
+  "metric": "rmsle",
+  "members": 7,
+  "stage4": 0.29528,
+  "candidates": {
+   "EXT-09(stacking)": 0.29832832940774906
+  },
+  "stage5_best": 0.29832832940774906,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -0.003048329407749073,
+  "helped": false
+ },
+ {
+  "comp": "s3e14",
+  "metric": "mae",
+  "members": 34,
+  "stage4": 340.35572,
+  "candidates": {
+   "EXT-09(stacking)": 345.38194169329114
+  },
+  "stage5_best": 345.38194169329114,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -5.02622169329112,
+  "helped": false
+ },
+ {
+  "comp": "s3e16",
+  "metric": "mae_round",
+  "members": 8,
+  "stage4": 1.33563,
+  "candidates": {
+   "EXT-09(stacking)": 1.3696641503828442
+  },
+  "stage5_best": 1.3696641503828442,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -0.034034150382844075,
+  "helped": false
+ },
+ {
+  "comp": "s3e19",
+  "metric": "smape",
+  "members": 10,
+  "stage4": 9.75707,
+  "candidates": {
+   "EXT-09(stacking)": 50.857608769323036
+  },
+  "stage5_best": 50.857608769323036,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -41.10053876932304,
+  "helped": false
+ },
+ {
+  "comp": "s3e20",
+  "metric": "rmse",
+  "members": 2,
+  "stage4": 21.0589,
+  "candidates": {
+   "EXT-09(stacking)": 20.812940492614416
+  },
+  "stage5_best": 20.812940492614416,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": 0.24595950738558514,
+  "helped": true
+ },
+ {
+  "comp": "s4e1",
+  "metric": "auc",
+  "members": 37,
+  "stage4": 0.894393,
+  "candidates": {
+   "EXT-12(rank)": 0.8943594081558112,
+   "EXT-09(stacking)": 0.8943032764034806
+  },
+  "stage5_best": 0.8943594081558112,
+  "stage5_source": "EXT-12(rank)",
+  "delta": -3.3591844188829434e-05,
+  "helped": false
+ },
+ {
+  "comp": "s4e11",
+  "metric": "accuracy",
+  "members": 8,
+  "stage4": 0.940235,
+  "candidates": {
+   "EXT-09(stacking)": 0.9398081023454158
+  },
+  "stage5_best": 0.9398081023454158,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -0.0004268976545842573,
+  "helped": false
+ },
+ {
+  "comp": "s5e10",
+  "metric": "rmse",
+  "members": 21,
+  "stage4": 0.055968,
+  "candidates": {
+   "EXT-09(stacking)": 0.05596890233256715
+  },
+  "stage5_best": 0.05596890233256715,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -9.023325671514426e-07,
+  "helped": false
+ },
+ {
+  "comp": "s6e1",
+  "metric": "r2",
+  "members": 21,
+  "stage4": 0.787183,
+  "candidates": {
+   "EXT-09(stacking)": 0.7871562887418206
+  },
+  "stage5_best": 0.7871562887418206,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -2.671125817932385e-05,
+  "helped": false
+ },
+ {
+  "comp": "s6e2",
+  "metric": "auc",
+  "members": 37,
+  "stage4": 0.955529,
+  "candidates": {
+   "EXT-12(rank)": 0.9554658625855468,
+   "EXT-09(stacking)": 0.9554739537266649
+  },
+  "stage5_best": 0.9554739537266649,
+  "stage5_source": "EXT-09(stacking)",
+  "delta": -5.504627333507983e-05,
+  "helped": false
+ }
+]
