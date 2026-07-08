@@ -84,6 +84,7 @@ week_no),預測 2022 年各位置每週的二氧化碳排放量 `emission`——
 **階段 5｜+外部想法注入**
 
 - 5.1 外部想法庫先驗 — 使用(快評注入 stacking meta 模型,在階段4收斂點以快取 OOF 評估;數值雖低但係 tier4 排除的 CV 噪音、非真增益 → 階段5=階段4)
+- 5.2 重組 mutation — 本場未使用(機制已建置[harness_v4 機械版 + LLM 版];跨場 pilot 實測與 mega-blend 搜尋冗餘、無增益,見 docs/recombine_findings)
 
 ## 3. 實驗方法
 
