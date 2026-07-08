@@ -184,10 +184,11 @@ def run_comp(comp, info, tier4_map):
                 stage5_source=best_name, delta=delta, helped=bool(helped))
 
 
-def main(as_json=False):
+def main(as_json=False, only=None):
     tier4_map = _committed_tier4()
+    comps = {only: COMPS[only]} if only else COMPS
     rows = []
-    for comp, info in COMPS.items():
+    for comp, info in comps.items():
         try:
             rows.append(run_comp(comp, info, tier4_map))
         except Exception as e:
@@ -222,5 +223,10 @@ def main(as_json=False):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
+    ap.add_argument("comp", nargs="?", default=None,
+                    help="只跑單一場(如 s5e10);省略則跑全 15 場")
     ap.add_argument("--json", action="store_true")
-    main(as_json=ap.parse_args().json)
+    a = ap.parse_args()
+    if a.comp and a.comp not in COMPS:
+        ap.error(f"未知場次 {a.comp};可用:{', '.join(COMPS)}")
+    main(as_json=a.json, only=a.comp)
