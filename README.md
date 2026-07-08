@@ -56,7 +56,16 @@ CLAUDE.md                               專案指令(含 uv 套件管理、Kaggl
 
 ## 如何重現
 
-所有 Python 以 **uv** 執行(見 CLAUDE.md)。
+**一鍵建置環境 + 自檢**(Docker 的輕量替代,凍結 `uv.lock`):
+
+```bash
+bash setup.sh          # 建核心環境 + 自檢核心 ML 堆疊
+bash setup.sh --torch  # 額外裝 torch(僅影像/NLP 競賽需要)
+```
+
+完整重現步驟、資料/憑證、已知限制與「為何不用 Docker」見 **[REPRODUCE.md](REPRODUCE.md)**。
+
+以下為常用重現指令(所有 Python 以 **uv** 執行,見 CLAUDE.md):
 
 ```bash
 # 重建跨場 benchmark 事實表(從各場 experiments.json 抽取,含一致性 assert)

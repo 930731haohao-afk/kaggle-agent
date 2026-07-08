@@ -86,5 +86,5 @@
   現行架構下先驗沒被搜尋讀到、注入是空操作,是 driver 手寫種子在引導)
 - [ ] **要決定的方向題**:第五種策略要不要「接線」讓搜尋真的讀先驗(接線 vs 接受誠實負面結果)
 - [x] 封裝 Skill:三個 skill 納入版控 + 安裝說明(commit f063f16;.claude/skills/README.md 含分工表/安裝步驟/相依/憑證注入)
-- [ ] 交付層可部署收尾:Docker 容器化(本機 arm64,套件建置為變數;傾向輕量替代 uv.lock+setup+重現說明)
+- [x] 交付層可部署收尾——採**輕量替代**(非 Docker):setup.sh 一鍵建置+自檢、REPRODUCE.md 收攏重現步驟/限制/取捨、README 接入;uv sync 用 --inexact 不刪鎖檔外的 torch。arm64 零風險。(Docker 映像本體評估後不做,理由見 REPRODUCE.md)
 - [ ] (可選延伸)統計嚴謹度延伸到 10 場 S3(缺 blend OOF 快取,需重訓)、對齊 Aygün 論文細比
