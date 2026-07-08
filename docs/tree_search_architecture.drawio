@@ -4,54 +4,51 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="t" value="Kaggle-Agent 樹搜尋架構(harness v1→v3;確定性、GBDT 組態空間)" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="40" y="20" width="900" height="40" as="geometry" /></mxCell>
+        <mxCell id="t" value="Kaggle-Agent 樹搜尋架構(harness v1→v3;確定性、GBDT 組態空間)" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;fillColor=#eef3fb;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="40" y="20" width="1200" height="44" as="geometry" /></mxCell>
         <mxCell id="seed" value="driver 手動種下第一代世系
-(root 的數個子節點=不同起始方向)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="360" y="90" width="240" height="56" as="geometry" /></mxCell>
+(root 的數個子節點 = 不同起始方向)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="470.0" y="100" width="320" height="56" as="geometry" /></mxCell>
         <mxCell id="phase" value="相位機 update_phase
-exploit → explore_burst → stopped" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="360" y="176" width="240" height="56" as="geometry" /></mxCell>
+exploit → explore_burst → stopped" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="470.0" y="196" width="320" height="56" as="geometry" /></mxCell>
         <mxCell id="stop" value="should_stop ?
-(預算 60 節點 / burst 後無改善)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="262" width="240" height="60" as="geometry" /></mxCell>
+預算 60 節點 / burst 後無改善" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="480.0" y="292" width="300" height="90" as="geometry" /></mxCell>
         <mxCell id="select" value="select_next_parent
-=active 世系中分數最佳、仍有展開額度的節點" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="352" width="240" height="60" as="geometry" /></mxCell>
+active 世系中分數最佳、仍有展開額度的節點
+(全 plateaued 時自動 reopen 次佳世系)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="470.0" y="418" width="320" height="72" as="geometry" /></mxCell>
         <mxCell id="propose" value="提出變異 propose_child
-種子 / boundary-push / 重組" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="442" width="240" height="60" as="geometry" /></mxCell>
-        <mxCell id="dedup" value="config_hash 去重?
-(同父連兩次重複 → 燒 failed 佔位)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="532" width="240" height="60" as="geometry" /></mxCell>
+種子 / boundary-push / 重組" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="470.0" y="528" width="320" height="60" as="geometry" /></mxCell>
+        <mxCell id="dedup" value="config_hash 去重 ?
+同父連兩次重複 → 燒 failed 佔位" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="480.0" y="624" width="300" height="90" as="geometry" /></mxCell>
         <mxCell id="eval" value="評分 evaluate(config)
-solo:K-fold→OOF 快取  |  blend:OOF 權重搜尋(Dirichlet k=800+座標上升)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="290" y="622" width="380" height="60" as="geometry" /></mxCell>
+solo:K-fold → OOF 快取   |   blend:OOF 權重搜尋(Dirichlet k=800 + 座標上升)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="370" y="752" width="520" height="64" as="geometry" /></mxCell>
         <mxCell id="add" value="add_node → 比對全域最佳
-贏:streak=0 | 沒贏:streak+1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="360" y="712" width="240" height="56" as="geometry" /></mxCell>
-        <mxCell id="plateau" value="streak ≥ 門檻(3;離散指標5)?
-→ 世系 plateaued" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="360" y="798" width="240" height="60" as="geometry" /></mxCell>
-        <mxCell id="backtrack" value="回溯:改選次佳的
-非-plateaued 世系" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="690" y="798" width="200" height="60" as="geometry" /></mxCell>
-        <mxCell id="burst" value="全部 plateaued →
-強制 explore_burst
-(注入 5–8 條長射程新世系
-+ burst 種子健全閘)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="690" y="262" width="200" height="90" as="geometry" /></mxCell>
+贏:streak=0    |    沒贏:streak+1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="470.0" y="852" width="320" height="60" as="geometry" /></mxCell>
+        <mxCell id="plateau" value="streak ≥ 門檻(3;離散指標 5)?
+是 → 世系 plateaued(下輪 select 改選次佳)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="450.0" y="948" width="360" height="96" as="geometry" /></mxCell>
         <mxCell id="done" value="輸出全域最佳解
 → OOF 逐位重現閘門
-→ 產生 submission" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="690" y="90" width="200" height="80" as="geometry" /></mxCell>
-        <mxCell id="layers" value="分層來源:
-• v1 harness.py:節點/樹、select_next_parent、plateau 回溯
-• v2:solo/blend kind、OOF 快取、eval_blend 權重搜尋、dedup、metric-aware plateau、suggest_priors
-• v3:預算相位機、dedup 燒預算、boundary-push、座標上升、成本護欄、子行程逾時、resume 契約
-• v4:外部想法注入 hook(J-3:write-only=no-op)" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;fontSize=11;" vertex="1" parent="1"><mxGeometry x="30" y="352" width="300" height="210" as="geometry" /></mxCell>
-        <mxCell id="e0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="seed" target="phase"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="phase" target="stop"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e2" value="否(繼續)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="stop" target="select"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e3" value="是(停止)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="stop" target="done"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="select" target="propose"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="propose" target="dedup"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e6" value="重複→重提" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="dedup" target="propose"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e7" value="新組態" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="dedup" target="eval"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="eval" target="add"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="add" target="plateau"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e10" value="否→回相位機" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="plateau" target="phase"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e11" value="是" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="plateau" target="backtrack"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="backtrack" target="phase"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e13" value="全 plateaued" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="phase" target="burst"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="burst" target="select"><mxGeometry relative="1" as="geometry" /></mxCell>
+→ 產生 submission" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="1000" y="100" width="240" height="90" as="geometry" /></mxCell>
+        <mxCell id="burst" value="全部 plateaued →
+強制 explore_burst
+注入 5–8 條長射程新世系
++ burst 種子健全閘" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="1000" y="300" width="240" height="120" as="geometry" /></mxCell>
+        <mxCell id="layers" value="分層來源(harness 疊加式,舊層原封不動供重現):
+• v1 harness.py:節點/樹結構、select_next_parent 選點、plateau 連續不進步回溯
+• v2:solo/blend kind、OOF 快取、eval_blend 權重搜尋、child dedup、metric-aware plateau、suggest_priors
+• v3:預算相位機、dedup 燒預算、boundary-push、座標上升精修、成本護欄、子行程硬逾時、burst 健全閘、resume 契約
+• v4:外部想法注入 hook（J-3 發現:tree[&#x27;priors&#x27;] write-only = 對搜尋 no-op）" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1"><mxGeometry x="60" y="1090" width="1180" height="150" as="geometry" /></mxCell>
+        <mxCell id="e0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="seed" target="phase"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="phase" target="stop"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="否(繼續)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="stop" target="select"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="select" target="propose"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="propose" target="dedup"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="新組態" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="dedup" target="eval"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="eval" target="add"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="add" target="plateau"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="回相位機" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="plateau" target="phase"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="410" y="996" /><mxPoint x="410" y="224" /></Array></mxGeometry></mxCell>
+        <mxCell id="e9" value="重複→重提" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;dashed=1;" edge="1" parent="1" source="dedup" target="propose"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="430" y="669" /><mxPoint x="430" y="558" /></Array></mxGeometry></mxCell>
+        <mxCell id="e10" value="是(停止)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="stop" target="done"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="880" y="337" /><mxPoint x="880" y="145" /></Array></mxGeometry></mxCell>
+        <mxCell id="e11" value="全 plateaued" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;dashed=1;" edge="1" parent="1" source="phase" target="burst"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="940" y="224" /><mxPoint x="940" y="360" /></Array></mxGeometry></mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;jettySize=auto;" edge="1" parent="1" source="burst" target="select"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="910" y="360" /><mxPoint x="910" y="454" /></Array></mxGeometry></mxCell>
       </root>
     </mxGraphModel>
   </diagram>

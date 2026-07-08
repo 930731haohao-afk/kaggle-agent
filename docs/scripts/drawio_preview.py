@@ -102,8 +102,25 @@ def _ortho_pts(a, b):
         return [p0, (midx, p0[1]), (midx, p1[1]), p1]
 
 
+def _boundary_point(n, tx, ty):
+    """從節點 n 中心朝 (tx,ty) 方向,交在 n 邊界矩形上的點(供 waypoint 錨定)。"""
+    cx, cy = n.x + n.w / 2, n.y + n.h / 2
+    dx, dy = tx - cx, ty - cy
+    if dx == 0 and dy == 0:
+        return cx, cy
+    sx = (n.w / 2) / abs(dx) if dx else float("inf")
+    sy = (n.h / 2) / abs(dy) if dy else float("inf")
+    s = min(sx, sy)
+    return cx + dx * s, cy + dy * s
+
+
 def _draw_edge(ax, nmap, e):
-    pts = _ortho_pts(nmap[e.source], nmap[e.target])
+    a, b = nmap[e.source], nmap[e.target]
+    if e.points:
+        wp = [tuple(p) for p in e.points]
+        pts = [_boundary_point(a, *wp[0])] + wp + [_boundary_point(b, *wp[-1])]
+    else:
+        pts = _ortho_pts(a, b)
     ls = (0, (4, 3)) if e.dashed else "solid"
     codes = [Path.MOVETO] + [Path.LINETO] * (len(pts) - 1)
     ax.add_patch(PathPatch(Path(pts, codes), fill=False, lw=1.2,
