@@ -125,7 +125,7 @@ EDA 已執行:15 個特徵全為數值型,其中多數實為低基數「類別�
 | CAT_S7_D10 | 0.0091 | 0.295779 | 線性迭代之 depth-10 tuned CAT(seed 7),自快取重用 |
 | CAT_S99 | 0.0031 | 0.295786 | 第 4 個 tuned-CAT seed,線性迭代未嘗試 |
 | CAT_TUNED_ROOT | 0.0039 | 0.29579 | 線性迭代最強 solo(Optuna 調參 CAT,seed 42),快取重用 |
-| DEEPLGB | 0.1783 | 0.295833 | 刻意多樣化之深 LGB(num_leaves 255);solo 平庸但權重第 3 大 |
+| DEEPLGB | 0.1783 | 0.295833 | 刻意多樣化之深 LGB(num_leaves 255);solo 平庸但權重第 4 大 |
 
 選型脈絡:第 1–3 次實驗 三模型權重搜尋連兩輪將 XGB 權重歸 0,第 4 次實驗 移除 XGB 後 blend 分數不變,
 驗證零權重裁決無代價;第 5 次實驗 起 Optuna 調參 CatBoost 成為主力,權重全數流向 tuned CAT 家族;
