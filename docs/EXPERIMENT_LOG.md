@@ -87,6 +87,13 @@
   3. **傾向**:結果大致可預測、且缺口已被 `statistical_rigor.md` 的誠實範圍聲明補住 → **傾向不做全套**;
      若要補,只做便宜版的**聚焦版(3→4 樹搜尋顯著性,挑能乾淨重建的場)**。**待決策。**
 
+- 傍晚起(使用者下班、授權自主執行)**自主完成計畫書合規全掃 + 補齊**(3→2→1,全程獨立子代理 + 我逐項核實):
+  - **讀計畫書本尊 4 頁逐條盤點**(docs/plan_compliance_audit.md):主線全達標;找出剩餘缺口=報告驗證三件套(§5)+ 想法重組 LLM 版 + MLflow。定案 **S3 不重訓**(已達計畫書可復現標準、逐位決定性超綱且 CV-only 不適用)。
+  - **③ MLflow**:export_to_mlflow.py 匯 experiments 進 sqlite(284 runs/38場)+ reproducibility.md(可復現分層+結構對映)。
+  - **② 報告驗證三件套(§5)**:rubric 建置 + 3 獨立 LLM 評分 **15 場全通過(19.5/20)**;一致性檢查抓到 **5 個真報告↔碼不一致**(s5e10「無失敗節點」誤述、s3e11 權重名次、s3e3 快評成員池、s3e9 clip、s6e1 措辭)全核實+修正;只讀報告重現 2 場皆「部分」(流程可重建、逐位受早批未記超參所限)。
+  - **① LLM 驅動重組 mutation**:建 LLM 重組算子(**首個 LLM-in-loop mutation**,補 ERA 核心落差)+ s6e1 pilot 實測=**redundant honest null**(冠軍=成員池 NNLS 凸最優逐位、誤差相關0.995近乎重複);還原先前誤刪的 5.2。
+  - 15 場 verify 全過、PDF 全重生、每單元 commit。commit:930eab9→dda5acb→fb488ac→b46c314→71338d1→fa2cd56。
+
 ---
 
 ### to do list
@@ -97,8 +104,9 @@
 - [x] 總結對照表擴充到 15 場 + 加「跨季泛化」章節
 - [x] 第五種策略(外部文獻注入)落地:建想法庫 ✓ → 接入樹搜尋 ✓ → 歸因對照 ✓(發現:
   現行架構下先驗沒被搜尋讀到、注入是空操作,是 driver 手寫種子在引導)
-- [ ] **要決定的方向題**:第五種策略要不要「接線」讓搜尋真的讀先驗(接線 vs 接受誠實負面結果)
+- [x] **方向題已解**:重組(5.2)LLM 版已建+實測=honest null(結構性冗餘,見 recombine_findings);第二支柱(注入+重組)機制皆建置、實測皆無系統性增益,附機制解釋,不再接線
 - [x] 封裝 Skill:三個 skill 納入版控 + 安裝說明(commit f063f16;.claude/skills/README.md 含分工表/安裝步驟/相依/憑證注入)
 - [x] 交付層可部署收尾——採**輕量替代**(非 Docker):setup.sh 一鍵建置+自檢、REPRODUCE.md 收攏重現步驟/限制/取捨、README 接入;uv sync 用 --inexact 不刪鎖檔外的 torch。arm64 零風險。(Docker 映像本體評估後不做,理由見 REPRODUCE.md)
 - [x] 對齊 Aygün 論文細比:docs/aygun_comparison.md(+PDF)——方法/benchmark/結果/嚴謹度逐項對照,誠實標出本專案非 LLM-code-mutation、第二支柱 no-op、CV-only,並指出本專案 10 場 S3 為 ERA 16 場的子集、統計嚴謹度反較 ERA 主結果保守
-- [ ] (可選延伸,**待決策**)統計嚴謹度延伸到 10 場 S3——可行性已查(見 7/8 段):S3 舊管線沒存 stage2/3 OOF;便宜版(只讀快取)~半天但覆蓋不齊、方案 A(重訓+re-baseline)~1.5–2 天但動到頭條數字。傾向不做全套/或只做聚焦版 3→4
+- [x] 統計嚴謹度延伸 10 場 S3——**定案不做**:S3 已達計畫書可復現標準(固定種子+uv+記錄),逐位決定性是超綱、且 S3 全 CV-only 不提交對它不適用;保留為合理進步 + 誠實記錄分層(見 reproducibility.md / plan_compliance_audit)
+- [x] **計畫書合規全掃 + 補齊(3→2→1,2026-07-08 自主)**:③MLflow ✅ ②報告驗證三件套 ✅ ①LLM重組(honest null)✅;主線+兩支柱+報告驗證全收尾,見 plan_compliance_audit
