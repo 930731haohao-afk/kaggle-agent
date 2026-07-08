@@ -58,7 +58,11 @@ s4e1 → s4e11 → s5e10 → s6e1 → s6e2(小→大/舊→新;s6e2 有既有訓
 - [x] **Phase J J-3 階段5歸因(2026-07-08,關鍵發現,commit待下)**:建run_s3e3_v4.py單一變因(只換suggest_priors_v4(mode)),mode='off'逐字==v3閘門過、ext淨新注入2條[EXT]。**結果 off vs ext 逐位元相同(delta=構造性0)**——根因:`tree['priors']`是**write-only**,搜尋算子(種子/mutation/propose_child/select/評估器)全不讀它,`[PRIOR Pk]`是driver作者手寫。∴階段5注入現行架構下是no-op。詳見docs/phase_j_j3_findings.md+記憶tree-priors-write-only。⚠️此發現同時牽動:(a)Phase J方向(J-4/J-5原schema歸因**前提不成立、暫緩**;真正下一步=把priors接進propose_child/種子);(b)報告「先驗注入」語言需誠實校準(知識有引導但透過手寫種子,非自動plumbing);(c)階段4樹搜尋價值仍真實(來自搜尋機制本身)。**wiring vs 接受誠實負面結果=方向題,留使用者決定,勿自行大改**。brief階段5措辭已誠實校準
 - [!] J-4/J-5暫緩(前提=priors被消費,J-3證明未成立);EXT-16 purge/embargo suppress待決
 - [ ] 佇列:~~s5e10/s6e1/s6e2~~✓ → ~~benchmark15~~✓ → ~~J-3歸因~~✓(no-op發現)→ ~~統計嚴謹度196d0c1~~✓ → ~~tech-report草稿~~✓ → **剩餘全部待使用者決策/有風險**:(a)Phase J接線priors消費端 or 接受誠實負面〔方向題〕;(b)Docker arm64〔套件建置風險,不宜4am無人盯〕;(c)統計延伸到10場S3〔缺blend OOF快取,需重訓〕;(d)真實LB〔多數場已關榜〕;(e)對齊Aygün細比〔需論文全文,恐失準〕
-- **📌 過夜session最終狀態(2026-07-08 ~03:4x,主控收束)**:今晚12 commit(idea_bank/J-2a/J-2b/s5e10/s6e1/s6e2/benchmark15/brief/README/J-3/統計/tech-report)+4記憶。git乾淨、無殘留進程、所有交付verify+PDF。**已達「已備妥資料+安全+高價值」的自然邊界**:下一步不是我能單方推的(要嘛你的方向決策,要嘛有arm64/重訓/失準風險)。故轉為輕量監看,待你回來拍板Phase J方向題(接線 vs 接受誠實負面),或指派新的well-defined工作。**不硬做marginal/風險工作充數**——這與本專案誠實高價值的一貫紀律一致
+- **📌 過夜session最終狀態(2026-07-08,主控收束)**:過夜12 commit(idea_bank/J-2a/J-2b/s5e10/s6e1/s6e2/benchmark15/brief/README/J-3/統計/tech-report)+4記憶。**後續(6pm日誌task+05:xx心跳)再+2 commit**:實驗日誌7/8段(935a0a8)、經驗庫收錄跨季4學習(f1f8c61,交互項先驗逐場相反判決等,填「跨競賽學習」核心產物缺口——原experience.md 7/7 10:19後未更新)。git乾淨、無殘留、所有交付verify+PDF。**已達安全高價值自主工作邊界**:剩餘要嘛你的方向決策(Phase J接線vs接受誠實負面)、要嘛有arm64/重訓/失準風險。轉輕量監看,不硬做marginal工作充數(與本專案誠實高價值紀律一致)
+
+
+- **📌 2026-07-08 使用者決策:Phase J 方向題選 (A) 接線**
+- **✅ 2026-07-08 Phase J 階段5 接線 pilot 完成(收尾)**:建 idea_injection.py(讀idea_bank→篩選去重→翻譯成候選→provenance,plateau觸發限次數)+ stage5_inject_pilot.py(可重現)。實測 EXT-12 rank averaging 在 s3e3/s4e1/s6e2 三AUC場 delta≤1e-5(噪音級)。**誠實結論:機制可行,外部注入無可量測系統性增益(null)**——已寫進 phase_j_j3_findings + 校準 PROJECT_BRIEF/TECH_REPORT/README 階段5定位。stage5第二支柱收尾為嚴謹負面結果。使用者選A後執行,不覆蓋15場。——授權把 priors 接進搜尋消費端。採小規模試點:s3e3(搜尋~17s)、先接 rank-average(EXT-12)這條乾淨映射,同folds/seed 跑「只消費[INT]」vs「消費[INT]+[EXT]」比外部注入有無系統性增益,不動已 commit 的15場。Skill封裝(第7項)已完成 commit f063f16。
 
 ## 併行 session 協定(2026-07-06 16:50 使用者指示:與 VS Code session 同時跑)
 每次 commit 前必做:
