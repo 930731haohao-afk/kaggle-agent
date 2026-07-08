@@ -138,41 +138,41 @@ def write_drawio(path: str, nodes: list[Node], edges: list[Edge], *, title: str 
 def _tree_search_diagram():
     """本專案 harness(v1→v3)樹搜尋迴圈的流程圖規格。版面:中央主迴圈,
     左側走回饋通道(loop-back / dup-retry),右側放結束與 explore 分支,底部整條放分層註記。"""
-    CX = 630                       # 主軸中心 x
-    W = 320                        # 一般節點寬
+    CX = 620                       # 主軸中心 x
+    W = 300                        # 一般節點寬
     XP = CX - W / 2                # 一般節點左緣 = 470
     DW = 300                       # 決策(菱形)寬
-    XD = CX - DW / 2               # 決策左緣 = 480
-    RX = 1000                      # 右欄左緣
+    XD = CX - DW / 2               # 決策左緣 = 470
+    RX = 980                       # 右欄左緣
     nodes = [
         Node("t", "Kaggle-Agent 樹搜尋架構(harness v1→v3;確定性、GBDT 組態空間)",
-             40, 20, 1200, 44, style="note",
+             40, 20, 1200, 40, style="note",
              extra_style="fontSize=14;fontStyle=1;align=center;verticalAlign=middle;fillColor=#eef3fb;strokeColor=#6c8ebf;"),
 
         Node("seed", "driver 手動種下第一代世系\n(root 的數個子節點 = 不同起始方向)",
-             XP, 100, W, 56, style="start"),
+             XP, 88, W, 50, style="start"),
         Node("phase", "相位機 update_phase\nexploit → explore_burst → stopped",
-             XP, 196, W, 56, style="accent"),
-        Node("stop", "should_stop ?\n預算 60 節點 / burst 後無改善",
-             XD, 292, DW, 90, style="decision"),
-        Node("select", "select_next_parent\nactive 世系中分數最佳、仍有展開額度的節點\n(全 plateaued 時自動 reopen 次佳世系)",
-             XP, 418, W, 72, style="process"),
+             XP, 170, W, 50, style="accent"),
+        Node("stop", "should_stop ?  預算 60 節點 / burst 後無改善",
+             XD, 252, DW, 72, style="decision"),
+        Node("select", "select_next_parent\nactive 世系中分數最佳、仍有展開額度\n(全 plateaued 時自動 reopen 次佳世系)",
+             XP, 356, W, 64, style="process"),
         Node("propose", "提出變異 propose_child\n種子 / boundary-push / 重組",
-             XP, 528, W, 60, style="process"),
-        Node("dedup", "config_hash 去重 ?\n同父連兩次重複 → 燒 failed 佔位",
-             XD, 624, DW, 90, style="decision"),
-        Node("eval", "評分 evaluate(config)\nsolo:K-fold → OOF 快取   |   blend:OOF 權重搜尋(Dirichlet k=800 + 座標上升)",
-             370, 752, 520, 64, style="process"),
-        Node("add", "add_node → 比對全域最佳\n贏:streak=0    |    沒贏:streak+1",
-             XP, 852, W, 60, style="process"),
+             XP, 452, W, 52, style="process"),
+        Node("dedup", "config_hash 去重 ?  同父連兩次重複 → 燒 failed 佔位",
+             XD, 536, DW, 72, style="decision"),
+        Node("eval", "評分 evaluate(config)\nsolo:K-fold → OOF 快取  |  blend:OOF 權重搜尋(Dirichlet k=800+座標上升)",
+             370, 640, 500, 56, style="process"),
+        Node("add", "add_node → 比對全域最佳\n贏:streak=0   |   沒贏:streak+1",
+             XP, 728, W, 52, style="process"),
         Node("plateau", "streak ≥ 門檻(3;離散指標 5)?\n是 → 世系 plateaued(下輪 select 改選次佳)",
-             XD - 30, 948, DW + 60, 96, style="decision"),
+             XD, 812, DW, 72, style="decision"),
 
         # 右欄:結束 + explore 分支
-        Node("done", "輸出全域最佳解\n→ OOF 逐位重現閘門\n→ 產生 submission",
-             RX, 100, 240, 90, style="end"),
-        Node("burst", "全部 plateaued →\n強制 explore_burst\n注入 5–8 條長射程新世系\n+ burst 種子健全閘",
-             RX, 300, 240, 120, style="accent"),
+        Node("done", "輸出全域最佳解\n→ OOF 逐位重現閘門 → 產生 submission",
+             RX, 88, 260, 72, style="end"),
+        Node("burst", "全部 plateaued → 強制 explore_burst\n注入 5–8 條長射程新世系\n+ burst 種子健全閘",
+             RX, 240, 260, 104, style="accent"),
 
         # 底部整條:各能力來自哪一層(單行不換行)
         Node("layers",
@@ -181,7 +181,7 @@ def _tree_search_diagram():
              "• v2:solo/blend kind、OOF 快取、eval_blend 權重搜尋、child dedup、metric-aware plateau、suggest_priors\n"
              "• v3:預算相位機、dedup 燒預算、boundary-push、座標上升精修、成本護欄、子行程硬逾時、burst 健全閘、resume 契約\n"
              "• v4:外部想法注入 hook（J-3 發現:tree['priors'] write-only = 對搜尋 no-op）",
-             60, 1090, 1180, 150, style="note", extra_style="fontSize=12;"),
+             60, 930, 1180, 140, style="note", extra_style="fontSize=12;"),
     ]
     edges = [
         # 主迴圈(相鄰,直落)
@@ -193,13 +193,13 @@ def _tree_search_diagram():
         Edge("dedup", "eval", "新組態"),
         Edge("eval", "add"),
         Edge("add", "plateau"),
-        # 回饋:左通道
-        Edge("plateau", "phase", "回相位機", points=[(410, 996), (410, 224)]),
-        Edge("dedup", "propose", "重複→重提", dashed=True, points=[(430, 669), (430, 558)]),
-        # 結束 + explore:右側
-        Edge("stop", "done", "是(停止)", points=[(880, 337), (880, 145)]),
-        Edge("phase", "burst", "全 plateaued", dashed=True, points=[(940, 224), (940, 360)]),
-        Edge("burst", "select", points=[(910, 360), (910, 454)]),
+        # 回饋:左通道(x=395,離主軸格子左緣 470 有 75px 淨距)
+        Edge("plateau", "phase", "回相位機", points=[(395, 848), (395, 195)]),
+        Edge("dedup", "propose", "重複→重提", dashed=True, points=[(420, 572), (420, 478)]),
+        # 結束 + explore:右側各走一條通道
+        Edge("stop", "done", "是(停止)", points=[(870, 288), (870, 124)]),
+        Edge("phase", "burst", "全 plateaued", dashed=True, points=[(920, 195), (920, 292)]),
+        Edge("burst", "select", points=[(900, 292), (900, 388)]),
     ]
     return nodes, edges
 
