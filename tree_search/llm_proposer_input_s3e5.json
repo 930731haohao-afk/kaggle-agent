@@ -1,0 +1,564 @@
+{
+ "competition": "playground-series-s3e5 (wine quality, ordinal 3-8, QWK, 2056 rows, all-numeric features)",
+ "evaluator_contract": {
+  "solo": {
+   "kind": "solo",
+   "model": "lgb|xgb|cat",
+   "params": "dict of model hyperparams (must be valid for that library)",
+   "features": {
+    "drop": "list of feature-name strings to drop (21 engineered cols; [] = keep all)"
+   },
+   "rounder": "full_oof|fold_avg"
+  },
+  "blend": {
+   "kind": "blend",
+   "members": "list of EXISTING evaluated solo node ids (see nodes)",
+   "weight_search": "dirichlet",
+   "rounder": "full_oof|fold_avg"
+  },
+  "notes": "every node is scored as post-OptimizedRounder QWK on shared 5-fold StratifiedKFold(seed 42); blend uses cached member OOF (no retrain)"
+ },
+ "priors": [
+  {
+   "tag": "INT-00",
+   "source": "experience.md",
+   "text": "序數目標用「迴歸 + OptimizedRounder(對 OOF QWK 調切點)」遠勝 naive rounding——這是小資料序數題的單一最高槓桿改動。 | 證據:s3e5, exp #2→#3,同一 blend、naive round QWK 0.47191 → 優化切點 0.52687(+0.055,約 +10% 相對)。"
+  },
+  {
+   "tag": "INT-01",
+   "source": "experience.md",
+   "text": "naive rounding 在嚴重類別不平衡(69.9x)下甚至比不做特徵工程的 baseline 更差:稀有類預測被主流類質量拉偏,對稱取整假設崩潰。 | 證據:s3e5, exp #1 baseline 0.47871 vs exp #2 naive round 0.47191。"
+  },
+  {
+   "tag": "INT-02",
+   "source": "experience.md",
+   "text": "序數題選迴歸頭而非多分類頭:QWK 罰平方距離,迴歸的連續輸出能借用中間類的訊號安置樣本極少的極端類(12–39 例)。 | 證據:s3e5, STATUS.md 建模決策;最終 0.52687 由迴歸頭達成;Phase B 迭代再驗證:多分類(class_weight=balanced)+期望值解碼作為多樣性成員加入 blend,單模 post-rounder QWK 僅 0.52040(顯著低於已調校的迴歸成員 0.56244/0.56466),權重搜尋歸零,對 blend 無貢獻。 | 證據:s3e5, exp #11(棄用),0.56769 = 0.56769(無變化)。"
+  },
+  {
+   "tag": "INT-03",
+   "source": "experience.md",
+   "text": "**小資料(~2k列)序數 + QWK 的最高槓桿不是加特徵或加模型,而是把 Optuna 目標函式直接設為「後處理(OptimizedRounder)後的 QWK」,在完整 5-fold CV 上跑(資料小到不需要 fold-0 代理),而非傳統的「先調 RMSE,再套用 rounder」——這是避開離散化指標陷阱最直接的做法,增益遠超過單純優化切點或權重搜尋本身。** | 證據:s3e5, exp #4→#5,LGB 以此法調校(TPE,40 trials,600s timeout,實際僅 26s)後加入池,0.52986→0.56293(+0.03307);exp #5→#8,同法調校 CatBoost 再加入,0.56293→0.56769(+0.00476);累計較「切點優化但未調參」的既有最佳 0.52687 提升 +0.04082(+7.7% 相對)。"
+  },
+  {
+   "tag": "INT-04",
+   "source": "experience.md",
+   "text": "巢狀(leave-fold-out)切點擬合可驗證「切點對全 OOF 過擬」的風險大小:風險並非固定值,會隨集成池成熟而縮小。 | 證據:s3e5, exp #7(5-way blend,單一調校模型主導)全 OOF 0.56293 vs 巢狀 0.54649,gap +0.01644;exp #10(6-way blend,兩個調校模型)全 OOF 0.56769 vs 巢狀 0.56393,gap 縮小至 +0.00377。"
+  },
+  {
+   "tag": "INT-05",
+   "source": "experience.md",
+   "text": "風險(原始記錄,已由上述巢狀診斷部分緩解):切點若直接對整份 OOF 向量擬合(非 nested CV),有輕度過擬 OOF 的風險;且極端類可能完全不被預測(s3e5 測試集無 quality 3/8 預測,Phase B 迭代後的新最佳甚至連 quality 4 也不再預測,僅剩 5/6/7)。 | 證據:s3e5, STATUS.md 明示風險註記。"
+  },
+  {
+   "tag": "INT-06",
+   "source": "experience.md",
+   "text": "小樣本上 CatBoost 可能持續劣於 LGB/XGB 且被權重搜尋歸零——不要假設三模型 blend 永遠有益,先看各模型 OOF。 | 證據:s3e3(1,677 列), exp #2/#3,CAT 0.77663/0.76268 遠低於 LGB 0.81901/0.83292,兩次 blend 權重皆 LGB=1.0。"
+  },
+  {
+   "tag": "INT-07",
+   "source": "experience.md",
+   "text": "**「CatBoost 在小資料上偏弱」的診斷結論已釐清:原生類別處理(cat_features 傳原始字串,而非 label/freq 預編碼)可大幅縮小差距,但無法逆轉排序——是「編碼方式」與「模型/資料規模不匹配」兩個獨立問題疊加,且後者才是主因。** 對 s3e3(1,677 列)重試 CatBoost,改用原生 cat_features(7 個類別欄位保留原始字串)+ `allow_writing_files=False` + 明確 thread_count,OOF 由標籤/頻率編碼版的 0.762684 大幅回升至 0.814259(+0.0516,深度 3、l2_leaf_reg 16、lr 0.05 之淺樹強正則配置最佳),證明原本落後的一部分原因確實是編碼方式不當;但即使原生處理後仍比同資料上的 LGB(0.837305)低 2.3 個百分點,加入 6-way blend 池後權重搜尋依然給予 0 權重(與未原生處理時的判定一致)。**結論:「CatBoost 在極小表格資料上結構性偏弱」才是耐用的教訓,原生類別處理是必要但不充分的緩解,不必再對同數量級資料重試此模型。** | 證據:s3e3, exp #6(CAT_native 診斷,solo 0.814259)、exp #7(6-way blend 含 CAT_native,權重搜尋仍給 0,blend 分數與未含 CAT_native 的 exp #5 在 prob-space 相同 0.837776)。"
+  },
+  {
+   "tag": "INT-08",
+   "source": "experience.md",
+   "text": "小樣本 + 相關性高的工程特徵 → 優先加正則化而非加容量。 | 證據:s3e3, exp #3 靠緊縮 LGB 正則拿到 +0.017;s3e9, exp #2 同理(見下)。"
+  },
+  {
+   "tag": "INT-09",
+   "source": "experience.md",
+   "text": "小樣本 per-fold 分數波動大(AUC 0.79–0.89)是常態,不是 bug;拿到明確增益後應「見好就收」,避免在噪音上過度搜尋。 | 證據:s3e3, STATUS.md 明示 plateau 停止準則,一輪 reflexion 後停。"
+  },
+  {
+   "tag": "EXT-10",
+   "source": "EXT-19",
+   "text": "機率校準之 Platt scaling(sigmoid 校準) | 機制: 把模型分數 `f` 過一個以 logistic 回歸擬合的 sigmoid `1/(1+exp(Af+B))`,得到校準機率;參數少、抗過擬,適合校準資料量小時。 | 適用: 分類 + 看機率值的指標(logloss、Brier);boosted trees 常呈 sigmoid 形失真尤其受益。校準器須在獨立折/CV 上擬合。 | [EXT 文獻先驗 EXT-19,出處見 idea_bank.md;無本場 [INT] 實證]"
+  }
+ ],
+ "evaluated_nodes": [
+  {
+   "id": 17,
+   "qwk": 0.57066,
+   "mutation": "[BLEND] BLEND: remove lowest-weight member #3 -> leaner 3-way, test whether it was truly adding value [PRIOR P",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     7
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 16,
+   "qwk": 0.57027,
+   "mutation": "[BLEND] BLEND: add LGBBOUND's best variant so far (#7, QWK=0.55784) -> 4-way -- new territory (v1 never tested",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     3,
+     7
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 23,
+   "qwk": 0.57025,
+   "mutation": "[PRIOR-INT-06] pool blend over 11 cached members, dirichlet weight search <= wired from prior: 小樣本上 CatBoost 可",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     22
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 19,
+   "qwk": 0.57,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #8 -> 4-way [PRIOR none] (parent=#17)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     7,
+     8
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 21,
+   "qwk": 0.56924,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #8 -> 5-way [PRIOR none] (parent=#16)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     3,
+     7,
+     8
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 20,
+   "qwk": 0.56868,
+   "mutation": "[BLEND] BLEND fallback: remove weakest #0 [PRIOR P19] (parent=#17)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     1,
+     7
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 13,
+   "qwk": 0.56766,
+   "mutation": "[BLEND] BLEND: add LGBNUDGE solo member (#3) -> 3-way, dirichlet weight search [PRIOR P19 -- weight search arb",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     3
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 10,
+   "qwk": 0.5676,
+   "mutation": "[BLEND] ensemble seed: 2-way blend of root LGB_tuned(#0) + CAT_tuned(#1) -- task brief's explicit suggestion '",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 15,
+   "qwk": 0.56741,
+   "mutation": "[BLEND] BLEND: add LGBORIG solo member (#6) -> 4-way, dirichlet weight search [PRIOR P19 -- weight search arbi",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     3,
+     6
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 12,
+   "qwk": 0.56725,
+   "mutation": "[BLEND] BLEND: add FEAT solo member (#4) -> 3-way, dirichlet weight search [PRIOR P19 -- weight search arbitra",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     4
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 11,
+   "qwk": 0.56702,
+   "mutation": "[BLEND] BLEND: add XGB solo member (#2) -> 3-way, dirichlet weight search [PRIOR P19 -- weight search arbitrat",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     2
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 14,
+   "qwk": 0.56645,
+   "mutation": "[BLEND] BLEND: add CATORIG solo member (#5) -> 4-way, dirichlet weight search [PRIOR P19 -- weight search arbi",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     3,
+     5
+    ],
+    "weight_search": "dirichlet",
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 1,
+   "qwk": 0.56466,
+   "mutation": "[CAT] Optuna-tuned CatBoost, solo QWK 0.56466, REUSED from v1 cache_s3e5/solo_2.npz [PRIOR P3 -- direct-QWK Op",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "depth": 4,
+     "learning_rate": 0.023711050140388417,
+     "l2_leaf_reg": 6.458015909315451,
+     "iterations": 333,
+     "random_strength": 1.2907627214036907,
+     "min_data_in_leaf": 27,
+     "random_seed": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 8,
+   "qwk": 0.56378,
+   "mutation": "[CATBOUND] BOUNDARY-PUSH contrast probe: CAT's tuned depth=4 sits well INSIDE its own Optuna box ([3,8]) -- un",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "depth": 3,
+     "learning_rate": 0.023711050140388417,
+     "l2_leaf_reg": 6.458015909315451,
+     "iterations": 333,
+     "random_strength": 1.2907627214036907,
+     "min_data_in_leaf": 27,
+     "random_seed": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 0,
+   "qwk": 0.56244,
+   "mutation": "root: s3e5 current-best single learner -- Optuna direct-post-rounder-QWK-tuned LGB (STATUS.md exp #5 origin), ",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "num_leaves": 57,
+     "max_depth": 3,
+     "learning_rate": 0.016850482169027743,
+     "min_child_samples": 40,
+     "subsample": 0.9520104938890754,
+     "colsample_bytree": 0.7120571432335079,
+     "reg_alpha": 0.7955110174517752,
+     "reg_lambda": 0.001041891430753302,
+     "n_estimators": 345,
+     "random_state": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 3,
+   "qwk": 0.56027,
+   "mutation": "[LGBNUDGE] second independent LGB-tuned exploration point (n_estimators 345->500, lr 0.0169->0.012), solo QWK ",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "num_leaves": 57,
+     "max_depth": 3,
+     "learning_rate": 0.012,
+     "min_child_samples": 40,
+     "subsample": 0.9520104938890754,
+     "colsample_bytree": 0.7120571432335079,
+     "reg_alpha": 0.7955110174517752,
+     "reg_lambda": 0.001041891430753302,
+     "n_estimators": 500,
+     "random_state": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 22,
+   "qwk": 0.56003,
+   "mutation": "[CAT] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=6000",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "depth": 4,
+     "learning_rate": 0.023711050140388417,
+     "l2_leaf_reg": 6.458015909315451,
+     "iterations": 333,
+     "random_strength": 1.2907627214036907,
+     "min_data_in_leaf": 27,
+     "random_seed": 6000
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 7,
+   "qwk": 0.55784,
+   "mutation": "[LGBBOUND] BOUNDARY-PUSH (the s3e11 lever, task brief): root's Optuna-tuned max_depth=3 landed EXACTLY on the ",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "num_leaves": 57,
+     "max_depth": 2,
+     "learning_rate": 0.016850482169027743,
+     "min_child_samples": 40,
+     "subsample": 0.9520104938890754,
+     "colsample_bytree": 0.7120571432335079,
+     "reg_alpha": 0.7955110174517752,
+     "reg_lambda": 0.001041891430753302,
+     "n_estimators": 345,
+     "random_state": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 4,
+   "qwk": 0.5566,
+   "mutation": "[FEAT] root's tuned-LGB hyperparams on a 17-feature subset (drop 4 weakest-correlation ratios), solo QWK 0.556",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "num_leaves": 57,
+     "max_depth": 3,
+     "learning_rate": 0.016850482169027743,
+     "min_child_samples": 40,
+     "subsample": 0.9520104938890754,
+     "colsample_bytree": 0.7120571432335079,
+     "reg_alpha": 0.7955110174517752,
+     "reg_lambda": 0.001041891430753302,
+     "n_estimators": 345,
+     "random_state": 42
+    },
+    "features": {
+     "drop": [
+      "fixed_to_volatile_acid",
+      "citric_to_volatile_acid",
+      "sugar_to_alcohol",
+      "acid_ph_ratio"
+     ]
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 24,
+   "qwk": 0.55019,
+   "mutation": "[PRIOR-INT-08] regularization push on champion (min_child_samples 40->80, num_leaves 57->28) <= wired from pri",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "num_leaves": 28,
+     "max_depth": 3,
+     "learning_rate": 0.016850482169027743,
+     "min_child_samples": 80,
+     "subsample": 0.9520104938890754,
+     "colsample_bytree": 0.7120571432335079,
+     "reg_alpha": 0.7955110174517752,
+     "reg_lambda": 0.001041891430753302,
+     "n_estimators": 345,
+     "random_state": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 9,
+   "qwk": 0.54766,
+   "mutation": "[FOLDROUNDER] ALTERNATIVE-ROUNDER probe (task brief: 'per-fold-averaged cutpoints as an alternative rounder in",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "num_leaves": 57,
+     "max_depth": 3,
+     "learning_rate": 0.016850482169027743,
+     "min_child_samples": 40,
+     "subsample": 0.9520104938890754,
+     "colsample_bytree": 0.7120571432335079,
+     "reg_alpha": 0.7955110174517752,
+     "reg_lambda": 0.001041891430753302,
+     "n_estimators": 345,
+     "random_state": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "fold_avg"
+   }
+  },
+  {
+   "id": 5,
+   "qwk": 0.52517,
+   "mutation": "[CATORIG] vanilla/untuned CatBoost, solo QWK 0.52517, REUSED from v1 cache_s3e5/solo_6.npz [PRIOR P19]",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "random_seed": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 2,
+   "qwk": 0.50847,
+   "mutation": "[XGB] vanilla/untuned XGB, solo QWK 0.50847, REUSED from v1 cache_s3e5/solo_3.npz [PRIOR P19 -- kept as a free",
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "reg:squarederror",
+     "n_estimators": 1500,
+     "learning_rate": 0.03,
+     "max_depth": 5,
+     "subsample": 0.8,
+     "colsample_bytree": 0.7,
+     "reg_lambda": 1.0,
+     "min_child_weight": 5,
+     "random_state": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  },
+  {
+   "id": 6,
+   "qwk": 0.50547,
+   "mutation": "[LGBORIG] vanilla/untuned LGB, solo QWK 0.50547, REUSED from v1 cache_s3e5/solo_7.npz [PRIOR P19]",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "random_state": 42
+    },
+    "features": {
+     "drop": []
+    },
+    "rounder": "full_oof"
+   }
+  }
+ ],
+ "champion": {
+  "id": 17,
+  "qwk": 0.57066,
+  "mutation": "[BLEND] BLEND: remove lowest-weight member #3 -> leaner 3-way, test whether it was truly adding value [PRIOR P",
+  "config": {
+   "kind": "blend",
+   "members": [
+    0,
+    1,
+    7
+   ],
+   "weight_search": "dirichlet",
+   "rounder": "full_oof"
+  }
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "meta": {
+  "pattern": "propose-once-freeze-replay (project precedent: docs/recombine_findings.md)",
+  "proposer": "claude subagent a780800a5d4964b92",
+  "date": "2026-07-13",
+  "input": "tree_search/llm_proposer_input_s3e5.json",
+  "arm": "B (LLM wiring)"
+ },
+ "proposals": [
+  {"config": {"kind": "solo", "model": "xgb", "params": {"max_depth": 3, "learning_rate": 0.02, "min_child_weight": 25, "subsample": 0.9, "colsample_bytree": 0.7, "reg_alpha": 0.8, "reg_lambda": 1.0, "n_estimators": 600, "random_state": 42}, "features": {"drop": []}, "rounder": "full_oof"},
+   "rationale": "Pool has no tuned XGB - only vanilla (#2, 0.508, depth 5 over-capacity). Transfer the winning shallow/regularized regime found by direct-QWK tuning of LGB/CAT to a third library. Cheapest source of genuinely new error structure for later blending.",
+   "prior_tags": ["INT-03", "INT-08"],
+   "expected": "Solo 0.545-0.560; best shot at a <0.99-correlated member to escape the NNLS ceiling in a future blend."},
+  {"config": {"kind": "solo", "model": "cat", "params": {"depth": 4, "learning_rate": 0.023711050140388417, "l2_leaf_reg": 6.458015909315451, "iterations": 333, "random_strength": 1.2907627214036907, "min_data_in_leaf": 27, "random_seed": 42}, "features": {"drop": ["fixed_to_volatile_acid", "citric_to_volatile_acid", "sugar_to_alcohol", "acid_ph_ratio"]}, "rounder": "full_oof"},
+   "rationale": "Cross the two decorrelation axes never combined: the 17-feature view (only tried on LGB, #4) with the strongest pool model, tuned CAT (#1). Different model on different feature view yields the most orthogonal errors available without new tuning.",
+   "prior_tags": ["INT-08", "INT-03"],
+   "expected": "Solo 0.555-0.565 (near #1); value is decorrelation - if OOF correlates <0.99 with #1, a later blend can move past 0.57066."},
+  {"config": {"kind": "solo", "model": "lgb", "params": {"num_leaves": 57, "max_depth": 3, "learning_rate": 0.0169, "min_child_samples": 40, "subsample": 0.65, "colsample_bytree": 0.5, "reg_alpha": 0.7955110174517752, "reg_lambda": 0.001041891430753302, "n_estimators": 600, "random_state": 777}, "features": {"drop": []}, "rounder": "full_oof"},
+   "rationale": "Seed-only variation (#22) produced a near-clone. Inject diversity structurally: aggressive row/column subsampling (0.65/0.5 vs tuned 0.95/0.71) changes which interactions each tree sees; more trees recover accuracy. Stochastic regularization, not a seed bag.",
+   "prior_tags": ["INT-08", "INT-09"],
+   "expected": "Solo 0.545-0.558; goal is a diversified LGB whose fold-level errors differ from #0/#3 enough to add blend weight later."},
+  {"config": {"kind": "solo", "model": "lgb", "params": {"num_leaves": 57, "max_depth": 2, "learning_rate": 0.016850482169027743, "min_child_samples": 40, "subsample": 0.9520104938890754, "colsample_bytree": 0.7120571432335079, "reg_alpha": 0.7955110174517752, "reg_lambda": 0.001041891430753302, "n_estimators": 500, "random_state": 42}, "features": {"drop": ["fixed_to_volatile_acid", "citric_to_volatile_acid", "sugar_to_alcohol", "acid_ph_ratio"]}, "rounder": "full_oof"},
+   "rationale": "Compose the two solo levers that each survived into strong blends but were never combined: depth-2 boundary push (#7, a champion member) and the 17-feature view (#4). Extra-shallow trees on the pruned view, n_estimators 500 to compensate.",
+   "prior_tags": ["INT-08", "INT-03"],
+   "expected": "Solo 0.550-0.560; if the levers' decorrelation compounds, this replaces #7 as diversity member and lifts the next blend round."}
+ ]
+}

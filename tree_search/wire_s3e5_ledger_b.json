@@ -1,0 +1,111 @@
+{
+  "comp": "playground-series-s3e5",
+  "arm": "B",
+  "off": {
+    "champion_id": 17,
+    "champion_qwk": 0.57066
+  },
+  "arm_b": {
+    "nodes": 28,
+    "champion_id": 27,
+    "champion_qwk": 0.57117
+  },
+  "ledger": [
+    {
+      "tag": "PRIOR-LLM-00",
+      "status": "evaluated",
+      "node_id": 23,
+      "qwk": 0.54967,
+      "wall_s": 5.8,
+      "prior_tags": [
+        "INT-03",
+        "INT-08"
+      ],
+      "expected": "Solo 0.545-0.560; best shot at a <0.99-correlated member to escape the NNLS ceiling in a future blend."
+    },
+    {
+      "tag": "PRIOR-LLM-01",
+      "status": "evaluated",
+      "node_id": 24,
+      "qwk": 0.56438,
+      "wall_s": 0.7,
+      "prior_tags": [
+        "INT-08",
+        "INT-03"
+      ],
+      "expected": "Solo 0.555-0.565 (near #1); value is decorrelation - if OOF correlates <0.99 with #1, a later blend can move past 0.57066."
+    },
+    {
+      "tag": "PRIOR-LLM-02",
+      "status": "evaluated",
+      "node_id": 25,
+      "qwk": 0.55357,
+      "wall_s": 2.8,
+      "prior_tags": [
+        "INT-08",
+        "INT-09"
+      ],
+      "expected": "Solo 0.545-0.558; goal is a diversified LGB whose fold-level errors differ from #0/#3 enough to add blend weight later."
+    },
+    {
+      "tag": "PRIOR-LLM-03",
+      "status": "evaluated",
+      "node_id": 26,
+      "qwk": 0.56327,
+      "wall_s": 1.6,
+      "prior_tags": [
+        "INT-08",
+        "INT-03"
+      ],
+      "expected": "Solo 0.550-0.560; if the levers' decorrelation compounds, this replaces #7 as diversity member and lifts the next blend round."
+    },
+    {
+      "tag": "PRIOR-LLM-REBLEND",
+      "status": "evaluated",
+      "node_id": 27,
+      "qwk": 0.57117,
+      "wall_s": 80.1
+    }
+  ],
+  "decorrelation": {
+    "23": {
+      "max_corr": 0.9933,
+      "vs": 3,
+      "mean_corr": 0.9822
+    },
+    "24": {
+      "max_corr": 0.9986,
+      "vs": 1,
+      "mean_corr": 0.9803
+    },
+    "25": {
+      "max_corr": 0.9946,
+      "vs": 3,
+      "mean_corr": 0.982
+    },
+    "26": {
+      "max_corr": 0.9981,
+      "vs": 7,
+      "mean_corr": 0.9805
+    }
+  },
+  "paired_bootstrap": {
+    "method": "paired bootstrap B=10000 seed=42, label-space reconstruction from stored weights+cutpoints",
+    "note": "reconstruction decode differs slightly from evaluator's OptimizedRounder decode (recomputed #27=0.57026/#17=0.56710 vs stored 0.57117/0.57066); both arms share the same decode so the paired delta remains a fair significance check",
+    "delta_mean": 0.00322,
+    "ci95": [
+      -0.00636,
+      0.01297
+    ],
+    "significant": false,
+    "verdict": "champion swap is NOT statistically resolvable at n=2056 — per Part-10 discipline no single-step gain is claimed"
+  },
+  "llm_member_weights_in_27": {
+    "26": 0.1293,
+    "23": 0.0739,
+    "24": 0.0325,
+    "25": 0.0078,
+    "sum": 0.2435,
+    "note": "LLM-proposed members take ~24% of the new convex optimum"
+  }
+}
