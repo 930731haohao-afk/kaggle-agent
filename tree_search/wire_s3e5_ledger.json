@@ -1,0 +1,143 @@
+{
+  "comp": "playground-series-s3e5",
+  "off": {
+    "nodes": 23,
+    "champion_id": 17,
+    "champion_qwk": 0.57066
+  },
+  "arm_a": {
+    "nodes": 25,
+    "champion_id": 17,
+    "champion_qwk": 0.57066,
+    "wired_results": [
+      {
+        "node_id": 23,
+        "tag": "PRIOR-INT-06",
+        "rule": "blend_pool",
+        "status": "evaluated",
+        "qwk": 0.57025,
+        "wall_s": 69.0
+      },
+      {
+        "node_id": 24,
+        "tag": "PRIOR-INT-08",
+        "rule": "regularize_push",
+        "status": "evaluated",
+        "qwk": 0.55019,
+        "wall_s": 1.2
+      }
+    ]
+  },
+  "ledger": [
+    {
+      "tag": "PRIOR-INT-00",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "rounder_enforced",
+      "status": "satisfied",
+      "reason": "evaluator bakes OptimizedRounder into every node score (eval docstring)",
+      "n_candidates": 0,
+      "text": "序數目標用「迴歸 + OptimizedRounder(對 OOF QWK 調切點)」遠勝 naive rounding——這是小資料序數題的單一最高槓桿改動。 | 證據:s3e5, exp #2→#3,同一 blend、naive round QWK 0.47191 → 優化切點 0.52687(+0.055,約 +"
+    },
+    {
+      "tag": "PRIOR-INT-01",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "rounder_enforced",
+      "status": "satisfied",
+      "reason": "evaluator bakes OptimizedRounder into every node score (eval docstring)",
+      "n_candidates": 0,
+      "text": "naive rounding 在嚴重類別不平衡(69.9x)下甚至比不做特徵工程的 baseline 更差:稀有類預測被主流類質量拉偏,對稱取整假設崩潰。 | 證據:s3e5, exp #1 baseline 0.47871 vs exp #2 naive round 0.47191。"
+    },
+    {
+      "tag": "PRIOR-INT-02",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "regression_head",
+      "status": "satisfied",
+      "reason": "champion/root already uses the regression head",
+      "n_candidates": 0,
+      "text": "序數題選迴歸頭而非多分類頭:QWK 罰平方距離,迴歸的連續輸出能借用中間類的訊號安置樣本極少的極端類(12–39 例)。 | 證據:s3e5, STATUS.md 建模決策;最終 0.52687 由迴歸頭達成;Phase B 迭代再驗證:多分類(class_weight=balanced)+期望值解碼作為多樣性成員加入"
+    },
+    {
+      "tag": "PRIOR-INT-03",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "optuna_direct_metric",
+      "status": "satisfied",
+      "reason": "root IS the Optuna direct-post-rounder-QWK-tuned config",
+      "n_candidates": 0,
+      "text": "**小資料(~2k列)序數 + QWK 的最高槓桿不是加特徵或加模型,而是把 Optuna 目標函式直接設為「後處理(OptimizedRounder)後的 QWK」,在完整 5-fold CV 上跑(資料小到不需要 fold-0 代理),而非傳統的「先調 RMSE,再套用 rounder」——這是避開離散化指標陷阱最"
+    },
+    {
+      "tag": "PRIOR-INT-04",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "rounder_fold_avg",
+      "status": "candidate-deduped",
+      "reason": "deduped vs existing node",
+      "n_candidates": 0,
+      "text": "巢狀(leave-fold-out)切點擬合可驗證「切點對全 OOF 過擬」的風險大小:風險並非固定值,會隨集成池成熟而縮小。 | 證據:s3e5, exp #7(5-way blend,單一調校模型主導)全 OOF 0.56293 vs 巢狀 0.54649,gap +0.01644;exp #10(6-way bl"
+    },
+    {
+      "tag": "PRIOR-INT-05",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "rounder_fold_avg",
+      "status": "candidate-deduped",
+      "reason": "deduped vs existing node",
+      "n_candidates": 0,
+      "text": "風險(原始記錄,已由上述巢狀診斷部分緩解):切點若直接對整份 OOF 向量擬合(非 nested CV),有輕度過擬 OOF 的風險;且極端類可能完全不被預測(s3e5 測試集無 quality 3/8 預測,Phase B 迭代後的新最佳甚至連 quality 4 也不再預測,僅剩 5/6/7)。 | 證據:s3e5"
+    },
+    {
+      "tag": "PRIOR-INT-06",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "blend_pool",
+      "status": "candidate",
+      "reason": "",
+      "n_candidates": 1,
+      "text": "小樣本上 CatBoost 可能持續劣於 LGB/XGB 且被權重搜尋歸零——不要假設三模型 blend 永遠有益,先看各模型 OOF。 | 證據:s3e3(1,677 列), exp #2/#3,CAT 0.77663/0.76268 遠低於 LGB 0.81901/0.83292,兩次 blend 權重皆 LGB="
+    },
+    {
+      "tag": "PRIOR-INT-07",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "needs_categorical",
+      "status": "na",
+      "reason": "competition has no raw categorical columns",
+      "n_candidates": 0,
+      "text": "**「CatBoost 在小資料上偏弱」的診斷結論已釐清:原生類別處理(cat_features 傳原始字串,而非 label/freq 預編碼)可大幅縮小差距,但無法逆轉排序——是「編碼方式」與「模型/資料規模不匹配」兩個獨立問題疊加,且後者才是主因。** 對 s3e3(1,677 列)重試 CatBoost,改用原"
+    },
+    {
+      "tag": "PRIOR-INT-08",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "regularize_push",
+      "status": "candidate",
+      "reason": "",
+      "n_candidates": 1,
+      "text": "小樣本 + 相關性高的工程特徵 → 優先加正則化而非加容量。 | 證據:s3e3, exp #3 靠緊縮 LGB 正則拿到 +0.017;s3e9, exp #2 同理(見下)。"
+    },
+    {
+      "tag": "PRIOR-INT-09",
+      "provenance": "INT",
+      "source": "experience.md",
+      "rule": "stop_discipline",
+      "status": "policy",
+      "reason": "search-policy advice: patience/stop rule, not a candidate config",
+      "n_candidates": 0,
+      "text": "小樣本 per-fold 分數波動大(AUC 0.79–0.89)是常態,不是 bug;拿到明確增益後應「見好就收」,避免在噪音上過度搜尋。 | 證據:s3e3, STATUS.md 明示 plateau 停止準則,一輪 reflexion 後停。"
+    },
+    {
+      "tag": "PRIOR-EXT-19",
+      "provenance": "EXT",
+      "source": "EXT-19",
+      "rule": "needs_prob_metric",
+      "status": "na",
+      "reason": "metric does not consume probabilities",
+      "n_candidates": 0,
+      "text": "機率校準之 Platt scaling(sigmoid 校準) | 機制: 把模型分數 `f` 過一個以 logistic 回歸擬合的 sigmoid `1/(1+exp(Af+B))`,得到校準機率;參數少、抗過擬,適合校準資料量小時。 | 適用: 分類 + 看機率值的指標(logloss、Brier);booste"
+    }
+  ]
+}
