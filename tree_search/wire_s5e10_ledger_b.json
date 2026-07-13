@@ -1,0 +1,112 @@
+{
+  "comp": "playground-series-s5e10",
+  "off": {
+    "champion_id": 29,
+    "champion_metric": 0.055968
+  },
+  "arm": {
+    "nodes": 55,
+    "champion_id": 29,
+    "champion_metric": 0.055968
+  },
+  "ledger": [
+    {
+      "tag": "PRIOR-LLM-00",
+      "status": "evaluated",
+      "node_id": 50,
+      "metric": 0.0561,
+      "wall_s": 65.1,
+      "prior_tags": [
+        "INT-02",
+        "INT-04",
+        "INT-05",
+        "EXT-21"
+      ],
+      "expected": "Solo ~0.0562-0.0565; lowest OOF correlation to the LGB-heavy pool."
+    },
+    {
+      "tag": "PRIOR-LLM-01",
+      "status": "evaluated",
+      "node_id": 51,
+      "metric": 0.056054,
+      "wall_s": 99.8,
+      "prior_tags": [
+        "INT-01",
+        "INT-04",
+        "EXT-21"
+      ],
+      "expected": "Solo ~0.0561-0.0563; link-function decorrelation is the strongest novelty here."
+    },
+    {
+      "tag": "PRIOR-LLM-02",
+      "status": "evaluated",
+      "node_id": 52,
+      "metric": 0.056114,
+      "wall_s": 91.7,
+      "prior_tags": [
+        "INT-02",
+        "INT-04",
+        "EXT-20"
+      ],
+      "expected": "Solo ~0.0561-0.0564; decorrelation via feature-view rather than seed."
+    },
+    {
+      "tag": "PRIOR-LLM-03",
+      "status": "evaluated",
+      "node_id": 53,
+      "metric": 0.056071,
+      "wall_s": 74.5,
+      "prior_tags": [
+        "INT-02",
+        "INT-05",
+        "INT-18"
+      ],
+      "expected": "Solo ~0.0562-0.0565; honest long shot, the only shallow cat view."
+    },
+    {
+      "tag": "PRIOR-LLM-REBLEND",
+      "status": "evaluated",
+      "node_id": 54,
+      "metric": 0.055972,
+      "wall_s": 5.1
+    }
+  ],
+  "paired_bootstrap": {
+    "method": "paired bootstrap B=10000 seed=42; TRUE champion weights from search_state.node_results; bit_check_off=True, bit_check_b=True",
+    "metric": "rmse",
+    "champion": 0.05596755977061599,
+    "reblend": 0.05597176359489204,
+    "delta_mean": -4.193948814741148e-06,
+    "ci95": [
+      -7.185242545491508e-06,
+      -1.1900089225764381e-06
+    ],
+    "significant": false
+  },
+  "llm_member_weights_in_reblend": {
+    "50": 0.0796,
+    "51": 0.004,
+    "52": 0.0061,
+    "53": 0.0146
+  },
+  "llm_member_weights_sum": 0.1043,
+  "nnls_check": {
+    "expanded_pool_nnls_rmse": 0.05596380435677384,
+    "champion_rmse": 0.055968,
+    "dirichlet_reblend_rmse": 0.055972,
+    "verdict": "true convex optimum over expanded pool beats champion -> the B-arm miss is a high-dim Dirichlet search approximation failure, not absence of value in LLM members",
+    "llm_weights_under_nnls": {
+      "50": 0.0214,
+      "53": 0.17
+    },
+    "posthoc_bootstrap": {
+      "delta_mean": 3.7503193773272594e-06,
+      "ci95": [
+        1.660795172260532e-06,
+        5.796189224743786e-06
+      ],
+      "significant": true,
+      "caveat": "post-hoc/exploratory: NNLS was not the pre-declared arm-B comparison"
+    }
+  }
+}

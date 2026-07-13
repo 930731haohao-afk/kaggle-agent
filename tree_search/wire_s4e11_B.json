@@ -1,0 +1,2896 @@
+{
+  "comp": "playground-series-s4e11",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: tier2/tier3 strongest cached solo (LGB_tuned), retrained via eval_s4e11.evaluate_solo for independent digit-for-digit verification against cached accuracy 0.939687",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 42,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939687,
+      "status": "evaluated",
+      "wall_s": 13.6,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[LGBHAND] model-variant: shallower/less-regularized hand LGB (num_leaves 63->31, min_child_samples 30->15) -- diversity direction distinct from root",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 31,
+          "max_depth": -1,
+          "min_child_samples": 15,
+          "feature_fraction": 0.8,
+          "bagging_fraction": 0.8,
+          "bagging_freq": 1,
+          "seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939204,
+      "status": "evaluated",
+      "wall_s": 14.9,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[XGBHAND] model-variant: deeper/lower-lr hand XGB (depth 6->8, lr 0.05->0.03)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "eval_metric": "logloss",
+          "learning_rate": 0.03,
+          "max_depth": 8,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_lambda": 1.0,
+          "random_state": 42,
+          "tree_method": "hist"
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939254,
+      "status": "evaluated",
+      "wall_s": 16.7,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[CATHAND] model-variant: deeper hand CatBoost (depth 7->9, l2_leaf_reg 3->5)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.05,
+          "depth": 9,
+          "l2_leaf_reg": 5.0,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939112,
+      "status": "evaluated",
+      "wall_s": 23.6,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[SEEDBAG] seed variation: root's exact params, seed -> 2024 [PRIOR: seed-bagging is the cheapest residual gain after tuning, knowledge/experience.md]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 2024,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939872,
+      "status": "evaluated",
+      "wall_s": 10.7,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[BOUNDARYPUSH] model-variant: boundary_candidates()-flagged push(es) -- max_depth 3->2 (edge=low) [feature 4]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 42,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939879,
+      "status": "evaluated",
+      "wall_s": 12.3,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[FEATPRUNE] feature-pruning: drop 3 low-signal engineered flags (is_young, is_male, satisfaction) [knowledge/experience.md: feature pruning is a recurring win on small engineered feature sets]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "max_depth": -1,
+          "min_child_samples": 30,
+          "feature_fraction": 0.8,
+          "bagging_fraction": 0.8,
+          "bagging_freq": 1,
+          "seed": 42
+        },
+        "features": {
+          "drop": [
+            "is_young",
+            "is_male",
+            "satisfaction"
+          ]
+        }
+      },
+      "score": -0.939119,
+      "status": "evaluated",
+      "wall_s": 14.8,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: blend of root + XGBHAND + CATHAND ([0, 2, 3])",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.939794,
+      "status": "evaluated",
+      "wall_s": 15.48110556602478,
+      "kind": "blend"
+    },
+    {
+      "id": 8,
+      "parent_id": 5,
+      "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4000 (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4000,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939829,
+      "status": "evaluated",
+      "wall_s": 12.7,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 5,
+      "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4001 (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4001,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.9399,
+      "status": "evaluated",
+      "wall_s": 14.2,
+      "kind": "solo"
+    },
+    {
+      "id": 10,
+      "parent_id": 9,
+      "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4002 (parent=#9)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4002,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939943,
+      "status": "evaluated",
+      "wall_s": 14.7,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 10,
+      "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4003 (parent=#10)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4003,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939908,
+      "status": "evaluated",
+      "wall_s": 16.2,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 10,
+      "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4004 (parent=#10)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4004,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939993,
+      "status": "evaluated",
+      "wall_s": 17.6,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 12,
+      "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4005 (parent=#12)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4005,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939879,
+      "status": "evaluated",
+      "wall_s": 18.2,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 12,
+      "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4006 (parent=#12)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4006,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939851,
+      "status": "evaluated",
+      "wall_s": 20.0,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 12,
+      "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4007 (parent=#12)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4007,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939844,
+      "status": "evaluated",
+      "wall_s": 17.3,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 4,
+      "mutation": "[SEEDBAG] SEEDBAG: NEW -- third independent seed (777) (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 777,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939773,
+      "status": "evaluated",
+      "wall_s": 11.9,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 4,
+      "mutation": "[SEEDBAG] fallback seed-variation: alt seed=4000 (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4000,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939609,
+      "status": "evaluated",
+      "wall_s": 12.8,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 4,
+      "mutation": "[SEEDBAG] fallback seed-variation: alt seed=4001 (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4001,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939709,
+      "status": "evaluated",
+      "wall_s": 16.4,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 7,
+      "mutation": "[BLEND] BLEND: add SEEDBAG solo member (#4) (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          4
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.939972,
+      "status": "evaluated",
+      "wall_s": 23.866026163101196,
+      "kind": "blend"
+    },
+    {
+      "id": 20,
+      "parent_id": 19,
+      "mutation": "[BLEND] BLEND: add BOUNDARYPUSH solo member (#12) (parent=#19)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          4,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940021,
+      "status": "evaluated",
+      "wall_s": 23.758565425872803,
+      "kind": "blend"
+    },
+    {
+      "id": 21,
+      "parent_id": 20,
+      "mutation": "[BLEND] BLEND: add FEATPRUNE solo member (#6) (parent=#20)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940036,
+      "status": "evaluated",
+      "wall_s": 24.20504093170166,
+      "kind": "blend"
+    },
+    {
+      "id": 22,
+      "parent_id": 21,
+      "mutation": "[BLEND] BLEND: add LGBHAND solo member (#1) (parent=#21)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          6,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940036,
+      "status": "evaluated",
+      "wall_s": 26.475999116897583,
+      "kind": "blend"
+    },
+    {
+      "id": 23,
+      "parent_id": 21,
+      "mutation": "[BLEND] BLEND: remove lowest-weight member #0 (w=0.000) (parent=#21)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940043,
+      "status": "evaluated",
+      "wall_s": 22.096251010894775,
+      "kind": "blend"
+    },
+    {
+      "id": 24,
+      "parent_id": 23,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #10 (parent=#23)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          10,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940185,
+      "status": "evaluated",
+      "wall_s": 19.87962532043457,
+      "kind": "blend"
+    },
+    {
+      "id": 25,
+      "parent_id": 24,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #11 (parent=#24)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          10,
+          11,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940199,
+      "status": "evaluated",
+      "wall_s": 23.211487293243408,
+      "kind": "blend"
+    },
+    {
+      "id": 26,
+      "parent_id": 25,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #9 (parent=#25)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940235,
+      "status": "evaluated",
+      "wall_s": 22.751919984817505,
+      "kind": "blend"
+    },
+    {
+      "id": 27,
+      "parent_id": 26,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #5 (parent=#26)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940142,
+      "status": "evaluated",
+      "wall_s": 22.073195934295654,
+      "kind": "blend"
+    },
+    {
+      "id": 28,
+      "parent_id": 26,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #13 (parent=#26)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940156,
+      "status": "evaluated",
+      "wall_s": 21.559861183166504,
+      "kind": "blend"
+    },
+    {
+      "id": 29,
+      "parent_id": 26,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #14 (parent=#26)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          9,
+          10,
+          11,
+          12,
+          14
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940206,
+      "status": "evaluated",
+      "wall_s": 28.21656894683838,
+      "kind": "blend"
+    },
+    {
+      "id": 30,
+      "parent_id": 2,
+      "mutation": "[XGBHAND] XGBHAND: NEW -- more aggressive row/col subsampling (0.8->0.6) (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "eval_metric": "logloss",
+          "learning_rate": 0.03,
+          "max_depth": 8,
+          "subsample": 0.6,
+          "colsample_bytree": 0.6,
+          "reg_lambda": 1.0,
+          "random_state": 42,
+          "tree_method": "hist"
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939083,
+      "status": "evaluated",
+      "wall_s": 22.4,
+      "kind": "solo"
+    },
+    {
+      "id": 31,
+      "parent_id": 2,
+      "mutation": "[XGBHAND] fallback seed-variation: alt random_state=4000 (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "eval_metric": "logloss",
+          "learning_rate": 0.03,
+          "max_depth": 8,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_lambda": 1.0,
+          "random_state": 4000,
+          "tree_method": "hist"
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.93887,
+      "status": "evaluated",
+      "wall_s": 18.0,
+      "kind": "solo"
+    },
+    {
+      "id": 32,
+      "parent_id": 2,
+      "mutation": "[XGBHAND] fallback seed-variation: alt random_state=4001 (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "eval_metric": "logloss",
+          "learning_rate": 0.03,
+          "max_depth": 8,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_lambda": 1.0,
+          "random_state": 4001,
+          "tree_method": "hist"
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939076,
+      "status": "evaluated",
+      "wall_s": 17.6,
+      "kind": "solo"
+    },
+    {
+      "id": 33,
+      "parent_id": 1,
+      "mutation": "[LGBHAND] LGBHAND: NEW -- stronger regularization (min_child_samples 15->60, +reg_lambda=2.0) (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 31,
+          "max_depth": -1,
+          "min_child_samples": 60,
+          "feature_fraction": 0.8,
+          "bagging_fraction": 0.8,
+          "bagging_freq": 1,
+          "seed": 42,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939318,
+      "status": "evaluated",
+      "wall_s": 23.1,
+      "kind": "solo"
+    },
+    {
+      "id": 34,
+      "parent_id": 33,
+      "mutation": "[LGBHAND] fallback seed-variation: alt seed=4000 (parent=#33)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 31,
+          "max_depth": -1,
+          "min_child_samples": 60,
+          "feature_fraction": 0.8,
+          "bagging_fraction": 0.8,
+          "bagging_freq": 1,
+          "seed": 4000,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.93919,
+      "status": "evaluated",
+      "wall_s": 21.5,
+      "kind": "solo"
+    },
+    {
+      "id": 35,
+      "parent_id": 33,
+      "mutation": "[LGBHAND] fallback seed-variation: alt seed=4001 (parent=#33)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 31,
+          "max_depth": -1,
+          "min_child_samples": 60,
+          "feature_fraction": 0.8,
+          "bagging_fraction": 0.8,
+          "bagging_freq": 1,
+          "seed": 4001,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939389,
+      "status": "evaluated",
+      "wall_s": 22.8,
+      "kind": "solo"
+    },
+    {
+      "id": 36,
+      "parent_id": 6,
+      "mutation": "[FEATPRUNE] FEATPRUNE: NEW -- isolate dropping just is_young alone (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "max_depth": -1,
+          "min_child_samples": 30,
+          "feature_fraction": 0.8,
+          "bagging_fraction": 0.8,
+          "bagging_freq": 1,
+          "seed": 42
+        },
+        "features": {
+          "drop": [
+            "is_young"
+          ]
+        }
+      },
+      "score": -0.939019,
+      "status": "evaluated",
+      "wall_s": 35.4,
+      "kind": "solo"
+    },
+    {
+      "id": 37,
+      "parent_id": 6,
+      "mutation": "[FEATPRUNE] fallback seed-variation: alt seed=4000 (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "max_depth": -1,
+          "min_child_samples": 30,
+          "feature_fraction": 0.8,
+          "bagging_fraction": 0.8,
+          "bagging_freq": 1,
+          "seed": 4000
+        },
+        "features": {
+          "drop": [
+            "is_young",
+            "is_male",
+            "satisfaction"
+          ]
+        }
+      },
+      "score": -0.939076,
+      "status": "evaluated",
+      "wall_s": 25.5,
+      "kind": "solo"
+    },
+    {
+      "id": 38,
+      "parent_id": 6,
+      "mutation": "[FEATPRUNE] fallback seed-variation: alt seed=4001 (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "max_depth": -1,
+          "min_child_samples": 30,
+          "feature_fraction": 0.8,
+          "bagging_fraction": 0.8,
+          "bagging_freq": 1,
+          "seed": 4001
+        },
+        "features": {
+          "drop": [
+            "is_young",
+            "is_male",
+            "satisfaction"
+          ]
+        }
+      },
+      "score": -0.939026,
+      "status": "evaluated",
+      "wall_s": 22.1,
+      "kind": "solo"
+    },
+    {
+      "id": 39,
+      "parent_id": 3,
+      "mutation": "[CATHAND] CATHAND: NEW -- bagging_temperature=1.0 (Bayesian-bootstrap row weighting) (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.05,
+          "depth": 9,
+          "l2_leaf_reg": 5.0,
+          "random_seed": 42,
+          "bagging_temperature": 1.0
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939112,
+      "status": "evaluated",
+      "wall_s": 24.3,
+      "kind": "solo"
+    },
+    {
+      "id": 40,
+      "parent_id": 3,
+      "mutation": "[CATHAND] fallback seed-variation: alt random_seed=4000 (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.05,
+          "depth": 9,
+          "l2_leaf_reg": 5.0,
+          "random_seed": 4000
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939225,
+      "status": "evaluated",
+      "wall_s": 24.7,
+      "kind": "solo"
+    },
+    {
+      "id": 41,
+      "parent_id": 40,
+      "mutation": "[CATHAND] fallback seed-variation: alt random_seed=4001 (parent=#40)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.05,
+          "depth": 9,
+          "l2_leaf_reg": 5.0,
+          "random_seed": 4001
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.938849,
+      "status": "evaluated",
+      "wall_s": 24.3,
+      "kind": "solo"
+    },
+    {
+      "id": 42,
+      "parent_id": 0,
+      "mutation": "[EXPL_MEGABLEND] explore-burst: kitchen-sink blend of the entire solo pool (30 members) [PRIOR: post-plateau gains historically come from mandatory mega-blends, not hand-written long-shot solos, 07_tree_search.md Section 3]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940028,
+      "status": "evaluated",
+      "wall_s": 34.827006101608276,
+      "kind": "blend"
+    },
+    {
+      "id": 43,
+      "parent_id": 0,
+      "mutation": "[EXPL_DEEPLGB] explore-burst long-shot: much deeper/slower LGB (num_leaves->255, lr->0.01)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.01,
+          "num_leaves": 255,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 42,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939026,
+      "status": "evaluated",
+      "wall_s": 52.3,
+      "kind": "solo"
+    },
+    {
+      "id": 44,
+      "parent_id": 0,
+      "mutation": "[EXPL_DEEPCAT] explore-burst long-shot: much deeper/slower CatBoost (depth->10, lr->0.02)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.02,
+          "depth": 10,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.938962,
+      "status": "evaluated",
+      "wall_s": 46.3,
+      "kind": "solo"
+    },
+    {
+      "id": 45,
+      "parent_id": 42,
+      "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #43 (parent=#42)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          43
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940028,
+      "status": "evaluated",
+      "wall_s": 34.25264525413513,
+      "kind": "blend"
+    },
+    {
+      "id": 46,
+      "parent_id": 42,
+      "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #44 (parent=#42)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          44
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940036,
+      "status": "evaluated",
+      "wall_s": 35.00399303436279,
+      "kind": "blend"
+    },
+    {
+      "id": 47,
+      "parent_id": 46,
+      "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #43 (parent=#46)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          43,
+          44
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940021,
+      "status": "evaluated",
+      "wall_s": 35.59747362136841,
+      "kind": "blend"
+    },
+    {
+      "id": 48,
+      "parent_id": 43,
+      "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4000 (parent=#43)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.01,
+          "num_leaves": 255,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4000,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939154,
+      "status": "evaluated",
+      "wall_s": 46.9,
+      "kind": "solo"
+    },
+    {
+      "id": 49,
+      "parent_id": 48,
+      "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4001 (parent=#48)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.01,
+          "num_leaves": 255,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4001,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.938998,
+      "status": "evaluated",
+      "wall_s": 46.9,
+      "kind": "solo"
+    },
+    {
+      "id": 50,
+      "parent_id": 48,
+      "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4002 (parent=#48)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.01,
+          "num_leaves": 255,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4002,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939076,
+      "status": "evaluated",
+      "wall_s": 46.1,
+      "kind": "solo"
+    },
+    {
+      "id": 51,
+      "parent_id": 48,
+      "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4003 (parent=#48)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.01,
+          "num_leaves": 255,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4003,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939126,
+      "status": "evaluated",
+      "wall_s": 45.7,
+      "kind": "solo"
+    },
+    {
+      "id": 52,
+      "parent_id": 51,
+      "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4004 (parent=#51)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.01,
+          "num_leaves": 255,
+          "max_depth": 3,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 4004,
+          "is_unbalance": false,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.93914,
+      "status": "evaluated",
+      "wall_s": 47.4,
+      "kind": "solo"
+    },
+    {
+      "id": 53,
+      "parent_id": 44,
+      "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4000 (parent=#44)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.02,
+          "depth": 10,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 4000
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939019,
+      "status": "evaluated",
+      "wall_s": 46.9,
+      "kind": "solo"
+    },
+    {
+      "id": 54,
+      "parent_id": 53,
+      "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4001 (parent=#53)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.02,
+          "depth": 10,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 4001
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.938813,
+      "status": "evaluated",
+      "wall_s": 46.3,
+      "kind": "solo"
+    },
+    {
+      "id": 55,
+      "parent_id": 53,
+      "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4002 (parent=#53)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.02,
+          "depth": 10,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 4002
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.939161,
+      "status": "evaluated",
+      "wall_s": 44.0,
+      "kind": "solo"
+    },
+    {
+      "id": 56,
+      "parent_id": 55,
+      "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4003 (parent=#55)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.02,
+          "depth": 10,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 4003
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.938905,
+      "status": "evaluated",
+      "wall_s": 45.0,
+      "kind": "solo"
+    },
+    {
+      "id": 57,
+      "parent_id": 55,
+      "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4004 (parent=#55)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.02,
+          "depth": 10,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 4004
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.938842,
+      "status": "evaluated",
+      "wall_s": 44.7,
+      "kind": "solo"
+    },
+    {
+      "id": 58,
+      "parent_id": 55,
+      "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4005 (parent=#55)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.02,
+          "depth": 10,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 4005
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": -0.938927,
+      "status": "evaluated",
+      "wall_s": 47.4,
+      "kind": "solo"
+    },
+    {
+      "id": 59,
+      "parent_id": 29,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #5 (parent=#29)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          9,
+          10,
+          11,
+          12,
+          14
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.940235,
+      "status": "evaluated",
+      "wall_s": 27.725831031799316,
+      "kind": "blend"
+    },
+    {
+      "id": 60,
+      "parent_id": 0,
+      "mutation": "[PRIOR-LLM-00] Pool has no shallow XGB: both XGB nodes are depth-8/lr-0.03 variance-heavy. Bias-dominated shallow XGB mirrors the s6e1  <= priors INT-00,INT-02",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "eval_metric": "logloss",
+          "learning_rate": 0.1,
+          "max_depth": 3,
+          "subsample": 0.9,
+          "colsample_bytree": 0.9,
+          "reg_lambda": 5.0,
+          "random_state": 42,
+          "tree_method": "hist"
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 28,
+          "accuracy": 0.939879
+        }
+      },
+      "score": -0.939879,
+      "status": "evaluated",
+      "wall_s": 13.3,
+      "kind": "solo"
+    },
+    {
+      "id": 61,
+      "parent_id": 0,
+      "mutation": "[PRIOR-LLM-01] Every pool member uses unweighted logloss; is_unbalance=true reweights class gradients, reordering minority-class border <= priors INT-02,INT-13",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.06999040855581445,
+          "num_leaves": 48,
+          "max_depth": 2,
+          "min_child_samples": 51,
+          "feature_fraction": 0.847926170224943,
+          "bagging_fraction": 0.8898615710512776,
+          "bagging_freq": 1,
+          "seed": 42,
+          "is_unbalance": true,
+          "reg_alpha": 0.013355404257800907,
+          "reg_lambda": 0.005734715134895114
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 28,
+          "accuracy": 0.939673
+        }
+      },
+      "score": -0.939673,
+      "status": "evaluated",
+      "wall_s": 15.8,
+      "kind": "solo"
+    },
+    {
+      "id": 62,
+      "parent_id": 0,
+      "mutation": "[PRIOR-LLM-02] All five CatBoost nodes are deep (9-10); the shallow regime dominating this comp's LGB pool is untested in CatBoost, who <= priors INT-00,INT-02",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "Logloss",
+          "learning_rate": 0.1,
+          "depth": 4,
+          "l2_leaf_reg": 10.0,
+          "bagging_temperature": 0.7,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 28,
+          "accuracy": 0.939659
+        }
+      },
+      "score": -0.939659,
+      "status": "evaluated",
+      "wall_s": 22.5,
+      "kind": "solo"
+    },
+    {
+      "id": 63,
+      "parent_id": 0,
+      "mutation": "[PRIOR-LLM-03] Restricted-view member: feature_fraction 0.45 (pool min 0.6) + FEATPRUNE drop set forces varied column subspaces, decorr <= priors INT-02,EXT-21",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "binary_logloss",
+          "learning_rate": 0.05,
+          "num_leaves": 63,
+          "max_depth": -1,
+          "min_child_samples": 30,
+          "feature_fraction": 0.45,
+          "bagging_fraction": 0.7,
+          "bagging_freq": 1,
+          "seed": 42,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": [
+            "is_young",
+            "is_male",
+            "satisfaction"
+          ]
+        },
+        "result": {
+          "n_feats": 25,
+          "accuracy": 0.939346
+        }
+      },
+      "score": -0.939346,
+      "status": "evaluated",
+      "wall_s": 37.2,
+      "kind": "solo"
+    },
+    {
+      "id": 64,
+      "parent_id": 0,
+      "mutation": "[PRIOR-LLM-REBLEND] full-pool reblend incl LLM members [60, 61, 62, 63]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          43,
+          44,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          60,
+          61,
+          62,
+          63
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            43,
+            44,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            60,
+            61,
+            62,
+            63
+          ],
+          "weights": [
+            0.0,
+            0.0001,
+            0.0,
+            0.0,
+            0.0,
+            0.0008,
+            0.0002,
+            0.0004,
+            0.0,
+            0.0025,
+            0.0,
+            0.9686,
+            0.0,
+            0.0062,
+            0.0001,
+            0.0,
+            0.0,
+            0.0002,
+            0.0014,
+            0.001,
+            0.0003,
+            0.0003,
+            0.0005,
+            0.0035,
+            0.0006,
+            0.0009,
+            0.0077,
+            0.0,
+            0.0,
+            0.0,
+            0.0002,
+            0.0,
+            0.0004,
+            0.0001,
+            0.0,
+            0.0001,
+            0.0001,
+            0.0003,
+            0.0,
+            0.0004,
+            0.0018,
+            0.0,
+            0.0003,
+            0.0001,
+            0.0002,
+            0.0001,
+            0.0006
+          ],
+          "method": "dirichlet",
+          "accuracy": 0.940014
+        }
+      },
+      "score": -0.940014,
+      "status": "evaluated",
+      "wall_s": 40.4,
+      "kind": "blend"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 7,
+    "streak": {
+      "5": 3,
+      "4": 3,
+      "7": 0,
+      "2": 3,
+      "1": 3,
+      "6": 3,
+      "3": 3,
+      "42": 3,
+      "43": 5,
+      "44": 6
+    },
+    "plateaued": [
+      44
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 15,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.939993 (tie_rate=0.062, discretized=False)"
+      },
+      {
+        "at_node_id": 18,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.939993 (tie_rate=0.053, discretized=False)"
+      },
+      {
+        "at_node_id": 29,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.940235 (tie_rate=0.067, discretized=False)"
+      },
+      {
+        "at_node_id": 32,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.940235 (tie_rate=0.061, discretized=False)"
+      },
+      {
+        "at_node_id": 35,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.940235 (tie_rate=0.056, discretized=False)"
+      },
+      {
+        "at_node_id": 38,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.940235 (tie_rate=0.077, discretized=False)"
+      },
+      {
+        "at_node_id": 41,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.940235 (tie_rate=0.095, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 42,
+        "reason": "propose_child exhausted for lineage EXPL_MEGABLEND (#42) -- no more distinct mutations available (driver-side plateau, not MAX_CHILDREN_PER_NODE) -- marking plateaued so select_next_parent moves to the next-best lineage instead of silently re-proposing the same dead end until ITER_SAFETY_CAP"
+      },
+      {
+        "at_node_id": 52,
+        "plateaued_lineage": 43,
+        "reason": "5 consecutive non-improving children of the active lineage failed to beat prior global best -0.940235 (tie_rate=0.170, discretized=True)"
+      },
+      {
+        "at_node_id": 57,
+        "plateaued_lineage": 44,
+        "reason": "5 consecutive non-improving children of the active lineage failed to beat prior global best -0.940235 (tie_rate=0.172, discretized=True)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": null,
+        "reason": "all lineages plateaued -> reopened once (fallback so the search can keep going toward the node budget)"
+      },
+      {
+        "at_node_id": 58,
+        "plateaued_lineage": 44,
+        "reason": "5 consecutive non-improving children of the active lineage failed to beat prior global best -0.940235 (tie_rate=0.169, discretized=True)"
+      }
+    ],
+    "budget": {
+      "total_budget": 60,
+      "explore_burst_size": 6,
+      "post_burst_patience": 20,
+      "phase": "stopped",
+      "burst_start_eval": 42,
+      "best_at_burst_start": -0.940235,
+      "evals_since_burst_improve": 17,
+      "stop_reason": "hard budget cap reached (60/60 evaluated nodes)"
+    },
+    "node_results": {
+      "0": {
+        "n_feats": 28,
+        "accuracy": 0.939687
+      },
+      "1": {
+        "n_feats": 28,
+        "accuracy": 0.939204
+      },
+      "2": {
+        "n_feats": 28,
+        "accuracy": 0.939254
+      },
+      "3": {
+        "n_feats": 28,
+        "accuracy": 0.939112
+      },
+      "4": {
+        "n_feats": 28,
+        "accuracy": 0.939872
+      },
+      "5": {
+        "n_feats": 28,
+        "accuracy": 0.939879
+      },
+      "6": {
+        "n_feats": 25,
+        "accuracy": 0.939119
+      },
+      "7": {
+        "members": [
+          0,
+          2,
+          3
+        ],
+        "weights": [
+          0.906,
+          0.0045,
+          0.0895
+        ],
+        "accuracy": 0.939794
+      },
+      "8": {
+        "n_feats": 28,
+        "accuracy": 0.939829
+      },
+      "9": {
+        "n_feats": 28,
+        "accuracy": 0.9399
+      },
+      "10": {
+        "n_feats": 28,
+        "accuracy": 0.939943
+      },
+      "11": {
+        "n_feats": 28,
+        "accuracy": 0.939908
+      },
+      "12": {
+        "n_feats": 28,
+        "accuracy": 0.939993
+      },
+      "13": {
+        "n_feats": 28,
+        "accuracy": 0.939879
+      },
+      "14": {
+        "n_feats": 28,
+        "accuracy": 0.939851
+      },
+      "15": {
+        "n_feats": 28,
+        "accuracy": 0.939844
+      },
+      "16": {
+        "n_feats": 28,
+        "accuracy": 0.939773
+      },
+      "17": {
+        "n_feats": 28,
+        "accuracy": 0.939609
+      },
+      "18": {
+        "n_feats": 28,
+        "accuracy": 0.939709
+      },
+      "19": {
+        "members": [
+          0,
+          2,
+          3,
+          4
+        ],
+        "weights": [
+          0.3025,
+          0.0937,
+          0.0551,
+          0.5487
+        ],
+        "accuracy": 0.939972
+      },
+      "20": {
+        "members": [
+          0,
+          2,
+          3,
+          4,
+          12
+        ],
+        "weights": [
+          0.0564,
+          0.1322,
+          0.0837,
+          0.3885,
+          0.3392
+        ],
+        "accuracy": 0.940021
+      },
+      "21": {
+        "members": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          12
+        ],
+        "weights": [
+          0.0,
+          0.0,
+          0.0,
+          0.0086,
+          0.0,
+          0.9914
+        ],
+        "accuracy": 0.940036
+      },
+      "22": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          6,
+          12
+        ],
+        "weights": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0117,
+          0.0,
+          0.9883
+        ],
+        "accuracy": 0.940036
+      },
+      "23": {
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          12
+        ],
+        "weights": [
+          0.0003,
+          0.0,
+          0.0084,
+          0.0001,
+          0.9912
+        ],
+        "accuracy": 0.940043
+      },
+      "24": {
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          10,
+          12
+        ],
+        "weights": [
+          0.0121,
+          0.0108,
+          0.1791,
+          0.0168,
+          0.6554,
+          0.1258
+        ],
+        "accuracy": 0.940185
+      },
+      "25": {
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          10,
+          11,
+          12
+        ],
+        "weights": [
+          0.0584,
+          0.0038,
+          0.1455,
+          0.0455,
+          0.4358,
+          0.0224,
+          0.2886
+        ],
+        "accuracy": 0.940199
+      },
+      "26": {
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weights": [
+          0.0447,
+          0.0018,
+          0.1856,
+          0.0432,
+          0.061,
+          0.603,
+          0.0443,
+          0.0164
+        ],
+        "accuracy": 0.940235
+      },
+      "27": {
+        "members": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weights": [
+          0.0712,
+          0.0196,
+          0.2886,
+          0.011,
+          0.0123,
+          0.0046,
+          0.3334,
+          0.0889,
+          0.1704
+        ],
+        "accuracy": 0.940142
+      },
+      "28": {
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "weights": [
+          0.088,
+          0.016,
+          0.2209,
+          0.0229,
+          0.1669,
+          0.2444,
+          0.1082,
+          0.1289,
+          0.0039
+        ],
+        "accuracy": 0.940156
+      },
+      "29": {
+        "members": [
+          2,
+          3,
+          4,
+          6,
+          9,
+          10,
+          11,
+          12,
+          14
+        ],
+        "weights": [
+          0.06,
+          0.0214,
+          0.1554,
+          0.0352,
+          0.1752,
+          0.2882,
+          0.1643,
+          0.0196,
+          0.0806
+        ],
+        "accuracy": 0.940206
+      },
+      "30": {
+        "n_feats": 28,
+        "accuracy": 0.939083
+      },
+      "31": {
+        "n_feats": 28,
+        "accuracy": 0.93887
+      },
+      "32": {
+        "n_feats": 28,
+        "accuracy": 0.939076
+      },
+      "33": {
+        "n_feats": 28,
+        "accuracy": 0.939318
+      },
+      "34": {
+        "n_feats": 28,
+        "accuracy": 0.93919
+      },
+      "35": {
+        "n_feats": 28,
+        "accuracy": 0.939389
+      },
+      "36": {
+        "n_feats": 27,
+        "accuracy": 0.939019
+      },
+      "37": {
+        "n_feats": 25,
+        "accuracy": 0.939076
+      },
+      "38": {
+        "n_feats": 25,
+        "accuracy": 0.939026
+      },
+      "39": {
+        "n_feats": 28,
+        "accuracy": 0.939112
+      },
+      "40": {
+        "n_feats": 28,
+        "accuracy": 0.939225
+      },
+      "41": {
+        "n_feats": 28,
+        "accuracy": 0.938849
+      },
+      "42": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41
+        ],
+        "weights": [
+          0.0,
+          0.0011,
+          0.0,
+          0.0,
+          0.0001,
+          0.0153,
+          0.003,
+          0.0001,
+          0.0,
+          0.0004,
+          0.0003,
+          0.9639,
+          0.0,
+          0.0,
+          0.0038,
+          0.0001,
+          0.0,
+          0.0085,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0004,
+          0.0,
+          0.0024,
+          0.0001,
+          0.0002,
+          0.0,
+          0.0001,
+          0.0
+        ],
+        "accuracy": 0.940028
+      },
+      "43": {
+        "n_feats": 28,
+        "accuracy": 0.939026
+      },
+      "44": {
+        "n_feats": 28,
+        "accuracy": 0.938962
+      },
+      "45": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          43
+        ],
+        "weights": [
+          0.005,
+          0.0,
+          0.0005,
+          0.0,
+          0.0002,
+          0.0019,
+          0.0,
+          0.0013,
+          0.0,
+          0.0,
+          0.0,
+          0.9598,
+          0.0011,
+          0.0,
+          0.0,
+          0.0,
+          0.0002,
+          0.0,
+          0.0,
+          0.0008,
+          0.0,
+          0.0001,
+          0.0,
+          0.0226,
+          0.0002,
+          0.0,
+          0.0,
+          0.0018,
+          0.0001,
+          0.0037,
+          0.0007
+        ],
+        "accuracy": 0.940028
+      },
+      "46": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          44
+        ],
+        "weights": [
+          0.0,
+          0.0,
+          0.0005,
+          0.0,
+          0.0002,
+          0.0,
+          0.0,
+          0.0013,
+          0.0,
+          0.0,
+          0.0,
+          0.9665,
+          0.0011,
+          0.0,
+          0.0,
+          0.0,
+          0.0002,
+          0.0,
+          0.0,
+          0.0008,
+          0.0,
+          0.0001,
+          0.0,
+          0.0228,
+          0.0002,
+          0.0,
+          0.0,
+          0.0018,
+          0.0001,
+          0.0037,
+          0.0007
+        ],
+        "accuracy": 0.940036
+      },
+      "47": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          43,
+          44
+        ],
+        "weights": [
+          0.0044,
+          0.0012,
+          0.0,
+          0.0004,
+          0.0006,
+          0.0,
+          0.001,
+          0.005,
+          0.0,
+          0.0,
+          0.0,
+          0.9609,
+          0.0,
+          0.0002,
+          0.0004,
+          0.0006,
+          0.0173,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0036,
+          0.0004,
+          0.0,
+          0.0009,
+          0.0,
+          0.0018,
+          0.0,
+          0.0,
+          0.0,
+          0.0004,
+          0.0009
+        ],
+        "accuracy": 0.940021
+      },
+      "48": {
+        "n_feats": 28,
+        "accuracy": 0.939154
+      },
+      "49": {
+        "n_feats": 28,
+        "accuracy": 0.938998
+      },
+      "50": {
+        "n_feats": 28,
+        "accuracy": 0.939076
+      },
+      "51": {
+        "n_feats": 28,
+        "accuracy": 0.939126
+      },
+      "52": {
+        "n_feats": 28,
+        "accuracy": 0.93914
+      },
+      "53": {
+        "n_feats": 28,
+        "accuracy": 0.939019
+      },
+      "54": {
+        "n_feats": 28,
+        "accuracy": 0.938813
+      },
+      "55": {
+        "n_feats": 28,
+        "accuracy": 0.939161
+      },
+      "56": {
+        "n_feats": 28,
+        "accuracy": 0.938905
+      },
+      "57": {
+        "n_feats": 28,
+        "accuracy": 0.938842
+      },
+      "58": {
+        "n_feats": 28,
+        "accuracy": 0.938927
+      },
+      "59": {
+        "members": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          9,
+          10,
+          11,
+          12,
+          14
+        ],
+        "weights": [
+          0.0602,
+          0.0028,
+          0.213,
+          0.1148,
+          0.0496,
+          0.1046,
+          0.263,
+          0.1428,
+          0.0393,
+          0.0098
+        ],
+        "accuracy": 0.940235
+      }
+    },
+    "dedup_streak": {
+      "0": 0,
+      "5": 0,
+      "9": 0,
+      "10": 0,
+      "12": 0,
+      "4": 0,
+      "7": 0,
+      "19": 0,
+      "20": 0,
+      "21": 0,
+      "23": 0,
+      "24": 0,
+      "25": 0,
+      "26": 0,
+      "2": 0,
+      "1": 0,
+      "33": 0,
+      "6": 0,
+      "3": 0,
+      "40": 0,
+      "42": 0,
+      "46": 0,
+      "43": 0,
+      "48": 0,
+      "51": 0,
+      "44": 0,
+      "53": 0,
+      "55": 0,
+      "29": 0
+    },
+    "tie_rate_log": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0714,
+      0.0667,
+      0.0625,
+      0.0588,
+      0.0556,
+      0.0526,
+      0.05,
+      0.0476,
+      0.0455,
+      0.087,
+      0.0833,
+      0.08,
+      0.0769,
+      0.0741,
+      0.0714,
+      0.069,
+      0.0667,
+      0.0645,
+      0.0625,
+      0.0606,
+      0.0588,
+      0.0571,
+      0.0556,
+      0.0541,
+      0.0789,
+      0.0769,
+      0.1,
+      0.0976,
+      0.0952,
+      0.1304,
+      0.1489,
+      0.1667,
+      0.1633,
+      0.16,
+      0.1765,
+      0.1731,
+      0.1698,
+      0.1852,
+      0.1818,
+      0.1786,
+      0.1754,
+      0.1724,
+      0.1695,
+      0.1833
+    ],
+    "driver_state": {
+      "burst_injected": true,
+      "dedup_rejections": []
+    }
+  }
+}

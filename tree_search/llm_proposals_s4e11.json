@@ -1,0 +1,123 @@
+{
+ "meta": {
+  "pattern": "propose-once-freeze-replay",
+  "proposer": "claude subagent ae9fd945c9dec7dd8",
+  "date": "2026-07-13",
+  "input": "tree_search/llm_proposer_input_s4e11.json",
+  "arm": "B"
+ },
+ "proposals": [
+  {
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "binary:logistic",
+     "eval_metric": "logloss",
+     "learning_rate": 0.1,
+     "max_depth": 3,
+     "subsample": 0.9,
+     "colsample_bytree": 0.9,
+     "reg_lambda": 5.0,
+     "random_state": 42,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Pool has no shallow XGB: both XGB nodes are depth-8/lr-0.03 variance-heavy. Bias-dominated shallow XGB mirrors the s6e1 winner regime with XGBoost's different split/binning, ranking borderline cases differently.",
+   "prior_tags": [
+    "INT-00",
+    "INT-02"
+   ],
+   "expected": "Solo ~0.9390-0.9394; decorrelated boundary ordering for the reblend."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 42,
+     "is_unbalance": true,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Every pool member uses unweighted logloss; is_unbalance=true reweights class gradients, reordering minority-class borderline cases - exactly what accuracy-with-refit-threshold rewards; threshold refit absorbs the calibration shift.",
+   "prior_tags": [
+    "INT-02",
+    "INT-13"
+   ],
+   "expected": "Solo likely below 0.9399; highest decorrelation-per-minute; weight search decides."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.1,
+     "depth": 4,
+     "l2_leaf_reg": 10.0,
+     "bagging_temperature": 0.7,
+     "random_seed": 42
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "All five CatBoost nodes are deep (9-10); the shallow regime dominating this comp's LGB pool is untested in CatBoost, whose ordered boosting and symmetric trees give a distinct inductive bias.",
+   "prior_tags": [
+    "INT-00",
+    "INT-02"
+   ],
+   "expected": "Solo ~0.9388-0.9393; may flip boundary ranks the LGB family agrees on."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 63,
+     "max_depth": -1,
+     "min_child_samples": 30,
+     "feature_fraction": 0.45,
+     "bagging_fraction": 0.7,
+     "bagging_freq": 1,
+     "seed": 42,
+     "reg_lambda": 2.0
+    },
+    "features": {
+     "drop": [
+      "is_young",
+      "is_male",
+      "satisfaction"
+     ]
+    }
+   },
+   "rationale": "Restricted-view member: feature_fraction 0.45 (pool min 0.6) + FEATPRUNE drop set forces varied column subspaces, decorrelating rows where dominant features are ambiguous. Combines two validated feature-view levers.",
+   "prior_tags": [
+    "INT-02",
+    "EXT-21"
+   ],
+   "expected": "Solo ~0.9388-0.9392; modest chance of nonzero weight."
+  }
+ ]
+}

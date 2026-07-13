@@ -1,0 +1,1778 @@
+{
+ "competition": "playground-series-s4e11 (metric accuracy, maximize)",
+ "evaluator_contract": {
+  "solo": {
+   "kind": "solo",
+   "model": "lgb|xgb|cat",
+   "params": "ONLY keys in param_whitelist for that model",
+   "features": {
+    "drop": "subset of names seen in tree configs; [] = keep all"
+   }
+  },
+  "blend": {
+   "kind": "blend",
+   "members": "existing evaluated solo node ids",
+   "weight_search": "dirichlet"
+  },
+  "notes": "shared folds; blends use cached OOF (seconds); solo retrain minutes"
+ },
+ "param_whitelist": {
+  "lgb": [
+   "bagging_fraction",
+   "bagging_freq",
+   "feature_fraction",
+   "is_unbalance",
+   "learning_rate",
+   "max_depth",
+   "metric",
+   "min_child_samples",
+   "num_leaves",
+   "objective",
+   "reg_alpha",
+   "reg_lambda",
+   "seed"
+  ],
+  "xgb": [
+   "colsample_bytree",
+   "eval_metric",
+   "learning_rate",
+   "max_depth",
+   "objective",
+   "random_state",
+   "reg_lambda",
+   "subsample",
+   "tree_method"
+  ],
+  "cat": [
+   "bagging_temperature",
+   "depth",
+   "eval_metric",
+   "l2_leaf_reg",
+   "learning_rate",
+   "loss_function",
+   "random_seed"
+  ]
+ },
+ "priors": [
+  {
+   "tag": "INT-00",
+   "source": "experience.md",
+   "text": "只調「最強單模」的超參是 blend 的高性價比槓桿:LGB 50 trials(TPE)即 +0.0004 單模 / +0.0005 blend;最佳解為「淺而強正則」(depth 3、lr 0.068、reg_alpha 2.14),再次印證小/中型資料獎勵正則化而非容量。 | 證據:s3e7, exp #3→#4,LGB 0.898824→0.899215,blend 0.899395→0.899891。"
+  },
+  {
+   "tag": "INT-01",
+   "source": "experience.md",
+   "text": "調參預算控制:每 trial 跑完整 5-fold 會爆時間(50 trials × 5 folds ≈ 25 分鐘,一次逾時全歸零);改用「單一 fold(fold-0)代理目標」調參、只對優勝配置重跑完整 5-fold 驗證,50 trials 僅 300s,且代理排序成功遷移(fold-0 最佳配置在全 OOF 也最佳)。 | 證據:s3e7, exp #4,第一次全 5-fold 嘗試 25 分鐘逾時無結果;fold-0 代理 300.2s 完成並拿到上述增益。"
+  },
+  {
+   "tag": "INT-02",
+   "source": "experience.md",
+   "text": "**對第二個基模型重複同一調參配方會傷 blend**:XGB 同法調參後單模微升(0.898765→0.898860)但 blend 反而退步(0.899891→0.899722)——兩個模型都收斂到相似的淺樹最優解,ensemble 多樣性下降。單模分數與 blend 貢獻不是同一回事;調完最強單模後,其餘基模型的「次優但異質」參數是資產不是負債。 | 證據:s3e7, exp #5(棄用)。"
+  },
+  {
+   "tag": "INT-03",
+   "source": "experience.md",
+   "text": "**調參後的單模應「加入」pool 而非「替換」原成員**:Optuna 調參版 LGB 單模由 342.02154 進步到 341.68775,但若直接替換掉原 LGB,blend 反退步(340.75961→340.95316,多樣性流失,權重被迫壓到 XGB/CAT);改為「保留原 LGB 並把調參版當額外成員」的 4-way blend 則降至 340.62702。是 s3e7「別替換多樣成員」教訓對最強模型自身的推廣。 | 證據:s3e14, exp #4(替換)340.95316 vs exp #5(增列)340.62702。"
+  },
+  {
+   "tag": "INT-04",
+   "source": "experience.md",
+   "text": "**seed bagging(同超參、換 random_state)是調參之後最便宜的殘餘增益**:再加一個 seed=2024 的原參數 LGB 作第 5 成員,blend 340.62702→340.59891;成本僅一次 5-fold 訓練(~52s)。 | 證據:s3e14, exp #7,5-way blend 權重 0.2/0.15/0.2/0.25/0.2。"
+  },
+  {
+   "tag": "INT-05",
+   "source": "experience.md",
+   "text": "**反例:seed bagging 並非普適增益,對「Optuna 已直接優化最終指標」調校出的模型可能完全無效**——同一招對 Optuna(直接優化 post-rounder QWK)調校出的 LGB 與 CatBoost 各做一次 seed=2024 bagging,兩次權重搜尋皆給新成員 0 權重、blend 分數不變或微降。可能原因:直接優化最終指標的 Optuna 已收斂到「淺而穩定」的解(與 s3e7 fold-0 代理法找到的「淺而強正則」解型態一致),模型本身變異已低,第二個 seed 提供的多樣性有限。 | 證據:s3e5, exp #6(LGB_tuned seed-bag)0.56293→0.56293(無變化);exp #9(CAT_tuned seed-bag)0.56769→0.56716(退步,未採用)。"
+  },
+  {
+   "tag": "INT-06",
+   "source": "experience.md",
+   "text": "**資料極小(~2k 列)時,Optuna 全 5-fold CV 本身就很便宜,不需要 fold-0 代理**:與 s3e7/s3e11 需要代理目標控制時間預算的情境相反,40 trials 的完整 5-fold CV(每 trial 皆重新做 5 折訓練)僅需 26–46 秒,直接對「後處理後的最終指標」做目標函式優化,而非先對 RMSE 代理指標調參再套用後處理。此模式僅適用於資料量與模型訓練時間都足夠小的情境;資料規模較大或訓練較慢時仍應遵循 fold-0 代理的既有配方。 | 證據:s3e5, exp #5(LGB 全 CV 40 trials,26s)、exp #8(CAT 全 CV 40 trials,46s)。"
+  },
+  {
+   "tag": "INT-07",
+   "source": "experience.md",
+   "text": "**三個競賽(s3e7/s3e14/s3e1)一致驗證同一套「Optuna fold-proxy 調參 → 加入 pool(不替換)→ seed bagging」流程**,即使 RMSE 尺度、資料規模、特徵集完全不同:s3e1 fold-0 代理 50 trials 僅 74.3s(vs 完整 5-fold 逾時風險),調參 LGB 加為 4-way 第 4 成員後 blend 0.558768→0.557977,再加 seed=2024 版為第 5 成員後 0.557977→0.557859——流程本身可視為此類「中型表格迴歸/GBDT blend」場景的預設起手式,不必每場重新論證。 | 證據:s3e1, exp #4/#5。"
+  },
+  {
+   "tag": "INT-08",
+   "source": "experience.md",
+   "text": "**第 4 個競賽驗證:配方遷移到「CatBoost 為最強成員」且資料放大到 360k 列仍成立**:fold-0 代理 40 trials 319s 調 CatBoost(depth/lr/l2/min_data_in_leaf/random_strength),調參版加入 pool 後 blend 0.296143→0.295781(該輪迭代最大單項);seed bagging 第 2、3 個 seed 再各得 0.295781→0.295715→0.295648。兩點新觀察:(1) 大資料上最優解是「更深+更高 lr」(depth 10、lr 0.082、min_data_in_leaf 33)而非 s3e7 小資料的「淺+強正則」——容量/正則需求隨資料量反轉;(2) 調參後 early-stopping 收斂迭代數 ~300(原參數 ~1300),單 fold 訓練反而快近一倍,調參同時買到分數與速度。 | 證據:s3e11, exp #4→#5→#6→#8。"
+  },
+  {
+   "tag": "INT-09",
+   "source": "experience.md",
+   "text": "**調參成功後權重可能全數流向調參版 seed 家族**:s3e11 權重搜尋把 LGB 與原參數 CAT 都歸零(tuned CAT 單模 0.29579 已勝原 3-way blend 0.296143)。與 s3e7「異質成員是資產」不矛盾——把原成員留在 pool、讓權重搜尋自行裁決即可(留著零成本,勝出與否由 OOF 決定)。 | 證據:s3e11, exp #8 權重 {LGB 0, CAT_orig 0, tuned×3 = 0.4/0.2/0.4}。"
+  },
+  {
+   "tag": "INT-10",
+   "source": "experience.md",
+   "text": "**刪除連續兩輪權重 0 的成員零代價**:s3e11 刪 XGB 後 2-way blend 分數與原 3-way 完全相同(0.296143 = 0.296143),每輪訓練省 ~25s。零權重裁決可放心執行,不必「以防萬一」保留。 | 證據:s3e11, exp #3 vs #4。"
+  },
+  {
+   "tag": "INT-11",
+   "source": "experience.md",
+   "text": "**⚠️ 邊界條件(第一個反例):目標需要「四捨五入到整數」時,配方在 raw OOF 上仍成立但可能無法轉化為 rounded OOF 的實際增益,必須以 rounded 分數而非 raw 分數做決策**。s3e16(已有真實 LB 錨點,CV↔LB gap 僅 0.006、CV 可信)重跑同一套「fold-0 代理 Optuna 調參 LGB → 加入 pool → seed bagging」:raw OOF 確實單調變好(1.35589→1.35541→1.35533),但 rounded OOF 兩輪都變差(1.33812→1.33850→1.33893)。原因:調參版只改了 depth/lr/reg,目標函式、特徵、CV 折都相同,新成員與原 LGB 在 OOF 空間高度相關(多樣性不足),raw 分數的小幅增益不足以跨過四捨五入的離散邊界。連續兩輪未改善 rounded 分數 → 依協定停止,未提交新版。與「MAE/整數目標」一節的「取整降低 MAE」原則合併看:取整本身是穩定增益的來源,但**取整之後的模型選擇/調參決策必須重新以取整分數驗證**,不能沿用 RMSE 尺度競賽驗證過的「raw OOF 越低就選」捷徑。 | 證據:s3e16, exp #3(raw 1.35541 rounded 1.33850,劣於 1.33812)、exp #4(raw 1.35533 rounded 1.33893,更劣)。"
+  },
+  {
+   "tag": "INT-12",
+   "source": "experience.md",
+   "text": "混合層微調(0.05→0.01 權重網格、rank-average)在 AUC 上只有噪音級差異(+0.000002 / −0.000007),不是可靠增益來源。 | 證據:s3e7, exp #6,prob 0.01grid 0.899893 vs 0.05grid 0.899891 vs rank 0.899884。"
+  },
+  {
+   "tag": "INT-13",
+   "source": "experience.md",
+   "text": "OOF 權重搜尋常直接淘汰弱模型(權重=0)——這是特徵而非 bug,尊重它:s3e3 CAT=0(兩次)、s3e11 XGB=0(兩次)、s3e19 外推下 XGB=0(兩次)、s3e20 三個 GBDT 全=0。 | 證據:各該賽 experiments.json blend_weights。"
+  },
+  {
+   "tag": "INT-14",
+   "source": "experience.md",
+   "text": "三模型時,單純 simplex 網格權重搜尋難被學習式 stacking 打敗:Ridge(非負)stacking 反而明顯更差。 | 證據:s3e14, exp #3,Ridge stack 344.04 vs simplex blend 340.76。"
+  },
+  {
+   "tag": "INT-15",
+   "source": "experience.md",
+   "text": "未優化的 50/50 等權 ensemble 可能比最佳單模差——權重必須搜尋。 | 證據:s3e20, exp #2,LGB 32.75 + XGB 34.44 等權 = 33.21 > LGB 單模。"
+  },
+  {
+   "tag": "INT-16",
+   "source": "experience.md",
+   "text": "模型實力相近時 blend 才穩定勝過所有單模。 | 證據:s3e1, exp #2,blend 0.55877 < LGB 0.56109/XGB 0.56297/CAT 0.56188。"
+  },
+  {
+   "tag": "INT-17",
+   "source": "experience.md",
+   "text": "後處理三寶皆有實證:整數取整(s3e16, 1.3565→1.3389)、OptimizedRounder(s3e5, +0.055)、snap-to-grid(s3e14, ~+0.05~0.06);另 clip 到訓練目標值域作安全網(s3e1、s3e11)。 | 證據:見「依指標」節各條。"
+  },
+  {
+   "tag": "INT-18",
+   "source": "experience.md",
+   "text": "fold-safe(K-fold out-of-fold)目標編碼是群組結構資料的最大單一增益來源;未見組合用全域均值 fallback。 | 證據:s3e11, exp #3 store_te(~111 組合、19 個測試集未見組合)貢獻主要增益 0.29710→0.29614;s3e20, te_locweek(以其他年度計算,無洩漏)單獨即達 22.65。"
+  },
+  {
+   "tag": "INT-19",
+   "source": "experience.md",
+   "text": "比值/物理領域特徵優於原始欄:s3e9 water_binder_ratio(修正為總膠結料,Pearson -0.227 vs 傳統水灰比 -0.151)、log1p(AgeInDays)(0.558 vs 原始 0.334);s3e16 部位重量比、密度、殼肉比;s3e5 alcohol_x_sulphates(|Spearman| 0.550 vs 單特徵 0.504/0.457,top-10 重要度中 7 個是工程特徵);s3e1 rooms_per_person(r=0.452,最強新特徵)。 | 證據:各該賽 exp 分數已列前節。"
+  },
+  {
+   "tag": "EXT-20",
+   "source": "EXT-04",
+   "text": "頻率 / 計數編碼(frequency / count encoding) | 機制: 用類別的出現頻率(或計數)取代類別本身;頻率本身常帶訊號(稀有 vs 常見),且不洩漏目標、無需 fold-safe 處理。 | 適用: 中高基數類別欄;與目標編碼互補(一個編頻率、一個編目標);任何指標。 | [EXT 文獻先驗 EXT-04,出處見 idea_bank.md;無本場 [INT] 實證]"
+  },
+  {
+   "tag": "EXT-21",
+   "source": "EXT-11",
+   "text": "Out-of-fold stacking + 加權 blending(Kaggle 實務配方) | 機制: 社群整理的實務集成手冊——簡單平均、加權平均、多層 stacked generalization + OOF、幾何平均等;強調「用更多折算 OOF 比單一 holdout 穩」。 | 適用: 各種指標與資料型態;是「先簡單平均、再視情況上 stacking」的決策地圖。 | [EXT 文獻先驗 EXT-11,出處見 idea_bank.md;無本場 [INT] 實證]"
+  },
+  {
+   "tag": "EXT-22",
+   "source": "EXT-12",
+   "text": "Rank averaging(排名平均集成) | 機制: 先把各模型預測轉成名次再平均——當模型未校準或輸出尺度/分布不同時,rank 空間平均比機率空間平均更穩健。 | 適用: 排名型指標(AUC)、或成員校準差異大時;對嚴格看機率值的指標(logloss)不宜。 | [EXT 文獻先驗 EXT-12,出處見 idea_bank.md;無本場 [INT] 實證]"
+  },
+  {
+   "tag": "EXT-23",
+   "source": "EXT-17",
+   "text": "Deep Feature Synthesis / 自動聚合特徵(aggregation across relations) | 機制: 沿實體關係自動堆疊聚合原語(count/mean/std/max/min/mode…)與轉換原語,系統化生成群組統計/跨表聚合特徵,取代人工枚舉。 | 適用: 有群組鍵、多表 / 交易型資料;數值 + 類別混合。 | [EXT 文獻先驗 EXT-17,出處見 idea_bank.md;無本場 [INT] 實證]"
+  },
+  {
+   "tag": "EXT-24",
+   "source": "EXT-18",
+   "text": "Entity embeddings(高基數類別的神經嵌入) | 機制: 用神經網路把每個類別值學成低維連續向量,語意相近的類別在嵌入空間相鄰;可餵回 GBDT 或直接在 NN 內用,對高基數特別有效、抗過擬。 | 適用: 高基數類別、且資料量足以訓 NN;數值嵌入亦可回饋給樹模型。 | [EXT 文獻先驗 EXT-18,出處見 idea_bank.md;無本場 [INT] 實證]"
+  },
+  {
+   "tag": "EXT-25",
+   "source": "EXT-24",
+   "text": "The Kaggle Book — 表格競賽綜合手冊(交叉索引) | 機制: 兩位 Kaggle Grandmaster 系統整理的競賽方法論——涵蓋驗證設計、對抗驗證、特徵工程、集成/stacking、超參調參、各資料型態(表格/影像/文字)配方,並附各賽 Master 訪談。 | 適用: 作為 [EXT-09~14]、[EXT-01~04] 等條目的二手交叉索引與情境判斷指南;不替代原始論文。 | [EXT 文獻先驗 EXT-24,出處見 idea_bank.md;無本場 [INT] 實證]"
+  }
+ ],
+ "evaluated_nodes": [
+  {
+   "id": 26,
+   "metric": 0.940235,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #9 (parent=#25)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 59,
+   "metric": 0.940235,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #5 (parent=#29)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     9,
+     10,
+     11,
+     12,
+     14
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 29,
+   "metric": 0.940206,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #14 (parent=#26)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12,
+     14
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 25,
+   "metric": 0.940199,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #11 (parent=#24)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     2,
+     3,
+     4,
+     6,
+     10,
+     11,
+     12
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 24,
+   "metric": 0.940185,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #10 (parent=#23)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     2,
+     3,
+     4,
+     6,
+     10,
+     12
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 28,
+   "metric": 0.940156,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #13 (parent=#26)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     2,
+     3,
+     4,
+     6,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 27,
+   "metric": 0.940142,
+   "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #5 (parent=#26)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     9,
+     10,
+     11,
+     12
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 23,
+   "metric": 0.940043,
+   "mutation": "[BLEND] BLEND: remove lowest-weight member #0 (w=0.000) (parent=#21)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     2,
+     3,
+     4,
+     6,
+     12
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 21,
+   "metric": 0.940036,
+   "mutation": "[BLEND] BLEND: add FEATPRUNE solo member (#6) (parent=#20)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     2,
+     3,
+     4,
+     6,
+     12
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 22,
+   "metric": 0.940036,
+   "mutation": "[BLEND] BLEND: add LGBHAND solo member (#1) (parent=#21)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     6,
+     12
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 46,
+   "metric": 0.940036,
+   "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #44 (parent=#42)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     44
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 42,
+   "metric": 0.940028,
+   "mutation": "[EXPL_MEGABLEND] explore-burst: kitchen-sink blend of the entire solo pool (30 members) [PRIOR: post-plateau g",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 45,
+   "metric": 0.940028,
+   "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #43 (parent=#42)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     43
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 20,
+   "metric": 0.940021,
+   "mutation": "[BLEND] BLEND: add BOUNDARYPUSH solo member (#12) (parent=#19)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     2,
+     3,
+     4,
+     12
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 47,
+   "metric": 0.940021,
+   "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #43 (parent=#46)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     43,
+     44
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 62,
+   "metric": 0.940007,
+   "mutation": "[PRIOR-EXT-12] pool blend over 43 cached members, dirichlet weight search <= wired from prior: Rank averaging(",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     30,
+     31,
+     32,
+     33,
+     34,
+     35,
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     43,
+     44,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54,
+     55,
+     56,
+     57,
+     58
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 12,
+   "metric": 0.939993,
+   "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4004 (parent=#10)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4004,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 19,
+   "metric": 0.939972,
+   "mutation": "[BLEND] BLEND: add SEEDBAG solo member (#4) (parent=#7)",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     2,
+     3,
+     4
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 10,
+   "metric": 0.939943,
+   "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4002 (parent=#9)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4002,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 11,
+   "metric": 0.939908,
+   "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4003 (parent=#10)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4003,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 9,
+   "metric": 0.9399,
+   "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4001 (parent=#5)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4001,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 60,
+   "metric": 0.9399,
+   "mutation": "[PRIOR-INT-04] seed-bag member: champion config, seed=101 <= wired from prior: **seed bagging(同超參、換 random_sta",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 101,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 5,
+   "metric": 0.939879,
+   "mutation": "[BOUNDARYPUSH] model-variant: boundary_candidates()-flagged push(es) -- max_depth 3->2 (edge=low) [feature 4]",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 42,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 13,
+   "metric": 0.939879,
+   "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4005 (parent=#12)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4005,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 4,
+   "metric": 0.939872,
+   "mutation": "[SEEDBAG] seed variation: root's exact params, seed -> 2024 [PRIOR: seed-bagging is the cheapest residual gain",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 2024,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 61,
+   "metric": 0.939858,
+   "mutation": "[PRIOR-INT-04] seed-bag member: champion config, seed=202 <= wired from prior: **seed bagging(同超參、換 random_sta",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 202,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 14,
+   "metric": 0.939851,
+   "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4006 (parent=#12)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4006,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 15,
+   "metric": 0.939844,
+   "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4007 (parent=#12)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4007,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 8,
+   "metric": 0.939829,
+   "mutation": "[BOUNDARYPUSH] fallback seed-variation: alt seed=4000 (parent=#5)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 2,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4000,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 7,
+   "metric": 0.939794,
+   "mutation": "[BLEND] ensemble seed: blend of root + XGBHAND + CATHAND ([0, 2, 3])",
+   "config": {
+    "kind": "blend",
+    "members": [
+     0,
+     2,
+     3
+    ],
+    "weight_search": "dirichlet"
+   }
+  },
+  {
+   "id": 16,
+   "metric": 0.939773,
+   "mutation": "[SEEDBAG] SEEDBAG: NEW -- third independent seed (777) (parent=#4)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 777,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 18,
+   "metric": 0.939709,
+   "mutation": "[SEEDBAG] fallback seed-variation: alt seed=4001 (parent=#4)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4001,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 0,
+   "metric": 0.939687,
+   "mutation": "root: tier2/tier3 strongest cached solo (LGB_tuned), retrained via eval_s4e11.evaluate_solo for independent di",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 42,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 17,
+   "metric": 0.939609,
+   "mutation": "[SEEDBAG] fallback seed-variation: alt seed=4000 (parent=#4)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.06999040855581445,
+     "num_leaves": 48,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4000,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 35,
+   "metric": 0.939389,
+   "mutation": "[LGBHAND] fallback seed-variation: alt seed=4001 (parent=#33)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 31,
+     "max_depth": -1,
+     "min_child_samples": 60,
+     "feature_fraction": 0.8,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "seed": 4001,
+     "reg_lambda": 2.0
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 33,
+   "metric": 0.939318,
+   "mutation": "[LGBHAND] LGBHAND: NEW -- stronger regularization (min_child_samples 15->60, +reg_lambda=2.0) (parent=#1)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 31,
+     "max_depth": -1,
+     "min_child_samples": 60,
+     "feature_fraction": 0.8,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "seed": 42,
+     "reg_lambda": 2.0
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 2,
+   "metric": 0.939254,
+   "mutation": "[XGBHAND] model-variant: deeper/lower-lr hand XGB (depth 6->8, lr 0.05->0.03)",
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "binary:logistic",
+     "eval_metric": "logloss",
+     "learning_rate": 0.03,
+     "max_depth": 8,
+     "subsample": 0.8,
+     "colsample_bytree": 0.7,
+     "reg_lambda": 1.0,
+     "random_state": 42,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 40,
+   "metric": 0.939225,
+   "mutation": "[CATHAND] fallback seed-variation: alt random_seed=4000 (parent=#3)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.05,
+     "depth": 9,
+     "l2_leaf_reg": 5.0,
+     "random_seed": 4000
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 1,
+   "metric": 0.939204,
+   "mutation": "[LGBHAND] model-variant: shallower/less-regularized hand LGB (num_leaves 63->31, min_child_samples 30->15) -- ",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 31,
+     "max_depth": -1,
+     "min_child_samples": 15,
+     "feature_fraction": 0.8,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "seed": 42
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 34,
+   "metric": 0.93919,
+   "mutation": "[LGBHAND] fallback seed-variation: alt seed=4000 (parent=#33)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 31,
+     "max_depth": -1,
+     "min_child_samples": 60,
+     "feature_fraction": 0.8,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "seed": 4000,
+     "reg_lambda": 2.0
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 55,
+   "metric": 0.939161,
+   "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4002 (parent=#53)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.02,
+     "depth": 10,
+     "l2_leaf_reg": 3.0,
+     "random_seed": 4002
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 48,
+   "metric": 0.939154,
+   "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4000 (parent=#43)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.01,
+     "num_leaves": 255,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4000,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 52,
+   "metric": 0.93914,
+   "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4004 (parent=#51)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.01,
+     "num_leaves": 255,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4004,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 51,
+   "metric": 0.939126,
+   "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4003 (parent=#48)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.01,
+     "num_leaves": 255,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4003,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 6,
+   "metric": 0.939119,
+   "mutation": "[FEATPRUNE] feature-pruning: drop 3 low-signal engineered flags (is_young, is_male, satisfaction) [knowledge/e",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 63,
+     "max_depth": -1,
+     "min_child_samples": 30,
+     "feature_fraction": 0.8,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "seed": 42
+    },
+    "features": {
+     "drop": [
+      "is_young",
+      "is_male",
+      "satisfaction"
+     ]
+    }
+   }
+  },
+  {
+   "id": 3,
+   "metric": 0.939112,
+   "mutation": "[CATHAND] model-variant: deeper hand CatBoost (depth 7->9, l2_leaf_reg 3->5)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.05,
+     "depth": 9,
+     "l2_leaf_reg": 5.0,
+     "random_seed": 42
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 39,
+   "metric": 0.939112,
+   "mutation": "[CATHAND] CATHAND: NEW -- bagging_temperature=1.0 (Bayesian-bootstrap row weighting) (parent=#3)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.05,
+     "depth": 9,
+     "l2_leaf_reg": 5.0,
+     "random_seed": 42,
+     "bagging_temperature": 1.0
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 30,
+   "metric": 0.939083,
+   "mutation": "[XGBHAND] XGBHAND: NEW -- more aggressive row/col subsampling (0.8->0.6) (parent=#2)",
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "binary:logistic",
+     "eval_metric": "logloss",
+     "learning_rate": 0.03,
+     "max_depth": 8,
+     "subsample": 0.6,
+     "colsample_bytree": 0.6,
+     "reg_lambda": 1.0,
+     "random_state": 42,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 32,
+   "metric": 0.939076,
+   "mutation": "[XGBHAND] fallback seed-variation: alt random_state=4001 (parent=#2)",
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "binary:logistic",
+     "eval_metric": "logloss",
+     "learning_rate": 0.03,
+     "max_depth": 8,
+     "subsample": 0.8,
+     "colsample_bytree": 0.7,
+     "reg_lambda": 1.0,
+     "random_state": 4001,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 37,
+   "metric": 0.939076,
+   "mutation": "[FEATPRUNE] fallback seed-variation: alt seed=4000 (parent=#6)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 63,
+     "max_depth": -1,
+     "min_child_samples": 30,
+     "feature_fraction": 0.8,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "seed": 4000
+    },
+    "features": {
+     "drop": [
+      "is_young",
+      "is_male",
+      "satisfaction"
+     ]
+    }
+   }
+  },
+  {
+   "id": 50,
+   "metric": 0.939076,
+   "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4002 (parent=#48)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.01,
+     "num_leaves": 255,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4002,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 38,
+   "metric": 0.939026,
+   "mutation": "[FEATPRUNE] fallback seed-variation: alt seed=4001 (parent=#6)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 63,
+     "max_depth": -1,
+     "min_child_samples": 30,
+     "feature_fraction": 0.8,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "seed": 4001
+    },
+    "features": {
+     "drop": [
+      "is_young",
+      "is_male",
+      "satisfaction"
+     ]
+    }
+   }
+  },
+  {
+   "id": 43,
+   "metric": 0.939026,
+   "mutation": "[EXPL_DEEPLGB] explore-burst long-shot: much deeper/slower LGB (num_leaves->255, lr->0.01)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.01,
+     "num_leaves": 255,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 42,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 36,
+   "metric": 0.939019,
+   "mutation": "[FEATPRUNE] FEATPRUNE: NEW -- isolate dropping just is_young alone (parent=#6)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.05,
+     "num_leaves": 63,
+     "max_depth": -1,
+     "min_child_samples": 30,
+     "feature_fraction": 0.8,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "seed": 42
+    },
+    "features": {
+     "drop": [
+      "is_young"
+     ]
+    }
+   }
+  },
+  {
+   "id": 53,
+   "metric": 0.939019,
+   "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4000 (parent=#44)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.02,
+     "depth": 10,
+     "l2_leaf_reg": 3.0,
+     "random_seed": 4000
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 49,
+   "metric": 0.938998,
+   "mutation": "[EXPL_DEEPLGB] fallback seed-variation: alt seed=4001 (parent=#48)",
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "binary_logloss",
+     "learning_rate": 0.01,
+     "num_leaves": 255,
+     "max_depth": 3,
+     "min_child_samples": 51,
+     "feature_fraction": 0.847926170224943,
+     "bagging_fraction": 0.8898615710512776,
+     "bagging_freq": 1,
+     "seed": 4001,
+     "is_unbalance": false,
+     "reg_alpha": 0.013355404257800907,
+     "reg_lambda": 0.005734715134895114
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 44,
+   "metric": 0.938962,
+   "mutation": "[EXPL_DEEPCAT] explore-burst long-shot: much deeper/slower CatBoost (depth->10, lr->0.02)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.02,
+     "depth": 10,
+     "l2_leaf_reg": 3.0,
+     "random_seed": 42
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 58,
+   "metric": 0.938927,
+   "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4005 (parent=#55)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.02,
+     "depth": 10,
+     "l2_leaf_reg": 3.0,
+     "random_seed": 4005
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 56,
+   "metric": 0.938905,
+   "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4003 (parent=#55)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.02,
+     "depth": 10,
+     "l2_leaf_reg": 3.0,
+     "random_seed": 4003
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 31,
+   "metric": 0.93887,
+   "mutation": "[XGBHAND] fallback seed-variation: alt random_state=4000 (parent=#2)",
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "binary:logistic",
+     "eval_metric": "logloss",
+     "learning_rate": 0.03,
+     "max_depth": 8,
+     "subsample": 0.8,
+     "colsample_bytree": 0.7,
+     "reg_lambda": 1.0,
+     "random_state": 4000,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 41,
+   "metric": 0.938849,
+   "mutation": "[CATHAND] fallback seed-variation: alt random_seed=4001 (parent=#40)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.05,
+     "depth": 9,
+     "l2_leaf_reg": 5.0,
+     "random_seed": 4001
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 57,
+   "metric": 0.938842,
+   "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4004 (parent=#55)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.02,
+     "depth": 10,
+     "l2_leaf_reg": 3.0,
+     "random_seed": 4004
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  },
+  {
+   "id": 54,
+   "metric": 0.938813,
+   "mutation": "[EXPL_DEEPCAT] fallback seed-variation: alt random_seed=4001 (parent=#53)",
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "Logloss",
+     "learning_rate": 0.02,
+     "depth": 10,
+     "l2_leaf_reg": 3.0,
+     "random_seed": 4001
+    },
+    "features": {
+     "drop": []
+    }
+   }
+  }
+ ],
+ "champion": {
+  "id": 26,
+  "metric": 0.940235,
+  "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #9 (parent=#25)",
+  "config": {
+   "kind": "blend",
+   "members": [
+    2,
+    3,
+    4,
+    6,
+    9,
+    10,
+    11,
+    12
+   ],
+   "weight_search": "dirichlet"
+  }
+ }
+}

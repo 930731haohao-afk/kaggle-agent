@@ -1,0 +1,125 @@
+{
+ "meta": {
+  "pattern": "propose-once-freeze-replay",
+  "proposer": "claude subagent abfbb1a0ee80965ce",
+  "date": "2026-07-13",
+  "input": "tree_search/llm_proposer_input_s5e10.json",
+  "arm": "B"
+ },
+ "proposals": [
+  {
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "reg:squarederror",
+     "eval_metric": "rmse",
+     "learning_rate": 0.08,
+     "max_depth": 4,
+     "subsample": 0.8,
+     "colsample_bytree": 0.35,
+     "reg_alpha": 0.5,
+     "reg_lambda": 5.0,
+     "random_state": 7,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Pool XGB never goes below depth 9; shallow bias-dominated XGB with aggressive column subsampling is the exact archetype that won the s6e1 large-n reblend. Higher lr compensates depth-4.",
+   "prior_tags": [
+    "INT-02",
+    "INT-04",
+    "INT-05",
+    "EXT-21"
+   ],
+   "expected": "Solo ~0.0562-0.0565; lowest OOF correlation to the LGB-heavy pool."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "xentropy",
+     "metric": "rmse",
+     "learning_rate": 0.04,
+     "num_leaves": 127,
+     "max_depth": 8,
+     "min_child_samples": 40,
+     "feature_fraction": 0.7,
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "reg_alpha": 0.1,
+     "reg_lambda": 1.0,
+     "seed": 7
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Target lives in [0,1], so LightGBM cross-entropy (sigmoid link) is valid and reshapes loss geometry near the boundaries vs every squared-error member - a different functional view, not a reweighting. Whole pool is objective=regression; this is the unvisited axis.",
+   "prior_tags": [
+    "INT-01",
+    "INT-04",
+    "EXT-21"
+   ],
+   "expected": "Solo ~0.0561-0.0563; link-function decorrelation is the strongest novelty here."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "regression",
+     "metric": "rmse",
+     "learning_rate": 0.05,
+     "num_leaves": 63,
+     "max_depth": 7,
+     "min_child_samples": 100,
+     "feature_fraction": 0.35,
+     "bagging_fraction": 0.7,
+     "bagging_freq": 1,
+     "reg_alpha": 0.1,
+     "reg_lambda": 2.0,
+     "seed": 7
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Random-subspace corner: no pool LGB uses feature_fraction below 0.75. At 0.35 each tree sees ~1/3 of columns, forcing splits the champion family under-uses; mcs=100 smooths for 518k rows.",
+   "prior_tags": [
+    "INT-02",
+    "INT-04",
+    "EXT-20"
+   ],
+   "expected": "Solo ~0.0561-0.0564; decorrelation via feature-view rather than seed."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "RMSE",
+     "eval_metric": "RMSE",
+     "learning_rate": 0.08,
+     "depth": 5,
+     "l2_leaf_reg": 8.0,
+     "bagging_temperature": 2.0,
+     "random_seed": 7
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "All pool CatBoost sits at depth 9-10. Depth-5 symmetric trees with heavy L2 and hot Bayesian bootstrap = bias-dominated high-row-diversity member from a different library than the shallow XGB.",
+   "prior_tags": [
+    "INT-02",
+    "INT-05",
+    "INT-18"
+   ],
+   "expected": "Solo ~0.0562-0.0565; honest long shot, the only shallow cat view."
+  }
+ ]
+}

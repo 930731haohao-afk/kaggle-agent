@@ -1,0 +1,129 @@
+{
+ "meta": {
+  "pattern": "propose-once-freeze-replay",
+  "proposer": "claude subagent ac3678cf70f6514b7",
+  "date": "2026-07-13",
+  "input": "tree_search/llm_proposer_input_s4e1.json",
+  "arm": "B"
+ },
+ "proposals": [
+  {
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "auc",
+     "learning_rate": 0.05,
+     "num_leaves": 7,
+     "max_depth": 3,
+     "min_child_samples": 100,
+     "feature_fraction": 0.6,
+     "bagging_fraction": 0.7,
+     "bagging_freq": 1,
+     "reg_alpha": 2.0,
+     "reg_lambda": 5.0,
+     "is_unbalance": false,
+     "seed": 42
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Entire LGB pool lives in one deep regime (leaves 242-363, mcs 11). A depth-3/7-leaf strongly regularized model is bias-dominated: residuals decorrelate from the champion family. Mirrors the shallow-XGB member that took largest weight in s6e1.",
+   "prior_tags": [
+    "INT-00",
+    "INT-01",
+    "INT-05"
+   ],
+   "expected": "Solo ~0.890-0.893; value only via reblend weight."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "binary:logistic",
+     "eval_metric": "auc",
+     "learning_rate": 0.1,
+     "max_depth": 3,
+     "subsample": 0.8,
+     "colsample_bytree": 0.5,
+     "reg_lambda": 10.0,
+     "random_state": 42,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Only one XGB regime exists (depth 8, lr 0.03). Depth-3 high-lr heavy-L2 XGB with aggressive column subsampling is the shallow bias-dominated archetype; different splitter adds ranking diversity.",
+   "prior_tags": [
+    "INT-05",
+    "INT-07",
+    "INT-18"
+   ],
+   "expected": "Weak solo (~0.891-0.893); success = nonzero reblend weight."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "binary",
+     "metric": "auc",
+     "learning_rate": 0.03,
+     "num_leaves": 127,
+     "max_depth": -1,
+     "min_child_samples": 40,
+     "feature_fraction": 0.4,
+     "bagging_fraction": 0.55,
+     "bagging_freq": 1,
+     "reg_alpha": 0.1,
+     "reg_lambda": 1.0,
+     "is_unbalance": false,
+     "seed": 7
+    },
+    "features": {
+     "drop": [
+      "age_decade",
+      "products_eq1",
+      "has_balance"
+     ]
+    }
+   },
+   "rationale": "Random-subspace view: pool LGBs use feature_fraction 0.75-0.8 on full features. Halving columns (0.4) + rows 0.55 + 3-flag drop forces different interactions; unconstrained depth with mcs 40 is absent from the pool.",
+   "prior_tags": [
+    "INT-07",
+    "EXT-21",
+    "INT-08"
+   ],
+   "expected": "Solo ~0.8930-0.8937; moderate decorrelation."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "Logloss",
+     "eval_metric": "AUC",
+     "learning_rate": 0.08,
+     "depth": 4,
+     "l2_leaf_reg": 20.0,
+     "bagging_temperature": 5.0,
+     "random_seed": 42
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Pool CatBoost is only deep (9-10) with temperature <=1. Shallow depth-4, heavy L2, temperature-5 Bayesian bootstrap = stochastic bias-dominated CatBoost with distinct ordered-statistics handling.",
+   "prior_tags": [
+    "INT-00",
+    "INT-05",
+    "INT-07"
+   ],
+   "expected": "Solo ~0.892-0.8935; plausible small nonzero weight."
+  }
+ ]
+}

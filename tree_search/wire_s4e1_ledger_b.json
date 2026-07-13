@@ -1,0 +1,92 @@
+{
+  "comp": "playground-series-s4e1",
+  "off": {
+    "champion_id": 44,
+    "champion_metric": 0.894393
+  },
+  "arm": {
+    "nodes": 65,
+    "champion_id": 64,
+    "champion_metric": 0.894463
+  },
+  "ledger": [
+    {
+      "tag": "PRIOR-LLM-00",
+      "status": "evaluated",
+      "node_id": 60,
+      "metric": 0.894023,
+      "wall_s": 30.1,
+      "prior_tags": [
+        "INT-00",
+        "INT-01",
+        "INT-05"
+      ],
+      "expected": "Solo ~0.890-0.893; value only via reblend weight."
+    },
+    {
+      "tag": "PRIOR-LLM-01",
+      "status": "evaluated",
+      "node_id": 61,
+      "metric": 0.894025,
+      "wall_s": 14.2,
+      "prior_tags": [
+        "INT-05",
+        "INT-07",
+        "INT-18"
+      ],
+      "expected": "Weak solo (~0.891-0.893); success = nonzero reblend weight."
+    },
+    {
+      "tag": "PRIOR-LLM-02",
+      "status": "evaluated",
+      "node_id": 62,
+      "metric": 0.893582,
+      "wall_s": 64.9,
+      "prior_tags": [
+        "INT-07",
+        "EXT-21",
+        "INT-08"
+      ],
+      "expected": "Solo ~0.8930-0.8937; moderate decorrelation."
+    },
+    {
+      "tag": "PRIOR-LLM-03",
+      "status": "evaluated",
+      "node_id": 63,
+      "metric": 0.894056,
+      "wall_s": 24.8,
+      "prior_tags": [
+        "INT-00",
+        "INT-05",
+        "INT-07"
+      ],
+      "expected": "Solo ~0.892-0.8935; plausible small nonzero weight."
+    },
+    {
+      "tag": "PRIOR-LLM-REBLEND",
+      "status": "evaluated",
+      "node_id": 64,
+      "metric": 0.894463,
+      "wall_s": 37.0
+    }
+  ],
+  "paired_bootstrap": {
+    "method": "paired bootstrap B=10000 seed=42; TRUE champion weights from search_state.node_results; bit_check_off=True, bit_check_b=True",
+    "metric": "auc",
+    "champion": 0.8943927551632926,
+    "reblend": 0.8944631508065694,
+    "delta_mean": 7.063086803557246e-05,
+    "ci95": [
+      2.1762844463882325e-05,
+      0.00011940385649055744
+    ],
+    "significant": true
+  },
+  "llm_member_weights_in_reblend": {
+    "60": 0.02,
+    "61": 0.1873,
+    "62": 0.0276,
+    "63": 0.0013
+  },
+  "llm_member_weights_sum": 0.2362
+}
