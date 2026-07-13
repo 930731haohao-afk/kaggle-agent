@@ -1,0 +1,91 @@
+{
+  "comp": "playground-series-s6e1",
+  "off": {
+    "champion_id": 27,
+    "champion_r2": 0.787183
+  },
+  "arm": {
+    "nodes": 53,
+    "champion_id": 52,
+    "champion_r2": 0.787213
+  },
+  "ledger": [
+    {
+      "tag": "PRIOR-LLM-00",
+      "status": "evaluated",
+      "node_id": 48,
+      "r2": 0.786483,
+      "wall_s": 67.1,
+      "prior_tags": [
+        "INT-02",
+        "INT-04",
+        "INT-07"
+      ],
+      "expected": "Solo R2 0.784-0.786, lowest error-correlation; realistic shot at nonzero blend weight."
+    },
+    {
+      "tag": "PRIOR-LLM-01",
+      "status": "evaluated",
+      "node_id": 49,
+      "r2": 0.786054,
+      "wall_s": 55.4,
+      "prior_tags": [
+        "INT-07",
+        "INT-05",
+        "INT-11",
+        "INT-04"
+      ],
+      "expected": "Solo 0.7860-0.7865; error profile shifted by strong column subsampling."
+    },
+    {
+      "tag": "PRIOR-LLM-02",
+      "status": "evaluated",
+      "node_id": 50,
+      "r2": 0.786261,
+      "wall_s": 134.5,
+      "prior_tags": [
+        "INT-04",
+        "INT-02",
+        "INT-15"
+      ],
+      "expected": "Solo 0.784-0.786; weakest candidate but most distinct."
+    },
+    {
+      "tag": "PRIOR-LLM-03",
+      "status": "evaluated",
+      "node_id": 51,
+      "r2": 0.784261,
+      "wall_s": 54.2,
+      "prior_tags": [
+        "INT-10",
+        "INT-04",
+        "INT-07"
+      ],
+      "expected": "Solo 0.7855-0.7862; moderate decorrelation from depthwise structure."
+    },
+    {
+      "tag": "PRIOR-LLM-REBLEND",
+      "status": "evaluated",
+      "node_id": 52,
+      "r2": 0.787213,
+      "wall_s": 7.0
+    }
+  ],
+  "paired_bootstrap": {
+    "method": "paired bootstrap B=10000 seed=42 on clipped blend OOF; #27 TRUE stored weights from search_state.node_results (bit-verified vs tree score)",
+    "baseline_bit_verified": true,
+    "delta_mean": 2.943347622409927e-05,
+    "ci95": [
+      5.393037086271648e-06,
+      5.377165108806283e-05
+    ],
+    "significant": true
+  },
+  "llm_member_weights_in_52": {
+    "48": 0.1626,
+    "49": 0.0108,
+    "50": 0.1134,
+    "51": 0.011
+  },
+  "llm_member_weights_sum": 0.2978
+}

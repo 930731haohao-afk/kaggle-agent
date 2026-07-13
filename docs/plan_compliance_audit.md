@@ -20,7 +20,7 @@
 | 要求 | 狀態 | 說明 |
 |---|---|---|
 | 可評分任務為核心 / 樹搜尋取代線性 | ✅ | 階段 4 |
-| 想法注入 | ✅ | 階段 5 快評,誠實 null(見 phase_j_j3_findings) |
+| 想法注入 | ✅ | 階段 5 快評誠實 null(phase_j_j3_findings);**2026-07-13 接線補完**:先驗→搜尋的 write-only 洞堵死,三臂對照(機械/LLM)兩場實測——機械臂驗證 NNLS 定理(無增益),**LLM 臂在 s6e1 得到首個統計顯著單步(+0.000029,CI [+0.000005,+0.000054])**,見 prior_wiring_findings |
 | 想法重組(recombination) | ✅ | 機械版(harness_v4)+ **LLM 版重組算子**皆建置並實測(s6e1 pilot);結構性冗餘(冠軍=NNLS 凸最優、成員誤差相關 0.995)honest null,見 recombine_findings |
 | 模組化+可重現:固定種子 / uv / MLflow | ✅ | 種子✅ uv✅ **MLflow✅**(export_to_mlflow.py→sqlite);結構對映見 reproducibility.md |
 | 報告由 AI 產出 / 停止準則 / 跨賽學習(經驗庫) | ✅ | — |
