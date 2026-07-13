@@ -70,7 +70,10 @@ import harness_v2 as hv2  # noqa: E402  (config_hash)
 #   alt_tuned:       dict  — {"cat": {...params...}, "xgb": {...}} alternative tuned params
 # ---------------------------------------------------------------------------
 
-_SEED_KEYS = {"lgb": "random_state", "xgb": "random_state", "cat": "random_seed"}
+# per-model candidate seed-key names (sklearn-style AND native-API style — different
+# comps' evaluators use different naming schemes, e.g. s3e5 random_state vs s6e1 seed)
+_SEED_KEYS = {"lgb": ("random_state", "seed"), "xgb": ("random_state", "seed"),
+              "cat": ("random_seed",)}
 
 
 def _t_rounder_fold_avg(prior, champ, ctx):
@@ -116,8 +119,9 @@ def _t_seed_bag(prior, champ, ctx):
     """Seed-bagging priors -> same config, two alternative seeds (members for a later blend)."""
     if champ.get("kind") != "solo":
         return []
-    key = _SEED_KEYS.get(champ.get("model"))
-    if not key or key not in champ.get("params", {}):
+    key = next((k for k in _SEED_KEYS.get(champ.get("model"), ())
+                if k in champ.get("params", {})), None)
+    if key is None:
         return []
     out = []
     for seed in (101, 202):  # fixed, deterministic

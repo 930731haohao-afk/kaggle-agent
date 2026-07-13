@@ -1,0 +1,123 @@
+{
+ "meta": {
+  "pattern": "propose-once-freeze-replay",
+  "proposer": "claude subagent a8e732c6c8e12f1ec",
+  "date": "2026-07-13",
+  "input": "tree_search/llm_proposer_input_s6e1.json",
+  "arm": "B"
+ },
+ "proposals": [
+  {
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "reg:squarederror",
+     "eval_metric": "rmse",
+     "learning_rate": 0.06,
+     "max_depth": 4,
+     "subsample": 0.7,
+     "colsample_bytree": 0.5,
+     "reg_alpha": 2.0,
+     "reg_lambda": 8.0,
+     "random_state": 42,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Pool has zero shallow learners (XGB only depth 9). A depth-4, strongly regularized XGB is bias-dominated, the opposite error structure of the deep/variance-heavy pool, maximizing decorrelation. INT-02 shallow+strong-reg optimum; INT-04: a suboptimal-but-heterogeneous member is an asset.",
+   "prior_tags": [
+    "INT-02",
+    "INT-04",
+    "INT-07"
+   ],
+   "expected": "Solo R2 0.784-0.786, lowest error-correlation; realistic shot at nonzero blend weight."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "lgb",
+    "params": {
+     "objective": "regression",
+     "metric": "rmse",
+     "learning_rate": 0.04,
+     "num_leaves": 127,
+     "max_depth": -1,
+     "min_child_samples": 200,
+     "feature_fraction": 0.5,
+     "bagging_fraction": 0.55,
+     "bagging_freq": 1,
+     "reg_alpha": 0.5,
+     "reg_lambda": 5.0,
+     "seed": 42
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Every LGB uses feature_fraction ~0.8; halving columns (0.5) + bagging 0.55 forces trees onto different feature subsets - a random-forest-like decorrelation seed bagging cannot provide (INT-07). Add to pool, let weight search judge.",
+   "prior_tags": [
+    "INT-07",
+    "INT-05",
+    "INT-11",
+    "INT-04"
+   ],
+   "expected": "Solo 0.7860-0.7865; error profile shifted by strong column subsampling."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "cat",
+    "params": {
+     "loss_function": "RMSE",
+     "eval_metric": "RMSE",
+     "learning_rate": 0.08,
+     "depth": 5,
+     "l2_leaf_reg": 12.0,
+     "bagging_temperature": 1.0,
+     "random_seed": 42
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "All six CatBoost members sit at depth 9-10, lr 0.03-0.05. Opposite corner: depth 5, lr 0.08, heavy L2, Bayesian bootstrap - most distinct CatBoost error structure. Weight search zeroes it if useless (INT-15), low cost.",
+   "prior_tags": [
+    "INT-04",
+    "INT-02",
+    "INT-15"
+   ],
+   "expected": "Solo 0.784-0.786; weakest candidate but most distinct."
+  },
+  {
+   "config": {
+    "kind": "solo",
+    "model": "xgb",
+    "params": {
+     "objective": "reg:squarederror",
+     "eval_metric": "rmse",
+     "learning_rate": 0.03,
+     "max_depth": 12,
+     "subsample": 0.6,
+     "colsample_bytree": 0.5,
+     "reg_alpha": 0.5,
+     "reg_lambda": 10.0,
+     "random_state": 42,
+     "tree_method": "hist"
+    },
+    "features": {
+     "drop": []
+    }
+   },
+   "rationale": "Deep exploration exists for LGB (255 leaves) and CAT (depth 10) but XGB stops at depth 9. Depth-12 depthwise trees with halved columns partition feature space differently from leaf-wise LGB - deep-but-decorrelated member.",
+   "prior_tags": [
+    "INT-10",
+    "INT-04",
+    "INT-07"
+   ],
+   "expected": "Solo 0.7855-0.7862; moderate decorrelation from depthwise structure."
+  }
+ ]
+}
