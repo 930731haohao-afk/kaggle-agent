@@ -1,17 +1,6 @@
 ---
 name: kaggle-agent
-description: |
-  Hybrid AI agent for Kaggle competitions combining Claude Code reasoning with Auto-ML tools (LightGBM, XGBoost, CatBoost, AutoGluon).
-  Guides through full competition pipeline: ingestion, EDA, feature engineering, modeling, evaluation, and submission.
-
-  Use this skill when the user wants to: work on a Kaggle competition, perform exploratory data analysis on competition data,
-  engineer features for a Kaggle dataset, train and evaluate models for a competition, generate or improve a Kaggle submission,
-  review experiment history and decide next steps, or optimize competition performance.
-
-  Trigger phrases: "kaggle", "competition", "submission", "leaderboard", "kaggle agent", "train model", "feature engineering",
-  "EDA", "cross-validation", "ensemble".
-
-  Supports both tabular (tree models) and NLP (transformers) competitions.
+description: 'Hybrid AI agent for Kaggle competitions combining Claude Code reasoning with Auto-ML tools (LightGBM, XGBoost, CatBoost, AutoGluon). Guides the full competition pipeline (ingestion, EDA, feature engineering, modeling, evaluation, submission). Use when the user wants to work on a Kaggle competition, perform EDA on competition data, engineer features for a Kaggle dataset, train and evaluate models, generate or improve a Kaggle submission, review experiment history, or optimize competition performance. Trigger phrases include "kaggle", "competition", "submission", "leaderboard", "kaggle agent", "train model", "feature engineering", "EDA", "cross-validation", "ensemble". Supports both tabular (tree models) and NLP (transformers) competitions. Do NOT use this skill for general ML or statistics concept questions, for pandas/NumPy/Python debugging, or for data analysis not tied to a specific Kaggle competition workspace — answer those directly without engaging the pipeline; only invoke it when the task targets an actual competition workspace under competitions/.'
 ---
 
 # Kaggle Agent
@@ -65,6 +54,11 @@ Environment variables don't persist across separate Bash tool invocations in Cla
 ## Core Workflow
 
 Follow these stages sequentially. The user may start at any stage or repeat stages as needed.
+
+**Progressive disclosure — read on demand**: The per-stage detail lives in `references/NN_*.md`. Read each
+reference file **only when you actually reach that stage** — do not preload them all. This keeps the working
+context lean: metadata is always loaded, this SKILL.md loads when the skill triggers, and a reference file is
+read only when its stage begins.
 
 ### Experience Library (check first)
 
@@ -149,9 +143,15 @@ Key actions: Retrain on full data, generate predictions, format submission, vali
 - **Compare against baseline**: Always report improvement relative to baseline
 
 ### Safety
+- **Confirm before externally-visible / irreversible actions**: Before ANY Kaggle submission (each consumes a
+  daily quota slot), dataset upload, or creating a **public** dataset, restate the competition + file + message
+  to the user and get **explicit approval** first. Datasets default to private. For the actual submit, prefer the
+  `kaggle-safe-submit` skill (it validates the CSV and checks remaining quota before uploading).
+- **Never print/log/echo `KAGGLE_API_TOKEN`**: treat it as a secret; pass it only via the environment variable,
+  never hardcode it into scripts, files, or messages.
 - **Ask before long operations**: Confirm if training will take >5 minutes
 - **Use timestamped filenames**: Never overwrite good submissions
-- **Validate before submitting**: Check format, shape, value ranges
+- **Validate before submitting**: Check format, shape, value ranges (use `kaggle-safe-submit`)
 
 ### Resource Awareness
 - **Start small**: Use samples for initial experiments, scale up when validated
