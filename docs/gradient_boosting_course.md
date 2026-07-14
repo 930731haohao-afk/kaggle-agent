@@ -5,7 +5,7 @@
 > **Chapters 1–9**, consolidated into a single reference. Each chapter is a clean restatement of the
 > source lessons with reconstructed math (the source rendered formulas via KaTeX, scraped as mangled
 > text) and cleaned, idiomatic Python. Companion to the distilled cross-competition
-> [`experience.md`](experience.md) and external [`idea_bank.md`](idea_bank.md).
+> [`experience.md`](../knowledge/experience.md) and external [`idea_bank.md`](../knowledge/idea_bank.md).
 >
 > Formulas were reconstructed from a mangled scrape — spot-check against the primary XGBoost /
 > LightGBM / CatBoost papers before quoting verbatim.
