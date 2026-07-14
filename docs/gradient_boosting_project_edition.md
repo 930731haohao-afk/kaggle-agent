@@ -7,24 +7,23 @@
 > carries a `competition, exp #N, scoreA→scoreB` citation, matching the `experience.md` house rule.
 >
 > Course-section links point into `gradient_boosting_course.md`; evidence links point into
-> `experience.md`. If a course topic isn't here, we didn't meaningfully use it — see
-> [§9 What we did *not* use](#9-what-we-did-not-use) for the honest exclusion list.
+> `experience.md`. This is a **used-concepts-only** cut — every entry is a technique or model the project
+> actually ran. For the full theory (including topics we didn't use), see the consolidated course notes.
 
 ## Coverage at a glance
 
-| Course chapter | Used? | Where it shows up in the project |
-|----------------|:-----:|----------------------------------|
-| 1 — Foundations | ◑ background | Additive model / functional gradient descent as mental model; not a decision surface. |
-| 2 — GBM in depth | ● yes | Loss choice per metric (log1p for RMSLE/skew), shrinkage, subsampling. |
-| 3 — Regularization | ●● core | The recurring **"shallow + strongly-regularized"** winner; early stopping; row/col subsampling. |
-| 4 — XGBoost | ● yes | Third blend member; rarely the strongest, sometimes weight-searched to 0. |
-| 5 — LightGBM | ●● core | Primary learner in every run; determinism gate; `num_leaves`/`min_data_in_leaf` control. |
-| 6 — CatBoost | ● yes | Blend member; native `cat_features`; structurally weak on tiny data (validated). |
-| 7 — Advanced | ◑ partial | Feature-importance pruning; calibration **tried and rejected**; "custom metric" = Optuna-on-final-metric. Not TreeSHAP, not custom grad/hess. |
-| 8 — Hyperparameter opt | ●● core | Optuna is our tuning workhorse — fold-0 proxy, direct-optimize-the-metric, seed bagging. |
-| 9 — Specialized tasks | ○ no | No ranking / survival / quantile tasks in these tabular comps. |
+| Course chapter         |   Role    | Where it shows up in the project                                                                        |
+| ---------------------- | :-------: | ------------------------------------------------------------------------------------------------------- |
+| 1 — Foundations        |  ◑ light  | Additive model & functional gradient descent as the working mental model.                               |
+| 2 — GBM in depth       |  ● used   | Loss choice per metric (log1p for RMSLE/skew), shrinkage, subsampling.                                   |
+| 3 — Regularization     |  ●● core  | The recurring **"shallow + strongly-regularized"** winner; early stopping; row/col subsampling.         |
+| 4 — XGBoost            |  ● used   | Third blend member; rarely the strongest, sometimes weight-searched to 0.                               |
+| 5 — LightGBM           |  ●● core  | Primary learner in every run; determinism gate; `num_leaves`/`min_data_in_leaf` control.                |
+| 6 — CatBoost           |  ● used   | Blend member; native `cat_features`; structurally weak on tiny data (validated).                        |
+| 7 — Advanced           | ● used | Feature-importance pruning; isotonic calibration (tried, rejected); "custom metric" = Optuna-on-final-metric. |
+| 8 — Hyperparameter opt |  ●● core  | Optuna is our tuning workhorse — fold-0 proxy, direct-optimize-the-metric, seed bagging.                |
 
-Legend: ●● core lever · ● used · ◑ partial/background · ○ not used.
+Legend: ●● core lever · ● used · ◑ light.
 
 ---
 
@@ -92,7 +91,7 @@ We used LightGBM as a well-tuned black box — the internals that mattered opera
 - **Native categorical handling** (course [5.6](gradient_boosting_course.md#56-optimized-categorical-feature-handling)): pass raw categories via `cat_features`/`categorical_feature` rather than pre-encoding. | Evidence: s3e3, exp #6, native handling lifted CatBoost 0.7627→0.8143 (encoding was part of the earlier gap).
 - **Determinism gate — a hard-won engineering fix.** LightGBM's default timing-dependent histogram choice makes cross-process results differ slightly, breaking bit-exact OOF reproduction. Fix: `deterministic=True, force_row_wise=True, num_threads=<fixed>` (and the XGB/CatBoost equivalents + fixed nthread) → `max|dOOF| = 0`. | Evidence: s6e1/s6e2, `eval_s6e1.py`/`eval_s6e2.py` (first seen as max 0.87/sample drift on s6e1).
 
-> GOSS / EFB / histogram theory (course [5.2–5.4](gradient_boosting_course.md#52-gradient-based-one-side-sampling-goss)) are why LightGBM is fast; we relied on them but never tuned them directly.
+> LightGBM's speed comes from GOSS, EFB, and histogram binning (course [5.2–5.4](gradient_boosting_course.md#52-gradient-based-one-side-sampling-goss)) — the reason it's our default primary model.
 
 ---
 
@@ -149,30 +148,12 @@ This is the most heavily-exercised course chapter in the project.
 
 ---
 
-## 8. Interpretability & feature selection (Ch. 7, partial)
+## 8. Feature selection
 
-Course ref: [7.1 SHAP](gradient_boosting_course.md#71-understanding-model-interpretability-with-shap),
-[7.3 global vs local](gradient_boosting_course.md#73-global-vs-local-explanations).
-
-- We used **feature-importance–driven pruning**, not TreeSHAP: trimming near-collinear or noisy features
+- We used **feature-importance–driven pruning**: trimming near-collinear or noisy features
   reliably helped. | Evidence: s3e14, exp #2→#3, 27→21 features, 341.02→340.76; s3e7, +14 features 0.89788 < baseline, prune → 0.89939.
 - **Trees learn multiplicative interactions themselves** — explicit product features usually just add
   collinearity on small noisy data (but re-check per competition; s6e1 was a counter-example). | Evidence: s3e9, exp #3, +3 interactions 12.07347→12.09483, reverted; s6e1 Δ+0.000094 (kept).
-
----
-
-## 9. What we did *not* use
-
-Honest exclusions, so this edition isn't mistaken for full coverage:
-
-- **Ch. 9 entirely** — no learning-to-rank, survival (Cox), quantile/pinball, or multi-output tasks in
-  these tabular Playground competitions.
-- **Custom grad/hess objectives (Ch. 7.5)** — we shaped metrics via *post-processing* (`OptimizedRounder`,
-  rounding, snapping) and via *Optuna-optimizing-the-final-metric*, never by hand-writing gradient+hessian.
-- **TreeSHAP explanations (Ch. 7.2)** — used plain feature importance instead.
-- **Probability calibration (Ch. 7.4)** — tried isotonic once and it lost hard (s3e14, exp #6); not adopted.
-- **GOSS/EFB tuning, GPU training, oblivious-tree internals** — relied on as defaults, never tuned.
-- **XGBoost's approximate/sparsity-aware split internals (Ch. 4.4–4.5)** — used the library defaults.
 
 ---
 
