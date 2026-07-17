@@ -1,0 +1,23 @@
+{
+  "skill_name": "kaggle-vision-agent",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "幫我開始跑 digit-recognizer 這場影像競賽,先做到 discovery 階段的 backbone 排名就好(用小子樣本,不要跑 full fine-tune)",
+      "expected_output": "Creates/updates competitions/digit-recognizer config.yaml with CV scheme; runs tier-0 embedding cache via the bundled embed_cache.py for a diverse backbone menu; tier-1 linear-probe ranking on shared stratified folds; logs experiments via log_experiment_v2; reports backbone ranking with scores; does NOT consult public kernels or inject [EXT] recipes; does NOT start full fine-tuning.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "cifar-10 的資料已經在 competitions/cifar-10/data 下了,規劃並執行這場的 vision pipeline 第一步(環境檢查+資料載入+CV 設計),先不要訓練",
+      "expected_output": "Runs the V1 setup checks (torch+CUDA+timm); inspects the image-folder/archive data format; writes config.yaml with metric, image format, image size, class count, and a StratifiedKFold CV plan; notes any leakage/grouping considerations; stops before training as asked.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "我想知道現在這台機器上,frozen probe 的 backbone 排名可不可以拿來信任?根據我們自己的證據回答",
+      "expected_output": "Reads vision/derisk_results.json (the local probe-vs-finetune agreement evidence) and answers from that measured evidence (Spearman rho, top-1/top-2 agreement), not from literature claims; if the file is missing, says the evidence is pending and explains the tier-2 verification fallback from the skill.",
+      "files": []
+    }
+  ]
+}
