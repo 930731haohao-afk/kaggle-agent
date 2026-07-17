@@ -1,0 +1,26 @@
+{
+  "competition": "dogs-vs-cats",
+  "metric": "log_loss",
+  "metric_direction": "minimize",
+  "experiments": [
+    {
+      "id": 1,
+      "name": "ResNet-50 Transfer Learning",
+      "model": "ResNet-50 (ImageNet V2 pretrained)",
+      "augmentation": "RandomResizedCrop(224) + HFlip + ColorJitter + Normalize",
+      "params": {
+        "epochs": 10,
+        "batch_size": 64,
+        "lr": 0.0001,
+        "weight_decay": 0.0001,
+        "optimizer": "AdamW + CosineAnnealing",
+        "image_size": 224,
+        "train_split": 0.9
+      },
+      "val_log_loss": 0.030669103674700153,
+      "val_accuracy": 0.9908,
+      "training_time_seconds": 1296.1707355976105,
+      "submission_file": "/home/tjyen/ai_agents/kaggle/competitions/dogs-vs-cats/submissions/submission_resnet50.csv"
+    }
+  ]
+}

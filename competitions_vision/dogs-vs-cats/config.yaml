@@ -1,0 +1,32 @@
+competition:
+  name: dogs-vs-cats
+  url: https://www.kaggle.com/c/dogs-vs-cats
+  type: binary_image_classification
+  metric: log_loss
+  metric_direction: minimize
+  deadline: null  # Evergreen competition
+
+data:
+  train_dir: data/train/
+  test_dir: data/test1/
+  sample_submission: data/sampleSubmission.csv
+  image_size: variable (resized to 224x224)
+  channels: 3
+  num_classes: 2
+  classes: [cat, dog]
+  train_naming: "{class}.{id}.jpg"
+  test_naming: "{id}.jpg"
+
+dataset_stats:
+  train_samples: 25000
+  train_cats: 12500
+  train_dogs: 12500
+  test_samples: 12500
+  balance: perfectly_balanced
+
+approach:
+  model: ResNet-50 (ImageNet pretrained, fine-tuned)
+  resize: 224x224
+  augmentation: [random_resized_crop, horizontal_flip, color_jitter, normalize]
+  optimizer: AdamW with cosine annealing
+  validation: stratified 90/10 split

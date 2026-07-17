@@ -1,0 +1,19 @@
+[12:53:15] top-3 from tier-2a: ['convnext_atto', 'resnet18', 'vit_tiny_patch16_224']
+[12:53:16] AUG   convnext_atto              none   acc=0.9806  (0s)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[12:54:05] AUG   convnext_atto              light  acc=0.9816  (49s)
+[12:54:53] AUG   convnext_atto              medium acc=0.9828  (48s)
+[12:54:53] BEST  convnext_atto              aug=medium acc=0.9828
+[12:54:53] AUG   resnet18                   none   acc=0.9767  (0s)
+[12:55:33] AUG   resnet18                   light  acc=0.9735  (40s)
+[12:56:13] AUG   resnet18                   medium acc=0.9809  (40s)
+[12:56:13] BEST  resnet18                   aug=medium acc=0.9809
+[12:56:13] AUG   vit_tiny_patch16_224       none   acc=0.9579  (0s)
+[12:56:48] AUG   vit_tiny_patch16_224       light  acc=0.9581  (34s)
+[12:57:22] AUG   vit_tiny_patch16_224       medium acc=0.9549  (34s)
+[12:57:22] BEST  vit_tiny_patch16_224       aug=light acc=0.9581
+[12:57:22] SUMMARY:
+[12:57:22]   convnext_atto              -> aug=medium lr=0.0001 acc=0.9828
+[12:57:22]   resnet18                   -> aug=medium lr=0.001 acc=0.9809
+[12:57:22]   vit_tiny_patch16_224       -> aug=light  lr=0.0001 acc=0.9581
+[12:57:22] done in 246.7s

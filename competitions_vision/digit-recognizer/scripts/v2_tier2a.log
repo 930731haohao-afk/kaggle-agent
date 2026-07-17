@@ -1,0 +1,26 @@
+[12:42:19] resumed grids for: ['resnet18']
+[12:42:19] SKIP  resnet18                   (resumed) lr=0.001 acc=0.9767
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[12:43:37] SWEEP efficientnet_b0            lr=0.0001  acc=0.9330  (78s)
+[12:44:54] SWEEP efficientnet_b0            lr=0.0003  acc=0.8799  (78s)
+[12:46:11] SWEEP efficientnet_b0            lr=0.001  acc=0.9434  (77s)
+[12:46:11] BEST  efficientnet_b0            lr=0.001  acc=0.9434
+[12:46:56] SWEEP mobilenetv3_large_100      lr=0.0001  acc=0.8612  (45s)
+[12:47:41] SWEEP mobilenetv3_large_100      lr=0.0003  acc=0.7605  (45s)
+[12:48:27] SWEEP mobilenetv3_large_100      lr=0.001  acc=0.9303  (46s)
+[12:48:27] BEST  mobilenetv3_large_100      lr=0.001  acc=0.9303
+[12:49:02] SWEEP vit_tiny_patch16_224       lr=0.0001  acc=0.9579  (35s)
+[12:49:36] SWEEP vit_tiny_patch16_224       lr=0.0003  acc=0.8304  (34s)
+[12:50:11] SWEEP vit_tiny_patch16_224       lr=0.001  acc=0.1520  (35s)
+[12:50:11] BEST  vit_tiny_patch16_224       lr=0.0001  acc=0.9579
+[12:51:02] SWEEP convnext_atto              lr=0.0001  acc=0.9806  (51s)
+[12:51:52] SWEEP convnext_atto              lr=0.0003  acc=0.9756  (50s)
+[12:52:41] SWEEP convnext_atto              lr=0.001  acc=0.3902  (50s)
+[12:52:41] BEST  convnext_atto              lr=0.0001  acc=0.9806
+[12:52:41] RANKING (at per-backbone best LR):
+[12:52:41]   convnext_atto              lr=0.0001 acc=0.9806
+[12:52:41]   resnet18                   lr=0.001 acc=0.9767
+[12:52:41]   vit_tiny_patch16_224       lr=0.0001 acc=0.9579
+[12:52:41]   efficientnet_b0            lr=0.001 acc=0.9434
+[12:52:41]   mobilenetv3_large_100      lr=0.001 acc=0.9303
+[12:52:41] done in 623.7s

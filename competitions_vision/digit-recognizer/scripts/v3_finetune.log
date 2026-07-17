@@ -1,0 +1,70 @@
+[12:58:40] train (42000, 28, 28), test (28000, 28, 28)
+[12:58:40] === convnext_atto_med (lr=0.0001, aug=medium) ===
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[13:00:04]   convnext_atto_med fold0 epoch0 done (85s elapsed)
+[13:01:29]   convnext_atto_med fold0 epoch1 done (169s elapsed)
+[13:02:53]   convnext_atto_med fold0 epoch2 done (253s elapsed)
+[13:03:22]   convnext_atto_med fold0: acc=0.9951
+[13:04:50]   convnext_atto_med fold1 epoch0 done (370s elapsed)
+[13:06:16]   convnext_atto_med fold1 epoch1 done (457s elapsed)
+[13:07:43]   convnext_atto_med fold1 epoch2 done (543s elapsed)
+[13:08:11]   convnext_atto_med fold1: acc=0.9948
+[13:09:39]   convnext_atto_med fold2 epoch0 done (659s elapsed)
+[13:11:06]   convnext_atto_med fold2 epoch1 done (747s elapsed)
+[13:12:33]   convnext_atto_med fold2 epoch2 done (834s elapsed)
+[13:13:02]   convnext_atto_med fold2: acc=0.9952
+[13:14:28]   convnext_atto_med fold3 epoch0 done (948s elapsed)
+[13:15:55]   convnext_atto_med fold3 epoch1 done (1035s elapsed)
+[13:17:22]   convnext_atto_med fold3 epoch2 done (1122s elapsed)
+[13:17:50]   convnext_atto_med fold3: acc=0.9965
+[13:19:17]   convnext_atto_med fold4 epoch0 done (1238s elapsed)
+[13:20:44]   convnext_atto_med fold4 epoch1 done (1324s elapsed)
+[13:22:12]   convnext_atto_med fold4 epoch2 done (1412s elapsed)
+[13:22:40]   convnext_atto_med fold4: acc=0.9954
+[13:22:40] CONFIG DONE convnext_atto_med: OOF acc=0.9954 (folds [0.9951, 0.9948, 0.9952, 0.9965, 0.9954], 1440.4s)
+[13:22:40] === resnet18_med (lr=0.001, aug=medium) ===
+[13:23:50]   resnet18_med fold0 epoch0 done (70s elapsed)
+[13:25:00]   resnet18_med fold0 epoch1 done (139s elapsed)
+[13:26:12]   resnet18_med fold0 epoch2 done (212s elapsed)
+[13:26:42]   resnet18_med fold0: acc=0.9954
+[13:27:54]   resnet18_med fold1 epoch0 done (313s elapsed)
+[13:29:04]   resnet18_med fold1 epoch1 done (384s elapsed)
+[13:30:16]   resnet18_med fold1 epoch2 done (455s elapsed)
+[13:30:44]   resnet18_med fold1: acc=0.9939
+[13:31:52]   resnet18_med fold2 epoch0 done (552s elapsed)
+[13:33:00]   resnet18_med fold2 epoch1 done (620s elapsed)
+[13:34:08]   resnet18_med fold2 epoch2 done (688s elapsed)
+[13:34:37]   resnet18_med fold2: acc=0.9954
+[13:35:47]   resnet18_med fold3 epoch0 done (787s elapsed)
+[13:36:57]   resnet18_med fold3 epoch1 done (857s elapsed)
+[13:38:08]   resnet18_med fold3 epoch2 done (928s elapsed)
+[13:38:37]   resnet18_med fold3: acc=0.9967
+[13:39:49]   resnet18_med fold4 epoch0 done (1028s elapsed)
+[13:40:59]   resnet18_med fold4 epoch1 done (1099s elapsed)
+[13:42:06]   resnet18_med fold4 epoch2 done (1166s elapsed)
+[13:42:35]   resnet18_med fold4: acc=0.9952
+[13:42:35] CONFIG DONE resnet18_med: OOF acc=0.9953 (folds [0.9954, 0.9939, 0.9954, 0.9967, 0.9952], 1194.8s)
+[13:42:35] === vit_tiny_light (lr=0.0001, aug=light) ===
+[13:43:36]   vit_tiny_light fold0 epoch0 done (61s elapsed)
+[13:44:36]   vit_tiny_light fold0 epoch1 done (121s elapsed)
+[13:45:34]   vit_tiny_light fold0 epoch2 done (179s elapsed)
+[13:45:57]   vit_tiny_light fold0: acc=0.9945
+[13:46:56]   vit_tiny_light fold1 epoch0 done (261s elapsed)
+[13:47:55]   vit_tiny_light fold1 epoch1 done (320s elapsed)
+[13:48:54]   vit_tiny_light fold1 epoch2 done (379s elapsed)
+[13:49:20]   vit_tiny_light fold1: acc=0.9940
+[13:50:21]   vit_tiny_light fold2 epoch0 done (466s elapsed)
+[13:51:20]   vit_tiny_light fold2 epoch1 done (525s elapsed)
+[13:52:20]   vit_tiny_light fold2 epoch2 done (585s elapsed)
+[13:52:43]   vit_tiny_light fold2: acc=0.9939
+[13:53:42]   vit_tiny_light fold3 epoch0 done (667s elapsed)
+[13:54:42]   vit_tiny_light fold3 epoch1 done (727s elapsed)
+[13:55:42]   vit_tiny_light fold3 epoch2 done (786s elapsed)
+[13:56:06]   vit_tiny_light fold3: acc=0.9938
+[13:57:07]   vit_tiny_light fold4 epoch0 done (872s elapsed)
+[13:58:07]   vit_tiny_light fold4 epoch1 done (932s elapsed)
+[13:59:06]   vit_tiny_light fold4 epoch2 done (991s elapsed)
+[13:59:31]   vit_tiny_light fold4: acc=0.9949
+[13:59:31] CONFIG DONE vit_tiny_light: OOF acc=0.9942 (folds [0.9945, 0.994, 0.9939, 0.9938, 0.9949], 1015.7s)
+[13:59:31] V3 SUMMARY: {"convnext_atto_med": 0.9954047619047619, "resnet18_med": 0.9953095238095238, "vit_tiny_light": 0.9942380952380953}
+[13:59:31] total 3652.4s

@@ -1,0 +1,41 @@
+name: digit-recognizer
+url: https://www.kaggle.com/competitions/digit-recognizer
+description: Classify handwritten digits (0-9) from 28x28 grayscale images (MNIST)
+problem_type: multiclass_classification
+evaluation_metric: categorization_accuracy
+optimization_direction: maximize
+target_column: label
+id_column: ImageId
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+num_classes: 10
+image_size: 28x28
+pixel_columns: 784  # pixel0 through pixel783, values 0-255
+special_rules:
+  external_data_allowed: true  # Getting Started competition
+  pretrained_models_allowed: true
+  internet_access_allowed: false
+  daily_submission_limit: 5
+
+# --- vision pipeline run #1 (kaggle-vision-agent skill, 2026-07-17) ---
+domain: vision
+cv:
+  scheme: StratifiedKFold
+  n_splits: 5
+  shuffle: true
+  seed: 42
+  grouping: none  # independent handwritten digits
+
+discovery:
+  subsample: 8000      # stratified, seed 42 — same substrate as vision/derisk_results.json
+  folds: 3
+  # derisk evidence (2026-07-17): probe rankings NOT trusted for backbone survival (rho=-0.30);
+  # backbone decisions happen at tier-2 via per-backbone LR mini-sweep.
+  backbones: [resnet18, efficientnet_b0, mobilenetv3_large_100, vit_tiny_patch16_224, convnext_atto]
+  lr_grid: [1.0e-4, 3.0e-4, 1.0e-3]
+  aug_domain_note: digits — NO horizontal flip (6/9 2/5 asymmetry); small rotate/translate/scale OK
+
+reproducibility:
+  layer1: seed 42 everywhere; folds + scheme recorded per experiment; OOF cached as npz
+  layer2: certification runs use kaggle-vision-agent assets/torch_determinism.py (GATE PASS 2026-07-17)

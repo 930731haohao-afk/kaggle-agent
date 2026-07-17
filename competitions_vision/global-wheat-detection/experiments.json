@@ -1,0 +1,31 @@
+{
+  "competition": "global-wheat-detection",
+  "experiments": [
+    {
+      "id": 1,
+      "name": "Faster R-CNN ResNet50-FPN Baseline",
+      "model": "fasterrcnn_resnet50_fpn",
+      "params": {
+        "backbone": "resnet50_fpn",
+        "pretrained": "COCO",
+        "num_classes": 2,
+        "lr": 0.005,
+        "momentum": 0.9,
+        "weight_decay": 0.0005,
+        "lr_scheduler": "StepLR(step_size=3, gamma=0.1)",
+        "batch_size": 4,
+        "n_epochs": 5,
+        "score_threshold": 0.3,
+        "optimizer": "SGD"
+      },
+      "validation": "GroupKFold by source (fold 0, val=arvalis_1)",
+      "local_score": {
+        "mAP_0.5": 0.7965,
+        "best_epoch": 1,
+        "epoch_scores": [0.7965, 0.7802, 0.7930, 0.7958, 0.7959]
+      },
+      "kaggle_score": null,
+      "notes": "Code competition — requires notebook submission. Strong baseline from COCO pretrained model. Best mAP at epoch 1, slight overfitting in later epochs. Val on arvalis_1 (1055 images)."
+    }
+  ]
+}

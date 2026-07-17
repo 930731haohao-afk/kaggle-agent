@@ -1,0 +1,15 @@
+{
+  "weights": {
+    "convnext_atto_med": 0.3393713290057119,
+    "resnet18_med": 0.42744163341493296,
+    "vit_tiny_light": 0.23318703757935524
+  },
+  "blend_acc": 0.9961190476190476,
+  "solo": {
+    "convnext_atto_med": 0.9954047619047619,
+    "resnet18_med": 0.9953095238095238,
+    "vit_tiny_light": 0.9942380952380953
+  },
+  "equal": 0.9960476190476191,
+  "chosen": "blend{'convnext_atto_med': 0.339, 'resnet18_med': 0.427, 'vit_tiny_light': 0.233}"
+}

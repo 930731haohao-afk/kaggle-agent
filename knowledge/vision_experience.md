@@ -1,10 +1,34 @@
 # Vision experience library ([INT], score-cited)
 
-Last updated: 2026-07-17. House rules identical to `experience.md`: every entry carries evidence
-(`experiment, metric A -> B`); negative results are first-class; `[EXT]` never mixes in here.
-Consumed by keyword-header matching (same mechanism as the tabular library).
+Last updated: 2026-07-17 (run #1 digit-recognizer complete). House rules identical to
+`experience.md`: every entry carries evidence (`experiment, metric A -> B`); negative results are
+first-class; `[EXT]` never mixes in here. Consumed by keyword-header matching (same mechanism as
+the tabular library).
 
 ---
+
+## digits / grayscale small images (run #1: digit-recognizer, full pipeline)
+
+- **Per-backbone LR sweep changes the ranking AND rescues collapses — mandatory before judging any
+  backbone.** At each backbone's own best LR (1ep/8k/3-fold): convnext_atto(1e-4) 0.9806 >
+  resnet18(1e-3) 0.9767 > vit_tiny(1e-4) 0.9579 > efficientnet_b0(1e-3) 0.9434 >
+  mobilenetv3(1e-3) 0.9303 (vs 0.374 at 3e-4). CNNs preferred 1e-3, ViT/ConvNeXt 1e-4. | Evidence:
+  digit-recognizer exp #4-8 (tier-2a), v2_tier2a_results.json.
+- **Affine augmentation (no h-flip) is a real gain on digits; strength is per-family.** medium
+  (rot15/trans10%/scale0.9-1.1) won for both CNNs (convnext 0.9806->0.9828, resnet18
+  0.9767->0.9809); light won for the ViT (0.9579->0.9581, marginal). Never h-flip digits (6/9,
+  2/5). | Evidence: digit-recognizer exp #9-11 (tier-2b), v2_tier2b_results.json.
+- **Discovery-scale gaps shrink dramatically at full scale — don't over-prune on discovery scores.**
+  vit_tiny trailed by 2.5pts at 1ep/8k (0.958 vs 0.983) but only 0.12pts at 3ep/42k (0.9942 vs
+  0.9954). Family diversity kept it in the pool and it earned 0.23 blend weight. | Evidence:
+  digit-recognizer exp #12-14 (V3).
+- **3-family convex blend beat the best solo AND equal weights**: blend OOF 0.99612 vs best solo
+  0.99540 vs equal 0.99605; weights resnet18 0.427 / convnext 0.339 / vit_tiny 0.233 — all three
+  families contributed (decorrelated errors). SLSQP-on-logloss + coordinate-refine-on-accuracy,
+  argmax inside the scorer. | Evidence: digit-recognizer exp #15 (V4), v4_results.json.
+- **Cost calibration (GB10, full pipeline)**: discovery (V2) = 14.5 min total (tier-2a 623s +
+  tier-2b 247s); V3 full fine-tune 3 configs x 5 folds x 3ep = 61 min; V4 convex solve = seconds.
+  Whole run #1 ~= 1.5 h GPU. | Evidence: run logs (v2_tier2a/v2_tier2b/v3_finetune.log).
 
 ## backbone selection / cheap proxies
 

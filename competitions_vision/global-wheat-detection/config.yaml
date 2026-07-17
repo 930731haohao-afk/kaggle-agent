@@ -1,0 +1,34 @@
+competition:
+  name: global-wheat-detection
+  url: https://www.kaggle.com/competitions/global-wheat-detection
+  type: object_detection
+  metric: mean_average_precision  # mAP at IoU 0.5
+  metric_direction: maximize
+  target: wheat head bounding boxes
+  id_column: image_id
+  submission_format: image_id,PredictionString  # "confidence x y w h ..."
+  code_competition: true  # Requires notebook submission, not CSV upload
+
+data:
+  train_csv: train.csv  # 147,793 rows (bounding box annotations)
+  train_images: train/  # 3,422 JPG images (1024x1024 RGB)
+  test_images: test/    # 10 JPG images (1024x1024 RGB) — placeholder
+  sample_submission: sample_submission.csv
+  image_size: [1024, 1024]
+  n_train_images: 3373  # unique images with annotations
+  n_train_boxes: 147793
+  n_test_images: 10
+  n_sources: 7
+
+notes:
+  - Detect wheat heads in field images using bounding boxes
+  - All images are 1024x1024 RGB JPG
+  - Bounding box format: [x, y, width, height] in train.csv
+  - Submission format: "confidence x y w h" per detection, space-separated
+  - 7 data sources from different institutions/countries
+  - Mean 43.8 boxes per image (range 1-116)
+  - Mean box area ~6,843 px (roughly 83x83 pixels)
+  - 49 images in train dir without annotations in train.csv
+  - ethz_1 source has highest density (68.9 boxes/img)
+  - No out-of-bounds boxes, very clean annotations
+  - Test set is placeholder (10 images)

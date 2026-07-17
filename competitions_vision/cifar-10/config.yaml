@@ -1,0 +1,39 @@
+competition:
+  name: cifar-10
+  url: https://www.kaggle.com/c/cifar-10
+  type: image_classification
+  metric: accuracy
+  metric_direction: maximize
+  deadline: null  # Evergreen competition
+
+data:
+  train_images: data/train/
+  test_images: data/test/
+  train_labels: data/trainLabels.csv
+  sample_submission: data/sampleSubmission.csv
+  image_size: [32, 32]
+  channels: 3
+  num_classes: 10
+  classes:
+    - airplane
+    - automobile
+    - bird
+    - cat
+    - deer
+    - dog
+    - frog
+    - horse
+    - ship
+    - truck
+
+dataset_stats:
+  train_samples: 50000
+  test_samples: 300000
+  samples_per_class: 5000
+  balance: perfectly_balanced
+
+approach:
+  model: ResNet-based CNN (CIFAR-10 variant)
+  augmentation: [random_crop_with_padding, horizontal_flip, cutout, color_jitter]
+  optimizer: SGD with cosine annealing
+  validation: stratified_kfold_5

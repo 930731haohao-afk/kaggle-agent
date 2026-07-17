@@ -1,0 +1,351 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-19T05:55:38.724622+00:00",
+    "stage": "baseline",
+    "model": "majority_class",
+    "features": "none",
+    "params": {
+      "majority_class": 1
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.11152,
+      0.11152,
+      0.11152,
+      0.11152,
+      0.11152
+    ],
+    "cv_mean": 0.11152,
+    "cv_std": 0.0,
+    "notes": "Trivial baseline \u2014 always predict most common digit"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-19T05:56:45.196262+00:00",
+    "stage": "baseline",
+    "model": "LogisticRegression",
+    "features": "engineered_v1",
+    "params": {
+      "C": 1.0,
+      "max_iter": 300,
+      "solver": "lbfgs"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.92143,
+      0.925,
+      0.91917,
+      0.9231,
+      0.92179
+    ],
+    "cv_mean": 0.9221,
+    "cv_std": 0.00193,
+    "training_time_sec": 66.5,
+    "notes": "Logistic Regression on engineered features (scaled)"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-19T06:01:24.457282+00:00",
+    "stage": "baseline",
+    "model": "LightGBM-default",
+    "features": "engineered_v1",
+    "params": {
+      "learning_rate": 0.1,
+      "num_leaves": 127,
+      "num_boost_round": 500,
+      "early_stopping": 50
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.97024,
+      0.97048,
+      0.97036,
+      0.97345,
+      0.9706
+    ],
+    "cv_mean": 0.97102,
+    "cv_std": 0.00122,
+    "training_time_sec": 279.3,
+    "notes": "LightGBM default on engineered features"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-19T06:11:36.481110+00:00",
+    "stage": "modeling",
+    "model": "CNN-2block",
+    "features": "raw_pixels_normalized",
+    "params": {
+      "conv_blocks": 2,
+      "channels": [
+        32,
+        64
+      ],
+      "fc_units": 256,
+      "dropout": [
+        0.25,
+        0.5
+      ],
+      "batch_norm": true,
+      "augmentation": "rotation_15deg_shift_2px",
+      "lr": 0.001,
+      "batch_size": 128,
+      "epochs": 30,
+      "optimizer": "Adam",
+      "weight_decay": 0.0001,
+      "scheduler": "ReduceLROnPlateau"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.99512,
+      0.99583,
+      0.99524,
+      0.99631,
+      0.99548
+    ],
+    "cv_mean": 0.9956,
+    "cv_std": 0.00043,
+    "training_time_sec": 550.8,
+    "submission_file": "competitions/digit-recognizer/submissions/cnn_submission_20260219_141136.csv",
+    "notes": "2-block CNN with BN, dropout, augmentation (rotation+shift), 5-fold ensemble"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-17T12:46:11",
+    "model": "efficientnet_b0 (tier-2a LR sweep, 1ep, 8000 sub)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.943375,
+    "features": [
+      "raw pixels -> 224 bilinear, ImageNet norm, no aug"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "per-backbone LR sweep [0.0001, 0.0003, 0.001], best lr=0.001; grid={'0.0001': 0.9330010605388505, '0.0003': 0.8798714489270987, '0.001': 0.9433745294216318}; determinism preamble on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-17T12:48:27",
+    "model": "mobilenetv3_large_100 (tier-2a LR sweep, 1ep, 8000 sub)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.930252,
+    "features": [
+      "raw pixels -> 224 bilinear, ImageNet norm, no aug"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "per-backbone LR sweep [0.0001, 0.0003, 0.001], best lr=0.001; grid={'0.0001': 0.8612499956635203, '0.0003': 0.7604877409828648, '0.001': 0.930251732411918}; determinism preamble on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-17T12:50:11",
+    "model": "vit_tiny_patch16_224 (tier-2a LR sweep, 1ep, 8000 sub)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.957876,
+    "features": [
+      "raw pixels -> 224 bilinear, ImageNet norm, no aug"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "per-backbone LR sweep [0.0001, 0.0003, 0.001], best lr=0.0001; grid={'0.0001': 0.9578761863319224, '0.0003': 0.8303702284776294, '0.001': 0.15199478534800556}; determinism preamble on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-17T12:52:41",
+    "model": "convnext_atto (tier-2a LR sweep, 1ep, 8000 sub)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.980625,
+    "features": [
+      "raw pixels -> 224 bilinear, ImageNet norm, no aug"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "per-backbone LR sweep [0.0001, 0.0003, 0.001], best lr=0.0001; grid={'0.0001': 0.9806247962440554, '0.0003': 0.9756244835487088, '0.001': 0.39021369515607257}; determinism preamble on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-17T12:54:53",
+    "model": "convnext_atto (tier-2b aug sweep, lr=0.0001, 1ep, 8000 sub)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.98275,
+    "features": [
+      "28px affine aug (medium) -> 224 bilinear, ImageNet norm"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "aug grid={'none': 0.9806247962440554, 'light': 0.9816253744726021, 'medium': 0.9827502338651778}; no h-flip (digit asymmetry); determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-17T12:56:13",
+    "model": "resnet18 (tier-2b aug sweep, lr=0.001, 1ep, 8000 sub)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.980876,
+    "features": [
+      "28px affine aug (medium) -> 224 bilinear, ImageNet norm"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "aug grid={'none': 0.9767, 'light': 0.9734989052850014, 'medium': 0.9808757026151927}; no h-flip (digit asymmetry); determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-17T12:57:22",
+    "model": "vit_tiny_patch16_224 (tier-2b aug sweep, lr=0.0001, 1ep, 8000 sub)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.958126,
+    "features": [
+      "28px affine aug (light) -> 224 bilinear, ImageNet norm"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "aug grid={'none': 0.9578761863319224, 'light': 0.9581262488475512, 'medium': 0.9548754361443755}; no h-flip (digit asymmetry); determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-17T13:22:40",
+    "model": "convnext_atto full FT (lr=0.0001, aug=medium, 3ep, cosine)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.995405,
+    "features": [
+      "28px affine aug (medium) -> 224 bilinear, ImageNet norm"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full fine-tune; fold accs=[0.9951, 0.9948, 0.9952, 0.9965, 0.9954]; wall=1440.4s; OOF cached data/oof_convnext_atto_med.npz; fp32; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 13,
+    "timestamp": "2026-07-17T13:42:35",
+    "model": "resnet18 full FT (lr=0.001, aug=medium, 3ep, cosine)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.99531,
+    "features": [
+      "28px affine aug (medium) -> 224 bilinear, ImageNet norm"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full fine-tune; fold accs=[0.9954, 0.9939, 0.9954, 0.9967, 0.9952]; wall=1194.8s; OOF cached data/oof_resnet18_med.npz; fp32; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 14,
+    "timestamp": "2026-07-17T13:59:31",
+    "model": "vit_tiny_patch16_224 full FT (lr=0.0001, aug=light, 3ep, cosine)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.994238,
+    "features": [
+      "28px affine aug (light) -> 224 bilinear, ImageNet norm"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full fine-tune; fold accs=[0.9945, 0.994, 0.9939, 0.9938, 0.9949]; wall=1015.7s; OOF cached data/oof_vit_tiny_light.npz; fp32; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 15,
+    "timestamp": "2026-07-17T14:00:31",
+    "model": "V4 ensemble (blend{'convnext_atto_med': 0.339, 'resnet18_med': 0.427, 'vit_tiny_light': 0.233})",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.996119,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "convnext_atto_med",
+        "score": 0.9954
+      },
+      {
+        "name": "resnet18_med",
+        "score": 0.99531
+      },
+      {
+        "name": "vit_tiny_light",
+        "score": 0.99424
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "convnext_atto_med": 0.339,
+        "resnet18_med": 0.427,
+        "vit_tiny_light": 0.233
+      },
+      "score": 0.99612,
+      "method": "SLSQP-logloss + coord-refine-acc"
+    },
+    "postprocess": [
+      "argmax"
+    ],
+    "submission": "v4_blend_submission.csv",
+    "notes": "baselines: best_solo=0.99540, equal=0.99605; decision rule: blend only if > best solo (s3e20)"
+  }
+]
