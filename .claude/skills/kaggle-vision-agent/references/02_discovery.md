@@ -5,12 +5,20 @@ consulted at this stage — the discoveries themselves become the recipe.
 
 ## Before starting: read the local evidence
 
-If `vision/derisk_results.json` exists, read it. It records this machine's measured agreement
-between frozen-probe rankings and short-fine-tune rankings (Spearman rho, top-1/top-2 agreement).
-- Strong agreement → trust tier-1 probe rankings to shortlist backbones.
-- Weak agreement → do NOT shortlist on probes alone; run tier-2 cheap fine-tunes on the full menu.
-If the file doesn't exist yet, treat probe rankings as *provisional* and verify the top pick at
-tier 2 before committing fine-tune budget.
+Read `vision/derisk_results.json` and `knowledge/vision_experience.md` first. **Measured verdict
+(digit-recognizer, 2026-07-17): probe-vs-finetune ranking agreement FAILED** — Spearman rho -0.30,
+top-1/top-2 disagree. Two consequences, both evidence-backed:
+
+1. **Never drop a backbone on tier-1 probe evidence alone.** Probes answer head/resolution
+   questions; backbone survival is decided at tier 2.
+2. **Tier-2 backbone comparisons require a per-backbone LR mini-sweep.** A single fixed LR is an
+   unfair ranker — at lr=3e-4 mobilenetv3 collapsed to 0.374 while convnext_atto hit 0.976; one-LR
+   comparison measures LR tolerance, not backbone quality.
+
+Domain caveat: that evidence is from MNIST-like digits. On a new domain, re-run the cheap
+agreement check (the whole 5-backbone x 2-arm experiment costs ~10 min on the GB10 —
+`vision/derisk_probe_vs_finetune.py` is the template) and append the result to
+`knowledge/vision_experience.md`.
 
 ## Tier 0 — embedding cache (run once)
 
