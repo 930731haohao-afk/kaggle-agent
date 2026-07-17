@@ -1,0 +1,17 @@
+{
+  "metric": "logloss",
+  "solo": {
+    "convnext_atto_none": 0.03642438295456682,
+    "resnet18_light": 0.043750815947081294,
+    "vit_tiny_patch16_224_none": 0.049550873702756765
+  },
+  "equal": 0.030134642046225908,
+  "blend": 0.029144321907587672,
+  "weights": {
+    "convnext_atto_none": 0.590576505885015,
+    "resnet18_light": 0.19454300690416232,
+    "vit_tiny_patch16_224_none": 0.21488048721082273
+  },
+  "chosen": "blend{'convnext_atto_none': 0.591, 'resnet18_light': 0.195, 'vit_tiny_patch16_224_none': 0.215}",
+  "oof_final": 0.029144321907587672
+}

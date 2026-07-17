@@ -244,44 +244,78 @@ def ensemble_submit(promote, y, ids, cfg, comp_dir):
         return -np.log(p[np.arange(len(y)), y]).mean()
 
     res = minimize(negll, np.full(len(names), 1 / len(names)), method="SLSQP",
-                   bounds=[(0, 1)] * len(names), constraints=({"type": "eq", "fun": lambda w: w.sum() - 1},))
-    w = np.clip(res.x, 0, 1); w /= w.sum()
-    bw, ba = w.copy(), float((blend(w, O).argmax(1) == y).mean())
+                   bounds=[(0, 1)] * len(names),
+                   constraints=({"type": "eq", "fun": lambda w: w.sum() - 1},))
+
+    # metric-aware scoring: 'logloss' (minimize) uses the SLSQP surrogate directly;
+    # 'accuracy' (default, maximize) refines on the discrete metric with argmax in the scorer.
+    from sklearn.metrics import log_loss
+    metric = cfg.get("metric", "accuracy")
+    is_logloss = metric == "logloss"
+
+    def norm(P):
+        P = np.clip(P, 1e-9, 1); return P / P.sum(-1, keepdims=True)
+
+    if is_logloss:
+        def score(P):        # lower is better -> return negative so "higher=better" logic holds
+            return -log_loss(y, norm(P), labels=list(range(cfg["n_classes"])))
+        solo = {n: -log_loss(y, norm(O[i]), labels=list(range(cfg["n_classes"]))) for i, n in enumerate(names)}
+        w = np.clip(res.x, 0, 1); w /= w.sum()   # SLSQP already minimized logloss
+        bw, ba = w.copy(), score(blend(w, O))
+        steps = [-0.05, -0.02, 0.02, 0.05]       # light refine on true logloss
+    else:
+        def score(P):
+            return float((P.argmax(1) == y).mean())
+        solo = {n: score(O[i]) for i, n in enumerate(names)}
+        w = np.clip(res.x, 0, 1); w /= w.sum()
+        bw, ba = w.copy(), score(blend(w, O))
+        steps = [-0.1, -0.05, -0.02, 0.02, 0.05, 0.1]
     changed = True
     while changed:
         changed = False
-        for i, s in product(range(len(names)), [-0.1, -0.05, -0.02, 0.02, 0.05, 0.1]):
+        for i, s in product(range(len(names)), steps):
             c = bw.copy(); c[i] = np.clip(c[i] + s, 0, 1)
             if c.sum() == 0:
                 continue
-            c /= c.sum(); a = float((blend(c, O).argmax(1) == y).mean())
+            c /= c.sum(); a = score(blend(c, O))
             if a > ba + 1e-9:
                 bw, ba, changed = c, a, True
     w = bw
-    eq = float((blend(np.full(len(names), 1 / len(names)), O).argmax(1) == y).mean())
+    eq = score(blend(np.full(len(names), 1 / len(names)), O))
     best_solo = max(solo, key=solo.get)
     use_blend = ba > solo[best_solo]
     final = blend(w, Tst) if use_blend else Tst[names.index(best_solo)]
     chosen = f"blend{dict(zip(names, [round(float(x), 3) for x in w]))}" if use_blend else f"solo:{best_solo}"
-    log(f"solo={solo} equal={eq:.5f} blend={ba:.5f} -> {chosen}")
+    # report positive numbers (flip sign back for logloss)
+    disp = (lambda v: -v) if is_logloss else (lambda v: v)
+    log(f"metric={metric} solo={ {k: round(disp(v),5) for k,v in solo.items()} } "
+        f"equal={disp(eq):.5f} blend={disp(ba):.5f} -> {chosen}")
 
-    pred_idx = final.argmax(1)
-    labels = [cfg["classes"][i] for i in pred_idx] if cfg.get("classes") else pred_idx
     import pandas as pd
-    sub = pd.DataFrame({cfg["id_col"]: ids, cfg["label_col"]: labels})
-    out = comp / "submissions" / f"vp_submission.csv"
+    final = norm(final)
+    if cfg.get("output") == "proba":              # binary: submit P(positive class)
+        col = final[:, cfg.get("proba_class", 1)]
+        vals = np.clip(col, 1e-6, 1 - 1e-6)
+    else:                                          # multiclass: argmax label
+        idx = final.argmax(1)
+        vals = [cfg["classes"][i] for i in idx] if cfg.get("classes") else idx
+    sub = pd.DataFrame({cfg["id_col"]: ids, cfg["label_col"]: vals})
+    out = comp / "submissions" / "vp_submission.csv"
     out.parent.mkdir(exist_ok=True)
     sub.to_csv(out, index=False)
+    ba, solo_b = disp(ba), disp(solo[best_solo])
     experiment_log.log_experiment_v2(
-        comp_dir, model=f"V4 ensemble ({chosen})", metric=cfg["metric"], direction="maximize",
-        score=max(ba, solo[best_solo]),
+        comp_dir, model=f"V4 ensemble ({chosen})", metric=metric,
+        direction="minimize" if is_logloss else "maximize", score=round(ba, 6),
         cv=dict(scheme="StratifiedKFold", n_splits=cfg["cv_folds"], seed=SEED),
-        base_models=[dict(name=n, score=round(solo[n], 5)) for n in names],
+        base_models=[dict(name=n, score=round(disp(solo[n]), 5)) for n in names],
         ensemble=dict(weights=dict(zip(names, [round(float(x), 3) for x in w])), score=round(ba, 5)),
-        postprocess=["argmax"], submission=out.name,
-        notes=f"best_solo={solo[best_solo]:.5f} equal={eq:.5f}; blend-if-better (s3e20)")
-    json.dump(dict(solo=solo, equal=eq, blend=ba, weights=dict(zip(names, [float(x) for x in w])),
-                   chosen=chosen, oof_final=max(ba, solo[best_solo])),
+        postprocess=["proba" if cfg.get("output") == "proba" else "argmax"], submission=out.name,
+        notes=f"best_solo={solo_b:.5f} equal={disp(eq):.5f}; blend-if-better (s3e20)")
+    best = min(ba, solo_b) if is_logloss else max(ba, solo_b)
+    json.dump(dict(metric=metric, solo={k: disp(v) for k, v in solo.items()}, equal=disp(eq),
+                   blend=ba, weights=dict(zip(names, [float(x) for x in w])),
+                   chosen=chosen, oof_final=best),
               open(comp / "scripts/v4_results.json", "w"), indent=2)
     log(f"submission: {out} ({len(sub)} rows)")
-    return out, max(ba, solo[best_solo]), chosen
+    return out, best, chosen

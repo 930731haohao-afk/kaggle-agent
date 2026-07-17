@@ -71,3 +71,15 @@ the tabular library).
 - **DataLoader + CUDA-fork deadlock is a real hazard** — a multi-worker DataLoader hung the run ~2h
   entering tier-2b. Fix: no DataLoader; preload uint8 arrays + GPU-batch resize/aug/norm. | Evidence:
   cifar-10 run #2 engineering note; vp.py.
+
+## binary / logloss (run #3: dogs-vs-cats, variable-size JPG -> 160px)
+
+- **Metric-aware blend works**: for logloss, minimize logloss in the SLSQP weight solve and submit
+  probabilities (not argmax). Blend logloss 0.02914 < best solo 0.03642 < equal 0.03013; weights
+  convnext 0.591/vit 0.215/resnet 0.195. | Evidence: dogs-vs-cats V4, v4_results.json.
+- **ConvNeXt/ViT low-LR pattern holds on a 3rd domain** (best 1e-4, collapse at 1e-3: convnext 0.536).
+  Now confirmed across digits, cifar, and cats/dogs. | Evidence: dogs-vs-cats tier-2a.
+- **Submission access caveat (operational)**: having a competition's DATA does not imply being able
+  to SUBMIT. Only competitions with userHasEntered=True and open submissions accept uploads; closed
+  comps give 400, un-joined comps give 403. Confirm entry status before promising a leaderboard score.
+  | Evidence: dogs-vs-cats 400 / redux 403 (2026-07-17); only digit-recognizer + cifar-10 submittable.
