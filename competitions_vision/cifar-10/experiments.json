@@ -1,24 +1,216 @@
-{
-  "competition": "cifar-10",
-  "metric": "accuracy",
-  "metric_direction": "maximize",
-  "experiments": [
-    {
-      "id": 1,
-      "name": "ResNet-18 CIFAR (single model)",
-      "model": "ResNet-18 (CIFAR variant, 11M params)",
-      "augmentation": "RandomCrop(4) + HFlip + ColorJitter + Cutout(16)",
-      "params": {
-        "epochs": 100,
-        "batch_size": 128,
-        "lr": 0.1,
-        "weight_decay": 0.0005,
-        "optimizer": "SGD + CosineAnnealing",
-        "train_split": 0.9
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-17T17:02:32",
+    "model": "resnet18 (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.797627,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.3570016988686617, '0.0003': 0.6400009732466861, '0.001': 0.7976267595207763}; img=128; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-17T17:03:51",
+    "model": "efficientnet_b0 (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.795499,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.5116249066016035, '0.0003': 0.7330013043193307, '0.001': 0.7954991184991598}; img=128; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-17T17:04:38",
+    "model": "mobilenetv3_large_100 (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.781877,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.530250954189616, '0.0003': 0.7103772568563963, '0.001': 0.7818771809562816}; img=128; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-17T17:05:24",
+    "model": "convnext_atto (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.877877,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.845001229684999, '0.0003': 0.8778765276245944, '0.001': 0.6346353648779649}; img=128; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-17T17:05:59",
+    "model": "vit_tiny_patch16_224 (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.855753,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.8393774484115967, '0.0003': 0.8557534021675647, '0.001': 0.2137472875905516}; img=128; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-17T17:06:31",
+    "model": "convnext_atto (tier-2b aug sweep, lr=0.0003)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.877877,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "aug grid={'none': 0.8778765276245944, 'light': 0.860750573845186, 'medium': 0.8433762921420268}; hflip_ok=True; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-17T17:06:55",
+    "model": "vit_tiny_patch16_224 (tier-2b aug sweep, lr=0.0003)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.855753,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "aug grid={'none': 0.8557534021675647, 'light': 0.8546258236850176, 'medium': 0.7053644269710097}; hflip_ok=True; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-17T17:07:25",
+    "model": "resnet18 (tier-2b aug sweep, lr=0.001)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.797627,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 8000
+    },
+    "notes": "aug grid={'none': 0.7976267595207763, 'light': 0.750000210963877, 'medium': 0.7138750848191989}; hflip_ok=True; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-17T17:21:26",
+    "model": "convnext_atto full FT (lr=0.0003, aug=none, 3ep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.9578,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full FT; folds=[0.9551, 0.9581, 0.9585, 0.9589, 0.9584]; img=128; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-17T17:31:56",
+    "model": "vit_tiny_patch16_224 full FT (lr=0.0003, aug=none, 3ep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.9539,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full FT; folds=[0.956, 0.9509, 0.9541, 0.9527, 0.9558]; img=128; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-17T17:44:43",
+    "model": "resnet18 full FT (lr=0.001, aug=none, 3ep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.94466,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full FT; folds=[0.9416, 0.9444, 0.9491, 0.9452, 0.943]; img=128; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-17T17:44:43",
+    "model": "V4 ensemble (blend{'convnext_atto_none': 0.409, 'vit_tiny_patch16_224_none': 0.375, 'resnet18_none': 0.216})",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.96674,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "convnext_atto_none",
+        "score": 0.9578
       },
-      "val_accuracy": 0.9602,
-      "training_time_seconds": 2028.348837852478,
-      "submission_file": "/home/tjyen/ai_agents/kaggle/competitions/cifar-10/submissions/submission_resnet18.csv"
-    }
-  ]
-}
+      {
+        "name": "vit_tiny_patch16_224_none",
+        "score": 0.9539
+      },
+      {
+        "name": "resnet18_none",
+        "score": 0.94466
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "convnext_atto_none": 0.409,
+        "vit_tiny_patch16_224_none": 0.375,
+        "resnet18_none": 0.216
+      },
+      "score": 0.96674
+    },
+    "postprocess": [
+      "argmax"
+    ],
+    "submission": "vp_submission.csv",
+    "notes": "best_solo=0.95780 equal=0.96638; blend-if-better (s3e20)"
+  }
+]

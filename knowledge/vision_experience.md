@@ -56,3 +56,18 @@ the tabular library).
   Tier-2 1-epoch 3-fold fine-tune: ~33-70s per small backbone. A 5-backbone x 2-arm de-risk
   experiment = ~10 min total. Cheap experiments are genuinely cheap here — prefer measuring over
   assuming. | Evidence: vision/derisk_results.json timing_s block.
+
+## RGB natural images (run #2: cifar-10, 32px upscaled to 128)
+
+- **Per-backbone LR ranking reconfirmed on RGB**: convnext_atto(3e-4) > vit_tiny(3e-4) >
+  resnet18(1e-3) > efficientnet(1e-3) > mobilenetv3(1e-3); ConvNeXt/ViT collapse at 1e-3
+  (convnext 0.635, vit 0.214) where CNNs peak. | Evidence: cifar-10 tier-2a, v-run #2.
+- **Batch-level GPU augmentation did NOT help at 1-epoch discovery** (none > light > medium for all
+  3 promoted backbones). Partly a weakness of batched aug (one transform per batch vs per-sample);
+  revisit with per-sample aug or more discovery epochs before concluding aug is useless on cifar. |
+  Evidence: cifar-10 tier-2b (convnext none 0.878 vs medium 0.843).
+- **3-family blend beat best solo again**: OOF 0.9578(convnext)→0.96674(blend), weights
+  0.41/0.38/0.22; Public/Private LB 0.96910 (CV↔LB +0.0024 in LB favor). | Evidence: cifar-10 V4.
+- **DataLoader + CUDA-fork deadlock is a real hazard** — a multi-worker DataLoader hung the run ~2h
+  entering tier-2b. Fix: no DataLoader; preload uint8 arrays + GPU-batch resize/aug/norm. | Evidence:
+  cifar-10 run #2 engineering note; vp.py.

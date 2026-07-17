@@ -1,0 +1,16 @@
+{
+  "solo": {
+    "convnext_atto_none": 0.9578,
+    "vit_tiny_patch16_224_none": 0.9539,
+    "resnet18_none": 0.94466
+  },
+  "equal": 0.96638,
+  "blend": 0.96674,
+  "weights": {
+    "convnext_atto_none": 0.4090769295077661,
+    "vit_tiny_patch16_224_none": 0.37512868082002704,
+    "resnet18_none": 0.21579438967220702
+  },
+  "chosen": "blend{'convnext_atto_none': 0.409, 'vit_tiny_patch16_224_none': 0.375, 'resnet18_none': 0.216}",
+  "oof_final": 0.96674
+}
