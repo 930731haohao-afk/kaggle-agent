@@ -28,7 +28,7 @@ stratified subsample (and later, full train+test for the chosen backbones):
 - Menu: 4-6 diverse small backbones across families, e.g. `resnet18`, `efficientnet_b0`,
   `mobilenetv3_large_100`, `vit_tiny_patch16_224`, `convnext_atto`. Diversity of family matters
   more than individual strength — later tiers and the ensemble feed on diversity.
-- Cache to `competitions/<name>/data/emb_<backbone>.npy` — atomic writes, extract once.
+- Cache to `competitions_vision/<name>/data/emb_<backbone>.npy` — atomic writes, extract once.
 
 ## Tier 1 — frozen-probe experiments (seconds each)
 

@@ -13,7 +13,7 @@ protected by doing discovery cheaply; do not blow it re-exploring here.
   - OOF prediction matrix (N_train x n_classes, probabilities)
   - test prediction matrix (mean over folds)
   - per-fold scores + wall time
-  - saved atomically to `competitions/<name>/data/oof_<config_id>.npz`
+  - saved atomically to `competitions_vision/<name>/data/oof_<config_id>.npz`
 - Log each config with `log_experiment_v2` the moment its CV completes.
 
 ## Execution discipline

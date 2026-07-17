@@ -68,12 +68,41 @@ See [references/05_int_library.md](references/05_int_library.md).
 After the run, write score-cited lessons to `knowledge/vision_experience.md` — the vision analogue
 of `experience.md`. These become priors for the NEXT image competition.
 
+## Data separation: vision NEVER mixes with tabular
+
+Vision and tabular artifacts are fully separated at every layer — do not write vision results into
+any tabular file, and vice versa:
+
+| Layer | Tabular | Vision |
+|---|---|---|
+| competition workspaces | `competitions/<comp>/` | **`competitions_vision/<comp>/`** |
+| experiments.json / reports (REPORT.md, PDFs) | inside `competitions/<comp>/` | inside `competitions_vision/<comp>/` |
+| [INT] experience library | `knowledge/experience.md` | **`knowledge/vision_experience.md`** |
+| [EXT] idea bank (deferred) | `knowledge/idea_bank.md` | `knowledge/vision_idea_bank.md` (when the opt-in stage arrives) |
+| MLflow mirror | `mlflow.db` | **`mlflow_vision.db`** |
+| cross-comp aggregate docs | `docs/` | `docs/vision/` |
+| infra experiments (derisk etc.) | `tree_search/` | `vision/` |
+
+Prior matching (`suggest_priors`-style) for a vision run reads ONLY the vision library — a tabular
+lesson citing s3eX evidence is not evidence for an image model, and cross-domain matches would
+pollute attribution.
+
+## Reproducibility (same two-layer standard as tabular)
+
+See [references/06_reproducibility.md](references/06_reproducibility.md) — Layer 1 (fixed
+seeds/folds, traceable numbers, OOF cache, uv-locked env, separate MLflow store) applies to every
+run; Layer 2 (bit-level determinism gate: retrain → byte-identical OOF) certifies submissions.
+The torch determinism preamble is bundled at `assets/torch_determinism.py`; its bit-exactness is
+**measured** on this machine (GATE: PASS, `vision/derisk_determinism_gate.py`, 2026-07-17).
+
 ## Non-negotiables (inherited from the tabular agent)
 
 - **Experiment logging is MANDATORY** via `experiment_log.log_experiment_v2()`
-  (`.claude/skills/kaggle-agent/assets/utils/experiment_log.py`) — same logger, same schema.
+  (`.claude/skills/kaggle-agent/assets/utils/experiment_log.py`) — same logger, same schema,
+  writing to the VISION workspace's experiments.json.
 - **Never compare scores across CV schemes**; log the scheme with every experiment.
-- **Fixed seeds + fixed folds** shared across every arm you intend to compare (byte-comparable).
+- **Fixed seeds + fixed folds** shared across every arm you intend to compare (byte-comparable);
+  certification runs use the full determinism preamble (see reproducibility reference).
 - **Respect compute**: GPU runs go through background execution with logs; long trainings need a
   subprocess-level timeout (`signal.alarm` cannot interrupt a native fit/forward).
 - **uv for everything**: `uv run python`, `.venv/bin/python` for GPU scripts.

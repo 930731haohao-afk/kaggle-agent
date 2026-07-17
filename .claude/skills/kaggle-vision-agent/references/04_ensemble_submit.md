@@ -31,7 +31,7 @@ the same TTA to validation folds and confirm it helps before applying to test.
 
 - Format per sample_submission.csv exactly (column names, id order, dtypes).
 - Validate before writing: shape, no NaNs, label space matches, spot-check a few rows.
-- Save to `competitions/<name>/submissions/` with a descriptive name; log the submission entry
+- Save to `competitions_vision/<name>/submissions/` with a descriptive name; log the submission entry
   (score, config, blend weights) in experiments.json.
 - Actual upload goes through the kaggle-safe-submit skill / CLI with the env-var token. Track the
   CV<->LB gap on the first submission — it calibrates trust in the local CV for the rest of the run.

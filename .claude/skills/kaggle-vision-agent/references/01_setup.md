@@ -21,7 +21,7 @@ subprocess timeout — `signal.alarm` cannot interrupt native code.
 
 ## Competition workspace
 
-Same layout as the tabular agent: `competitions/<name>/{config.yaml, data/, scripts/, submissions/,
+Same layout as the tabular agent: `competitions_vision/<name>/{config.yaml, data/, scripts/, submissions/,
 experiments.json}`. Create `config.yaml` with: metric, direction, target format, image format
 (csv-pixels | folder), image size, #classes, and the chosen CV scheme.
 

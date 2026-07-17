@@ -9,7 +9,7 @@ Usage (from a competition script):
     from embed_cache import embed_pixels, embed_files
 
     emb = embed_pixels("resnet18", X28, img_size=224,
-                       cache="competitions/<name>/data/emb_resnet18_224.npy")
+                       cache="competitions_vision/<name>/data/emb_resnet18_224.npy")
     # -> (N, D) float32; computed once, then loaded from cache on later calls
 
 Design notes:

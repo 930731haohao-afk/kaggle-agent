@@ -36,7 +36,7 @@ from sklearn.model_selection import StratifiedKFold
 from torch.utils.data import DataLoader, TensorDataset
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "competitions" / "digit-recognizer" / "data" / "train.csv"
+DATA = ROOT / "competitions_vision" / "digit-recognizer" / "data" / "train.csv"
 OUT = Path(__file__).resolve().parent / "derisk_results.json"
 
 SEED = 42
