@@ -95,6 +95,9 @@ the tabular library).
   tpu-flowers tier-2b.
 - **Big blend gain from cross-family diversity**: OOF 0.9084(best solo)->0.93186(blend), +0.0235;
   weights vit 0.459/eff 0.288/mob 0.253 — all three families essential. | Evidence: tpu-flowers V4.
-- **Notebook-only competitions (operational)**: a valid CSV can get HTTP 400 on CreateSubmission
-  because the comp accepts only Kaggle-Notebook submissions (e.g. Petals to the Metal / TPU comps).
-  Confirm submission TYPE, not just entry status, before promising an LB. | Evidence: tpu-getting-started 400 (2026-07-20).
+- **Notebook-only competitions — the working submission route**: direct CSV gets HTTP 400 (e.g.
+  Petals to the Metal / TPU comps). Route that WORKS: `kaggle datasets create` the predictions ->
+  push a notebook (competition_sources attached) that copies them to /kaggle/working/submission.csv
+  -> `kaggle competitions submit -c <comp> -k <owner/notebook> -f submission.csv -v <version>`
+  (needs kaggle CLI >= 2.2.2). Confirm submission TYPE before promising an LB. | Evidence:
+  tpu-getting-started: CSV 400 then notebook route -> Public LB 0.93303 (2026-07-20).

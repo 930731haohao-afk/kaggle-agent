@@ -7,15 +7,18 @@
 > Fourth run; first 104-CLASS fine-grained task and first TFRecord-format data (decoded with the
 > pure-python `tfrecord` package, no TensorFlow). Train+val TFRecords merged = 16,465 labeled images;
 > 7,382 test images. All numbers are OOF CV.
-> **Submission status: BLOCKED (notebook-only competition).** The file uploads but CreateSubmission
-> returns HTTP 400 — Petals to the Metal accepts submissions only via Kaggle Notebooks, not CSV
-> upload. The prediction file is valid (ids match sample_submission exactly); no LB via CSV.
+> **Submission status: SUBMITTED via the notebook route → Public LB 0.93303 (macro-F1).** Petals to
+> the Metal is a NOTEBOOK-ONLY competition (direct CSV upload returns HTTP 400). Route: package the
+> predictions as a Kaggle dataset → push a notebook that emits them as submission.csv (competition
+> attached) → `kaggle competitions submit -k <notebook> -f submission.csv -v <ver>`. Submitted on the
+> huangweihaohuang account. CV↔LB: OOF acc 0.93186 vs LB macro-F1 0.93303 — consistent.
 
 ## Headline (OOF accuracy)
 
 | | accuracy |
 |---|---|
-| **Final 3-model convex blend** | **0.93186** |
+| **Final 3-model convex blend (OOF acc)** | **0.93186** |
+| **Kaggle Public LB (macro-F1)** | **0.93303** |
 | best single (efficientnet_b0) | 0.90835 |
 | equal-weight blend | 0.93015 |
 
