@@ -1,0 +1,133 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-20T11:19:51",
+    "model": "lgbm balanced 5fold",
+    "metric": "balanced_accuracy",
+    "direction": "maximize",
+    "score": 0.949689,
+    "features": [
+      "sleep_duration",
+      "heart_rate",
+      "bmi",
+      "calorie_expenditure",
+      "step_count",
+      "exercise_duration",
+      "water_intake",
+      "diet_type",
+      "stress_level",
+      "sleep_quality",
+      "physical_activity_level",
+      "smoking_alcohol",
+      "gender"
+    ],
+    "n_features": 13,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "class-balanced; raw=0.94881; prior-adjust=[1.0, 2.0, 2.0]; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-20T11:48:21",
+    "model": "cat balanced 5fold",
+    "metric": "balanced_accuracy",
+    "direction": "maximize",
+    "score": 0.949392,
+    "features": [
+      "sleep_duration",
+      "heart_rate",
+      "bmi",
+      "calorie_expenditure",
+      "step_count",
+      "exercise_duration",
+      "water_intake",
+      "diet_type",
+      "stress_level",
+      "sleep_quality",
+      "physical_activity_level",
+      "smoking_alcohol",
+      "gender"
+    ],
+    "n_features": 13,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "class-balanced; raw=0.94926; prior-adjust=[1.0, 0.85, 1.2]; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-20T11:53:02",
+    "model": "xgb balanced 5fold",
+    "metric": "balanced_accuracy",
+    "direction": "maximize",
+    "score": 0.949699,
+    "features": [
+      "sleep_duration",
+      "heart_rate",
+      "bmi",
+      "calorie_expenditure",
+      "step_count",
+      "exercise_duration",
+      "water_intake",
+      "diet_type",
+      "stress_level",
+      "sleep_quality",
+      "physical_activity_level",
+      "smoking_alcohol",
+      "gender"
+    ],
+    "n_features": 13,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "class-balanced; raw=0.94887; prior-adjust=[1.0, 2.0, 1.5]; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-20T11:53:19",
+    "model": "blend {'lgbm': np.float64(0.2), 'cat': np.float64(0.4), 'xgb': np.float64(0.4)}",
+    "metric": "balanced_accuracy",
+    "direction": "maximize",
+    "score": 0.949939,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "lgbm",
+        "score": 0.94881
+      },
+      {
+        "name": "cat",
+        "score": 0.94926
+      },
+      {
+        "name": "xgb",
+        "score": 0.94887
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "lgbm": 0.2,
+        "cat": 0.4,
+        "xgb": 0.4
+      },
+      "score": 0.94994
+    },
+    "submission": "s6e7_blend_v1.csv",
+    "notes": "prior-adjust=[1.0, 1.5, 1.5]; balanced-accuracy blend"
+  }
+]

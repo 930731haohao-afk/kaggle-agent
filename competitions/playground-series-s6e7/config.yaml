@@ -1,0 +1,23 @@
+competition: playground-series-s6e7
+url: https://www.kaggle.com/competitions/playground-series-s6e7
+description: Predict health_condition (3-class: at-risk/unhealthy/fit) from lifestyle/health features
+problem_type: multiclass_classification
+evaluation_metric: balanced_accuracy
+optimization_direction: maximize
+target_column: health_condition
+id_column: id
+n_classes: 3
+train_rows: 690088
+test_rows: 295753
+deadline: 2026-07-31
+account: huangweihaohuang
+numeric_features: [sleep_duration, heart_rate, bmi, calorie_expenditure, step_count, exercise_duration, water_intake]
+categorical_features: [diet_type, stress_level, sleep_quality, physical_activity_level, smoking_alcohol, gender]
+cv:
+  scheme: StratifiedKFold
+  n_splits: 5
+  shuffle: true
+  seed: 42
+notes: |
+  balanced accuracy => class balancing MANDATORY (opposite of the AUC insight in experience.md).
+  imbalance: at-risk 0.859 / unhealthy 0.084 / fit 0.058. Predict-all-majority = 0.333 baseline.

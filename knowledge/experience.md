@@ -159,3 +159,8 @@
 ## 待驗證想法(有 EDA 依據但未實測,勿當作已驗證)
 
 - (2026-07-04 已驗證並移入「SMAPE/時序」節:s3e19 比例分解已實測,結論為反例——佔比結構被 GBDT 原生吃掉、總量外推是共同瓶頸,勿再以「佔比穩定」為由單獨重試。)
+
+### balanced accuracy (imbalanced multiclass)
+- **balanced accuracy INVERTS the AUC imbalance-weighting rule: here class balancing is MANDATORY.** balanced accuracy averages per-class recall, so the majority class is capped at weight 1/K; class_weight='balanced' (LGB) / auto_class_weights='Balanced' (CAT) / sample_weight (XGB) is essential (predict-all-majority scores only 1/K). Do NOT transfer the "remove imbalance weighting helps AUC" prior to this metric. | 證據:s6e7 (health_condition, 86/8/6% split), LGB/XGB/CAT all class-balanced -> CV balacc 0.949; blend 0.94994 -> Public LB 0.94939.
+- **Per-class posterior multiplier tuned on OOF beats plain argmax for balanced accuracy.** After balanced training, grid-search a minority-class probability scale (e.g. x1.5) on OOF balanced accuracy; shifts predictions toward minorities (pred dist 0.81/0.07/0.12 vs true prior 0.86/0.06/0.08). | 證據:s6e7, blend raw->adjusted lifted balacc, adj=[1,1.5,1.5].
+- **CatBoost cat_features reject NaN** — fill categorical NaN with a "missing" string first (LGB/XGB handle NaN natively; only CatBoost errors). | 證據:s6e7 CatBoostError object_idx NaN -> fixed with fillna("missing").
