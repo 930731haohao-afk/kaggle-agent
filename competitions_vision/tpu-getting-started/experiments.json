@@ -1,0 +1,216 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-20T10:04:00",
+    "model": "resnet18 (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.266535,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 6000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.023860783053561704, '0.0003': 0.07410364609469865, '0.001': 0.266534540684441}; img=192; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-20T10:05:42",
+    "model": "efficientnet_b0 (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.687875,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 6000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.09078350730033863, '0.0003': 0.3901081139529597, '0.001': 0.6878747717480201}; img=192; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-20T10:06:47",
+    "model": "mobilenetv3_large_100 (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.686128,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 6000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.09641122084362429, '0.0003': 0.3899136384127455, '0.001': 0.6861276522547085}; img=192; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-20T10:07:52",
+    "model": "convnext_atto (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.394769,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 6000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.25625408731601856, '0.0003': 0.39476886756994517, '0.001': 0.07313510598409025}; img=192; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-20T10:08:40",
+    "model": "vit_tiny_patch16_224 (tier-2a LR sweep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.421143,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 6000
+    },
+    "notes": "LR sweep [0.0001, 0.0003, 0.001]; grid={'0.0001': 0.29582472415061145, '0.0003': 0.4211429337656718, '0.001': 0.11368827884744968}; img=192; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-20T10:09:54",
+    "model": "efficientnet_b0 (tier-2b aug sweep, lr=0.001)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.690785,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 6000
+    },
+    "notes": "aug grid={'none': 0.6878747717480201, 'light': 0.6907847940218467, 'medium': 0.653927672255327}; hflip_ok=True; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-20T10:10:40",
+    "model": "mobilenetv3_large_100 (tier-2b aug sweep, lr=0.001)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.688652,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 6000
+    },
+    "notes": "aug grid={'none': 0.6861276522547085, 'light': 0.6886523352979538, 'medium': 0.6576137907650869}; hflip_ok=True; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-20T10:11:13",
+    "model": "vit_tiny_patch16_224 (tier-2b aug sweep, lr=0.0003)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.421143,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 3,
+      "seed": 42,
+      "subsample": 6000
+    },
+    "notes": "aug grid={'none': 0.4211429337656718, 'light': 0.4021359125553093, 'medium': 0.39590840619676043}; hflip_ok=True; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-20T10:23:55",
+    "model": "efficientnet_b0 full FT (lr=0.001, aug=light, 4ep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.908351,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full FT; folds=[0.9077, 0.9095, 0.9049, 0.9068, 0.9128]; img=192; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-20T10:31:39",
+    "model": "mobilenetv3_large_100 full FT (lr=0.001, aug=light, 4ep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.903128,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full FT; folds=[0.9013, 0.9049, 0.9028, 0.9037, 0.9028]; img=192; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-20T10:37:18",
+    "model": "vit_tiny_patch16_224 full FT (lr=0.0003, aug=none, 4ep)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.905375,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "notes": "V3 full FT; folds=[0.9065, 0.9128, 0.8974, 0.9056, 0.9046]; img=192; determinism on"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-20T10:37:19",
+    "model": "V4 ensemble (blend{'efficientnet_b0_light': 0.288, 'mobilenetv3_large_100_light': 0.253, 'vit_tiny_patch16_224_none': 0.459})",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.931855,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "base_models": [
+      {
+        "name": "efficientnet_b0_light",
+        "score": 0.90835
+      },
+      {
+        "name": "mobilenetv3_large_100_light",
+        "score": 0.90313
+      },
+      {
+        "name": "vit_tiny_patch16_224_none",
+        "score": 0.90538
+      }
+    ],
+    "ensemble": {
+      "weights": {
+        "efficientnet_b0_light": 0.288,
+        "mobilenetv3_large_100_light": 0.253,
+        "vit_tiny_patch16_224_none": 0.459
+      },
+      "score": 0.93186
+    },
+    "postprocess": [
+      "argmax"
+    ],
+    "submission": "vp_submission.csv",
+    "notes": "best_solo=0.90835 equal=0.93015; blend-if-better (s3e20)"
+  }
+]

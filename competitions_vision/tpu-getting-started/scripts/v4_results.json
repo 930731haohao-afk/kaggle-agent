@@ -1,0 +1,17 @@
+{
+  "metric": "accuracy",
+  "solo": {
+    "efficientnet_b0_light": 0.9083510476768903,
+    "mobilenetv3_large_100_light": 0.9031278469480717,
+    "vit_tiny_patch16_224_none": 0.9053750379593076
+  },
+  "equal": 0.9301548739750987,
+  "blend": 0.9318554509565745,
+  "weights": {
+    "efficientnet_b0_light": 0.2879888268268944,
+    "mobilenetv3_large_100_light": 0.25302565612271066,
+    "vit_tiny_patch16_224_none": 0.4589855170503949
+  },
+  "chosen": "blend{'efficientnet_b0_light': 0.288, 'mobilenetv3_large_100_light': 0.253, 'vit_tiny_patch16_224_none': 0.459}",
+  "oof_final": 0.9318554509565745
+}

@@ -83,3 +83,18 @@ the tabular library).
   to SUBMIT. Only competitions with userHasEntered=True and open submissions accept uploads; closed
   comps give 400, un-joined comps give 403. Confirm entry status before promising a leaderboard score.
   | Evidence: dogs-vs-cats 400 / redux 403 (2026-07-17); only digit-recognizer + cifar-10 submittable.
+
+## fine-grained multiclass / TFRecords (run #4: tpu-flowers, 104-class, 192px)
+
+- **Backbone ranking is DOMAIN-SPECIFIC — re-discover per competition.** On 104-class flowers:
+  efficientnet_b0(1e-3) 0.688 ~ mobilenetv3(1e-3) 0.686 >> vit_tiny 0.421 > convnext_atto 0.395 >
+  resnet18 0.267. convnext_atto (the digit/cifar champion) fell to 4th; EfficientNet/MobileNet won.
+  Never assume a backbone that won one domain wins another. | Evidence: tpu-flowers tier-2a, run #4.
+- **h-flip augmentation helps flowers** (flip-invariant); light > none > medium for both CNNs.
+  Contrast digits (no h-flip). Reason augmentation from the domain, per competition. | Evidence:
+  tpu-flowers tier-2b.
+- **Big blend gain from cross-family diversity**: OOF 0.9084(best solo)->0.93186(blend), +0.0235;
+  weights vit 0.459/eff 0.288/mob 0.253 — all three families essential. | Evidence: tpu-flowers V4.
+- **Notebook-only competitions (operational)**: a valid CSV can get HTTP 400 on CreateSubmission
+  because the comp accepts only Kaggle-Notebook submissions (e.g. Petals to the Metal / TPU comps).
+  Confirm submission TYPE, not just entry status, before promising an LB. | Evidence: tpu-getting-started 400 (2026-07-20).
