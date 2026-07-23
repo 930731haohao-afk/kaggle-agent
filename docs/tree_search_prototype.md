@@ -1,237 +1,237 @@
-# 樹搜尋原型可行性報告 —— 最終版:v1 → v2 → v3 全弧 + 規模曲線(Phase F-3)
+# Tree-Search Prototype Feasibility Report — Final Version: v1 → v2 → v3 Full Arc + Scaling Curve (Phase F-3)
 
-> 產生方式:數字逐字取自 `tree_search/harness.py`(v1)、`tree_search/harness_v2.py`(v2)、`tree_search/harness_v3.py`(v3)、**15 份**樹狀態檔案(`competitions/playground-series-{s3e9,s3e14,s3e5,s3e3,s3e7,s3e1,s3e19,s3e11,s3e16,s3e20}/experiments_tree*.json`,涵蓋 `experiments_tree.json`/`experiments_tree_v2.json`/`experiments_tree_v3.json`/`experiments_tree_scale.json` 四種檔名)、`docs/scaling_experiment.md`(Phase E-5),以及對應 `STATUS.md` 的樹搜尋附錄;抽取腳本 `docs/scripts/build_tree_facts.py` → `docs/tree_facts.json`。
+> Generation method: numbers are taken verbatim from `tree_search/harness.py` (v1), `tree_search/harness_v2.py` (v2), `tree_search/harness_v3.py` (v3), **15** tree-state files (`competitions/playground-series-{s3e9,s3e14,s3e5,s3e3,s3e7,s3e1,s3e19,s3e11,s3e16,s3e20}/experiments_tree*.json`, covering the four filename variants `experiments_tree.json`/`experiments_tree_v2.json`/`experiments_tree_v3.json`/`experiments_tree_scale.json`), `docs/scaling_experiment.md` (Phase E-5), and the tree-search appendix of the corresponding `STATUS.md`; the extraction script is `docs/scripts/build_tree_facts.py` → `docs/tree_facts.json`.
 >
-> **版本範圍**:本報告涵蓋 3 個 harness 世代(v1/v2/v3)+ 1 個規模擴充實驗,共 **15 次樹搜尋執行、覆蓋 10 場競賽**(任務簡報原估 12 次,經 `find competitions -iname "experiments_tree*.json"` 精確盤點後為 15 次——3 v1 + 9 v2 + 1 scale + 2 v3,詳見下方完整結果總表)。
+> **Version scope**: this report covers 3 harness generations (v1/v2/v3) + 1 scaling-extension experiment, for a total of **15 tree-search runs covering 10 competitions** (the task brief originally estimated 12 runs; after a precise inventory via `find competitions -iname "experiments_tree*.json"`, the count is 15 — 3 v1 + 9 v2 + 1 scale + 2 v3, see the full results master table below).
 >
-> 計畫書脈絡:ERA(Aygün et al. 2026, Nature)——用候選樹搜尋取代線性單路徑迭代,核心機制為節點評分、選擇規則、plateau 偵測與回溯、以及「想法注入」持續擴充候選集。本報告是計畫書 Stage 4(週 6–7)先遣驗證的最終彙整:v1(Phase C-2/C-3,3 場)先驗證機制成立,v2(Phase D-2..D-6 + E-1..E-4,9 場)加入 ensemble-default 節點空間等四項升級並掃描剩餘全部競賽,E-5(1 場)量測節點預算的報酬曲線,v3(Phase F-1/F-2,2 場驗證跑)把掃描中發現的六項教訓收斂為 harness 預設行為。問題從「值不值得做」(v1)升級為「在什麼條件下、用多少評估數就能贏」(v2)再升級為「贏的機制能否系統化、且經得起自動化實戰驗證」(v3)。
+> Plan context: ERA (Aygün et al. 2026, Nature) — replacing linear single-path iteration with candidate tree search, whose core mechanisms are node scoring, selection rules, plateau detection and backtrack, and "idea injection" that continually expands the candidate set. This report is the final consolidation of the advance validation for Stage 4 (Weeks 6–7) of the plan: v1 (Phase C-2/C-3, 3 competitions) first verifies that the mechanism holds; v2 (Phase D-2..D-6 + E-1..E-4, 9 competitions) adds four upgrades including the ensemble-default node space and sweeps all remaining competitions; E-5 (1 competition) measures the return curve of node budget; v3 (Phase F-1/F-2, 2 validation runs) converges the six lessons discovered during the sweeps into the harness's default behavior. The question is upgraded from "is it worth doing" (v1) to "under what conditions, and with how many evaluations, can it win" (v2), and then to "can the winning mechanism be systematized, and does it hold up under automated real-world validation" (v3).
 
-## 1. 目的與設計
+## 1. Purpose and Design
 
-### 設計目標
+### Design Goals
 
-`tree_search/harness.py` 是一個與競賽無關的通用引擎;每場競賽只需提供一個 `evaluate(config) -> score` 函式。設計選擇如下:
+`tree_search/harness.py` is a competition-agnostic general engine; each competition need only supply an `evaluate(config) -> score` function. The design choices are as follows:
 
-- **node = 一個完整、已評分(或已失敗)的解**:`{id, parent_id, mutation, config, score, status, wall_s}`。不是「部分想法」或「一個超參數變動」的抽象節點,而是一個可獨立重現、有 CV 分數的完整 pipeline 設定——這是刻意的簡化,換取「隨時可比較任兩個節點」的簡單性。
-- **選擇規則(selection rule)**:任一時刻恰有一條「活躍 lineage」(root 的某個第一代子節點所代表的候選子樹)。`select_next_parent()` 永遠在活躍 lineage 內,挑選「分數最好、且尚未達到 `MAX_CHILDREN_PER_NODE`(=3)個子節點」的節點來擴展。
-- **plateau/backtrack**:每當活躍 lineage 新增一個子節點,若其分數未能刷新「新增前的全域最佳分數」,該 lineage 的未改進計數 +1;連續達到 `PLATEAU_STREAK`(=3)次,該 lineage 標記為「已 plateau」並從候選中剔除,`select_next_parent()` 改選次佳、尚未 plateau 的 lineage(即回溯)。兩個額外規則防止搜尋卡死:(1) 一條 lineage 若耗盡擴展預算也視為 plateau;(2) 若所有 lineage 同時 plateau,清空 plateau 旗標一次(reopen)。
-- **solo + blend 雙節點空間(Phase C-2b 起,v2 起升級為預設)**:`solo`(訓練一個模型,OOF/test 預測快取到磁碟)與 `blend`(對已快取的成員 OOF 做權重搜尋,不重訓)。這是修正 s3e9 教訓的關鍵設計:單模型節點空間永遠碰不到集成解法能到達的分數。
-- **OOF 快取**:solo 節點的 OOF/test 矩陣存成 `tree_search/cache_<comp>/solo_<node_id>.npz`,後續 blend 節點直接讀取、不必重新訓練——這是 blend 節點能做到「近乎免費評分」的唯一原因(此假設本身在 v1 第 3 節即被 s3e5 推翻,見下)。
+- **node = one complete, already-scored (or failed) solution**: `{id, parent_id, mutation, config, score, status, wall_s}`. Not an abstract node representing a "partial idea" or "a single hyperparameter change," but a complete, independently reproducible pipeline configuration with a CV score — this is a deliberate simplification, traded for the simplicity of "being able to compare any two nodes at any time."
+- **selection rule**: at any moment there is exactly one "active lineage" (the candidate subtree represented by some first-generation child of the root). `select_next_parent()` always picks, within the active lineage, the node with "the best score that has not yet reached `MAX_CHILDREN_PER_NODE` (=3) children" to expand.
+- **plateau/backtrack**: whenever the active lineage adds a child, if its score fails to refresh "the global best score before the addition," that lineage's no-improvement counter is incremented by 1; upon reaching `PLATEAU_STREAK` (=3) consecutive times, that lineage is marked "plateaued" and removed from the candidate set, and `select_next_parent()` switches to the next-best, not-yet-plateaued lineage (i.e., backtrack). Two additional rules prevent the search from getting stuck: (1) a lineage that exhausts its expansion budget is also treated as plateaued; (2) if all lineages plateau simultaneously, clear the plateau flags once (reopen).
+- **solo + blend dual node space (from Phase C-2b; upgraded to default from v2)**: `solo` (train one model, cache OOF/test predictions to disk) and `blend` (run a weight search over the cached members' OOF, without retraining). This is the key design that fixes the s3e9 lesson: a single-model node space can never reach the score achievable by an ensemble solution.
+- **OOF cache**: a solo node's OOF/test matrices are stored as `tree_search/cache_<comp>/solo_<node_id>.npz`, and subsequent blend nodes read them directly without retraining — this is the sole reason blend nodes can achieve "near-free scoring" (this assumption itself was refuted by s3e5 in Section 3 of v1, see below).
 
-### 與 ERA 的對應與簡化
+### Correspondence to ERA, and Simplifications
 
-| ERA(Aygün et al. 2026)理念 | 本原型的對應 | 簡化了什麼 |
+| ERA (Aygün et al. 2026) concept | This prototype's correspondence | What was simplified |
 |---|---|---|
-| 候選樹取代單路徑迭代 | node/lineage/select_next_parent 機制,完整實作 | 無 |
-| Plateau 偵測與回溯 | `PLATEAU_STREAK`(=3)+ lineage 排除 + reopen-once 保底;v2 起 metric-aware 自適應(`ADAPTIVE_PLATEAU_STREAK`=5) | v1 固定閾值,v2 才依指標離散度動態調整 |
-| 想法注入(idea injection) | v1:驅動腳本手寫固定佇列;v2 起 `suggest_priors` 對經驗庫關鍵字比對(簡化版) | 仍非「執行期動態生成新方向」,只是把既有經驗結構化成可查詢清單 |
-| 多機並行搜尋 | **單機序列**,`harness.py` docstring 明載「no concurrent add_node calls」 | 無平行化 |
-| 變異提案者可自我演化 | 固定為 agent 撰寫驅動腳本當下手動設計的規則式佇列 | 無運行時想法生成 |
+| Candidate tree replaces single-path iteration | node/lineage/select_next_parent mechanism, fully implemented | none |
+| Plateau detection and backtrack | `PLATEAU_STREAK` (=3) + lineage exclusion + reopen-once fallback; from v2, metric-aware adaptivity (`ADAPTIVE_PLATEAU_STREAK`=5) | v1 uses a fixed threshold; only v2 dynamically adjusts by the metric's dispersion |
+| Idea injection | v1: a fixed queue hand-written in the driver script; from v2, `suggest_priors` does keyword matching against the experience library (a simplified version) | still not "runtime dynamic generation of new directions," only structuring existing experience into a queryable list |
+| Multi-machine parallel search | **single-machine sequential**; the `harness.py` docstring explicitly states "no concurrent add_node calls" | no parallelization |
+| Mutation proposer can self-evolve | fixed to the rule-based queue the agent manually designs at the time of writing the driver script | no runtime idea generation |
 
-簡言之:本原型完整驗證了 ERA 的**搜尋機制**,但 v1/v2 都尚未觸及 ERA 真正被引用的差異化能力——**想法注入**。v3 的六項規則(第 9 節)把 v1→v2 掃描期間人工發現的模式(邊界推進、後期突破需重開 blend lineage、探索性 burst)收斂為 harness 自身的預設行為,某種意義上是「把人類在 10 場掃描裡學到的候選生成直覺,提煉成系統的一部分」——仍不是 ERA 描述的執行期動態生成,但比 v2 的靜態經驗庫比對更接近。
+In short: this prototype fully validates ERA's **search mechanism**, but neither v1 nor v2 yet touches the differentiating capability for which ERA is truly cited — **idea injection**. v3's six rules (Section 9) converge the patterns manually discovered during the v1→v2 sweeps (boundary pushing, late-stage breakthroughs requiring a reopened blend lineage, exploratory bursts) into the harness's own default behavior — in a sense, "distilling the candidate-generation intuition that a human learned across 10 sweep competitions into part of the system" — still not the runtime dynamic generation ERA describes, but closer than v2's static experience-library matching.
 
-## 2. 完整結果總表(15 次執行,10 場競賽,3 個 harness 世代)
+## 2. Full Results Master Table (15 runs, 10 competitions, 3 harness generations)
 
-| # | comp | harness版/Phase | 對照最佳(線性或前版樹) | 樹最佳 | 判定 | 節點 | 關鍵招式 |
+| # | comp | harness ver/Phase | reference best (linear or prior tree) | tree best | verdict | nodes | key move |
 |---|---|---|---|---|---|---|---|
-| 1 | s3e9 | v1 / C-2a | 線性 12.07003 | 12.07459 | **負** | 20 | (無;單模型空間結構性到不了 blend 天花板) |
-| 2 | s3e14 | v1 / C-2b | 線性 340.59891 | 340.52635 | **勝** | 20 | blend 節點型別 + FEAT 6 員(多樣性成員) |
-| 3 | s3e5 | v1 / C-2c | 線性 0.56769 | 0.56766 | **平**(差 0.00003) | 40 | 重新發現線性最適區,無新增益 |
-| 4 | s3e3 | v2 / D-2 | 線性 0.838140 | 0.841442 | **勝** | 22 | FEAT lineage tenure-prune(EDA 未驗證假設證實) |
-| 5 | s3e7 | v2 / D-3 | 線性 0.899893 | 0.900242 | **勝** | 22 | prior-informed ensemble mechanics + dedup 活鎖修正 |
-| 6 | s3e1 | v2 / D-4 | 線性 0.557088 | 0.556329 | **勝** | 23(1 敗) | top-code 感知 clip 寫進 metric_fn 內部 |
-| 7 | s3e19 | v2 / D-5 | 線性 10.01946 | 9.75707 | **勝** | 22 | auto_scale 全域 ×1.02(修時序 OOF 系統性偏低) |
-| 8 | s3e11 | v2 / D-6 | 線性 0.295648 | 0.295280 | **勝** | 24 | CatBoost depth 邊界推進 10→12 |
-| 9 | s3e9 | v2 / E-1(復仇戰) | v1 樹 12.07459 + 線性 12.070034(全精度) | **12.070034** | v1 樹**勝**(+0.004556)/ 線性**精確平** | 26 | ensemble-default 節點空間 + 歷史種子復現 + coord-descent 精修 |
-| 10 | s3e5 | v2 / E-2(復仇戰) | v1 樹 0.56766 + 線性 0.56769 | **0.57066** | **雙贏**(+0.00300 / +0.00297) | 23(1 敗) | 邊界推進 blend 成員(LGBBOUND)+ 足額 k=800 權重搜尋預算 |
-| 11 | s3e16 | v2 / E-3(酸性測試) | 線性 1.33812(**唯一有真實 Kaggle LB 錨點**) | **1.33563** | **勝**(−0.186% 相對) | 27(3 敗) | raw/rounded 反轉鐵證 + FEATPRUNE + k=800 精修 |
-| 12 | s3e20 | v2 / E-4(結構主宰) | Phase-B 基準 21.1487 | 21.0332(blend,**低信度**)/ 21.0589(純結構) | **勝** | 38 | JOINT 多軸聯合移動 + YEARWEIGHTS 新軸 |
-| 13 | s3e3 | v2-scale / E-5(規模曲線) | v2 樹 0.841442 + 線性 0.838140 | **0.845051** | **雙贏** | 80(95,含 15 死路佔位) | explore-burst KITCHENBLEND(dirichlet k=800 全池混合) |
-| 14 | s3e7 | v3 / F-2(驗證跑) | v2 樹 0.900242 + 線性 0.899893 | **0.900455** | **雙贏** | 60(63) | explore burst mega-blend(prob→rank 空間交換) |
-| 15 | s3e14 | v3 / F-2(驗證跑) | v1 樹 340.52635 + 線性 340.59891 | **340.35572** | **雙贏** | 60(62) | explore burst mega-blend(34 員,28 員留有實質權重) |
+| 1 | s3e9 | v1 / C-2a | linear 12.07003 | 12.07459 | **loss** | 20 | (none; the single-model space structurally cannot reach the blend ceiling) |
+| 2 | s3e14 | v1 / C-2b | linear 340.59891 | 340.52635 | **win** | 20 | blend node type + FEAT 6-member (diversity member) |
+| 3 | s3e5 | v1 / C-2c | linear 0.56769 | 0.56766 | **tie** (Δ 0.00003) | 40 | rediscovered the linear optimum region, no new gain |
+| 4 | s3e3 | v2 / D-2 | linear 0.838140 | 0.841442 | **win** | 22 | FEAT lineage tenure-prune (EDA-unverified hypothesis confirmed) |
+| 5 | s3e7 | v2 / D-3 | linear 0.899893 | 0.900242 | **win** | 22 | prior-informed ensemble mechanics + dedup livelock fix |
+| 6 | s3e1 | v2 / D-4 | linear 0.557088 | 0.556329 | **win** | 23 (1 failed) | top-code-aware clip written inside metric_fn |
+| 7 | s3e19 | v2 / D-5 | linear 10.01946 | 9.75707 | **win** | 22 | auto_scale global ×1.02 (fixes systematically low temporal OOF) |
+| 8 | s3e11 | v2 / D-6 | linear 0.295648 | 0.295280 | **win** | 24 | CatBoost depth boundary push 10→12 |
+| 9 | s3e9 | v2 / E-1 (revenge match) | v1 tree 12.07459 + linear 12.070034 (full precision) | **12.070034** | v1 tree **win** (+0.004556) / linear **exact tie** | 26 | ensemble-default node space + historical seed reproduction + coord-descent refinement |
+| 10 | s3e5 | v2 / E-2 (revenge match) | v1 tree 0.56766 + linear 0.56769 | **0.57066** | **double win** (+0.00300 / +0.00297) | 23 (1 failed) | boundary-pushed blend member (LGBBOUND) + sufficient k=800 weight-search budget |
+| 11 | s3e16 | v2 / E-3 (acid test) | linear 1.33812 (**the only one with a real Kaggle LB anchor**) | **1.33563** | **win** (−0.186% relative) | 27 (3 failed) | raw/rounded inversion hard evidence + FEATPRUNE + k=800 refinement |
+| 12 | s3e20 | v2 / E-4 (structure-dominated) | Phase-B baseline 21.1487 | 21.0332 (blend, **low confidence**) / 21.0589 (pure structure) | **win** | 38 | JOINT multi-axis joint move + YEARWEIGHTS new axis |
+| 13 | s3e3 | v2-scale / E-5 (scaling curve) | v2 tree 0.841442 + linear 0.838140 | **0.845051** | **double win** | 80 (95, incl. 15 dead-end placeholders) | explore-burst KITCHENBLEND (dirichlet k=800 full-pool mix) |
+| 14 | s3e7 | v3 / F-2 (validation run) | v2 tree 0.900242 + linear 0.899893 | **0.900455** | **double win** | 60 (63) | explore burst mega-blend (prob→rank space swap) |
+| 15 | s3e14 | v3 / F-2 (validation run) | v1 tree 340.52635 + linear 340.59891 | **340.35572** | **double win** | 60 (62) | explore burst mega-blend (34 members, 28 retaining substantial weight) |
 
-**15/15 執行中,12 次明確勝過其對照組、2 次精確追平(#9 對線性、#3 對線性)、1 次明確負(#1,結構性節點空間問題已於 #9 用 v2 翻盤)。** 逐版與逐場分析見第 3–9 節;十場全覆蓋的彙整判定(僅取每場 v2/v3 最佳結果對線性,見第 10 節)為 **9 勝 1 精確平、0 負**。
+**Of the 15/15 runs, 12 clearly beat their reference, 2 tied exactly (#9 vs. linear, #3 vs. linear), and 1 clearly lost (#1, whose structural node-space problem was overturned in #9 with v2).** Per-version and per-competition analysis is in Sections 3–9; the consolidated verdict over the full ten-competition coverage (taking only each competition's v2/v3 best result against linear, see Section 10) is **9 wins, 1 exact tie, 0 losses**.
 
-## 3. v1:三場結果與逐場分析(Phase C-2a/b/c)
+## 3. v1: Three Competition Results and Per-Competition Analysis (Phase C-2a/b/c)
 
-### s3e9(單模型空間困於噪音上限)
+### s3e9 (single-model space trapped at the noise ceiling)
 
-Root 為既有正則化單一 LGB(RMSE 12.11061,5.2s);5 條第一代 lineage 全部是**單模型**變異。20 個節點全部評估成功,總牆鐘 125.4s。全樹最佳分數是 CatBoost 種子節點本身(12.07459),4 次回溯都沒能找到更好的方向。
+Root is an existing regularized single LGB (RMSE 12.11061, 5.2s); all 5 first-generation lineages are **single-model** mutations. All 20 nodes evaluated successfully, total wall-clock 125.4s. The whole-tree best score is the CatBoost seed node itself (12.07459), and none of the 4 backtracks found a better direction.
 
-**教訓**:線性迭代真正的最佳分數(12.07003)來自 7-way seed-bagged blend,樹搜尋因為節點空間限定在單模型,結構上就到不了那裡。這不是搜尋機制失敗,是候選空間設計失敗——直接促成 s3e14 加入 blend 節點型別,也是 v2 把 ensemble-default 節點空間變成第一項升級的原始動機(第 9 節 E-1 顯示這個結構缺口用 v2 就能翻盤)。
+**Lesson**: linear iteration's true best score (12.07003) came from a 7-way seed-bagged blend, and the tree search — because its node space was limited to single models — structurally could not reach there. This is not a failure of the search mechanism, but a failure of candidate-space design — it directly prompted s3e14 to add the blend node type, and is also the original motivation for v2 making the ensemble-default node space its first upgrade (Section 9's E-1 shows this structural gap can be overturned with v2 alone).
 
-### s3e14(勝:blend 節點 <1s、fold-exact 驗證)
+### s3e14 (win: blend node <1s, fold-exact validation)
 
-Root 沿用既有調校 LGB(342.02154,52.1s)。7 條第一代 lineage:6 條 solo + 1 條 BLEND。20 個節點、0 失敗,12 solo + 8 blend。BLEND 種子節點一評分就是全樹最佳,第 **9** 個評估(node #8, 340.59485)就**超車**了線性迭代耗費 7 次實驗才找到的 340.59891;最終於 node #11(340.52635)拉開差距。2 次回溯都發生在最佳分數已找到之後。
+Root reuses an existing tuned LGB (342.02154, 52.1s). 7 first-generation lineages: 6 solo + 1 BLEND. 20 nodes, 0 failures, 12 solo + 8 blend. The BLEND seed node was the whole-tree best on its first scoring; the **9th** evaluation (node #8, 340.59485) **overtook** the 340.59891 that linear iteration took 7 experiments to find, and finally pulled ahead at node #11 (340.52635). Both backtracks occurred after the best score had already been found.
 
-**贏的原因**:winning node(#11)的第 6 個成員——把 21 特徵集再砍 3 個溫度欄位的 LGB——線性迭代從未試過這個成員組合;它的價值純粹是 blend 多樣性,只有節點空間能展開到 ensemble 才碰得到。
+**Reason for the win**: the winning node's (#11) 6th member — an LGB that further cut 3 temperature columns from the 21-feature set — was a member combination linear iteration never tried; its value is purely blend diversity, reachable only when the node space can expand to an ensemble.
 
-### s3e5(平:成熟 blend 空間只被重新發現;離散指標階梯面)
+### s3e5 (tie: a mature blend space was merely rediscovered; discrete-metric staircase surface)
 
-Root 為 Optuna 直接以 post-rounder QWK 為目標調校出的 LGB(0.56244,1.4s)。8 條第一代 lineage。40 個節點、0 失敗。樹最佳是 node #11(4-way blend),QWK **0.56766**——與線性最佳 0.56769 只差 **0.00003**,量級小到單一樣本的切點歸屬就能翻轉。
+Root is an LGB tuned by Optuna directly against post-rounder QWK (0.56244, 1.4s). 8 first-generation lineages. 40 nodes, 0 failures. The tree best is node #11 (a 4-way blend), QWK **0.56766** — differing from the linear best 0.56769 by only **0.00003**, a magnitude so small that the cut-point assignment of a single sample could flip it.
 
-**離散指標帶來的三個新現象**:(1) 分數面呈階梯狀,平手極常見(4 組 5 位小數完全相同);(2) `PLATEAU_STREAK`=3 對離散指標實質上更嚴格(8/8 lineage 全數 plateau,三場中最徹底);(3) 「blend 便宜」的假設不成立(每個候選權重都要做 Nelder-Mead 擬合,單一 blend 節點成本升到 ~45–46s,與 solo 節點同量級)——這三個發現直接催生 v2 的自適應 plateau 機制。
+**Three new phenomena from the discrete metric**: (1) the score surface is staircase-shaped, with ties extremely common (4 groups had identical 5-decimal scores); (2) `PLATEAU_STREAK`=3 is effectively stricter for discrete metrics (8/8 lineages all plateaued, the most thorough of the three competitions); (3) the "blend is cheap" assumption does not hold (every candidate weight requires a Nelder-Mead fit, raising a single blend node's cost to ~45–46s, the same order as a solo node) — these three findings directly gave rise to v2's adaptive plateau mechanism.
 
-## 4. 樹搜尋何時贏——v1 三場歸納的邊界條件
+## 4. When Tree Search Wins — Boundary Conditions Inferred from v1's Three Competitions
 
-1. **贏的條件:blend 組合空間存在,且尚未被線性迭代充分開採**——s3e14 是 v1 唯一的勝場。
-2. **平/負的條件:線性迭代已把該指標的可用信號榨乾,或節點空間設計本身不對**——s3e5 是前者、s3e9 是後者。
-3. **離散指標需要調整 plateau 規則**——QWK-after-rounder 這類指標的分數面呈階梯狀,固定 `PLATEAU_STREAK=3` 比在連續指標上更快把每條 lineage 判定為停滯。
-4. **「blend 便宜」是指標相關,不是普遍真理**——任何以「blend 節點近乎免費」為前提的搜尋預算規劃,必須先確認該指標的後處理成本結構(v3 第 6 項成本護欄正是為此而生)。
+1. **Condition for winning: a blend combination space exists and has not yet been fully exploited by linear iteration** — s3e14 is v1's only win.
+2. **Condition for tie/loss: linear iteration has already squeezed out the metric's usable signal, or the node-space design itself is wrong** — s3e5 is the former, s3e9 the latter.
+3. **Discrete metrics require adjusting the plateau rule** — metrics like QWK-after-rounder have a staircase-shaped score surface, and a fixed `PLATEAU_STREAK=3` declares each lineage stalled faster than on a continuous metric.
+4. **"Blend is cheap" is metric-dependent, not a universal truth** — any search-budget planning premised on "blend nodes being near-free" must first confirm the metric's post-processing cost structure (v3's 6th cost guardrail exists precisely for this).
 
-## 5. 已知缺口(v1;四項已於 v2 修正/實作,詳見下節)
+## 5. Known Gaps (v1; four fixed/implemented in v2, see next section)
 
-- **重複子節點**:blend fallback 在 parent config 不變時會對同一 parent 重複產生同一組成員,浪費 plateau 額度。**→ v2 以 `find_duplicate_config`/`add_node` 內建拒絕修正。**
-- **blend-rounder 成本**:離散指標(QWK)下 blend 節點成本追上甚至超過部分 solo 節點。**→ v2 掃描證實可再推廣:blend 成本不只隨指標離散度變,也隨資料列數變(見第 6 節)。**
-- **無想法注入(ERA 第二支柱)**:三場的每條 lineage 變異佇列都是驅動腳本裡手寫的固定清單。**→ v2 加入 `suggest_priors`(經驗庫關鍵字比對,無 LLM 呼叫)作為簡化版想法注入——仍非執行期動態生成新方向,見第 7 節誠實讀法。**
-- **單場單樹,無跨場遷移**:三棵樹彼此獨立。**→ v2 的 `suggest_priors` 部分解決,但候選集本身仍是每場手寫。**
+- **Duplicate children**: blend fallback, when the parent config is unchanged, repeatedly produces the same member set for the same parent, wasting plateau quota. **→ v2 fixes this with a built-in rejection in `find_duplicate_config`/`add_node`.**
+- **blend-rounder cost**: under a discrete metric (QWK), a blend node's cost catches up to or even exceeds some solo nodes. **→ the v2 sweep confirms a further generalization: blend cost varies not only with metric discreteness but also with row count (see Section 6).**
+- **No idea injection (ERA's second pillar)**: every lineage's mutation queue across the three competitions is a fixed list hand-written in the driver script. **→ v2 adds `suggest_priors` (experience-library keyword matching, no LLM call) as a simplified idea injection — still not runtime dynamic generation of new directions, see the honest reading in Section 7.**
+- **One tree per competition, no cross-competition transfer**: the three trees are independent of each other. **→ v2's `suggest_priors` partially addresses this, but the candidate set itself is still hand-written per competition.**
 
-## 6. v2:四項升級與 D 掃描(5 場)+ E 掃描(4 場)—— 9 場全勝/翻盤
+## 6. v2: Four Upgrades and the D Sweep (5 competitions) + E Sweep (4 competitions) — 9 Competitions All Won/Overturned
 
-### 四項升級(`tree_search/harness_v2.py`)
+### Four Upgrades (`tree_search/harness_v2.py`)
 
-1. **Ensemble-default 節點空間**:`kind`(`solo`/`blend`)升級為節點的第一級欄位。`eval_blend(cache_dir, members, metric_fn, weight_search=...)` 對已快取成員做 Dirichlet 或 grid-simplex 權重搜尋。任何後處理規定必須寫在 `metric_fn` 內部。
-2. **Metric-aware 自適應 plateau**:`tie_rate(tree)` 量測目前所有已評分節點中「完全同分」的比例;`tie_rate > TIE_RATE_THRESHOLD`(0.15)時停滯門檻從 `PLATEAU_STREAK`(=3)放寬為 `ADAPTIVE_PLATEAU_STREAK`(=5)。
-3. **子節點去重**:`config_hash`(sha256)+ `find_duplicate_config`,`add_node` 預設對雜湊撞見既有節點的候選直接拒絕。
-4. **經驗庫變異先驗**:`suggest_priors(comp_meta)` 對 `knowledge/experience.md` 的每個標題做關鍵字比對,逐字回傳證據標註 bullet。
+1. **Ensemble-default node space**: `kind` (`solo`/`blend`) is upgraded to a first-class field of the node. `eval_blend(cache_dir, members, metric_fn, weight_search=...)` runs a Dirichlet or grid-simplex weight search over cached members. Any post-processing rule must be written inside `metric_fn`.
+2. **Metric-aware adaptive plateau**: `tie_rate(tree)` measures the fraction of "exactly equal-scoring" nodes among all currently scored nodes; when `tie_rate > TIE_RATE_THRESHOLD` (0.15), the stall threshold is relaxed from `PLATEAU_STREAK` (=3) to `ADAPTIVE_PLATEAU_STREAK` (=5).
+3. **Child deduplication**: `config_hash` (sha256) + `find_duplicate_config`; `add_node` by default rejects any candidate whose hash collides with an existing node.
+4. **Experience-library mutation priors**: `suggest_priors(comp_meta)` does keyword matching against every heading in `knowledge/experience.md` and returns evidence-annotated bullets verbatim.
 
-### D 掃描(Phase D-2..D-6,5 場,首次全面掃描):5/5 全勝
+### D Sweep (Phase D-2..D-6, 5 competitions, first comprehensive sweep): 5/5 all wins
 
-s3e3(AUC,小樣本 1,677 列)、s3e7(AUC)、s3e1(RMSE,地理特徵)、s3e19(SMAPE,TimeSeriesSplit)、s3e11(RMSLE,36 萬列)——涵蓋 4 個指標家族、2 種 CV 方案、3 個資料規模量級,全部在 9–21 次評估內超越線性迭代最佳(完整數字見第 2 節總表 #4–8)。
+s3e3 (AUC, small sample of 1,677 rows), s3e7 (AUC), s3e1 (RMSE, geographic features), s3e19 (SMAPE, TimeSeriesSplit), s3e11 (RMSLE, 360k rows) — covering 4 metric families, 2 CV schemes, and 3 orders of magnitude of data scale, all surpassing the linear-iteration best within 9–21 evaluations (full numbers in the Section 2 master table, #4–8).
 
-### E 掃描(Phase E-1..E-4,4 場,補完剩餘場次 + 兩場復仇戰)
+### E Sweep (Phase E-1..E-4, 4 competitions, completing the remaining competitions + two revenge matches)
 
-- **E-1 s3e9 復仇戰**:v1 曾以 12.07459 輸給線性 12.07003(第 3 節)。v2 用 ensemble-default 節點空間,在第 14 個評估(BLEND 種子本身)就達到 **12.070034**——與線性迭代 7-way seed-bagged blend 的全精度分數逐位相同(**精確追平**),同時把 v1 的單模型天花板甩開 0.004556。搜尋機制自行發現了 seed-bagging + 加權混合這個線性迭代原本靠人工試出來的招式。
-- **E-2 s3e5 復仇戰**:v1 曾以 0.56766 對線性 0.56769「統計上打平」。v2 用邊界推進(LGBBOUND,把 tuned-LGB 三個卡在 Optuna 搜尋盒邊界上的超參往外推)產生一個 solo 較弱(0.55784)但異質的 blend 成員,拿到 0.297 權重,把最終 blend 推到 **0.57066**——同時擊敗 v1(+0.00300)與線性(+0.00297),差距是 v1↔線性 gap(0.00003)的約 100 倍,不再是切點噪音量級。本場也是自適應 plateau 機制的首次實戰,結果是**全程休眠**(tie_rate 恆為 0)——因為子節點去重已經修掉了 v1 那種 duplicate-children 造成的假性同分,machinery 之間有依賴關係:「dedup 修好後,tie-neutrality 的觸發條件反而變得罕見」。
-- **E-3 s3e16 酸性測試**:Phase B 的線性迭代在這場已踩到「取整 MAE」的已知失敗模式(raw OOF 單調改善,rounded OOF 反而變差兩輪)。v2 用 k=800+coordinate-ascent 權重搜尋直接對 rounded MAE 決策,找到 **1.33563**(−0.186% 相對於線性 1.33812)——且勝出組合是 raw MAE 1.35712(比線性冠軍的 1.35589 更差)但 rounded MAE 更好,與 Phase B 失敗模式完全鏡像對稱,是「決策必須基於 rounded 分數」這條規則最強的一次獨立確認。s3e16 也是 v2 全掃描**唯一有真實 Kaggle LB 錨點**的一場(Public 1.34356 / Private 1.34075,CV↔LB 差距 0.00544)。
-- **E-4 s3e20(結構主宰地形)**:此場已知純結構訊號(location-week 歷史均值)完勝所有 GBDT。樹搜尋在已被人工調到位的單軸(W2020、WNB)上誠實地「打平」——證明 Phase-B 手動調校本身沒有明顯單軸漏洞;真正的增益來自 (a) 一個全新結構軸 YEARWEIGHTS(異常年降權概念推廣到 2019/2021)與 (b) JOINT lineage 把 4 個結構旋鈕一步到位共同移動,複合拿到純結構最佳 21.0589(−0.425%)。最終疊加 GBDT 的邊際混合到 21.0332(−0.546%),但**這個混合權重只在 3 折 LOYO CV 上、直接對同一份 OOF 擬合**,信心低,視為 CV 噪音範圍內的邊際發現(見第 12 節誠實但書)。此場評估成本近乎零(38 節點 + 15 次回溯僅 33.3 秒),說明「結構主宰」與「模型主宰」地形不只解的形狀不同,搜尋預算的稀缺程度也天差地遠。
+- **E-1 s3e9 revenge match**: v1 had lost with 12.07459 to linear's 12.07003 (Section 3). With the ensemble-default node space, v2 reached **12.070034** at the 14th evaluation (the BLEND seed itself) — digit-for-digit identical to the full-precision score of linear iteration's 7-way seed-bagged blend (**exact tie**), while leaving v1's single-model ceiling behind by 0.004556. The search mechanism discovered on its own the seed-bagging + weighted-blend move that linear iteration had originally found by manual trial.
+- **E-2 s3e5 revenge match**: v1 had been a "statistical tie" with 0.56766 vs. linear's 0.56769. With boundary pushing (LGBBOUND, pushing the tuned-LGB's three hyperparameters that were stuck on the edges of the Optuna search box outward), v2 produced a solo-weaker (0.55784) but heterogeneous blend member that took 0.297 weight, pushing the final blend to **0.57066** — beating both v1 (+0.00300) and linear (+0.00297), a gap about 100× the v1↔linear gap (0.00003), no longer at the cut-point noise magnitude. This competition was also the first field test of the adaptive plateau mechanism, and the result was **dormant throughout** (tie_rate constantly 0) — because child deduplication had already removed the kind of duplicate-children spurious ties from v1; there is a dependency between the machinery: "once dedup is fixed, the trigger condition for tie-neutrality actually becomes rare."
+- **E-3 s3e16 acid test**: Phase B's linear iteration had already hit the known failure mode of "rounded MAE" in this competition (raw OOF improved monotonically, while rounded OOF got worse for two rounds). With k=800 + coordinate-ascent weight search directly deciding against rounded MAE, v2 found **1.33563** (−0.186% relative to linear's 1.33812) — and the winning combination had raw MAE 1.35712 (worse than the linear champion's 1.35589) but better rounded MAE, a mirror-image of the Phase B failure mode, the strongest independent confirmation yet of the rule "decisions must be based on the rounded score." s3e16 is also the **only** competition in the entire v2 sweep with a real Kaggle LB anchor (Public 1.34356 / Private 1.34075, CV↔LB gap 0.00544).
+- **E-4 s3e20 (structure-dominated terrain)**: this competition is known to have pure structural signal (location-week historical means) that beats all GBDTs. On the single axes already manually tuned into place (W2020, WNB), the tree search honestly "tied" — proving that the manual Phase-B tuning itself had no obvious single-axis leak; the real gain came from (a) an entirely new structural axis YEARWEIGHTS (generalizing the anomalous-year down-weighting concept to 2019/2021) and (b) the JOINT lineage moving 4 structural knobs together in one step, compositely reaching the pure-structure best of 21.0589 (−0.425%). Finally, adding the marginal GBDT blend reached 21.0332 (−0.546%), but **this blend weight was fit directly against the same OOF on only 3-fold LOYO CV**, is low-confidence, and is treated as a marginal finding within CV-noise range (see the honest caveat in Section 12). This competition's evaluation cost was near zero (38 nodes + 15 backtracks in only 33.3 seconds), showing that "structure-dominated" and "model-dominated" terrains differ not only in the shape of the solution but also vastly in how scarce the search budget is.
 
-### E 掃描收官
+### E Sweep Wrap-up
 
-v2 在 D+E 兩輪掃描共測遍 9 場(D 的 5 場首測 + E 的 4 場:2 場翻盤/加強 v1 結果 + 2 場全新酸性測試),結果 **9 勝 0 負**(僅 s3e20 的 blend 疊加部分標記低信度,純結構主體仍穩健勝出)。加上 v1 的 1 勝 1 平 1 負,v1+v2 合計已覆蓋全部 10 場競賽中的 10 場(s3e9/s3e5 各有 v1+v2 兩次執行,詳見第 2 節總表)。
+Across the two rounds of the D+E sweeps, v2 tested a total of 9 competitions (D's 5 first-tested + E's 4: 2 that overturned/strengthened v1 results + 2 all-new acid tests), for a result of **9 wins, 0 losses** (only s3e20's blend-overlay part is marked low-confidence; the pure-structure body still wins robustly). Adding v1's 1 win, 1 tie, 1 loss, v1+v2 combined have covered 10 of the total 10 competitions (s3e9/s3e5 each have two runs, v1+v2, see the Section 2 master table).
 
-## 7. 先驗 vs 在地洞見
+## 7. Priors vs. Local Insight
 
-`suggest_priors` 的「先驗命中率」是系統性量化「想法注入值多少」的機會。D 掃描 5 場的 informed vs uninformed 勝率:s3e3 14.3% vs 14.3%(打平)、s3e7 62.5% vs 16.7%(先驗明顯優於）、s3e1 100% vs 62.5%、s3e19 33% vs 44.4%(先驗反而略輸)、s3e11 100% vs 18.2%。E 掃描 4 場延續同一模式:s3e9 v2 informed 36.4% vs uninformed 0%(小樣本)、s3e5 v2 33.3% vs 0%、s3e16 38.5% vs 0%、s3e20 informed 33.3% vs uninformed **42.9%**(prior 標註節點勝率反而略低於無 prior 節點)。
+`suggest_priors`'s "prior hit rate" is an opportunity to systematically quantify "how much idea injection is worth." The informed vs. uninformed win rates across the D sweep's 5 competitions: s3e3 14.3% vs. 14.3% (tie), s3e7 62.5% vs. 16.7% (prior clearly superior), s3e1 100% vs. 62.5%, s3e19 33% vs. 44.4% (prior actually slightly worse), s3e11 100% vs. 18.2%. The E sweep's 4 competitions continue the same pattern: s3e9 v2 informed 36.4% vs. uninformed 0% (small sample), s3e5 v2 33.3% vs. 0%, s3e16 38.5% vs. 0%, s3e20 informed 33.3% vs. uninformed **42.9%** (prior-annotated nodes actually had a slightly lower win rate than no-prior nodes).
 
-**跨全部 9 場 D+E 反覆出現的發現:「先驗定下限,在地洞見定上限」。** 先驗(經驗庫)持續正確地「提名該試什麼方向」,價值主要是**避免浪費算力在已知死路上**。但每一場**真正拉開分數差距的最大單一槓桿,始終來自該場自己的 EDA/comp-local 洞見或搜尋機制本身的結構性改變**,而非經驗庫比對:s3e3 的 tenure-prune、s3e1 的 top-code clip、s3e19 的 auto_scale、s3e11 的 depth-boundary-push,以及 E 掃描新增的兩個範例——s3e5 v2 的 LGBBOUND(邊界推進本身,而非某條經驗庫 bullet 直接命中)、s3e20 的 YEARWEIGHTS/JOINT(全新結構軸 + 聯合移動,經驗庫裡沒有這兩條規則)。第 10 節的「boundary-push 3 場」與「burst 3/3」正是這個發現的兩個具體、可重複的機制化版本。
+**A finding that recurs across all 9 D+E competitions: "priors set the floor, local insight sets the ceiling."** The priors (experience library) consistently and correctly "nominate what directions to try," their value being mainly to **avoid wasting compute on known dead ends**. But in every competition, the **single largest lever that truly opens up the score gap always comes from that competition's own EDA/comp-local insight or from a structural change to the search mechanism itself**, not from experience-library matching: s3e3's tenure-prune, s3e1's top-code clip, s3e19's auto_scale, s3e11's depth-boundary-push, and the two examples newly added in the E sweep — s3e5 v2's LGBBOUND (the boundary push itself, not a direct hit from some experience-library bullet), and s3e20's YEARWEIGHTS/JOINT (an all-new structural axis + joint move, neither of which is a rule in the experience library). Section 10's "boundary-push in 3 competitions" and "burst 3/3" are precisely two concrete, repeatable mechanized versions of this finding.
 
-## 8. 誠實但書(v1+v2,9 場)
+## 8. Honest Caveats (v1+v2, 9 competitions)
 
-- **v1 三場**:s3e9 樹搜尋結構性到不了 blend 空間(已用 v2 翻盤);s3e5 的「平手」量級小到單一樣本切點歸屬就能翻轉;三棵樹之間無知識遷移。
-- **D 掃描 5 場**:全部 OOF-only,未經 Kaggle LB 驗證;s3e19 有 fold-5 double-dip 疊加 OOF 擬合的雙重樂觀偏誤(詳見第 12 節);s3e7 掃描期間曾出現搜尋層級活鎖(已修正)。
-- **E 掃描 4 場**:s3e16 是唯一有真實 LB 錨點的一場,其餘 8 場(含 v1)仍是 OOF-only;s3e20 的 GBDT-blend 疊加部分是 3 折 LOYO CV 上對同一份 OOF 直接擬合的邊際發現,信心低。
+- **v1's three competitions**: s3e9's tree search structurally cannot reach the blend space (already overturned with v2); s3e5's "tie" is of a magnitude so small that a single sample's cut-point assignment could flip it; there is no knowledge transfer among the three trees.
+- **D sweep's 5 competitions**: all are OOF-only, unverified on the Kaggle LB; s3e19 has the double optimistic bias of fold-5 double-dip overlaid with OOF fitting (see Section 12 for detail); s3e7 exhibited a search-level livelock during the sweep (since fixed).
+- **E sweep's 4 competitions**: s3e16 is the only one with a real LB anchor; the other 8 (including v1) are still OOF-only; s3e20's GBDT-blend overlay part is a marginal finding fit directly against the same OOF on 3-fold LOYO CV, and is low-confidence.
 
-完整、彙整過的誠實但書清單(含 v3)見第 12 節。
+The full, consolidated list of honest caveats (including v3) is in Section 12.
 
-## 9. v3:六項規則與 F-2 驗證跑
+## 9. v3: Six Rules and the F-2 Validation Runs
 
-### 六項規則(`tree_search/harness_v3.py`,把 v1→v2 掃描期間的人工發現收斂為 harness 預設行為)
+### Six Rules (`tree_search/harness_v3.py`, converging the manual findings from the v1→v2 sweeps into the harness's default behavior)
 
-1. **預算與停止策略**(`init_budget`/`update_phase`/`should_stop`):預設總預算 60 個已評估節點;相位機 exploit → explore_burst → stopped——所有已知 lineage 都 plateau 後強制進入 explore_burst(驅動腳本被期待注入 5–8 條新的長射程 lineage),burst 開始後若連續 20 次評估未刷新全域最佳即停止,任何情況下達到總預算硬停止。證據:E-5 的 80 節點曲線——3 次 explore-phase 改進全部來自強制 burst,且沒有停止規則時浪費了 28 個(占 80 節點預算 35%)閒置評估。
-2. **去重消耗預算**(`add_node` 的 dedup 路徑):同一 parent 的候選連續兩次被 dedup 拒絕,即燒掉一個 `status="failed"` 佔位子節點,讓 parent 自然計滿 `MAX_CHILDREN_PER_NODE`。證據:E-5 建置時發現 v2 的 dedup 拒絕不消耗擴展額度,曾讓 kitchen-sink blend lineage 的 fallback 池耗盡後無限重複提案同一組態,把搜尋卡在 50/80 節點。
-3. **post-plateau solo 突破自動重開 blend lineage**(`reopen_blend_lineage_on_solo_breakthrough`):當一個 solo 節點成為新的全域最佳,任何已 plateau 的 blend lineage 自動重開。證據:D-6(s3e11)的全樹最終最佳是 phase-1 BLEND lineage 已 plateau 之後才出現的 depth-12 CatBoost solo,原本需要人工開「phase 2」才拿到那個增益。
-4. **邊界推進為一等公民變異型別**(`boundary_candidates`):自動標記任何落在其宣告搜尋空間邊緣(`edge_frac`=0.05)內的超參,並提出往外推的候選。證據:D-6/E-2/E-3 三場(s3e11 depth 10→12、s3e5 v2 的 LGBBOUND、s3e16 的 learning_rate)各自的單一最大槓桿都是這個模式(詳見第 10 節)。
-5. **權重搜尋預設 k=800 + coordinate-ascent 精修**:`k` 預設從各呼叫端各自為政改為統一 800,並在粗搜之後跑一輪座標上升精修。證據:E-2/E-3 顯示粗網格會**靜默地**打平(多個候選權重向量四捨五入到同一個離散化分數),必須同時夠寬(k=800)且加精修才找得到真正的最優盆地。
-6. **指標感知的 blend 成本護欄**(`eval_blend_with_cost_guard`):blend 評分若超過門檻(預設 45 秒)才自動粗化權重搜尋預算,且**必留一條顯式警告紀錄**,絕不靜默粗化。證據:C-2c(s3e5)的 QWK blend 節點成本 ~45–46 秒,追上 solo 節點量級;E-2 進一步顯示靜默粗化只會打平(丟失真訊號)而不會有人發現。
+1. **Budget and stopping policy** (`init_budget`/`update_phase`/`should_stop`): default total budget of 60 evaluated nodes; the phase machine goes exploit → explore_burst → stopped — once all known lineages plateau, it is forced into explore_burst (the driver script is expected to inject 5–8 new long-range lineages), and after the burst starts, if 20 consecutive evaluations fail to refresh the global best it stops, with a hard stop upon reaching the total budget in any case. Evidence: E-5's 80-node curve — all 3 explore-phase improvements came from the forced burst, and without a stopping rule, 28 idle evaluations (35% of the 80-node budget) were wasted.
+2. **Dedup consumes budget** (`add_node`'s dedup path): when the same parent's candidate is rejected by dedup twice in a row, a `status="failed"` placeholder child is burned, letting the parent naturally reach `MAX_CHILDREN_PER_NODE`. Evidence: while building E-5, it was found that v2's dedup rejection did not consume expansion quota, which once let the kitchen-sink blend lineage's fallback pool exhaust and then propose the same config infinitely, stalling the search at 50/80 nodes.
+3. **A post-plateau solo breakthrough automatically reopens the blend lineage** (`reopen_blend_lineage_on_solo_breakthrough`): when a solo node becomes the new global best, any already-plateaued blend lineage is automatically reopened. Evidence: D-6's (s3e11) whole-tree final best was a depth-12 CatBoost solo that appeared only after the phase-1 BLEND lineage had already plateaued; originally that gain required manually opening a "phase 2."
+4. **Boundary pushing as a first-class mutation type** (`boundary_candidates`): automatically flags any hyperparameter falling within `edge_frac`=0.05 of the edge of its declared search space, and proposes candidates that push outward. Evidence: the single largest lever in each of D-6/E-2/E-3 (s3e11 depth 10→12, s3e5 v2's LGBBOUND, s3e16's learning_rate) was this pattern (see Section 10 for detail).
+5. **Weight search defaults to k=800 + coordinate-ascent refinement**: `k` changes from each caller doing its own thing to a unified 800, and a round of coordinate-ascent refinement is run after the coarse search. Evidence: E-2/E-3 show a coarse grid **silently** ties (multiple candidate weight vectors round to the same discretized score), so the search must be simultaneously wide enough (k=800) and add refinement to find the true optimal basin.
+6. **Metric-aware blend cost guardrail** (`eval_blend_with_cost_guard`): only if a blend evaluation exceeds a threshold (default 45 seconds) does it automatically coarsen the weight-search budget, and it **always leaves an explicit warning record**, never coarsening silently. Evidence: C-2c's (s3e5) QWK blend nodes cost ~45–46 seconds, catching up to the solo-node magnitude; E-2 further shows that silent coarsening only ties (losing true signal) without anyone noticing.
 
-### F-2 驗證跑(s3e7、s3e14,以 v3 預設自動策略端到端重跑)
+### F-2 Validation Runs (s3e7, s3e14, rerun end-to-end with v3's default automatic policy)
 
-**驗證問題**:harness_v3 的預設自動策略(相位機 + 自動停止 + 去重耗算 + 重開觸發 + 邊界推進 + k=800 精修 + 成本護欄)能否在真實跑動中端到端運作、不比 v2 退步,且相位機真的做了實質工作?
+**Validation question**: can harness_v3's default automatic policy (phase machine + auto-stop + dedup-consumes-budget + reopen trigger + boundary pushing + k=800 refinement + cost guardrail) run end-to-end in a real run, not regress versus v2, and does the phase machine actually do substantive work?
 
-**答案:兩場都是。且兩場超出 v2/v1 樹的全部增益,100% 來自相位機的強制 explore burst。**
+**Answer: both, in both competitions. And in both, all the gain beyond the v2/v1 trees came 100% from the phase machine's forced explore burst.**
 
-- **s3e7**:v2 曾以 0.900242 勝過線性 0.899893(D-3)。v3 exploit 階段在第 39 個評估耗盡所有 9 條第一代 lineage 的 plateau 額度,重現 v2 的 4-way SEEDBAG blend(0.900054,eval 11)為 exploit 天花板;explore burst 自動於 eval 39 觸發,注入 5 條長射程 solo(DART/extra-trees/深度CAT/lossguide-XGB/depth2-LGB,全部 solo 較差)+ 1 個 kitchen-sink mega-blend(38 員 rank-space Dirichlet+coordinate-ascent);mega-blend 拿到 **0.900455**,同時擊敗 v2(+0.000213)與線性(+0.000562)。在 60/60 硬頂停止,burst 後 13 次評估未再刷新最佳(< 20 次耐心值,數值上限先到)。
-- **s3e14**:v1-proto 曾以 340.52635 勝過線性 340.59891(C-2b)。v3 在 eval 9 超車線性、eval 11 追平 v1-proto(晚 1 個評估,同一組成員),exploit 階段磨到 340.45150(eval 16)後 22 次評估無改善;explore burst 於 eval 38 觸發,34 員 kitchen-sink mega-blend(其中 28 員保留 >0.005 權重,不同於 s3e7 的 29/38 歸零——在這個雜訊更大的目標上,「廣度平均」本身就是訊號)把分數推到 **340.35572**,同時擊敗 v1-proto(0.17063)與線性(0.24319)。同樣在 60/60 硬頂停止,burst 後 16 次評估無改善。
+- **s3e7**: v2 had beaten linear's 0.899893 with 0.900242 (D-3). In v3, the exploit phase exhausted all 9 first-generation lineages' plateau quotas at the 39th evaluation, reproducing v2's 4-way SEEDBAG blend (0.900054, eval 11) as the exploit ceiling; the explore burst triggered automatically at eval 39, injecting 5 long-range solos (DART/extra-trees/deep CAT/lossguide-XGB/depth2-LGB, all solo-worse) + 1 kitchen-sink mega-blend (38 members, rank-space Dirichlet + coordinate-ascent); the mega-blend took **0.900455**, beating both v2 (+0.000213) and linear (+0.000562). It stopped at the 60/60 hard cap, with 13 evaluations after the burst failing to refresh the best (< 20 patience, the numeric cap arriving first).
+- **s3e14**: the v1-proto had beaten linear's 340.59891 with 340.52635 (C-2b). In v3, it overtook linear at eval 9, tied the v1-proto at eval 11 (1 evaluation later, same member set), and after grinding the exploit phase to 340.45150 (eval 16) went 22 evaluations without improvement; the explore burst triggered at eval 38, and a 34-member kitchen-sink mega-blend (of which 28 members retained >0.005 weight, unlike s3e7's 29/38 zeroed out — on this noisier target, "breadth averaging" is itself signal) pushed the score to **340.35572**, beating both the v1-proto (0.17063) and linear (0.24319). It likewise stopped at the 60/60 hard cap, with 16 evaluations after the burst without improvement.
 
-**邊界推進的 4 次確認**:s3e7 的 `boundary_candidates()` 自動標記出 root 的 max_depth 卡在 Optuna 盒下界([3,12] 選中 3),自動生成的推進變異(depth 2)本身 solo 較差,但作為 burst mega-blend 成員拿到 0.114 權重——第 4 個確認「邊界值得推」的資料點,且這次是 harness **自動**找到,不是人工重讀 Optuna trial 表。s3e14 的邊界檢查跑了但誠實地一無所獲(最近的超參離盒邊也有 ~13% log-space 距離)——這正是這個機制被期待的行為:檢查了,誠實地沒找到,而非被迫找出點什麼。
+**Boundary pushing's 4 confirmations**: s3e7's `boundary_candidates()` automatically flagged that root's max_depth was stuck at the lower bound of the Optuna box ([3,12], 3 selected), and the automatically generated pushing mutation (depth 2) was itself solo-worse but took 0.114 weight as a burst mega-blend member — the 4th confirmation data point that "the boundary is worth pushing," and this time the harness found it **automatically**, not a human re-reading the Optuna trial table. s3e14's boundary check ran but honestly found nothing (the nearest hyperparameter was ~13% log-space distance from the box edge) — precisely the expected behavior of this mechanism: it checked, honestly found nothing, rather than being forced to dig something up.
 
-**其他規則的實戰結果**:去重耗算在 s3e7 觸發 3 次(crash-resume 期間重播的重複提案,全部正確燒掉佔位節點、零評估預算浪費);重開-on-breakthrough 在兩場都**從未觸發**(blend 從很早期就領先,沒有 solo 後來居上的情境);成本護欄在兩場都**從未觸發**(38 員 AUC blend 僅 11.6 秒 < 45 秒門檻)。
+**Field results of the other rules**: dedup-consumes-budget triggered 3 times in s3e7 (duplicate proposals replayed during crash-resume, all correctly burning placeholder nodes with zero wasted evaluation budget); reopen-on-breakthrough **never** triggered in either competition (blend led from very early on, no scenario of a solo catching up later); the cost guardrail **never** triggered in either competition (a 38-member AUC blend was only 11.6 seconds < the 45-second threshold).
 
-## 10. 十場全覆蓋圖景
+## 10. The Full Ten-Competition Coverage Picture
 
-以每場競賽「v2/v3 曾達到過的最佳結果」對線性迭代最佳分數彙整(見 `docs/tree_facts.json` 的 `ten_comp_coverage` 區塊,逐場取 min/max 後與 `linear_reference` 相減,無條件依指標方向判定):
+Consolidating each competition's "best result ever reached by v2/v3" against the linear-iteration best score (see the `ten_comp_coverage` block in `docs/tree_facts.json`, taking per-competition min/max minus `linear_reference`, with the verdict determined unconditionally by metric direction):
 
-**10 場中 9 勝、1 精確平、0 負**——唯一的「精確平」是 s3e9(v2 的 12.070034 與線性迭代全精度 12.070034 逐位相同),其餘 9 場(s3e14/s3e5/s3e3/s3e7/s3e1/s3e19/s3e11/s3e16/s3e20)全部是明確的勝。這比 v1 三場的「1 勝 1 平 1 負」是質的躍升——結構性缺口(s3e9 的單模型空間)被 v2 的 ensemble-default 節點空間徹底解決,原本平手的一場(s3e5)也被 v2 的邊界推進機制轉為明確勝場。
+**Of 10 competitions, 9 wins, 1 exact tie, 0 losses** — the only "exact tie" is s3e9 (v2's 12.070034 is digit-for-digit identical to linear iteration's full-precision 12.070034), and the other 9 (s3e14/s3e5/s3e3/s3e7/s3e1/s3e19/s3e11/s3e16/s3e20) are all clear wins. This is a qualitative leap over v1's three-competition "1 win, 1 tie, 1 loss" — the structural gap (s3e9's single-model space) was thoroughly solved by v2's ensemble-default node space, and the originally tied competition (s3e5) was turned into a clear win by v2's boundary-pushing mechanism.
 
-本次全 15 執行、10 場覆蓋歸納出三個可重複的機制發現:
+This full run of 15 executions with 10-competition coverage yields three repeatable mechanistic findings:
 
-1. **先驗定下限,在地洞見定上限**(第 7 節已詳述)——經驗庫命中持續避免浪費算力在已知死路,但真正拉開分數差距的槓桿(tenure-prune、top-code clip、auto_scale、depth-boundary-push、LGBBOUND、YEARWEIGHTS/JOINT)全部來自該場自己的 EDA 或搜尋機制的結構性改變。
-2. **explore burst + kitchen-sink mega-blend:3/3**——所有三次「相位機強制注入探索性 burst」的場次(E-5 的 s3e3 scale、F-2 的 s3e7、F-2 的 s3e14),post-exploit-phase 的全部增益都來自 burst 本身注入的 kitchen-sink mega-blend,沒有一次是某個手寫長射程 solo lineage 單獨貢獻的。三場的增益分別為 +0.001527(s3e3 scale,對 exploit 天花板 0.843524)、+0.000401(s3e7,對 0.900054)、以及 s3e14 從 340.45150 降到 340.35572(改善 0.09579)。
-3. **boundary-push:3 場**——s3e11(D-6,CatBoost max_depth 10→12,solo 0.295779→0.295461)、s3e5 v2(E-2,LGBBOUND 把 max_depth 從 3 推到 2,solo 分數是 0.55784,但拿到 0.297 blend 權重)、s3e16(E-3,learning_rate 從 Optuna 盒邊界 0.0102 推到 0.005,solo rounded MAE 1.33979→1.33950)——三場的單一最大槓桿都源自「Optuna 最優解卡在搜尋空間邊界上」這個模式。s3e7 的 F-2 跑額外提供第 4 個確認資料點(邊界推進成員拿到 0.114 blend 權重),差別在於這次是 v3 的 `boundary_candidates()` 自動找到,而非人工重讀 Optuna trial 表——是「把人類直覺變成系統預設」這條 v3 設計原則最乾淨的一次證據。
+1. **Priors set the floor, local insight sets the ceiling** (detailed in Section 7) — experience-library hits consistently avoid wasting compute on known dead ends, but the levers that truly open up the score gap (tenure-prune, top-code clip, auto_scale, depth-boundary-push, LGBBOUND, YEARWEIGHTS/JOINT) all come from that competition's own EDA or from a structural change to the search mechanism.
+2. **explore burst + kitchen-sink mega-blend: 3/3** — in all three competitions where "the phase machine forced an exploratory burst" (E-5's s3e3 scale, F-2's s3e7, F-2's s3e14), all the post-exploit-phase gain came from the kitchen-sink mega-blend injected by the burst itself, never from a single hand-written long-range solo lineage contributing alone. The three competitions' gains were, respectively, +0.001527 (s3e3 scale, against the exploit ceiling 0.843524), +0.000401 (s3e7, against 0.900054), and s3e14 dropping from 340.45150 to 340.35572 (improvement 0.09579).
+3. **boundary-push: 3 competitions** — s3e11 (D-6, CatBoost max_depth 10→12, solo 0.295779→0.295461), s3e5 v2 (E-2, LGBBOUND pushing max_depth from 3 to 2, solo score 0.55784 but taking 0.297 blend weight), s3e16 (E-3, learning_rate pushed from the Optuna box edge 0.0102 to 0.005, solo rounded MAE 1.33979→1.33950) — the single largest lever in all three competitions stems from the pattern "the Optuna optimum is stuck on the search-space boundary." s3e7's F-2 run additionally provides a 4th confirmation data point (the boundary-push member took 0.114 blend weight), the difference being that this time v3's `boundary_candidates()` found it automatically rather than a human re-reading the Optuna trial table — the cleanest evidence for the v3 design principle of "turning human intuition into a system default."
 
-## 11. 規模曲線章(Phase E-5,`docs/scaling_experiment.md`)
+## 11. Scaling-Curve Chapter (Phase E-5, `docs/scaling_experiment.md`)
 
-D-2 的 22 節點 s3e3 掃描找到 AUC 0.841442,但當時仍有可見的頭寸(四條 lineage 已 plateau,但搜尋在耗盡候選空間前就先碰到 22 節點上限)。E-5 把同一個搜尋 regime 延伸到 80 個已評估節點的預算,直接量測分數-評估數曲線,問題是:曲線在哪裡走平,後期回溯是否值得?
+D-2's 22-node s3e3 sweep found AUC 0.841442, but there was still visible headroom at the time (four lineages had plateaued, but the search hit the 22-node cap before exhausting the candidate space). E-5 extends the same search regime to a budget of 80 evaluated nodes and directly measures the score-vs-evaluations curve; the questions are: where does the curve flatten, and are the late-stage backtracks worth it?
 
-**曲線走勢**(逐字自 `experiments_tree_scale.json` 的 `curve` 欄位、由 `docs/scripts/build_tree_facts.py` 的 `curve_summary()` 機械抽取,與 `docs/scaling_experiment.md` 手工整理的同一份數字互相印證):全程 10 次全域最佳刷新,exploit 階段(eval 1–39)貢獻 7 次、explore 階段(eval 41 起)貢獻 3 次。Exploit 階段的最後一次改進在 eval 39(0.843524),此後 exploit 階段自身沒有再改進;explore burst 觸發後,3 次改進全部集中在 eval 45–52(KITCHENBLEND lineage),之後直到 eval 80(全跑結束)**再無任何改進**——idle tail 長達 28 個評估,占 80 節點預算的 35%。全跑實際牆鐘時間(含快取重用、失敗佔位節點)97.4 秒。
+**Curve trajectory** (verbatim from the `curve` field of `experiments_tree_scale.json`, mechanically extracted by `docs/scripts/build_tree_facts.py`'s `curve_summary()`, cross-checked against the same numbers manually compiled in `docs/scaling_experiment.md`): 10 global-best refreshes over the whole run, of which the exploit phase (eval 1–39) contributed 7 and the explore phase (from eval 41) contributed 3. The last improvement in the exploit phase was at eval 39 (0.843524), after which the exploit phase itself improved no further; after the explore burst triggered, all 3 improvements concentrated in eval 45–52 (the KITCHENBLEND lineage), and then, until eval 80 (the end of the run), there were **no further improvements at all** — the idle tail was as long as 28 evaluations, 35% of the 80-node budget. The whole run's actual wall-clock time (including cache reuse and failed placeholder nodes) was 97.4 seconds.
 
-**Stage-4 預算規則**(`docs/scaling_experiment.md` 原文,經 `docs/tree_facts.json` 的 `v3_constants` 區塊確認已如實編碼進 `harness_v3.py` 的預設值):(1) 預設節點預算 60(exploit ~35–40 + 強制 explore burst 5–8 條長射程 lineage);(2) burst 後連續 15–20 次評估無改善即停(v3 預設 20);(3) 數值上限 60,不論相位機是否觸發都硬停。這三條規則正是 `harness_v3.py` 的 `DEFAULT_TOTAL_BUDGET=60`、`EXPLORE_BURST_MIN/MAX=5/8`、`DEFAULT_POST_BURST_PATIENCE=20` 常數的直接來源。
+**Stage-4 budget rules** (original text from `docs/scaling_experiment.md`, confirmed via the `v3_constants` block in `docs/tree_facts.json` to have been faithfully encoded into `harness_v3.py`'s defaults): (1) default node budget 60 (exploit ~35–40 + a forced explore burst of 5–8 long-range lineages); (2) stop after 15–20 consecutive evaluations without improvement post-burst (v3 default 20); (3) numeric cap 60, a hard stop regardless of whether the phase machine triggers. These three rules are the direct source of `harness_v3.py`'s `DEFAULT_TOTAL_BUDGET=60`, `EXPLORE_BURST_MIN/MAX=5/8`, and `DEFAULT_POST_BURST_PATIENCE=20` constants.
 
-**與全部 15 次執行的交叉校準**(`docs/tree_facts.json` 的 `budget_efficiency` 區塊,對每次執行機械重算「最佳解出現在第幾次評估 / 總評估數」比值與尾端閒置評估數):15 次執行的 best/total 比值介於 0.10(s3e9 v1)到 1.00(s3e20,結構主宰地形評估成本近零、最後一個節點才刷新最佳)之間,均值約 0.65;idle tail 介於 0(s3e20)到 28(s3e5 v1 的 40 節點跑、以及 s3e3 scale 的 80 節點跑——同一個 28-評估閒置尾端在 2 倍的預算規模下重現,顯示這是 harness 本身的搜尋動態特徵,不只是特定預算大小下的巧合)之間。
+**Cross-calibration with all 15 runs** (the `budget_efficiency` block in `docs/tree_facts.json`, mechanically recomputing per run the "at which evaluation the best solution appeared / total evaluations" ratio and the tail idle-evaluation count): the best/total ratio across 15 runs ranges from 0.10 (s3e9 v1) to 1.00 (s3e20, whose structure-dominated terrain has near-zero evaluation cost and where the very last node refreshed the best), with a mean of about 0.65; the idle tail ranges from 0 (s3e20) to 28 (s3e5 v1's 40-node run, and s3e3 scale's 80-node run — the same 28-evaluation idle tail recurring at 2× the budget scale, showing this is a characteristic of the harness's own search dynamics, not merely a coincidence of a specific budget size).
 
-## 12. 誠實但書(v1+v2+v3,全 15 執行)
+## 12. Honest Caveats (v1+v2+v3, all 15 runs)
 
-1. **全部 15 次執行,只有 s3e16(E-3)有真實 Kaggle LB 錨點**(Public 1.34356 / Private 1.34075,CV↔LB 差距 0.00544)——其餘 14 次的「樹最佳勝過對照組」結論都只在 **OOF** 分數上成立,尚未經 Public/Private Leaderboard 驗證。本次週末批次執行「不碰任何 token」是鐵則,OOF 勝出不保證 LB 勝出,尤其在權重搜尋/後處理參數本身就是對同一份 OOF 擬合出來的情況下。
-2. **s3e19 的 fold-5 double-dip + OOF-擬合但書**:線性迭代原本的 10.01946 已帶有「fold 5 同時是 Optuna 調參目標、又是 5 折 OOF 的其中一折」的雙重使用樂觀偏誤;樹搜尋的 9.75707 在此之上再疊加 `auto_scale`(×1.02 純量)與種子選擇這兩層直接對 114,000 列 OOF 擬合的參數。誠實的讀法是「實際 SMAPE 應顯著低於 10.02,但不應直接讀成 9.76」。
-3. **s3e20 的 GBDT-blend 疊加部分信心偏低**:純結構節點(21.0589)是穩健結論,但疊加 GBDT 的最終 21.0332 只在 **3 折 LOYO CV** 上、直接對同一份 OOF 擬合出 2.17% 的極小權重,大機率是 CV 噪音而非真實訊號,與 Phase-B 殘差診斷的既有結論一致(感測器特徵對此目標不含結構之外的可預測訊號)。
-4. **v3 的 auto-stop(耐心計數器)在兩場 F-2 實戰中都未曾真正觸發**——s3e7、s3e14 都是 explore burst 持續改善全域最佳,耐心計數器被持續重置,最終讓 60 節點的數值上限(而非耐心規則本身)結束了搜尋。耐心路徑本身只在一次小預算的驅動腳本煙霧測試中端到端驗證過(`stop_reason` 正確輸出 "2 evals without improvement post-burst");**在真實跑動中它會在 burst 是失敗(dud)的比賽上首次被真正檢驗,目前尚無這樣的資料點**——這是「auto-stop 有效」這句話目前唯一沒有實戰證據支持的部分,誠實記錄而非假裝已驗證。
-5. **F-2 驗證跑暴露的驅動腳本層級 bug(非 harness_v3.py 本身)**:s3e7 需要 3 次重啟——(a) blend-vs-solo 分派邏輯錯誤地依字面 lineage 名稱「BLEND」判斷型別而非節點自身的 `kind`;(b) 模組層級的驅動狀態(lineage 名稱、burst 旗標、node_results)未隨 resume 存活,修正為把這些狀態移進 `search_state` 本身;(c) 一次 CatBoost 訓練(EXPL_CATDEEP)原生 `fit()` 卡死 28 分鐘,`signal.alarm` 無法中斷一個從未返回 Python bytecode 的原生呼叫,只能手動 kill 後重跑(重跑本身只花 54.8 秒)。s3e14 則遇到程序本身的 35 分鐘牆鐘上限在 59/60 節點時觸發、外加 6 次 DART 評估(107–140 秒/次,OOF MAE 高達 6144–6544、約為基準的 18 倍)白白燒掉約 12 分鐘——`harness_v3.py` 本身在兩場驗證跑中都**零修改**,三個 bug 全部是驅動腳本層級的教訓,見第 13 節的三項上線前工程需求。
+1. **Of all 15 runs, only s3e16 (E-3) has a real Kaggle LB anchor** (Public 1.34356 / Private 1.34075, CV↔LB gap 0.00544) — the other 14 runs' conclusions that "the tree best beat the reference" hold only on **OOF** scores, unverified on the Public/Private Leaderboard. It was an ironclad rule for this weekend batch run to "not touch any token"; an OOF win does not guarantee an LB win, especially when the weight search/post-processing parameters were themselves fit against the same OOF.
+2. **s3e19's fold-5 double-dip + OOF-fitting caveat**: linear iteration's original 10.01946 already carries the double-use optimistic bias of "fold 5 being simultaneously the Optuna tuning target and one of the 5 OOF folds"; the tree search's 9.75707 further layers on top of this the two levels of `auto_scale` (×1.02 scalar) and seed selection, both fit directly against the 114,000-row OOF. The honest reading is "the true SMAPE should be significantly below 10.02, but should not be read directly as 9.76."
+3. **s3e20's GBDT-blend overlay part is low-confidence**: the pure-structure node (21.0589) is a robust conclusion, but the final 21.0332 with GBDT overlaid fits a tiny 2.17% weight directly against the same OOF on only **3-fold LOYO CV**, and is very likely CV noise rather than true signal, consistent with Phase-B's existing residual-diagnostic conclusion (sensor features contain no predictable signal for this target beyond the structure).
+4. **v3's auto-stop (patience counter) never truly triggered in either F-2 field run** — in both s3e7 and s3e14, the explore burst kept improving the global best, the patience counter kept getting reset, and ultimately the 60-node numeric cap (not the patience rule itself) ended the search. The patience path itself was only validated end-to-end once, in a small-budget driver-script smoke test (`stop_reason` correctly outputting "2 evals without improvement post-burst"); **in a real run it will first be truly tested on a competition where the burst is a dud, and there is no such data point yet** — this is the one part of the claim "auto-stop works" currently unsupported by field evidence, recorded honestly rather than pretending it is validated.
+5. **Driver-script-level bugs exposed by the F-2 validation runs (not harness_v3.py itself)**: s3e7 required 3 restarts — (a) the blend-vs-solo dispatch logic wrongly judged the type by the literal lineage name "BLEND" rather than the node's own `kind`; (b) module-level driver state (lineage names, burst flags, node_results) did not survive resume, fixed by moving this state into `search_state` itself; (c) one CatBoost training (EXPL_CATDEEP) had its native `fit()` hang for 28 minutes, and `signal.alarm` cannot interrupt a native call that never returns to Python bytecode, so it could only be manually killed and rerun (the rerun itself took only 54.8 seconds). s3e14, meanwhile, hit the process's own 35-minute wall-clock limit at 59/60 nodes, and additionally 6 DART evaluations (107–140 seconds each, with OOF MAE as high as 6144–6544, about 18× the baseline) wasted about 12 minutes for nothing — `harness_v3.py` itself was **unchanged** in both validation runs, and all three bugs are driver-script-level lessons, see the three pre-deployment engineering requirements in Section 13.
 
-## 13. Stage 4 正式建議
+## 13. Stage 4 Formal Recommendations
 
-### v3 作為預設迴圈
+### v3 as the Default Loop
 
-`harness_v3.py`(相位機/去重耗算/blend 重開/邊界推進/k=800+精修權重搜尋/成本護欄)應作為 Stage 4 樹搜尋的**預設迴圈**,理由:(1) 兩場 F-2 驗證跑都端到端跑通、且雙雙刷新該場全紀錄最佳(s3e7 0.900455、s3e14 340.35572),harness_v3.py 本身在驗證期間零修改;(2) explore burst 機制在全部三次觸發中 3/3 貢獻了 post-exploit-phase 的唯一增益來源(第 10 節);(3) 邊界推進在四個獨立場次確認為單一最大槓桿之一。
+`harness_v3.py` (phase machine / dedup-consumes-budget / blend reopen / boundary pushing / k=800 + refinement weight search / cost guardrail) should be the **default loop** for Stage 4 tree search, because: (1) both F-2 validation runs ran end-to-end and both refreshed the all-time best for their competition (s3e7 0.900455, s3e14 340.35572), with harness_v3.py itself unchanged during validation; (2) the explore-burst mechanism contributed the sole post-exploit-phase gain in all three triggers, 3/3 (Section 10); (3) boundary pushing was confirmed as one of the single largest levers in four independent competitions.
 
-### 上線前必須補齊的三項工程需求(F-2 誠實但書直接指出的缺口,而非鍛造出的新願望清單)
+### Three Engineering Requirements That Must Be Completed Before Deployment (gaps directly identified by the F-2 honest caveats, not a forged new wish list)
 
-1. **Resume 狀態契約**:驅動腳本自身的執行期狀態(lineage 名稱映射、burst 已注入旗標、node_results 暫存)必須明確定義為 `tree["search_state"]` 的一部分並隨樹一起持久化,而非留在驅動腳本的模組層級變數——s3e7 F-2 驗證跑的 3 次重啟裡有 1 次直接因此而起,修法已在該跑的驅動腳本裡完成,但尚未提煉成 harness 或驅動腳本模板的正式契約。
-2. **子行程層級的評估逾時**:`signal.alarm` 無法中斷一個從未把控制權交還 Python bytecode 的原生 `fit()`(s3e7 F-2 一次 CatBoost 訓練卡死 28 分鐘)。每個節點的 solo/blend 評估應該在獨立子行程(`subprocess`/`multiprocessing`)裡執行,由父行程強制 kill 逾時的子行程,而非依賴 in-process 訊號。
-3. **Burst 種子的健全性閘**:s3e14 F-2 的 6 次 DART 長射程 solo 評估產生的 OOF MAE 高達基準的 18 倍、且每次耗時 107–140 秒(是典型節點的 2–3 倍)——burst 注入的長射程種子需要一個「每種子評估前/評估中」的牆鐘與初步分數健全性檢查(例如:訓練 loss 是否發散、前幾輪 wall 是否遠超過歷史同類節點的中位數),提早中止明顯失控的長射程嘗試,而非讓它跑到底才發現是浪費。
+1. **Resume state contract**: the driver script's own runtime state (lineage-name mapping, burst-injected flag, node_results scratch) must be explicitly defined as part of `tree["search_state"]` and persisted along with the tree, rather than left in module-level variables of the driver script — 1 of the 3 restarts in s3e7's F-2 validation run stemmed directly from this; the fix was made in that run's driver script but has not yet been distilled into a formal contract for the harness or the driver-script template.
+2. **Subprocess-level evaluation timeout**: `signal.alarm` cannot interrupt a native `fit()` that never yields control back to Python bytecode (in s3e7's F-2 one CatBoost training hung for 28 minutes). Each node's solo/blend evaluation should run in a separate subprocess (`subprocess`/`multiprocessing`), with the parent process forcibly killing a timed-out child, rather than relying on an in-process signal.
+3. **Sanity gate for burst seeds**: the 6 DART long-range solo evaluations in s3e14's F-2 produced OOF MAE as high as 18× the baseline and each took 107–140 seconds (2–3× a typical node) — the long-range seeds injected by the burst need a "before/during each seed evaluation" wall-clock and preliminary-score sanity check (e.g., whether the training loss is diverging, whether the first few rounds' wall far exceeds the median of historically comparable nodes), aborting an obviously runaway long-range attempt early rather than letting it run to completion only to discover it was a waste.
 
-### 預算規則(Phase E-5 驗證,已編碼為 `harness_v3.py` 常數,第 11 節)
+### Budget Rules (validated in Phase E-5, encoded as `harness_v3.py` constants, Section 11)
 
-- 預設總節點預算 **60**(exploit 階段 ~35–40 + 強制 explore burst 5–8 條長射程 lineage)。
-- **Explore burst 不可省略**,即使 exploit 階段「看起來已經收斂」——三份獨立證據(E-5/F-2×2)顯示 burst 是 post-exploit 階段唯一的增益來源。
-- Burst 後連續 **15–20** 次評估無改善即停(v3 預設 20);若相位機或數值訊號都未乾淨觸發,以 **60** 節點數值上限保底(E-5 驗證:全部 15 次執行的 best/total 比值均值 0.647、介於 0.1–1.0 之間,本次 E-5 自身 0.65——上限留有充分餘裕,幾乎不會截斷真實改進)。
+- Default total node budget **60** (exploit phase ~35–40 + a forced explore burst of 5–8 long-range lineages).
+- **The explore burst must not be omitted**, even if the exploit phase "looks converged" — three independent pieces of evidence (E-5/F-2×2) show the burst is the sole source of post-exploit gain.
+- Stop after **15–20** consecutive evaluations without improvement post-burst (v3 default 20); if neither the phase machine nor the numeric signal triggers cleanly, fall back to the **60**-node numeric cap (E-5 validation: the mean best/total ratio across all 15 runs is 0.647, ranging 0.1–1.0, with E-5 itself at 0.65 — the cap leaves ample headroom and will almost never truncate a real improvement).
 
-## 14. 重現指令(v1 + v2 + v3 + 規模實驗,15 次執行)
+## 14. Reproduction Commands (v1 + v2 + v3 + scaling experiment, 15 runs)
 
 ```bash
 cd /home/tjyen/ai_agents/kaggle
 
-# --- v1(harness.py,Phase C-2a/b/c)---
-uv run python3 tree_search/run_s3e9.py     # 單模型節點空間
-uv run python3 tree_search/run_s3e14.py    # solo + blend 節點空間
-uv run python3 tree_search/run_s3e5.py     # 離散化指標(QWK-after-rounder)泛化測試
+# --- v1 (harness.py, Phase C-2a/b/c) ---
+uv run python3 tree_search/run_s3e9.py     # single-model node space
+uv run python3 tree_search/run_s3e14.py    # solo + blend node space
+uv run python3 tree_search/run_s3e5.py     # discretized-metric (QWK-after-rounder) generalization test
 
-# --- v2 D 掃描(harness_v2.py,Phase D-2..D-6)---
-uv run python3 tree_search/run_s3e3.py     # AUC,小樣本(1,677 列)
-uv run python3 tree_search/run_s3e7.py     # AUC,42k 列
-uv run python3 tree_search/run_s3e1.py     # RMSE,地理特徵,37k 列
-uv run python3 tree_search/run_s3e19.py    # SMAPE,TimeSeriesSplit
-uv run python3 tree_search/run_s3e11.py    # RMSLE,36 萬列
+# --- v2 D sweep (harness_v2.py, Phase D-2..D-6) ---
+uv run python3 tree_search/run_s3e3.py     # AUC, small sample (1,677 rows)
+uv run python3 tree_search/run_s3e7.py     # AUC, 42k rows
+uv run python3 tree_search/run_s3e1.py     # RMSE, geographic features, 37k rows
+uv run python3 tree_search/run_s3e19.py    # SMAPE, TimeSeriesSplit
+uv run python3 tree_search/run_s3e11.py    # RMSLE, 360k rows
 
-# --- v2 E 掃描(harness_v2.py,Phase E-1..E-4)---
-uv run python3 tree_search/run_s3e9_v2.py   # 復仇戰:ensemble-default 能否翻盤 v1 敗場
-uv run python3 tree_search/run_s3e5_v2.py   # 復仇戰:v2 能否破 v1 的平手
-uv run python3 tree_search/run_s3e16_v2.py  # 酸性測試:取整 MAE
-uv run python3 tree_search/run_s3e20_v2.py  # 結構主宰地形
+# --- v2 E sweep (harness_v2.py, Phase E-1..E-4) ---
+uv run python3 tree_search/run_s3e9_v2.py   # revenge match: can ensemble-default overturn the v1 loss
+uv run python3 tree_search/run_s3e5_v2.py   # revenge match: can v2 break the v1 tie
+uv run python3 tree_search/run_s3e16_v2.py  # acid test: rounded MAE
+uv run python3 tree_search/run_s3e20_v2.py  # structure-dominated terrain
 
-# --- v2 E-5 規模實驗 ---
-uv run python3 tree_search/run_s3e3_scale.py   # 80-評估-節點預算曲線
+# --- v2 E-5 scaling experiment ---
+uv run python3 tree_search/run_s3e3_scale.py   # 80-evaluation-node budget curve
 
-# --- v3 F-2 驗證跑(harness_v3.py)---
-uv run python3 tree_search/run_s3e7_v3.py    # 可中斷/續跑
-uv run python3 tree_search/run_s3e14_v3.py   # 可中斷/續跑
+# --- v3 F-2 validation runs (harness_v3.py) ---
+uv run python3 tree_search/run_s3e7_v3.py    # interruptible/resumable
+uv run python3 tree_search/run_s3e14_v3.py   # interruptible/resumable
 ```
 
-全部 15 支跑腳本皆可中斷/續跑(每個節點寫入後立即以 temp-file + `os.replace` 原子寫入對應的 `experiments_tree*.json`)。若要從零開始重跑,先刪除對應的樹狀態檔與 `tree_search/cache_<comp>*/`(皆為可重新產生、已 gitignore 的暫存)。
+All 15 run scripts are interruptible/resumable (each node, once written, is atomically written to its corresponding `experiments_tree*.json` via temp-file + `os.replace`). To rerun from scratch, first delete the corresponding tree-state file and `tree_search/cache_<comp>*/` (both regenerable, already-gitignored scratch).
 
-事實抽取與驗證:
+Fact extraction and validation:
 ```bash
 uv run python3 docs/scripts/build_tree_facts.py
-uv run python3 .claude/skills/kaggle-report/assets/verify_report.py docs/tree_search_prototype.md docs/tree_facts.json
-bash .claude/skills/kaggle-report/assets/md2pdf.sh docs/tree_search_prototype.md
+uv run python3 .claude/skills/kaggle-mlspec-report/assets/verify_report.py docs/tree_search_prototype.md docs/tree_facts.json
+bash .claude/skills/kaggle-mlspec-report/assets/md2pdf.sh docs/tree_search_prototype.md
 ```

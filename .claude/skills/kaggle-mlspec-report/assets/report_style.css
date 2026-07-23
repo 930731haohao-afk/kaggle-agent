@@ -1,4 +1,4 @@
-/* kaggle-report PDF 樣式 v2 — 可讀性優先:清晰層級、斑馬表格、call-out 區塊 */
+/* kaggle-mlspec-report PDF 樣式 v2 — 可讀性優先:清晰層級、斑馬表格、call-out 區塊 */
 /* 表格必須收合進頁寬(width:100% + word-break),寬表曾在 PDF 右緣被裁 */
 /* 頁尾頁碼:需 weasyprint(chromium 不支援 @bottom-center,備援模式無頁碼) */
 @page {

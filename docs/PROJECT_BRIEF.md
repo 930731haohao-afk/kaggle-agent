@@ -1,90 +1,68 @@
-# 成果簡報:AI Agent 自主參加 Kaggle 表格競賽
+# Results Brief: An AI Agent Autonomously Competing in Kaggle Tabular Competitions
 
-> 本簡報濃縮整個暑期專案的成果,供口頭報告與快速檢視使用;完整方法見《前言》
-> (PREFACE),逐場與跨場數據見《總結報告》(SUMMARY_REPORT)與各場競賽報告。
-> 所有數字均取自可重現的原始紀錄並經自動一致性驗證。
+> This brief condenses the results of the entire summer project, for use in oral reports and quick review; the shared five-stage methodology is in [docs/pipeline_stages_detail.md](pipeline_stages_detail.md), and the per-competition and cross-competition data are in the 15 ML-spec reports and results table under [docs/ml_specs/](ml_specs/). All numbers are taken from reproducible raw logs and pass automatic consistency verification.
 
-## 1. 一句話目標
+## 1. One-Sentence Objective
 
-評估「Claude Code(LLM agent)+ AutoML 工具」的混合式 AI agent,能否**自主**走完 Kaggle
-表格競賽的完整資料科學流程(理解題目 → EDA → CV 設計 → 特徵 → 建模 → 集成 → 提交),
-並用**受控消融**量化「每加一項自主能力,分數多改善多少」。方法對齊 Aygün 等人(2026,
-Nature)的 ERA 系統核心主張。
+To evaluate whether a hybrid AI agent, "Claude Code (LLM agent) + AutoML tools," can **autonomously** work through the complete data-science pipeline of a Kaggle tabular competition (understanding the problem → EDA → CV design → features → modeling → ensembling → submission), and to use **controlled ablation** to quantify "how much more the score improves with each added autonomous capability." The method aligns with the core claims of the ERA system by Aygün et al. (2026, Nature).
 
-## 2. 做了什麼(交付物)
+## 2. What Was Done (Deliverables)
 
-| 交付物 | 內容 |
+| Deliverable | Content |
 |--------|------|
-| kaggle-agent skill | 競賽流程操作手冊:六階段 EDA→CV→特徵→建模→評估→提交 |
-| self-improvement skill | 線性自我迭代 + 跨競賽經驗庫(什麼有效/無效的累積條目) |
-| 自建樹搜尋工具(3 版) | 候選樹 + 回溯 + 預算相位機,取代線性單路徑優化 |
-| 外部想法庫 + 注入鉤 | 24 條有真實出處的文獻技法([EXT]),v4 harness 把它與經驗庫併池注入樹搜尋 |
-| kaggle-report skill | 報告自動產生:事實抽取 → 數字一致性驗證 → 目錄/頁碼 PDF |
-| 15 場競賽 + 3 份總覽 | 各場報告 + 前言 + 總結報告 + 本簡報,全部自動化產生並驗證 |
+| kaggle-agent skill | Competition-workflow operating manual: the six stages EDA→CV→features→modeling→evaluation→submission |
+| self-improvement skill | Linear self-iteration + cross-competition experience library (accumulated entries of what works / what doesn't) |
+| Custom tree-search tool (3 versions) | Candidate tree + backtracking + budget phase machine, replacing linear single-path optimization |
+| External idea bank + injection hook | 24 literature techniques with real provenance ([EXT]); the v4 harness pools it with the experience library and injects into the tree search |
+| kaggle-mlspec-report skill | Automatic ML-spec report generation: fact extraction → numeric consistency verification → PDF with table of contents / page numbers |
+| 15 competitions + 3 overviews | Per-competition reports + preface + summary report + this brief, all generated and verified automatically |
 
-## 3. 核心方法:五階段消融
+## 3. Core Method: Five-Stage Ablation
 
-同一場競賽解多次,一次比一次多給一項能力,再比較分數,就能逐段隔離每項能力的貢獻:
+Solve the same competition multiple times, giving one additional capability each time, then compare the scores; this isolates each capability's contribution segment by segment:
 
-- **階段 1**:無 skill 基線(直接跑通用 AutoML)
-- **階段 2**:+ kaggle-agent skill(結構化六階段流程)
-- **階段 3**:+ 線性自我迭代(經驗庫先驗、Optuna、seed bagging)
-- **階段 4**:+ 樹搜尋(候選樹取代線性單路徑 → 對應 ERA 第一支柱)
-- **階段 5**:+ 外部想法注入(文獻想法庫 → 對應 ERA 第二支柱;注入機制已建置並實測——外部
-  注入在測試場無可量測系統性增益(誠實 null),見 §8)
+- **Stage 1**: no-skill baseline (run generic AutoML directly)
+- **Stage 2**: + kaggle-agent skill (structured six-stage workflow)
+- **Stage 3**: + linear self-iteration (experience-library priors, Optuna, seed bagging)
+- **Stage 4**: + tree search (candidate tree replaces the linear single path → corresponds to ERA's first pillar)
+- **Stage 5**: + external-idea injection (literature idea bank → corresponds to ERA's second pillar; the injection mechanism was built and empirically tested—external injection yields no measurable systematic gain on the test competitions (an honest null), see §8)
 
-## 4. 主要結果
+## 4. Main Results
 
-**(1) 遞增階梯場場成立**:15 場競賽(10 場同季 S3 主 benchmark + 5 場跨季 S4–S6),
-每一場的階段 1→4 都是正向或持平,**沒有一場在任一階整體倒退**——這是「導入自主能力
-確實有用」的跨場證據(計畫書目標三:效能不退步)。
+**(1) The incremental ladder holds in every competition**: across 15 competitions (10 same-season S3 main benchmark + 5 cross-season S4–S6), Stages 1→4 are positive or flat in every competition, **with no competition regressing overall at any stage**—this is cross-competition evidence that "introducing autonomous capabilities really does help" (project-brief objective three: performance does not regress).
 
-**(2) 增幅分布本身是資訊**:大改善集中在「資料藏著結構性洞見」的場次(如 s3e20 +25.7%、
-s3e5 +19.2%),已被基線逼近天花板的場次增量普遍 <1%。這說明 agent 的價值在「找到並利用
-結構」,而非無差別地堆疊模型。
+**(2) The distribution of the gains is itself information**: large improvements concentrate on competitions where "the data hides structural insight" (e.g., s3e20 +25.7%, s3e5 +19.2%), whereas competitions where the baseline is already near the ceiling generally have increments <1%. This shows that the agent's value lies in "finding and exploiting structure," not in indiscriminately stacking models.
 
-**(3) 真實排行榜驗證**:s3e16 是唯一有真實 Kaggle LB 對照者,樹搜尋版(階段 4)對線性版
-(階段 2)在 Public 與 Private **兩榜同方向改善**,CV↔LB 落差兩次提交一致——這是本套方法
-第一個外部(非本地)信度證據。
+**(3) Real leaderboard validation**: s3e16 is the only competition with a real Kaggle LB comparison; the tree-search version (Stage 4) improves over the linear version (Stage 2) **in the same direction on both the Public and Private boards**, and the CV↔LB gap is consistent across the two submissions—this is the method's first external (non-local) reliability evidence.
 
-**(4) 跨季泛化**:把 S3 驗證過的四階段配方原封搬到第 4–6 季五場競賽(五種不同指標:
-AUC、accuracy、RMSE、R2),階梯**仍場場成立**,只是增幅收斂——配方能泛化到新季度與新指標。
+**(4) Cross-season generalization**: transplanting the four-stage recipe validated on S3 unchanged to five competitions in Seasons 4–6 (five different metrics: AUC, accuracy, RMSE, R2), the ladder **still holds in every competition**, only with converging magnitudes—the recipe generalizes to new seasons and new metrics.
 
-## 5. 跨場學到的可遷移洞見
+## 5. Transferable Insights Learned Across Competitions
 
-- **經驗庫先驗必須逐場檢驗——同一先驗可得相反結論**:交互項先驗在 s5e10/s6e2 被確認、
-  卻在 s6e1 被否決;類別不平衡加權在不同指標場各有適用邊界。先驗要連同適用條件一起搬。
-- **指標決定後處理,不是目標外觀決定**:整數目標配取整(s3e16)、序數配 OptimizedRounder
-  (s3e5);但 s5e10 目標雖落格點,對 RMSE 貼格點反而有害——外觀離散 ≠ 該離散化。
-- **樹搜尋的贏家形狀因資料而異**:有場 mega-blend 奪冠、有場血統 blend 勝出、有場單一模型
-  勝出——固定套路會賭錯形狀,搜尋會就地找到對的那個。
-- **可重現性紀律**:跨季場的階段 4 最佳解全數通過 OOF 逐位重現閘門;並修掉 LightGBM
-  跨進程非決定性,達 max|dOOF|=0 的位元級重現——這是消融方法論可信度的根。
+- **Experience-library priors must be checked competition by competition—the same prior can yield opposite conclusions**: the interaction-term prior was confirmed on s5e10/s6e2 but rejected on s6e1; class-imbalance weighting has different applicable boundaries across metrics. Priors must be transferred together with their conditions of applicability.
+- **The metric decides post-processing, not the appearance of the target**: an integer target pairs with rounding (s3e16), an ordinal one with OptimizedRounder (s3e5); but although the s5e10 target falls on grid points, snapping to the grid actually hurts RMSE—discrete appearance ≠ should be discretized.
+- **The winning shape of the tree search varies with the data**: in some competitions a mega-blend wins, in others a lineage blend wins, in others a single model wins—a fixed playbook would bet on the wrong shape, whereas the search finds the right one on the spot.
+- **Reproducibility discipline**: every Stage 4 best solution in the cross-season competitions passes the bit-by-bit OOF reproducibility gate; and LightGBM's cross-process non-determinism was fixed, reaching bit-level reproducibility with max|dOOF|=0—this is the root of the ablation methodology's credibility.
 
-## 6. 對齊 Aygün 等人 ERA(計畫書 4.1)
+## 6. Alignment with ERA of Aygün et al. (Project Brief 4.1)
 
-| ERA 支柱 | 本專案對應 | 狀態 |
+| ERA pillar | This project's counterpart | Status |
 |----------|-----------|------|
-| 第一支柱:候選樹取代線性單路徑 | 階段 4 樹搜尋(3 版工具) | 已完成、15 場驗證 |
-| 第二支柱:外部知識注入 | 階段 5 外部想法庫 + v4 注入鉤 + plateau 注入 | 想法庫 24 條 + 併池去重 + 注入機制(idea_injection.py)建置並實測完成。誠實結論:機制可行,但外部注入在測試場**無可量測系統性增益(null)**——能乾淨翻譯的想法搜尋已覆蓋、有用的想法已手寫(見 phase_j_j3_findings) |
+| First pillar: candidate tree replaces the linear single path | Stage 4 tree search (3-version tool) | Completed, validated on 15 competitions |
+| Second pillar: external-knowledge injection | Stage 5 external idea bank + v4 injection hook + plateau injection | Idea bank of 24 entries + pooled deduplication + injection mechanism (idea_injection.py) built and empirically tested. Honest conclusion: the mechanism is feasible, but external injection yields **no measurable systematic gain (null)** on the test competitions—ideas that can be cleanly translated are already covered by the search, and useful ideas are already hand-written in (see phase_j_j3_findings) |
 
-## 7. 對照計畫書五大目標
+## 7. Against the Project Brief's Five Objectives
 
-| 目標 | 狀態 |
+| Objective | Status |
 |------|------|
-| 一:報告自動生成 | ✅ kaggle-report skill,15 場全自動產出 |
-| 二:報告品質(可讀、無自創術語) | ✅ 前言抽共同內容、白話化、目錄頁碼 |
-| 三:效能不退步 | ✅ 15 場階梯場場成立 |
-| 四:決策可追溯 | ✅ 數字一致性驗證閘門 + OOF 逐位重現閘門 |
-| 五:可重現與可部署 | 🔄 重現已達位元級;封裝/容器化進行中 |
+| One: automatic report generation | ✅ kaggle-mlspec-report skill, fully automatic output for all 15 competitions |
+| Two: report quality (readable, no self-coined jargon) | ✅ preface extracts shared content, plain-language phrasing, table of contents / page numbers |
+| Three: performance does not regress | ✅ 15-competition ladder holds in every competition |
+| Four: decisions are traceable | ✅ numeric-consistency verification gate + bit-by-bit OOF reproducibility gate |
+| Five: reproducible and deployable | 🔄 reproducibility reaches bit level; packaging/containerization in progress |
 
-## 8. 下一步
+## 8. Next Steps
 
-- **階段 5(外部注入)已收尾**:J-3 發現 `tree['priors']` 為 write-only → 已接線
-  (idea_injection.py,plateau 觸發、限次數)並實測。誠實答案:**外部注入在測試場無可量測
-  系統性增益(null)**——能乾淨翻譯的想法(rank averaging)搜尋已覆蓋,有用的想法已手寫或
-  難自動翻譯。ERA 第二支柱定位為「機制可行、邊際價值 null」的嚴謹負面結果(見
-  docs/phase_j_j3_findings.md)。若要續探,方向是「需重訓/新特徵」的想法(對抗驗證等),
-  但從一致型態看報酬遞減。
-- 交付層收尾:Skill 封裝、使用說明、容器化(本機為 arm64,套件建置為變數)。
-- 統計嚴謹度升級:多種子重跑 + 信賴區間,把「階段 N > 階段 N−1」由點估計變為統計顯著。
+- **Stage 5 (external injection) is wrapped up**: J-3 found that `tree['priors']` was write-only → it has been wired up (idea_injection.py, plateau-triggered, capped count) and empirically tested. Honest answer: **external injection yields no measurable systematic gain (null)** on the test competitions—ideas that can be cleanly translated (rank averaging) are already covered by the search, and useful ideas are already hand-written or hard to translate automatically. ERA's second pillar is positioned as a rigorous negative result of "mechanism feasible, marginal value null" (see docs/phase_j_j3_findings.md). If one wanted to explore further, the direction would be ideas that "require retraining/new features" (adversarial validation, etc.), but the consistent pattern points to diminishing returns.
+- Delivery-layer wrap-up: skill packaging, usage instructions, containerization (the local machine is arm64, so package builds are a variable).
+- Statistical-rigor upgrade: multi-seed reruns + confidence intervals, turning "Stage N > Stage N−1" from a point estimate into statistical significance.

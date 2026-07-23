@@ -1,8 +1,8 @@
 """
-Deterministic fact extractor for kaggle-report.
+Deterministic fact extractor for kaggle-mlspec-report.
 
 Usage (from project root):
-    uv run python3 .claude/skills/kaggle-report/assets/collect.py <competition-name>
+    uv run python3 .claude/skills/kaggle-mlspec-report/assets/collect.py <competition-name>
 
 Reads  competitions/<name>/config.yaml + experiments.json (+ STATUS.md presence)
 Writes competitions/<name>/facts.json

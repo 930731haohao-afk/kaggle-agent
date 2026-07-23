@@ -1,8 +1,8 @@
 """
-Deterministic EDA fact extractor for kaggle-report.
+Deterministic EDA fact extractor for kaggle-mlspec-report.
 
 Usage (from project root):
-    uv run python3 .claude/skills/kaggle-report/assets/eda_summary.py <competition-name>
+    uv run python3 .claude/skills/kaggle-mlspec-report/assets/eda_summary.py <competition-name>
 
 Reads  competitions/<name>/config.yaml + data/train.csv + data/test.csv
 Writes competitions/<name>/eda_summary.json

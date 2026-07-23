@@ -1,129 +1,129 @@
-# 混合式 LLM+AutoML agent 於 Kaggle 表格競賽的受控消融研究(技術報告草稿)
+# A Controlled Ablation Study of a Hybrid LLM+AutoML Agent on Kaggle Tabular Competitions (Technical Report Draft)
 
-> **草稿**:本文把整個專案綜合成研究溝通用的技術報告,供後續精修為正式報告/論文草稿。
-> 所有量化結果取自可重現的原始紀錄,並經自動一致性驗證(見各引用檔)。
+> **Draft**: this document synthesizes the entire project into a technical report for research communication, to be later refined into a formal report / paper draft.
+> All quantitative results are taken from reproducible raw logs and pass automatic consistency verification (see the cited files).
 
-## 摘要
+## Abstract
 
-我們評估「Claude Code(大型語言模型 agent)+ 梯度提升樹 AutoML(LightGBM/XGBoost/
-CatBoost)」的混合式 agent,能否自主完成 Kaggle 表格競賽的完整資料科學流程,並用**受控
-消融**量化每項自主能力的邊際貢獻。做法是同一場競賽以遞增配置各解一次——(1)無 skill
-基線、(2)加結構化競賽流程 skill、(3)加線性自我迭代與跨競賽經驗庫、(4)加樹搜尋(候選樹
-取代線性單路徑)、(5)加外部文獻想法注入——再比較分數。在 15 場競賽(10 場同季第三季主
-benchmark + 5 場跨第 4–6 季、五種指標)上,遞增階梯**場場成立、無一場在任一階整體倒退**;
-增益集中於「資料藏有結構性洞見」的場次。跨季配方仍成立但增幅收斂。對五場跨季做 paired
-bootstrap 顯示端到端階梯的總改善**統計顯著**,但個別階間在較小樣本場次可落入 OOF 估計噪音
-內。關於 ERA 第二支柱(外部想法注入),我們誠實報告:先驗原為 write-only(構造性 no-op),
-我們**建置了真正的注入機制並實測**,結論為「機制可行,但外部注入在測試場無可量測系統性
-增益(null)」——一個嚴謹的負面結果。本工作對應 Aygün 等人(2026)ERA 系統的兩大支柱。
+We evaluate whether a hybrid agent, "Claude Code (large language model agent) + gradient-boosted-tree AutoML (LightGBM/XGBoost/
+CatBoost)," can autonomously complete the full data-science pipeline of a Kaggle tabular competition, and use **controlled
+ablation** to quantify the marginal contribution of each autonomous capability. The approach is to solve the same competition once under each incremental configuration—(1) no-skill
+baseline, (2) adding the structured competition-workflow skill, (3) adding linear self-iteration and a cross-competition experience library, (4) adding tree search (the candidate tree
+replacing the linear single path), (5) adding external-literature idea injection—and then compare the scores. Across 15 competitions (10 same-season Season 3 main
+benchmark + 5 cross-Season 4–6, five metrics), the incremental ladder **holds in every competition, with no competition regressing overall at any stage**;
+the gains concentrate on competitions where "the data hides structural insight." The cross-season recipe still holds but with converging magnitudes. A paired
+bootstrap on the five cross-season competitions shows that the total improvement of the end-to-end ladder is **statistically significant**, but individual inter-stage steps can fall within the OOF estimation noise
+in smaller-sample competitions. On ERA's second pillar (external-idea injection), we report honestly: the priors were originally write-only (a constructive no-op),
+we **built a real injection mechanism and empirically tested it**, and the conclusion is "the mechanism is feasible, but external injection yields no measurable systematic
+gain (null) on the test competitions"—a rigorous negative result. This work corresponds to the two pillars of the ERA system by Aygün et al. (2026).
 
-## 1. 引言
+## 1. Introduction
 
-Kaggle 表格競賽是評估自主資料科學 agent 的實務基準。既有工作多報告「end-to-end 能不能拿
-到好分數」,少有**逐能力的受控歸因**。本文的研究問題是:**每加一項自主能力,分數各改善
-多少、是否統計顯著、在什麼條件下失效?** 貢獻有四:(a) 一套五階段消融協定 + 全自動、
-數字可追溯的報告產生管線;(b) 15 場、五種指標的跨競賽證據;(c) 跨季泛化與統計顯著性的
-誠實校準;(d) ERA 第二支柱(外部知識注入)的機制建置,與「機制可行、邊際價值 null」的嚴謹負面結果。
+Kaggle tabular competitions are a practical benchmark for evaluating autonomous data-science agents. Existing work mostly reports "whether the end-to-end pipeline can achieve
+a good score," and rarely provides **per-capability controlled attribution**. The research question of this paper is: **for each added autonomous capability, how much does the score improve,
+is it statistically significant, and under what conditions does it fail?** There are four contributions: (a) a five-stage ablation protocol + a fully automatic,
+numerically traceable report-generation pipeline; (b) cross-competition evidence over 15 competitions and five metrics; (c) an honest calibration of cross-season generalization and statistical significance;
+(d) the mechanism construction for ERA's second pillar (external-knowledge injection), together with the rigorous negative result of "mechanism feasible, marginal value null."
 
-## 2. 對齊 Aygün 等人 ERA
+## 2. Alignment with ERA of Aygün et al.
 
-Aygün 等人(2026,Nature)的 ERA 系統有兩大支柱:以**候選樹搜尋**取代線性單路徑優化,
-以及注入**外部知識**引導搜尋。本工作的階段 4(自建樹搜尋:候選樹 + 回溯 + 預算相位機)
-對應第一支柱;階段 5(文獻想法庫 + 注入鉤 + plateau 注入)瞄準第二支柱。第 6 節報告:第二
-支柱先驗原為 write-only(J-3),我們接線並實測後,誠實結論為「機制可行、邊際價值 null」——
-這是與 ERA 對齊上最誠實的一筆。
+The ERA system of Aygün et al. (2026, Nature) has two pillars: replacing linear single-path optimization with **candidate tree search**,
+and injecting **external knowledge** to guide the search. This work's Stage 4 (custom tree search: candidate tree + backtracking + budget phase machine)
+corresponds to the first pillar; Stage 5 (literature idea bank + injection hook + plateau injection) targets the second pillar. Section 6 reports: the second-pillar
+prior was originally write-only (J-3); after we wired it up and empirically tested it, the honest conclusion is "mechanism feasible, marginal value null"—
+the most honest entry in aligning with ERA.
 
-## 3. 方法
+## 3. Method
 
-**五階段消融**:階段 1 無 skill 基線 → 2 kaggle-agent skill 的結構化六階段(EDA→CV 設計
-→特徵→建模→指標感知後處理→提交)→ 3 線性自我迭代(經驗庫先驗、Optuna、seed bagging)
-→ 4 樹搜尋(候選樹取代線性單路徑)→ 5 外部想法注入。同場所有階段共用同一組折,分數
-才可直接比較。
+**Five-stage ablation**: Stage 1 no-skill baseline → 2 the kaggle-agent skill's structured six stages (EDA→CV design
+→features→modeling→metric-aware post-processing→submission) → 3 linear self-iteration (experience-library priors, Optuna, seed bagging)
+→ 4 tree search (the candidate tree replaces the linear single path) → 5 external-idea injection. All stages within a competition share the same set of folds, so that scores
+are directly comparable.
 
-**樹搜尋**(自建,三版演進):節點為候選配置(solo 或 blend),以 OOF 分數評分;lineage
-plateau 後回溯、探索爆發(kitchen-sink mega-blend),預算相位機先廣後深排程並自動停止。
+**Tree search** (custom, evolved over three versions): a node is a candidate configuration (solo or blend), scored by OOF score; after a lineage
+plateaus it backtracks, with an explore burst (kitchen-sink mega-blend); the budget phase machine schedules broad-first-then-deep and stops automatically.
 
-**報告產生與雙閘門**:報告數字由程式從原始紀錄抽取,經**數字可追溯性閘門**(報告中每個
-數字必須能追溯到事實表)驗證;可提交場次另設**OOF 逐位重現閘門**(最佳解成員全部從頭
-重訓、逐位比對 OOF 與搜尋快取一致,才產生 test 預測)。全流程以 uv 管理、可重現。
+**Report generation and dual gates**: report numbers are extracted from the raw logs by a program and verified by a **numeric-traceability gate** (every
+number in the report must be traceable to the fact table); submittable competitions additionally have an **OOF bit-by-bit reproducibility gate** (all members of the best solution are retrained
+from scratch and their OOF is compared bit-by-bit against the search cache before test predictions are generated). The whole pipeline is managed by uv and reproducible.
 
-## 4. 實驗設定
+## 4. Experimental Setup
 
-15 場 Kaggle Playground:10 場第三季(S3,同季週末批次,主 benchmark)+ 5 場跨第 4–6 季
-(S4–S6)。五種官方指標:RMSE、ROC-AUC、accuracy、QWK、R²。交叉驗證一律 5 折(依資料
-選分層/分箱/時序/隨機)。本地分數一律為 OOF;可提交場次以排行榜複核。逐場資料規格、
-實驗總表與重現指令見各場競賽報告第 3、7 節;跨場彙總見 docs/SUMMARY_REPORT。
+15 Kaggle Playground competitions: 10 in Season 3 (S3, same-season weekend batch, main benchmark) + 5 across Seasons 4–6
+(S4–S6). Five official metrics: RMSE, ROC-AUC, accuracy, QWK, R². Cross-validation is always 5-fold (choosing
+stratified/binned/time-series/random by the data). Local scores are always OOF; submittable competitions are cross-checked with the leaderboard. Per-competition data specifications,
+the master experiment table are in each competition's ML-spec report (docs/ml_specs/md/playground-series-*.md); reproduction is each competition's scripts/ (04/05/06) + tree_search/ driver, and the cross-competition results table is in docs/ml_specs/README.md.
 
-## 5. 結果
+## 5. Results
 
-**(R1)遞增階梯場場成立**:15 場的階段 1→4 全為正向或持平,無一場在任一階整體倒退
-(計畫書目標三:效能不退步的跨場證據)。
+**(R1) The incremental ladder holds in every competition**: Stages 1→4 of the 15 competitions are all positive or flat, with no competition regressing overall at any stage
+(project-brief objective three: cross-competition evidence that performance does not regress).
 
-**(R2)增益分布反映結構**:大增益集中於結構性洞見場(s3e20 +25.7%、s3e5 +19.2%);已被
-基線逼近天花板的場次增量普遍 <1%。agent 的價值在「找到並利用結構」,非無差別堆疊。
+**(R2) The gain distribution reflects structure**: large gains concentrate on structural-insight competitions (s3e20 +25.7%, s3e5 +19.2%); competitions where
+the baseline is already near the ceiling generally have increments <1%. The agent's value lies in "finding and exploiting structure," not indiscriminate stacking.
 
-**(R3)真實排行榜驗證**:s3e16 是唯一有真實 LB 對照者;樹搜尋版對線性版於 Public 與
-Private **兩榜同方向改善**,CV↔LB 落差兩次提交一致——外部信度證據。
+**(R3) Real leaderboard validation**: s3e16 is the only competition with a real LB comparison; the tree-search version improves over the linear version on the Public and
+Private boards **in the same direction on both**, with the CV↔LB gap consistent across the two submissions—external reliability evidence.
 
-**(R4)跨季泛化**:五場跨季(五種指標)階梯仍場場成立,增幅較 S3 收斂。
+**(R4) Cross-season generalization**: the ladder still holds in every one of the five cross-season competitions (five metrics), with magnitudes converging relative to S3.
 
-**(R5)統計顯著性(paired bootstrap)**:五場跨季的**端到端階梯(base blend→
-樹搜尋贏家)總改善全部超出 OOF 估計噪音、統計顯著**;但個別階間(尤其樹搜尋那一步)在
-兩個較小樣本場次(s4e1、s4e11)落在噪音內——其可解析度隨驗證列數 n 增加。誠實結論:信
-「累積的階梯」,不過度宣稱任何單一 0.0x% 步(詳見 docs/statistical_rigor)。
+**(R5) Statistical significance (paired bootstrap)**: the **total improvement of the end-to-end ladder (base blend→
+tree-search winner) exceeds the OOF estimation noise and is statistically significant** in all five cross-season competitions; but individual inter-stage steps (especially the tree-search step) fall
+within the noise in the two smaller-sample competitions (s4e1, s4e11)—their resolvability increases with the number of validation rows n. Honest conclusion: trust
+"the cumulative ladder," and do not over-claim any single 0.0x% step (see docs/statistical_rigor for details).
 
-## 6. 分析與跨場發現
+## 6. Analysis and Cross-Competition Findings
 
-**(F1)經驗庫先驗必須逐場檢驗——同一先驗可得相反結論**:交互項先驗在 s5e10、s6e2 被
-對照檢驗確認、卻在 s6e1 被否決;類別不平衡加權先驗在不同指標場各有適用邊界。先驗要連同
-適用條件一起搬。
+**(F1) Experience-library priors must be checked competition by competition—the same prior can yield opposite conclusions**: the interaction-term prior was
+confirmed by controlled checks on s5e10 and s6e2 but rejected on s6e1; the class-imbalance weighting prior has different applicable boundaries across metric competitions. Priors must be transferred together with
+their conditions of applicability.
 
-**(F2)指標決定後處理,不是目標外觀決定**:整數目標配取整(s3e16)、序數配切點優化
-(s3e5);但 s5e10 目標雖落 0.01 格點,對 RMSE 貼格點反而有害(平方誤差要條件均值)。
+**(F2) The metric decides post-processing, not the appearance of the target**: an integer target pairs with rounding (s3e16), an ordinal one with cut-point optimization
+(s3e5); but although the s5e10 target falls on a 0.01 grid, snapping to the grid actually hurts RMSE (squared error wants the conditional mean).
 
-**(F3)樹搜尋的贏家形狀因資料而異**:mega-blend、系譜血統 blend、單一模型各有奪冠場次
-——固定套路會賭錯形狀,搜尋會就地找對的那個。
+**(F3) The winning shape of the tree search varies with the data**: mega-blend, lineage blend, and single model each have competitions where they won
+—a fixed playbook would bet on the wrong shape, whereas the search finds the right one on the spot.
 
-**(F4)可重現性紀律**:跨場最佳解全數通過 OOF 逐位重現閘門;修掉 LightGBM 跨進程非
-決定性後達 max|dOOF|=0 的位元級重現。
+**(F4) Reproducibility discipline**: the cross-competition best solutions all pass the OOF bit-by-bit reproducibility gate; after fixing LightGBM's cross-process
+non-determinism, bit-level reproducibility with max|dOOF|=0 is achieved.
 
-**(F5,負面/架構)外部注入:機制可建,但邊際價值為 null**:先以單一變因對照(harness_v4
-只切注入 mode)發現 off 與 ext 的搜尋樹**逐位元相同**(構造性 0)——根因是 `suggest_priors`
-的回傳只寫入 `tree['priors']` 供記錄、**沒有任何搜尋算子讀它**,經驗庫知識實際是透過 driver
-**手寫種子**引導而非自動 plumbing。隨後**建置了真正的注入機制**(`idea_injection.py`:讀
-idea_bank → 篩選去重 → 翻譯成搜尋候選 → 標 provenance,plateau 觸發、限次數)並在階段4
-收斂點以快取 OOF 對 **15 場**實測(rank averaging + 通用的 stacking 翻譯器涵蓋非 AUC 場):
-**外部注入從未產生勝過階段4的候選——階段5 = 階段4(全 15 場持平)**;過程抓除兩個假正例
-(s3e7 弱基線、s3e20 榨出的已排除 CV 噪音)。**為什麼 null**:(1) 階段4的 OOF 權重搜尋已在
-成員池近最優,可乾淨注入的想法(rank/stacking)只是重組同批成員、贏不過它;(2) stacking 更
-有彈性 → 過擬合 CV 噪音、且對非平方誤差指標不對齊(MAE/SMAPE 場明顯更差);(3) 有用的
-領域想法早已被作者手寫進搜尋;(4) 訊號已被前四階段榨到噪音地板;(5) 能帶來新訊號的想法
-(對抗驗證等)需新特徵/重訓且資料相依。**外部知識只在引入搜尋錯過的新訊號時才有價值,而
-這些成熟表格題幾無被錯過的結構可撿。這不否定階段 4 樹搜尋的價值**(其增益來自搜尋機制本身)。
-可重現:`docs/scripts/stage5_sweep.py`;詳見 docs/phase_j_j3_findings。
+**(F5, negative/architectural) External injection: the mechanism can be built, but the marginal value is null**: first, a single-variable comparison (harness_v4
+toggling only the injection mode) found that the search trees of off and ext were **bit-for-bit identical** (a constructive 0)—the root cause being that the return of `suggest_priors`
+was only written into `tree['priors']` for logging and **no search operator read it**, so experience-library knowledge was actually guided through the driver via
+**hand-written seeds** rather than automatic plumbing. Subsequently, **a real injection mechanism was built** (`idea_injection.py`: read
+idea_bank → filter and deduplicate → translate into search candidates → tag provenance, plateau-triggered, capped count) and empirically tested at the Stage 4
+convergence point over **15 competitions** with cached OOF (rank averaging + a generic stacking translator covering non-AUC competitions):
+**external injection never produced a candidate that beat Stage 4—Stage 5 = Stage 4 (flat across all 15 competitions)**; the process caught and removed two false positives
+(s3e7's weak baseline, and CV noise already excluded from s3e20's squeeze). **Why null**: (1) Stage 4's OOF weight search is already
+near-optimal on the member pool, and ideas that can be injected cleanly (rank/stacking) merely recombine the same members and cannot beat it; (2) stacking is more
+flexible → overfits CV noise and does not align with non-squared-error metrics (MAE/SMAPE competitions are clearly worse); (3) useful
+domain ideas were long ago hand-written into the search by the author; (4) the signal was already squeezed by the first four stages down to the noise floor; (5) ideas that could bring new signal
+(adversarial validation, etc.) require new features/retraining and are data-dependent. **External knowledge is valuable only when it introduces new signal the search missed, and
+these mature tabular problems have almost no missed structure left to pick up. This does not negate the value of the Stage 4 tree search** (its gain comes from the search mechanism itself).
+Reproducible: `docs/scripts/stage5_sweep.py`; see docs/phase_j_j3_findings for details.
 
-## 7. 限制
+## 7. Limitations
 
-- **CV-only**:多數場次(尤其跨季)競賽已關榜,除 s3e16 外僅有本地 OOF(+ 部分前季 LB
-  錨點),缺當前真實 LB 對照。
-- **統計範圍**:R5 的 bootstrap 只量 OOF 估計的抽樣變異,**非**重跑搜尋(換 seed/折/Optuna)
-  的變異——後者需重訓、本文未做;故 CI 為不確定性下界,個別「顯著」可能仍 seed-fragile。
-- **第二支柱邊際價值 null**(F5):注入機制已建置並實測,但外部注入在測試場無可量測系統性
-  增益;此為嚴謹負面結果,非機制缺陷。
-- **單一 agent、單一 driver 模式**:各場 driver 的先驗種子為手寫,未系統化自動生成。
+- **CV-only**: most competitions (especially cross-season) are closed, and except for s3e16 only local OOF is available (+ some prior-season LB
+  anchors), lacking a current real LB comparison.
+- **Statistical scope**: the R5 bootstrap measures only the sampling variance of the OOF estimate, **not** the variance of rerunning the search (changing seed/folds/Optuna)—
+  the latter requires retraining and is not done here; so the CI is a lower bound on uncertainty, and individual "significant" results may still be seed-fragile.
+- **Second-pillar marginal value null** (F5): the injection mechanism was built and empirically tested, but external injection yields no measurable systematic
+  gain on the test competitions; this is a rigorous negative result, not a mechanism defect.
+- **Single-agent, single-driver mode**: each competition's driver prior seeds are hand-written, not systematically auto-generated.
 
-## 8. 結論與未來工作
+## 8. Conclusion and Future Work
 
-遞增自主能力在 15 場、五種指標上帶來一致(場場不退步)、且**端到端統計顯著**的增益,
-增益大小反映資料的結構可利用性;跨季仍成立但收斂。ERA 第二支柱(外部注入)的機制已建置
-並實測,誠實結論為「機制可行、邊際價值 null」(F5)。未竟工作:多種子/多折的搜尋變異
-研究(把「顯著」由 OOF 下界升級為重跑穩健)、開放場次的真實 LB 驗證、跨出表格題的評估
-拓寬;以及若要續探第二支柱,需實作「需重訓/新特徵」類的外部想法(對抗驗證、頻率編碼),
-但從目前一致型態看報酬遞減。
+Incremental autonomous capabilities bring consistent (no competition regresses) and **end-to-end statistically significant** gains across 15 competitions and five metrics,
+with the gain sizes reflecting the data's structural exploitability; the cross-season case still holds but converges. ERA's second pillar (external injection) has had its mechanism built
+and empirically tested, with the honest conclusion "mechanism feasible, marginal value null" (F5). Remaining work: a study of search variance under multiple seeds/folds
+(upgrading "significant" from an OOF lower bound to rerun robustness), real LB validation on open competitions, broadening the evaluation
+beyond tabular problems; and if the second pillar is to be explored further, implementing external ideas of the "require retraining/new features" kind (adversarial validation, frequency encoding),
+though the consistent pattern so far points to diminishing returns.
 
 ---
 
-**可重現與出處**:各場競賽報告(competitions/playground-series-*/REPORT.md)、跨場彙總
-(docs/SUMMARY_REPORT)、成果簡報(docs/PROJECT_BRIEF)、統計嚴謹度(docs/statistical_rigor
-+ docs/scripts/bootstrap_ci.py)、J-3 發現(docs/phase_j_j3_findings)、benchmark 事實表
-(docs/benchmark_facts.json + docs/scripts/build_benchmark_table.py)。方法與術語見 docs/PREFACE。
+**Reproducibility and provenance**: each competition's ML-spec report (docs/ml_specs/md/playground-series-*.md), cross-competition results table
+(docs/ml_specs/README.md), results brief (docs/PROJECT_BRIEF), statistical rigor (docs/statistical_rigor
++ docs/scripts/bootstrap_ci.py), J-3 findings (docs/phase_j_j3_findings), benchmark fact table
+(docs/benchmark_facts.json + docs/scripts/build_benchmark_table.py). Methodology and the five stages are in docs/pipeline_stages_detail.md.

@@ -1,0 +1,137 @@
+---
+name: kaggle-mlspec-report
+description: |
+  Generate a structured, reproducible ML Specification Report (5-section 顏佐榕 framework:
+  Data / Models & Architecture / Training / Inference / Evaluation & Benchmarking) plus an
+  academic-serif PDF for a completed Kaggle competition run. Numbers are extracted
+  deterministically into facts.json by collect.py; the agent writes only the what/why
+  narrative and never invents or rewrites a number. Includes the vs-NVIDIA reproduce-agent
+  benchmark and a plan-aligned 8-item rubric self-check.
+
+  Use when the user asks to: generate an ML-spec / competition report, 產 ML 規格報告,
+  產出競賽報告, 產出分析報告, write up a finished competition run, or after completing the
+  kaggle-agent pipeline.
+
+  Trigger phrases: "ml-spec report", "ML 規格報告", "競賽報告", "分析報告", "report", "報告".
+
+  Do NOT use for: general ML questions, or a competition with no experiments.json /
+  facts sources yet — there must be a finished run under competitions/<name>/ to report on.
+---
+
+# Kaggle ML-Spec Report
+
+Turns a finished competition folder into a **5-section ML Specification Report** — the
+顏佐榕 ML-spec framework aligned to the summer-plan's Goal 1 ((甲) what/why + (乙) the five
+process components) — that a data scientist can read to rebuild the pipeline **without
+reading the code**. Output lives in `docs/ml_specs/` (canonical report set), not inside the
+competition folder.
+
+## Hard Rules (non-negotiable — the number-integrity contract)
+
+1. **Every number in the report must trace to that competition's structured records**
+   (`facts.json`, `eda_summary.json`, `STATUS.md`, `experiments_tree_v3.json`,
+   `config.yaml`, and the benchmark record for the vs-NVIDIA line). Never recompute,
+   re-round, or invent a number. Derived stats (improvement %, gaps) may appear only if
+   the underlying numbers are grounded and the arithmetic is shown inline in a fenced code
+   block (e.g. `1.34356 − 1.33812 = 0.00544`) — verify_report.py exempts code blocks.
+2. **STATUS.md is narrative context only** — read it to understand *why* decisions were
+   made; numbers still come from facts.json.
+3. **DL→GBDT translation convention**: the 顏佐榕 framework has DL-shaped fields (Loss,
+   Optimization Algorithm, Learning Rate, **Learning Rate Scheduler**, **Batch Size**,
+   **Transfer Learning**, **Data Augmentation**). For a GBDT pipeline, fill the real ones
+   (loss objective, gradient boosting, boosting shrinkage) and mark the DL-only ones
+   **`N/A (reason)`** with the GBDT analogue named — e.g. *"no Learning Rate Scheduler
+   (N/A — GBDT convergence is governed by CV early-stopping, not a schedule)"*,
+   *"Transfer Learning N/A (no pretrained weights); its analogue here is cross-competition
+   experience injection"*, *"Data Augmentation N/A (tabular); the analogues are feature
+   engineering and seed-bagging"*. Never leave a field blank and never fabricate a DL
+   component that did not exist.
+4. **Unavailable items → write "not recorded"** (e.g. peak memory, inference duration), and
+   **surface source conflicts honestly** rather than picking one (e.g. "eda_summary reports
+   562 duplicate rows, STATUS.md reports none; not reconciled").
+5. **CV-only honesty**: if the run was never submitted / the leaderboard is closed, state
+   "CV-only, no public/private LB" explicitly; only cite a real LB number when one exists.
+
+## The 5-section structure (see references/mlspec_structure.md for the field checklist)
+
+Title line: `# ML Specification Report — <comp>` + a subtitle `### <Task> · our from-scratch
+agent (<architecture>)`, then a grounding blockquote listing the source files.
+
+1. **Overview** — what the task is + **"Why it matters"** (non-canned) + the champion CV
+   score + a one-line vs-NVIDIA outcome (winner / tie / behind).
+2. **Data** — Purpose of Data · Data Format · Data Volume · Data Quality (missing/dupes/
+   shift + the defining wrinkle) · strongest EDA signals · Annotation Guidelines · Feature
+   Set (grouped table) · Splitting strategy (CV scheme + why + LB status).
+3. **Models & Architecture** — Purpose · Architecture Type · Input Format/Dimension ·
+   Architecture Description (representative hyperparams) · Model Complexity (trees×leaves,
+   not a dense parameter count) · the champion node id + member weights.
+4. **Training procedures** — the staged trajectory table (each stage → OOF score) · Loss
+   Function · Optimization Algorithm · Learning Rate · Learning Rate Scheduler (N/A) · Batch
+   Size (N/A) · Training Duration · Training Memory · Transfer Learning analogue · Data
+   Augmentation analogue · Reproducibility Standards (seeds, determinism, replay/rebuild gate).
+5. **Inference procedures** — Decision Threshold (or N/A for ranking/regression) ·
+   post-processing (clip / round / OptimizedRounder / snap-to-grid) · Inference Duration ·
+   Inference Memory.
+6. **Evaluation & Benchmarking** — the task · Performance Metrics (with the stage
+   progression) · **Performance Benchmarking**: the vs-NVIDIA reproduce-agent table
+   (approach + score + winner note), with honest caveats (de-leaking, unified CV schemes,
+   CV-only).
+
+(Sections 2–6 are the 五大元件 (乙): Data spec / Model spec / Training spec / Inference
+procedure / Evaluation metric. Section 1 is 目的 (甲) what/why.)
+
+## Pipeline
+
+Run from project root (`/home/tjyen/ai_agents/kaggle`), in order:
+
+1. **Summarize EDA (deterministic, optional but recommended)**
+   ```bash
+   uv run python3 .claude/skills/kaggle-mlspec-report/assets/eda_summary.py <competition-name>
+   ```
+   Writes `competitions/<name>/eda_summary.json` (target distribution, feature stats,
+   correlations, collinearity, train/test shift, validation hint). Skip if data absent.
+
+2. **Collect facts (deterministic)**
+   ```bash
+   uv run python3 .claude/skills/kaggle-mlspec-report/assets/collect.py <competition-name>
+   ```
+   Writes `competitions/<name>/facts.json`, wiring `config.yaml`, `experiments.json`,
+   `STATUS.md`, `eda_summary.json`. On error: report to the user and stop.
+
+3. **Write the report (you)** — read `facts.json` +
+   [references/mlspec_structure.md](references/mlspec_structure.md), then write
+   `docs/ml_specs/md/playground-series-<comp>.md` following the 5-section structure,
+   embedding numbers/tables from facts.json verbatim and applying the DL→GBDT convention.
+
+4. **Rubric self-check** — walk [references/rubric.md](references/rubric.md) (P1–P8) item by
+   item; fix any gap before proceeding.
+
+5. **Verify number traceability (deterministic)**
+   ```bash
+   uv run python3 .claude/skills/kaggle-mlspec-report/assets/verify_report.py \
+       docs/ml_specs/md/playground-series-<comp>.md competitions/<name>/facts.json
+   ```
+   Must exit 0. Fix the report if it flags numbers; never hand-edit facts.json.
+
+6. **PDF (deterministic)** — academic serif, auto TOC + page numbers:
+   ```bash
+   bash .claude/skills/kaggle-mlspec-report/assets/md2pdf.sh \
+       docs/ml_specs/md/playground-series-<comp>.md \
+       docs/ml_specs/pdf/playground-series-<comp>.pdf
+   ```
+   weasyprint primary (page numbers), chromium fallback (no page numbers — say so if it
+   fired). Exit 0 = PDF written, 2 = no engine (keep the .md, say PDF skipped), 3 = claimed
+   success but no file.
+
+7. Show the user where the .md / .pdf landed and summarize the rubric result. If reporting a
+   full set, regenerate `docs/ml_specs/README.md`'s results table and confirm `RUBRIC.md`
+   still passes 8/8.
+
+## Notes
+
+- The **vs-NVIDIA reproduce-agent** benchmark (Evaluation §) draws on the benchmark record
+  (`docs/benchmark_facts.json` / the per-comp `ext_facts.json`); if no benchmark exists for a
+  competition, say so and omit the comparison table rather than inventing a comparator.
+- This skill replaced the older 7-section `kaggle-report` skill (2026-07-16); the shared
+  engine (`collect.py` / `verify_report.py` / `md2pdf.sh` / `eda_summary.py` /
+  `report_style.css`) was carried over unchanged.

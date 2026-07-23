@@ -1,49 +1,49 @@
-# 可重現性(對照計畫書 §4「模組化與可重現」+ 目標五)
+# Reproducibility (against plan §4 "Modularity and Reproducibility" + Goal 5)
 
-> 對照《暑期實習計畫》§4 與目標五,說明本專案的可重現機制、與計畫書的對映,以及
-> 「可重現標準於專案中途提高」的誠實分層。日期:2026-07-08。
+> Against *Summer Internship Plan* §4 and Goal 5, this describes the project's reproducibility mechanisms, the mapping to the plan, and
+> the honest layering of "the reproducibility standard was raised midway through the project." Date: 2026-07-08.
 
-## 計畫書要求 ↔ 現況
+## Plan requirements ↔ current status
 
-| 計畫書 §4「模組化與可重現」 | 現況 |
+| Plan §4 "Modularity and Reproducibility" | Current status |
 |---|---|
-| 固定 torch/numpy/scikit-learn 隨機種子 | ✅ 全場 **seed=42**(模型 `random_state`、`KFold(shuffle, seed=42)`、numpy `RandomState(42)`)。本專案表格題以 GBDT(LGB/XGB/CAT)為主,亦固定;torch 少用但同原則 |
-| 以 uv 管理套件 | ✅ `pyproject.toml` + `uv.lock`;`uv sync` 重建環境 |
-| 以 MLflow 記錄實驗 | ✅ `docs/scripts/export_to_mlflow.py` 把各場 `experiments.json` 鏡射進本地 **sqlite MLflow store**(`mlflow.db`;284 runs/38 場)。權威紀錄仍為 experiments.json / facts / 報告管線,MLflow 為對應的標準化查詢層 |
-| 沿用 data/models/trainers/utils 結構 | 等效、命名不同(對映見下) |
+| Fix torch/numpy/scikit-learn random seeds | ✅ **seed=42** in every competition (model `random_state`, `KFold(shuffle, seed=42)`, numpy `RandomState(42)`). This project's tabular tasks are mainly GBDT (LGB/XGB/CAT), also fixed; torch is rarely used but follows the same principle |
+| Manage packages with uv | ✅ `pyproject.toml` + `uv.lock`; `uv sync` rebuilds the environment |
+| Log experiments with MLflow | ✅ `docs/scripts/export_to_mlflow.py` mirrors each competition's `experiments.json` into a local **sqlite MLflow store** (`mlflow.db`; 284 runs / 38 competitions). The authoritative record remains experiments.json / facts / the report pipeline; MLflow is the corresponding standardized query layer |
+| Follow the data/models/trainers/utils structure | Equivalent, differently named (mapping below) |
 
-## 結構對映(data/models/trainers/utils ↔ 實際佈局)
+## Structural mapping (data/models/trainers/utils ↔ actual layout)
 
-| 計畫書模組 | 本專案實際位置 |
+| Plan module | Actual location in this project |
 |---|---|
-| **data** | `competitions/<comp>/data`(gitignored 原始資料)+ `config.yaml`(規格) |
-| **models / trainers** | `competitions/<comp>/scripts`(`features.py` + `train*.py` / `04_train_blend.py` / `05_iterate.py`);`tree_search/`(`harness_v2/v3` + `run_*_v3.py` 樹搜尋 driver) |
-| **utils** | `utils/`(data_loader / evaluation / experiment_log)、`templates/`、`.claude/skills/kaggle-report/assets`(collect / verify / md2pdf 報告管線) |
+| **data** | `competitions/<comp>/data` (gitignored raw data) + `config.yaml` (spec) |
+| **models / trainers** | `competitions/<comp>/scripts` (`features.py` + `train*.py` / `04_train_blend.py` / `05_iterate.py`); `tree_search/` (`harness_v2/v3` + `run_*_v3.py` tree-search driver) |
+| **utils** | `utils/` (data_loader / evaluation / experiment_log), `templates/`, `.claude/skills/kaggle-mlspec-report/assets` (collect / verify / md2pdf report pipeline) |
 
-## 可重現分層(誠實記錄:標準於專案中途提高)
+## Reproducibility layering (honest record: the standard was raised midway)
 
-有兩個嚴格度,都是真的、都誠實記錄:
+There are two strictness levels, both real, both honestly recorded:
 
-**層一(計畫書標準)——全 15 場**:固定種子 + 固定折 + 數字可追溯(verify 閘門)+ OOF 快取
-+ uv 鎖環境 + MLflow 記錄。S3(早批 10 場)做在此層,全 CV-only(競賽關閉、不提交)。
+**Layer 1 (plan standard) — all 15 competitions**: fixed seeds + fixed folds + traceable numbers (verify gate) + OOF cache
++ uv-locked environment + MLflow logging. S3 (the early batch of 10 competitions) is done at this layer, all CV-only (competitions closed, not submitted).
 
-**層二(額外的逐位決定性)——跨季 5 場**:層一 +「重訓能逐位吐出同一份 OOF」的閘門
-(pin LightGBM `deterministic`/`force_row_wise`/`num_threads`)。
-- 為**認證提交檔**而引入(重訓的 test 預測要對得上驗證過的 OOF);過程中發現並修掉 LGBM
-  跨進程不決定性坑(見記憶 lgbm-determinism-oof-gate)。
-- 此層**超出計畫書要求**——計畫書要「固定種子」,而**固定種子 ≠ 逐位決定性**:LGBM 那個坑
-  來自臨時計時選 row/col-wise + 執行緒累加順序,固定種子也躲不掉。
+**Layer 2 (extra bit-level determinism) — the 5 cross-season competitions**: Layer 1 + the gate "retraining emits the exact same OOF bit-for-bit"
+(pinning LightGBM `deterministic`/`force_row_wise`/`num_threads`).
+- Introduced for **certifying the submission file** (the retrained test predictions must match the validated OOF); along the way discovered and fixed the LGBM
+  cross-process non-determinism pitfall (see memory lgbm-determinism-oof-gate).
+- This layer is **beyond the plan's requirement** — the plan asks for "fixed seeds," and **fixed seeds ≠ bit-level determinism**: that LGBM pitfall
+  comes from ad-hoc timing choosing row/col-wise + thread accumulation order, which fixed seeds cannot escape.
 
-**S3 為何不回頭補到層二**:S3 全 CV-only、不提交,層二的目的(認證提交)對它不適用;S3 已
-滿足計畫書標準(層一)。保留為專案演進的合理進步、誠實記錄,不重訓。(定案 2026-07-08,
-見 `docs/plan_compliance_audit.md`。)
+**Why S3 is not brought back up to Layer 2**: S3 is entirely CV-only and not submitted, so Layer 2's purpose (certifying submissions) does not apply to it; S3 already
+meets the plan standard (Layer 1). It is retained as reasonable progress in the project's evolution, honestly recorded, without retraining. (Finalized 2026-07-08,
+see `docs/plan_compliance_audit.md`.)
 
-## 如何重現
+## How to reproduce
 
 ```bash
-uv sync                        # 依 uv.lock 重建環境
-# 各場逐步重現指令見 competitions/<comp>/REPORT.md 第 7 節
-# 交付層一鍵建置+自檢見 setup.sh / REPRODUCE.md
-uv run python3 docs/scripts/export_to_mlflow.py                       # 重生 MLflow 紀錄
-uv run --with mlflow mlflow ui --backend-store-uri sqlite:///mlflow.db  # 開 MLflow UI 查看
+uv sync                        # rebuild the environment from uv.lock
+# per-competition reproduction = its scripts/ (04_train_blend -> 05_iterate -> 06_rebuild_tree_best) + the tree_search/ driver; report is docs/ml_specs/md/playground-series-<comp>.md
+# the one-command delivery-layer build + self-check is in setup.sh / REPRODUCE.md
+uv run python3 docs/scripts/export_to_mlflow.py                       # regenerate the MLflow records
+uv run --with mlflow mlflow ui --backend-store-uri sqlite:///mlflow.db  # open the MLflow UI to inspect
 ```

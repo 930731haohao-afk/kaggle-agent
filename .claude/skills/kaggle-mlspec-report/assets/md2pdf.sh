@@ -30,7 +30,7 @@ toc = (getattr(md, "toc", "") or "").strip()
 # 目錄注入第一個 h2 之前;h2 少於 3 個的短文件不加目錄
 i = body.find("<h2")
 if i != -1 and body.count("<h2") >= 3 and toc:
-    nav = '<nav class="report-toc"><div class="toc-title">目錄</div>' + toc + "</nav>"
+    nav = '<nav class="report-toc"><div class="toc-title">Contents</div>' + toc + "</nav>"
     body = body[:i] + nav + body[i:]
 css = pathlib.Path(css_path).read_text(encoding="utf-8")
 pathlib.Path(html_path).write_text(

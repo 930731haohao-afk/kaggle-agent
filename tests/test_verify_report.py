@@ -8,7 +8,7 @@ FACTS = {
     "trajectory": [],
 }
 
-VERIFY = ".claude/skills/kaggle-report/assets/verify_report.py"
+VERIFY = ".claude/skills/kaggle-mlspec-report/assets/verify_report.py"
 
 
 def test_traceable_numbers_pass(load_module):

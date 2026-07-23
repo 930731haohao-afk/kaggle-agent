@@ -9,10 +9,10 @@
 |-------|------|----------|
 | **kaggle-agent** | 競賽核心流程:EDA→CV 設計→特徵→建模(LGB/XGB/CAT)→評估→提交 六階段操作手冊 | 開始/接手一場 Kaggle 表格競賽 |
 | **kaggle-agent-self-improvement** | 在 kaggle-agent 之上加「線性自我迭代 + 跨競賽經驗庫」(經驗庫先驗、Optuna、seed bagging、反思回退) | 要對一場競賽做逐輪自我改進、跨賽累積經驗 |
-| **kaggle-report** | 從實驗原始紀錄自動產生結構化報告:`collect.py` 抽數字→`verify_report.py` 數字追溯閘門→`md2pdf.sh` 出含目錄/頁碼 PDF | 一場競賽跑完、要產出可審查可重現的分析報告 |
+| **kaggle-mlspec-report** | 從實驗原始紀錄自動產生結構化報告:`collect.py` 抽數字→`verify_report.py` 數字追溯閘門→`md2pdf.sh` 出含目錄/頁碼 PDF | 一場競賽跑完、要產出可審查可重現的分析報告 |
 
 **關係**:`kaggle-agent-self-improvement` 是 `kaggle-agent` 的超集(references/assets 幾乎相同,
-多一份 `07_self_improvement.md`)。若只要基本流程用前者;要自我迭代+經驗庫用後者。`kaggle-report`
+多一份 `07_self_improvement.md`)。若只要基本流程用前者;要自我迭代+經驗庫用後者。`kaggle-mlspec-report`
 獨立、與前兩者搭配使用。
 
 ## 安裝
@@ -20,7 +20,7 @@
 1. **複製 skill**:把要用的 skill 目錄整個複製到目標環境的 `.claude/skills/` 下,例如
    ```bash
    cp -r .claude/skills/kaggle-agent          <目標專案>/.claude/skills/
-   cp -r .claude/skills/kaggle-report          <目標專案>/.claude/skills/
+   cp -r .claude/skills/kaggle-mlspec-report          <目標專案>/.claude/skills/
    # 要自我迭代版就再複製 kaggle-agent-self-improvement
    ```
    Claude Code 會自動偵測 `.claude/skills/<name>/SKILL.md` 並依其 `description`/觸發詞啟用。
@@ -34,7 +34,7 @@
    ```
    完整清單見本專案 `pyproject.toml`。
 
-3. **報告 PDF 相依(僅 kaggle-report 需要)**:`md2pdf.sh` 首選 **weasyprint**(唯一支援目錄
+3. **報告 PDF 相依(僅 kaggle-mlspec-report 需要)**:`md2pdf.sh` 首選 **weasyprint**(唯一支援目錄
    頁碼 target-counter + 頁尾),備援 **chromium**;另需 python 的 **markdown** 套件。三者缺
    weasyprint 時會自動降級用 chromium(無頁碼)。
 
@@ -54,7 +54,7 @@
     ├── templates/        # eda / feature / train / submit 腳本骨架
     └── utils/            # data_loader / evaluation / experiment_log / kaggle_auth
 ```
-kaggle-report 的 `assets/` 另含 `collect.py`、`verify_report.py`、`md2pdf.sh`、
+kaggle-mlspec-report 的 `assets/` 另含 `collect.py`、`verify_report.py`、`md2pdf.sh`、
 `report_style.css`、`report_template.md`、`eda_summary.py`。
 
 ## 版本與相依環境

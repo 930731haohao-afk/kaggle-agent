@@ -1,40 +1,40 @@
-# 重現說明(REPRODUCE)
+# Reproduction Instructions (REPRODUCE)
 
-本專案交付以**輕量、可重現**為目標,取代 Docker 容器化(理由見文末)。核心作法:
-凍結的 `uv.lock` + 一支 `setup.sh` + 本說明。任何人照這份走,就能在自己的機器上
-重建與本專案一致的環境並重現結果。
+This project's deliverable aims to be **lightweight and reproducible**, replacing Docker containerization (rationale at the end). The core approach:
+a frozen `uv.lock` + a single `setup.sh` + these instructions. Anyone who follows this document can
+rebuild an environment consistent with this project on their own machine and reproduce the results.
 
 ---
 
-## 0. 前置需求
+## 0. Prerequisites
 
-| 需求 | 說明 |
+| Requirement | Description |
 |------|------|
-| **uv** | 唯一硬需求。`curl -LsSf https://astral.sh/uv/install.sh \| sh`,裝完 `export PATH="$HOME/.local/bin:$PATH"`。 |
-| **Python 3.13** | 不必自己裝——`uv sync` 會依 `.python-version`(3.13)自動下載對應版本。 |
-| 平台 | 開發機為 **arm64 Linux(Ubuntu 24.04)**。x86_64 亦可(見「已知限制」)。 |
-| Kaggle 憑證 | **僅下載資料/提交時需要**;純重現本地 CV 分數不需要。 |
-| torch | **僅影像/NLP 競賽需要**,核心表格結果不需要。 |
+| **uv** | The only hard requirement. `curl -LsSf https://astral.sh/uv/install.sh \| sh`, then after installing `export PATH="$HOME/.local/bin:$PATH"`. |
+| **Python 3.13** | No need to install it yourself — `uv sync` will automatically download the corresponding version according to `.python-version` (3.13). |
+| Platform | The development machine is **arm64 Linux (Ubuntu 24.04)**. x86_64 also works (see "Known Limitations"). |
+| Kaggle credentials | **Only needed when downloading data / submitting**; not needed for purely reproducing local CV scores. |
+| torch | **Only needed for image/NLP competitions**; not needed for the core tabular results. |
 
 ---
 
-## 1. 一鍵建置 + 自檢
+## 1. One-Command Build + Self-Check
 
 ```bash
 bash setup.sh
 ```
 
-`setup.sh` 會依序:找到 uv → 印平台/arm64 提示 → `uv sync`(依 `uv.lock` 凍結版本
-建置 `.venv`)→ 自檢核心 ML 堆疊可匯入並印版本 → 提示 torch / PDF 後端狀態。
-全程冪等,可重複執行。
+`setup.sh` will, in order: find uv → print platform/arm64 hints → `uv sync` (build `.venv` with frozen versions
+per `uv.lock`) → self-check that the core ML stack imports and print versions → report torch / PDF backend status.
+The whole process is idempotent and can be run repeatedly.
 
-要連影像/NLP 用的 torch 一起裝:
+To install torch (for image/NLP) at the same time:
 
 ```bash
 bash setup.sh --torch
 ```
 
-預期自檢輸出(版本以 uv.lock 為準):
+Expected self-check output (versions per uv.lock):
 
 ```
 python 3.13.x
@@ -45,71 +45,72 @@ OK  optuna 4.9.0    OK  yaml 6.0.3     OK  tqdm 4.67.3
 
 ---
 
-## 2. 重現結果(由淺到深)
+## 2. Reproduce Results (from shallow to deep)
 
 ```bash
-# (a) 全套測試——最快的整體健康檢查
+# (a) full test suite -- the fastest overall health check
 uv run pytest -q
 
-# (b) 重建跨場 benchmark 事實表(從各場 experiments.json 抽取,含一致性 assert)
+# (b) rebuild the cross-competition benchmark facts table (extracted from each competition's experiments.json, with consistency asserts)
 uv run python3 docs/scripts/build_benchmark_table.py
 
-# (c) 驗證任一報告的數字全部可追溯(閘門,exit 0 = 通過)
-uv run python3 .claude/skills/kaggle-report/assets/verify_report.py \
-    docs/SUMMARY_REPORT.md docs/benchmark_facts.json
+# (c) verify that all numbers in a report are traceable to facts.json (gate, exit 0 = pass)
+uv run python3 .claude/skills/kaggle-mlspec-report/assets/verify_report.py \
+    docs/ml_specs/md/playground-series-s6e1.md competitions/playground-series-s6e1/facts.json
 
-# (d) 重現單場最佳解(含 OOF 逐位重現閘門,通過才產提交檔),以 s5e10 為例
+# (d) reproduce a single competition's best solution (including the digit-for-digit OOF reproduction gate; produces a submission only on pass), using s5e10 as an example
 uv run python3 competitions/playground-series-s5e10/scripts/06_rebuild_tree_best.py
 
-# (e) 由 Markdown 產生含目錄/頁碼的 PDF
-bash .claude/skills/kaggle-report/assets/md2pdf.sh \
-    docs/SUMMARY_REPORT.md docs/SUMMARY_REPORT.pdf
+# (e) generate a PDF with table of contents / page numbers from Markdown
+bash .claude/skills/kaggle-mlspec-report/assets/md2pdf.sh \
+    docs/ml_specs/md/playground-series-s6e1.md docs/ml_specs/pdf/playground-series-s6e1.pdf
 ```
 
-> (b)–(e) 從 `experiments.json` / 已快取的 OOF 出發,**不需要競賽原始資料**。
-> (d) 若要從原始資料重跑,需先下載該場 `data/`(見第 3 節);各場「從原始資料到
-> 最佳解」的完整指令見該場 `REPORT.md` 第 7 節。
+> (b)–(e) start from `experiments.json` / cached OOF and **do not need the raw competition data**.
+> For (d), to rerun from raw data you first need to download that competition's `data/` (see Section 3); the full "from raw data to
+> best solution" path for each competition is its `scripts/` (`04_train_blend.py` → `05_iterate.py` → `06_rebuild_tree_best.py`) plus the `tree_search/` driver.
 
 ---
 
-## 3. 資料與憑證(僅需要下載/提交時)
+## 3. Data and Credentials (only needed when downloading/submitting)
 
 ```bash
-# Kaggle token 一律以環境變數注入,絕不落檔(見 CLAUDE.md 安全規則)
+# the Kaggle token is always injected via an environment variable, never written to a file (see the CLAUDE.md security rules)
 export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')
 
-# 下載某場資料到該場 data/(已 gitignore,不入版控)
+# download a competition's data into that competition's data/ (already gitignored, not version-controlled)
 uv run kaggle competitions download -c playground-series-s5e10 \
     -p competitions/playground-series-s5e10/data
 ```
 
 ---
 
-## 4. 已知限制(相對於 Docker 的取捨)
+## 4. Known Limitations (trade-offs relative to Docker)
 
-輕量替代凍結了 **Python 版本 + 所有套件版本**(`uv.lock`),但**不凍結作業系統與
-系統函式庫**。實務影響:
+The lightweight alternative freezes the **Python version + all package versions** (`uv.lock`), but **does not freeze the operating system and
+system libraries**. Practical impact:
 
-- **arm64(開發機)**:`uv.lock` 直接可用,零風險。
-- **x86_64**:核心 ML 套件在 x86_64 也有預編譯 wheel,通常無礙。若某套件在你的
-  平台沒有 wheel 而需現場編譯失敗,多半是缺編譯器或系統開發庫,依錯誤補裝即可。
-- **torch 不在 `uv.lock`**:因 triton 依賴解析問題另行安裝(`setup.sh --torch`),
-  且僅影像/NLP 競賽需要。核心的 15 場表格 benchmark 與樹搜尋不依賴它。
-- **PDF 後端**:`weasyprint`(首選,含目錄頁碼)或 `chromium`(備援,無頁碼);
-  兩者皆無時報告 `.md` 仍可產,只是不出 PDF。
+- **arm64 (development machine)**: `uv.lock` works directly, zero risk.
+- **x86_64**: The core ML packages also have prebuilt wheels for x86_64, usually without issue. If some package has no
+  wheel for your platform and needs on-the-spot compilation that fails, it is most likely a missing compiler or system development library;
+  install what the error indicates.
+- **torch is not in `uv.lock`**: it is installed separately (`setup.sh --torch`) due to a triton dependency-resolution issue,
+  and is only needed for image/NLP competitions. The core 15-competition tabular benchmark and tree search do not depend on it.
+- **PDF backend**: `weasyprint` (preferred, with table of contents and page numbers) or `chromium` (fallback, no page numbers);
+  if neither is available, the report `.md` can still be produced, only without a PDF.
 
 ---
 
-## 為什麼不用 Docker
+## Why Not Docker
 
-目標(可重現交付)兩條路都能達成,權衡如下:
+The goal (a reproducible deliverable) can be achieved either way; the trade-offs are as follows:
 
-| | Docker 映像 | **本方案(uv.lock + setup.sh)** |
+| | Docker image | **This approach (uv.lock + setup.sh)** |
 |---|---|---|
-| 重現強度 | 最強(連 OS/系統庫凍結) | 強(凍結 Python 與全部套件版本) |
-| arm64 風險 | 高:乾淨容器裡從頭裝 ML 套件,易踩 arm64 無 wheel → 現場編譯失敗 | 低:以「已知會動」的環境為基準 |
-| 建置/交付 | 慢、image GB 級 | 快、交付物為數個文字檔 |
-| 對方需要 | 裝 Docker | 裝 uv(單一執行檔) |
+| Reproduction strength | Strongest (freezes even OS/system libs) | Strong (freezes Python and all package versions) |
+| arm64 risk | High: installing ML packages from scratch in a clean container easily hits "no arm64 wheel" → on-the-spot compilation failure | Low: uses a "known to work" environment as the baseline |
+| Build/delivery | Slow, image is GB-scale | Fast, deliverable is a few text files |
+| What the other party needs | Install Docker | Install uv (a single executable) |
 
-開發機為 arm64,ML 套件在乾淨 arm64 容器內建置有真實失敗風險;本方案以已跑通的
-環境為基準,對「在類似機器上重現」的實際場景已足夠,故採之。
+The development machine is arm64, and building ML packages inside a clean arm64 container carries a real risk of failure; this approach uses an
+already-working environment as the baseline, which is sufficient for the actual scenario of "reproducing on a similar machine," hence its adoption.

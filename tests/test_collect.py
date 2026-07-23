@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-COLLECT = ".claude/skills/kaggle-report/assets/collect.py"
+COLLECT = ".claude/skills/kaggle-mlspec-report/assets/collect.py"
 
 # ---- fixtures:三種舊格式 + v2 + 未知,欄位取自專案真實紀錄 ----
 

@@ -21,12 +21,18 @@ _HEADING_NUM = re.compile(r"^(#{1,6}[ \t]+)\d+(?:\.\d+)*[a-z]?\.?(?=[ \t])", re.
 # 「見 2.2a 節」「見 2.2a 小節」等 — 同上豁免理由;僅豁免緊鄰「第」/「節」/「見」/「小節」
 # 的編號本身,不吃掉周圍任何其他數字。
 _TOKEN = r"\d+(?:\.\d+)*[a-z]?"
-_TOKENLIST = rf"{_TOKEN}(?:\s*[、/,]\s*{_TOKEN})*"
+_TOKENLIST = rf"{_TOKEN}(?:\s*[、/,]\s*(?:and\s+)?{_TOKEN})*"
 _SECTION_REF = re.compile(
     rf"第\s*{_TOKENLIST}(?=\s*節)"      # 「第 2.1、2.2a 節」
     rf"|(?<=節)\s*{_TOKENLIST}"          # 「見節 4、2.5」(節在前,無「第」)
     rf"|見\s*{_TOKENLIST}(?=\s*節)"      # 「見 2.2a 節」(無「第」)
     rf"|{_TOKEN}(?=\s*小節)"             # 「見(本節末的)? 2.2a 小節」
+    # English section cross-references (章節結構,非資料數字) — bilingual exemption
+    # so translated reports keep passing: "§2.1", "Section 2.10", "Sections 3.1 and 3.2",
+    # "sub-section 2.2a". Only the section number tokens are removed, not surrounding data.
+    rf"|§\s*{_TOKENLIST}"                                       # 「§2.1」「§2.1, 2.2」
+    rf"|(?i:sections?)\s*{_TOKENLIST}"                          # 「Section 2.10」「Sections 3.1 and 3.2」
+    rf"|(?i:sub-?sections?)\s*{_TOKENLIST}"                     # 「sub-section 2.2a」
 )
 
 

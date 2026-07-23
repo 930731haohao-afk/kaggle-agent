@@ -115,5 +115,5 @@ echo
 echo "接下來(詳見 REPRODUCE.md):"
 echo "  • 跑測試驗證:      uv run pytest -q"
 echo "  • 重建 benchmark:   uv run python3 docs/scripts/build_benchmark_table.py"
-echo "  • 重現單場最佳解:   見各場 competitions/<賽>/REPORT.md 第 7 節"
+echo "  • 重現單場最佳解:   各場 scripts/(04→05→06_rebuild_tree_best.py)+ tree_search/ driver;見 REPRODUCE.md"
 echo "  • 用 agent:         在 Claude Code 觸發 kaggle-agent skill"
