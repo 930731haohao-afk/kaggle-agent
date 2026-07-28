@@ -1,0 +1,22 @@
+name: store-sales-time-series-forecasting
+url: https://www.kaggle.com/competitions/store-sales-time-series-forecasting
+description: Predict grocery store sales for Corporacion Favorita (Ecuador)
+problem_type: regression_timeseries
+evaluation_metric: RMSLE
+optimization_direction: minimize
+target_column: sales
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 5
+notes: |
+  1,782 series (54 stores x 33 product families). Daily data.
+  Train: 2013-01-01 to 2017-08-15 (3M rows), Test: 2017-08-16 to 2017-08-31 (28.5K rows, 16 days).
+  Supplementary data: stores.csv, oil.csv, holidays_events.csv, transactions.csv.
+  Target highly skewed (many zeros, mean=358, max=125K). Ecuador-based retailer.
+  Metric: RMSLE = sqrt(mean((log(1+pred) - log(1+actual))^2)).

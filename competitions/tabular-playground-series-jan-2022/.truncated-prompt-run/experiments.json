@@ -1,0 +1,317 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T10:13:31",
+    "model": "naive",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 10.047046,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        8.968409251597178,
+        10.74082471815427,
+        10.047046391812097
+      ],
+      "mean": 9.918760120521183
+    },
+    "notes": "train_v1.py naive; naive=lag364 seasonal"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T10:13:31",
+    "model": "lgb_raw",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 8.429157,
+    "features": [
+      "country",
+      "store",
+      "product",
+      "year",
+      "month",
+      "day",
+      "dow",
+      "doy",
+      "is_weekend",
+      "sin1",
+      "cos1",
+      "sin2",
+      "cos2",
+      "sin3",
+      "cos3",
+      "sin4",
+      "cos4",
+      "is_holiday",
+      "holiday_win2",
+      "eoy_idx",
+      "gdp_pc",
+      "log_gdp"
+    ],
+    "n_features": 22,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.653003663772047,
+        8.82240238319008,
+        8.429156519013524
+      ],
+      "mean": 7.968187521991884
+    },
+    "notes": "train_v1.py lgb_raw"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T10:13:31",
+    "model": "lgb_gdp",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.802769,
+    "features": [
+      "country",
+      "store",
+      "product",
+      "year",
+      "month",
+      "day",
+      "dow",
+      "doy",
+      "is_weekend",
+      "sin1",
+      "cos1",
+      "sin2",
+      "cos2",
+      "sin3",
+      "cos3",
+      "sin4",
+      "cos4",
+      "is_holiday",
+      "holiday_win2",
+      "eoy_idx"
+    ],
+    "n_features": 20,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.23879358535315,
+        6.497412872015597,
+        5.802769234957009
+      ],
+      "mean": 6.1796585641085855
+    },
+    "notes": "train_v1.py lgb_gdp"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T10:13:31",
+    "model": "ridge",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.527029,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.168833932374907,
+        5.855014872097632,
+        5.527029298671782
+      ],
+      "mean": 5.850292701048107
+    },
+    "notes": "train_v1.py ridge"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T10:13:31",
+    "model": "blend_v1",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.358822,
+    "ensemble": {
+      "models": [
+        "lgb_raw",
+        "lgb_gdp",
+        "ridge"
+      ],
+      "weights": [
+        0.15000000000000002,
+        0.1,
+        0.75
+      ],
+      "search": "grid 0.05 on fold2018"
+    },
+    "notes": "train_v1.py weight search on fold-2018 OOF"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-28T10:14:34",
+    "model": "ridge_A_base",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.527029,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.168833932372929,
+        5.8550148720955875,
+        5.527029298671865
+      ],
+      "mean": 5.850292701046794
+    },
+    "notes": "train_v2.py ridge variant A_base: {}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-28T10:14:34",
+    "model": "ridge_B_holc",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.518106,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.146804743518892,
+        5.873364001088341,
+        5.5181055615079755
+      ],
+      "mean": 5.846091435371736
+    },
+    "notes": "train_v2.py ridge variant B_holc: {'hol_country': True}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-28T10:14:34",
+    "model": "ridge_C_f6",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.525804,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.185180301148866,
+        5.93057822082933,
+        5.525804124142737
+      ],
+      "mean": 5.880520882040311
+    },
+    "notes": "train_v2.py ridge variant C_f6: {'fourier_k': 6}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-28T10:14:34",
+    "model": "ridge_D_eoyc",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.492117,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.219497273748935,
+        5.830690633430502,
+        5.49211709973945
+      ],
+      "mean": 5.8474350023062955
+    },
+    "notes": "train_v2.py ridge variant D_eoyc: {'eoy_country': True}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-28T10:14:34",
+    "model": "ridge_E_all",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.456423,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.189045553818391,
+        5.928454745967024,
+        5.456423449729329
+      ],
+      "mean": 5.857974583171582
+    },
+    "notes": "train_v2.py ridge variant E_all: {'hol_country': True, 'fourier_k': 6, 'eoy_country': True}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-28T10:15:23",
+    "model": "ridge_v3_holnames",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 5.230523,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        6.007672341496973,
+        5.660761532210246,
+        5.230523470981799
+      ],
+      "mean": 5.632985781563005
+    },
+    "notes": "train_v3.py: per-holiday-name x offset(-2..2) dummies, fourier6, eoy x country"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-28T10:16:01",
+    "model": "ridge_v3b_off37",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 4.21273,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        5.0284774191863395,
+        4.837317032979464,
+        4.212730300302912
+      ],
+      "mean": 4.6928415841562385
+    },
+    "notes": "train_v3b.py: per-holiday-name x offset(-3..7) dummies, fourier6, eoy x country"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 13,
+    "timestamp": "2026-07-28T10:18:31",
+    "model": "blend_final(ridge_v4*0.95+lgb_gdp*0.05, rounded)",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 4.1793,
+    "cv": {
+      "strategy": "expanding-year (val 2016/2017/2018), primary fold 2018",
+      "scores": [
+        5.0154,
+        4.8401,
+        4.1793
+      ],
+      "mean": 4.678
+    },
+    "ensemble": {
+      "models": [
+        "ridge_v4",
+        "lgb_gdp"
+      ],
+      "weights": [
+        0.95,
+        0.05
+      ],
+      "search": "grid on fold-2018 OOF"
+    },
+    "postprocess": [
+      "clip>=1",
+      "round to int"
+    ],
+    "submission": "submissions/submission_ridge95_lgb05_cv4.179_20260728.csv",
+    "notes": "final_submit.py: retrained on all 2015-2018; ridge holiday-name x offset(-5..10) design + log_gdp + year_c; World Bank GDP pc incl. 2019"
+  }
+]

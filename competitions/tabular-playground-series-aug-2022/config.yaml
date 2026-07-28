@@ -1,0 +1,22 @@
+name: tabular-playground-series-aug-2022
+url: https://www.kaggle.com/competitions/tabular-playground-series-aug-2022
+description: Predict product failure from attributes and measurements
+problem_type: binary_classification
+evaluation_metric: AUC-ROC
+optimization_direction: maximize
+target_column: failure
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 5
+notes: |
+  26,570 train / 20,775 test. Target imbalanced (21.3% failure).
+  Features: product_code (5 cats), loading (continuous), attribute_0-1 (categorical),
+  attribute_2-3 (integer), measurement_0-2 (integer), measurement_3-17 (float).
+  Missing values: loading (~1%), measurements 3-17 (increasing ~1.4%-8.6%).
+  Submit probabilities. Failure rate ~20% across all product codes.

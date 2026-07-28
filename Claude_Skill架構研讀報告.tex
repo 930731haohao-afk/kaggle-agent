@@ -1,0 +1,186 @@
+% =====================================================================
+%  Claude Skill 架構研讀報告
+%  Overleaf 設定：Menu → Compiler → XeLaTeX
+%  使用 ctexart，Overleaf 內建中文字型（Fandol），無需額外安裝。
+% =====================================================================
+\documentclass[11pt]{ctexart}
+
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{framed}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+% --- 等寬字型內若要顯示 box-drawing 樹狀符號，設一個支援的等寬字型 ---
+% Overleaf 有 DejaVu Sans Mono；若無此行也可編譯（樹狀圖符號可能改用預設字型）
+\usepackage{fontspec}
+\IfFontExistsTF{DejaVu Sans Mono}{\setmonofont{DejaVu Sans Mono}}{}
+
+% --- 顏色 ---
+\definecolor{navy}{HTML}{1F4E79}
+\definecolor{blue}{HTML}{2E75B6}
+\definecolor{grey}{HTML}{595959}
+\definecolor{headfill}{HTML}{D5E8F0}
+\definecolor{rowfill}{HTML}{F2F6FA}
+\definecolor{shadecolor}{HTML}{F4F6F8}
+
+% --- 標題樣式 ---
+\titleformat{\section}{\Large\bfseries\color{navy}}{\thesection.}{0.5em}{}
+\titlespacing{\section}{0pt}{1.4em}{0.6em}
+\titleformat{\subsection}{\large\bfseries\color{blue}}{\thesubsection}{0.5em}{}
+
+\setlist[itemize]{leftmargin=1.4em,itemsep=2pt,topsep=3pt}
+\renewcommand{\arraystretch}{1.35}
+
+% --- 程式碼 / 引用區塊 ---
+\newenvironment{codebox}
+  {\begin{shaded}\ttfamily\small\setlength{\parindent}{0pt}\obeylines}
+  {\end{shaded}}
+
+\newcommand{\code}[1]{\texttt{#1}}
+
+% =====================================================================
+\begin{document}
+
+% ---------- 封面 ----------
+\begin{center}
+  {\color{navy}\Huge\bfseries Claude Skill 架構研讀}\\[6pt]
+  {\color{grey}\Large\bfseries Kaggle AI Agent 專案 · 現有 Skill 架構分析}\\[10pt]
+  {\color{grey}研讀對象：\code{.claude/skills/} 下的三個 Skill \quad·\quad 2026-07-02}
+\end{center}
+
+\vspace{1em}
+\noindent\textbf{目的：}展現我已研讀並理解 Claude Code「Skill」的組成方式與設計原則——包括
+SKILL.md 的角色、漸進式揭露（progressive disclosure）三層載入機制，以及
+references／scripts 的分工——並以本專案實作的三個 Skill 作為具體對照。
+
+\vspace{0.5em}
+\hrule
+\tableofcontents
+\vspace{0.5em}
+\hrule
+
+% ---------- 1 ----------
+\section{什麼是 Claude Code 的「Skill」}
+Skill 是放在 \code{.claude/skills/} 底下、由「指令＋腳本＋資源」組成的資料夾。核心是一個
+\code{SKILL.md}，它同時扮演兩個角色：最上方的 YAML frontmatter 提供 metadata，下方本文提供操作流程。
+\begin{itemize}
+  \item 一個子資料夾 = 一個 Skill；資料夾名稱要與 frontmatter 的 \code{name} 一致。
+  \item Claude 不會一次讀完整個 Skill——而是「漸進式揭露」，用多少讀多少，以節省 context。
+\end{itemize}
+
+% ---------- 2 ----------
+\section{核心機制：漸進式揭露（Progressive Disclosure）}
+這是研讀後認為最關鍵的設計。Skill 的內容分三層，各自在不同時機才載入：
+
+\vspace{0.4em}
+\noindent\begin{tabularx}{\linewidth}{>{\bfseries}l l X}
+\arrayrulecolor{navy}\toprule
+\rowcolor{headfill}\textbf{層級} & \textbf{內容} & \textbf{何時載入} \\
+\midrule
+① metadata  & frontmatter：\code{name} + \code{description} & 對話一開始就載入 → 決定「何時觸發」這個 Skill \\
+\rowcolor{rowfill}
+② body      & SKILL.md 本文（流程 playbook） & Skill 被「呼叫」時才載入 → 一步步的操作指令 \\
+③ resources & \code{references/} 與 \code{scripts/} & 需要時才讀取（on demand）→ 深入說明與可重複腳本 \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.6em}
+\noindent\textbf{研讀證據：}我在自己實作的 \code{kaggle-safe-submit/SKILL.md} 檔頭直接寫下這段對照註解——
+\begin{codebox}
+漸進式揭露 (Progressive disclosure) 有三層:
+  1. metadata (frontmatter 的 name + description) —— 對話一開始就載入
+  2. SKILL.md 本文 (body) —— 技能被「呼叫」時才載入
+  3. scripts/ 與 references/ —— 需要時才讀取 (on demand)
+\end{codebox}
+
+% ---------- 3 ----------
+\section{SKILL.md 結構 ↔ 設計概念對照}
+把檔案／資料夾逐一對應到它體現的 Skill 設計概念：
+
+\vspace{0.4em}
+\noindent\begin{tabularx}{\linewidth}{l X}
+\arrayrulecolor{navy}\toprule
+\rowcolor{headfill}\textbf{結構（檔案／資料夾）} & \textbf{對應的 Claude Skill 設計概念} \\
+\midrule
+\code{.claude/skills/}            & Skill 的固定存放位置；一個子資料夾＝一個 Skill \\
+\rowcolor{rowfill}
+\code{~~<skill>/SKILL.md}          & Skill 核心檔＝ frontmatter(metadata) ＋ body \\
+\code{~~~~name}                    & 識別碼，必須與資料夾同名（kebab-case） \\
+\rowcolor{rowfill}
+\code{~~~~description}             & 觸發機制：Claude 靠它判斷何時呼叫；要寫清楚 WHAT＋WHEN \\
+\code{~~~~body（本文）}            & 流程 playbook，呼叫時才載入 → 用祈使句、精簡 \\
+\rowcolor{rowfill}
+\code{~~<skill>/references/}       & 第③層資源：深入說明，需要時才讀（節省 context） \\
+\code{~~<skill>/scripts/}         & 確定性、可重複的工作固化成腳本（如提交驗證） \\
+\bottomrule
+\end{tabularx}
+
+% ---------- 4 ----------
+\section{三個 Skill 的比較}
+本專案實作了三個 Skill，分別示範不同的設計取捨：
+
+\vspace{0.4em}
+\noindent\begin{tabularx}{\linewidth}{l c X X}
+\arrayrulecolor{navy}\toprule
+\rowcolor{headfill}\textbf{Skill} & \textbf{refs} & \textbf{設計定位} & \textbf{研讀重點} \\
+\midrule
+\code{kaggle-agent} & 6 & 完整競賽 pipeline：setup→EDA→特徵→建模→評估→提交 & 以「階段」拆分 references，每階段一份 \\
+\rowcolor{rowfill}
+\code{kaggle-agent-self-improvement} & 7 & 在主 pipeline 上加自我改進迴圈 & 多一份 07\_self\_improvement（Reflexion／Best-of-N／適應性搜尋） \\
+\code{kaggle-safe-submit} & 0 & 單一職責：提交前驗證＋安全提交 & 確定性工作固化成 script；SKILL.md 內滿是教程對照註解 \\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.8em}
+\noindent\textbf{結構對照圖：}
+\begin{codebox}
+.claude/skills/
+├── kaggle-agent/                    (主 pipeline)
+│   ├── SKILL.md
+│   └── references/  01_setup → 06_submission   (6 份)
+│
+├── kaggle-agent-self-improvement/   (＋自我改進迴圈)
+│   ├── SKILL.md
+│   └── references/  01 → 06 ＋ 07_self_improvement (7 份)
+│
+└── kaggle-safe-submit/              (單一職責：安全提交)
+    └── SKILL.md   (無 references，改用 scripts/)
+\end{codebox}
+
+% ---------- 5 ----------
+\section{研讀後歸納的設計原則}
+
+\subsection{description 就是「觸發器」}
+description 決定 Claude 何時呼叫 Skill，因此要同時寫清楚\textbf{做什麼（WHAT）}與\textbf{何時用（WHEN）}，
+並刻意寫得主動一點以對抗「該觸發卻不觸發」。
+\begin{codebox}
+description: ... ALWAYS use this skill whenever the user wants to
+submit to a Kaggle competition ... even if they don't say "submit".
+\end{codebox}
+
+\subsection{確定性、可重複的工作 → 固化成 script}
+像「提交檔格式驗證」這種每次都一樣的工作，被抽成 \code{scripts/validate\_submission.py}，
+而不是每次請 Claude 重寫——保證可重複、可預期。
+
+\subsection{深入細節 → 放 references，需要時才讀}
+主流程只放精簡步驟，細節（如各競賽型別的提交檢查清單）留在 references，
+用一句「\code{load on demand}」指引 Claude 需要時再讀，避免灌爆 context。
+
+\subsection{不可逆動作 → human-in-the-loop}
+提交會消耗每日額度、屬於外向且難撤回的動作，SKILL.md 明確要求
+「先向使用者複述競賽／檔案／訊息並取得同意再執行」。
+
+\subsection{界線集中在 Guardrails}
+把不可違反的規則（絕不硬編碼 token、未驗證不提交、提交前一定確認、尊重競賽規則）集中列出，少而明確。
+
+\vspace{1em}
+\noindent\textbf{小結：}透過研讀既有 Claude Skill 架構，我掌握了 Skill 的三層漸進式揭露、
+frontmatter 作為觸發機制、以及 references／scripts 的分工原則，
+並已將這些原則實際套用在 Kaggle AI Agent 的三個 Skill 設計上。
+
+\end{document}

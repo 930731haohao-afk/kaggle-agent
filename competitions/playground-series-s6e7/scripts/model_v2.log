@@ -1,0 +1,8 @@
+[13:57:22] Optuna fold-0 proxy (balanced accuracy)...
+[14:22:55] best fold-0 balacc=0.95083 params={'lr': 0.021469073313791966, 'num_leaves': 39, 'mcs': 71, 'ff': 0.6045281216930778, 'bf': 0.8775457654243581, 'l2': 1.5981821130925216, 'l1': 1.1533476702890695}
+[14:22:55] full 5-fold: tuned LGBM (seed 42) + seed-bag (seed 2024)...
+[14:26:53] lgbm_tuned OOF balacc=0.94985
+[14:30:54] lgbm_tuned_seed2024 OOF balacc=0.94984
+[14:36:33] V2 BLEND balacc=0.94998 weights={'lgbm': np.float64(0.0), 'cat': np.float64(0.25), 'xgb': np.float64(0.25), 'lgbm_tuned': np.float64(0.25), 'lgbm_seed2024': np.float64(0.25)} adj=[1.   1.43 1.31] (v1=0.94994)
+[14:36:33] IMPROVED -> submission written: /home/tjyen/ai_agents/kaggle/competitions/playground-series-s6e7/submissions/s6e7_blend_v2.csv
+[14:36:33] V2 DONE

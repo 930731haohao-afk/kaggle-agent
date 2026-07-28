@@ -1,0 +1,16 @@
+name: siim-isic-melanoma-classification
+url: https://www.kaggle.com/competitions/siim-isic-melanoma-classification
+description: Identify melanoma in lesion images. Predict the probability (`target`) that each skin lesion image in the test set is malignant, using the image plus patient-level metadata (age, sex, anatomical site).
+problem_type: binary classification (probability output)
+evaluation_metric: area under the ROC curve (AUC)
+optimization_direction: maximize
+target_column: target
+id_column: image_name
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: true
+  internet_access_allowed: false
+notes: MLE-bench medium-complexity split (prepared data from mle-bench, graded offline against private split). Large image dataset (DICOM + JPEG); heavy class imbalance (~1.8% positive). GPU strongly recommended.

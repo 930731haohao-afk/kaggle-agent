@@ -1,0 +1,42 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-23T19:24:37",
+    "model": "BiLSTM-4x256 (seq2seq, masked L1)",
+    "metric": "masked_MAE(u_out==0)",
+    "direction": "minimize",
+    "score": 0.240039,
+    "cv": {
+      "strategy": "5-fold KFold on breath_id, fold 0 trained only (time budget)",
+      "folds_trained": 1,
+      "fold_scores": [
+        0.24109041690826416
+      ],
+      "cv_raw": 0.24109043180942535,
+      "cv_snapped": 0.24003925919532776,
+      "params": {
+        "folds": "5",
+        "max_folds": "1",
+        "epochs": "100",
+        "batch": "1024",
+        "hidden": "256",
+        "layers": "4",
+        "lr": "0.002",
+        "subset": "0",
+        "tag": "lstm_f0",
+        "time_budget": "1000000000.0"
+      }
+    },
+    "postprocess": [
+      "snap-to-pressure-grid (950 values, step 0.0703)"
+    ],
+    "submission": "submission.csv",
+    "leaderboard": {
+      "mlebench_grade": 0.2315,
+      "median_threshold": 0.1638,
+      "any_medal": false
+    },
+    "notes": "41 per-timestep sequence features (u_in lags/leads 1-4 + diffs, cumsum, area=cumsum(u_in*dt), area/C, R/C one-hot+log, breath aggregates, u_out timing). Masked L1 loss on u_out==0, OneCycle 100 epochs, batch 1024. Underconverged: val still improving at epoch 100 (2.5h wall-clock benchmark cap)."
+  }
+]

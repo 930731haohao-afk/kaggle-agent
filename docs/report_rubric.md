@@ -1,29 +1,29 @@
-# 報告評分檢核表(rubric)
+# Report Scoring Rubric
 
-> 計畫書目標二驗收基準 + §5 報告驗證 1。逐項檢查每份競賽報告是否**完整涵蓋競賽目的與
-> 五大流程元件**,並評估**清晰度與可重現性**。每項 0–2 分,滿分 20。
-> 驗收門檻:**總分 ≥ 16 且無任一項為 0**。
+> The acceptance baseline for the plan's Goal 2 + §5 report validation 1. Checks item by item whether each competition report **fully covers the competition purpose and
+> the five workflow components**, and assesses **clarity and reproducibility**. Each item is scored 0–2, for a maximum of 20.
+> Acceptance threshold: **total ≥ 16 and no single item scoring 0**.
 
-| # | 檢核項 | 0 分 | 1 分 | 2 分 |
+| # | Checklist item | 0 points | 1 point | 2 points |
 |---|---|---|---|---|
-| 1 | **競賽目的 what** | 缺問題定義或目標欄位 | 有但不完整 | 問題型別、資料、目標欄位、指標齊全(§1) |
-| 2 | **競賽目的 why** | 未說明指標動機 | 泛泛 | 指標與實務需求/資料特性連結清楚(§1) |
-| 3 | **資料規格** | 缺 | 部分 | 列數/欄數/缺失/特別規則齊(§3.1) |
-| 4 | **模型規格** | 缺 | 只列模型 | 成員模型 + blend/集成配置 + 權重(§3.2) |
-| 5 | **訓練規格** | 缺 | 缺關鍵項 | CV 方案/折/seed/關鍵超參(§3.3) |
-| 6 | **推論程序** | 缺 | 部分 | 後處理 + submission 格式/檔(§3.4) |
-| 7 | **評估指標** | 缺 | 只給定義 | 定義 + CV + LB(或誠實註明關榜)(§3.5) |
-| 8 | **清晰度** | 難讀/術語堆砌 | 尚可 | 敘事連貫、術語白話、表格清楚 |
-| 9 | **可重現性(指令+追溯)** | 無重現指令 | 指令不全或數字無出處 | §7 逐步指令完整 + 數字全可追溯(verify 過) |
-| 10 | **只讀可重建主要決策** | 不看碼無法重建 | 部分決策可重建 | 關鍵決策鏈(選型/後處理/階梯)僅憑報告即可重建(§4 軌跡+轉折點) |
+| 1 | **Competition purpose — what** | Missing problem definition or target column | Present but incomplete | Problem type, data, target column, metric all present (§1) |
+| 2 | **Competition purpose — why** | Metric motivation not explained | Generic | Metric clearly linked to practical need / data characteristics (§1) |
+| 3 | **Data spec** | Missing | Partial | Row count / column count / missingness / special rules all present (§3.1) |
+| 4 | **Model spec** | Missing | Only lists the model | Member models + blend/ensemble config + weights (§3.2) |
+| 5 | **Training spec** | Missing | Missing key items | CV scheme / folds / seed / key hyperparameters (§3.3) |
+| 6 | **Inference procedure** | Missing | Partial | Post-processing + submission format/file (§3.4) |
+| 7 | **Evaluation metric** | Missing | Only gives the definition | Definition + CV + LB (or honestly notes the competition is closed) (§3.5) |
+| 8 | **Clarity** | Hard to read / jargon-laden | Adequate | Coherent narrative, plain-language terms, clear tables |
+| 9 | **Reproducibility (instructions + traceability)** | No reproduction instructions | Instructions incomplete or numbers without provenance | §7 step-by-step instructions complete + all numbers traceable (verify passed) |
+| 10 | **Major decisions reconstructable from report only** | Cannot reconstruct without reading the code | Some decisions reconstructable | The key decision chain (model selection / post-processing / ladder) is reconstructable from the report alone (§4 trajectory + turning points) |
 
-## 評分方式
+## Scoring Method
 
-- 由**獨立 LLM 代理**(非報告作者)逐份評分,回傳每項分數 + 一句理由 + 總分。
-- 低於門檻(<16 或有 0 項)者列出**具體缺項**,回饋給報告修訂。
-- 人工抽查:對 LLM 評分結果抽 2–3 份人工複核(計畫書「再由人抽查」)。
+- An **independent LLM agent** (not the report's author) scores each report, returning per-item scores + a one-sentence rationale + a total.
+- For reports below the threshold (<16 or any item at 0), list the **specific missing items** and feed them back for report revision.
+- Manual spot-check: 2–3 of the LLM scoring results are manually re-reviewed (the plan's "then a human spot-checks").
 
-## 產出
+## Output
 
-- 逐場評分表:`docs/report_validation.md`(rubric 分數 + 缺項)。
-- 與 §5 報告驗證 2(程式碼一致性)、3(只讀重現測試)合為完整報告驗證證據。
+- Per-competition scoring table: `docs/report_validation.md` (rubric scores + missing items).
+- Combined with §5 report validation 2 (code consistency) and 3 (report-only reproduction test) to form the complete report-validation evidence.

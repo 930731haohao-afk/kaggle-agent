@@ -1,0 +1,25 @@
+name: cat-in-the-dat
+url: https://www.kaggle.com/competitions/cat-in-the-dat
+description: Binary classification with only categorical features - test encoding strategies
+problem_type: binary_classification
+evaluation_metric: auc
+optimization_direction: maximize
+target_column: target
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 5
+notes: |
+  All features are categorical. Key challenge is encoding strategy.
+  - bin_0-4: binary features
+  - nom_0-9: nominal features (nom_5-9 are high cardinality with hashed values)
+  - ord_0-5: ordinal features with natural ordering
+  - day, month: cyclical features
+  Submission expects probabilities (not hard labels).
+  Metric is AUC-ROC.
+  300K train, 200K test, no missing values.

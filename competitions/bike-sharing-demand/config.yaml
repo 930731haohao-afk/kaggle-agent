@@ -1,0 +1,21 @@
+name: bike-sharing-demand
+url: https://www.kaggle.com/c/bike-sharing-demand
+description: Predict hourly bike rental count based on weather and seasonal factors
+problem_type: regression
+evaluation_metric: rmsle  # Root Mean Squared Logarithmic Error
+optimization_direction: minimize
+target_column: count
+id_column: datetime
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sampleSubmission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes:
+  - "casual + registered = count, but casual/registered are NOT in test set"
+  - "Data is hourly from 2011-01-01 to 2012-12-31"
+  - "Train has ~first 19 days of each month, test has remaining days"
+  - "Target is right-skewed — log transform is essential for RMSLE"

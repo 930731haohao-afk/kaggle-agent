@@ -1,0 +1,107 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-10T14:26:03.093040",
+    "model": "RandomForest",
+    "n_features": 67,
+    "params": {
+      "n_estimators": "500",
+      "max_depth": "25",
+      "min_samples_split": "3",
+      "max_features": "sqrt"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.878968,
+      0.885251,
+      0.877315,
+      0.873347,
+      0.868717
+    ],
+    "cv_mean": 0.87672,
+    "cv_std": 0.005543,
+    "eval_metric": "accuracy",
+    "notes": "Tuned Random Forest"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-10T14:26:23.751455",
+    "model": "ExtraTrees",
+    "n_features": 67,
+    "params": {
+      "n_estimators": "500",
+      "max_depth": "25",
+      "min_samples_split": "3",
+      "max_features": "sqrt"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.890542,
+      0.88922,
+      0.883267,
+      0.881283,
+      0.885582
+    ],
+    "cv_mean": 0.885979,
+    "cv_std": 0.00349,
+    "eval_metric": "accuracy",
+    "notes": "Tuned Extra Trees"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-10T14:27:55.717931",
+    "model": "LightGBM",
+    "n_features": 67,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.05",
+      "num_leaves": "63",
+      "max_depth": "-1",
+      "min_child_samples": "10",
+      "subsample": "0.8",
+      "colsample_bytree": "0.8",
+      "reg_alpha": "0.1",
+      "reg_lambda": "0.1",
+      "num_class": "7"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.88955,
+      0.896825,
+      0.883598,
+      0.888889,
+      0.884921
+    ],
+    "cv_mean": 0.888757,
+    "cv_std": 0.004628,
+    "eval_metric": "accuracy",
+    "notes": "Tuned LightGBM multiclass"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-10T14:28:51.826781",
+    "model": "XGBoost",
+    "n_features": 67,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.05",
+      "max_depth": "8",
+      "subsample": "0.8",
+      "colsample_bytree": "0.8",
+      "reg_alpha": "0.1",
+      "reg_lambda": "1.0"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.884259,
+      0.892196,
+      0.877976,
+      0.880622,
+      0.874669
+    ],
+    "cv_mean": 0.881944,
+    "cv_std": 0.006015,
+    "eval_metric": "accuracy",
+    "notes": "Tuned XGBoost multiclass"
+  }
+]

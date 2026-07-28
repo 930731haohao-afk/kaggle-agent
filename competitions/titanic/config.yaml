@@ -1,0 +1,16 @@
+name: titanic
+url: https://www.kaggle.com/competitions/titanic
+description: Predict survival on the Titanic
+problem_type: binary_classification
+evaluation_metric: accuracy
+optimization_direction: maximize
+target_column: Survived
+id_column: PassengerId
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: gender_submission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 10

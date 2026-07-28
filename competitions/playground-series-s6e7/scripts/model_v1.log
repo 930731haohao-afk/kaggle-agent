@@ -1,0 +1,20 @@
+[11:19:50] s6e7 train=(690088, 15) classes=['at-risk', 'fit', 'unhealthy'] priors=[0.85867455 0.05767815 0.0836473 ]
+[11:19:51] === lgbm (resumed from cache) ===
+[11:19:51] lgbm: OOF balacc raw=0.94881 adjusted=0.94969 adj=[1. 2. 2.]
+[11:19:51] === cat ===
+[11:24:53]   CAT fold0: balacc=0.9496
+[11:30:44]   CAT fold1: balacc=0.9512
+[11:36:29]   CAT fold2: balacc=0.9488
+[11:42:24]   CAT fold3: balacc=0.9490
+[11:48:20]   CAT fold4: balacc=0.9478
+[11:48:21] cat: OOF balacc raw=0.94926 adjusted=0.94939 adj=[1.   0.85 1.2 ]
+[11:48:21] === xgb ===
+[11:49:17]   XGB fold0: balacc=0.9497
+[11:50:13]   XGB fold1: balacc=0.9509
+[11:51:09]   XGB fold2: balacc=0.9489
+[11:52:04]   XGB fold3: balacc=0.9481
+[11:53:00]   XGB fold4: balacc=0.9467
+[11:53:02] xgb: OOF balacc raw=0.94887 adjusted=0.94970 adj=[1.  2.  1.5]
+[11:53:19] BLEND balacc=0.94994 weights={'lgbm': np.float64(0.2), 'cat': np.float64(0.4), 'xgb': np.float64(0.4)} adj=[1.  1.5 1.5]
+[11:53:19] submission: /home/tjyen/ai_agents/kaggle/competitions/playground-series-s6e7/submissions/s6e7_blend_v1.csv (295753 rows) pred dist=[0.80832316 0.07376764 0.1179092 ]
+[11:53:19] DONE in 33.5 min

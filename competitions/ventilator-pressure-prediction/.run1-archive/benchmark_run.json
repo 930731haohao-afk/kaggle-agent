@@ -1,0 +1,56 @@
+{
+  "agent": "my-agent",
+  "competition": "ventilator-pressure-prediction",
+  "start_time": "2026-07-23T18:01:28+08:00",
+  "end_time": "2026-07-23T19:27:00+08:00",
+  "elapsed_minutes": 85.5,
+  "approach": "Treated each breath as an 80-step sequence and trained a 4-layer bidirectional LSTM (hidden 256, input projection + LayerNorm, MLP head) on 41 engineered per-timestep features (u_in lags/leads 1-4 and their diffs, cumsum(u_in), area = cumsum(u_in*dt), area/C, dt-normalised derivative, R/C one-hot + logs, breath-level u_in aggregates, u_out timing). Loss was L1 masked to inspiratory rows (u_out == 0), matching the competition metric exactly, with OneCycle LR over 100 epochs at batch 1024. Predictions were snapped to the observed pressure grid (950 uniform values, step 0.0703), a post-process validated on OOF.",
+  "cv": {
+    "strategy": "5-fold KFold on breath_id; only fold 0 trained (2.5h wall-clock cap)",
+    "oof_breaths": 13581,
+    "local_masked_MAE_raw": 0.24109,
+    "local_masked_MAE_snapped": 0.24004,
+    "metric": "MAE on u_out == 0 rows only"
+  },
+  "mlebench_grade": {
+    "competition_id": "ventilator-pressure-prediction",
+    "score": 0.2315,
+    "gold_threshold": 0.1119,
+    "silver_threshold": 0.1338,
+    "bronze_threshold": 0.1364,
+    "median_threshold": 0.1638,
+    "any_medal": false,
+    "gold_medal": false,
+    "silver_medal": false,
+    "bronze_medal": false,
+    "above_median": false,
+    "submission_exists": true,
+    "valid_submission": true,
+    "is_lower_better": true,
+    "created_at": "2026-07-23T19:24:17"
+  },
+  "cv_lb_gap": "local 0.24004 vs graded 0.2315 (graded 0.0085 better) - masked local CV tracked the real metric well",
+  "experience_md_entries_used": [
+    "MAE/整數目標: 目標落在離散格點時對 MAE 有益的離散化後處理 (s3e16 rounding) vs RMSE 反例 (s5e10 snap 有害) -> here metric is MAE so grid-snapping was tried and validated on OOF (0.24109 -> 0.24004, adopted)",
+    "MAE 指標下訓練目標函式要與指標對齊 (L1 而非 L2) -> used masked L1 loss instead of MSE",
+    "CV 設計: 有群組結構 (breath_id) 必須以群組切折,否則 OOF 虛高 (us-patent GroupKFold-by-anchor 教訓) -> KFold applied at breath level, never at row level",
+    "固定 seed + 固定 fold 才能跨實驗比較 -> seed 42 throughout"
+  ],
+  "new_experience_entries_written": [
+    "序列迴歸(每組固定長度時序,MAE 遮罩評分) section: masked metric must be mirrored in both loss and validation; grid-snapping confirms metric-not-target rule; epoch budget is the dominant lever for seq2seq (save checkpoints to allow resuming); GBDT unsuitable for per-timestep state dynamics"
+  ],
+  "fallbacks_and_issues": [
+    "Only 1 of 5 folds trained: measured ~46 s/epoch on the shared GPU, so 100 epochs of one fold consumed 78 min of the 2.5h cap. Chose a config that finishes over an ambitious multi-fold one.",
+    "Model was clearly under-converged: val masked MAE was still dropping steeply at the end (ep60 0.339 -> ep80 0.255 -> ep100 0.241). 200-300 epochs plus multi-fold averaging would be needed to approach the medal thresholds.",
+    "The in-script experiment_log call crashed with a TypeError (wrong kwargs for log_experiment_v2) AFTER submission.csv and cv_result.json were written; the experiment was logged separately with the correct v2 signature. train.py has been fixed.",
+    "No model checkpoint was persisted, so the remaining ~1h of budget could not be used to continue training the existing model."
+  ],
+  "artifacts": {
+    "submission": "competitions/ventilator-pressure-prediction/submission.csv",
+    "train_script": "competitions/ventilator-pressure-prediction/scripts/train.py",
+    "train_log": "competitions/ventilator-pressure-prediction/train.log",
+    "cv_result": "competitions/ventilator-pressure-prediction/cv_result.json",
+    "oof": "competitions/ventilator-pressure-prediction/oof_lstm_f0.npy",
+    "experiments": "competitions/ventilator-pressure-prediction/experiments.json"
+  }
+}

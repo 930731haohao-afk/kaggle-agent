@@ -1,0 +1,16 @@
+name: us-patent-phrase-to-phrase-matching
+url: https://www.kaggle.com/competitions/us-patent-phrase-to-phrase-matching
+description: Score semantic similarity between pairs of patent phrases (anchor, target) within a CPC context code. Train on phrase pairs with human-rated similarity in [0, 1]; predict `score` for each test pair.
+problem_type: regression
+evaluation_metric: Pearson correlation coefficient between predicted and actual scores
+optimization_direction: maximize
+target_column: score
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: true
+  internet_access_allowed: false
+notes: MLE-bench medium-complexity split (prepared data from mle-bench, graded offline against private split). NLP pair-similarity task; transformers help but TF-IDF/char-ngram + GBDT is a viable CPU baseline.

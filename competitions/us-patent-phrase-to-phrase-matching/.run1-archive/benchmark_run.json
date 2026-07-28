@@ -1,0 +1,110 @@
+{
+  "agent": "my-agent",
+  "competition": "us-patent-phrase-to-phrase-matching",
+  "split": "MLE-bench offline (prepared public)",
+  "start": "2026-07-23T15:42:00+08:00",
+  "end": "2026-07-23T17:32:00+08:00",
+  "elapsed_minutes": 110,
+  "metric": "pearson_r",
+  "direction": "maximize",
+
+  "approach": {
+    "summary": "Debugged and rebuilt the failed DeBERTa fine-tune, then ensembled two DeBERTa-v3-base seeds with the existing LightGBM lexical baseline.",
+    "model": "microsoft/deberta-v3-base (local HF cache only, no downloads; HF_HUB_OFFLINE=1)",
+    "other_models_available_locally": ["distilbert-base-uncased", "timm vision backbones"],
+    "input_text": "anchor [SEP] target [SEP] <CPC section title> <context code>",
+    "head": "mean-pooling over last_hidden_state -> Linear(768,1)",
+    "loss": "BCEWithLogitsLoss (targets already in [0,1]); sigmoid at inference",
+    "optimizer": "AdamW fused, lr=2e-5 backbone / 1e-4 head, wd=0.01, eps=1e-6, cosine schedule with 10% warmup, grad clip 1.0",
+    "precision": "fp32 master weights + bf16 autocast",
+    "cv": "GroupKFold(4) grouped by anchor (an anchor never spans folds)",
+    "runs": [
+      {"tag": "deberta_v3_base", "seed": 42, "epochs": 4, "batch": 32, "max_len": 64, "oof_pearson": 0.80405, "fold_scores": [0.81062, 0.80861, 0.80023, 0.80481], "minutes": 45},
+      {"tag": "deberta_s1337", "seed": 1337, "epochs": 3, "batch": 32, "max_len": 96, "oof_pearson": 0.80917, "fold_scores": [0.808, 0.80989, 0.80465, 0.815], "minutes": 34}
+    ],
+    "final_ensemble": "NNLS weights on split-matched OOF: deberta_seed42 0.361, deberta_seed1337 0.507, lgbm 0.133"
+  },
+
+  "nan_root_cause": {
+    "symptom": "v1 (scripts/train_deberta.py) reported val r=-0.0077 on fold 0 epoch 0 then val r=nan for every subsequent epoch, and finally crashed with TypeError: unsupported operand type(s) for /: 'NoneType' and 'int' because best_test_pred was never assigned (no epoch ever beat a NaN metric).",
+    "root_cause": "The locally cached microsoft/deberta-v3-base checkpoint is stored entirely in float16 (verified: all 210 checkpoint tensors are torch.float16). transformers v5 loads a model in the checkpoint's dtype by default, so AutoModel/AutoModelForSequenceClassification returned a model whose parameters were fp16, and training ran with fp16 MASTER weights. torch.optim.AdamW keeps its exp_avg_sq state in the parameter dtype; for this task grad^2 is around 1e-8, which is below the fp16 minimum subnormal (~6e-8) and flushes to exactly 0. The update denominator sqrt(v)+eps then collapses toward eps, the step explodes, and weights become inf/NaN. Once the weights are NaN the predictions are constant/NaN, so scipy.stats.pearsonr returns nan (ConstantInputWarning, 0/0) for every later epoch.",
+    "evidence": [
+      "scripts/diag_nan.py: with the fp16-loaded model, fp32+fused AdamW trained ~40 steps then all 202 param tensors went NaN; foreach and single-tensor AdamW produced NaN weights on step 1.",
+      "Counter of checkpoint dtypes: {'torch.float16': 210}; AutoModel.from_pretrained(...).dtype == torch.float16.",
+      "scripts/diag_opt.py and scripts/diag_opt2.py: AdamW (fused/foreach/single) matches a hand-written reference update to 2.4e-07 and produces no NaN over 3 steps on a synthetic 198-tensor / 184M-param DeBERTa-shaped model in fp32; clip_grad_norm_ is also correct (reported norm matches the fp64 reference, post-clip norm exactly 1.0)."
+    ],
+    "misdiagnosis_in_v1_corrected": "v1 carried an inline comment claiming the foreach and single-tensor AdamW paths 'corrupt weights to NaN on the first step' on this torch 2.14-dev/GB10 build, and used fused=True as a workaround. That is wrong. The synthetic isolation tests show all three implementations are numerically correct in fp32. The apparent foreach failure was an artifact of running configurations sequentially inside one process, after an earlier configuration had already NaN'd. With fp32 master weights, fused, foreach, fp32 and bf16 all train cleanly and to the same score (smoke test val_r 0.7412-0.7429 across all four combinations).",
+    "fix": [
+      "Load the backbone with an explicit dtype: AutoModel.from_pretrained(MODEL, config=cfg, dtype=torch.float32), plus an assert that the backbone holds fp32 master weights. Speed is recovered with bf16 autocast, which keeps the master copy in fp32.",
+      "Robust metric: safe_pearson() returns 0.0 for zero-variance input instead of nan, and returns nan only when the predictions are genuinely non-finite.",
+      "Never crash on a fold with no best checkpoint: if no epoch improved, fall back to the last epoch's predictions and re-score them.",
+      "Non-finite gradient guard: skip the optimizer step (and count it) when the clipped grad norm is not finite, so one bad batch cannot poison every weight.",
+      "Per-epoch diagnostics (train loss, mean grad norm, prediction std/mean, skipped-step count) so a collapse is visible immediately rather than as a downstream nan."
+    ],
+    "skipped_steps_in_final_runs": 0
+  },
+
+  "blending": {
+    "decision": "adopted",
+    "honesty_check": "The pre-existing LGBM OOF came from StratifiedKFold-on-score, which lets the same anchor appear in both train and validation and inflates its OOF (0.61128). The LGBM baseline was retrained under the identical GroupKFold(4)-by-anchor split (scripts/baseline_lgbm_group.py); its unbiased OOF is 0.58266. All blend weights were fitted on split-matched, unbiased OOF vectors only.",
+    "lgbm_oof_reported_previously": 0.61128,
+    "lgbm_oof_unbiased": 0.58266,
+    "deberta_seed42_only": 0.80405,
+    "deberta_mean_2_seeds": 0.8137,
+    "final_nnls_ensemble": 0.81584
+  },
+
+  "local_cv": {
+    "scheme": "GroupKFold(4) by anchor",
+    "final_oof_pearson": 0.81584,
+    "note": "This is a deliberately strict split (no anchor overlap between train and validation). The MLE-bench test split does share anchors with train, so the graded score is expected to be, and is, higher than the OOF."
+  },
+
+  "mlebench_grade": {
+    "competition_id": "us-patent-phrase-to-phrase-matching",
+    "score": 0.8575,
+    "gold_threshold": 0.87,
+    "silver_threshold": 0.863,
+    "bronze_threshold": 0.8616,
+    "median_threshold": 0.851,
+    "any_medal": false,
+    "gold_medal": false,
+    "silver_medal": false,
+    "bronze_medal": false,
+    "above_median": true,
+    "submission_exists": true,
+    "valid_submission": true,
+    "is_lower_better": false,
+    "created_at": "2026-07-23T17:29:33.555285",
+    "submission_path": "/home/tjyen/ai_agents/kaggle/competitions/us-patent-phrase-to-phrase-matching/submission.csv"
+  },
+
+  "score_trajectory": [
+    {"stage": "previous attempt: LGBM lexical baseline", "graded": 0.60734},
+    {"stage": "DeBERTa seed 42 + LGBM (w=0.15)", "graded": 0.85596},
+    {"stage": "NNLS ensemble: 2 DeBERTa seeds + LGBM", "graded": 0.8575}
+  ],
+
+  "outcome": "Above median (0.8575 vs 0.851). Did not reach bronze (0.8616); short by 0.0041.",
+
+  "obstacles": [
+    "The GPU (unified-memory GB10) is shared with concurrent aideml benchmark jobs. CUDA allocation failed repeatedly because free physical memory was 0 with ~90 GB held as page cache, and the CUDA driver did not force reclaim. Worked around with an OOM-retry loop around model construction plus a userspace page-cache reclaim (allocate/touch/free a large anonymous buffer). No aideml process was touched.",
+    "Contention roughly doubled the per-epoch time versus the smoke-test extrapolation."
+  ],
+
+  "what_would_likely_close_the_bronze_gap": [
+    "The CPC context is only represented as a section-letter title plus the raw code. Public solutions that reach 0.86+ use the full CPC subclass title text, which is not available offline here.",
+    "A third and fourth seed, or 5-fold instead of 4-fold (each member trains on 75% of the data).",
+    "deberta-v3-large is not in the local HF cache; only base and distilbert are."
+  ],
+
+  "artifacts": {
+    "final_submission": "submission.csv (= submissions/ensemble_nnls.csv)",
+    "training_script": "scripts/train_deberta_v2.py",
+    "diagnostics": ["scripts/diag_nan.py", "scripts/diag_opt.py", "scripts/diag_opt2.py"],
+    "logs": ["scripts/train_v2.log", "scripts/train_s1337.log", "scripts/diag_nan.log"],
+    "blend_scripts": ["scripts/baseline_lgbm_group.py", "scripts/blend_eval_fair.py", "scripts/ensemble_final.py"],
+    "decisions": ["scripts/blend_decision.json", "scripts/ensemble_decision.json"],
+    "experiments": "experiments.json (ids 1-4)"
+  }
+}

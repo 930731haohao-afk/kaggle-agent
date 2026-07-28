@@ -1,55 +1,55 @@
-# 週末自主執行總結(2026-07-03 五晚 → 07-04 六午)
+# Weekend Autonomous Run Summary (2026-07-03 Fri evening → 07-04 Sat noon)
 
-> 使用者下班前授權自主執行 2–3 天有意義的專案工作。實際上以約 19 小時連續自主運行完成了原定計畫(Phase A–C)並超前擴展(Phase D–H)。本文為總覽;所有數字之權威出處為各競賽 `experiments.json`/`experiments_tree*.json` 與 `docs/` 下各報告(皆經 verify_report.py 驗證)。
+> Before leaving work, the user authorized 2–3 days of autonomous, meaningful project work. In practice, about 19 hours of continuous autonomous running completed the original plan (Phase A–C) and extended ahead of schedule (Phase D–H). This document is an overview; the authoritative source for all numbers is each competition's `experiments.json`/`experiments_tree*.json` and the reports under `docs/` (all validated by verify_report.py).
 
-## 一句話總結
+## One-sentence summary
 
-**8 場基線題補齊完整 skill 流程並全數擊敗通用基線;10 場自我改進迭代蒸餾出 52+ 條證據型經驗庫;樹搜尋原型從 v1 迭代到 v3,對線性迭代取得 9 勝 1 精確平,並正式接入 kaggle-agent skill 成為 Stage 4 預設迴圈。**
+**8 baseline competitions were filled out with the complete skill workflow and all beat the generic baseline; 10 self-improvement iterations distilled an evidence-based experience library of 52+ entries; the tree-search prototype iterated from v1 to v3, achieving 9 wins and 1 exact tie over linear iteration, and was formally integrated into the kaggle-agent skill as the Stage 4 default loop.**
 
-## 各 Phase 完成內容
+## What each Phase completed
 
-| Phase | 內容 | 關鍵成果 |
+| Phase | Content | Key results |
 |---|---|---|
-| A(8 單元) | 8 場批次題完整 skill 六階段 + 報告 | 8/8 勝 generic 基線;每場 REPORT.md/PDF 過 verify |
-| B(11 單元) | 經驗庫 + 10 場自我改進迭代 | knowledge/experience.md(52 條證據型);9/10 場再改善 |
-| C(4 單元) | benchmark 彙總 + 樹搜尋 v1 原型(3 場) | v1:1 勝 1 平 1 負 → 找到 ensemble 節點空間缺口 |
-| D(7 單元) | harness v2(4 升級)+ 5 場掃描 | **5/5 勝**;「先驗定下限、在地洞見定上限」模式 |
-| E(5 單元) | v2 補完(復仇/平反/酸性/結構)+ 規模實驗 | s3e9 精確追平;s3e5 平轉勝;s3e16 穿越取整邊界;80 節點曲線 → 預算規則 |
-| F(3 單元) | harness v3(預算相位機等 6 特性)+ 驗證 + 最終報告 | v3 兩場再刷新紀錄;burst+mega-blend 3 戰 3 勝 |
-| G(2 單元) | 收割:樹最佳入帳 experiments.json + 全報告更新 + benchmark tier-4 | 四層對照表;一切成果可從正式紀錄回溯 |
-| H(2 單元) | v3 上線三需求(resume/timeout/sanity gate)+ skill 接入 | 82 測試全綠;references/07_tree_search.md;Stage 4 正式升級 |
+| A (8 units) | 8 batch competitions, full six-stage skill + reports | 8/8 wins over generic baseline; every competition's REPORT.md/PDF passed verify |
+| B (11 units) | Experience library + 10 self-improvement iterations | knowledge/experience.md (52 evidence-based entries); improved again in 9/10 competitions |
+| C (4 units) | Benchmark aggregation + tree-search v1 prototype (3 competitions) | v1: 1 win 1 tie 1 loss → found the gap in the ensemble node space |
+| D (7 units) | harness v2 (4 upgrades) + 5-competition sweep | **5/5 wins**; the "prior sets the floor, local insight sets the ceiling" pattern |
+| E (5 units) | v2 completion (revenge/vindication/acidity/structure) + scaling experiment | s3e9 exact tie; s3e5 turned tie to win; s3e16 crossed the rounding boundary; 80-node curve → budget rule |
+| F (3 units) | harness v3 (budget phase machine and 6 features) + validation + final report | v3 set new records in two more competitions; burst+mega-blend 3 for 3 |
+| G (2 units) | Harvest: tree-best recorded into experiments.json + all reports updated + benchmark tier-4 | Four-tier comparison table; all results traceable from the official record |
+| H (2 units) | v3 go-live three requirements (resume/timeout/sanity gate) + skill integration | 82 tests all green; references/07_tree_search.md; Stage 4 formally upgraded |
 
-## Benchmark 四層對照(tier1 generic → tier4 樹搜尋後,相對改善)
+## Benchmark four-tier comparison (tier1 generic → tier4 after tree search, relative improvement)
 
-s3e20 **+25.70%**、s3e5 **+19.21%**、s3e19 +4.11%(t2→t4)、s3e9 +3.77%(t4=t3 精確平)、s3e3 +3.53%、s3e16 +1.39%、s3e1 +0.95%、s3e11 +0.66%、s3e14 +0.31%、s3e7 +0.18%。
-詳表與口徑注意事項見 `docs/benchmark_summary.md`(+PDF)。
+s3e20 **+25.70%**, s3e5 **+19.21%**, s3e19 +4.11% (t2→t4), s3e9 +3.77% (t4=t3 exact tie), s3e3 +3.53%, s3e16 +1.39%, s3e1 +0.95%, s3e11 +0.66%, s3e14 +0.31%, s3e7 +0.18%.
+Detailed table and methodology caveats in `docs/benchmark_summary.md` (+PDF).
 
-## 三個可重現的研究發現(詳見 docs/tree_search_prototype.md)
+## Three reproducible research findings (details in docs/tree_search_prototype.md)
 
-1. **先驗定下限、在地洞見定上限**:經驗庫先驗讓搜尋不走死路(多場 informed 勝率顯著高於 uninformed),但每場最大的單筆增益幾乎都來自該場自己的未驗證假設(冗餘欄剪枝、top-code clip、auto_scale、深度邊界推)。
-2. **強制 explore burst + mega-blend**:三次觸發三次貢獻 100% 的後期增益(E-5、F-2×2)——探索爆發不是選配。
-3. **邊界推(boundary-push)**:Optuna 最優卡在搜尋盒邊緣是常態而非例外(≥3 場),把「推過邊界」做成標準 mutation 有實質回報。
+1. **The prior sets the floor, local insight sets the ceiling**: experience-library priors keep the search off dead ends (in many competitions the informed win rate is significantly higher than uninformed), but each competition's single largest gain almost always comes from that competition's own unvalidated hypothesis (redundant-column pruning, top-code clip, auto_scale, depth boundary-push).
+2. **Forced explore burst + mega-blend**: triggered three times, contributing 100% of the late-stage gain all three times (E-5, F-2×2) — the exploration burst is not optional.
+3. **Boundary-push**: the Optuna optimum being stuck at the edge of the search box is the norm rather than the exception (≥3 competitions), and making "push past the boundary" a standard mutation has substantial payoff.
 
-## 誠實但書(重要)
+## Honest caveats (important)
 
-- **除 s3e16 有真實 LB 錨點(Public 1.34356/Private 1.34075,提交於樹搜尋之前)外,全部分數皆為本地 CV/OOF**,未提交 Kaggle(未動任何憑證)。樹搜尋 blend 未產出測試集預測,報告中皆標「未提交/CV-only」。
-- s3e19 的 9.757 帶 fold-5 double-dip 與 OOF 上擬合縮放之樂觀偏差(紀錄在案);s3e20 的 21.03 blend 為低信度未入帳(入帳的是穩健的 21.0589 純結構節點)。
-- v3 的自動停止在實戰兩跑皆由硬上限收場(burst 持續改善屬正確行為),耐心路徑僅在小預算煙霧驗證過。
-- Phase B 曾將 s3e20 的 experiments.json 就地遷移 v2(偏離「舊紀錄不改」原則;已驗證無資料損失)。
+- **Except for s3e16, which has a real LB anchor (Public 1.34356 / Private 1.34075, submitted before the tree search), all scores are local CV/OOF**, not submitted to Kaggle (no credentials touched). The tree-search blend produced no test-set predictions, and the reports all mark "not submitted / CV-only."
+- s3e19's 9.757 carries an optimistic bias from fold-5 double-dip and scaling fitted on the OOF (recorded on file); s3e20's 21.03 blend is low-confidence and not recorded (what was recorded is the robust 21.0589 pure-structure node).
+- v3's auto-stop ended on the hard cap in both live runs (continued improvement during the burst is correct behavior); the patience path was only smoke-tested at a small budget.
+- Phase B once migrated s3e20's experiments.json in place to v2 (deviating from the "do not modify old records" principle; verified no data loss).
 
-## 主要交付物索引
+## Index of main deliverables
 
-- `docs/benchmark_summary.md/.pdf` — 十場四層對照
-- `docs/tree_search_prototype.md/.pdf` — 樹搜尋 v1→v3 全弧(15 次執行)
-- `docs/scaling_experiment.md/.pdf` — 80 節點規模曲線與預算規則
-- `knowledge/experience.md` — 跨競賽經驗庫(證據型)
-- `tree_search/harness_v3.py` + 82 綠測試 — 可上線的樹搜尋引擎
-- `.claude/skills/*/references/07_tree_search.md` — Stage 4 操作手冊(兩 skill 同步)
-- 各競賽資料夾:更新後的 REPORT.md/PDF、STATUS.md、experiments.json(樹最佳已入帳)
+- `docs/benchmark_summary.md/.pdf` — ten-competition four-tier comparison
+- `docs/tree_search_prototype.md/.pdf` — the full tree-search v1→v3 arc (15 runs)
+- `docs/scaling_experiment.md/.pdf` — 80-node scaling curve and budget rule
+- `knowledge/experience.md` — cross-competition experience library (evidence-based)
+- `tree_search/harness_v3.py` + 82 green tests — a production-ready tree-search engine
+- `.claude/skills/*/references/07_tree_search.md` — Stage 4 operations manual (synced across both skills)
+- Each competition folder: updated REPORT.md/PDF, STATUS.md, experiments.json (tree-best recorded)
 
-## 給下週的建議
+## Suggestions for next week
 
-1. **給老師看的順序**:benchmark_summary(成果)→ tree_search_prototype(研究)→ 任一場 REPORT.pdf(流程品質)。這直接對應計畫書目標一/二/三/四的證據。
-2. 若要拿 LB 驗證樹搜尋增益:挑 s3e16(Late Submission 開放、有歷史錨點),為樹最佳 blend 產測試預測後提交一次即可對照。
-3. v3 後續(非急):auto-stop 耐心路徑的實戰驗證;經驗庫 prior 的自動化注入(ERA 想法注入完整版);跨場樹遷移。
-4. 計畫書第 4–5 週(報告模組)與第 6–7 週(樹搜尋)的核心工作已於本週末提前完成,時程可重新配置(例如轉向論文 16 場 benchmark 的其餘場次、或報告 rubric 的人工驗收輪)。
+1. **Order for showing the professor**: benchmark_summary (results) → tree_search_prototype (research) → any REPORT.pdf (process quality). This maps directly to the evidence for the plan's Goals 1/2/3/4.
+2. To validate the tree-search gain against the LB: pick s3e16 (Late Submission open, with a historical anchor), produce test predictions for the tree-best blend, and submit once to compare.
+3. v3 follow-ups (not urgent): live validation of the auto-stop patience path; automated injection of experience-library priors (the full ERA idea-injection version); cross-competition tree transfer.
+4. The core work of the plan's Weeks 4–5 (report module) and Weeks 6–7 (tree search) was completed ahead of schedule this weekend, so the schedule can be reallocated (e.g., pivoting to the remaining competitions of the paper's 16-competition benchmark, or a manual acceptance round for the report rubric).

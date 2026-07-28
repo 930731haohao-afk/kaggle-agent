@@ -1,0 +1,881 @@
+{
+  "comp": "playground-series-s3e9",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: s3e9's strongest known solo -- hand-set CatBoost (depth=6, l2_leaf_reg=6) -- OOF RMSE 12.07459 (STATUS.md; also v1's global-best node #1, no mutation across v1's 20-node single-model-only search ever beat it), REUSED from scripts/_round23_pool.npz (verified digit-for-digit, no retrain) [PRIOR P5 -- CatBoost's ordered-boosting regularization resists the 56%-dup-row label-noise ceiling better than LGB/XGB's default capacity]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.074593,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[LGB_ORIG] model-type: hand-regularized LGB (num_leaves=15,depth=5,L1=2,L2=4) -- STATUS.md's root single-model reference, solo OOF 12.11061, REUSED from scripts/_round23_pool.npz [PRIOR P6 -- regularization + features together is what fixed LGB's initial overfit on this dup-noisy data]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.110609,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[XGB_ORIG] model-type: hand-regularized XGB (depth=4,min_child_weight=8,L1=2,L2=4) -- weakest of the 3 base learners (12.12086) but kept as a free diversity source for the blend pool per 'weight search often zeroes weak members, that is a feature not a bug' [PRIOR P19 -- zero-weight members cost nothing to keep, REUSED from scripts/_round23_pool.npz]",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "max_depth": 4,
+          "min_child_weight": 8,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.120859,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[LGB_TUNED] model-type: Optuna-tuned LGB (60-trial full-5fold-CV objective, STATUS.md Round 2) -- solo OOF 12.12074, WORSE than hand-reg LGB solo yet its seed variants earned real blend weight in the linear run [PRIOR P12 -- add tuned model to pool, don't replace the original, REUSED from scripts/_round23_pool.npz]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 3000,
+          "learning_rate": 0.019795655587585677,
+          "num_leaves": 11,
+          "max_depth": 3,
+          "min_child_samples": 31,
+          "subsample": 0.6018504151952752,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.5006835428888052,
+          "reg_alpha": 0.1120861378640153,
+          "reg_lambda": 0.3020804107290036,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.088947,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[LGB_TUNED_SEED2] seed variation: Optuna-tuned LGB, random_state 42->1042 -- STATUS.md Round 3's seed-bag member, solo OOF 12.10843, earned 22.7% blend weight in the 5-way pool [PRIOR P8/P13 -- seed bagging is the single most reliable lever on this label-noise-capped comp, REUSED from scripts/_round23_pool.npz]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 3000,
+          "learning_rate": 0.019795655587585677,
+          "num_leaves": 11,
+          "max_depth": 3,
+          "min_child_samples": 31,
+          "subsample": 0.6018504151952752,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.5006835428888052,
+          "reg_alpha": 0.1120861378640153,
+          "reg_lambda": 0.3020804107290036,
+          "random_state": 1042
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.091754,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[CAT_SEEDFAM] seed-family expansion off the root CAT config (seed 42->7) -- the linear run's own Phase B found seed-bagging the dominant CatBoost member gave its single largest round-4 gain (12.07143->12.07003); this run extends the seed family with NEW seeds (not the linear run's exact seed=1042) so the blend pool gets independently-random members rather than reproducing already-known numbers [PRIOR P8 -- seed bagging is the only reliable lever left once tuning/denoising both plateaued on this comp]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 7
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.084398,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[CAT_DEPTH] BOUNDARY-PUSH probe (s3e11's winning lever, transplanted): push CAT depth 6->8 (more capacity) while holding l2/seed fixed -- s3e9 is small (5.4k rows) + label-noise-capped, the OPPOSITE regime from s3e11's 360k-row 'more capacity wins' reversal, so the honest expectation is this should NOT help (confirm, not assumed) [PRIOR P17 -- direct test of whether the large-data capacity reversal transfers to small noisy data; prior evidence (P5/P3) says it should not]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 8,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.115003,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[CAT_L2] BOUNDARY-PUSH probe (opposite axis from CAT_DEPTH): push l2_leaf_reg 6.0->10.0 (more regularization) while holding depth/seed fixed -- tests whether root's l2=6 undershot the noise-ceiling sweet spot in the 'regularize harder' direction v1's own CAT lineage only nudged once (l2 6->9, tied/lost) [PRIOR P3/P5 -- small noisy data rewards regularization over capacity, push further to find the true boundary]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 10.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.078566,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[LGB_SEEDFAM] seed-family expansion of the hand-reg LGB baseline (random_state 42->2024) -- the linear run never seed-bagged the ORIGINAL LGB (only the Optuna-tuned one), untested extension of the validated seed-bagging recipe to a different base config [PRIOR P8 -- seed bagging, applied to a pool member the linear run itself never tried it on]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "max_depth": 5,
+          "min_child_samples": 25,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 2.0,
+          "reg_lambda": 4.0,
+          "learning_rate": 0.02,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150,
+          "random_state": 2024
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.115615,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[DEEPLGB] model-variant: DELIBERATELY diverse deep/high-capacity/light-reg LGB (num_leaves 15->63, max_depth 5->8, reg_alpha 2.0->0.1, reg_lambda 4.0->0.1, min_child_samples 25->10) -- s3e9's own evidence (P3/P5/P6) says capacity should HURT here (opposite of s3e11's large-data finding), so this is a deliberate diversity source for the blend pool (mirrors s3e11's own DEEPLGB pattern) rather than an expected solo winner -- worth testing since a genuinely different bias/variance profile can still add blend value even with a worse solo score [PRIOR none -- diversity-for-blend hypothesis, not itself evidenced on this comp]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 63,
+          "max_depth": 8,
+          "min_child_samples": 10,
+          "subsample": 0.9,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.9,
+          "reg_alpha": 0.1,
+          "reg_lambda": 0.1,
+          "learning_rate": 0.03,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 150,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.28386,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 10,
+      "parent_id": 0,
+      "mutation": "[LGB_TUNED_SEEDFAM] seed-family expansion of the Optuna-tuned LGB, 3rd independent seed (random_state=3000, distinct from the linear run's own 42/1042/2042) -- STATUS.md's Round 4 noted diminishing-but-still-positive returns on the 3rd seed (-0.00140 there); honest test of whether a 3rd tuned-LGB seed here is still marginally useful or genuinely exhausted [PRIOR P8/P13 -- seed bagging after tuning is the cheapest residual gain, extending the seed family one further]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 3000,
+          "learning_rate": 0.019795655587585677,
+          "num_leaves": 11,
+          "max_depth": 3,
+          "min_child_samples": 31,
+          "subsample": 0.6018504151952752,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.5006835428888052,
+          "reg_alpha": 0.1120861378640153,
+          "reg_lambda": 0.3020804107290036,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.096831,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 0,
+      "mutation": "[CAT_HISTREPRO] EXACT reproduction of the linear iteration's CAT_seed2 (STATUS.md Round 4, same depth=6/l2=6 as root, random_seed 42->1042) -- the linear run's own single largest Phase-B round-4 gain came from seed-bagging exactly this config; this member's individual OOF was NOT separately cached in scripts/_round23_pool.npz (only the final 7-way blend was), so unlike the 4 legacy pool members it needs a real (cheap, ~2-3s) retrain rather than a load -- included so the v2 blend pool has direct access to the exact member composition that produced 12.07003, not just this run's own new seeds [PRIOR P8/P13 -- seed bagging, direct reproduction of the comp's own best-evidenced instance of the lever]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 1042
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.078519,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 0,
+      "mutation": "[LGBT_HISTREPRO] EXACT reproduction of the linear iteration's LGB_tuned_seed3 (STATUS.md Round 4, same Optuna-tuned hyperparams, random_state 42->2042) -- the other new member of the historical 7-way 12.07003 blend; individual OOF not separately cached (only the final blend was), real retrain needed [PRIOR P8/P13 -- seed bagging, direct reproduction]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 3000,
+          "learning_rate": 0.019795655587585677,
+          "num_leaves": 11,
+          "max_depth": 3,
+          "min_child_samples": 31,
+          "subsample": 0.6018504151952752,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.5006835428888052,
+          "reg_alpha": 0.1120861378640153,
+          "reg_lambda": 0.3020804107290036,
+          "random_state": 2042
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.097701,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: 13-way blend of the FULL first-generation solo pool [0, 11, 7, 5, 10, 12, 4, 1, 6, 8, 3, 2, 9] (root CAT + 4 legacy-reused + 6 newly-trained seed-family/boundary-push/diversity solos) CACHED OOF, dirichlet weight search -- the recommendation #1 mechanism itself: this is the exact move v1's single-model-only harness could not make [PRIOR none -- generic ensemble-default node-space seed]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weight_search": "dirichlet",
+        "compose": "raw"
+      },
+      "score": 12.066947,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 14,
+      "parent_id": 13,
+      "mutation": "[BLEND] BLEND: remove lowest-weight member #7 (w=0.000) -> leaner 12-way, test whether it was truly adding value or just being tolerated [PRIOR P19 -- removing (near-)zero-weight members is zero-cost, s3e11's own R1 validated this] (parent=#13)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weight_search": "dirichlet",
+        "compose": "raw"
+      },
+      "score": 12.066947,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 15,
+      "parent_id": 13,
+      "mutation": "[BLEND] BLEND: composition-variant probe -- z-score-standardize each member's OOF (own mean/std) before weight search, rescale via the target's own mean/std before scoring -- a distinct blend parameterization from plain weighted-average-of-raw-values (the task brief's 'rank-average' composition-variant lever, adapted for a continuous RMSE target rather than a ranking metric) [PRIOR none -- experience.md's only related finding (s3e7 rank-average blend tuning) was noise-level on AUC, an even weaker case exists here since RMSE is not rank-based; honest single-node test, not assumed to help] (parent=#13)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weight_search": "dirichlet",
+        "compose": "zscore"
+      },
+      "score": 13.164093,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 16,
+      "parent_id": 11,
+      "mutation": "[CAT_HISTREPRO] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=5000 [PRIOR P8 -- seed bagging as a universal fallback lever on this comp] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 5000
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.083909,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 11,
+      "mutation": "[CAT_HISTREPRO] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=5001 [PRIOR P8 -- seed bagging as a universal fallback lever on this comp] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 5001
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.084545,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 11,
+      "mutation": "[CAT_HISTREPRO] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=5002 [PRIOR P8 -- seed bagging as a universal fallback lever on this comp] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 5002
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.078576,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 7,
+      "mutation": "[CAT_L2] CAT_L2: push regularization FURTHER (l2 10->14) -- brackets whether more L2 keeps helping or has already turned [PRIOR P3/P5] (parent=#7)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 14.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.076987,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 19,
+      "mutation": "[CAT_L2] CAT_L2: OPPOSITE direction -- l2 6->3 (less regularization than root), bracket from both sides [PRIOR P17 -- boundary-push, opposite arm] (parent=#19)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 3.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.083415,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 21,
+      "parent_id": 19,
+      "mutation": "[CAT_L2] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=5000 [PRIOR P8 -- seed bagging as a universal fallback lever on this comp] (parent=#19)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 14.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 5000
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.091954,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 5,
+      "mutation": "[CAT_SEEDFAM] CAT_SEEDFAM: 3rd new seed (99) -- honest test of whether the seed pool is exhausted after 2 new seeds or still has marginal juice [PRIOR P8] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 99
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.083404,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 22,
+      "mutation": "[CAT_SEEDFAM] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=5003 [PRIOR P8 -- seed bagging as a universal fallback lever on this comp] (parent=#22)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 5003
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.077073,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 24,
+      "parent_id": 23,
+      "mutation": "[CAT_SEEDFAM] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_seed=5004 [PRIOR P8 -- seed bagging as a universal fallback lever on this comp] (parent=#23)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 6,
+          "l2_leaf_reg": 6.0,
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "random_seed": 5004
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.083144,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 25,
+      "parent_id": 10,
+      "mutation": "[LGB_TUNED_SEEDFAM] LGB_TUNED_SEEDFAM: 4th independent seed (4000) of the Optuna-tuned LGB -- extends the family past the linear run's own 3-seed stopping point (which cited diminishing gains) [PRIOR P8/P13 -- honest test of whether the 4th seed is genuinely exhausted (parent=#10)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 3000,
+          "learning_rate": 0.019795655587585677,
+          "num_leaves": 11,
+          "max_depth": 3,
+          "min_child_samples": 31,
+          "subsample": 0.6018504151952752,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.5006835428888052,
+          "reg_alpha": 0.1120861378640153,
+          "reg_lambda": 0.3020804107290036,
+          "random_state": 4000
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 12.088412,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "node_results": {
+      "0": {
+        "n_feats": 22,
+        "rmse": 12.074593
+      },
+      "1": {
+        "n_feats": 22,
+        "rmse": 12.110609
+      },
+      "2": {
+        "n_feats": 22,
+        "rmse": 12.120859
+      },
+      "3": {
+        "n_feats": 22,
+        "rmse": 12.088947
+      },
+      "4": {
+        "n_feats": 22,
+        "rmse": 12.091754
+      },
+      "5": {
+        "n_feats": 22,
+        "rmse": 12.084398
+      },
+      "6": {
+        "n_feats": 22,
+        "rmse": 12.115003
+      },
+      "7": {
+        "n_feats": 22,
+        "rmse": 12.078566
+      },
+      "8": {
+        "n_feats": 22,
+        "rmse": 12.115615
+      },
+      "9": {
+        "n_feats": 22,
+        "rmse": 12.28386
+      },
+      "10": {
+        "n_feats": 22,
+        "rmse": 12.096831
+      },
+      "11": {
+        "n_feats": 22,
+        "rmse": 12.078519
+      },
+      "12": {
+        "n_feats": 22,
+        "rmse": 12.097701
+      },
+      "13": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weights": [
+          0.4109,
+          0.0,
+          0.0,
+          0.2977,
+          0.0558,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2356,
+          0.0
+        ],
+        "method": "dirichlet",
+        "compose": "raw",
+        "rmse": 12.066947
+      },
+      "14": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weights": [
+          0.4107,
+          0.0,
+          0.0,
+          0.2978,
+          0.0558,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2357,
+          0.0
+        ],
+        "method": "dirichlet",
+        "compose": "raw",
+        "rmse": 12.066947
+      },
+      "15": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "weights": [
+          0.318,
+          0.0,
+          0.0,
+          0.2512,
+          0.1266,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0926,
+          0.0,
+          0.2115,
+          0.0
+        ],
+        "method": "dirichlet",
+        "compose": "zscore",
+        "rmse": 13.164093
+      },
+      "16": {
+        "n_feats": 22,
+        "rmse": 12.083909
+      },
+      "17": {
+        "n_feats": 22,
+        "rmse": 12.084545
+      },
+      "18": {
+        "n_feats": 22,
+        "rmse": 12.078576
+      },
+      "19": {
+        "n_feats": 22,
+        "rmse": 12.076987
+      },
+      "20": {
+        "n_feats": 22,
+        "rmse": 12.083415
+      },
+      "21": {
+        "n_feats": 22,
+        "rmse": 12.091954
+      },
+      "22": {
+        "n_feats": 22,
+        "rmse": 12.083404
+      },
+      "23": {
+        "n_feats": 22,
+        "rmse": 12.077073
+      },
+      "24": {
+        "n_feats": 22,
+        "rmse": 12.083144
+      },
+      "25": {
+        "n_feats": 22,
+        "rmse": 12.088412
+      }
+    },
+    "budget": {
+      "total_budget": 26,
+      "phase": "stopped",
+      "stop_reason": "faithful replay of committed tree"
+    }
+  }
+}

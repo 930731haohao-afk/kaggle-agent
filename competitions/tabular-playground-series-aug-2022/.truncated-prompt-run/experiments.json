@@ -1,0 +1,202 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T10:05:20",
+    "model": "LogisticRegression(C=1e-4)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.586522,
+    "features": [
+      "loading_log",
+      "measurement_17",
+      "m3_na",
+      "m5_na"
+    ],
+    "n_features": 4,
+    "cv": {
+      "strategy": "GroupKFold(product_code, 5)",
+      "folds": [
+        0.587515,
+        0.582721,
+        0.589176,
+        0.597425,
+        0.593514
+      ]
+    },
+    "notes": "feature set lr_min; per-product std-scaling for LR; m17 Huber-imputed per product"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T10:05:20",
+    "model": "LogisticRegression(C=1e-4)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.586031,
+    "features": [
+      "loading_log",
+      "measurement_17",
+      "m3_na",
+      "m5_na",
+      "measurement_0",
+      "measurement_1",
+      "measurement_2",
+      "na_count"
+    ],
+    "n_features": 8,
+    "cv": {
+      "strategy": "GroupKFold(product_code, 5)",
+      "folds": [
+        0.583223,
+        0.582458,
+        0.591313,
+        0.598884,
+        0.59233
+      ]
+    },
+    "notes": "feature set lr_plus; per-product std-scaling for LR; m17 Huber-imputed per product"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T10:05:20",
+    "model": "LightGBM-shallow",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.584148,
+    "features": [
+      "loading",
+      "loading_log",
+      "measurement_0",
+      "measurement_1",
+      "measurement_2",
+      "measurement_3",
+      "measurement_4",
+      "measurement_5",
+      "measurement_6",
+      "measurement_7",
+      "measurement_8",
+      "measurement_9",
+      "measurement_10",
+      "measurement_11",
+      "measurement_12",
+      "measurement_13",
+      "measurement_14",
+      "measurement_15",
+      "measurement_16",
+      "measurement_17",
+      "m3_na",
+      "m5_na",
+      "na_count",
+      "area",
+      "meas_avg_3_16",
+      "attribute_2",
+      "attribute_3"
+    ],
+    "n_features": 27,
+    "cv": {
+      "strategy": "GroupKFold(product_code, 5)",
+      "folds": [
+        0.584139,
+        0.581263,
+        0.588254,
+        0.596319,
+        0.589079
+      ]
+    },
+    "notes": "feature set lgb_full; per-product std-scaling for LR; m17 Huber-imputed per product"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T10:05:20",
+    "model": "rank-blend LR+LGB",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.586951,
+    "cv": {
+      "strategy": "GroupKFold(product_code, 5)"
+    },
+    "ensemble": {
+      "weights": {
+        "lr_min": 0.75,
+        "lgb_full": 0.25
+      },
+      "space": "rank"
+    },
+    "notes": "grid 0.05 on rank-averaged OOF"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T10:06:39",
+    "model": "LogisticRegression(C=0.02)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.59131,
+    "features": [
+      "loading",
+      "measurement_17",
+      "m3_na",
+      "m5_na",
+      "measurement_2"
+    ],
+    "n_features": 5,
+    "cv": {
+      "strategy": "GroupKFold(product_code, 5)"
+    },
+    "postprocess": [
+      "per-product rank normalization"
+    ],
+    "notes": "sweep winner m2_raw; raw OOF 0.59055, rank-pp 0.59131"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-28T10:06:39",
+    "model": "rank-blend LR_best+LGB",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.591328,
+    "cv": {
+      "strategy": "GroupKFold(product_code, 5)"
+    },
+    "ensemble": {
+      "weights": {
+        "lr_best": 0.95,
+        "lgb_full": 0.05
+      },
+      "space": "rank"
+    },
+    "postprocess": [
+      "per-product rank normalization"
+    ],
+    "notes": "final blend candidate"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-28T10:07:13",
+    "model": "LogisticRegression(C=0.02) full-train",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.59131,
+    "features": [
+      "loading",
+      "measurement_17",
+      "m3_na",
+      "m5_na",
+      "measurement_2"
+    ],
+    "n_features": 5,
+    "cv": {
+      "strategy": "GroupKFold(product_code, 5)"
+    },
+    "postprocess": [
+      "per-product rank normalization on test"
+    ],
+    "submission": "submission_lr_rankpp_0.59131.csv",
+    "notes": "FINAL submission; raw loading + per-product std-scale; m17 Huber-imputed per product"
+  }
+]

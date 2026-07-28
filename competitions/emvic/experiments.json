@@ -1,0 +1,84 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-22T04:47:17.010082+00:00",
+    "stage": "baseline",
+    "model": "RandomForest",
+    "features": "stat+PCA (215)",
+    "cv_strategy": "StratifiedKFold-5",
+    "cv_scores": [
+      1.30747,
+      1.72191,
+      1.45073,
+      1.49314,
+      1.34614
+    ],
+    "cv_mean": 1.46388,
+    "cv_std": 0.14556,
+    "notes": "RF 500 trees, balanced class weight"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-22T04:48:03.639426+00:00",
+    "stage": "tuned",
+    "model": "LightGBM",
+    "features": "stat+PCA (215)",
+    "cv_strategy": "StratifiedKFold-5",
+    "cv_scores": [
+      0.70374,
+      1.06312,
+      0.95618,
+      0.99438,
+      0.79243
+    ],
+    "cv_mean": 0.90197,
+    "cv_std": 0.13323,
+    "notes": "LightGBM multiclass, balanced, 0-indexed labels"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-22T04:50:09.920654+00:00",
+    "stage": "tuned",
+    "model": "XGBoost",
+    "features": "stat+PCA (215)",
+    "cv_strategy": "StratifiedKFold-5",
+    "cv_scores": [
+      0.9163,
+      1.22385,
+      1.18596,
+      1.22312,
+      1.02537
+    ],
+    "cv_mean": 1.11492,
+    "cv_std": 0.12336,
+    "notes": "XGBoost multiclass softprob, 0-indexed labels"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-22T04:55:52.707751+00:00",
+    "stage": "tuned",
+    "model": "CatBoost",
+    "features": "stat+PCA (215)",
+    "cv_strategy": "StratifiedKFold-5",
+    "cv_scores": [
+      0.86804,
+      1.10885,
+      1.10073,
+      1.12274,
+      1.02292
+    ],
+    "cv_mean": 1.04466,
+    "cv_std": 0.0949,
+    "notes": "CatBoost MultiClass, balanced weights"
+  },
+  {
+    "experiment_id": 5,
+    "timestamp": "2026-02-22T05:04:58.766604+00:00",
+    "stage": "ensemble",
+    "model": "Weighted Ensemble (RF=0.0, LGB=0.7, XGB=0.1, Cat=0.2)",
+    "features": "stat+PCA (215)",
+    "cv_strategy": "StratifiedKFold-5 OOF",
+    "cv_mean": 0.90299,
+    "notes": "Best weights. Simple avg: 1.02334"
+  }
+]

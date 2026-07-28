@@ -1,0 +1,209 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T12:13:14",
+    "model": "baseline-all-zero",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 0.145128,
+    "cv": {
+      "strategy": "5-fold stratified by delta, seed 42",
+      "scores": [
+        0.146623,
+        0.14486,
+        0.144672,
+        0.144055,
+        0.145432
+      ]
+    },
+    "notes": "Predict all cells dead. Start density 0.145."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T12:13:14",
+    "model": "baseline-perdelta-stop-or-zero",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 0.139585,
+    "cv": {
+      "strategy": "5-fold stratified by delta, seed 42",
+      "scores": [
+        0.141058,
+        0.139437,
+        0.139048,
+        0.13847,
+        0.139912
+      ]
+    },
+    "notes": "stop board as start for delta=1, zeros otherwise."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T12:41:51",
+    "model": "refine-forward-consistency-probe",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 0.11647,
+    "notes": "NEGATIVE: greedy hill-climb flipping cells of thresholded cnn_f0probe preds to reduce hamming(evolve(start,delta),stop)+lam*prior. Forward-mismatch 0.099->0.068 but MAE WORSE at every delta (base 0.11273 -> 0.11732 lam=0.2, 0.11647 lam=0.5; 3k fold-0 boards). Reverse GoL has many preimages; per-cell marginal probs are MAE-optimal, a single consistent preimage is not. REFINE lineage dropped from tree search."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T13:06:52",
+    "model": "cnn-delta-conditioned",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 0.111928,
+    "cv": {
+      "strategy": "5-fold stratified by delta, seed 42",
+      "scores": [
+        0.112929,
+        0.111661,
+        0.111407,
+        0.111559,
+        0.112083
+      ]
+    },
+    "notes": "cnn_v1: {\"channels\": 64, \"depth\": 8, \"residual\": true, \"epochs\": 20, \"batch\": 512, \"lr\": 0.002, \"wd\": 0.0001, \"synth_n\": 100000, \"d4_aug\": true, \"tta\": true, \"seed\": 42, \"per_delta\": false}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T13:06:52",
+    "model": "lgb-percell-perdelta",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 0.122521,
+    "cv": {
+      "strategy": "5-fold stratified by delta, seed 42",
+      "scores": [
+        0.123787,
+        0.122468,
+        0.122082,
+        0.121449,
+        0.12282
+      ]
+    },
+    "notes": "lgb_v1: {\"model\": \"lgb-percell-perdelta\", \"window\": 7, \"objective\": \"binary\", \"learning_rate\": \"0.1\", \"num_leaves\": \"63\", \"max_depth\": \"-1\", \"min_child_samples\": \"100\", \"subsample\": \"0.9\", \"subsample_freq\": \"1\", \"colsample_bytree\": \"0.9\", \"n_estimators\": \"150\", \"num_threads\": \"10\", \"deterministic\": \"True\", \"force_row_wise\": \"True\", \"random_state\": \"42\", \"verbosity\": \"-1\"}"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-28T13:06:52",
+    "model": "blend-cnn_v1+lgb_v1",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 0.111928,
+    "cv": {
+      "strategy": "5-fold stratified by delta, seed 42",
+      "scores": [
+        0.112929,
+        0.111661,
+        0.111407,
+        0.111559,
+        0.112083
+      ]
+    },
+    "ensemble": {
+      "members": [
+        "cnn_v1",
+        "lgb_v1"
+      ],
+      "weights": [
+        1.0,
+        0.0
+      ],
+      "search": "101-point 1D grid on full OOF, MAE@0.5"
+    },
+    "notes": "Linear-protocol first blend (Stage 3->4 gate)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-28T14:15:11",
+    "model": "tree-search-v3-fold0-proxy",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 0.112899,
+    "cv": {
+      "strategy": "fold-0 proxy (12.5k boards, 5M cells) of 5-fold stratified by delta"
+    },
+    "ensemble": {
+      "members": [
+        "node0=cnn_v1(cached)",
+        "node1=lgb_v1(cached)"
+      ],
+      "per_delta_weights": true,
+      "thresholds": {
+        "1": 0.49,
+        "2": 0.5,
+        "3": 0.5,
+        "4": 0.49,
+        "5": 0.48
+      }
+    },
+    "notes": "harness_v3 tree search, 23 evaluated nodes (budget shrunk 40->30, patience 12->5, burst forced early at n_eval=18 for session-time reasons \u2014 logged in tree backtrack_log). Best node 7: per-delta-weight+threshold blend of cnn_v1+lgb_v1 fold-0 (0.112899 vs root 0.112929). Key solo finding: ch96+lr3e-3 best search-grade CNN (0.113895 vs base 0.115752); depth12 hurts at 10-epoch budget; per_delta models lose to delta-conditioned single model (0.11848 vs 0.11575); 12-member kitchen-sink blends lose to lean 3-member blend (0.11294 vs 0.11290). evals-to-beat-linear: node 5 (6th eval) tied linear blend; node 7 (8th) surpassed. Dedup rejections: 6. Sanity gate: no burst seed failed. Cost guard: n/a (custom blend eval). OOF-only caveat: no LB validation (competition closed)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-28T15:38:59",
+    "model": "final-blend-cnn_v1+cnn_v2+lgb_v1",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 0.110352,
+    "cv": {
+      "strategy": "5-fold stratified by delta, seed 42",
+      "scores": [
+        0.111139,
+        0.110576,
+        0.110343,
+        0.109182,
+        0.110519
+      ]
+    },
+    "ensemble": {
+      "members": [
+        "cnn_v1",
+        "cnn_v2",
+        "lgb_v1"
+      ],
+      "per_delta_weights": {
+        "1": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "2": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "3": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "4": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "5": [
+          0.0,
+          1.0,
+          0.0
+        ]
+      },
+      "search": "per-delta dirichlet(400)+coord-ascent on full OOF, MAE@thresh"
+    },
+    "postprocess": [
+      "per-delta threshold {'1': 0.51, '2': 0.49, '3': 0.49, '4': 0.49, '5': 0.49}"
+    ],
+    "submission": "competitions/conway-s-reverse-game-of-life/submission.csv",
+    "notes": "Final submission blend. Weights+thresholds fit on full OOF (in-sample for the weight fit; members' OOFs are honest)."
+  }
+]

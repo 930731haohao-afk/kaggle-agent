@@ -1,36 +1,36 @@
-# 想法重組(recombination / 階段 5.2)findings
+# Idea Recombination (recombination / Stage 5.2) findings
 
-> 計畫書 §4/§6「將兩個高分候選解的核心概念交由 LLM 比較後重組成新解」。日期 2026-07-08。
+> Plan §4/§6: "hand the core concepts of two high-scoring candidate solutions to the LLM to compare and recombine into a new solution." Date 2026-07-08.
 
-## 機制(已建置)
+## Mechanism (built)
 
-- **機械版**:`harness_v4.recombine`(J-2b,commit 0330b70)——繼承較強親代的模型/超參 + 聯集成員/特徵家族;pure、可測。
-- **LLM 版**:LLM 重組算子(子代理)——比較兩親代核心概念、提出重組候選;**propose-once 可凍結復現**(LLM 提案一次、凍結成 config,之後評估可重現)。這是計畫書要的「交由 LLM 比較後重組」,也是本專案唯一的 **LLM-in-loop mutation**(補上 aygun_comparison 標的核心落差)。
+- **Mechanical version**: `harness_v4.recombine` (J-2b, commit 0330b70) — inherits the stronger parent's model/hyperparameters + the union of member/feature families; pure, testable.
+- **LLM version**: LLM recombination operator (subagent) — compares the core concepts of two parents and proposes a recombination candidate; **propose-once, frozen and replayable** (the LLM proposes once, freezes into a config, after which evaluation is reproducible). This is the plan's required "hand to the LLM to compare and recombine," and is this project's only **LLM-in-loop mutation** (filling the core gap marked in aygun_comparison).
 
-## Pilot 實測(s6e1,R2 越大越好)
+## Pilot measurement (s6e1, R2 higher is better)
 
-重組**冠軍 node#27**(21 成員 mega-blend,R2 0.787183)× **最佳單模 node#13**(單一 LGB,R2 0.786684)。
+Recombine the **champion node#27** (21-member mega-blend, R2 0.787183) × the **best single model node#13** (single LGB, R2 0.786684).
 
-**結果:redundant(冗餘)、無系統性增益。** 已獨立驗證(不盡信子代理):
+**Result: redundant, no systematic gain.** Independently verified (not trusting the subagent blindly):
 
-| 對照 | R2 | 說明 |
+| Comparison | R2 | Note |
 |---|---|---|
-| 冠軍(給定 dirichlet 權重) | 0.787183 | — |
-| **NNLS 凸最優(blend/單純形家族)** | **0.787183** | **逐位相符**——dirichlet 搜尋已收斂到真正凸最優 |
-| OLS 無約束 stacking | 0.787192 | 僅 +9e-6,且需負權(min_w −0.092) |
+| champion (given Dirichlet weights) | 0.787183 | — |
+| **NNLS convex optimum (blend/simplex family)** | **0.787183** | **bit-for-bit match** — the Dirichlet search already converged to the true convex optimum |
+| OLS unconstrained stacking | 0.787192 | only +9e-6, and requires negative weights (min_w −0.092) |
 
-- **根因(已驗證)**:成員 OOF 相關 0.998–1.000、**誤差殘差相關 0.993–0.998**——全是同 22 特徵/同折的 GBDT 變體,近乎重複,無多樣性可榨;集成僅比最佳單模高 +0.0005,已被凸最優完全吃盡。
-- 負權 OLS 的 +9e-6 是噪聲級(折抽樣本身擺動 ~6e-4,約 100 倍大)、需負權在有界目標 [0,100] 上脆弱、且現有 blend 節點(dirichlet/grid_simplex 皆在單純形=凸)無法表達。
+- **Root cause (verified)**: member OOF correlation 0.998–1.000, **error-residual correlation 0.993–0.998** — all are GBDT variants on the same 22 features/same folds, nearly duplicate, with no diversity to squeeze; the ensemble is only +0.0005 over the best single model, already fully consumed by the convex optimum.
+- The negative-weight OLS's +9e-6 is noise-level (fold sampling itself wobbles ~6e-4, about 100× larger), requiring negative weights is fragile on a bounded target [0,100], and the existing blend nodes (Dirichlet/grid_simplex, both on the simplex = convex) cannot express it.
 
-## 結論
+## Conclusion
 
-> **重組在本專案架構下結構性冗餘**:樹搜尋的 mega-blend + 凸權重搜尋**已是全池高分節點的最優組合**
-> (冠軍 = 成員池的 NNLS 凸最優,逐位證明),且冠軍已含最佳單模。重組兩高分解 = 對近乎重複的池
-> 重新賦權/挑子集,無系統性增益。**要突破 0.787183 需注入與現有池去相關的新基學習器**(非 GBDT:
-> NN/kNN/線性、新特徵/表徵、目標變換、pseudo-labeling)——那是新基模的工作,非重組既有池。
+> **Recombination is structurally redundant under this project's architecture**: the tree search's mega-blend + convex weight search **is already the optimal combination of the whole pool's high-scoring nodes**
+> (the champion = the NNLS convex optimum of the member pool, proven bit-for-bit), and the champion already includes the best single model. Recombining two high-scoring solutions = reweighting/subsetting a nearly-duplicate pool,
+> with no systematic gain. **To break past 0.787183 requires injecting a new base learner decorrelated from the existing pool** (non-GBDT:
+> NN/kNN/linear, new features/representations, target transforms, pseudo-labeling) — that is the work of a new base model, not recombining the existing pool.
 
-與階段 5 外部注入的 null **同源**(池已近最優組合、訊號到噪音地板),同一誠實水準的嚴謹負面結果。
-**ERA 第二支柱(外部注入 + 重組)機制皆建置、實測皆無可量測系統性增益**——但兩者都給出了「為何」
-的機制性解釋,並指出真正的 EV 在「注入去相關新基模」。
+This is **homologous** with the Stage 5 external-injection null (the pool is already a near-optimal combination, signal at the noise floor), a rigorous negative result at the same honesty level.
+**ERA's second pillar (external injection + recombination): both mechanisms are built, both measured with no measurable systematic gain** — but both give a mechanistic explanation of "why,"
+and point out that the true EV lies in "injecting a decorrelated new base model."
 
-**可重現**:LLM 重組算子提案(凍結)+ `docs/scripts/`(或 scratchpad)`eval_recombine_s6e1.py`(NNLS/OLS/dirichlet 對照,逐位重現冠軍)。
+**Reproducible**: LLM recombination operator proposal (frozen) + `docs/scripts/` (or scratchpad) `eval_recombine_s6e1.py` (NNLS/OLS/Dirichlet comparison, reproducing the champion bit-for-bit).

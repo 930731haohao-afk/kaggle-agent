@@ -1,0 +1,31 @@
+competition:
+  name: conway-s-reverse-game-of-life
+  title: "Conway's Reverse Game of Life"
+  url: https://www.kaggle.com/competitions/conway-s-reverse-game-of-life
+  metric: MAE
+  metric_direction: minimize
+  category: Playground
+  reward: Swag
+  teams: 141
+  deadline: "2014-03-02"
+
+data:
+  train_file: data/train.csv
+  test_file: data/test.csv
+  sample_submission: data/sampleSubmission.csv
+  train_rows: 50000
+  test_rows: 50000
+  features: 402  # id + delta + 400 stop cells
+  targets: 400   # 400 start cells (binary)
+
+task:
+  type: binary_classification_per_cell
+  description: "Predict the initial 20x20 Game of Life board given the board state after delta steps"
+  board_size: 20
+  cells: 400
+  delta_range: [1, 2, 3, 4, 5]
+
+validation:
+  strategy: stratified_kfold_by_delta
+  n_splits: 5
+  random_state: 42

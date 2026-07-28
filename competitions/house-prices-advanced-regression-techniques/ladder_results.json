@@ -1,0 +1,53 @@
+{
+  "comp": "house-prices-advanced-regression-techniques",
+  "metric": "rmsle",
+  "higher": false,
+  "stages": {
+    "stage1": {
+      "score": 0.131836,
+      "sub": "ladder_stage1_rmsle_0.13184.csv",
+      "weights": {
+        "lgb": 0.0,
+        "xgb": 0.5,
+        "lgb_v2": 0.5
+      }
+    },
+    "stage2": {
+      "score": 0.126051,
+      "sub": "ladder_stage2_rmsle_0.12605.csv",
+      "weights": {
+        "lgb": 0.15,
+        "xgb": 0.05,
+        "cat": 0.8
+      }
+    },
+    "stage3": {
+      "score": 0.122726,
+      "sub": "ladder_stage3_rmsle_0.12273.csv",
+      "weights": {
+        "lgb": 0.003,
+        "xgb": 0.017,
+        "cat": 0.224,
+        "cat_tuned": 0.648,
+        "cat_tuned_s2024": 0.109
+      }
+    },
+    "stage4": {
+      "score": 0.122602,
+      "sub": "ladder_stage4_rmsle_0.12260.csv",
+      "weights": null
+    },
+    "stage5": {
+      "score": 0.122602,
+      "sub": "ladder_stage5_rmsle_0.12260.csv",
+      "weights": null
+    }
+  },
+  "ladder": [
+    0.131836,
+    0.126051,
+    0.122726,
+    0.122602,
+    0.122602
+  ]
+}

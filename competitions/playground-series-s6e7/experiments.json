@@ -129,5 +129,49 @@
     },
     "submission": "s6e7_blend_v1.csv",
     "notes": "prior-adjust=[1.0, 1.5, 1.5]; balanced-accuracy blend"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-20T14:36:33",
+    "model": "v2 blend +tuned+seedbag {'lgbm': np.float64(0.0), 'cat': np.float64(0.25), 'xgb': np.float64(0.25), 'lgbm_tuned': np.float64(0.25), 'lgbm_seed2024': np.float64(0.25)}",
+    "metric": "balanced_accuracy",
+    "direction": "maximize",
+    "score": 0.949979,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "s6e7_blend_v2.csv",
+    "notes": "Optuna fold-0 tuned LGBM + seed-bag added to pool; adj=[1.0, 1.426315789473684, 1.3052631578947367]"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-20T15:22:37",
+    "model": "v3b blend: 5 GBDT + ExtraTrees + fixed MLP",
+    "metric": "balanced_accuracy",
+    "direction": "maximize",
+    "score": 0.950049,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "ensemble": {
+      "weights": {
+        "lgbm": 0.007,
+        "cat": 0.202,
+        "xgb": 0.322,
+        "lgbm_tuned": 0.271,
+        "lgbm_seed2024": 0.138,
+        "et": 0.05,
+        "mlp": 0.011
+      },
+      "score": 0.950049
+    },
+    "submission": "s6e7_blend_v3b.csv",
+    "notes": "public LB 0.94985 (v1 was 0.94939, +0.00046). Diverse non-GBDT members (MLP 0.011, ET 0.050) add ~6% weight only -> CV near-ceiling but real LB gain. MLP needs numeric-NaN median impute + missing-indicators (GBDT eats NaN natively). adj=[1.0, 1.4, 1.3]"
   }
 ]

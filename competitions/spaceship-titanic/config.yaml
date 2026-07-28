@@ -1,0 +1,23 @@
+name: spaceship-titanic
+url: https://www.kaggle.com/competitions/spaceship-titanic
+description: Predict which passengers were transported to an alternate dimension
+problem_type: binary_classification
+evaluation_metric: accuracy
+optimization_direction: maximize
+target_column: Transported
+id_column: PassengerId
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 5
+notes: |
+  8,693 train / 4,277 test. Nearly balanced target (50.4% transported).
+  Mixed features: categorical + numerical. Missing values in most columns (~2%).
+  PassengerId format "GGGG_PP" encodes group and person within group.
+  Cabin format "deck/num/side" encodes spatial location on ship.
+  5 spending features (RoomService, FoodCourt, ShoppingMall, Spa, VRDeck) highly right-skewed.
+  CryoSleep passengers likely spent $0 on all amenities.

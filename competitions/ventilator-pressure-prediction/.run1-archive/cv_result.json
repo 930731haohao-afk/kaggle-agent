@@ -1,0 +1,22 @@
+{
+  "cv_raw": 0.24109043180942535,
+  "cv_snap": 0.24003925919532776,
+  "fold_scores": [
+    0.24109041690826416
+  ],
+  "n_folds_trained": 1,
+  "snap_applied": true,
+  "elapsed_s": 4676.202954292297,
+  "args": {
+    "folds": 5,
+    "max_folds": 1,
+    "epochs": 100,
+    "batch": 1024,
+    "hidden": 256,
+    "layers": 4,
+    "lr": 0.002,
+    "subset": 0,
+    "tag": "lstm_f0",
+    "time_budget": 1000000000.0
+  }
+}

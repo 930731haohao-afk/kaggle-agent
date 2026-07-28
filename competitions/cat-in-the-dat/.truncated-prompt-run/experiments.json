@@ -1,0 +1,180 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T09:51:44",
+    "model": "LogisticRegression-OHE(C=0.1)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.803081,
+    "features": [
+      "one-hot all 23 cols, combined train+test fit, 16552 dims"
+    ],
+    "n_features": 1,
+    "cv": {
+      "strategy": "StratifiedKFold(5, shuffle, seed=42)",
+      "fold_scores": [
+        0.801857,
+        0.804421,
+        0.803209,
+        0.804148,
+        0.801773
+      ]
+    },
+    "notes": "C grid {0.05,0.1,0.2} on same folds: C=0.05:0.801680, C=0.1:0.803081, C=0.2:0.802637"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T09:52:41",
+    "model": "LogisticRegression-OHE(C=0.12)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.803135,
+    "features": [
+      "one-hot all 23 cols, 16552 dims"
+    ],
+    "n_features": 1,
+    "cv": {
+      "strategy": "StratifiedKFold(5, shuffle, seed=42)",
+      "fold_scores": [
+        0.801926,
+        0.804406,
+        0.803444,
+        0.804066,
+        0.801839
+      ]
+    },
+    "notes": "fine C grid: C=0.08:0.802817, C=0.12:0.803135, C=0.15:0.803054; beats coarse best C=0.1 (0.803081), pred_lr.npz updated"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T09:53:05",
+    "model": "LGB-TE",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.784688,
+    "features": [
+      "bin_0",
+      "bin_1",
+      "bin_2",
+      "bin_3",
+      "bin_4",
+      "nom_0",
+      "nom_1",
+      "nom_2",
+      "nom_3",
+      "nom_4",
+      "ord_0",
+      "ord_1",
+      "ord_2",
+      "ord_3",
+      "ord_4",
+      "ord_5",
+      "day",
+      "month",
+      "nom_5_freq",
+      "nom_6_freq",
+      "nom_7_freq",
+      "nom_8_freq",
+      "nom_9_freq",
+      "nom_5_te",
+      "nom_6_te",
+      "nom_7_te",
+      "nom_8_te",
+      "nom_9_te"
+    ],
+    "n_features": 28,
+    "cv": {
+      "strategy": "StratifiedKFold(5, shuffle, seed=42)",
+      "fold_scores": [
+        0.783138,
+        0.784883,
+        0.78667,
+        0.784961,
+        0.783846
+      ]
+    },
+    "notes": "fold-safe smoothed TE (smooth=20) + freq enc for nom_5..9; ords as ints; low-card noms native categorical. best_iters [388, 369, 382, 447, 298]. No imbalance weighting per AUC prior (s3e3/s4e1/s6e2)."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T09:54:46",
+    "model": "LR2-TE(C=0.3)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.790289,
+    "features": [
+      "OHE 18 low/mid-card cols",
+      "fold-safe smoothed TE + log-freq for nom_5..9 (standardized)"
+    ],
+    "n_features": 2,
+    "cv": {
+      "strategy": "StratifiedKFold(5, shuffle, seed=42)",
+      "fold_scores": [
+        0.788679,
+        0.790695,
+        0.792635,
+        0.790016,
+        0.789429
+      ]
+    },
+    "notes": "diversity member for blend; TE fit per training fold only"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T09:55:30",
+    "model": "blend-prob(lr+lgb+lr2)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.803161,
+    "cv": {
+      "strategy": "StratifiedKFold(5, shuffle, seed=42)"
+    },
+    "ensemble": {
+      "members": [
+        "lr",
+        "lgb",
+        "lr2"
+      ],
+      "weights": [
+        0.95,
+        0.05,
+        0.0
+      ],
+      "space": "prob",
+      "search": "simplex grid 0.05"
+    },
+    "submission": "submission.csv",
+    "notes": "prob 0.803161 vs rank 0.803159; solo: lr=0.803135, lgb=0.784688, lr2=0.790289"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-28T09:56:45",
+    "model": "LR3-OHE+ordnum(C=0.12)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.803219,
+    "features": [
+      "OHE 16552",
+      "standardized ord_0..5 ints",
+      "day/month sin-cos"
+    ],
+    "n_features": 3,
+    "cv": {
+      "strategy": "StratifiedKFold(5, shuffle, seed=42)",
+      "fold_scores": [
+        0.801985,
+        0.804511,
+        0.803483,
+        0.804184,
+        0.801941
+      ]
+    },
+    "notes": "tests whether numeric ordinal trend adds signal beyond OHE under L2 shrinkage"
+  }
+]

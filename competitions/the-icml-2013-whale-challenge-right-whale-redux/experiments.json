@@ -1,0 +1,69 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-22T05:44:43.999218+00:00",
+    "stage": "baseline",
+    "model": "LightGBM",
+    "features": "audio features (402)",
+    "cv_strategy": "StratifiedKFold-5",
+    "cv_scores": [
+      0.95257,
+      0.95128,
+      0.94843,
+      0.94843,
+      0.95407
+    ],
+    "cv_mean": 0.95096,
+    "cv_std": 0.00224,
+    "oof_auc": 0.94969,
+    "notes": "LightGBM binary, unbalanced, audio features (mel+MFCC+spectral)"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-22T05:48:09.306176+00:00",
+    "stage": "baseline",
+    "model": "XGBoost",
+    "features": "audio features (402)",
+    "cv_strategy": "StratifiedKFold-5",
+    "cv_scores": [
+      0.95263,
+      0.95199,
+      0.94866,
+      0.94763,
+      0.95211
+    ],
+    "cv_mean": 0.9506,
+    "cv_std": 0.00204,
+    "oof_auc": 0.95019,
+    "notes": "XGBoost binary, scale_pos_weight, audio features"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-22T05:49:47.972931+00:00",
+    "stage": "baseline",
+    "model": "CatBoost",
+    "features": "audio features (402)",
+    "cv_strategy": "StratifiedKFold-5",
+    "cv_scores": [
+      0.95144,
+      0.9489,
+      0.94466,
+      0.94684,
+      0.95092
+    ],
+    "cv_mean": 0.94855,
+    "cv_std": 0.00254,
+    "oof_auc": 0.94844,
+    "notes": "CatBoost binary, balanced weights, audio features"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-22T05:49:48.134470+00:00",
+    "stage": "ensemble",
+    "model": "Weighted Ensemble (LGB=0.4, XGB=0.5, Cat=0.1)",
+    "features": "audio features (402)",
+    "cv_strategy": "StratifiedKFold-5 OOF",
+    "cv_mean": 0.95114,
+    "notes": "Best weights. Simple avg: 0.95081"
+  }
+]

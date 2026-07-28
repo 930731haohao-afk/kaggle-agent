@@ -1,0 +1,154 @@
+[transformers] The tokenizer you are loading from 'microsoft/deberta-v3-base' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+Loading weights:   0%|          | 0/198 [00:00<?, ?it/s]Loading weights: 100%|██████████| 198/198 [00:00<00:00, 24942.10it/s]
+[transformers] [1mDebertaV2ForSequenceClassification LOAD REPORT[0m from: microsoft/deberta-v3-base
+Key                                     | Status     | 
+----------------------------------------+------------+-
+lm_predictions.lm_head.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED | 
+mask_predictions.classifier.weight      | UNEXPECTED | 
+mask_predictions.dense.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED | 
+mask_predictions.dense.weight           | UNEXPECTED | 
+mask_predictions.classifier.bias        | UNEXPECTED | 
+classifier.weight                       | MISSING    | 
+classifier.bias                         | MISSING    | 
+pooler.dense.weight                     | MISSING    | 
+pooler.dense.bias                       | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+
+=== fp32_fused (amp=None, opt=fused, lr=2e-05) ===
+  step   1 loss=0.25449 gnorm=6.7227 pred_std=0.07075 pred_mean=0.0073 nan_params=0
+  step   2 loss=0.12161 gnorm=3.5000 pred_std=0.05804 pred_mean=0.0677 nan_params=0
+  step   3 loss=0.07228 gnorm=2.6152 pred_std=0.05045 pred_mean=0.1050 nan_params=0
+  step  10 loss=0.08663 gnorm=2.7383 pred_std=0.08333 pred_mean=0.5538 nan_params=0
+  step  20 loss=0.08039 gnorm=0.8369 pred_std=0.07871 pred_mean=0.3809 nan_params=0
+  step  30 loss=2.33056 gnorm=50.6875 pred_std=0.25513 pred_mean=-1.1474 nan_params=0
+  step  40 loss=0.33220 gnorm=9.4766 pred_std=0.25592 pred_mean=0.7705 nan_params=0
+  step  50 loss=nan gnorm=nan pred_std=nan pred_mean=nan nan_params=202
+  --> WEIGHTS WENT NaN
+[transformers] The tokenizer you are loading from 'microsoft/deberta-v3-base' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+Loading weights:   0%|          | 0/198 [00:00<?, ?it/s]Loading weights: 100%|██████████| 198/198 [00:00<00:00, 38590.72it/s]
+[transformers] [1mDebertaV2ForSequenceClassification LOAD REPORT[0m from: microsoft/deberta-v3-base
+Key                                     | Status     | 
+----------------------------------------+------------+-
+lm_predictions.lm_head.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED | 
+mask_predictions.classifier.weight      | UNEXPECTED | 
+mask_predictions.dense.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED | 
+mask_predictions.dense.weight           | UNEXPECTED | 
+mask_predictions.classifier.bias        | UNEXPECTED | 
+classifier.weight                       | MISSING    | 
+classifier.bias                         | MISSING    | 
+pooler.dense.weight                     | MISSING    | 
+pooler.dense.bias                       | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+
+=== bf16_fused (amp=torch.bfloat16, opt=fused, lr=2e-05) ===
+  step   1 loss=0.25300 gnorm=6.6953 pred_std=0.07021 pred_mean=0.0083 nan_params=0
+  step   2 loss=0.12032 gnorm=3.4727 pred_std=0.05592 pred_mean=0.0699 nan_params=0
+  step   3 loss=0.07260 gnorm=2.6309 pred_std=0.05073 pred_mean=0.1043 nan_params=0
+  step  10 loss=0.08766 gnorm=2.8828 pred_std=0.07616 pred_mean=0.2476 nan_params=0
+  step  20 loss=0.08758 gnorm=1.4951 pred_std=0.06777 pred_mean=0.4233 nan_params=0
+  step  30 loss=0.09146 gnorm=1.8184 pred_std=0.06170 pred_mean=0.2305 nan_params=0
+  step  40 loss=0.95588 gnorm=17.4688 pred_std=0.08513 pred_mean=1.2485 nan_params=0
+  step  50 loss=0.46682 gnorm=11.3203 pred_std=0.27718 pred_mean=-0.1876 nan_params=0
+  step  60 loss=1.54129 gnorm=65.8750 pred_std=0.75677 pred_mean=-0.5522 nan_params=0
+[transformers] The tokenizer you are loading from 'microsoft/deberta-v3-base' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+Loading weights:   0%|          | 0/198 [00:00<?, ?it/s]Loading weights: 100%|██████████| 198/198 [00:00<00:00, 20283.12it/s]
+[transformers] [1mDebertaV2ForSequenceClassification LOAD REPORT[0m from: microsoft/deberta-v3-base
+Key                                     | Status     | 
+----------------------------------------+------------+-
+lm_predictions.lm_head.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED | 
+mask_predictions.classifier.weight      | UNEXPECTED | 
+mask_predictions.dense.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED | 
+mask_predictions.dense.weight           | UNEXPECTED | 
+mask_predictions.classifier.bias        | UNEXPECTED | 
+classifier.weight                       | MISSING    | 
+classifier.bias                         | MISSING    | 
+pooler.dense.weight                     | MISSING    | 
+pooler.dense.bias                       | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+
+=== bf16_foreach (amp=torch.bfloat16, opt=foreach, lr=2e-05) ===
+  step   1 loss=0.25300 gnorm=6.6953 pred_std=0.07021 pred_mean=0.0083 nan_params=192
+  --> WEIGHTS WENT NaN
+[transformers] The tokenizer you are loading from 'microsoft/deberta-v3-base' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+Loading weights:   0%|          | 0/198 [00:00<?, ?it/s]Loading weights: 100%|██████████| 198/198 [00:00<00:00, 37202.54it/s]
+[transformers] [1mDebertaV2ForSequenceClassification LOAD REPORT[0m from: microsoft/deberta-v3-base
+Key                                     | Status     | 
+----------------------------------------+------------+-
+lm_predictions.lm_head.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED | 
+mask_predictions.classifier.weight      | UNEXPECTED | 
+mask_predictions.dense.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED | 
+mask_predictions.dense.weight           | UNEXPECTED | 
+mask_predictions.classifier.bias        | UNEXPECTED | 
+classifier.weight                       | MISSING    | 
+classifier.bias                         | MISSING    | 
+pooler.dense.weight                     | MISSING    | 
+pooler.dense.bias                       | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+
+=== fp32_foreach (amp=None, opt=foreach, lr=2e-05) ===
+  step   1 loss=0.25449 gnorm=6.7227 pred_std=0.07075 pred_mean=0.0073 nan_params=193
+  --> WEIGHTS WENT NaN
+[transformers] The tokenizer you are loading from 'microsoft/deberta-v3-base' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+Loading weights:   0%|          | 0/198 [00:00<?, ?it/s]Loading weights: 100%|██████████| 198/198 [00:00<00:00, 19911.10it/s]
+[transformers] [1mDebertaV2ForSequenceClassification LOAD REPORT[0m from: microsoft/deberta-v3-base
+Key                                     | Status     | 
+----------------------------------------+------------+-
+lm_predictions.lm_head.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED | 
+mask_predictions.classifier.weight      | UNEXPECTED | 
+mask_predictions.dense.bias             | UNEXPECTED | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED | 
+mask_predictions.dense.weight           | UNEXPECTED | 
+mask_predictions.classifier.bias        | UNEXPECTED | 
+classifier.weight                       | MISSING    | 
+classifier.bias                         | MISSING    | 
+pooler.dense.weight                     | MISSING    | 
+pooler.dense.bias                       | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+
+=== fp32_single (amp=None, opt=single, lr=2e-05) ===
+  step   1 loss=0.25449 gnorm=6.7227 pred_std=0.07075 pred_mean=0.0073 nan_params=193
+  --> WEIGHTS WENT NaN

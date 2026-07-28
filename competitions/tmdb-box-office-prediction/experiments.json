@@ -1,0 +1,42 @@
+[
+  {
+    "version": 1,
+    "name": "catboost_baseline",
+    "cv_rmsle": 2.05552,
+    "lb_public": 2.01895,
+    "lb_private": 2.01895,
+    "note": "CatBoost only, 68 features, no budget imputation"
+  },
+  {
+    "version": 2,
+    "name": "catboost_improved",
+    "cv_rmsle": 2.05132,
+    "lb_public": 2.01063,
+    "lb_private": 2.01063,
+    "note": "CatBoost only, 87 features, target encoding, major studios"
+  },
+  {
+    "version": 3,
+    "name": "avg3_improved",
+    "cv_rmsle": 2.07395,
+    "lb_public": 2.01082,
+    "lb_private": 2.01082,
+    "note": "Simple avg LGB+XGB+CAT, 87 features"
+  },
+  {
+    "version": 4,
+    "name": "ens4_budget_imputed",
+    "cv_rmsle": 2.02234,
+    "lb_public": 1.97279,
+    "lb_private": 1.97279,
+    "note": "BEST: 4-model ensemble (LGB 10% + XGB 20% + CAT 55% + Ridge 15%) with budget imputation"
+  },
+  {
+    "version": 5,
+    "name": "catboost_budget_imputed",
+    "cv_rmsle": 2.03031,
+    "lb_public": 1.98352,
+    "lb_private": 1.98352,
+    "note": "CatBoost only with budget imputation, 76 features"
+  }
+]

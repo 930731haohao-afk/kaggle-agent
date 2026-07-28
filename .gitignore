@@ -38,3 +38,12 @@ competitions*/**/*.pth
 competitions*/**/*.pt
 competitions*/**/*.ckpt
 competitions*/**/*.safetensors
+
+# Large generated/cache artifacts (benchmark machines only)
+competitions/*/data_proc/
+competitions/*/data_official/
+competitions/*/.feb-archive/
+competitions/*/.collided-run/
+competitions/**/*.npz
+competitions/*/submissions/*.csv
+competitions/*/scripts/cache*/

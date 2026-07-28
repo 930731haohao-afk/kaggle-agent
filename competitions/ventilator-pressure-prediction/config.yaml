@@ -1,0 +1,16 @@
+name: ventilator-pressure-prediction
+url: https://www.kaggle.com/competitions/ventilator-pressure-prediction
+description: Simulate a ventilator connected to a sedated patient's lung. Predict the airway pressure in the respiratory circuit during each breath given time series of control inputs (R, C, u_in, u_out). Only the inspiratory phase (u_out == 0) is scored.
+problem_type: regression
+evaluation_metric: mean absolute error (MAE), computed only on inspiratory-phase rows (u_out == 0)
+optimization_direction: minimize
+target_column: pressure
+id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+notes: MLE-bench medium-complexity split (prepared data from mle-bench, graded offline against private split). Time-series grouped by breath_id, 80 timesteps per breath.

@@ -1,47 +1,50 @@
-# 先驗接線實驗(prior wiring):三臂對照 × 五場競賽
+# Prior-Wiring Experiment: three-arm comparison × five competitions
 
-> **回答的問題**:`suggest_priors` 算出的先驗從未被搜尋讀到(write-only,階段 5 no-op 的根因)。
-> 接線之後——機械模板翻譯(A 臂)和 LLM 即時翻譯(B 臂)各能帶來什麼?
-> 日期 2026-07-13(s3e5/s6e1 先導 + 同日跨季三場擴充)。
-> 程式:`tree_search/prior_wiring.py`(翻譯器)、`run_s3e5_wire(_b).py`、`run_s6e1_wire.py`、`run_wire_v3.py`(通用)、`wire_bootstrap_v3.py`。
+> **Question answered**: the priors computed by `suggest_priors` were never read by the search (write-only, the root cause of the Stage 5 no-op).
+> After wiring — what can mechanical-template translation (arm A) and LLM on-the-fly translation (arm B) each bring?
+> Date 2026-07-13 (s3e5/s6e1 pilots + same-day cross-season three-event expansion).
+> Code: `tree_search/prior_wiring.py` (translators), `run_s3e5_wire(_b).py`, `run_s6e1_wire.py`, `run_wire_v3.py` (generic), `wire_bootstrap_v3.py`.
 
-## 設計
+## Design
 
-**配對式三臂**,同場、同折、同快取,OFF 樹永不改動:
+**Paired three-arm**, same event, same folds, same cache, with the OFF tree never modified:
 
-| 臂 | 候選來源 | 實作 |
+| Arm | Candidate source | Implementation |
 |---|---|---|
-| OFF | 只有歷史手寫種子 | 已提交的歷史樹本身(=先驗未送達的真實對照) |
-| A 機械 | + 模板翻譯的先驗候選 | `wire_priors()`:每條先驗處置成 candidate/satisfied/policy/n-a/unmapped 帳本(送達證明),可執行者翻成 config 標 `[PRIOR-INT/EXT-xx]`;決定性、無 RNG |
-| B LLM | + LLM 子代理提案 | 子代理讀「先驗+全搜尋狀態+契約」→ 凍結重放(propose-once)→ 動態白名單驗證(只允許樹上出現過的參數鍵)→ 評估 `[PRIOR-LLM-xx]` → **預先宣告**的全池重 blend |
+| OFF | historical hand-written seeds only | the submitted historical tree itself (= the true control where priors are not delivered) |
+| A mechanical | + template-translated prior candidates | `wire_priors()`: each prior is dispositioned into a candidate/satisfied/policy/n-a/unmapped ledger (delivery proof); the executable ones are translated into configs marked `[PRIOR-INT/EXT-xx]`; deterministic, no RNG |
+| B LLM | + LLM subagent proposals | the subagent reads "priors + full search state + contract" → frozen replay (propose-once) → dynamic-whitelist validation (only parameter keys that appeared in the tree are allowed) → evaluate `[PRIOR-LLM-xx]` → a **pre-declared** full-pool re-blend |
 
-顯著性:paired bootstrap B=10,000(冠軍權重取自 `search_state.node_results` 或 v2 config.result,重算指標**逐位核對**樹上分數;s4e11 見誠實界線)。
+Significance: paired bootstrap B=10,000 (champion weights taken from `search_state.node_results` or v2 config.result, with the metric recomputed and **bit-checked** against the tree score; see the honest boundary for s4e11).
 
-## 五場總表
+## Five-event summary table
 
-| 場 | n | 指標 | A 臂(機械) | B 臂 reblend vs 冠軍 | paired bootstrap(改善量) | LLM 成員權重 |
+| Event | n | Metric | Arm A (mechanical) | Arm B reblend vs champion | paired bootstrap (improvement) | LLM member weight |
 |---|---|---|---|---|---|---|
-| s3e5 | 2,056 | QWK | 冠軍不變 | +0.00051(名義換冠) | CI [−0.0064, +0.0130] **不顯著**(低功效) | 24.4% |
-| s6e1 | 630,000 | R² | 冠軍不變 | +0.000029(換冠) | **[+0.000005, +0.000054] 顯著** ✅ | 29.8%(淺XGB=最大單一權重) |
-| s4e1 | 165,034 | AUC | 冠軍不變 | +0.000071(換冠) | **[+0.000022, +0.000119] 顯著** ✅ | 23.6%(淺XGB #61=0.187) |
-| s4e11 | 140,700 | Accuracy | 冠軍不變 | −0.000215(未換) | [−0.00049, +0.00006] 不顯著 | **0.1%(全被歸零)** |
-| s5e10 | 517,754 | RMSE | 冠軍不變 | −0.000004(未換) | [−0.000007, −0.000001](微幅顯著**變差**) | 10.4% |
+| s3e5 | 2,056 | QWK | champion unchanged | +0.00051 (nominal new champion) | CI [−0.0064, +0.0130] **not significant** (low power) | 24.4% |
+| s6e1 | 630,000 | R² | champion unchanged | +0.000029 (new champion) | **[+0.000005, +0.000054] significant** ✅ | 29.8% (shallow XGB = largest single weight) |
+| s4e1 | 165,034 | AUC | champion unchanged | +0.000071 (new champion) | **[+0.000022, +0.000119] significant** ✅ | 23.6% (shallow XGB #61=0.187) |
+| s4e11 | 140,700 | Accuracy | champion unchanged | −0.000215 (no change) | [−0.00049, +0.00006] not significant | **0.1% (all zeroed out)** |
+| s5e10 | 517,754 | RMSE | champion unchanged | −0.000004 (no change) | [−0.000007, −0.000001] (marginally significant **worse**) | 10.4% |
 
-**s5e10 的 NNLS 診斷(RMSE 有閉式解,post-hoc/探索性)**:擴池 39 員的**真凸最優 = 0.055964 < 冠軍 0.055968**,且給 LLM 成員 **19.1%** 權重(淺CAT #53=0.17);post-hoc bootstrap 改善 +0.0000038,CI [+0.0000017, +0.0000058] 顯著。→ B 臂在 s5e10 的「未過」是 **39 維 Dirichlet 權重搜尋找不到碗底**(近似失敗),不是 LLM 成員沒價值。同類近似失敗也出現在 s6e1-A(30員 blend 低於 21員冠軍)與 s4e11-B(47員 reblend 低於冠軍——冠軍解在可行域內卻沒被搜到)。
+**s5e10's NNLS diagnostic (RMSE has a closed-form solution, post-hoc/exploratory)**: the **true convex optimum of the 39-member expanded pool = 0.055964 < champion 0.055968**,
+giving the LLM members **19.1%** weight (shallow CAT #53=0.17); post-hoc bootstrap improvement +0.0000038, CI [+0.0000017, +0.0000058] significant. → Arm B's "not passing" on s5e10 is a
+**39-dimensional Dirichlet weight search failing to find the bowl bottom** (an approximation failure), not the LLM members having no value. The same kind of approximation failure also appears in
+s6e1-A (the 30-member blend below the 21-member champion) and s4e11-B (the 47-member reblend below the champion — the champion solution is within the feasible region but was not searched).
 
-## 結論
+## Conclusions
 
-1. **write-only 洞已堵死,五場皆有處置帳本**。先驗送達率 100%,每個 [PRIOR-*] 節點可追溯到生成它的先驗。
-2. **A 臂 5/5 場冠軍不變**——同池重加權(與模板可及的保守變體)不可能超過凸最優冠軍,NNLS 定理五場全數驗證。模板庫的誠實侷限:通用流程型先驗多數 unmapped(s6e1/s4e1/s4e11/s5e10 各 ~20/27 條),機械規則翻不動「建議」類知識。
-3. **B 臂(LLM 擴池)5 場中:2 場統計顯著改善(s6e1 R²、s4e1 AUC)、1 場低功效名義正(s3e5)、2 場未過(s4e11、s5e10)**;其中 s5e10 經 NNLS 閉式診斷確認 LLM 成員有真實價值、敗因在權重搜尋近似;s4e11(accuracy,唯一門檻型指標)是最乾淨的「無效」場——權重搜尋把全部 LLM 成員歸零。
-4. **重複出現的贏家原型**:「淺而強正則的異庫模型」(bias-dominated shallow learner)在 s6e1、s4e1 都拿下 LLM 成員中最大權重,s5e10 的 NNLS 解也重用同原型(淺CAT)——「用偏差主導的成員去相關方差主導的池」是可遷移的配方,已值得寫回經驗庫。
-5. **工程建議(由 3 導出)**:RMSE 族競賽的 blend 權重應以 **NNLS 閉式解**取代/校驗 Dirichlet(高維近似誤差已實測 ~1e-5 量級,足以吃掉真實增益);其他指標可用「Dirichlet + 冠軍熱啟動」防止「搜不回已知冠軍」的退化。
-6. **對計畫書的意義**:第二支柱(想法注入)從「honest null(未送達)」升級為「**送達且在 2/5 場產生統計顯著增益**(另 1 場閉式診斷下亦有真值)」——增益絕對量極小(1e-5~1e-4 級)、無實務 LB 意義,但機制與理論預測(NNLS 逃逸條款)完全自洽。
+1. **The write-only hole is sealed, all five events have a disposition ledger.** Prior delivery rate 100%, every [PRIOR-*] node traceable to the prior that generated it.
+2. **Arm A: champion unchanged in 5/5 events** — reweighting the same pool (plus conservative template-reachable variants) cannot beat the convex-optimum champion, and the NNLS theorem is verified in all five events. Honest limitation of the template library: most generic process-type priors are unmapped (s6e1/s4e1/s4e11/s5e10 each ~20/27 entries), and mechanical rules cannot translate "suggestion"-type knowledge.
+3. **Arm B (LLM pool expansion), across 5 events: 2 events with statistically significant improvement (s6e1 R², s4e1 AUC), 1 event low-power nominally positive (s3e5), 2 events not passing (s4e11, s5e10)**; of which s5e10 was confirmed by the NNLS closed-form diagnostic to have real value in the LLM members, the failure lying in the weight-search approximation; s4e11 (accuracy, the only threshold-type metric) is the cleanest "ineffective" event — the weight search zeroed out all LLM members.
+4. **A recurring winning archetype**: the "shallow and heavily-regularized diverse-library model" (bias-dominated shallow learner) took the largest weight among LLM members in both s6e1 and s4e1, and s5e10's NNLS solution also reused the same archetype (shallow CAT) — "using a bias-dominated member to decorrelate a variance-dominated pool" is a transferable recipe, worth writing back into the experience library.
+5. **Engineering recommendation (derived from 3)**: the blend weights for RMSE-family competitions should replace/verify Dirichlet with the **NNLS closed-form solution** (high-dimensional approximation error measured at ~1e-5 magnitude, enough to eat up the real gain); other metrics can use "Dirichlet + champion warm-start" to prevent the degeneracy of "failing to search back to a known champion."
+6. **Meaning for the plan**: the second pillar (idea injection) is upgraded from "honest null (not delivered)" to "**delivered and producing statistically significant gain in 2/5 events** (and 1 more event with a true value under the closed-form diagnostic)" — the absolute magnitude of the gain is extremely small (1e-5~1e-4 level), with no practical LB significance, but the mechanism and the theoretical prediction (NNLS escape clause) are fully self-consistent.
 
-## 誠實界線
+## Honest boundary
 
-- 每場 B 臂只做**一次預先宣告**的 reblend 比較;s5e10 的 NNLS 檢驗是 **post-hoc 探索性**,不計入確認性結論。
-- s4e11 的重算 accuracy(0.940021)與樹上存值(0.940014)差 7e-6——門檻掃描的平手處理與評估器略異;兩者皆低於冠軍,結論不受影響。
-- 全部 CV-only(五場比賽皆關榜),無真實 LB 佐證。
-- LLM 提案凍結後評估可重放;提案本身不可重現(只可重放)。
-- 顯著的兩場增益量級(+3e-5 R²、+7e-5 AUC)在任何實務意義上都可忽略;本實驗的價值在**機制歸因**(先驗送達→擴池→去相關→凸最優上移),不在分數。
+- Each event's arm B makes only **one pre-declared** reblend comparison; s5e10's NNLS test is **post-hoc exploratory** and not counted toward confirmatory conclusions.
+- s4e11's recomputed accuracy (0.940021) differs from the tree-stored value (0.940014) by 7e-6 — the tie-handling of the threshold sweep differs slightly from the evaluator; both are below the champion, and the conclusion is unaffected.
+- All CV-only (all five competitions are closed), with no real-LB corroboration.
+- Once frozen, the LLM proposals can be replayed and evaluated; the proposals themselves are not reproducible (only replayable).
+- The gain magnitudes of the two significant events (+3e-5 R², +7e-5 AUC) are negligible in any practical sense; the value of this experiment lies in **mechanism attribution** (prior delivery → pool expansion → decorrelation → convex optimum shifts up), not in the score.

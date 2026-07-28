@@ -56,6 +56,70 @@ COMPS = {
                    "data_type": "tabular", "keywords": ["rmse", "optuna", "ensemble", "特徵工程"]},
         ctx=dict(has_categorical=True, prob_metric=False),
     ),
+    "s6e2": dict(
+        slug="playground-series-s6e2", eval_mod="eval_s6e2", metric_key="auc",
+        display=lambda s: -s,   # score = -AUC
+        comp_meta={"metric": "auc", "tags": ["binary", "tabular", "heart"],
+                   "data_type": "tabular", "keywords": ["auc", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=False, prob_metric=False),  # all-numeric UCI features
+    ),
+    "s3e7": dict(
+        slug="playground-series-s3e7", eval_mod="eval_s3e7", metric_key="auc",
+        display=lambda s: -s,   # score = -AUC
+        comp_meta={"metric": "auc", "tags": ["binary", "tabular", "cancellation"],
+                   "data_type": "tabular", "keywords": ["auc", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=True, prob_metric=False),
+    ),
+    "s3e14": dict(
+        slug="playground-series-s3e14", eval_mod="eval_s3e14", metric_key="mae",
+        display=lambda s: s,    # score = +MAE (lower-better)
+        comp_meta={"metric": "mae", "tags": ["regression", "tabular"],
+                   "data_type": "tabular", "keywords": ["mae", "optuna", "ensemble", "特徵工程", "共線"]},
+        ctx=dict(has_categorical=False, prob_metric=False),
+    ),
+    "s3e16": dict(
+        slug="playground-series-s3e16", eval_mod="eval_s3e16_v2", metric_key="mae",
+        display=lambda s: s,    # score = rounded MAE (lower-better)
+        comp_meta={"metric": "mae", "tags": ["regression", "tabular", "integer-target"],
+                   "data_type": "tabular", "keywords": ["mae", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=False, prob_metric=False),
+    ),
+    "s3e1": dict(
+        slug="playground-series-s3e1", eval_mod="eval_s3e1", metric_key="rmse", display=lambda s: s,
+        comp_meta={"metric": "rmse", "tags": ["regression", "tabular", "geo"],
+                   "data_type": "tabular", "keywords": ["rmse", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=False, prob_metric=False),
+    ),
+    "s3e3": dict(
+        slug="playground-series-s3e3", eval_mod="eval_s3e3", metric_key="auc", display=lambda s: -s,
+        comp_meta={"metric": "auc", "tags": ["binary", "tabular"],
+                   "data_type": "tabular", "keywords": ["auc", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=True, prob_metric=False),
+    ),
+    "s3e9": dict(
+        slug="playground-series-s3e9", eval_mod="eval_s3e9_v2", metric_key="rmse", display=lambda s: s,
+        comp_meta={"metric": "rmse", "tags": ["regression", "tabular"],
+                   "data_type": "tabular", "keywords": ["rmse", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=False, prob_metric=False),
+    ),
+    "s3e11": dict(
+        slug="playground-series-s3e11", eval_mod="eval_s3e11", metric_key="rmsle", display=lambda s: s,
+        comp_meta={"metric": "rmsle", "tags": ["regression", "tabular"],
+                   "data_type": "tabular", "keywords": ["rmsle", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=False, prob_metric=False),
+    ),
+    "s3e19": dict(
+        slug="playground-series-s3e19", eval_mod="eval_s3e19", metric_key="smape", display=lambda s: s,
+        comp_meta={"metric": "smape", "tags": ["regression", "tabular", "timeseries"],
+                   "data_type": "tabular", "keywords": ["smape", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=True, prob_metric=False),
+    ),
+    "s3e20": dict(
+        slug="playground-series-s3e20", eval_mod="eval_s3e20_v2", metric_key="rmse", display=lambda s: s,
+        comp_meta={"metric": "rmse", "tags": ["regression", "tabular"],
+                   "data_type": "tabular", "keywords": ["rmse", "optuna", "ensemble", "特徵工程"]},
+        ctx=dict(has_categorical=False, prob_metric=False),
+    ),
 }
 
 
@@ -114,8 +178,11 @@ def summarize(off, tree, spec, ledger, out_path):
     off_ids = {n["id"] for n in off["nodes"]}
     for n in tree["nodes"]:
         if n["id"] not in off_ids and n["mutation"].startswith("[PRIOR-"):
-            print(f"  #{n['id']} rank {ranks.get(n['id'])}/{len(ranked)} "
-                  f"{spec['metric_key']}={disp(n['score']):.6f}  {n['mutation'][:85]}")
+            if isinstance(n["score"], (int, float)):
+                print(f"  #{n['id']} rank {ranks.get(n['id'])}/{len(ranked)} "
+                      f"{spec['metric_key']}={disp(n['score']):.6f}  {n['mutation'][:85]}")
+            else:
+                print(f"  #{n['id']} [{n['status']}] {n['mutation'][:85]}")
     json.dump(dict(comp=spec["slug"],
                    off=dict(champion_id=off_c["id"], champion_metric=disp(off_c["score"])),
                    arm=dict(nodes=len(tree["nodes"]), champion_id=new_c["id"],

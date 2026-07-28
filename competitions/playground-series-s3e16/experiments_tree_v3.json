@@ -1,0 +1,897 @@
+{
+  "comp": "playground-series-s3e16",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: s3e16 pool's dominant member -- plain L1-objective LGB, 60% weight in the linear-champion 0.6/0.3/0.1 blend (STATUS.md exp #1, OOF MAE raw 1.35651 / rounded 1.33885), REUSED from scripts/cache/LGB.npz (verified digit-for-digit on BOTH raw and rounded MAE, no retrain)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 63,
+          "min_child_samples": 40,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.33885,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[XGB] vanilla-hyperparam XGB (reg:absoluteerror), OOF raw 1.35763 / rounded 1.34160, 30% weight in linear-champion blend, REUSED from scripts/cache/XGB.npz",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "reg:absoluteerror",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "max_depth": 6,
+          "min_child_weight": 5,
+          "subsample": 0.8,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.3416,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[CAT] vanilla-hyperparam CatBoost (MAE loss), OOF raw 1.36162 / rounded 1.33846, 10% weight in linear-champion blend, REUSED from scripts/cache/CAT.npz",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "MAE",
+          "eval_metric": "MAE",
+          "iterations": 4000,
+          "learning_rate": 0.03,
+          "depth": 7,
+          "l2_leaf_reg": 5.0,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.33846,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[LGB_tuned] Optuna fold0-proxy tuned LGB (21/50 trials, 300s timeout), OOF raw 1.35583 / rounded 1.33979 -- Phase B round1: added to blend, ROUNDED MAE got WORSE (1.33812->1.33850) despite raw improving, REUSED from scripts/cache/LGB_tuned.npz [PRIOR: 超參調校 boundary-condition bullet -- this IS the failure-mode member]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.010194593774108831,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.33979,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[LGB_tuned_seed2024] seed-bagged LGB_tuned (same hyperparams, random_state=2024), OOF raw 1.35604 / rounded 1.33914 -- Phase B round2: added, ROUNDED MAE got WORSE AGAIN (1.33812->1.33893), 2nd consecutive non-improving round -> Phase B STOPPED here, REUSED from scripts/cache/LGB_tuned_seed2024.npz [PRIOR: same boundary-condition bullet]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.010194593774108831,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 2024
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.33914,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[LGBBOUND] BOUNDARY-PUSH (s3e11/s3e5 lever): LGB_tuned's Optuna learning_rate=0.0102 landed almost EXACTLY on tune_lgb_optuna.py's own search box lower bound ([0.01,0.06] log) -- every other tuned param sits interior (22%-85% of its range, see eval_s3e16_v2.py module docstring's full table). Push past the edge, 0.0102->0.005, all other tuned hyperparams unchanged [PRIOR: 超參調校 section's boundary-condition bullet -- direct response to the diagnosed failure mode by attacking the ONE axis that actually saturated, not another generic nudge]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.005,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.3395,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[TWEEDIE] DIVERSE-OBJECTIVE probe (STATUS.md's own 'Untried' list, scripts/pool_lib.train_lgb_tweedie scaffolded but never run): Tweedie loss (variance_power=1.3) targets Age's right-skewed (skew 1.09), non-negative, count-like distribution with a genuinely DIFFERENT loss surface than every other pool member's L1/MAE objective -- attacks Phase B's diagnosed root cause (insufficient OOF-space diversity among near-duplicate LGB variants) directly, rather than another hyperparam nudge on the same objective [PRIOR: MAE/整數目標 section -- rounding is the decision metric; a genuinely different loss surface is the honest way to test whether MORE diversity (not more raw-MAE optimization on the same surface) is what crosses the rounding boundary]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 42,
+          "objective": "tweedie",
+          "tweedie_variance_power": 1.3,
+          "metric": "mae",
+          "learning_rate": 0.02
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.37467,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[POISSON] Second DIVERSE-OBJECTIVE probe, honest sibling to TWEEDIE (not cherry-picking only one count-like head): Poisson objective, Age's positive-integer-count nature is the textbook Poisson use case, plain base hyperparams (not the tuned LGB_tuned set, to isolate the objective-change effect from the boundary-push effect already tested by LGBBOUND) [PRIOR: same MAE/整數目標 diversity rationale as TWEEDIE]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "poisson",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 63,
+          "min_child_samples": 40,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.37501,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[FEATPRUNE] COLLINEAR FEATURE-PRUNED probe (STATUS.md's other 'Untried' idea): Weight ~= Shucked Weight + Viscera Weight + Shell Weight (r=0.993, EDA finding #3) and the 24-feature set ALREADY carries both `parts_sum` (the literal sum of those 3 parts) and `weight_resid` (Weight minus that sum) -- raw `Weight` is fully algebraically recoverable from 2 columns already present, so dropping it tests whether it is pure redundancy or genuinely load-bearing (e.g. via nonlinear tree splits that the ratio/residual features don't expose as directly) [PRIOR: 高共線性特徵 section -- s3e14's precedent that pruning near-perfect-collinear columns can be a real gain, not just noise]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "n_estimators": 3000,
+          "learning_rate": 0.02,
+          "num_leaves": 63,
+          "min_child_samples": 40,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "Weight"
+          ]
+        }
+      },
+      "score": 1.34025,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: 3-way blend root LGB(#0) + XGB(#1) + CAT(#2) -- reproduces the linear champion's EXACT composition (0.6/0.3/0.1) as an internal check that k=800+coord-ascent weight search on THIS module's own metric_fn recovers 1.33812 digit-for-digit before exploring new territory",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.3364,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 9,
+      "mutation": "[BLEND] BLEND: add LGB_tuned solo member (#3) -> 4-way, dirichlet+coord-ascent weight search on rounded MAE [PRIOR: Ensemble/後處理 -- weight search arbitrates, no cost to trying] (parent=#9)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.33635,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 11,
+      "parent_id": 10,
+      "mutation": "[BLEND] BLEND: add LGB_tuned_seed2024 solo member (#4) -> 5-way, dirichlet+coord-ascent weight search on rounded MAE [PRIOR: Ensemble/後處理 -- weight search arbitrates, no cost to trying] (parent=#10)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.33625,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 12,
+      "parent_id": 11,
+      "mutation": "[BLEND] BLEND: add LGBBOUND's best variant so far (#5, rounded MAE=1.33950) -> 6-way -- new territory (Phase B never tested this member as a blend candidate) [PRIOR: LGBBOUND lineage's own prior tag] (parent=#11)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.33616,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 13,
+      "parent_id": 12,
+      "mutation": "[BLEND] BLEND: add TWEEDIE's best variant so far (#6, rounded MAE=1.37467) -> 7-way -- new territory (Phase B never tested this member as a blend candidate) [PRIOR: TWEEDIE lineage's own prior tag] (parent=#12)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.33567,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 14,
+      "parent_id": 13,
+      "mutation": "[BLEND] BLEND: add POISSON's best variant so far (#7, rounded MAE=1.37501) -> 8-way -- new territory (Phase B never tested this member as a blend candidate) [PRIOR: POISSON lineage's own prior tag] (parent=#13)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.3357,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 15,
+      "parent_id": 13,
+      "mutation": "[BLEND] BLEND: add FEATPRUNE's best variant so far (#8, rounded MAE=1.34025) -> 8-way -- new territory (Phase B never tested this member as a blend candidate) [PRIOR: FEATPRUNE lineage's own prior tag] (parent=#13)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.33563,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 16,
+      "parent_id": 15,
+      "mutation": "[BLEND] BLEND: remove lowest-weight member #6 -> leaner 7-way, test whether it was truly adding value [PRIOR: Ensemble/後處理 section -- deleting continuously-zero-weight members is zero-cost] (parent=#15)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          8
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.33566,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 17,
+      "parent_id": 15,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #7 -> 9-way [PRIOR none] (parent=#15)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 1.33576,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 21,
+      "parent_id": 4,
+      "mutation": "[LGB_tuned_seed2024] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=7000 [PRIOR none -- seed-bagging an already-tuned model gave zero/negative rounded gain in Phase B (round2); used here only as a last-resort filler, never counted on for a win] (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.010194593774108831,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 7000
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.33944,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 4,
+      "mutation": "[LGB_tuned_seed2024] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=7001 [PRIOR none -- seed-bagging an already-tuned model gave zero/negative rounded gain in Phase B (round2); used here only as a last-resort filler, never counted on for a win] (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.010194593774108831,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 7001
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.34017,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 4,
+      "mutation": "[LGB_tuned_seed2024] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=7002 [PRIOR none -- seed-bagging an already-tuned model gave zero/negative rounded gain in Phase B (round2); used here only as a last-resort filler, never counted on for a win] (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.010194593774108831,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 7002
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.33966,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 24,
+      "parent_id": 5,
+      "mutation": "[LGBBOUND] LGBBOUND: push further past the box edge, 0.005->0.003 -- brackets whether the boundary-push gain (if any) keeps growing or has already peaked [PRIOR: 超參調校 boundary-condition] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.003,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.34085,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 25,
+      "parent_id": 5,
+      "mutation": "[LGBBOUND] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=7000 [PRIOR none -- seed-bagging an already-tuned model gave zero/negative rounded gain in Phase B (round2); used here only as a last-resort filler, never counted on for a win] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.005,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 7000
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.34066,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 26,
+      "parent_id": 5,
+      "mutation": "[LGBBOUND] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=7001 [PRIOR none -- seed-bagging an already-tuned model gave zero/negative rounded gain in Phase B (round2); used here only as a last-resort filler, never counted on for a win] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.005,
+          "num_leaves": 61,
+          "min_child_samples": 30,
+          "subsample": 0.8094065093571273,
+          "colsample_bytree": 0.7216637100997246,
+          "reg_alpha": 0.1131044878505013,
+          "reg_lambda": 2.563832295704767,
+          "n_estimators": 3000,
+          "random_state": 7001
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 1.33951,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "node_results": {
+      "0": {
+        "n_feats": 24,
+        "mae_raw": 1.35651,
+        "mae_rounded": 1.33885
+      },
+      "1": {
+        "n_feats": null,
+        "mae_raw": 1.35763,
+        "mae_rounded": 1.3416,
+        "reused_from": "scripts/cache/XGB.npz"
+      },
+      "2": {
+        "n_feats": null,
+        "mae_raw": 1.36162,
+        "mae_rounded": 1.33846,
+        "reused_from": "scripts/cache/CAT.npz"
+      },
+      "3": {
+        "n_feats": 24,
+        "mae_raw": 1.35583,
+        "mae_rounded": 1.33979
+      },
+      "4": {
+        "n_feats": 24,
+        "mae_raw": 1.35604,
+        "mae_rounded": 1.33914
+      },
+      "5": {
+        "n_feats": 24,
+        "mae_raw": 1.35587,
+        "mae_rounded": 1.3395
+      },
+      "6": {
+        "n_feats": 24,
+        "mae_raw": 1.39881,
+        "mae_rounded": 1.37467
+      },
+      "7": {
+        "n_feats": 24,
+        "mae_raw": 1.40023,
+        "mae_rounded": 1.37501
+      },
+      "8": {
+        "n_feats": 23,
+        "mae_raw": 1.35731,
+        "mae_rounded": 1.34025
+      },
+      "9": {
+        "members": [
+          0,
+          1,
+          2
+        ],
+        "weights": {
+          "0": 0.6381,
+          "1": 0.0342,
+          "2": 0.3277
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.35629,
+        "mae_rounded": 1.3364
+      },
+      "10": {
+        "members": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "weights": {
+          "0": 0.45,
+          "1": 0.0029,
+          "2": 0.4739,
+          "3": 0.0732
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.35678,
+        "mae_rounded": 1.33635
+      },
+      "11": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "weights": {
+          "0": 0.4325,
+          "1": 0.0113,
+          "2": 0.4835,
+          "3": 0.0,
+          "4": 0.0727
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.35685,
+        "mae_rounded": 1.33625
+      },
+      "12": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "weights": {
+          "0": 0.355,
+          "1": 0.0,
+          "2": 0.4179,
+          "3": 0.0136,
+          "4": 0.2109,
+          "5": 0.0025
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.3564,
+        "mae_rounded": 1.33616
+      },
+      "13": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "weights": {
+          "0": 0.0317,
+          "1": 0.0024,
+          "2": 0.5745,
+          "3": 0.0571,
+          "4": 0.1364,
+          "5": 0.1725,
+          "6": 0.0254
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.35746,
+        "mae_rounded": 1.33567
+      },
+      "14": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.5166,
+          "3": 0.1658,
+          "4": 0.2625,
+          "5": 0.0215,
+          "6": 0.0222,
+          "7": 0.0114
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.3571,
+        "mae_rounded": 1.3357
+      },
+      "15": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8
+        ],
+        "weights": {
+          "0": 0.0198,
+          "1": 0.0256,
+          "2": 0.5061,
+          "3": 0.0075,
+          "4": 0.0626,
+          "5": 0.1117,
+          "6": 0.0004,
+          "8": 0.2662
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.35712,
+        "mae_rounded": 1.33563
+      },
+      "16": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          8
+        ],
+        "weights": {
+          "0": 0.0631,
+          "1": 0.0152,
+          "2": 0.4934,
+          "3": 0.1376,
+          "4": 0.0271,
+          "5": 0.0378,
+          "8": 0.2258
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.35692,
+        "mae_rounded": 1.33566
+      },
+      "17": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "weights": {
+          "0": 0.0237,
+          "1": 0.0101,
+          "2": 0.4998,
+          "3": 0.1288,
+          "4": 0.2763,
+          "5": 0.0034,
+          "6": 0.0242,
+          "7": 0.0028,
+          "8": 0.0308
+        },
+        "method": "dirichlet",
+        "raw_mae": 1.35696,
+        "mae_rounded": 1.33576
+      },
+      "21": {
+        "n_feats": 24,
+        "mae_raw": 1.35617,
+        "mae_rounded": 1.33944
+      },
+      "22": {
+        "n_feats": 24,
+        "mae_raw": 1.3562,
+        "mae_rounded": 1.34017
+      },
+      "23": {
+        "n_feats": 24,
+        "mae_raw": 1.3562,
+        "mae_rounded": 1.33966
+      },
+      "24": {
+        "n_feats": 24,
+        "mae_raw": 1.35641,
+        "mae_rounded": 1.34085
+      },
+      "25": {
+        "n_feats": 24,
+        "mae_raw": 1.35583,
+        "mae_rounded": 1.34066
+      },
+      "26": {
+        "n_feats": 24,
+        "mae_raw": 1.35553,
+        "mae_rounded": 1.33951
+      }
+    },
+    "budget": {
+      "total_budget": 27,
+      "phase": "stopped",
+      "stop_reason": "faithful replay of committed tree"
+    }
+  }
+}

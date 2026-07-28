@@ -1,0 +1,90 @@
+[
+  {
+    "comp": "playground-series-s3e1",
+    "metric": "rmse",
+    "score": 0.56166,
+    "weights": {
+      "LGB": 0.2,
+      "XGB": 0.2,
+      "CAT": 0.6
+    },
+    "time_s": 92.5
+  },
+  {
+    "comp": "playground-series-s3e3",
+    "metric": "roc_auc",
+    "score": 0.81624,
+    "weights": {
+      "LGB": 0.7,
+      "XGB": 0.0,
+      "CAT": 0.3
+    },
+    "time_s": 42.4
+  },
+  {
+    "comp": "playground-series-s3e5",
+    "metric": "quadratic_weighted_kappa",
+    "score": 0.47871,
+    "weights": {
+      "LGB": 0.1,
+      "XGB": 0.4,
+      "CAT": 0.5
+    },
+    "time_s": 46.6
+  },
+  {
+    "comp": "playground-series-s3e7",
+    "metric": "roc_auc",
+    "score": 0.89882,
+    "weights": {
+      "LGB": 0.1,
+      "XGB": 0.6,
+      "CAT": 0.3
+    },
+    "time_s": 120.8
+  },
+  {
+    "comp": "playground-series-s3e9",
+    "metric": "rmse",
+    "score": 12.54287,
+    "weights": {
+      "LGB": 0.0,
+      "XGB": 0.0,
+      "CAT": 1.0
+    },
+    "time_s": 50.2
+  },
+  {
+    "comp": "playground-series-s3e11",
+    "metric": "rmsle",
+    "score": 0.29723,
+    "weights": {
+      "LGB": 0.7,
+      "XGB": 0.0,
+      "CAT": 0.3
+    },
+    "time_s": 228.1
+  },
+  {
+    "comp": "playground-series-s3e14",
+    "metric": "mae",
+    "score": 341.40782,
+    "weights": {
+      "LGB": 0.3,
+      "XGB": 0.3,
+      "CAT": 0.4
+    },
+    "time_s": 85.3
+  },
+  {
+    "comp": "playground-series-s3e19",
+    "metric": "smape",
+    "score": 5.31891,
+    "weights": {
+      "LGB": 0.7,
+      "XGB": 0.0,
+      "CAT": 0.3
+    },
+    "time_s": 140.1
+  }
+]

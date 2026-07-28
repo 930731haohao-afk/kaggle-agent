@@ -1,55 +1,55 @@
-# 計畫書合規盤點(逐條 ↔ 現況)
+# Plan Compliance Audit (clause by clause ↔ current status)
 
-> **用途**:對照《暑期實習計畫:Kaggle 競賽 AI 代理人》(`~/Desktop/Kaggle_AI.pdf`,4 頁)
-> 每一條要求與專案現況,作為**後續計畫推進方向的依據**。
-> **盤點日期**:2026-07-08(讀計畫書本尊後逐條對)。
-> **圖例**:✅ 已達 / ⚠️ 部分或有差異 / ❌ 未做。項目關閉即更新本檔。
+> **Purpose**: to compare, against every requirement of the *Summer Internship Plan: Kaggle Competition AI Agent* (`~/Desktop/Kaggle_AI.pdf`, 4 pages),
+> the project's current status, serving as **the basis for the direction of subsequent plan advancement**.
+> **Audit date**: 2026-07-08 (clause-by-clause comparison after reading the plan itself).
+> **Legend**: ✅ met / ⚠️ partial or with differences / ❌ not done. This file is updated whenever an item is closed.
 
-## 目標(§2)
+## Goals (§2)
 
-| 目標 | 狀態 | 說明 |
+| Goal | Status | Notes |
 |---|---|---|
-| 一 報告自動生成(核心) | ✅ | 15 場報告,§1 what/why + §3 五大元件(資料/模型/訓練/推論/評估)齊全 |
-| 二 報告品質(可只讀報告重建 + rubric 驗收) | ✅ | 驗收三件套已補齊(2026-07-08):rubric 15/15 過、一致性修 5 處、只讀重現 2 場「部分」——見下方 §5 產出驗證 |
-| 三 效能不退步(公開 LB 分位不低於舊版) | ⚠️ | CV 階梯 15 場成立,但**多為 CV-only**(競賽關閉),真實 LB 只有 s3e16 一場 |
-| 四 決策可追溯 | ✅ | 實驗日誌 + experiments.json + 報告 §4 軌跡/轉折點引用 |
-| 五 可重現與可部署(容器化+固定種子+HPC/雲重現) | ⚠️ | 固定種子 ✅、uv ✅;**Docker 容器化 ❌**(改輕量 setup.sh,理由見 REPRODUCE.md) |
+| 1. Automatic report generation (core) | ✅ | 15-competition reports, §1 what/why + §3 the five components (data/model/training/inference/evaluation) all present |
+| 2. Report quality (reconstruction from report only + rubric acceptance) | ✅ | Acceptance trio completed (2026-07-08): rubric 15/15 passed, 5 consistency fixes, report-only reproduction 2 competitions "partial" — see §5 Output Validation below |
+| 3. No performance regression (public LB percentile not below the old version) | ⚠️ | The CV ladder holds across 15 competitions, but **most are CV-only** (competitions closed); real LB exists for only one competition, s3e16 |
+| 4. Traceable decisions | ✅ | Experiment log + experiments.json + report §4 trajectory/turning-point citations |
+| 5. Reproducible and deployable (containerization + fixed seeds + HPC/cloud reproduction) | ⚠️ | Fixed seeds ✅, uv ✅; **Docker containerization ❌** (replaced with lightweight setup.sh, rationale in REPRODUCE.md) |
 
-## 執行策略(§4)+ 迭代(§6)
+## Execution Strategy (§4) + Iteration (§6)
 
-| 要求 | 狀態 | 說明 |
+| Requirement | Status | Notes |
 |---|---|---|
-| 可評分任務為核心 / 樹搜尋取代線性 | ✅ | 階段 4 |
-| 想法注入 | ✅ | 階段 5 快評誠實 null(phase_j_j3_findings);**2026-07-13 接線補完(5 場三臂)**:write-only 洞堵死;機械臂 5/5 驗證 NNLS 定理;**LLM 擴池臂 2/5 場統計顯著**(s6e1 R² +0.000029、s4e1 AUC +0.000071),s5e10 經 NNLS 閉式診斷增益為真(敗於高維 Dirichlet 近似)、s4e11 無效;見 prior_wiring_findings |
-| 想法重組(recombination) | ✅ | 機械版(harness_v4)+ **LLM 版重組算子**皆建置並實測(s6e1 pilot);結構性冗餘(冠軍=NNLS 凸最優、成員誤差相關 0.995)honest null,見 recombine_findings |
-| 模組化+可重現:固定種子 / uv / MLflow | ✅ | 種子✅ uv✅ **MLflow✅**(export_to_mlflow.py→sqlite);結構對映見 reproducibility.md |
-| 報告由 AI 產出 / 停止準則 / 跨賽學習(經驗庫) | ✅ | — |
+| Scorable tasks as the core / tree search replacing linear | ✅ | Stage 4 |
+| Idea injection | ✅ | Stage 5 quick-eval honest null (phase_j_j3_findings); **wiring completed 2026-07-13 (5 competitions, three arms)**: the write-only hole sealed; the mechanical arm verifies the NNLS theorem 5/5; **the LLM pool-expansion arm is statistically significant in 2/5 competitions** (s6e1 R² +0.000029, s4e1 AUC +0.000071); s5e10, via closed-form NNLS diagnosis, has a real gain (lost to the high-dimensional Dirichlet approximation), s4e11 ineffective; see prior_wiring_findings |
+| Idea recombination | ✅ | Both the mechanical version (harness_v4) and the **LLM recombination operator** are built and tested (s6e1 pilot); structural redundancy (champion = NNLS convex optimum, member error correlation 0.995) honest null, see recombine_findings |
+| Modular + reproducible: fixed seeds / uv / MLflow | ✅ | Seeds ✅ uv ✅ **MLflow ✅** (export_to_mlflow.py→sqlite); structural mapping in reproducibility.md |
+| Report produced by AI / stopping criteria / cross-competition learning (experience library) | ✅ | — |
 
-## 產出驗證(§5)—— 已補齊(原最大缺口)
+## Output Validation (§5) — completed (formerly the biggest gap)
 
-| 要求 | 狀態 | 說明 |
+| Requirement | Status | Notes |
 |---|---|---|
-| 成績驗證(CV + LB 分位 + CV↔LB gap) | ⚠️ | CV✅;LB 分位/gap 只有 s3e16(其餘關榜,選配④真實LB待定) |
-| 報告驗證 1:評分檢核表 rubric | ✅ | rubric 建置 + 3 獨立 LLM 評分 15 場全通過(19.5/20),見 report_validation §1 |
-| 報告驗證 2:程式碼一致性檢查 | ✅ | 3 稽核代理比對 15 場,抓 5 真不一致全核實+修正,見 report_validation §2 |
-| 報告驗證 3:只讀報告重現測試 | ✅ | 2 代表場只讀報告重建皆「部分」(流程可重建、逐位受超參未記所限),見 report_validation §3 |
+| Score validation (CV + LB percentile + CV↔LB gap) | ⚠️ | CV ✅; LB percentile/gap for s3e16 only (the rest are closed; optional ④ real LB pending) |
+| Report validation 1: scoring rubric | ✅ | Rubric built + 3 independent LLM scorings, all 15 competitions passed (19.5/20), see report_validation §1 |
+| Report validation 2: code consistency check | ✅ | 3 independent audit agents compared 15 competitions, caught 5 genuine inconsistencies all verified + corrected, see report_validation §2 |
+| Report validation 3: report-only reproduction test | ✅ | 2 representative competitions reconstructed from report only, both "partial" (process reproducible, bit-level limited by unrecorded hyperparameters), see report_validation §3 |
 
-## 缺口處置狀態(③→②→① 已全數完成 2026-07-08)
+## Gap Disposition Status (③→②→① all completed 2026-07-08)
 
-| 缺口 | 狀態 | 結果 |
+| Gap | Status | Result |
 |---|---|---|
-| **③ MLflow + 可復現分層/結構對映文件** | ✅ 完成 | export_to_mlflow.py(284 runs/38場)+ reproducibility.md;commit dda5acb |
-| **② 報告驗證三件套**(rubric / 一致性 / 只讀重現) | ✅ 完成 | rubric 15/15過、一致性抓5真不一致修正、只讀重現2場部分;fb488ac/b46c314/71338d1 |
-| **① 想法重組(LLM 版)** | ✅ 完成 | LLM 重組算子建置+s6e1 pilot 實測;結構性冗餘 honest null(冠軍=NNLS凸最優、成員誤差相關0.995),見 recombine_findings |
-| ④(選配)真實 LB 分位 | ⬜ 待定 | ~1–1.5 天/場,補目標三最大缺口,需挑仍開放的 Playground 場 |
-| ⑤(選配)Docker 容器化 | ⬜ 不做 | arm64 建置風險,改輕量 setup.sh(見下) |
+| **③ MLflow + reproducibility-layering/structural-mapping document** | ✅ Done | export_to_mlflow.py (284 runs / 38 competitions) + reproducibility.md; commit dda5acb |
+| **② Report-validation trio** (rubric / consistency / report-only reproduction) | ✅ Done | rubric 15/15 passed, consistency caught 5 genuine inconsistencies corrected, report-only reproduction 2 competitions partial; fb488ac/b46c314/71338d1 |
+| **① Idea recombination (LLM version)** | ✅ Done | LLM recombination operator built + s6e1 pilot test; structural redundancy honest null (champion = NNLS convex optimum, member error correlation 0.995), see recombine_findings |
+| ④ (optional) real LB percentile | ⬜ Pending | ~1–1.5 days/competition, fills the biggest gap in Goal 3, need to pick a still-open Playground competition |
+| ⑤ (optional) Docker containerization | ⬜ Not doing | arm64 build risk, replaced with lightweight setup.sh (see below) |
 
-**主線與三大缺口全部收尾。** 計畫書除選配 ④(真實 LB,需開放競賽)、⑤(Docker,已決定不做)外,
-逐條達標:五階段方法/兩支柱(重組=honest null 有 NNLS 機制證明;注入=接線後 **2/5 場統計顯著**、
-其餘場有機制診斷,見 prior_wiring_findings)/報告自動生成/報告品質三項驗證/
-決策可追溯/可重現(種子+uv+MLflow)/經驗庫。
+**The main line and all three major gaps are wrapped up.** Apart from the optional ④ (real LB, needs an open competition) and ⑤ (Docker, decided against), the plan is
+met clause by clause: the five-stage method / two pillars (recombination = honest null with NNLS mechanism proof; injection = after wiring, **statistically significant in 2/5 competitions**,
+with mechanism diagnosis for the rest, see prior_wiring_findings) / automatic report generation / the three report-quality validations /
+traceable decisions / reproducibility (seeds + uv + MLflow) / experience library.
 
-## 已定案的方向決策(記此免重議)
+## Finalized Directional Decisions (recorded here to avoid re-litigating)
 
-- **S3 不重訓**:S3(早批)的可復現做在計畫書標準(固定種子 + uv + 實驗記錄)——**已達標**;跨季額外的「逐位決定性」是為認證提交而加、超出計畫書要求的更嚴機制。S3 保留為**合理進步 + 誠實記錄分層**,不花 ~4 天重訓。(對話 2026-07-08 定案。)
-- **Docker 不做**:改輕量 setup.sh + uv.lock(arm64 風險),理由見 REPRODUCE.md。若要投正式論文再議。
+- **S3 no retraining**: S3's (early-batch) reproducibility is done to the plan's standard (fixed seed + uv + experiment logging) — **already met**; the extra cross-season "bit-level determinism" was added to certify submissions, a stricter mechanism beyond the plan's requirement. S3 is retained as **reasonable progress + honest record layering**, not spending ~4 days retraining. (Finalized in the 2026-07-08 conversation.)
+- **Docker not done**: replaced with lightweight setup.sh + uv.lock (arm64 risk), rationale in REPRODUCE.md. To be revisited if submitting a formal paper.

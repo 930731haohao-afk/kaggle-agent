@@ -1,0 +1,12 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T10:00:41",
+    "model": "baseline-all-zeros",
+    "metric": "MAE",
+    "direction": "minimize",
+    "score": 0.1451,
+    "notes": "Predict all cells dead. Train start density 0.1451 = MAE. Copy-stop baseline worse for delta>=2 (0.117-0.174 by delta)."
+  }
+]

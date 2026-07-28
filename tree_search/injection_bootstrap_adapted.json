@@ -1,0 +1,41 @@
+[
+  {
+    "comp": "s3e1",
+    "metric": "rmse",
+    "pool_only": 0.55621,
+    "pool_ext": 0.55626,
+    "delta_mean": -5.9e-05,
+    "ci95": [
+      -0.000228,
+      0.000111
+    ],
+    "significant": false,
+    "bit_check": true
+  },
+  {
+    "comp": "s3e3",
+    "metric": "auc",
+    "pool_only": 0.84161,
+    "pool_ext": 0.8416,
+    "delta_mean": -1e-05,
+    "ci95": [
+      -0.000321,
+      0.000301
+    ],
+    "significant": false,
+    "bit_check": true
+  },
+  {
+    "comp": "s3e19",
+    "metric": "smape",
+    "pool_only": 41.79167,
+    "pool_ext": 41.81377,
+    "delta_mean": -0.022156,
+    "ci95": [
+      -0.027466,
+      -0.016904
+    ],
+    "significant": true,
+    "bit_check": false
+  }
+]

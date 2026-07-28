@@ -1,0 +1,51 @@
+[
+  {
+    "id": "v1_cdf_blended",
+    "timestamp": "20260222_145530",
+    "method": "CDF-based prediction blended with mean",
+    "best_alpha_forward": 1.0,
+    "best_alpha_oracle": 0.4,
+    "cv_rmse_forward": 0.25995358419471215,
+    "cv_rmse_oracle": 0.22905734499874544,
+    "submission_file": "/home/tjyen/ai_agents/kaggle/competitions/icdar2013-stroke-recovery-from-offline-data/submissions/submission_20260222_145530_cdf_blend1.0.csv",
+    "notes": "CDF maps time fraction to x-percentile, y from sliding window mean, blended with skeleton mean"
+  },
+  {
+    "id": "v2_cdf_learned_direction",
+    "timestamp": "20260222_145717",
+    "method": "CDF + correlation direction + \u03b1=0.5 blend",
+    "direction_method": "correlation",
+    "blend_alpha": 0.5,
+    "cv_rmse": 0.25132423751641647,
+    "submission_file": "/home/tjyen/ai_agents/kaggle/competitions/icdar2013-stroke-recovery-from-offline-data/submissions/submission_20260222_145717_correlation_a0.5.csv",
+    "alt_submission": "/home/tjyen/ai_agents/kaggle/competitions/icdar2013-stroke-recovery-from-offline-data/submissions/submission_20260222_145717_majority_a0.4.csv"
+  },
+  {
+    "id": "v3_refined",
+    "timestamp": "20260222_145835",
+    "config": {
+      "name": "sort_x_fwd_corrTrue_a0.6",
+      "sort_by": "x",
+      "base_dir": "fwd",
+      "use_corr_dir": true,
+      "alpha": 0.6
+    },
+    "cv_rmse": 0.24939292460424103,
+    "submission_file": "/home/tjyen/ai_agents/kaggle/competitions/icdar2013-stroke-recovery-from-offline-data/submissions/submission_20260222_145835_best.csv"
+  },
+  {
+    "id": "v4_template_ensemble",
+    "timestamp": "20260222_150015",
+    "method": "template_k5",
+    "cv_rmse": 0.1989560670708898,
+    "submission_file": "/home/tjyen/ai_agents/kaggle/competitions/icdar2013-stroke-recovery-from-offline-data/submissions/submission_20260222_150015_final.csv"
+  },
+  {
+    "id": "v5_ensemble_final",
+    "timestamp": "20260222_150416",
+    "method": "ens_cdf0.5_tmpl50_0.5",
+    "cv_rmse": 0.24515359021231675,
+    "evaluation": "writer-held-out",
+    "submission_file": "/home/tjyen/ai_agents/kaggle/competitions/icdar2013-stroke-recovery-from-offline-data/submissions/submission_20260222_150416_final_ensemble.csv"
+  }
+]

@@ -1,0 +1,15 @@
+Done. Pipeline complete.
+
+**Result: OOF AUC 0.59131** — LogisticRegression(C=0.02) on 5 features `[loading, measurement_17, m3_na, m5_na, measurement_2]`, leave-one-product-out GroupKFold, per-product rank normalization postprocess.
+
+Key findings:
+- Train products A–E vs test F–I disjoint. GroupKFold by product_code mandatory. Simple LR generalizes better than shallow LGBM (0.5906 vs 0.5842 raw OOF) — trees overfit per-product noise.
+- measurement_17 Huber-imputed per product from 4 most-correlated measurements; m3/m5 missingness indicators carry signal (fail rate 0.160/0.254 vs base 0.213).
+- Per-product rank normalization: consistent +0.0007 across all 40 sweep configs (pooled AUC penalizes cross-group distribution shift).
+- LR+LGB blend +0.00002 — noise level, rejected per experience prior.
+
+Deliverables:
+- `competitions/tabular-playground-series-aug-2022/submission.csv` — 20,775 rows, validated vs sample_submission (shape, id order, [0,1], no NaN)
+- `STATUS.md` — 3-line summary at top with final CV
+- `experiments.json` — 7 experiments logged via `log_experiment_v2`
+- `knowledge/experience.md` — 3 new validated entries (disjoint-group AUC + rank-pp, per-group scaling, model-based imputation + NA indicators)

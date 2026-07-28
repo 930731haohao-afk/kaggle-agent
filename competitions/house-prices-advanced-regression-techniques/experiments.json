@@ -1,0 +1,410 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-10T13:56:37.962543",
+    "model": "MeanPredictor",
+    "features": "data/train_processed.csv",
+    "n_features": 88,
+    "params": {},
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.399576,
+      0.399576,
+      0.399576,
+      0.399576,
+      0.399576
+    ],
+    "cv_mean": 0.399576,
+    "cv_std": 0.0,
+    "eval_metric": "rmse_log",
+    "notes": "Naive baseline"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-10T13:56:37.987591",
+    "model": "Ridge",
+    "features": "data/train_processed.csv",
+    "n_features": 88,
+    "params": {
+      "alpha": "10.0"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.118384,
+      0.114576,
+      0.131319,
+      0.124487,
+      0.103628
+    ],
+    "cv_mean": 0.118479,
+    "cv_std": 0.009346,
+    "eval_metric": "rmse_log",
+    "notes": "L2 regularized linear regression"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-10T13:56:38.722611",
+    "model": "Lasso",
+    "features": "data/train_processed.csv",
+    "n_features": 88,
+    "params": {
+      "alpha": "0.0005"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.115579,
+      0.111554,
+      0.131928,
+      0.124231,
+      0.104399
+    ],
+    "cv_mean": 0.117538,
+    "cv_std": 0.009635,
+    "eval_metric": "rmse_log",
+    "notes": "L1 regularized linear regression"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-10T13:56:39.995080",
+    "model": "ElasticNet",
+    "features": "data/train_processed.csv",
+    "n_features": 88,
+    "params": {
+      "alpha": "0.0005",
+      "l1_ratio": "0.5"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.115703,
+      0.111869,
+      0.131701,
+      0.123578,
+      0.103424
+    ],
+    "cv_mean": 0.117255,
+    "cv_std": 0.00971,
+    "eval_metric": "rmse_log",
+    "notes": "L1+L2 regularized linear regression"
+  },
+  {
+    "experiment_id": 5,
+    "timestamp": "2026-02-10T13:56:43.035821",
+    "model": "LightGBM",
+    "features": "data/train_processed.csv",
+    "n_features": 88,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.05",
+      "num_leaves": "31",
+      "max_depth": "5",
+      "min_child_samples": "10",
+      "subsample": "0.8",
+      "colsample_bytree": "0.8",
+      "reg_alpha": "0.1",
+      "reg_lambda": "0.1"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.129012,
+      0.114845,
+      0.125682,
+      0.130223,
+      0.115278
+    ],
+    "cv_mean": 0.123008,
+    "cv_std": 0.006658,
+    "eval_metric": "rmse_log",
+    "notes": "Tuned LightGBM"
+  },
+  {
+    "experiment_id": 6,
+    "timestamp": "2026-02-10T13:56:43.822833",
+    "model": "XGBoost",
+    "features": "data/train_processed.csv",
+    "n_features": 88,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.05",
+      "max_depth": "4",
+      "subsample": "0.8",
+      "colsample_bytree": "0.8",
+      "reg_alpha": "0.1",
+      "reg_lambda": "1.0"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.121244,
+      0.1137,
+      0.120357,
+      0.124896,
+      0.108476
+    ],
+    "cv_mean": 0.117735,
+    "cv_std": 0.005873,
+    "eval_metric": "rmse_log",
+    "notes": "Tuned XGBoost"
+  },
+  {
+    "experiment_id": 7,
+    "timestamp": "2026-02-10T13:56:46.270553",
+    "model": "WeightedEnsemble",
+    "features": "data/train_processed.csv",
+    "n_features": 88,
+    "params": {
+      "models": "Ridge+Lasso+LightGBM+XGBoost",
+      "weights": "0.15+0.15+0.35+0.35"
+    },
+    "cv_strategy": "5-fold",
+    "cv_scores": [
+      0.11699,
+      0.108872,
+      0.120598,
+      0.120988,
+      0.103127
+    ],
+    "cv_mean": 0.114115,
+    "cv_std": 0.007011,
+    "eval_metric": "rmse_log",
+    "notes": "Weighted average of 4 models"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-20T16:06:22",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.132581,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_rmsle_0.13258.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.0), 'xgb': np.float64(0.4), 'lgb_v2': np.float64(0.6)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-20T16:06:56",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.128467,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_rmsle_0.12847.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.25), 'xgb': np.float64(0.0), 'cat': np.float64(0.75)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-20T16:07:56",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.124449,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_rmsle_0.12445.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.036, 'xgb': 0.019, 'cat': 0.129, 'cat_tuned': 0.295, 'cat_tuned_s2024': 0.522}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-20T16:08:36",
+    "model": "[LADDER s4] tree search 24 nodes; champ #15 blend",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.123607,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage4_rmsle_0.12361.csv",
+    "notes": "ladder stage 4; weights=None; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-20T16:08:52",
+    "model": "[LADDER s5] idea-injected pool, final blend (20 members)",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.123607,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage5_rmsle_0.12361.csv",
+    "notes": "ladder stage 5; weights=None; priors=['RMSLE = \u5c0d log1p \u76ee\u6a19\u7684 RMSE:\u5373\u4f7f\u76ee\u6a19\u4e0d\u504f\u614b(skew 0.019)\u4e5f\u61c9\u4ee5 log1p+RMSE objective \u76f4\u63a5\u512a\u5316\u8a72\u6307\u6a19,\u9810\u6e2c expm1 \u9084\u539f\u4e26 clip \u2265 0\u3002 | \u8b49\u64da:s3e11, exp #2/#3 \u5747\u63a1\u6b64\u6cd5;\u65b9\u6cd5\u8ad6\u672c\u8eab\u589e\u76ca\u5c0f(exp #1\u2192#2 \u50c5 -0.00013),\u4f46\u70ba\u6b63\u78ba\u512a\u5316\u76ee\u6a19\u7684\u524d\u63d0\u3002']"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 13,
+    "timestamp": "2026-07-20T16:16:54",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.131836,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_rmsle_0.13184.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.0), 'xgb': np.float64(0.5), 'lgb_v2': np.float64(0.5)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 14,
+    "timestamp": "2026-07-20T16:17:34",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.126051,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_rmsle_0.12605.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.15), 'xgb': np.float64(0.05), 'cat': np.float64(0.8)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 15,
+    "timestamp": "2026-07-20T16:18:13",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.123229,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_rmsle_0.12323.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.007, 'xgb': 0.034, 'cat': 0.268, 'cat_tuned': 0.492, 'cat_tuned_s2024': 0.2}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 16,
+    "timestamp": "2026-07-20T16:18:18",
+    "model": "[LADDER s4] tree search 4 nodes; champ #9 blend",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.123091,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage4_rmsle_0.12309.csv",
+    "notes": "ladder stage 4; weights=None; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 17,
+    "timestamp": "2026-07-20T16:18:29",
+    "model": "[LADDER s5] idea-injected pool, final blend (9 members)",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.123091,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage5_rmsle_0.12309.csv",
+    "notes": "ladder stage 5; weights=None; priors=['RMSLE = \u5c0d log1p \u76ee\u6a19\u7684 RMSE:\u5373\u4f7f\u76ee\u6a19\u4e0d\u504f\u614b(skew 0.019)\u4e5f\u61c9\u4ee5 log1p+RMSE objective \u76f4\u63a5\u512a\u5316\u8a72\u6307\u6a19,\u9810\u6e2c expm1 \u9084\u539f\u4e26 clip \u2265 0\u3002 | \u8b49\u64da:s3e11, exp #2/#3 \u5747\u63a1\u6b64\u6cd5;\u65b9\u6cd5\u8ad6\u672c\u8eab\u589e\u76ca\u5c0f(exp #1\u2192#2 \u50c5 -0.00013),\u4f46\u70ba\u6b63\u78ba\u512a\u5316\u76ee\u6a19\u7684\u524d\u63d0\u3002']"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 18,
+    "timestamp": "2026-07-20T16:25:55",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.131836,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_rmsle_0.13184.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.0), 'xgb': np.float64(0.5), 'lgb_v2': np.float64(0.5)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 19,
+    "timestamp": "2026-07-20T16:26:36",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.126051,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_rmsle_0.12605.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.15), 'xgb': np.float64(0.05), 'cat': np.float64(0.8)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 20,
+    "timestamp": "2026-07-20T16:27:52",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.122726,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_rmsle_0.12273.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.003, 'xgb': 0.017, 'cat': 0.224, 'cat_tuned': 0.648, 'cat_tuned_s2024': 0.109}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 21,
+    "timestamp": "2026-07-20T16:28:33",
+    "model": "[LADDER s4] tree search 24 nodes; champ #9 blend",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.122602,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage4_rmsle_0.12260.csv",
+    "notes": "ladder stage 4; weights=None; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 22,
+    "timestamp": "2026-07-20T16:28:49",
+    "model": "[LADDER s5] idea-injected pool, final blend (20 members)",
+    "metric": "rmsle",
+    "direction": "minimize",
+    "score": 0.122602,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage5_rmsle_0.12260.csv",
+    "notes": "ladder stage 5; weights=None; priors=['RMSLE = \u5c0d log1p \u76ee\u6a19\u7684 RMSE:\u5373\u4f7f\u76ee\u6a19\u4e0d\u504f\u614b(skew 0.019)\u4e5f\u61c9\u4ee5 log1p+RMSE objective \u76f4\u63a5\u512a\u5316\u8a72\u6307\u6a19,\u9810\u6e2c expm1 \u9084\u539f\u4e26 clip \u2265 0\u3002 | \u8b49\u64da:s3e11, exp #2/#3 \u5747\u63a1\u6b64\u6cd5;\u65b9\u6cd5\u8ad6\u672c\u8eab\u589e\u76ca\u5c0f(exp #1\u2192#2 \u50c5 -0.00013),\u4f46\u70ba\u6b63\u78ba\u512a\u5316\u76ee\u6a19\u7684\u524d\u63d0\u3002']"
+  }
+]

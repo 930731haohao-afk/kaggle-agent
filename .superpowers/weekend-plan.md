@@ -106,3 +106,12 @@ G-1 各場樹最佳以 log_experiment_v2 正式寫入 experiments.json(notes 引
 - [x] Phase G-1a 收割完成(commit 1e3beb9;s3e1/s3e3/s3e5/s3e7/s3e16 樹最佳入帳 exp#、報告重產,verify+pdf 全過;s3e16 raw/rounded 反轉記錄在案)
 - [x] Phase G-1b 收割完成(commit 待補;s3e11 0.29528/s3e14 340.35572/s3e19 9.75707(fold-5 double-dip+OOF-fitted scale 警語逐字入 notes)/s3e20 21.0589(純結構節點,明確不採 21.0332 低信心 blend)全數以 log_experiment_v2 入帳,notes 皆引樹檔+node id+CV-only 聲明;4 場 REPORT.md 重產,verify+pdf 全綠;docs/scripts/build_benchmark_table.py 新增機械式 is_tree_entry() 偵測 + tier4 欄位,docs/benchmark_facts.json 重產(11 rows,10 場主表 tier1→tier4 9 勝 1 平手 s3e9),docs/benchmark_summary.md 加 tier4 欄+相對變化欄+「樹搜尋(tier4)」段落,全部既有 caveat 保留並擴充涵蓋 tier4,verify+pdf 過)
 - [ ] C-4 週末總結
+- [x] Phase G-1b 收割+tier-4 完成(commit 37aa7ed;4場入帳;benchmark 四層表:tier1→tier4 s3e20 +25.70/s3e5 +19.21/s3e19 +4.11(t2→t4)/s3e9 +3.77平/s3e3 +3.53/其餘 +0.18~+1.39;全 verify+pdf 過)
+## Phase H(收尾工程)
+- [ ] H-1 v3 上線三需求:harness 層 resume-state 契約、subprocess eval timeout、burst 種子健全性閘(+測試)
+- [ ] H-2 tree search 接進 kaggle-agent skill(SKILL.md 新 Stage 4 節+reference 文件,引用 harness_v3 與預算規則)
+- [ ] C-4 週末總結(最後)
+- [x] Phase H-1 v3 上線工程完成(commit 2ee9eda;resume契約/subprocess timeout/burst健全閘;19新測試82全綠;kill-resume位元級一致;備註:F-2 driver未接新入口,H-2一併處理)
+- [x] Phase H-2 skill 接入完成(commit e87d7af;07_tree_search.md 兩skill同步;run_s3e7_v3 接 H-1 入口+--dry-run;82測試綠)
+- [x] C-4 週末總結完成(docs/weekend_summary.md + pdf)
+- [x] ====== 週末計畫全部完成(A~H,43 單元)——迴圈結束 ======

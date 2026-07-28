@@ -1,0 +1,124 @@
+2026-02-14 16:28:17,978 Loading data...
+2026-02-14 16:28:18,302 Combined shape: (900000, 13), train=630000, test=270000
+2026-02-14 16:28:18,302 Creating enhanced features...
+2026-02-14 16:28:18,357 Adding NEW v5 features...
+2026-02-14 16:28:18,477 Total features: 58 (added 25 new)
+2026-02-14 16:28:18,478 
+======================================================================
+2026-02-14 16:28:18,478 STAGE 1: Training base models with multi-seed averaging
+2026-02-14 16:28:18,478 ======================================================================
+2026-02-14 16:28:18,478 
+── SEED 42 (1/5) ──
+2026-02-14 16:34:02,839   Seed 42 OOF AUC - LGB: 0.95491, Cat: 0.95507, XGB: 0.95482
+2026-02-14 16:34:02,839 
+── SEED 123 (2/5) ──
+2026-02-14 16:39:48,108   Seed 123 OOF AUC - LGB: 0.95489, Cat: 0.95508, XGB: 0.95480
+2026-02-14 16:39:48,108 
+── SEED 456 (3/5) ──
+2026-02-14 16:45:48,218   Seed 456 OOF AUC - LGB: 0.95491, Cat: 0.95510, XGB: 0.95484
+2026-02-14 16:45:48,218 
+── SEED 789 (4/5) ──
+2026-02-14 16:51:33,866   Seed 789 OOF AUC - LGB: 0.95492, Cat: 0.95510, XGB: 0.95486
+2026-02-14 16:51:33,866 
+── SEED 2024 (5/5) ──
+2026-02-14 16:57:19,976   Seed 2024 OOF AUC - LGB: 0.95489, Cat: 0.95509, XGB: 0.95482
+2026-02-14 16:57:20,191 
+Final Multi-Seed OOF AUC:
+2026-02-14 16:57:20,192   LGB: 0.95505
+2026-02-14 16:57:20,192   Cat: 0.95513
+2026-02-14 16:57:20,192   XGB: 0.95500
+2026-02-14 16:57:20,192 
+======================================================================
+2026-02-14 16:57:20,192 STAGE 2: Training meta-learner (stacking)
+2026-02-14 16:57:20,192 ======================================================================
+2026-02-14 16:57:21,054 Stacked OOF AUC: 0.95511
+2026-02-14 16:57:21,054 Meta-model coefficients: [-1.1580326   7.11269064  0.56685522]
+2026-02-14 16:57:21,121 Weighted Average OOF AUC: 0.95519
+2026-02-14 16:57:21,121 Weights: LGB=0.333, Cat=0.334, XGB=0.332
+2026-02-14 16:57:21,121 
+✓ Using WEIGHTED AVERAGE (AUC 0.95519)
+2026-02-14 16:57:21,354 
+Submission saved: /home/tjyen/ai_agents/kaggle/competitions/playground-series-s6e2/submissions/sub_v5_enhanced.csv
+2026-02-14 16:57:21,354 
+======================================================================
+2026-02-14 16:57:21,354 FINAL RESULTS
+2026-02-14 16:57:21,354 ======================================================================
+2026-02-14 16:57:21,354 Features: 58
+2026-02-14 16:57:21,354 Final OOF AUC: 0.95519
+2026-02-14 16:57:21,354 Ensemble: weighted
+2026-02-14 16:57:21,354 Ready for submission!
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[944]	valid_0's auc: 0.955186
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[707]	valid_0's auc: 0.95423
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[868]	valid_0's auc: 0.955079
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[822]	valid_0's auc: 0.954661
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[927]	valid_0's auc: 0.955406
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[791]	valid_0's auc: 0.954532
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[836]	valid_0's auc: 0.956091
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[938]	valid_0's auc: 0.954721
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[870]	valid_0's auc: 0.953649
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[862]	valid_0's auc: 0.955482
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[1160]	valid_0's auc: 0.954462
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[802]	valid_0's auc: 0.955203
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[893]	valid_0's auc: 0.954654
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[841]	valid_0's auc: 0.955171
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[912]	valid_0's auc: 0.955095
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[838]	valid_0's auc: 0.9546
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[934]	valid_0's auc: 0.954895
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[782]	valid_0's auc: 0.955171
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[875]	valid_0's auc: 0.954668
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[902]	valid_0's auc: 0.955277
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[826]	valid_0's auc: 0.955111
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[1010]	valid_0's auc: 0.954823
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[1013]	valid_0's auc: 0.954609
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[845]	valid_0's auc: 0.955408
+Training until validation scores don't improve for 50 rounds
+Early stopping, best iteration is:
+[1002]	valid_0's auc: 0.954529

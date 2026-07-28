@@ -1,0 +1,10 @@
+{
+  "deberta_oof": 0.804052671980817,
+  "lgbm_oof": 0.5826648730226485,
+  "best_blend_r": 0.8076233661300211,
+  "best_w_lgbm": 0.15000000000000002,
+  "best_kind": "linear",
+  "gain": 0.003570694149204079,
+  "adopted": true,
+  "final": "blend_linear_w0.15"
+}

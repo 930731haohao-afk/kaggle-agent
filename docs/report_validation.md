@@ -1,92 +1,92 @@
-# 報告驗證(計畫書 §5)
+# Report Validation (Plan §5)
 
-> 計畫書 §5 三項報告驗證機制的證據。日期:2026-07-08。
-> 1. 評分檢核表 rubric / 2. 程式碼一致性檢查 / 3. 只讀報告重現測試。
+> Evidence for the three report-validation mechanisms in plan §5. Date: 2026-07-08.
+> 1. Scoring rubric / 2. Code consistency check / 3. Report-only reproduction test.
 
-## 1. 評分檢核表 rubric(§5 報告驗證 1)
+## 1. Scoring rubric (§5 report validation 1)
 
-由 **3 個獨立 LLM 子代理**(非報告作者,計畫書「可先由另一個 LLM 比對」)依
-`docs/report_rubric.md`(10 項/滿分 20/門檻 ≥16 且無 0 項)對 15 場評分。
+**3 independent LLM subagents** (not the report authors; the plan's "can first be compared by another LLM") scored the 15 competitions
+per `docs/report_rubric.md` (10 items / max 20 / threshold ≥16 and no item at 0).
 
-| 場 | 總分/20 | 通過 | 缺項(得 1 分的項) |
+| Competition | Total/20 | Passed | Missing items (items scoring 1) |
 |---|---|---|---|
 | s3e1 | 20 | ✅ | — |
-| s3e3 | 19 | ✅ | 項4:KITCHENBLEND 冠軍集成成員/權重/solo 無紀錄 |
-| s3e5 | 19 | ✅ | 項5:無調參後具體超參(僅 Optuna 元設定) |
+| s3e3 | 19 | ✅ | Item 4: KITCHENBLEND champion ensemble members/weights/solo not recorded |
+| s3e5 | 19 | ✅ | Item 5: no concrete post-tuning hyperparameters (only Optuna meta-settings) |
 | s3e7 | 20 | ✅ | — |
 | s3e9 | 20 | ✅ | — |
 | s3e11 | 20 | ✅ | — |
-| s3e14 | 19 | ✅ | 項9:§7 缺階段1基線重現指令 |
-| s3e16 | 18 | ✅ | 項3:§3.1 未述缺失值狀態;項5:無調參後超參 |
+| s3e14 | 19 | ✅ | Item 9: §7 missing Stage 1 baseline reproduction instructions |
+| s3e16 | 18 | ✅ | Item 3: §3.1 does not state missingness status; Item 5: no post-tuning hyperparameters |
 | s3e19 | 20 | ✅ | — |
 | s3e20 | 20 | ✅ | — |
 | s4e1 | 20 | ✅ | — |
-| s4e11 | 19 | ✅ | 項5:CV seed 未明列 + 調參後超參未列 |
+| s4e11 | 19 | ✅ | Item 5: CV seed not explicitly listed + post-tuning hyperparameters not listed |
 | s5e10 | 20 | ✅ | — |
 | s6e1 | 20 | ✅ | — |
-| s6e2 | 19 | ✅ | 項9:§7 缺階段1重現指令 |
+| s6e2 | 19 | ✅ | Item 9: §7 missing Stage 1 reproduction instructions |
 
-**結果:15/15 全通過**(門檻 ≥16 且無任一項為 0);平均 **19.5/20**。
+**Result: 15/15 all passed** (threshold ≥16 and no single item at 0); average **19.5/20**.
 
-**缺項型態 + 修訂狀態(誠實處置)**:
-| 型態 | 場次 | 處置 |
+**Missing-item types + revision status (honest disposition)**:
+| Type | Competitions | Disposition |
 |---|---|---|
-| §3.1 未述缺失值狀態 | s3e16 | ✅ 已補(驗證:無缺失值、無重複列) |
-| §7 缺階段1重現指令 | s3e14, s6e2 | ⓘ 階段1=通用批次/二月既有基線,**非本管線可跑步驟**(是被比較的基線錨點,不需重現);rubric 此項偏嚴,不補假命令,報告仍 19/20 通過 |
-| 冠軍集成權重無紀錄 | s3e3 | ⚠️ 早批 KITCHENBLEND 未存成員權重——記錄限制,不無中生有 |
-| 調參後具體超參未記 | s3e5, s3e16, s4e11 | ⚠️ 早批未存 Optuna best params——記錄限制,誠實標註(即「S3 早批儀表較少」的一環,見 plan_compliance_audit) |
+| §3.1 does not state missingness status | s3e16 | ✅ Added (verified: no missing values, no duplicate rows) |
+| §7 missing Stage 1 reproduction instructions | s3e14, s6e2 | ⓘ Stage 1 = the generic batch / the pre-existing February baseline, **not a runnable step of this pipeline** (it is the baseline anchor being compared against, no reproduction needed); this rubric item is on the strict side, we do not add fake commands, and the report still passes at 19/20 |
+| Champion ensemble weights not recorded | s3e3 | ⚠️ The early-batch KITCHENBLEND did not save member weights — a record limitation, we do not fabricate |
+| Concrete post-tuning hyperparameters not recorded | s3e5, s3e16, s4e11 | ⚠️ The early batch did not save Optuna best params — a record limitation, honestly noted (part of "the S3 early batch has less instrumentation," see plan_compliance_audit) |
 
-**小結**:15 場全通過(平均 19.5/20)。缺項多為**早批紀錄限制**(超參/權重未存),非報告錯誤;
-唯一清楚可補的事實缺口(s3e16 缺失值)已補。這也印證盤點的「S3 早批儀表較少」。
+**Summary**: all 15 competitions passed (average 19.5/20). Missing items are mostly **early-batch record limitations** (hyperparameters/weights not saved), not report errors;
+the only clearly fixable factual gap (s3e16 missingness) has been added. This also corroborates the audit's "the S3 early batch has less instrumentation."
 
-## 2. 程式碼一致性檢查(§5 報告驗證 2)
+## 2. Code consistency check (§5 report validation 2)
 
-由 **3 個獨立稽核子代理**比對「報告所述方法 ↔ 實際程式碼」(CV/模型/後處理/樹配置/冠軍 blend
-五點);每個發現我**逐項對樹狀檔/程式碼核實**(人工抽查)再處置。
+**3 independent audit subagents** compared "the methods described in the report ↔ the actual code" (five points: CV / model / post-processing / tree config / champion blend);
+I **verified every finding item by item against the tree files/code** (manual spot-check) before disposition.
 
-**結果:15 場中 10 場完全一致;5 場找到共 5 個真不一致(皆已核實、已修正措辭,不動任何決策分數)**:
+**Result: 10 of 15 competitions fully consistent; 5 competitions found 5 genuine inconsistencies in total (all verified, wording corrected, no decision scores touched)**:
 
-| 場 | 嚴重度 | 不一致 | 修正 |
+| Competition | Severity | Inconsistency | Correction |
 |---|---|---|---|
-| s5e10 | med | §3.3「無失敗節點」為真錯——邊界推進 node#5 把 min_child_samples 推到非法負值→失敗,連帶 4 個 blend 失敗(+6 去重佔位) | ✅ 改為誠實揭露失敗節點 |
-| s3e3 | med | 階段5快評成員池取 base 樹 3-way(node#7),非 _scale 樹 36-way 真冠軍(node#55);stage5_sweep 未讀 _scale | ✅ §5 加註;結論(階段5=階段4)不受影響 |
-| s3e11 | low | §3.2 DEEPLGB「權重第 3 大」實為第 4 大(0.1783 降冪第 4) | ✅ 改第 4 大 |
-| s6e1 | low | §3.3「無失敗節點」不精確——2 個 status=failed 為去重佔位 | ✅ 改「無真正評估失敗」 |
-| s3e9 | low | §2.3/§3.4「無後處理」但碼對提交 clip(≥0) | ✅ 揭露(no-op) |
+| s5e10 | med | §3.3 "no failed node" is a genuine error — boundary-push node#5 pushed min_child_samples to an illegal negative value → failure, cascading to 4 failed blends (+6 dedup placeholders) | ✅ Changed to honestly disclose the failed node |
+| s3e3 | med | The Stage 5 quick-eval member pool took the base-tree 3-way (node#7), not the _scale-tree 36-way true champion (node#55); stage5_sweep did not read _scale | ✅ Note added to §5; the conclusion (Stage 5 = Stage 4) is unaffected |
+| s3e11 | low | §3.2 DEEPLGB "3rd-largest weight" is actually 4th-largest (0.1783, 4th in descending order) | ✅ Changed to 4th-largest |
+| s6e1 | low | §3.3 "no failed node" is imprecise — 2 status=failed are dedup placeholders | ✅ Changed to "no genuine evaluation failures" |
+| s3e9 | low | §2.3/§3.4 "no post-processing" but the code clips the submission (≥0) | ✅ Disclosed (no-op) |
 
-**評語**:一致性檢查成功抓到 5 個真實報告↔碼落差(2 med / 3 low),多為措辭精確度;最重要的
-s5e10「無失敗節點」原為誤述,已誠實化(邊界推進確會產生非法設定而失敗)。全數修正**不動任何
-回報數字**,僅使敘述與程式碼一致。
+**Assessment**: the consistency check successfully caught 5 genuine report↔code gaps (2 med / 3 low), mostly wording precision; the most important,
+s5e10's "no failed node," was originally a misstatement and has been made honest (a boundary push does produce illegal settings that fail). All corrections **touch no reported
+number**, only bringing the narrative in line with the code.
 
-## 3. 只讀報告重現測試(§5 報告驗證 3)
+## 3. Report-only reproduction test (§5 report validation 3)
 
-派 **2 個獨立代理只讀報告 + 原始資料**(嚴格禁讀任何程式碼/腳本/實驗紀錄/processed CSV),
-從零重建流程、跑分數、量落差。選 2 代表場:s3e1(RMSE,乾淨)、s3e5(QWK 序數,複雜後處理)。
+Dispatched **2 independent agents to read the report + raw data only** (strictly forbidden from reading any code/scripts/experiment logs/processed CSV),
+to reconstruct the process from scratch, run the scores, and measure the gap. Chose 2 representative competitions: s3e1 (RMSE, clean), s3e5 (QWK ordinal, complex post-processing).
 
-| 場 | 重現階段 | 重現分數 | 報告宣稱 | 落差 | 結論 |
+| Competition | Reproduced stage | Reproduced score | Report claim | Gap | Conclusion |
 |---|---|---|---|---|---|
-| s3e1 | 階段2 blend | 0.559287 | 0.558768 | ~0.0005(~0.09%) | 部分 |
-| s3e5 | 階段3(調參+OptimizedRounder) | 0.56265 | 0.56769 | ~0.005 | 部分 |
+| s3e1 | Stage 2 blend | 0.559287 | 0.558768 | ~0.0005 (~0.09%) | Partial |
+| s3e5 | Stage 3 (tuning + OptimizedRounder) | 0.56265 | 0.56769 | ~0.005 | Partial |
 
-**共同結論:「部分」——足以重建流程 + 逼近分數(落差 ~0.09–0.9%),不足以逐位重現。**
-- **可(方法論)**:問題/指標/CV 方案/模型家族/blend 結構/**後處理**都描述完整。s3e5 的 OptimizedRounder
-  切點後處理(本場最大增益來源)文件化尤其充分——重現代理獨立搜出的切點與報告給的每個切點吻合
-  ~0.06 內,強力佐證方法可重建;s3e1 EDA 層完全對得上。
-- **否(逐位)**:因**模型基線超參數、確切工程特徵集**未逐一記錄(§3.3 多自承「無紀錄」),殘差落差
-  正由此而來。與 rubric(§1)發現的「早批未存超參」及盤點「S3 早批儀表較少」一致。
+**Shared conclusion: "partial" — enough to reconstruct the process + approach the score (gap ~0.09–0.9%), not enough to reproduce bit-for-bit.**
+- **Yes (methodology)**: the problem / metric / CV scheme / model family / blend structure / **post-processing** are all fully described. s3e5's OptimizedRounder
+  cut-point post-processing (the biggest gain source in this competition) is especially well documented — the cut points the reproducing agent independently searched out match every cut point given in the report
+  to within ~0.06, strong evidence the method is reconstructable; s3e1's EDA layer matches exactly.
+- **No (bit-level)**: because the **model baseline hyperparameters and exact engineered feature set** are not recorded one by one (§3.3 often admits "not recorded"), the residual gap
+  comes precisely from this. Consistent with the rubric (§1) finding "early batch did not save hyperparameters" and the audit's "the S3 early batch has less instrumentation."
 
-**對目標二的判定**:報告達成「**可只憑報告重建主要決策與流程、落到接近分數**」(目標二核心);
-「逐位重現數字」則受早批未記超參所限——非報告錯誤,而是紀錄粒度。此為誠實的完整度邊界。
+**Verdict for Goal 2**: the reports achieve "**major decisions and process reconstructable from the report alone, landing near the score**" (the core of Goal 2);
+"reproducing the numbers bit-for-bit" is limited by the early batch's unrecorded hyperparameters — not a report error, but a matter of record granularity. This is an honest boundary of completeness.
 
 ---
 
-## 總結(§5 三項報告驗證)
+## Summary (§5 three report validations)
 
-| 機制 | 結果 |
+| Mechanism | Result |
 |---|---|
-| 1 評分檢核表 rubric | 15/15 全通過(平均 19.5/20);缺項多為早批紀錄限制,s3e16 缺失值已補 |
-| 2 程式碼一致性檢查 | 15 場 10 一致;抓到 5 真不一致(2 med/3 low)全核實+修正,不動決策分數 |
-| 3 只讀報告重現測試 | 2 代表場皆「部分」:流程可重建、分數逼近 ~0.09–0.9%,逐位受超參未記所限 |
+| 1 Scoring rubric | 15/15 all passed (average 19.5/20); missing items mostly early-batch record limitations, s3e16 missingness added |
+| 2 Code consistency check | 15 competitions, 10 consistent; caught 5 genuine inconsistencies (2 med/3 low) all verified + corrected, no decision scores touched |
+| 3 Report-only reproduction test | 2 representative competitions both "partial": process reconstructable, score approached ~0.09–0.9%, bit-level limited by unrecorded hyperparameters |
 
-**整體**:報告品質(目標二)在**流程可重建、方法忠實、數字可追溯、關鍵決策可只讀重建**四面達標;
-唯一系統性限制是「早批(S3)未逐一記錄基線超參」,已誠實界定,非報告錯誤。
+**Overall**: report quality (Goal 2) meets the target on all four fronts — **process reconstructable, methods faithful, numbers traceable, key decisions reconstructable from report only**;
+the only systematic limitation is "the early batch (S3) did not record baseline hyperparameters one by one," which is honestly delimited and not a report error.

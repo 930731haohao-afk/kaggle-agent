@@ -1,0 +1,24 @@
+{
+  "competition": "cifar-10",
+  "metric": "accuracy",
+  "metric_direction": "maximize",
+  "experiments": [
+    {
+      "id": 1,
+      "name": "ResNet-18 CIFAR (single model)",
+      "model": "ResNet-18 (CIFAR variant, 11M params)",
+      "augmentation": "RandomCrop(4) + HFlip + ColorJitter + Cutout(16)",
+      "params": {
+        "epochs": 100,
+        "batch_size": 128,
+        "lr": 0.1,
+        "weight_decay": 0.0005,
+        "optimizer": "SGD + CosineAnnealing",
+        "train_split": 0.9
+      },
+      "val_accuracy": 0.9602,
+      "training_time_seconds": 2028.348837852478,
+      "submission_file": "/home/tjyen/ai_agents/kaggle/competitions/cifar-10/submissions/submission_resnet18.csv"
+    }
+  ]
+}

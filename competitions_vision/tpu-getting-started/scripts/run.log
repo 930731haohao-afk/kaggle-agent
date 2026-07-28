@@ -1,0 +1,39 @@
+[10:03:01]   decoding train tfrecords...
+[10:03:06]   train: (12753, 192, 192, 3)
+[10:03:06]   decoding val tfrecords...
+[10:03:07]   val: (3712, 192, 192, 3)
+[10:03:08] tpu-flowers train=(16465, 192, 192, 3) n_classes=104 img=192
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[10:04:00] tier2a resnet18                 best lr=0.001 acc=0.2665 {'0.0001': 0.023860783053561704, '0.0003': 0.07410364609469865, '0.001': 0.266534540684441}
+[10:05:42] tier2a efficientnet_b0          best lr=0.001 acc=0.6879 {'0.0001': 0.09078350730033863, '0.0003': 0.3901081139529597, '0.001': 0.6878747717480201}
+[10:06:47] tier2a mobilenetv3_large_100    best lr=0.001 acc=0.6861 {'0.0001': 0.09641122084362429, '0.0003': 0.3899136384127455, '0.001': 0.6861276522547085}
+[10:07:52] tier2a convnext_atto            best lr=0.0003 acc=0.3948 {'0.0001': 0.25625408731601856, '0.0003': 0.39476886756994517, '0.001': 0.07313510598409025}
+[10:08:40] tier2a vit_tiny_patch16_224     best lr=0.0003 acc=0.4211 {'0.0001': 0.29582472415061145, '0.0003': 0.4211429337656718, '0.001': 0.11368827884744968}
+[10:09:54] tier2b efficientnet_b0          best aug=light acc=0.6908 {'none': 0.6878747717480201, 'light': 0.6907847940218467, 'medium': 0.653927672255327}
+[10:10:40] tier2b mobilenetv3_large_100    best aug=light acc=0.6887 {'none': 0.6861276522547085, 'light': 0.6886523352979538, 'medium': 0.6576137907650869}
+[10:11:13] tier2b vit_tiny_patch16_224     best aug=none acc=0.4211 {'none': 0.4211429337656718, 'light': 0.4021359125553093, 'medium': 0.39590840619676043}
+[10:11:13] PROMOTE: ['efficientnet_b0_light', 'mobilenetv3_large_100_light', 'vit_tiny_patch16_224_none']
+[10:11:13]   decoding test tfrecords...
+[10:11:15]   test: (7382, 192, 192, 3)
+[10:11:15] test=(7382, 192, 192, 3)
+[10:13:51] V3 efficientnet_b0_light fold0: acc=0.9077 (155s)
+[10:16:20] V3 efficientnet_b0_light fold1: acc=0.9095 (305s)
+[10:18:50] V3 efficientnet_b0_light fold2: acc=0.9049 (455s)
+[10:21:21] V3 efficientnet_b0_light fold3: acc=0.9068 (606s)
+[10:23:55] V3 efficientnet_b0_light fold4: acc=0.9128 (759s)
+[10:23:55] V3 CONFIG DONE efficientnet_b0_light: OOF=0.9084
+[10:25:28] V3 mobilenetv3_large_100_light fold0: acc=0.9013 (94s)
+[10:27:01] V3 mobilenetv3_large_100_light fold1: acc=0.9049 (186s)
+[10:28:34] V3 mobilenetv3_large_100_light fold2: acc=0.9028 (279s)
+[10:30:07] V3 mobilenetv3_large_100_light fold3: acc=0.9037 (372s)
+[10:31:39] V3 mobilenetv3_large_100_light fold4: acc=0.9028 (464s)
+[10:31:39] V3 CONFIG DONE mobilenetv3_large_100_light: OOF=0.9031
+[10:32:48] V3 vit_tiny_patch16_224_none fold0: acc=0.9065 (68s)
+[10:33:55] V3 vit_tiny_patch16_224_none fold1: acc=0.9128 (136s)
+[10:35:03] V3 vit_tiny_patch16_224_none fold2: acc=0.8974 (203s)
+[10:36:10] V3 vit_tiny_patch16_224_none fold3: acc=0.9056 (270s)
+[10:37:18] V3 vit_tiny_patch16_224_none fold4: acc=0.9046 (338s)
+[10:37:18] V3 CONFIG DONE vit_tiny_patch16_224_none: OOF=0.9054
+[10:37:19] metric=accuracy solo={'efficientnet_b0_light': 0.90835, 'mobilenetv3_large_100_light': 0.90313, 'vit_tiny_patch16_224_none': 0.90538} equal=0.93015 blend=0.93186 -> blend{'efficientnet_b0_light': 0.288, 'mobilenetv3_large_100_light': 0.253, 'vit_tiny_patch16_224_none': 0.459}
+[10:37:19] submission: /home/tjyen/ai_agents/kaggle/competitions_vision/tpu-getting-started/submissions/vp_submission.csv (7382 rows)
+[10:37:19] tpu-flowers DONE: acc=0.93186 chosen=blend{'efficientnet_b0_light': 0.288, 'mobilenetv3_large_100_light': 0.253, 'vit_tiny_patch16_224_none': 0.459} sub=/home/tjyen/ai_agents/kaggle/competitions_vision/tpu-getting-started/submissions/vp_submission.csv

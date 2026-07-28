@@ -1,0 +1,106 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-23T14:34:22",
+    "model": "lightgbm-lexical-tfidf-baseline",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.611275,
+    "features": [
+      "cos_char",
+      "cos_word",
+      "jaccard",
+      "n_common",
+      "len_a",
+      "len_t",
+      "nw_a",
+      "nw_t",
+      "len_ratio",
+      "a_in_t",
+      "t_in_a",
+      "same_first_word",
+      "context_code",
+      "section"
+    ],
+    "n_features": 14,
+    "cv": {
+      "scheme": "StratifiedKFold5_on_score",
+      "seed": 42
+    },
+    "submission": "submissions/baseline_lgbm.csv",
+    "notes": "Char/word TF-IDF cosine + lexical overlap + context codes. Safety baseline."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-23T16:42:33",
+    "model": "deberta_v3_base-meanpool-bce",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.804053,
+    "features": [
+      "anchor [SEP] target [SEP] section-title context-code"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "GroupKFold4_by_anchor",
+      "seed": 42,
+      "fold_scores": [
+        0.81062,
+        0.80861,
+        0.80023,
+        0.80481
+      ]
+    },
+    "submission": "submissions/deberta_v3_base.csv",
+    "notes": "deberta-v3-base mean-pool head, BCEWithLogits, lr=2e-05, head_lr=0.0001, batch=32, epochs=4, amp=bf16, opt=fused, max_len=64."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-23T17:29:06",
+    "model": "deberta_s1337-meanpool-bce",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.809166,
+    "features": [
+      "anchor [SEP] target [SEP] section-title context-code"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "GroupKFold4_by_anchor",
+      "seed": 1337,
+      "fold_scores": [
+        0.808,
+        0.80989,
+        0.80465,
+        0.815
+      ]
+    },
+    "submission": "submissions/deberta_s1337.csv",
+    "notes": "deberta-v3-base mean-pool head, BCEWithLogits, lr=2e-05, head_lr=0.0001, batch=32, epochs=3, amp=bf16, opt=fused, max_len=96."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-23T17:29:50",
+    "model": "nnls-ensemble-deberta-x2-plus-lgbm",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.81584,
+    "features": [
+      "deberta_v3_base seed42",
+      "deberta_s1337 seed1337",
+      "lgbm lexical tfidf"
+    ],
+    "n_features": 3,
+    "cv": {
+      "scheme": "GroupKFold4_by_anchor",
+      "seed": 42,
+      "note": "all members share this split"
+    },
+    "submission": "submissions/ensemble_nnls.csv",
+    "notes": "NNLS weights 0.361/0.507/0.133. mlebench score 0.85750 (above median 0.851, bronze 0.8616)."
+  }
+]

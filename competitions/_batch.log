@@ -1,0 +1,87 @@
+
+======================================================================
+>>> playground-series-s3e1
+======================================================================
+[playground-series-s3e1] metric=rmse kind=reg target=MedHouseVal train=(37137, 10) test=(24759, 9)
+  per-model rmse: LGB=0.57002  XGB=0.56744  CAT=0.56391  [91s]
+  BEST blend {'LGB': np.float64(0.2), 'XGB': np.float64(0.2), 'CAT': np.float64(0.6)} -> rmse=0.56166
+  wrote sub_generic_0.56166_20260703_120212.csv  (24759 rows)
+RESULT {"comp": "playground-series-s3e1", "metric": "rmse", "score": 0.56166, "weights": {"LGB": 0.2, "XGB": 0.2, "CAT": 0.6}}
+
+======================================================================
+>>> playground-series-s3e3
+======================================================================
+[playground-series-s3e3] metric=roc_auc kind=clf target=Attrition train=(1677, 35) test=(1119, 34)
+  per-model roc_auc: LGB=0.81362  XGB=0.80511  CAT=0.80874  [41s]
+  BEST blend {'LGB': np.float64(0.7), 'XGB': np.float64(0.0), 'CAT': np.float64(0.3)} -> roc_auc=0.81624
+  wrote sub_generic_0.81624_20260703_120255.csv  (1119 rows)
+RESULT {"comp": "playground-series-s3e3", "metric": "roc_auc", "score": 0.81624, "weights": {"LGB": 0.7, "XGB": 0.0, "CAT": 0.3}}
+
+======================================================================
+>>> playground-series-s3e5
+======================================================================
+[playground-series-s3e5] metric=quadratic_weighted_kappa kind=ord target=quality train=(2056, 13) test=(1372, 12)
+  per-model quadratic_weighted_kappa: LGB=0.45223  XGB=0.46995  CAT=0.46768  [46s]
+  BEST blend {'LGB': np.float64(0.1), 'XGB': np.float64(0.4), 'CAT': np.float64(0.5)} -> quadratic_weighted_kappa=0.47871
+  wrote sub_generic_0.47871_20260703_120341.csv  (1372 rows)
+RESULT {"comp": "playground-series-s3e5", "metric": "quadratic_weighted_kappa", "score": 0.47871, "weights": {"LGB": 0.1, "XGB": 0.4, "CAT": 0.5}}
+
+======================================================================
+>>> playground-series-s3e7
+======================================================================
+[playground-series-s3e7] metric=roc_auc kind=clf target=booking_status train=(42100, 19) test=(28068, 18)
+  per-model roc_auc: LGB=0.89536  XGB=0.89821  CAT=0.89668  [119s]
+  BEST blend {'LGB': np.float64(0.1), 'XGB': np.float64(0.6), 'CAT': np.float64(0.3)} -> roc_auc=0.89882
+  wrote sub_generic_0.89882_20260703_120542.csv  (28068 rows)
+RESULT {"comp": "playground-series-s3e7", "metric": "roc_auc", "score": 0.89882, "weights": {"LGB": 0.1, "XGB": 0.6, "CAT": 0.3}}
+
+======================================================================
+>>> playground-series-s3e9
+======================================================================
+[playground-series-s3e9] metric=rmse kind=reg target=Strength train=(5407, 10) test=(3605, 9)
+  per-model rmse: LGB=13.20550  XGB=12.98156  CAT=12.54287  [49s]
+  BEST blend {'LGB': np.float64(0.0), 'XGB': np.float64(0.0), 'CAT': np.float64(1.0)} -> rmse=12.54287
+  wrote sub_generic_12.54287_20260703_120632.csv  (3605 rows)
+RESULT {"comp": "playground-series-s3e9", "metric": "rmse", "score": 12.54287, "weights": {"LGB": 0.0, "XGB": 0.0, "CAT": 1.0}}
+
+======================================================================
+>>> playground-series-s3e11
+======================================================================
+[playground-series-s3e11] metric=rmsle kind=reg_log target=cost train=(360336, 17) test=(240224, 16)
+  per-model rmsle: LGB=0.29731  XGB=0.29877  CAT=0.29770  [226s]
+  BEST blend {'LGB': np.float64(0.7), 'XGB': np.float64(0.0), 'CAT': np.float64(0.3)} -> rmsle=0.29723
+  wrote sub_generic_0.29723_20260703_121020.csv  (240224 rows)
+RESULT {"comp": "playground-series-s3e11", "metric": "rmsle", "score": 0.29723, "weights": {"LGB": 0.7, "XGB": 0.0, "CAT": 0.3}}
+
+======================================================================
+>>> playground-series-s3e14
+======================================================================
+[playground-series-s3e14] metric=mae kind=reg target=yield train=(15289, 18) test=(10194, 17)
+  per-model mae: LGB=345.32118  XGB=344.13027  CAT=344.24276  [84s]
+  BEST blend {'LGB': np.float64(0.3), 'XGB': np.float64(0.3), 'CAT': np.float64(0.4)} -> mae=341.40782
+  wrote sub_generic_341.40782_20260703_121146.csv  (10194 rows)
+RESULT {"comp": "playground-series-s3e14", "metric": "mae", "score": 341.40782, "weights": {"LGB": 0.3, "XGB": 0.3, "CAT": 0.4}}
+
+======================================================================
+>>> playground-series-s3e19
+======================================================================
+[playground-series-s3e19] metric=smape kind=reg target=num_sold train=(136950, 6) test=(27375, 5)
+  per-model smape: LGB=5.45633  XGB=7.41858  CAT=6.09778  [139s]
+  BEST blend {'LGB': np.float64(0.7), 'XGB': np.float64(0.0), 'CAT': np.float64(0.3)} -> smape=5.31891
+  wrote sub_generic_5.31891_20260703_121406.csv  (27375 rows)
+RESULT {"comp": "playground-series-s3e19", "metric": "smape", "score": 5.31891, "weights": {"LGB": 0.7, "XGB": 0.0, "CAT": 0.3}}
+
+
+======================================================================
+SUMMARY
+======================================================================
+  playground-series-s3e1       rmse   = 0.56166    weights={'LGB': 0.2, 'XGB': 0.2, 'CAT': 0.6} (92.5s)
+  playground-series-s3e3       roc_auc = 0.81624    weights={'LGB': 0.7, 'XGB': 0.0, 'CAT': 0.3} (42.4s)
+  playground-series-s3e5       quadratic_weighted_kappa = 0.47871    weights={'LGB': 0.1, 'XGB': 0.4, 'CAT': 0.5} (46.6s)
+  playground-series-s3e7       roc_auc = 0.89882    weights={'LGB': 0.1, 'XGB': 0.6, 'CAT': 0.3} (120.8s)
+  playground-series-s3e9       rmse   = 12.54287   weights={'LGB': 0.0, 'XGB': 0.0, 'CAT': 1.0} (50.2s)
+  playground-series-s3e11      rmsle  = 0.29723    weights={'LGB': 0.7, 'XGB': 0.0, 'CAT': 0.3} (228.1s)
+  playground-series-s3e14      mae    = 341.40782  weights={'LGB': 0.3, 'XGB': 0.3, 'CAT': 0.4} (85.3s)
+  playground-series-s3e19      smape  = 5.31891    weights={'LGB': 0.7, 'XGB': 0.0, 'CAT': 0.3} (140.1s)
+
+wrote competitions/_batch_results.json

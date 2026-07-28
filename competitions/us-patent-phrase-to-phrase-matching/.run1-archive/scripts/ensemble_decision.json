@@ -1,0 +1,21 @@
+{
+  "members": [
+    "deberta_v3_base",
+    "deberta_s1337",
+    "lgbm"
+  ],
+  "member_oof": {
+    "deberta_v3_base": 0.804052671980817,
+    "deberta_s1337": 0.8091659249390224,
+    "lgbm": 0.5826648730226485
+  },
+  "candidates": {
+    "nnls": 0.8158396735785781,
+    "deberta_mean": 0.8136956963744933,
+    "deberta_mean+lgbm0.125": 0.8156604186535089
+  },
+  "chosen": "nnls",
+  "chosen_oof": 0.8158396735785781,
+  "previous_oof": 0.8076233661300211,
+  "updated": true
+}

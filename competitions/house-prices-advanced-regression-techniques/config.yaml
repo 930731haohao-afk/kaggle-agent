@@ -1,0 +1,20 @@
+name: house-prices
+url: https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques
+description: Predict residential house sale prices in Ames, Iowa
+problem_type: regression
+evaluation_metric: rmse
+optimization_direction: minimize
+target_column: SalePrice
+id_column: Id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 5
+notes: |
+  Metric is RMSLE (Root Mean Squared Log Error) on log-transformed SalePrice.
+  81 features covering almost every aspect of residential homes.
+  Target is right-skewed (skew=1.88) - log transform recommended.

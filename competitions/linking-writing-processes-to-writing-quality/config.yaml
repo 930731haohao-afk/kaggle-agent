@@ -1,0 +1,24 @@
+name: linking-writing-processes-to-writing-quality
+url: https://www.kaggle.com/c/linking-writing-processes-to-writing-quality
+description: Predict essay quality scores from keystroke log data (writing process)
+problem_type: regression
+evaluation_metric: rmse
+optimization_direction: minimize
+target_column: score
+id_column: id
+train_file: train_logs.csv
+train_scores_file: train_scores.csv
+test_file: test_logs.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes:
+  - "Keystroke-level log data, NOT essay text (characters anonymized as 'q')"
+  - "2,471 train essays, 3 test essays (placeholder — real test is hidden, likely code competition)"
+  - "~3,400 events per essay on average (8.4M total rows)"
+  - "Target: 0.5 to 6.0 in 0.5 increments (12 levels, treat as regression)"
+  - "Must engineer all features from writing process signals (timing, revision, navigation)"
+  - "Essays ~30 min each, ~378 words average"

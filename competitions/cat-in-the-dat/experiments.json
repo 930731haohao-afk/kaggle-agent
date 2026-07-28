@@ -1,0 +1,109 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T11:07:18",
+    "model": "LogisticRegression OHE C=0.1",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.803103,
+    "features": [
+      "full one-hot 16552 cols, train+test union categories"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_folds": 5,
+      "seed": 42
+    },
+    "notes": "Baseline solo. C sweep: 0.05->0.801734, 0.1->0.803103, 0.2->0.802699. lbfgs tol 1e-5."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T11:07:18",
+    "model": "LGBM native-categorical",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.776214,
+    "features": [
+      "label-encoded 23 cols, nom_*/day/month as LGBM categorical"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_folds": 5,
+      "seed": 42
+    },
+    "notes": "Native cat splits overfit high-card noms; far below LR. deterministic, 10 threads."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T11:07:18",
+    "model": "LGBM + fold-safe TE",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.797328,
+    "features": [
+      "ordinal-mapped ords, TE(smoothing=20) on nom_0-9/ord_5/day/month, nested 4-subfold TE on train rows"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_folds": 5,
+      "seed": 42
+    },
+    "notes": "Better than native cat but still below LR-OHE \u2014 linear-friendly data confirmed."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T11:07:18",
+    "model": "Greedy blend (5 members)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.803169,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_folds": 5,
+      "seed": 42
+    },
+    "ensemble": {
+      "weights": {
+        "lr_c010": 0.75,
+        "lr_c020": 0.25
+      },
+      "search": "greedy forward w/ replacement, 60 steps"
+    },
+    "notes": "LGB members zeroed by weight search. +0.00007 over best solo. Completes linear-protocol prerequisite for tree search."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T12:08:33",
+    "model": "Tree search champion: kitchen-sink mega-blend (node #55)",
+    "metric": "auc",
+    "direction": "maximize",
+    "score": 0.803272,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_folds": 5,
+      "seed": 42
+    },
+    "ensemble": {
+      "members": 38,
+      "nonzero_weights": 17,
+      "top_weights": {
+        "lr_C0.12": 0.3723,
+        "lr_C0.1_root": 0.1658,
+        "lr_C0.2": 0.1403,
+        "lr_C0.13": 0.0447,
+        "lgb_te_reg": 0.0732
+      },
+      "search": "harness_v3 dirichlet k=800->cost-guard k=200 + coordinate ascent"
+    },
+    "submission": "submission.csv",
+    "notes": "harness_v3 tree search, 60/60 nodes, root=lr_c010 digit-verified 0.803103. Champion from mandatory explore-burst mega-blend of entire solo pool. evals-to-beat-linear-best: eval #10 (first BLEND seed, 0.803226 > 0.803169). Honest leave-fold-out weight re-fit: 0.803231 (in-sample optimism +0.000041). OOF-only, not LB-validated. LRPAIRS (interaction crosses) hurt LR everywhere (best 0.796539 vs 0.803103); LGBTE tuning peaked 0.798865; dedup_rejections=10; cost-guard fired on all big blends (~46-60s -> k=200); burst sanity gate: both long-shots PASS (deep LGB 0.797445, LR C=1.0 pairs_ord5 0.770255)."
+  }
+]

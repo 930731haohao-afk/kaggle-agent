@@ -1,0 +1,44 @@
+name: predict-energy-behavior-of-prosumers
+url: https://www.kaggle.com/competitions/predict-energy-behavior-of-prosumers
+description: Predict energy production and consumption of Estonian prosumers to reduce imbalance costs
+problem_type: regression
+evaluation_metric: mae  # Mean Absolute Error
+optimization_direction: minimize
+target_column: target
+id_column: row_id
+competition_type: code_competition  # Time-series API, not CSV upload
+
+# Data files
+train_file: train.csv
+auxiliary_files:
+  - client.csv
+  - electricity_prices.csv
+  - gas_prices.csv
+  - historical_weather.csv
+  - forecast_weather.csv
+  - weather_station_to_county_mapping.csv
+  - county_id_to_name_map.json
+
+# Train data characteristics
+date_range: "2021-09-01 to 2023-05-31"
+n_rows: 2018352
+n_prediction_units: 69  # county x is_business x product_type
+n_data_blocks: 638  # ~638 days
+prediction_granularity: hourly  # 24 hours per day per unit
+is_consumption_values: [0, 1]  # 0=production, 1=consumption
+
+# Key columns
+key_columns:
+  - county  # 16 Estonian counties (0-15)
+  - is_business  # 0=residential, 1=business
+  - product_type  # 0-3, energy product types
+  - is_consumption  # 0=production, 1=consumption
+  - data_block_id  # links all tables, ~1 per day
+  - prediction_unit_id  # 69 unique units
+
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: false
+  daily_submission_limit: 5
+  code_competition: true  # Must submit notebook, not CSV

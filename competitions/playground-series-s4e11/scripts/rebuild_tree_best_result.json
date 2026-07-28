@@ -1,0 +1,101 @@
+{
+  "winner_node_id": 26,
+  "kind": "blend",
+  "target_oof_accuracy": 0.940235,
+  "decision_threshold": 0.48999999999999977,
+  "members": [
+    {
+      "node_id": 2,
+      "model": "xgb",
+      "accuracy": 0.939254,
+      "max_abs_diff_oof": 0.0,
+      "max_abs_diff_pred": 0.0,
+      "gate_ok": true,
+      "wall_s": 18.9,
+      "n_feats": 28
+    },
+    {
+      "node_id": 3,
+      "model": "cat",
+      "accuracy": 0.939112,
+      "max_abs_diff_oof": 0.0,
+      "max_abs_diff_pred": 0.0,
+      "gate_ok": true,
+      "wall_s": 24.2,
+      "n_feats": 28
+    },
+    {
+      "node_id": 4,
+      "model": "lgb",
+      "accuracy": 0.939872,
+      "max_abs_diff_oof": 5.5289106626332796e-14,
+      "max_abs_diff_pred": 1.3766765505351941e-14,
+      "gate_ok": true,
+      "wall_s": 15.4,
+      "n_feats": 28
+    },
+    {
+      "node_id": 6,
+      "model": "lgb",
+      "accuracy": 0.939119,
+      "max_abs_diff_oof": 0.0,
+      "max_abs_diff_pred": 0.0,
+      "gate_ok": true,
+      "wall_s": 30.0,
+      "n_feats": 25
+    },
+    {
+      "node_id": 9,
+      "model": "lgb",
+      "accuracy": 0.9399,
+      "max_abs_diff_oof": 1.2989609388114332e-14,
+      "max_abs_diff_pred": 3.3306690738754696e-15,
+      "gate_ok": true,
+      "wall_s": 18.0,
+      "n_feats": 28
+    },
+    {
+      "node_id": 10,
+      "model": "lgb",
+      "accuracy": 0.939943,
+      "max_abs_diff_oof": 2.986499936241671e-14,
+      "max_abs_diff_pred": 5.551115123125783e-15,
+      "gate_ok": true,
+      "wall_s": 18.3,
+      "n_feats": 28
+    },
+    {
+      "node_id": 11,
+      "model": "lgb",
+      "accuracy": 0.939908,
+      "max_abs_diff_oof": 2.098321516541546e-14,
+      "max_abs_diff_pred": 3.219646771412954e-15,
+      "gate_ok": true,
+      "wall_s": 19.4,
+      "n_feats": 28
+    },
+    {
+      "node_id": 12,
+      "model": "lgb",
+      "accuracy": 0.939993,
+      "max_abs_diff_oof": 8.548717289613705e-15,
+      "max_abs_diff_pred": 2.1649348980190553e-15,
+      "gate_ok": true,
+      "wall_s": 20.0,
+      "n_feats": 28
+    }
+  ],
+  "recovered_weights": {
+    "2": 0.04466859575930837,
+    "3": 0.0017864387542165423,
+    "4": 0.18564577887606876,
+    "6": 0.04321268480188266,
+    "9": 0.06096700161295802,
+    "10": 0.6029843450502915,
+    "11": 0.044337758143153175,
+    "12": 0.01639739700212104
+  },
+  "gate_pass": true,
+  "submission_file": "sub_tree_best_0.94024_20260707_131655.csv",
+  "total_wall_s": 191.2
+}

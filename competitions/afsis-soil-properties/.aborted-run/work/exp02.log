@@ -1,0 +1,136 @@
+warning: `VIRTUAL_ENV=/home/tjyen/pytorch/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead
+ridge_raw_a10                MCRMSE 0.62512  0.467 1.086 0.479 0.600 0.495
+ridge_raw_a100               MCRMSE 0.59666  0.428 1.011 0.470 0.582 0.493
+ridge_raw_a1000              MCRMSE 0.60733  0.444 0.985 0.486 0.604 0.517
+ridge_raw_a10000             MCRMSE 0.67009  0.621 0.979 0.546 0.633 0.571
+ridge_raw_aux_a10            MCRMSE 0.62440  0.476 1.074 0.516 0.573 0.483
+ridge_raw_aux_a100           MCRMSE 0.59119  0.419 1.016 0.485 0.560 0.476
+ridge_raw_aux_a1000          MCRMSE 0.60132  0.435 0.990 0.483 0.586 0.512
+ridge_raw_aux_a10000         MCRMSE 0.66792  0.617 0.980 0.539 0.633 0.571
+ridge_snv_a10                MCRMSE 0.64785  0.505 1.135 0.478 0.599 0.523
+ridge_snv_a100               MCRMSE 0.61581  0.462 1.051 0.471 0.576 0.519
+ridge_snv_a1000              MCRMSE 0.60575  0.436 0.993 0.468 0.610 0.521
+ridge_snv_a10000             MCRMSE 0.64747  0.555 0.980 0.506 0.649 0.548
+ridge_snv_aux_a10            MCRMSE 0.64004  0.516 1.099 0.497 0.578 0.510
+ridge_snv_aux_a100           MCRMSE 0.60737  0.460 1.042 0.482 0.557 0.496
+ridge_snv_aux_a1000          MCRMSE 0.59984  0.430 0.997 0.468 0.594 0.510
+ridge_snv_aux_a10000         MCRMSE 0.64601  0.553 0.981 0.503 0.646 0.547
+ridge_sg1_a10                MCRMSE 0.71709  0.575 1.240 0.504 0.684 0.582
+ridge_sg1_a100               MCRMSE 0.63942  0.486 1.116 0.462 0.624 0.510
+ridge_sg1_a1000              MCRMSE 0.59926  0.455 1.019 0.452 0.579 0.491
+ridge_sg1_a10000             MCRMSE 0.61284  0.445 0.984 0.504 0.624 0.509
+ridge_sg1_aux_a10            MCRMSE 0.70878  0.572 1.211 0.514 0.684 0.564
+ridge_sg1_aux_a100           MCRMSE 0.63376  0.482 1.096 0.471 0.620 0.500
+ridge_sg1_aux_a1000          MCRMSE 0.59482  0.452 1.013 0.456 0.572 0.481
+ridge_sg1_aux_a10000         MCRMSE 0.61144  0.443 0.984 0.503 0.620 0.507
+ridge_sg2_a10                MCRMSE 0.76302  0.665 1.285 0.533 0.702 0.629
+ridge_sg2_a100               MCRMSE 0.66986  0.543 1.162 0.483 0.638 0.524
+ridge_sg2_a1000              MCRMSE 0.61705  0.461 1.044 0.496 0.601 0.484
+ridge_sg2_a10000             MCRMSE 0.62822  0.444 0.986 0.560 0.637 0.515
+ridge_sg2_aux_a10            MCRMSE 0.75564  0.676 1.290 0.542 0.677 0.593
+ridge_sg2_aux_a100           MCRMSE 0.66575  0.539 1.154 0.493 0.628 0.515
+ridge_sg2_aux_a1000          MCRMSE 0.61243  0.456 1.037 0.496 0.597 0.477
+ridge_sg2_aux_a10000         MCRMSE 0.62608  0.442 0.985 0.557 0.634 0.514
+ridge_snv_sg1_a10            MCRMSE 0.73773  0.620 1.232 0.535 0.694 0.608
+ridge_snv_sg1_a100           MCRMSE 0.66154  0.543 1.112 0.470 0.652 0.530
+ridge_snv_sg1_a1000          MCRMSE 0.62080  0.514 1.021 0.450 0.611 0.509
+ridge_snv_sg1_a10000         MCRMSE 0.62274  0.478 0.983 0.492 0.640 0.521
+ridge_snv_sg1_aux_a10        MCRMSE 0.72844  0.619 1.208 0.537 0.695 0.583
+ridge_snv_sg1_aux_a100       MCRMSE 0.65450  0.542 1.090 0.476 0.646 0.518
+ridge_snv_sg1_aux_a1000      MCRMSE 0.61624  0.512 1.014 0.453 0.605 0.497
+ridge_snv_sg1_aux_a10000     MCRMSE 0.62157  0.477 0.983 0.492 0.637 0.519
+[ridge 48s]
+
+pls_raw_k10                  MCRMSE 0.64110  0.509 0.988 0.526 0.622 0.561
+pls_raw_k20                  MCRMSE 0.62415  0.441 1.063 0.482 0.638 0.496
+pls_raw_k40                  MCRMSE 0.68887  0.522 1.285 0.507 0.611 0.520
+pls_snv_k10                  MCRMSE 0.64751  0.494 1.004 0.532 0.637 0.570
+pls_snv_k20                  MCRMSE 0.62194  0.443 1.045 0.479 0.599 0.543
+pls_snv_k40                  MCRMSE 0.66659  0.501 1.197 0.516 0.574 0.545
+pls_sg1_k10                  MCRMSE 0.63464  0.461 0.995 0.534 0.619 0.563
+pls_sg1_k20                  MCRMSE 0.64046  0.440 1.137 0.521 0.598 0.506
+pls_sg1_k40                  MCRMSE 0.68154  0.502 1.262 0.468 0.639 0.537
+pls_sg2_k10                  MCRMSE 0.66193  0.465 1.022 0.641 0.641 0.541
+pls_sg2_k20                  MCRMSE 0.66212  0.467 1.112 0.553 0.667 0.511
+pls_sg2_k40                  MCRMSE 0.70401  0.486 1.349 0.522 0.648 0.515
+pls_snv_sg1_k10              MCRMSE 0.65036  0.488 0.997 0.544 0.665 0.557
+pls_snv_sg1_k20              MCRMSE 0.65534  0.507 1.112 0.513 0.603 0.541
+pls_snv_sg1_k40              MCRMSE 0.70208  0.586 1.247 0.485 0.651 0.541
+[pls 115s]
+
+svr_raw_g0.5_C3              MCRMSE 0.63006  0.587 0.998 0.502 0.569 0.495
+svr_raw_g0.5_C10             MCRMSE 0.59128  0.481 0.991 0.494 0.516 0.474
+svr_raw_g0.5_C30             MCRMSE 0.56568  0.418 0.982 0.484 0.474 0.470
+svr_raw_g0.5_C100            MCRMSE 0.55074  0.377 0.978 0.481 0.448 0.469
+svr_raw_g1_C3                MCRMSE 0.61906  0.554 0.992 0.509 0.543 0.497
+svr_raw_g1_C10               MCRMSE 0.58469  0.463 0.985 0.501 0.489 0.485
+svr_raw_g1_C30               MCRMSE 0.56758  0.407 0.987 0.501 0.462 0.480
+svr_raw_g1_C100              MCRMSE 0.58947  0.389 1.034 0.541 0.477 0.506
+svr_raw_g2_C3                MCRMSE 0.62031  0.552 0.987 0.518 0.543 0.502
+svr_raw_g2_C10               MCRMSE 0.60177  0.480 0.995 0.532 0.508 0.494
+svr_raw_g2_C30               MCRMSE 0.62436  0.464 1.056 0.574 0.518 0.510
+svr_raw_g2_C100              MCRMSE 0.67910  0.455 1.212 0.624 0.568 0.536
+svr_snv_g0.5_C3              MCRMSE 0.59090  0.501 0.988 0.455 0.528 0.484
+svr_snv_g0.5_C10             MCRMSE 0.54680  0.372 0.978 0.440 0.471 0.473
+svr_snv_g0.5_C30             MCRMSE 0.54135  0.360 0.977 0.431 0.459 0.479
+svr_snv_g0.5_C100            MCRMSE 0.55345  0.379 0.980 0.439 0.454 0.516
+svr_snv_g1_C3                MCRMSE 0.57690  0.451 0.983 0.453 0.513 0.484
+svr_snv_g1_C10               MCRMSE 0.55453  0.371 0.977 0.445 0.488 0.491
+svr_snv_g1_C30               MCRMSE 0.56221  0.386 0.982 0.445 0.477 0.520
+svr_snv_g1_C100              MCRMSE 0.59803  0.428 1.041 0.473 0.485 0.563
+svr_snv_g2_C3                MCRMSE 0.59902  0.496 0.975 0.470 0.547 0.506
+svr_snv_g2_C10               MCRMSE 0.59558  0.468 0.981 0.476 0.522 0.530
+svr_snv_g2_C30               MCRMSE 0.61878  0.488 1.015 0.497 0.531 0.562
+svr_snv_g2_C100              MCRMSE 0.65613  0.492 1.104 0.538 0.546 0.600
+svr_sg1_g0.5_C3              MCRMSE 0.57930  0.437 0.972 0.426 0.581 0.480
+svr_sg1_g0.5_C10             MCRMSE 0.56475  0.406 0.954 0.412 0.566 0.486
+svr_sg1_g0.5_C30             MCRMSE 0.56743  0.409 0.949 0.420 0.559 0.500
+svr_sg1_g0.5_C100            MCRMSE 0.59845  0.423 1.013 0.454 0.572 0.530
+svr_sg1_g1_C3                MCRMSE 0.60289  0.524 0.959 0.442 0.599 0.490
+svr_sg1_g1_C10               MCRMSE 0.59395  0.492 0.949 0.431 0.590 0.507
+svr_sg1_g1_C30               MCRMSE 0.61010  0.500 0.985 0.448 0.593 0.525
+svr_sg1_g1_C100              MCRMSE 0.63118  0.505 1.051 0.463 0.600 0.537
+svr_sg1_g2_C3                MCRMSE 0.65027  0.665 0.955 0.479 0.640 0.513
+svr_sg1_g2_C10               MCRMSE 0.64837  0.636 0.967 0.480 0.632 0.528
+svr_sg1_g2_C30               MCRMSE 0.65881  0.637 0.999 0.488 0.637 0.534
+svr_sg1_g2_C100              MCRMSE 0.66274  0.637 1.017 0.488 0.637 0.534
+svr_sg2_g0.5_C3              MCRMSE 0.61301  0.515 0.971 0.482 0.615 0.481
+svr_sg2_g0.5_C10             MCRMSE 0.59469  0.474 0.963 0.469 0.588 0.479
+svr_sg2_g0.5_C30             MCRMSE 0.60210  0.484 0.981 0.479 0.572 0.495
+svr_sg2_g0.5_C100            MCRMSE 0.62485  0.485 1.068 0.496 0.571 0.504
+svr_sg2_g1_C3                MCRMSE 0.63916  0.625 0.962 0.503 0.623 0.483
+svr_sg2_g1_C10               MCRMSE 0.63268  0.596 0.970 0.499 0.606 0.492
+svr_sg2_g1_C30               MCRMSE 0.64618  0.597 1.026 0.507 0.604 0.497
+svr_sg2_g1_C100              MCRMSE 0.65585  0.597 1.074 0.507 0.604 0.497
+svr_sg2_g2_C3                MCRMSE 0.69020  0.763 0.962 0.555 0.664 0.507
+svr_sg2_g2_C10               MCRMSE 0.69336  0.750 0.989 0.559 0.659 0.509
+svr_sg2_g2_C30               MCRMSE 0.69972  0.750 1.021 0.559 0.659 0.509
+svr_sg2_g2_C100              MCRMSE 0.69996  0.750 1.022 0.559 0.659 0.509
+svr_snv_sg1_g0.5_C3          MCRMSE 0.58455  0.465 0.971 0.424 0.578 0.485
+svr_snv_sg1_g0.5_C10         MCRMSE 0.56700  0.429 0.951 0.411 0.555 0.489
+svr_snv_sg1_g0.5_C30         MCRMSE 0.57022  0.423 0.946 0.429 0.551 0.503
+svr_snv_sg1_g0.5_C100        MCRMSE 0.60059  0.429 1.021 0.460 0.563 0.529
+svr_snv_sg1_g1_C3            MCRMSE 0.60633  0.546 0.956 0.441 0.595 0.495
+svr_snv_sg1_g1_C10           MCRMSE 0.59948  0.513 0.947 0.445 0.587 0.505
+svr_snv_sg1_g1_C30           MCRMSE 0.61803  0.520 0.993 0.462 0.592 0.524
+svr_snv_sg1_g1_C100          MCRMSE 0.64450  0.521 1.077 0.483 0.599 0.542
+svr_snv_sg1_g2_C3            MCRMSE 0.65145  0.666 0.949 0.488 0.640 0.513
+svr_snv_sg1_g2_C10           MCRMSE 0.65305  0.641 0.964 0.497 0.635 0.529
+svr_snv_sg1_g2_C30           MCRMSE 0.66712  0.640 1.010 0.506 0.640 0.539
+svr_snv_sg1_g2_C100          MCRMSE 0.67158  0.639 1.030 0.507 0.640 0.542
+[svr 103s]
+
+Traceback (most recent call last):
+  File "/home/tjyen/ai_agents/kaggle/competitions/afsis-soil-properties/scripts/exp02_bank.py", line 108, in <module>
+  File "/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 753, in savez_compressed
+    _savez(file, args, kwds, True, allow_pickle=allow_pickle)
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 779, in _savez
+    zipf = zipfile_factory(file, mode="w", compression=compression)
+  File "/home/tjyen/ai_agents/kaggle/.venv/lib/python3.13/site-packages/numpy/lib/_npyio_impl.py", line 112, in zipfile_factory
+    return zipfile.ZipFile(file, *args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tjyen/.local/share/uv/python/cpython-3.13.12-linux-aarch64-gnu/lib/python3.13/zipfile/__init__.py", line 1383, in __init__
+    self.fp = io.open(file, filemode)
+              ~~~~~~~^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/tjyen/ai_agents/kaggle/competitions/afsis-soil-properties/work/bank_v1.npz'

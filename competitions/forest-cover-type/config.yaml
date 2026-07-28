@@ -1,0 +1,23 @@
+name: forest-cover-type
+url: https://www.kaggle.com/competitions/forest-cover-type-prediction
+description: Predict forest cover type from cartographic variables (7-class classification)
+problem_type: multiclass_classification
+evaluation_metric: accuracy
+optimization_direction: maximize
+target_column: Cover_Type
+id_column: Id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sampleSubmission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 5
+notes: |
+  7 forest cover types, perfectly balanced training set (2160 each).
+  15K train vs 566K test — unusual ratio, overfitting risk is high.
+  Features: 10 continuous (elevation, slope, distances, hillshade),
+  4 binary wilderness area indicators, 40 binary soil type indicators.
+  Soil_Type7 and Soil_Type15 are constant (all zeros) in train — drop them.
+  All features already numeric, no missing values.

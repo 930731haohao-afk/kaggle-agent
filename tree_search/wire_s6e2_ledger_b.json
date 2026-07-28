@@ -1,0 +1,56 @@
+{
+  "comp": "playground-series-s6e2",
+  "off": {
+    "champion_id": 43,
+    "champion_metric": 0.955529
+  },
+  "arm": {
+    "nodes": 64,
+    "champion_id": 43,
+    "champion_metric": 0.955529
+  },
+  "ledger": [
+    {
+      "tag": "PRIOR-LLM-00",
+      "status": "evaluated",
+      "node_id": 60,
+      "metric": 0.955291,
+      "wall_s": 62.5,
+      "prior_tags": [
+        "INT-02",
+        "INT-05"
+      ],
+      "expected": "Solo AUC ~0.953-0.955 (below the deep members) but lowest error-correlation; realistic shot at nonzero blend weight."
+    },
+    {
+      "tag": "PRIOR-LLM-01",
+      "status": "evaluated",
+      "node_id": 61,
+      "metric": 0.95534,
+      "wall_s": 204.5,
+      "prior_tags": [
+        "INT-02"
+      ],
+      "expected": "Solo AUC ~0.953-0.955; CatBoost's ordered boosting at shallow depth gives a differently-correlated error surface than the shallow XGB/LGB."
+    },
+    {
+      "tag": "PRIOR-LLM-02",
+      "status": "evaluated",
+      "node_id": 62,
+      "metric": 0.955296,
+      "wall_s": 130.5,
+      "prior_tags": [
+        "INT-02",
+        "INT-04"
+      ],
+      "expected": "Solo AUC ~0.951-0.954; an extreme-bias depth-2 stump-like learner, most decorrelated of the three."
+    },
+    {
+      "tag": "PRIOR-LLM-REBLEND",
+      "status": "evaluated",
+      "node_id": 63,
+      "metric": 0.955516,
+      "wall_s": 150.9
+    }
+  ]
+}

@@ -1,0 +1,306 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "mean predictor (naive baseline)",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 1.02421,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5
+    },
+    "notes": "Per-fold training-mean per target. Reference point for all later scores."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "Ridge (SVD, per-target alpha) on raw spectra, CO2 band dropped",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 0.48877,
+    "features": [
+      "3563 MIR absorbance cols (m7497.96-m599.76 minus 2352-2380 CO2 band)"
+    ],
+    "n_features": 1,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5
+    },
+    "notes": "Best single preprocessing variant of round 1; per-target RMSE Ca 0.3935 P 0.9609 pH 0.3589 SOC 0.3600 Sand 0.3706. Adding the 15 spatial cols + Depth gives 0.48668."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "7-variant Ridge per-target greedy blend",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 0.47787,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5,
+      "note": "full-OOF weight fit (optimistic)"
+    },
+    "ensemble": {
+      "type": "per-target greedy forward selection with replacement",
+      "members": [
+        "raw",
+        "sg1",
+        "sg2",
+        "snv",
+        "snv_sg1",
+        "raw_spatial",
+        "sg1_spatial"
+      ]
+    },
+    "notes": "Round 1. Equal-weight blend of the same 7 was only 0.48777 \u2014 weights must be searched."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "16-member blend (Ridge + PLS + SVR-RBF)",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 0.47338,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5,
+      "note": "NESTED score; full-OOF weight fit was 0.45515 (optimism +0.01823)"
+    },
+    "ensemble": {
+      "type": "per-target greedy forward selection",
+      "n_members_pool": 16
+    },
+    "postprocess": [
+      "per-target shrink calibration (b=0.96-1.04) \u2014 noise-level, +0.0004, dropped"
+    ],
+    "notes": "Round 2. SVR members earn weight despite weak solo scores (svr_raw solo 0.684, still 0.20 weight on Ca) \u2014 solo strength is not the criterion for pool membership."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "Kernel Ridge RBF (per-variant), solo",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 0.45244,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5,
+      "note": "hyperparameters picked per target on the full OOF \u2014 optimistic; honest inner-CV version of the same model scores 0.46661"
+    },
+    "notes": "Rounds 3-4. KRR-RBF on SNV + Savitzky-Golay 1st-derivative (window 41) is the strongest single family, beating the best plain Ridge (0.48668) by 0.034. Kernelising is a bigger lever than any preprocessing choice."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "52-member blend (leaky-hyperparameter pool)",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 0.44861,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5,
+      "note": "NESTED blend weights, but member hyperparameters still chosen on full OOF"
+    },
+    "ensemble": {
+      "type": "bagged greedy (25 bags, 50% member subsample)",
+      "n_members_pool": 52
+    },
+    "notes": "Round 5. Method (plain vs bagged greedy) chosen by nested score, not full-OOF score."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "log-shifted and winsorized target KRR variants",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 0.46725,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5
+    },
+    "notes": "Round 5, diagnostic. Targets are heavily right-skewed (P 7.45, Ca 4.71, SOC 2.45) but log-shifted fits are worse than raw-target fits on every variant (krrlog best 0.47216 vs krr 0.45244); winsorizing at p99 also worse (0.46725). The metric is plain RMSE, so squashing the tail costs more than it buys. Not used."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "H_lap_* Laplacian-kernel KRR members added to honest pool",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 0.44903,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5,
+      "note": "NESTED"
+    },
+    "notes": "Round 7, REVERTED. Solo 0.485-0.558, and the 36-member pool's nested score is worse than the 32-member pool's 0.44817. L1 distance geometry adds no usable diversity here."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-28T09:46:30",
+    "model": "FINAL: honest-pool 32-member per-target greedy blend (KRR-RBF / Ridge / SVR / PLS)",
+    "metric": "MCRMSE",
+    "direction": "minimize",
+    "score": 0.44817,
+    "cv": {
+      "strategy": "GroupKFold-5 on spatial-signature site (seed 42)",
+      "folds": 5,
+      "fold_scores": [
+        0.42543196652446025,
+        0.3554590207554374,
+        0.4515820537332095,
+        0.42475817299259405,
+        0.520894565329172
+      ],
+      "note": "score = NESTED (leave-fold-out blend-weight fit); full-OOF weight fit gives 0.43129 (optimism +0.01688). Every member's hyperparameters are selected by inner CV on outer-train rows only, so the pool carries no selection leakage."
+    },
+    "base_models": [
+      {
+        "name": "H_krr_raw",
+        "weights_per_target": [
+          0.3333,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "H_krr_snv",
+        "weights_per_target": [
+          0.0,
+          0.0,
+          0.0,
+          0.3333,
+          0.0714
+        ]
+      },
+      {
+        "name": "H_krr_snv_sg1",
+        "weights_per_target": [
+          0.3333,
+          0.25,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "H_krr_snv_sg2",
+        "weights_per_target": [
+          0.0,
+          0.25,
+          0.0,
+          0.0,
+          0.2143
+        ]
+      },
+      {
+        "name": "H_krr_snv_sg1_w41",
+        "weights_per_target": [
+          0.3333,
+          0.0,
+          0.6667,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "H_krr_sg1_spatial",
+        "weights_per_target": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0714
+        ]
+      },
+      {
+        "name": "H_krr_raw_spatial",
+        "weights_per_target": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1429
+        ]
+      },
+      {
+        "name": "H_krr_sg1_fp",
+        "weights_per_target": [
+          0.0,
+          0.25,
+          0.3333,
+          0.0,
+          0.2143
+        ]
+      },
+      {
+        "name": "H_krr_raw_fp",
+        "weights_per_target": [
+          0.0,
+          0.0,
+          0.0,
+          0.6667,
+          0.0
+        ]
+      },
+      {
+        "name": "H_ridge_raw_spatial",
+        "weights_per_target": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1429
+        ]
+      },
+      {
+        "name": "svr_sg1_C100_e0.05",
+        "weights_per_target": [
+          0.0,
+          0.25,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "name": "svr_raw_C1000_e0.1",
+        "weights_per_target": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0714
+        ]
+      },
+      {
+        "name": "svr_snv_sg1_C1000_e0.1",
+        "weights_per_target": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0714
+        ]
+      }
+    ],
+    "ensemble": {
+      "type": "per-target greedy forward selection with replacement",
+      "n_members_pool": 32,
+      "n_members_used": 13
+    },
+    "submission": "submission.csv",
+    "notes": "Per-target full-OOF RMSE: Ca 0.2877 P 0.90055 pH 0.32245 SOC 0.31898 Sand 0.32675. P is ~2.8x the error of every other target and is the binding constraint on MCRMSE."
+  }
+]

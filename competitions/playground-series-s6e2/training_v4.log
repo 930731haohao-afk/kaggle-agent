@@ -1,0 +1,504 @@
+2026-02-12 15:30:35,156 Loading data...
+2026-02-12 15:30:35,460 Combined shape: (900000, 13), train=630000, test=270000
+2026-02-12 15:30:35,461 Engineering features...
+2026-02-12 15:30:35,515 Features: 33
+2026-02-12 15:30:35,515 
+Starting GPU training: 10 seeds × 10 folds
+2026-02-12 15:30:35,515 
+====== SEED 42 (1/10) ======
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 15:31:27,160   Fold 1/10: LGB=895, Cat=1335, XGB=1552 iters
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 15:39:03,665   Seed 42: LGB=0.95499, Cat=0.95517, XGB=0.95514
+2026-02-12 15:39:03,720 
+====== SEED 123 (2/10) ======
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 15:39:55,510   Fold 1/10: LGB=1005, Cat=1469, XGB=1390 iters
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 15:47:32,743   Seed 123: LGB=0.95502, Cat=0.95518, XGB=0.95513
+2026-02-12 15:47:32,750 
+====== SEED 456 (3/10) ======
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 15:48:27,402   Fold 1/10: LGB=1148, Cat=1572, XGB=1351 iters
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 15:56:21,655   Seed 456: LGB=0.95503, Cat=0.95517, XGB=0.95516
+2026-02-12 15:56:21,662 
+====== SEED 789 (4/10) ======
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 15:57:10,612   Fold 1/10: LGB=1005, Cat=1352, XGB=1153 iters
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:04:58,290   Seed 789: LGB=0.95501, Cat=0.95519, XGB=0.95515
+2026-02-12 16:04:58,298 
+====== SEED 2024 (5/10) ======
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:05:55,328   Fold 1/10: LGB=1032, Cat=1366, XGB=1792 iters
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:13:27,232   Seed 2024: LGB=0.95504, Cat=0.95518, XGB=0.95514
+2026-02-12 16:13:27,239 
+====== SEED 2025 (6/10) ======
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:14:13,835   Fold 1/10: LGB=888, Cat=1415, XGB=1126 iters
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90770.51172 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90718.56641 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90276.05078 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90413.19531 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:21:55,327   Seed 2025: LGB=0.95500, Cat=0.95518, XGB=0.95515
+2026-02-12 16:21:55,335 
+====== SEED 3456 (7/10) ======
+Warning: less than 75% GPU memory available for training. Free: 89876.67188 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:22:44,811   Fold 1/10: LGB=811, Cat=1511, XGB=1572 iters
+Warning: less than 75% GPU memory available for training. Free: 89637.33203 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90494.23828 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91098.5625 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[895]	valid_0's auc: 0.954789
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1147]	valid_0's auc: 0.95575
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[928]	valid_0's auc: 0.954899
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1028]	valid_0's auc: 0.953868
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[878]	valid_0's auc: 0.955323
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[914]	valid_0's auc: 0.954887
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[942]	valid_0's auc: 0.9537
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1056]	valid_0's auc: 0.955758
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1065]	valid_0's auc: 0.956006
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1033]	valid_0's auc: 0.955013
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1005]	valid_0's auc: 0.954865
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1037]	valid_0's auc: 0.95455
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[961]	valid_0's auc: 0.956157
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[914]	valid_0's auc: 0.956158
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1123]	valid_0's auc: 0.955583
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[822]	valid_0's auc: 0.95406
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[874]	valid_0's auc: 0.953419
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[975]	valid_0's auc: 0.954197
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1211]	valid_0's auc: 0.955241
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[985]	valid_0's auc: 0.956014
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1148]	valid_0's auc: 0.955225
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1308]	valid_0's auc: 0.95412
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[949]	valid_0's auc: 0.955375
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[959]	valid_0's auc: 0.955212
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1344]	valid_0's auc: 0.954401
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[951]	valid_0's auc: 0.955256
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1408]	valid_0's auc: 0.956004
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[857]	valid_0's auc: 0.954473
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[899]	valid_0's auc: 0.954853
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1291]	valid_0's auc: 0.955468
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1005]	valid_0's auc: 0.954616
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[910]	valid_0's auc: 0.954688
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[949]	valid_0's auc: 0.95564
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[998]	valid_0's auc: 0.954442
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1316]	valid_0's auc: 0.955088
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1012]	valid_0's auc: 0.955405
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[961]	valid_0's auc: 0.954613
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[975]	valid_0's auc: 0.954841
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1209]	valid_0's auc: 0.955687
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1091]	valid_0's auc: 0.955155
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1032]	valid_0's auc: 0.954689
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[858]	valid_0's auc: 0.955872
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[888]	valid_0's auc: 0.955766
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[934]	valid_0's auc: 0.954129
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1101]	valid_0's auc: 0.95465
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1263]	valid_0's auc: 0.954851
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[813]	valid_0's auc: 0.956162
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1349]	valid_0's auc: 0.954926
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1066]	valid_0's auc: 0.954641
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1223]	valid_0's auc: 0.954732
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[888]	valid_0's auc: 0.956145
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[901]	valid_0's auc: 0.955728
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1001]	valid_0's auc: 0.954689
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[881]	valid_0's auc: 0.955353
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[950]	valid_0's auc: 0.953841
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1125]	valid_0's auc: 0.953425
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1068]	valid_0's auc: 0.95396
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1027]	valid_0's auc: 0.955297
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1061]	valid_0's auc: 0.954975
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1020]	valid_0's auc: 0.95661
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[811]	valid_0's auc: 0.954531
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1163]	valid_0's auc: 0.954612
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[934]	valid_0's auc: 0.954611
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1111]	valid_0's auc: 0.955155
+Training until validation scores don't improve for 200 roundsWarning: less than 75% GPU memory available for training. Free: 91102.55078 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90874.125 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91118.52344 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91001.08203 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91097.41797 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91102.45313 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:30:31,420   Seed 3456: LGB=0.95500, Cat=0.95517, XGB=0.95513
+2026-02-12 16:30:31,427 
+====== SEED 4567 (8/10) ======
+Warning: less than 75% GPU memory available for training. Free: 91108.21484 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:31:22,542   Fold 1/10: LGB=914, Cat=1744, XGB=1294 iters
+Warning: less than 75% GPU memory available for training. Free: 91111.05859 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90999.65625 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91168.42969 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91147.84375 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91044.55469 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91085.31641 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90994.83203 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91071.38281 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91032.93359 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:38:55,703   Seed 4567: LGB=0.95503, Cat=0.95520, XGB=0.95515
+2026-02-12 16:38:55,710 
+====== SEED 5678 (9/10) ======
+Warning: less than 75% GPU memory available for training. Free: 91086.07813 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:39:40,524   Fold 1/10: LGB=1009, Cat=1226, XGB=1125 iters
+Warning: less than 75% GPU memory available for training. Free: 91087.00391 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91108.87109 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91079.14063 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91110.94141 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91146.85156 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91117.78906 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91127.89844 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91128.63672 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90988 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:47:19,293   Seed 5678: LGB=0.95505, Cat=0.95516, XGB=0.95515
+2026-02-12 16:47:19,300 
+====== SEED 6789 (10/10) ======
+Warning: less than 75% GPU memory available for training. Free: 91058.6875 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:48:08,318   Fold 1/10: LGB=1030, Cat=1119, XGB=1286 iters
+Warning: less than 75% GPU memory available for training. Free: 91057.23438 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91055.86328 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91046.06641 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91060.16406 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91039.21875 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91039.25391 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91069.05859 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 91066.26953 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+Warning: less than 75% GPU memory available for training. Free: 90988.28906 Total: 122506.1563
+Default metric period is 5 because AUC is/are not implemented for GPU
+2026-02-12 16:56:00,658   Seed 6789: LGB=0.95504, Cat=0.95519, XGB=0.95515
+2026-02-12 16:56:00,882 
+=== Multi-seed averaged OOF ===
+2026-02-12 16:56:00,882   LGB: 0.95514
+2026-02-12 16:56:00,882   CatBoost: 0.95525
+2026-02-12 16:56:00,882   XGBoost: 0.95522
+2026-02-12 16:56:00,882 
+Optimizing 3-model blend weights...
+2026-02-12 16:56:16,256 Best blend: LGB=0.10, Cat=0.55, XGB=0.35
+2026-02-12 16:56:16,256 Ensemble OOF AUC: 0.95528
+2026-02-12 16:56:16,496 
+Submission saved to /home/tjyen/ai_agents/kaggle/competitions/playground-series-s6e2/submissions/sub_gpu_v4.csv
+2026-02-12 16:56:16,497 Experiment logged.
+2026-02-12 16:56:16,497 
+✓ Training complete!
+
+Early stopping, best iteration is:
+[1206]	valid_0's auc: 0.954733
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[943]	valid_0's auc: 0.955006
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1166]	valid_0's auc: 0.956095
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[909]	valid_0's auc: 0.955391
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1194]	valid_0's auc: 0.954555
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1153]	valid_0's auc: 0.955342
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[914]	valid_0's auc: 0.955869
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1232]	valid_0's auc: 0.954231
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[766]	valid_0's auc: 0.955189
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[827]	valid_0's auc: 0.954033
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[942]	valid_0's auc: 0.955714
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1051]	valid_0's auc: 0.955358
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[861]	valid_0's auc: 0.954498
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[816]	valid_0's auc: 0.955227
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1143]	valid_0's auc: 0.954082
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[923]	valid_0's auc: 0.956095
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1009]	valid_0's auc: 0.955242
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[859]	valid_0's auc: 0.954559
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1232]	valid_0's auc: 0.95411
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1235]	valid_0's auc: 0.954953
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[952]	valid_0's auc: 0.955511
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1131]	valid_0's auc: 0.955901
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1134]	valid_0's auc: 0.955788
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[839]	valid_0's auc: 0.955068
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1225]	valid_0's auc: 0.954678
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1227]	valid_0's auc: 0.954697
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1030]	valid_0's auc: 0.955925
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1077]	valid_0's auc: 0.954634
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1003]	valid_0's auc: 0.954269
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1330]	valid_0's auc: 0.955706
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[936]	valid_0's auc: 0.954629
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1255]	valid_0's auc: 0.955037
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[909]	valid_0's auc: 0.955112
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[905]	valid_0's auc: 0.955621
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[1181]	valid_0's auc: 0.955296
+Training until validation scores don't improve for 200 rounds
+Early stopping, best iteration is:
+[940]	valid_0's auc: 0.954186

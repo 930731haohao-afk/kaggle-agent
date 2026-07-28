@@ -1,0 +1,2547 @@
+{
+  "comp": "cat-in-the-dat",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: linear-stage best solo (lr C=0.1 full OHE), retrained via eval_citd for digit-for-digit verification vs cached 0.803103",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.1,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.803103,
+      "status": "evaluated",
+      "wall_s": 12.5,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[POOL_LR005] linear-pool reseed (cached OOF reuse, scripts/members.py lr_c005; zero retraining) [PRIOR: full-pool reseed lesson, afsis run-1 vs run-2]",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.05,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.801734,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[POOL_LR020] linear-pool reseed (cached OOF reuse, scripts/members.py lr_c020; zero retraining) [PRIOR: full-pool reseed lesson, afsis run-1 vs run-2]",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.2,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.802699,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[POOL_LGBCAT] linear-pool reseed (cached OOF reuse, scripts/members.py lgb_base; zero retraining) [PRIOR: full-pool reseed lesson, afsis run-1 vs run-2]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_cat",
+        "params": {},
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.776214,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[POOL_LGBTE] linear-pool reseed (cached OOF reuse, scripts/members.py lgb_te; zero retraining) [PRIOR: full-pool reseed lesson, afsis run-1 vs run-2]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {},
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797328,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[LRC] C exploration between the linear-stage grid points (0.1 best of 0.05/0.1/0.2, curvature suggests optimum in (0.1, 0.2))",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.15,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.80308,
+      "status": "evaluated",
+      "wall_s": 14.6,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[LRPAIRS] comp-local NEW idea: append all pairwise interaction crosses of the 17 low-card columns to the OHE (~5-6k extra dummies) -- LR cannot learn interactions on its own; this is the standard lever OHE+LR lacks",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.1,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "pairs"
+        }
+      },
+      "score": -0.796458,
+      "status": "evaluated",
+      "wall_s": 101.7,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[LGBTE] shallower/slower LGB-on-TE (leaves 127->63, lr 0.05->0.03, mcs 50->100) -- regularization direction per experience.md AUC section",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 100
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.798734,
+      "status": "evaluated",
+      "wall_s": 22.5,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[SEEDBAG] seed variation of pool lgb_te (seed 42->2024) [PRIOR: seed bagging is the cheapest residual gain, knowledge/experience.md]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "seed": 2024
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.796813,
+      "status": "evaluated",
+      "wall_s": 17.1,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: root + pool lgb_te + pool lr_c020 ([0, 2, 4])",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          4
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803226,
+      "status": "evaluated",
+      "wall_s": 37.91765093803406,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 9,
+      "mutation": "[BLEND] BLEND: add best-of-LRPAIRS (#6) (parent=#9)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          4,
+          6
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803227,
+      "status": "evaluated",
+      "wall_s": 61.05358600616455,
+      "kind": "blend"
+    },
+    {
+      "id": 11,
+      "parent_id": 10,
+      "mutation": "[BLEND] BLEND: add best-of-LRC (#5) (parent=#10)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          4,
+          5,
+          6
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803226,
+      "status": "evaluated",
+      "wall_s": 62.71542406082153,
+      "kind": "blend"
+    },
+    {
+      "id": 12,
+      "parent_id": 10,
+      "mutation": "[BLEND] BLEND: add best-of-LGBTE (#7) (parent=#10)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          4,
+          6,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803247,
+      "status": "evaluated",
+      "wall_s": 65.33076000213623,
+      "kind": "blend"
+    },
+    {
+      "id": 13,
+      "parent_id": 12,
+      "mutation": "[BLEND] BLEND: add best-of-SEEDBAG (#8) (parent=#12)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          4,
+          6,
+          7,
+          8
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803247,
+      "status": "evaluated",
+      "wall_s": 68.6583960056305,
+      "kind": "blend"
+    },
+    {
+      "id": 14,
+      "parent_id": 12,
+      "mutation": "[BLEND] BLEND: remove lowest-weight member #6 (w=0.005) (parent=#12)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          4,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803247,
+      "status": "evaluated",
+      "wall_s": 64.68691754341125,
+      "kind": "blend"
+    },
+    {
+      "id": 15,
+      "parent_id": 12,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #5 (parent=#12)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803248,
+      "status": "evaluated",
+      "wall_s": 69.90183663368225,
+      "kind": "blend"
+    },
+    {
+      "id": 16,
+      "parent_id": 15,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #1 (parent=#15)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803245,
+      "status": "evaluated",
+      "wall_s": 74.8945164680481,
+      "kind": "blend"
+    },
+    {
+      "id": 17,
+      "parent_id": 15,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #8 (parent=#15)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803247,
+      "status": "evaluated",
+      "wall_s": 41.186678409576416,
+      "kind": "blend"
+    },
+    {
+      "id": 18,
+      "parent_id": 15,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #3 (parent=#15)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803248,
+      "status": "evaluated",
+      "wall_s": 39.587430000305176,
+      "kind": "blend"
+    },
+    {
+      "id": 19,
+      "parent_id": 18,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #1 (parent=#18)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803248,
+      "status": "evaluated",
+      "wall_s": 87.64491200447083,
+      "kind": "blend"
+    },
+    {
+      "id": 20,
+      "parent_id": 18,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #8 (parent=#18)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803248,
+      "status": "evaluated",
+      "wall_s": 40.68049645423889,
+      "kind": "blend"
+    },
+    {
+      "id": 21,
+      "parent_id": 5,
+      "mutation": "[LRC] LRC: C=0.12 (finer grid inside (0.1, 0.15)) (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.12,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.803169,
+      "status": "evaluated",
+      "wall_s": 12.4,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 21,
+      "mutation": "[LRC] fallback: next untried C=0.13 on variant 'base' (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.13,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.803156,
+      "status": "evaluated",
+      "wall_s": 12.7,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 21,
+      "mutation": "[LRC] LRC: C=0.08 (probe below 0.1) (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.08,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.802854,
+      "status": "evaluated",
+      "wall_s": 10.8,
+      "kind": "solo"
+    },
+    {
+      "id": 24,
+      "parent_id": 21,
+      "mutation": "[LRC] fallback: next untried C=0.11 on variant 'base' (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.11,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.803154,
+      "status": "evaluated",
+      "wall_s": 13.2,
+      "kind": "solo"
+    },
+    {
+      "id": 25,
+      "parent_id": 22,
+      "mutation": "[LRC] fallback: next untried C=0.14 on variant 'base' (parent=#22)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.14,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.803127,
+      "status": "evaluated",
+      "wall_s": 13.3,
+      "kind": "solo"
+    },
+    {
+      "id": 26,
+      "parent_id": 2,
+      "mutation": "[POOL_LR020] fallback: next untried C=0.09 on variant 'base' (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.09,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.803007,
+      "status": "evaluated",
+      "wall_s": 11.0,
+      "kind": "solo"
+    },
+    {
+      "id": 27,
+      "parent_id": 26,
+      "mutation": "[POOL_LR020] fallback: next untried C=0.18 on variant 'base' (parent=#26)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.18,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.802873,
+      "status": "evaluated",
+      "wall_s": 15.9,
+      "kind": "solo"
+    },
+    {
+      "id": 28,
+      "parent_id": 26,
+      "mutation": "[POOL_LR020] fallback: next untried C=0.25 on variant 'base' (parent=#26)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.25,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.802203,
+      "status": "evaluated",
+      "wall_s": 17.5,
+      "kind": "solo"
+    },
+    {
+      "id": 29,
+      "parent_id": 26,
+      "mutation": "[POOL_LR020] fallback: next untried C=0.07 on variant 'base' (parent=#26)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.07,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.802621,
+      "status": "evaluated",
+      "wall_s": 10.2,
+      "kind": "solo"
+    },
+    {
+      "id": 30,
+      "parent_id": 27,
+      "mutation": "[POOL_LR020] fallback: next untried C=0.35 on variant 'base' (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.35,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.801155,
+      "status": "evaluated",
+      "wall_s": 19.7,
+      "kind": "solo"
+    },
+    {
+      "id": 31,
+      "parent_id": 1,
+      "mutation": "[POOL_LR005] fallback: next untried C=0.5 on variant 'base' (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.5,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.799726,
+      "status": "evaluated",
+      "wall_s": 21.8,
+      "kind": "solo"
+    },
+    {
+      "id": 32,
+      "parent_id": 7,
+      "mutation": "[LGBTE] LGBTE: weaker TE smoothing 20->5 (high-card noms have median count 25+) (parent=#7)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 100,
+          "smoothing": 5
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.798407,
+      "status": "evaluated",
+      "wall_s": 22.1,
+      "kind": "solo"
+    },
+    {
+      "id": 33,
+      "parent_id": 7,
+      "mutation": "[LGBTE] LGBTE: capacity direction (leaves->255, lr->0.02) -- 300k rows may reward capacity per s3e11 lesson (parent=#7)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 255,
+          "learning_rate": 0.02,
+          "min_child_samples": 100
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797732,
+      "status": "evaluated",
+      "wall_s": 43.0,
+      "kind": "solo"
+    },
+    {
+      "id": 34,
+      "parent_id": 7,
+      "mutation": "[LGBTE] fallback seed-variation: seed=4002 (parent=#7)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 100,
+          "seed": 4002
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.798658,
+      "status": "evaluated",
+      "wall_s": 22.5,
+      "kind": "solo"
+    },
+    {
+      "id": 35,
+      "parent_id": 34,
+      "mutation": "[LGBTE] fallback seed-variation: seed=4003 (parent=#34)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 100,
+          "seed": 4003
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.798865,
+      "status": "evaluated",
+      "wall_s": 22.7,
+      "kind": "solo"
+    },
+    {
+      "id": 36,
+      "parent_id": 35,
+      "mutation": "[LGBTE] fallback seed-variation: seed=4004 (parent=#35)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 63,
+          "learning_rate": 0.03,
+          "min_child_samples": 100,
+          "seed": 4004
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.798609,
+      "status": "evaluated",
+      "wall_s": 21.9,
+      "kind": "solo"
+    },
+    {
+      "id": 37,
+      "parent_id": 4,
+      "mutation": "[POOL_LGBTE] fallback seed-variation: seed=4000 (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "seed": 4000
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797277,
+      "status": "evaluated",
+      "wall_s": 17.6,
+      "kind": "solo"
+    },
+    {
+      "id": 38,
+      "parent_id": 4,
+      "mutation": "[POOL_LGBTE] fallback seed-variation: seed=4001 (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "seed": 4001
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.79739,
+      "status": "evaluated",
+      "wall_s": 17.3,
+      "kind": "solo"
+    },
+    {
+      "id": 39,
+      "parent_id": 38,
+      "mutation": "[POOL_LGBTE] fallback seed-variation: seed=4002 (parent=#38)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "seed": 4002
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797293,
+      "status": "evaluated",
+      "wall_s": 16.9,
+      "kind": "solo"
+    },
+    {
+      "id": 40,
+      "parent_id": 38,
+      "mutation": "[POOL_LGBTE] fallback seed-variation: seed=4003 (parent=#38)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "seed": 4003
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797364,
+      "status": "evaluated",
+      "wall_s": 17.1,
+      "kind": "solo"
+    },
+    {
+      "id": 41,
+      "parent_id": 38,
+      "mutation": "[POOL_LGBTE] fallback seed-variation: seed=4004 (parent=#38)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "seed": 4004
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797351,
+      "status": "evaluated",
+      "wall_s": 17.2,
+      "kind": "solo"
+    },
+    {
+      "id": 42,
+      "parent_id": 8,
+      "mutation": "[SEEDBAG] SEEDBAG: third seed 777 (parent=#8)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "seed": 777
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797314,
+      "status": "evaluated",
+      "wall_s": 16.8,
+      "kind": "solo"
+    },
+    {
+      "id": 43,
+      "parent_id": 42,
+      "mutation": "[dead-end placeholder] parent #42's proposal dedup-rejected 2x in a row (config identical to existing node #38) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 42,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 44,
+      "parent_id": 42,
+      "mutation": "[dead-end placeholder] parent #42's proposal dedup-rejected 2x in a row (config identical to existing node #38) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 42,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 45,
+      "parent_id": 42,
+      "mutation": "[dead-end placeholder] parent #42's proposal dedup-rejected 2x in a row (config identical to existing node #38) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 42,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 46,
+      "parent_id": 8,
+      "mutation": "[dead-end placeholder] parent #8's proposal dedup-rejected 2x in a row (config identical to existing node #38) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 8,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 47,
+      "parent_id": 8,
+      "mutation": "[dead-end placeholder] parent #8's proposal dedup-rejected 2x in a row (config identical to existing node #38) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 8,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 48,
+      "parent_id": 6,
+      "mutation": "[LRPAIRS] LRPAIRS: pairs variant, C=0.15 (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.15,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "pairs"
+        }
+      },
+      "score": -0.796485,
+      "status": "evaluated",
+      "wall_s": 108.7,
+      "kind": "solo"
+    },
+    {
+      "id": 49,
+      "parent_id": 48,
+      "mutation": "[LRPAIRS] LRPAIRS: add ord_5 x 12-partner crosses on top of pairs (parent=#48)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.1,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "pairs_ord5"
+        }
+      },
+      "score": -0.78584,
+      "status": "evaluated",
+      "wall_s": 118.1,
+      "kind": "solo"
+    },
+    {
+      "id": 50,
+      "parent_id": 48,
+      "mutation": "[LRPAIRS] LRPAIRS: pairs variant, stronger reg C=0.05 (more dummies may need it) (parent=#48)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.05,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "pairs"
+        }
+      },
+      "score": -0.795126,
+      "status": "evaluated",
+      "wall_s": 69.5,
+      "kind": "solo"
+    },
+    {
+      "id": 51,
+      "parent_id": 48,
+      "mutation": "[LRPAIRS] fallback: next untried C=0.13 on variant 'pairs' (parent=#48)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.13,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "pairs"
+        }
+      },
+      "score": -0.796539,
+      "status": "evaluated",
+      "wall_s": 102.2,
+      "kind": "solo"
+    },
+    {
+      "id": 52,
+      "parent_id": 3,
+      "mutation": "[POOL_LGBCAT] fallback seed-variation: seed=4000 (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_cat",
+        "params": {
+          "seed": 4000
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.776362,
+      "status": "evaluated",
+      "wall_s": 54.8,
+      "kind": "solo"
+    },
+    {
+      "id": 53,
+      "parent_id": 52,
+      "mutation": "[POOL_LGBCAT] fallback seed-variation: seed=4001 (parent=#52)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_cat",
+        "params": {
+          "seed": 4001
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.777153,
+      "status": "evaluated",
+      "wall_s": 52.1,
+      "kind": "solo"
+    },
+    {
+      "id": 54,
+      "parent_id": 53,
+      "mutation": "[POOL_LGBCAT] fallback seed-variation: seed=4002 (parent=#53)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_cat",
+        "params": {
+          "seed": 4002
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.776291,
+      "status": "evaluated",
+      "wall_s": 54.3,
+      "kind": "solo"
+    },
+    {
+      "id": 55,
+      "parent_id": 0,
+      "mutation": "[EXPL_MEGABLEND] explore-burst: kitchen-sink blend of the entire solo pool (38 members) [PRIOR: mandatory mega-blend, 07_tree_search.md Section 3]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803272,
+      "status": "evaluated",
+      "wall_s": 209.34837079048157,
+      "kind": "blend"
+    },
+    {
+      "id": 56,
+      "parent_id": 0,
+      "mutation": "[EXPL_DEEPLGB] explore-burst long-shot: much deeper LGB-on-TE (leaves->511, lr->0.02, mcs->20, ff->0.6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 511,
+          "learning_rate": 0.02,
+          "min_child_samples": 20,
+          "feature_fraction": 0.6
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797445,
+      "status": "evaluated",
+      "wall_s": 56.4,
+      "kind": "solo"
+    },
+    {
+      "id": 57,
+      "parent_id": 0,
+      "mutation": "[EXPL_LRLOWREG] explore-burst long-shot: near-unregularized LR (C=1.0) on the richest feature set (pairs_ord5)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 1.0,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "pairs_ord5"
+        }
+      },
+      "score": -0.770255,
+      "status": "evaluated",
+      "wall_s": 246.1,
+      "kind": "solo"
+    },
+    {
+      "id": 58,
+      "parent_id": 55,
+      "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #56 (parent=#55)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          56
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803271,
+      "status": "evaluated",
+      "wall_s": 223.51149129867554,
+      "kind": "blend"
+    },
+    {
+      "id": 59,
+      "parent_id": 55,
+      "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #57 (parent=#55)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          57
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.803272,
+      "status": "evaluated",
+      "wall_s": 223.41706824302673,
+      "kind": "blend"
+    },
+    {
+      "id": 60,
+      "parent_id": 56,
+      "mutation": "[EXPL_DEEPLGB] fallback seed-variation: seed=4000 (parent=#56)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 511,
+          "learning_rate": 0.02,
+          "min_child_samples": 20,
+          "feature_fraction": 0.6,
+          "seed": 4000
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797271,
+      "status": "evaluated",
+      "wall_s": 58.5,
+      "kind": "solo"
+    },
+    {
+      "id": 61,
+      "parent_id": 56,
+      "mutation": "[EXPL_DEEPLGB] fallback seed-variation: seed=4001 (parent=#56)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 511,
+          "learning_rate": 0.02,
+          "min_child_samples": 20,
+          "feature_fraction": 0.6,
+          "seed": 4001
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797375,
+      "status": "evaluated",
+      "wall_s": 56.0,
+      "kind": "solo"
+    },
+    {
+      "id": 62,
+      "parent_id": 56,
+      "mutation": "[EXPL_DEEPLGB] fallback seed-variation: seed=4002 (parent=#56)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb_te",
+        "params": {
+          "num_leaves": 511,
+          "learning_rate": 0.02,
+          "min_child_samples": 20,
+          "feature_fraction": 0.6,
+          "seed": 4002
+        },
+        "features": {
+          "variant": "base"
+        }
+      },
+      "score": -0.797369,
+      "status": "evaluated",
+      "wall_s": 56.0,
+      "kind": "solo"
+    },
+    {
+      "id": 63,
+      "parent_id": 57,
+      "mutation": "[EXPL_LRLOWREG] fallback: next untried C=0.13 on variant 'pairs_ord5' (parent=#57)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.13,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "pairs_ord5"
+        }
+      },
+      "score": -0.78463,
+      "status": "evaluated",
+      "wall_s": 118.7,
+      "kind": "solo"
+    },
+    {
+      "id": 64,
+      "parent_id": 63,
+      "mutation": "[EXPL_LRLOWREG] fallback: next untried C=0.11 on variant 'pairs_ord5' (parent=#63)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.11,
+          "solver": "lbfgs",
+          "max_iter": 2000,
+          "tol": 1e-05
+        },
+        "features": {
+          "variant": "pairs_ord5"
+        }
+      },
+      "score": -0.78543,
+      "status": "evaluated",
+      "wall_s": 108.5,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 57,
+    "streak": {
+      "9": 2,
+      "5": 5,
+      "2": 5,
+      "1": 1,
+      "7": 5,
+      "4": 5,
+      "8": 1,
+      "6": 4,
+      "3": 3,
+      "55": 2,
+      "56": 3,
+      "57": 2
+    },
+    "plateaued": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      55,
+      56
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 9,
+        "reason": "propose_child exhausted for lineage BLEND (driver-side plateau)"
+      },
+      {
+        "at_node_id": 25,
+        "plateaued_lineage": 5,
+        "reason": "5 consecutive non-improving children of the active lineage failed to beat prior global best -0.803248 (tie_rate=0.269, discretized=True)"
+      },
+      {
+        "at_node_id": 30,
+        "plateaued_lineage": 2,
+        "reason": "5 consecutive non-improving children of the active lineage failed to beat prior global best -0.803248 (tie_rate=0.226, discretized=True)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 1,
+        "reason": "propose_child exhausted for lineage POOL_LR005 (driver-side plateau)"
+      },
+      {
+        "at_node_id": 36,
+        "plateaued_lineage": 7,
+        "reason": "5 consecutive non-improving children of the active lineage failed to beat prior global best -0.803248 (tie_rate=0.189, discretized=True)"
+      },
+      {
+        "at_node_id": 41,
+        "plateaued_lineage": 4,
+        "reason": "5 consecutive non-improving children of the active lineage failed to beat prior global best -0.803248 (tie_rate=0.167, discretized=True)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 8,
+        "reason": "expansion budget exhausted (all nodes in lineage reached MAX_CHILDREN_PER_NODE)"
+      },
+      {
+        "at_node_id": 51,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.803248 (tie_rate=0.149, discretized=False)"
+      },
+      {
+        "at_node_id": 54,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.803248 (tie_rate=0.140, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 55,
+        "reason": "propose_child exhausted for lineage EXPL_MEGABLEND (driver-side plateau)"
+      },
+      {
+        "at_node_id": 62,
+        "plateaued_lineage": 56,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.803272 (tie_rate=0.138, discretized=False)"
+      }
+    ],
+    "budget": {
+      "total_budget": 60,
+      "explore_burst_size": 6,
+      "post_burst_patience": 20,
+      "phase": "stopped",
+      "burst_start_eval": 50,
+      "best_at_burst_start": -0.803272,
+      "evals_since_burst_improve": 8,
+      "stop_reason": "hard budget cap reached (60/60 evaluated nodes)"
+    },
+    "node_results": {
+      "0": {
+        "auc": 0.803103
+      },
+      "1": {
+        "auc": 0.801734
+      },
+      "2": {
+        "auc": 0.802699
+      },
+      "3": {
+        "auc": 0.776214
+      },
+      "4": {
+        "auc": 0.797328
+      },
+      "5": {
+        "auc": 0.80308
+      },
+      "6": {
+        "auc": 0.796458
+      },
+      "7": {
+        "auc": 0.798734
+      },
+      "8": {
+        "auc": 0.796813
+      },
+      "9": {
+        "members": [
+          0,
+          2,
+          4
+        ],
+        "weights": [
+          0.608,
+          0.299,
+          0.093
+        ],
+        "auc": 0.803226
+      },
+      "10": {
+        "members": [
+          0,
+          2,
+          4,
+          6
+        ],
+        "weights": [
+          0.5959,
+          0.2996,
+          0.0961,
+          0.0083
+        ],
+        "auc": 0.803227,
+        "cost_guard_warning": "blend eval took 46.4s > 45s threshold (members=[0, 2, 4, 6], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "11": {
+        "members": [
+          0,
+          2,
+          4,
+          5,
+          6
+        ],
+        "weights": [
+          0.4177,
+          0.0717,
+          0.0961,
+          0.4075,
+          0.0071
+        ],
+        "auc": 0.803226,
+        "cost_guard_warning": "blend eval took 48.8s > 45s threshold (members=[0, 2, 4, 5, 6], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "12": {
+        "members": [
+          0,
+          2,
+          4,
+          6,
+          7
+        ],
+        "weights": [
+          0.5699,
+          0.3037,
+          0.0201,
+          0.005,
+          0.1013
+        ],
+        "auc": 0.803247,
+        "cost_guard_warning": "blend eval took 47.3s > 45s threshold (members=[0, 2, 4, 6, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "13": {
+        "members": [
+          0,
+          2,
+          4,
+          6,
+          7,
+          8
+        ],
+        "weights": [
+          0.5834,
+          0.2901,
+          0.0331,
+          0.0054,
+          0.0879,
+          0.0
+        ],
+        "auc": 0.803247,
+        "cost_guard_warning": "blend eval took 52.1s > 45s threshold (members=[0, 2, 4, 6, 7, 8], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "14": {
+        "members": [
+          0,
+          2,
+          4,
+          7
+        ],
+        "weights": [
+          0.5779,
+          0.3,
+          0.0109,
+          0.1112
+        ],
+        "auc": 0.803247,
+        "cost_guard_warning": "blend eval took 46.0s > 45s threshold (members=[0, 2, 4, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "15": {
+        "members": [
+          0,
+          2,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": [
+          0.5385,
+          0.248,
+          0.0232,
+          0.0888,
+          0.0031,
+          0.0985
+        ],
+        "auc": 0.803248,
+        "cost_guard_warning": "blend eval took 49.2s > 45s threshold (members=[0, 2, 4, 5, 6, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "16": {
+        "members": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": [
+          0.1546,
+          0.1356,
+          0.2242,
+          0.0237,
+          0.3595,
+          0.0024,
+          0.1
+        ],
+        "auc": 0.803245,
+        "cost_guard_warning": "blend eval took 54.9s > 45s threshold (members=[0, 1, 2, 4, 5, 6, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "17": {
+        "members": [
+          0,
+          2,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "weights": [
+          0.5769,
+          0.2978,
+          0.0302,
+          0.0,
+          0.0046,
+          0.0905,
+          0.0
+        ],
+        "auc": 0.803247
+      },
+      "18": {
+        "members": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": [
+          0.5485,
+          0.2689,
+          0.0045,
+          0.029,
+          0.0531,
+          0.0049,
+          0.0911
+        ],
+        "auc": 0.803248
+      },
+      "19": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": [
+          0.4504,
+          0.0199,
+          0.2184,
+          0.0048,
+          0.0369,
+          0.1825,
+          0.0,
+          0.0871
+        ],
+        "auc": 0.803248,
+        "cost_guard_warning": "blend eval took 60.4s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "20": {
+        "members": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "weights": [
+          0.534,
+          0.2377,
+          0.0082,
+          0.0266,
+          0.1003,
+          0.0,
+          0.0933,
+          0.0
+        ],
+        "auc": 0.803248
+      },
+      "21": {
+        "auc": 0.803169
+      },
+      "22": {
+        "auc": 0.803156
+      },
+      "23": {
+        "auc": 0.802854
+      },
+      "24": {
+        "auc": 0.803154
+      },
+      "25": {
+        "auc": 0.803127
+      },
+      "26": {
+        "auc": 0.803007
+      },
+      "27": {
+        "auc": 0.802873
+      },
+      "28": {
+        "auc": 0.802203
+      },
+      "29": {
+        "auc": 0.802621
+      },
+      "30": {
+        "auc": 0.801155
+      },
+      "31": {
+        "auc": 0.799726
+      },
+      "32": {
+        "auc": 0.798407
+      },
+      "33": {
+        "auc": 0.797732
+      },
+      "34": {
+        "auc": 0.798658
+      },
+      "35": {
+        "auc": 0.798865
+      },
+      "36": {
+        "auc": 0.798609
+      },
+      "37": {
+        "auc": 0.797277
+      },
+      "38": {
+        "auc": 0.79739
+      },
+      "39": {
+        "auc": 0.797293
+      },
+      "40": {
+        "auc": 0.797364
+      },
+      "41": {
+        "auc": 0.797351
+      },
+      "42": {
+        "auc": 0.797314
+      },
+      "48": {
+        "auc": 0.796485
+      },
+      "49": {
+        "auc": 0.78584
+      },
+      "50": {
+        "auc": 0.795126
+      },
+      "51": {
+        "auc": 0.796539
+      },
+      "52": {
+        "auc": 0.776362
+      },
+      "53": {
+        "auc": 0.777153
+      },
+      "54": {
+        "auc": 0.776291
+      },
+      "55": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54
+        ],
+        "weights": [
+          0.1658,
+          0.0,
+          0.1403,
+          0.0,
+          0.0,
+          0.0,
+          0.0037,
+          0.0185,
+          0.0,
+          0.3723,
+          0.0447,
+          0.0192,
+          0.035,
+          0.009,
+          0.0,
+          0.0401,
+          0.0095,
+          0.0,
+          0.0017,
+          0.0,
+          0.0312,
+          0.0,
+          0.0,
+          0.0732,
+          0.0,
+          0.0,
+          0.0148,
+          0.0,
+          0.005,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0159,
+          0.0
+        ],
+        "auc": 0.803272,
+        "cost_guard_warning": "blend eval took 120.7s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 48, 49, 50, 51, 52, 53, 54], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "56": {
+        "auc": 0.797445
+      },
+      "57": {
+        "auc": 0.770255
+      },
+      "58": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          56
+        ],
+        "weights": [
+          0.0884,
+          0.0,
+          0.1143,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0322,
+          0.0,
+          0.4844,
+          0.025,
+          0.0102,
+          0.0335,
+          0.0323,
+          0.0,
+          0.0344,
+          0.0,
+          0.0102,
+          0.0,
+          0.0044,
+          0.0319,
+          0.0,
+          0.0,
+          0.0636,
+          0.0,
+          0.0,
+          0.0133,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.005,
+          0.0,
+          0.0,
+          0.0,
+          0.0059,
+          0.011,
+          0.0,
+          0.0
+        ],
+        "auc": 0.803271,
+        "cost_guard_warning": "blend eval took 129.1s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 48, 49, 50, 51, 52, 53, 54, 56], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "59": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          57
+        ],
+        "weights": [
+          0.0155,
+          0.0,
+          0.129,
+          0.0,
+          0.0,
+          0.0051,
+          0.0,
+          0.026,
+          0.0,
+          0.5794,
+          0.0137,
+          0.03,
+          0.0101,
+          0.0099,
+          0.0,
+          0.0223,
+          0.0,
+          0.0201,
+          0.005,
+          0.0,
+          0.0249,
+          0.0,
+          0.0,
+          0.0768,
+          0.0,
+          0.0,
+          0.0097,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0051,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.017,
+          0.0,
+          0.0005
+        ],
+        "auc": 0.803272,
+        "cost_guard_warning": "blend eval took 129.1s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 48, 49, 50, 51, 52, 53, 54, 57], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      "60": {
+        "auc": 0.797271
+      },
+      "61": {
+        "auc": 0.797375
+      },
+      "62": {
+        "auc": 0.797369
+      },
+      "63": {
+        "auc": 0.78463
+      },
+      "64": {
+        "auc": 0.78543
+      }
+    },
+    "dedup_streak": {
+      "0": 0,
+      "9": 0,
+      "10": 0,
+      "12": 0,
+      "15": 0,
+      "18": 0,
+      "5": 0,
+      "21": 0,
+      "22": 0,
+      "2": 0,
+      "26": 0,
+      "27": 0,
+      "1": 0,
+      "7": 0,
+      "34": 0,
+      "35": 0,
+      "4": 0,
+      "38": 0,
+      "8": 0,
+      "42": 0,
+      "6": 0,
+      "48": 0,
+      "3": 0,
+      "52": 0,
+      "53": 0,
+      "55": 0,
+      "56": 0,
+      "57": 0,
+      "63": 0
+    },
+    "driver_state": {
+      "dedup_rejections": [
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#42)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#42)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#42)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#42)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#42)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#42)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#8)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#8)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#8)",
+          "dup_id": 38
+        },
+        {
+          "mutation": "[SEEDBAG] fallback seed-variation: seed=4001 (parent=#8)",
+          "dup_id": 38
+        }
+      ],
+      "burst_injected": true
+    },
+    "cost_guard_log": [
+      {
+        "members": [
+          0,
+          2,
+          4,
+          6
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 46.45,
+        "coarsened_wall_s": 14.61,
+        "warning": "blend eval took 46.4s > 45s threshold (members=[0, 2, 4, 6], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          2,
+          4,
+          5,
+          6
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 48.79,
+        "coarsened_wall_s": 13.92,
+        "warning": "blend eval took 48.8s > 45s threshold (members=[0, 2, 4, 5, 6], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          2,
+          4,
+          6,
+          7
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 47.25,
+        "coarsened_wall_s": 18.08,
+        "warning": "blend eval took 47.3s > 45s threshold (members=[0, 2, 4, 6, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          2,
+          4,
+          6,
+          7,
+          8
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 52.12,
+        "coarsened_wall_s": 16.54,
+        "warning": "blend eval took 52.1s > 45s threshold (members=[0, 2, 4, 6, 7, 8], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          2,
+          4,
+          7
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 46.04,
+        "coarsened_wall_s": 18.64,
+        "warning": "blend eval took 46.0s > 45s threshold (members=[0, 2, 4, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          2,
+          4,
+          5,
+          6,
+          7
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 49.2,
+        "coarsened_wall_s": 20.7,
+        "warning": "blend eval took 49.2s > 45s threshold (members=[0, 2, 4, 5, 6, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          6,
+          7
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 54.86,
+        "coarsened_wall_s": 20.04,
+        "warning": "blend eval took 54.9s > 45s threshold (members=[0, 1, 2, 4, 5, 6, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 60.38,
+        "coarsened_wall_s": 27.26,
+        "warning": "blend eval took 60.4s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 120.67,
+        "coarsened_wall_s": 88.67,
+        "warning": "blend eval took 120.7s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 48, 49, 50, 51, 52, 53, 54], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          56
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 129.08,
+        "coarsened_wall_s": 94.43,
+        "warning": "blend eval took 129.1s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 48, 49, 50, 51, 52, 53, 54, 56], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          57
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 129.14,
+        "coarsened_wall_s": 94.27,
+        "warning": "blend eval took 129.1s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 48, 49, 50, 51, 52, 53, 54, 57], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      }
+    ],
+    "tie_rate_log": [
+      0.0,
+      0.0833,
+      0.0769,
+      0.1429,
+      0.2,
+      0.1875,
+      0.1765,
+      0.2222,
+      0.2632,
+      0.3,
+      0.3333,
+      0.3182,
+      0.3043,
+      0.2917,
+      0.28,
+      0.2692,
+      0.2593,
+      0.25,
+      0.2414,
+      0.2333,
+      0.2258,
+      0.2188,
+      0.2121,
+      0.2059,
+      0.2,
+      0.1944,
+      0.1892,
+      0.1842,
+      0.1795,
+      0.175,
+      0.1707,
+      0.1667,
+      0.1628,
+      0.1591,
+      0.1556,
+      0.1522,
+      0.1489,
+      0.1458,
+      0.1429,
+      0.14,
+      0.1296,
+      0.1455,
+      0.1429,
+      0.1404,
+      0.1379,
+      0.1356,
+      0.1333
+    ]
+  }
+}

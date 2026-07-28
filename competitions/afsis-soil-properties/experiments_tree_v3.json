@@ -1,0 +1,7059 @@
+{
+  "comp": "afsis-soil-properties",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "[ROOT] linear-stage best solo (svr_rbf_sg1) [REUSED cached OOF from linear-stage 'svr_rbf_sg1', digit-verified MCRMSE 0.471939, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "C": 10.0,
+          "epsilon": 0.1,
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.471939,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[ridge_linear_sg1] seed: linear-stage pool member 'ridge_linear_sg1' [REUSED cached OOF from linear-stage 'ridge_linear_sg1', digit-verified MCRMSE 0.507098, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.507098,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[ridge_linear_snv] seed: linear-stage pool member 'ridge_linear_snv' [REUSED cached OOF from linear-stage 'ridge_linear_snv', digit-verified MCRMSE 0.509952, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.509952,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[krr_rbf_raw] seed: linear-stage pool member 'krr_rbf_raw' [REUSED cached OOF from linear-stage 'krr_rbf_raw', digit-verified MCRMSE 0.497413, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "raw",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.497413,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[krr_rbf_snv] seed: linear-stage pool member 'krr_rbf_snv' [REUSED cached OOF from linear-stage 'krr_rbf_snv', digit-verified MCRMSE 0.483994, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.483994,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[KRR_KERNEL] seed: linear-stage pool member 'krr_rbf_sg1' [REUSED cached OOF from linear-stage 'krr_rbf_sg1', digit-verified MCRMSE 0.475432, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.475432,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[krr_rbf_sg2] seed: linear-stage pool member 'krr_rbf_sg2' [REUSED cached OOF from linear-stage 'krr_rbf_sg2', digit-verified MCRMSE 0.488990, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg2",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.48899,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[krr_rbf_sg1w11] seed: linear-stage pool member 'krr_rbf_sg1w11' [REUSED cached OOF from linear-stage 'krr_rbf_sg1w11', digit-verified MCRMSE 0.474935, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1w11",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.474935,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[VARIANT] seed: linear-stage pool member 'krr_rbf_sg1_nospatial' [REUSED cached OOF from linear-stage 'krr_rbf_sg1_nospatial', digit-verified MCRMSE 0.473573, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": false,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.473573,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[krr_lap_sg1] seed: linear-stage pool member 'krr_lap_sg1' [REUSED cached OOF from linear-stage 'krr_lap_sg1', digit-verified MCRMSE 0.507486, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "laplacian"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.507486,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 10,
+      "parent_id": 0,
+      "mutation": "[krr_poly2_snv] seed: linear-stage pool member 'krr_poly2_snv' [REUSED cached OOF from linear-stage 'krr_poly2_snv', digit-verified MCRMSE 0.474339, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "coef0": 1.0,
+          "degree": 2,
+          "gamma_scale": 1.0,
+          "kernel": "poly"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.474339,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 0,
+      "mutation": "[DIVERSE] seed: linear-stage pool member 'pls_sg1' [REUSED cached OOF from linear-stage 'pls_sg1', digit-verified MCRMSE 0.548804, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "pls",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "n_components": 20
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.548804,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 0,
+      "mutation": "[pls_snv] seed: linear-stage pool member 'pls_snv' [REUSED cached OOF from linear-stage 'pls_snv', digit-verified MCRMSE 0.548192, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "pls",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "n_components": 25
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.548192,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 0,
+      "mutation": "[lgbpca_sg1] seed: linear-stage pool member 'lgbpca_sg1' [REUSED cached OOF from linear-stage 'lgbpca_sg1', digit-verified MCRMSE 0.534282, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "lgbpca",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "n_components": 40
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.534282,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 0,
+      "mutation": "[krr_rbf_spatialonly] seed: linear-stage pool member 'krr_rbf_spatialonly' [REUSED cached OOF from linear-stage 'krr_rbf_spatialonly', digit-verified MCRMSE 0.726751, no retraining]",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "spatial",
+        "use_spatial": false,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.726751,
+      "status": "evaluated",
+      "wall_s": 0.05,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 0,
+      "mutation": "[SVR] seed: SVR-RBF on SG-d1 at C=30 (root family, own lineage)",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "C": 30.0,
+          "epsilon": 0.1,
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.478453,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 0,
+      "mutation": "[BLEND] seed: per-target weighted blend of the 16 solo nodes evaluated so far",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "per_target": true,
+        "weight_search": "greedy"
+      },
+      "score": 0.433077,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 17,
+      "parent_id": 16,
+      "mutation": "[BLEND] reblend kitchen-sink (all solos) via bagged_greedy, per-target weights over 16 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "per_target": true,
+        "weight_search": "bagged_greedy"
+      },
+      "score": 0.441345,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "blend"
+    },
+    {
+      "id": 18,
+      "parent_id": 16,
+      "mutation": "[BLEND] reblend kitchen-sink (all solos) via dirichlet, per-target weights over 16 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "per_target": true,
+        "weight_search": "dirichlet"
+      },
+      "score": 0.433074,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "blend"
+    },
+    {
+      "id": 19,
+      "parent_id": 18,
+      "mutation": "[BLEND] reblend top12 via greedy, per-target weights over 12 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          15
+        ],
+        "per_target": true,
+        "weight_search": "greedy"
+      },
+      "score": 0.43514,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 20,
+      "parent_id": 18,
+      "mutation": "[BLEND] reblend top8 via greedy, per-target weights over 8 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          15
+        ],
+        "per_target": true,
+        "weight_search": "greedy"
+      },
+      "score": 0.443841,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 21,
+      "parent_id": 18,
+      "mutation": "[BLEND] reblend kitchen-sink (all solos) via greedy_ascent, per-target weights over 16 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "per_target": true,
+        "weight_search": "greedy_ascent"
+      },
+      "score": 0.433071,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 22,
+      "parent_id": 21,
+      "mutation": "[BLEND] reblend kitchen-sink (all solos) via greedy, shared weights over 16 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "per_target": false,
+        "weight_search": "greedy"
+      },
+      "score": 0.45284,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 23,
+      "parent_id": 21,
+      "mutation": "[BLEND] reblend top5 via dirichlet, per-target weights over 5 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          5,
+          7,
+          8,
+          10
+        ],
+        "per_target": true,
+        "weight_search": "dirichlet"
+      },
+      "score": 0.444833,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 24,
+      "parent_id": 21,
+      "mutation": "[BLEND] reblend top6 via greedy_ascent, per-target weights over 6 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          5,
+          7,
+          8,
+          10,
+          15
+        ],
+        "per_target": true,
+        "weight_search": "greedy_ascent"
+      },
+      "score": 0.444629,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 25,
+      "parent_id": 8,
+      "mutation": "[VARIANT] best-variant x weak spatial",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 0.3,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.474577,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 26,
+      "parent_id": 8,
+      "mutation": "[VARIANT] best-variant x strong spatial",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 3.0,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.489105,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 27,
+      "parent_id": 8,
+      "mutation": "[VARIANT] sg1w11 + gamma 0.5",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1w11",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 0.5,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.469187,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 28,
+      "parent_id": 10,
+      "mutation": "[krr_poly2_snv] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "coef0": 1.0,
+          "degree": 2,
+          "gamma_scale": 1.0,
+          "kernel": "poly"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.4858,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 29,
+      "parent_id": 10,
+      "mutation": "[krr_poly2_snv] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "coef0": 1.0,
+          "degree": 2,
+          "gamma_scale": 1.0,
+          "kernel": "poly"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.470786,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 30,
+      "parent_id": 29,
+      "mutation": "[krr_poly2_snv] spatial_weight 0.5 -> 0.25 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "coef0": 1.0,
+          "degree": 2,
+          "gamma_scale": 1.0,
+          "kernel": "poly"
+        },
+        "spatial_weight": 0.25
+      },
+      "score": 0.471081,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 31,
+      "parent_id": 7,
+      "mutation": "[krr_rbf_sg1w11] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1w11",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.480865,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 32,
+      "parent_id": 7,
+      "mutation": "[krr_rbf_sg1w11] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1w11",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.472842,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 33,
+      "parent_id": 32,
+      "mutation": "[krr_rbf_sg1w11] spatial_weight 0.5 -> 0.25 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1w11",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 0.25
+      },
+      "score": 0.472128,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 34,
+      "parent_id": 5,
+      "mutation": "[KRR_KERNEL] gamma-scale sweep down (bias-dominated kernel width)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 0.5,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.469345,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 35,
+      "parent_id": 34,
+      "mutation": "[KRR_KERNEL] gamma-scale sweep up",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 2.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.49517,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 36,
+      "parent_id": 34,
+      "mutation": "[KRR_KERNEL] gamma 0.25 + finer alpha grid",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "alphas": [
+            0.0003,
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0,
+            10.0
+          ],
+          "gamma_scale": 0.25,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.470357,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 37,
+      "parent_id": 15,
+      "mutation": "[SVR] SVR C down + tighter eps",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "C": 3.0,
+          "epsilon": 0.05,
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.490814,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 38,
+      "parent_id": 15,
+      "mutation": "[SVR] SVR on sg1w11",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1w11",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "C": 10.0,
+          "epsilon": 0.1,
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.471583,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 39,
+      "parent_id": 38,
+      "mutation": "[SVR] SVR gamma 0.5",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "C": 10.0,
+          "epsilon": 0.1,
+          "gamma_scale": 0.5,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.471881,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 40,
+      "parent_id": 4,
+      "mutation": "[krr_rbf_snv] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.502407,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 41,
+      "parent_id": 4,
+      "mutation": "[krr_rbf_snv] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.472741,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 42,
+      "parent_id": 41,
+      "mutation": "[krr_rbf_snv] spatial_weight 0.5 -> 0.25 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 0.25
+      },
+      "score": 0.469086,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 43,
+      "parent_id": 6,
+      "mutation": "[krr_rbf_sg2] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg2",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.494186,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 44,
+      "parent_id": 6,
+      "mutation": "[krr_rbf_sg2] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg2",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.489223,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 45,
+      "parent_id": 6,
+      "mutation": "[krr_rbf_sg2] spatial_weight 1.0 -> 4.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg2",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 4.0
+      },
+      "score": 0.509479,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 46,
+      "parent_id": 3,
+      "mutation": "[krr_rbf_raw] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "raw",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.516388,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 47,
+      "parent_id": 3,
+      "mutation": "[krr_rbf_raw] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "raw",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.494052,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 48,
+      "parent_id": 47,
+      "mutation": "[krr_rbf_raw] spatial_weight 0.5 -> 0.25 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "raw",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 0.25
+      },
+      "score": 0.493187,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "solo"
+    },
+    {
+      "id": 49,
+      "parent_id": 1,
+      "mutation": "[ridge_linear_sg1] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.509233,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 50,
+      "parent_id": 1,
+      "mutation": "[ridge_linear_sg1] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.503882,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 51,
+      "parent_id": 50,
+      "mutation": "[ridge_linear_sg1] spatial_weight 0.5 -> 0.25 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        },
+        "spatial_weight": 0.25
+      },
+      "score": 0.502943,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 52,
+      "parent_id": 9,
+      "mutation": "[krr_lap_sg1] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "laplacian"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.510077,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 53,
+      "parent_id": 9,
+      "mutation": "[krr_lap_sg1] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "laplacian"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.507259,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 54,
+      "parent_id": 53,
+      "mutation": "[krr_lap_sg1] spatial_weight 0.5 -> 0.25 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "laplacian"
+        },
+        "spatial_weight": 0.25
+      },
+      "score": 0.507308,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 55,
+      "parent_id": 2,
+      "mutation": "[ridge_linear_snv] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.511122,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 56,
+      "parent_id": 2,
+      "mutation": "[ridge_linear_snv] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.509296,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 57,
+      "parent_id": 56,
+      "mutation": "[ridge_linear_snv] spatial_weight 0.5 -> 0.25 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        },
+        "spatial_weight": 0.25
+      },
+      "score": 0.510533,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 58,
+      "parent_id": 13,
+      "mutation": "[lgbpca_sg1] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "lgbpca",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "n_components": 40
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.549807,
+      "status": "evaluated",
+      "wall_s": 5.1,
+      "kind": "solo"
+    },
+    {
+      "id": 59,
+      "parent_id": 13,
+      "mutation": "[lgbpca_sg1] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "lgbpca",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "n_components": 40
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.541152,
+      "status": "evaluated",
+      "wall_s": 4.9,
+      "kind": "solo"
+    },
+    {
+      "id": 60,
+      "parent_id": 13,
+      "mutation": "[lgbpca_sg1] spatial_weight 1.0 -> 4.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "lgbpca",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "n_components": 40
+        },
+        "spatial_weight": 4.0
+      },
+      "score": 0.549591,
+      "status": "evaluated",
+      "wall_s": 5.0,
+      "kind": "solo"
+    },
+    {
+      "id": 61,
+      "parent_id": 12,
+      "mutation": "[pls_snv] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "pls",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "n_components": 25
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.549912,
+      "status": "evaluated",
+      "wall_s": 2.5,
+      "kind": "solo"
+    },
+    {
+      "id": 62,
+      "parent_id": 12,
+      "mutation": "[pls_snv] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "pls",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "n_components": 25
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.536909,
+      "status": "evaluated",
+      "wall_s": 2.5,
+      "kind": "solo"
+    },
+    {
+      "id": 63,
+      "parent_id": 62,
+      "mutation": "[pls_snv] spatial_weight 0.5 -> 0.25 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "pls",
+        "variant": "snv",
+        "use_spatial": true,
+        "params": {
+          "n_components": 25
+        },
+        "spatial_weight": 0.25
+      },
+      "score": 0.535486,
+      "status": "evaluated",
+      "wall_s": 2.7,
+      "kind": "solo"
+    },
+    {
+      "id": 64,
+      "parent_id": 11,
+      "mutation": "[DIVERSE] PLS fewer components",
+      "config": {
+        "kind": "solo",
+        "model": "pls",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "n_components": 12
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.566815,
+      "status": "evaluated",
+      "wall_s": 1.4,
+      "kind": "solo"
+    },
+    {
+      "id": 65,
+      "parent_id": 11,
+      "mutation": "[DIVERSE] PLS more components",
+      "config": {
+        "kind": "solo",
+        "model": "pls",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "n_components": 35
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.544888,
+      "status": "evaluated",
+      "wall_s": 3.1,
+      "kind": "solo"
+    },
+    {
+      "id": 66,
+      "parent_id": 65,
+      "mutation": "[DIVERSE] LGB on 60 PCA components",
+      "config": {
+        "kind": "solo",
+        "model": "lgbpca",
+        "variant": "sg1",
+        "use_spatial": true,
+        "params": {
+          "learning_rate": 0.05,
+          "n_components": 60
+        },
+        "spatial_weight": 1.0
+      },
+      "score": 0.534075,
+      "status": "evaluated",
+      "wall_s": 6.0,
+      "kind": "solo"
+    },
+    {
+      "id": 67,
+      "parent_id": 14,
+      "mutation": "[krr_rbf_spatialonly] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "spatial",
+        "use_spatial": false,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 2.0
+      },
+      "score": 0.726751,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 68,
+      "parent_id": 14,
+      "mutation": "[krr_rbf_spatialonly] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "spatial",
+        "use_spatial": false,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 0.5
+      },
+      "score": 0.726751,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 69,
+      "parent_id": 14,
+      "mutation": "[krr_rbf_spatialonly] spatial_weight 1.0 -> 4.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "spatial",
+        "use_spatial": false,
+        "params": {
+          "alphas": [
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        },
+        "spatial_weight": 4.0
+      },
+      "score": 0.726751,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 70,
+      "parent_id": 0,
+      "mutation": "[EXPL_LOWGAMMA] long-shot: very wide RBF kernel (gamma 0.1, lower edge) + finest alpha grid \u2014 the opposite regularization regime from the exploit-phase champion",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "sg1",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "alphas": [
+            0.0003,
+            0.001,
+            0.003,
+            0.01,
+            0.03,
+            0.1,
+            0.3,
+            1.0,
+            3.0,
+            10.0
+          ],
+          "gamma_scale": 0.1,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.473991,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 71,
+      "parent_id": 0,
+      "mutation": "[EXPL_HIGHREG] long-shot: linear kernel on raw spectra with heavy ridge only \u2014 the pre-kernel regime, kept as a contrast lineage",
+      "config": {
+        "kind": "solo",
+        "model": "krr",
+        "variant": "raw",
+        "use_spatial": true,
+        "spatial_weight": 1.0,
+        "params": {
+          "alphas": [
+            0.3,
+            1.0,
+            3.0,
+            10.0,
+            30.0,
+            100.0
+          ],
+          "gamma_scale": 1.0,
+          "kernel": "linear"
+        }
+      },
+      "score": 0.686914,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 72,
+      "parent_id": 0,
+      "mutation": "[EXPL_SPATIALFREE] long-shot: spectra-only SVR at high C, no spatial covariates at all (train/test sites do not overlap, so spatial may be pure covariate shift)",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1w11",
+        "use_spatial": false,
+        "spatial_weight": 1.0,
+        "params": {
+          "C": 30.0,
+          "epsilon": 0.1,
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.473656,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "solo"
+    },
+    {
+      "id": 73,
+      "parent_id": 0,
+      "mutation": "[EXPL_KITCHENSINK] mandatory explore-burst kitchen-sink blend of all 64 solo nodes, per-target weights",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72
+        ],
+        "per_target": true,
+        "weight_search": "greedy"
+      },
+      "score": 0.428772,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "blend"
+    },
+    {
+      "id": 74,
+      "parent_id": 73,
+      "mutation": "[EXPL_KITCHENSINK] reblend kitchen-sink (all solos) via bagged_greedy, per-target weights over 64 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72
+        ],
+        "per_target": true,
+        "weight_search": "bagged_greedy"
+      },
+      "score": 0.430371,
+      "status": "evaluated",
+      "wall_s": 0.3,
+      "kind": "blend"
+    },
+    {
+      "id": 75,
+      "parent_id": 73,
+      "mutation": "[EXPL_KITCHENSINK] reblend kitchen-sink (all solos) via dirichlet, per-target weights over 64 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72
+        ],
+        "per_target": true,
+        "weight_search": "dirichlet"
+      },
+      "score": 0.428899,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "blend"
+    },
+    {
+      "id": 76,
+      "parent_id": 73,
+      "mutation": "[EXPL_KITCHENSINK] reblend top12 via greedy, per-target weights over 12 members",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          27,
+          29,
+          30,
+          32,
+          33,
+          34,
+          36,
+          38,
+          39,
+          41,
+          42
+        ],
+        "per_target": true,
+        "weight_search": "greedy"
+      },
+      "score": 0.438032,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 77,
+      "parent_id": 72,
+      "mutation": "[EXPL_SPATIALFREE] spatial_weight 1.0 -> 2.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1w11",
+        "use_spatial": false,
+        "spatial_weight": 2.0,
+        "params": {
+          "C": 30.0,
+          "epsilon": 0.1,
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.473656,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "solo"
+    },
+    {
+      "id": 78,
+      "parent_id": 72,
+      "mutation": "[EXPL_SPATIALFREE] spatial_weight 1.0 -> 0.5 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1w11",
+        "use_spatial": false,
+        "spatial_weight": 0.5,
+        "params": {
+          "C": 30.0,
+          "epsilon": 0.1,
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.473656,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 79,
+      "parent_id": 72,
+      "mutation": "[EXPL_SPATIALFREE] spatial_weight 1.0 -> 4.0 (comp-local knob)",
+      "config": {
+        "kind": "solo",
+        "model": "svr",
+        "variant": "sg1w11",
+        "use_spatial": false,
+        "spatial_weight": 4.0,
+        "params": {
+          "C": 30.0,
+          "epsilon": 0.1,
+          "gamma_scale": 1.0,
+          "kernel": "rbf"
+        }
+      },
+      "score": 0.473656,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 72,
+    "streak": {
+      "16": 3,
+      "8": 3,
+      "10": 3,
+      "7": 3,
+      "5": 3,
+      "15": 3,
+      "4": 3,
+      "6": 3,
+      "3": 3,
+      "1": 3,
+      "9": 3,
+      "2": 3,
+      "13": 3,
+      "12": 3,
+      "11": 3,
+      "14": 3,
+      "73": 3,
+      "72": 3
+    },
+    "plateaued": [
+      16,
+      8,
+      10,
+      7,
+      5,
+      15,
+      4,
+      6,
+      3,
+      1,
+      9,
+      2,
+      13,
+      12,
+      11,
+      14,
+      71,
+      73,
+      72
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 24,
+        "plateaued_lineage": 16,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 27,
+        "plateaued_lineage": 8,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 30,
+        "plateaued_lineage": 10,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 33,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 36,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 39,
+        "plateaued_lineage": 15,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 42,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 45,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 48,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 51,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 54,
+        "plateaued_lineage": 9,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 57,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 60,
+        "plateaued_lineage": 13,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 63,
+        "plateaued_lineage": 12,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 66,
+        "plateaued_lineage": 11,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 69,
+        "plateaued_lineage": 14,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.433071 (tie_rate=0.043, discretized=False)"
+      },
+      {
+        "at_node_id": 71,
+        "plateaued_lineage": 71,
+        "reason": "burst-seed sanity gate FAILED: node #71's score 0.686914 exceeds the sanity bound 0.549675 (factor=3.0x the root-to-global-best gap, floor=5% of |global best|) -- burning this seed's own already-sunk evaluation cost only, NOT opening a mutation lineage on top of it (feature 9; F-2 s3e14 lesson)"
+      },
+      {
+        "at_node_id": 76,
+        "plateaued_lineage": 73,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.428772 (tie_rate=0.039, discretized=False)"
+      },
+      {
+        "at_node_id": 79,
+        "plateaued_lineage": 72,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.428772 (tie_rate=0.075, discretized=False)"
+      }
+    ],
+    "budget": {
+      "total_budget": 80,
+      "explore_burst_size": 6,
+      "post_burst_patience": 20,
+      "phase": "stopped",
+      "burst_start_eval": 70,
+      "best_at_burst_start": 0.428772,
+      "evals_since_burst_improve": 5,
+      "stop_reason": "hard budget cap reached (80/80 evaluated nodes)"
+    },
+    "driver_state": {
+      "priors_log": [
+        "\u6975\u53f3\u504f\u76ee\u6a19(skew 10.2)\u5fc5 log1p;\u7dda\u6027\u6a21\u578b(Ridge)\u5728\u6b64\u8a2d\u5b9a\u4e0b\u53ef\u707d\u96e3\u6027\u7206\u70b8,GBDT \u7a69\u5065\u3002 | \u8b49\u64da:s3e20, exp #1,Ridge RMSE 23,917.63 vs LGB 32.75(\u5747\u503c baseline 155.54)\u3002",
+        "**\u76ee\u6a19\u843d\u5728\u96e2\u6563\u683c\u9ede \u2260 \u61c9\u628a\u9810\u6e2c\u8cbc\u56de\u683c\u9ede(\u5c0d RMSE \u6709\u5bb3)**:s5e10 \u76ee\u6a19 accident_risk \u843d\u5728 0.01 \u683c\u9ede(\u50c5 98 \u76f8\u7570\u503c),\u8a98\u4f7f\u5957\u7528 s3e14 \u7684\u300c\u8cbc\u9f4a\u6700\u8fd1\u8a13\u7df4\u89c0\u6e2c\u300d\u5f8c\u8655\u7406;\u4f46\u540c\u6298\u5c0d\u7167\u986f\u793a\u8cbc\u683c\u9ede\u5f8c RMSE 0.056095 > \u53ea clip \u7684 0.056027\u2014\u2014\u5e73\u65b9\u8aa4\u5dee\u8981\u7684\u662f\u689d\u4ef6\u671f\u671b(\u9023\u7e8c\u5747\u503c),\u628a\u9023\u7e8c\u9810\u6e2c\u786c\u62c9\u5230\u683c\u9ede\u53ea\u589e\u8aa4\u5dee\u3002\u8207 s3e16 \u53d6\u6574 MAE \u6070\u4e92\u88dc:**\u662f\u6307\u6a19(\u800c\u975e\u76ee\u6a19\u7684\u96e2\u6563\u5916\u89c0)\u6c7a\u5b9a\u8a72\u4e0d\u8a72\u505a\u96e2\u6563\u5316\u5f8c\u8655\u7406**\u3002 | \u8b49\u64da:s5e10, \u968e\u6bb53\u5148\u9a57\u6aa2\u9a57B,snap 0.056095 vs clip 0.056027\u3002",
+        "**\u6838\u5316(Kernel Ridge RBF)\u662f\u6bd4\u4efb\u4f55\u524d\u8655\u7406\u9078\u64c7\u90fd\u5927\u7684\u69d3\u687f**:\u540c\u4e00\u4efd SNV+SG-d1 \u5149\u8b5c,\u7dda\u6027 Ridge \u6700\u4f73\u8b8a\u9ad4 0.48668,\u63db\u6210 KRR-RBF(\u9589\u5f0f\u89e3,\u5c0d K \u505a\u4e00\u6b21 eigh \u5f8c\u6574\u689d alpha \u7db2\u683c\u514d\u8cbb)\u964d\u5230 0.46661(honest inner-CV)\u3002\u904e\u53bb\u300cp>>n \u5c31\u7528 Ridge\u3001GBDT/stacking \u6703\u904e\u64ec\u300d\u7684\u7d50\u8ad6\u4ecd\u6210\u7acb,\u4f46**\u300cRidge\u300d\u8a72\u7406\u89e3\u70ba\u300c\u6b63\u5247\u5316 + \u6838\u6280\u5de7\u300d\u800c\u975e\u300c\u7dda\u6027\u6a21\u578b\u300d**\u3002 | \u8b49\u64da:afsis-soil-properties, exp #2 vs #5\u3002",
+        "**\u5149\u8b5c\u8cc7\u6599\u7684 CV \u5fc5\u9808\u5148\u627e\u51fa\u300c\u540c\u5730\u9ede\u591a\u5217\u300d\u7684\u96b1\u85cf\u7fa4\u7d44**:afsis \u7684 15 \u500b\u7a7a\u9593\u5171\u8b8a\u91cf\u5728 1157 \u5217\u4e2d\u53ea\u6709 580 \u500b\u76f8\u7570\u503c\u2014\u2014565 \u500b\u5730\u9ede\u5404\u8ca2\u737b Topsoil/Subsoil \u4e00\u5c0d\u3002\u666e\u901a KFold \u6703\u628a\u540c\u5730\u9ede\u5169\u5217\u62c6\u5230\u5169\u5074\u800c\u6d29\u6f0f\u4f4d\u7f6e\u8cc7\u8a0a;\u6539\u7528\u300c\u7a7a\u9593\u7c3d\u540d GroupKFold\u300d\u624d\u8aa0\u5be6\u3002\u627e\u7fa4\u7d44\u9375\u7684\u901a\u7528\u505a\u6cd5:\u5c0d\u975e\u5149\u8b5c\u7684\u4e2d\u7e7c\u8cc7\u6599\u6b04\u505a round + tuple \u53bb\u91cd\u8a08\u6578\u3002 | \u8b49\u64da:afsis-soil-properties, EDA(580 unique sites / 1157 rows)\u3002",
+        "**\u6975\u504f\u614b\u76ee\u6a19 + RMSE \u6307\u6a19\u6642\u4e0d\u8981 log/winsorize**:afsis \u76ee\u6a19 skew \u9ad8\u9054 7.45(P)/4.71(Ca),\u76f4\u89ba\u60f3 log1p,\u4f46\u540c\u6298\u5c0d\u7167\u5168\u9762\u8b8a\u5dee(krrlog 0.47216\u3001krrwin(p99 \u5c01\u9802)0.46725 vs \u539f\u76ee\u6a19 0.45244)\u3002RMSE \u8981\u7684\u662f\u689d\u4ef6\u671f\u671b,\u58d3\u5c3e\u5df4\u7b49\u65bc\u7cfb\u7d71\u6027\u4f4e\u4f30\u9ad8\u503c\u5217\u3002\u8207\u300cRMSLE/\u6975\u504f\u614b\u76ee\u6a19\u300d\u7bc0\u7684 log1p \u5efa\u8b70\u4e0d\u885d\u7a81\u2014\u2014**\u90a3\u88e1\u6307\u6a19\u672c\u8eab\u5c31\u662f log \u5c3a\u5ea6,\u9019\u88e1\u4e0d\u662f;\u6c7a\u5b9a\u8981\u4e0d\u8981\u8f49\u63db\u7684\u662f\u6307\u6a19,\u4e0d\u662f\u76ee\u6a19\u7684\u5916\u89c0**(\u540c s5e10 snap-to-grid \u53cd\u4f8b\u7684\u908f\u8f2f)\u3002 | \u8b49\u64da:afsis-soil-properties, exp #7\u3002",
+        "\u591a\u76ee\u6a19\u984c(MCRMSE = \u5404\u6b04 RMSE \u5e73\u5747)\u61c9**\u9010\u76ee\u6a19**\u9078\u8d85\u53c3\u8207 blend \u6b0a\u91cd:afsis \u5404\u76ee\u6a19\u6700\u4f73 (gamma, alpha) \u5dee\u7570\u6975\u5927(P \u4e00\u81f4\u9078\u6700\u5f37\u6b63\u5247 alpha=0.3,\u5176\u9918\u76ee\u6a19\u9078 0.003\u20130.03),\u4e14\u6700\u4f73\u524d\u8655\u7406\u8b8a\u9ad4\u4e5f\u4e0d\u540c\u3002\u55ae\u4e00\u7d44\u5168\u57df\u8d85\u53c3\u6703\u88ab\u6700\u96e3\u7684\u6b04\u62d6\u8457\u8d70\u3002 | \u8b49\u64da:afsis-soil-properties, exp #9 \u9010\u76ee\u6a19\u6b0a\u91cd\u8868\u3002",
+        "OOF \u6b0a\u91cd\u641c\u5c0b\u5e38\u76f4\u63a5\u6dd8\u6c70\u5f31\u6a21\u578b(\u6b0a\u91cd=0)\u2014\u2014\u9019\u662f\u7279\u5fb5\u800c\u975e bug,\u5c0a\u91cd\u5b83:s3e3 CAT=0(\u5169\u6b21)\u3001s3e11 XGB=0(\u5169\u6b21)\u3001s3e19 \u5916\u63a8\u4e0b XGB=0(\u5169\u6b21)\u3001s3e20 \u4e09\u500b GBDT \u5168=0\u3002 | \u8b49\u64da:\u5404\u8a72\u8cfd experiments.json blend_weights\u3002",
+        "\u4e09\u6a21\u578b\u6642,\u55ae\u7d14 simplex \u7db2\u683c\u6b0a\u91cd\u641c\u5c0b\u96e3\u88ab\u5b78\u7fd2\u5f0f stacking \u6253\u6557:Ridge(\u975e\u8ca0)stacking \u53cd\u800c\u660e\u986f\u66f4\u5dee\u3002 | \u8b49\u64da:s3e14, exp #3,Ridge stack 344.04 vs simplex blend 340.76\u3002",
+        "\u672a\u512a\u5316\u7684 50/50 \u7b49\u6b0a ensemble \u53ef\u80fd\u6bd4\u6700\u4f73\u55ae\u6a21\u5dee\u2014\u2014\u6b0a\u91cd\u5fc5\u9808\u641c\u5c0b\u3002 | \u8b49\u64da:s3e20, exp #2,LGB 32.75 + XGB 34.44 \u7b49\u6b0a = 33.21 > LGB \u55ae\u6a21\u3002",
+        "\u6a21\u578b\u5be6\u529b\u76f8\u8fd1\u6642 blend \u624d\u7a69\u5b9a\u52dd\u904e\u6240\u6709\u55ae\u6a21\u3002 | \u8b49\u64da:s3e1, exp #2,blend 0.55877 < LGB 0.56109/XGB 0.56297/CAT 0.56188\u3002",
+        "**\u53cd\u4f8b(\u754c\u5b9a\u4e0a\u4e00\u689d\u7684\u908a\u754c):\u55ae\u6a21\u5f31\u4e0d\u4ee3\u8868\u4e0d\u8a72\u5165\u6c60\u2014\u2014\u5f31\u4f46\u7570\u8cea\u7684\u6210\u54e1\u4ecd\u53ef\u62ff\u5230\u5be6\u8cea\u6b0a\u91cd**\u3002afsis \u7684 svr_raw \u55ae\u6a21 MCRMSE 0.684(\u6700\u4f73\u6210\u54e1 0.452,\u5dee 50%),\u6b0a\u91cd\u641c\u5c0b\u4ecd\u7d66\u5b83 Ca \u76ee\u6a19 0.20 \u6b0a\u91cd;svr_sg1_C100 \u55ae\u6a21 0.5215 \u62ff\u5230 P \u76ee\u6a19 0.15 \u6b0a\u91cd\u3002\u8207 s3e3\u300cCAT \u5f31\u5c31\u88ab\u6b78\u96f6\u300d\u4e26\u5b58\u7684\u89e3\u8b80:**\u5165\u6c60\u9580\u6abb\u61c9\u662f\u300c\u8aa4\u5dee\u662f\u5426\u8207\u73fe\u6709\u6210\u54e1\u4e0d\u76f8\u95dc\u300d,\u4e0d\u662f\u55ae\u6a21\u5206\u6578;\u628a\u5f31\u6210\u54e1\u7559\u5728\u6c60\u88e1\u8b93\u6b0a\u91cd\u641c\u5c0b\u88c1\u6c7a,\u6210\u672c\u70ba\u96f6\u3002** | \u8b49\u64da:afsis-soil-properties, exp #4/#9 \u6b0a\u91cd\u8868\u3002",
+        "\u5f8c\u8655\u7406\u4e09\u5bf6\u7686\u6709\u5be6\u8b49:\u6574\u6578\u53d6\u6574(s3e16, 1.3565\u21921.3389)\u3001OptimizedRounder(s3e5, +0.055)\u3001snap-to-grid(s3e14, ~+0.05~0.06);\u53e6 clip \u5230\u8a13\u7df4\u76ee\u6a19\u503c\u57df\u4f5c\u5b89\u5168\u7db2(s3e1\u3001s3e11)\u3002 | \u8b49\u64da:\u898b\u300c\u4f9d\u6307\u6a19\u300d\u7bc0\u5404\u689d\u3002"
+      ],
+      "lineage_names": {
+        "1": "ridge_linear_sg1",
+        "2": "ridge_linear_snv",
+        "3": "krr_rbf_raw",
+        "4": "krr_rbf_snv",
+        "5": "KRR_KERNEL",
+        "6": "krr_rbf_sg2",
+        "7": "krr_rbf_sg1w11",
+        "8": "VARIANT",
+        "9": "krr_lap_sg1",
+        "10": "krr_poly2_snv",
+        "11": "DIVERSE",
+        "12": "pls_snv",
+        "13": "lgbpca_sg1",
+        "14": "krr_rbf_spatialonly",
+        "15": "SVR",
+        "16": "BLEND",
+        "17": "BLEND",
+        "18": "BLEND",
+        "19": "BLEND",
+        "20": "BLEND",
+        "21": "BLEND",
+        "22": "BLEND",
+        "23": "BLEND",
+        "24": "BLEND",
+        "25": "VARIANT",
+        "26": "VARIANT",
+        "27": "VARIANT",
+        "28": "krr_poly2_snv",
+        "29": "krr_poly2_snv",
+        "30": "krr_poly2_snv",
+        "31": "krr_rbf_sg1w11",
+        "32": "krr_rbf_sg1w11",
+        "33": "krr_rbf_sg1w11",
+        "34": "KRR_KERNEL",
+        "35": "KRR_KERNEL",
+        "36": "KRR_KERNEL",
+        "37": "SVR",
+        "38": "SVR",
+        "39": "SVR",
+        "40": "krr_rbf_snv",
+        "41": "krr_rbf_snv",
+        "42": "krr_rbf_snv",
+        "43": "krr_rbf_sg2",
+        "44": "krr_rbf_sg2",
+        "45": "krr_rbf_sg2",
+        "46": "krr_rbf_raw",
+        "47": "krr_rbf_raw",
+        "48": "krr_rbf_raw",
+        "49": "ridge_linear_sg1",
+        "50": "ridge_linear_sg1",
+        "51": "ridge_linear_sg1",
+        "52": "krr_lap_sg1",
+        "53": "krr_lap_sg1",
+        "54": "krr_lap_sg1",
+        "55": "ridge_linear_snv",
+        "56": "ridge_linear_snv",
+        "57": "ridge_linear_snv",
+        "58": "lgbpca_sg1",
+        "59": "lgbpca_sg1",
+        "60": "lgbpca_sg1",
+        "61": "pls_snv",
+        "62": "pls_snv",
+        "63": "pls_snv",
+        "64": "DIVERSE",
+        "65": "DIVERSE",
+        "66": "DIVERSE",
+        "67": "krr_rbf_spatialonly",
+        "68": "krr_rbf_spatialonly",
+        "69": "krr_rbf_spatialonly",
+        "70": "EXPL_LOWGAMMA",
+        "71": "EXPL_HIGHREG",
+        "72": "EXPL_SPATIALFREE",
+        "73": "EXPL_KITCHENSINK",
+        "74": "EXPL_KITCHENSINK",
+        "75": "EXPL_KITCHENSINK",
+        "76": "EXPL_KITCHENSINK",
+        "77": "EXPL_SPATIALFREE",
+        "78": "EXPL_SPATIALFREE",
+        "79": "EXPL_SPATIALFREE"
+      },
+      "node_results": {
+        "0": {
+          "mcrmse": 0.471939,
+          "per_target": {
+            "Ca": 0.358495,
+            "P": 0.929591,
+            "pH": 0.382145,
+            "SOC": 0.363414,
+            "Sand": 0.326053
+          },
+          "reused_from": "svr_rbf_sg1"
+        },
+        "1": {
+          "mcrmse": 0.507098,
+          "per_target": {
+            "Ca": 0.376518,
+            "P": 0.987269,
+            "pH": 0.399198,
+            "SOC": 0.412593,
+            "Sand": 0.359913
+          },
+          "reused_from": "ridge_linear_sg1"
+        },
+        "2": {
+          "mcrmse": 0.509952,
+          "per_target": {
+            "Ca": 0.411204,
+            "P": 0.960723,
+            "pH": 0.411261,
+            "SOC": 0.39098,
+            "Sand": 0.375594
+          },
+          "reused_from": "ridge_linear_snv"
+        },
+        "3": {
+          "mcrmse": 0.497413,
+          "per_target": {
+            "Ca": 0.30507,
+            "P": 0.964635,
+            "pH": 0.423007,
+            "SOC": 0.423294,
+            "Sand": 0.371061
+          },
+          "reused_from": "krr_rbf_raw"
+        },
+        "4": {
+          "mcrmse": 0.483994,
+          "per_target": {
+            "Ca": 0.344838,
+            "P": 0.953439,
+            "pH": 0.395656,
+            "SOC": 0.371404,
+            "Sand": 0.354631
+          },
+          "reused_from": "krr_rbf_snv"
+        },
+        "5": {
+          "mcrmse": 0.475432,
+          "per_target": {
+            "Ca": 0.336693,
+            "P": 0.95087,
+            "pH": 0.373123,
+            "SOC": 0.38218,
+            "Sand": 0.334293
+          },
+          "reused_from": "krr_rbf_sg1"
+        },
+        "6": {
+          "mcrmse": 0.48899,
+          "per_target": {
+            "Ca": 0.363618,
+            "P": 0.958616,
+            "pH": 0.394303,
+            "SOC": 0.394974,
+            "Sand": 0.333442
+          },
+          "reused_from": "krr_rbf_sg2"
+        },
+        "7": {
+          "mcrmse": 0.474935,
+          "per_target": {
+            "Ca": 0.335247,
+            "P": 0.950903,
+            "pH": 0.373195,
+            "SOC": 0.381717,
+            "Sand": 0.333615
+          },
+          "reused_from": "krr_rbf_sg1w11"
+        },
+        "8": {
+          "mcrmse": 0.473573,
+          "per_target": {
+            "Ca": 0.339826,
+            "P": 0.948123,
+            "pH": 0.367572,
+            "SOC": 0.375722,
+            "Sand": 0.336621
+          },
+          "reused_from": "krr_rbf_sg1_nospatial"
+        },
+        "9": {
+          "mcrmse": 0.507486,
+          "per_target": {
+            "Ca": 0.379036,
+            "P": 0.945728,
+            "pH": 0.450159,
+            "SOC": 0.418095,
+            "Sand": 0.34441
+          },
+          "reused_from": "krr_lap_sg1"
+        },
+        "10": {
+          "mcrmse": 0.474339,
+          "per_target": {
+            "Ca": 0.400613,
+            "P": 0.957055,
+            "pH": 0.361452,
+            "SOC": 0.309316,
+            "Sand": 0.34326
+          },
+          "reused_from": "krr_poly2_snv"
+        },
+        "11": {
+          "mcrmse": 0.548804,
+          "per_target": {
+            "Ca": 0.39255,
+            "P": 1.024631,
+            "pH": 0.493579,
+            "SOC": 0.431986,
+            "Sand": 0.401274
+          },
+          "reused_from": "pls_sg1"
+        },
+        "12": {
+          "mcrmse": 0.548192,
+          "per_target": {
+            "Ca": 0.418588,
+            "P": 0.988853,
+            "pH": 0.438963,
+            "SOC": 0.467724,
+            "Sand": 0.426832
+          },
+          "reused_from": "pls_snv"
+        },
+        "13": {
+          "mcrmse": 0.534282,
+          "per_target": {
+            "Ca": 0.402964,
+            "P": 0.954198,
+            "pH": 0.485423,
+            "SOC": 0.448547,
+            "Sand": 0.380278
+          },
+          "reused_from": "lgbpca_sg1"
+        },
+        "14": {
+          "mcrmse": 0.726751,
+          "per_target": {
+            "Ca": 0.663257,
+            "P": 0.996394,
+            "pH": 0.596847,
+            "SOC": 0.779336,
+            "Sand": 0.59792
+          },
+          "reused_from": "krr_rbf_spatialonly"
+        },
+        "15": {
+          "gamma": 2.387752,
+          "mcrmse": 0.478453,
+          "per_target": {
+            "Ca": 0.370102,
+            "P": 0.93838,
+            "pH": 0.369283,
+            "SOC": 0.375841,
+            "Sand": 0.33866
+          }
+        },
+        "16": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "per_target": true,
+          "weight_search": "greedy",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0,
+              0.0,
+              0.6471,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3529,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "P": [
+              0.4595,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1081,
+              0.3243,
+              0.0,
+              0.1081
+            ],
+            "pH": [
+              0.0,
+              0.1864,
+              0.0,
+              0.0,
+              0.0169,
+              0.0,
+              0.0,
+              0.0,
+              0.3559,
+              0.0,
+              0.4237,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0169
+            ],
+            "SOC": [
+              0.1522,
+              0.0,
+              0.0217,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.8261,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "Sand": [
+              0.3056,
+              0.0556,
+              0.0,
+              0.0278,
+              0.0,
+              0.0,
+              0.0833,
+              0.0,
+              0.0,
+              0.0,
+              0.2778,
+              0.0,
+              0.0,
+              0.0278,
+              0.0278,
+              0.1944
+            ]
+          },
+          "mcrmse": 0.433077,
+          "per_target_rmse": {
+            "Ca": 0.289033,
+            "P": 0.913673,
+            "pH": 0.337657,
+            "SOC": 0.307104,
+            "Sand": 0.317921
+          }
+        },
+        "17": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "per_target": true,
+          "weight_search": "bagged_greedy",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0713,
+              0.0069,
+              0.292,
+              0.1027,
+              0.1138,
+              0.0094,
+              0.1607,
+              0.2051,
+              0.0,
+              0.0069,
+              0.0095,
+              0.0,
+              0.0218,
+              0.0,
+              0.0
+            ],
+            "P": [
+              0.2001,
+              0.0,
+              0.073,
+              0.0089,
+              0.0033,
+              0.0173,
+              0.0,
+              0.0413,
+              0.1147,
+              0.0286,
+              0.0503,
+              0.0,
+              0.0582,
+              0.2772,
+              0.0,
+              0.127
+            ],
+            "pH": [
+              0.0017,
+              0.1764,
+              0.0537,
+              0.0109,
+              0.089,
+              0.0762,
+              0.0117,
+              0.0651,
+              0.2466,
+              0.0,
+              0.1882,
+              0.0023,
+              0.0171,
+              0.0,
+              0.0,
+              0.0613
+            ],
+            "SOC": [
+              0.1659,
+              0.0245,
+              0.1448,
+              0.0021,
+              0.086,
+              0.0,
+              0.0133,
+              0.0227,
+              0.0475,
+              0.0017,
+              0.3391,
+              0.0088,
+              0.0419,
+              0.0,
+              0.0,
+              0.1015
+            ],
+            "Sand": [
+              0.2092,
+              0.0862,
+              0.0314,
+              0.0459,
+              0.037,
+              0.0028,
+              0.1095,
+              0.0588,
+              0.0979,
+              0.0257,
+              0.1373,
+              0.005,
+              0.0,
+              0.0283,
+              0.0131,
+              0.1119
+            ]
+          },
+          "mcrmse": 0.441345,
+          "per_target_rmse": {
+            "Ca": 0.304475,
+            "P": 0.917239,
+            "pH": 0.342547,
+            "SOC": 0.322448,
+            "Sand": 0.320016
+          }
+        },
+        "18": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "per_target": true,
+          "weight_search": "dirichlet",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0,
+              0.0,
+              0.6469,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3531,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "P": [
+              0.4322,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1077,
+              0.3288,
+              0.0,
+              0.1314
+            ],
+            "pH": [
+              0.0,
+              0.1907,
+              0.0,
+              0.0,
+              0.0157,
+              0.0,
+              0.0,
+              0.0,
+              0.3615,
+              0.0,
+              0.4236,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0085
+            ],
+            "SOC": [
+              0.1548,
+              0.0,
+              0.009,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.8245,
+              0.0,
+              0.0116,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "Sand": [
+              0.3009,
+              0.0591,
+              0.0,
+              0.0342,
+              0.0,
+              0.0,
+              0.0689,
+              0.0,
+              0.0,
+              0.0,
+              0.2713,
+              0.0,
+              0.0,
+              0.0368,
+              0.0267,
+              0.2021
+            ]
+          },
+          "mcrmse": 0.433074,
+          "per_target_rmse": {
+            "Ca": 0.289033,
+            "P": 0.913682,
+            "pH": 0.337655,
+            "SOC": 0.307085,
+            "Sand": 0.317916
+          }
+        },
+        "19": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            15
+          ],
+          "per_target": true,
+          "weight_search": "greedy",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0,
+              0.0,
+              0.6471,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3529,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "P": [
+              0.4091,
+              0.0,
+              0.0909,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0455,
+              0.0,
+              0.2045,
+              0.25
+            ],
+            "pH": [
+              0.0,
+              0.1864,
+              0.0,
+              0.0,
+              0.0169,
+              0.0,
+              0.0,
+              0.0,
+              0.3559,
+              0.0,
+              0.4237,
+              0.0169
+            ],
+            "SOC": [
+              0.1522,
+              0.0,
+              0.0217,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.8261,
+              0.0
+            ],
+            "Sand": [
+              0.3137,
+              0.0588,
+              0.0,
+              0.0588,
+              0.0,
+              0.0,
+              0.098,
+              0.0,
+              0.0,
+              0.0,
+              0.2745,
+              0.1961
+            ]
+          },
+          "mcrmse": 0.43514,
+          "per_target_rmse": {
+            "Ca": 0.289033,
+            "P": 0.923541,
+            "pH": 0.337657,
+            "SOC": 0.307104,
+            "Sand": 0.318368
+          }
+        },
+        "20": {
+          "members": [
+            0,
+            4,
+            5,
+            6,
+            7,
+            8,
+            10,
+            15
+          ],
+          "per_target": true,
+          "weight_search": "greedy",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.4074,
+              0.0,
+              0.0,
+              0.0185,
+              0.537,
+              0.037,
+              0.0
+            ],
+            "P": [
+              0.4746,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0678,
+              0.2542,
+              0.2034
+            ],
+            "pH": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3913,
+              0.5217,
+              0.087
+            ],
+            "SOC": [
+              0.1579,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.8421,
+              0.0
+            ],
+            "Sand": [
+              0.3409,
+              0.0,
+              0.0,
+              0.1364,
+              0.0,
+              0.0,
+              0.3409,
+              0.1818
+            ]
+          },
+          "mcrmse": 0.443841,
+          "per_target_rmse": {
+            "Ca": 0.328452,
+            "P": 0.92374,
+            "pH": 0.341194,
+            "SOC": 0.307151,
+            "Sand": 0.318666
+          }
+        },
+        "21": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "per_target": true,
+          "weight_search": "greedy_ascent",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0,
+              0.0,
+              0.6471,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3529,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "P": [
+              0.4621,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1076,
+              0.3227,
+              0.0,
+              0.1076
+            ],
+            "pH": [
+              0.0,
+              0.1896,
+              0.0,
+              0.0,
+              0.0168,
+              0.0,
+              0.0,
+              0.0,
+              0.3574,
+              0.0,
+              0.4245,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0118
+            ],
+            "SOC": [
+              0.1548,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.8252,
+              0.0,
+              0.0199,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "Sand": [
+              0.3067,
+              0.0567,
+              0.0,
+              0.0334,
+              0.0,
+              0.0,
+              0.0697,
+              0.0,
+              0.0,
+              0.0,
+              0.2733,
+              0.0,
+              0.0,
+              0.0334,
+              0.0283,
+              0.1984
+            ]
+          },
+          "mcrmse": 0.433071,
+          "per_target_rmse": {
+            "Ca": 0.289033,
+            "P": 0.913673,
+            "pH": 0.337655,
+            "SOC": 0.30708,
+            "Sand": 0.317915
+          }
+        },
+        "22": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "per_target": false,
+          "weight_search": "greedy",
+          "weights": {
+            "all": [
+              0.1833,
+              0.0167,
+              0.0,
+              0.0667,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1333,
+              0.0,
+              0.3333,
+              0.0,
+              0.0,
+              0.0833,
+              0.0,
+              0.1833
+            ]
+          },
+          "mcrmse": 0.45284,
+          "per_target_rmse": {
+            "Ca": 0.341261,
+            "P": 0.92362,
+            "pH": 0.348969,
+            "SOC": 0.331167,
+            "Sand": 0.319185
+          }
+        },
+        "23": {
+          "members": [
+            0,
+            5,
+            7,
+            8,
+            10
+          ],
+          "per_target": true,
+          "weight_search": "dirichlet",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0193,
+              0.282,
+              0.5003,
+              0.1984
+            ],
+            "P": [
+              0.6694,
+              0.0,
+              0.0,
+              0.0922,
+              0.2384
+            ],
+            "pH": [
+              0.0,
+              0.0,
+              0.0,
+              0.465,
+              0.535
+            ],
+            "SOC": [
+              0.1525,
+              0.0,
+              0.0,
+              0.0053,
+              0.8422
+            ],
+            "Sand": [
+              0.657,
+              0.0,
+              0.0,
+              0.0,
+              0.343
+            ]
+          },
+          "mcrmse": 0.444833,
+          "per_target_rmse": {
+            "Ca": 0.332112,
+            "P": 0.924281,
+            "pH": 0.341302,
+            "SOC": 0.307158,
+            "Sand": 0.319313
+          }
+        },
+        "24": {
+          "members": [
+            0,
+            5,
+            7,
+            8,
+            10,
+            15
+          ],
+          "per_target": true,
+          "weight_search": "greedy_ascent",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.01,
+              0.2845,
+              0.5066,
+              0.199,
+              0.0
+            ],
+            "P": [
+              0.48,
+              0.0,
+              0.0,
+              0.0665,
+              0.2541,
+              0.1994
+            ],
+            "pH": [
+              0.0,
+              0.0,
+              0.0,
+              0.3894,
+              0.5241,
+              0.0865
+            ],
+            "SOC": [
+              0.1587,
+              0.0,
+              0.0,
+              0.0,
+              0.8413,
+              0.0
+            ],
+            "Sand": [
+              0.4839,
+              0.0,
+              0.0,
+              0.0,
+              0.3548,
+              0.1613
+            ]
+          },
+          "mcrmse": 0.444629,
+          "per_target_rmse": {
+            "Ca": 0.332112,
+            "P": 0.923739,
+            "pH": 0.341194,
+            "SOC": 0.307151,
+            "Sand": 0.318947
+          }
+        },
+        "25": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              0.3,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.1,
+              3.0,
+              0.01,
+              0.1,
+              0.03
+            ],
+            [
+              0.01,
+              0.3,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              0.1,
+              0.01,
+              0.03,
+              0.03
+            ]
+          ],
+          "gamma": 2.432097,
+          "mcrmse": 0.474577,
+          "per_target": {
+            "Ca": 0.340131,
+            "P": 0.948635,
+            "pH": 0.368059,
+            "SOC": 0.380702,
+            "Sand": 0.335357
+          }
+        },
+        "26": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.1,
+              0.1
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.1,
+              0.1
+            ],
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              0.1,
+              0.01,
+              0.1,
+              0.1
+            ]
+          ],
+          "gamma": 2.040566,
+          "mcrmse": 0.489105,
+          "per_target": {
+            "Ca": 0.370587,
+            "P": 0.960451,
+            "pH": 0.391707,
+            "SOC": 0.389573,
+            "Sand": 0.333209
+          }
+        },
+        "27": {
+          "alpha_per_fold": [
+            [
+              0.01,
+              0.3,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.003,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              0.3,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.003,
+              0.01,
+              0.03
+            ],
+            [
+              0.03,
+              0.1,
+              0.003,
+              0.03,
+              0.03
+            ]
+          ],
+          "gamma": 1.191525,
+          "mcrmse": 0.469187,
+          "per_target": {
+            "Ca": 0.343008,
+            "P": 0.953393,
+            "pH": 0.356659,
+            "SOC": 0.363798,
+            "Sand": 0.329079
+          }
+        },
+        "28": {
+          "alpha_per_fold": [
+            [
+              1.0,
+              3.0,
+              0.03,
+              0.1,
+              0.1
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.1,
+              0.03
+            ],
+            [
+              3.0,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              3.0,
+              3.0,
+              0.03,
+              0.1,
+              0.1
+            ],
+            [
+              1.0,
+              3.0,
+              0.1,
+              0.1,
+              0.03
+            ]
+          ],
+          "gamma": 10.668181,
+          "mcrmse": 0.4858,
+          "per_target": {
+            "Ca": 0.430282,
+            "P": 0.962541,
+            "pH": 0.373383,
+            "SOC": 0.315356,
+            "Sand": 0.347439
+          }
+        },
+        "29": {
+          "alpha_per_fold": [
+            [
+              1.0,
+              3.0,
+              0.1,
+              0.1,
+              0.1
+            ],
+            [
+              0.1,
+              3.0,
+              0.01,
+              0.1,
+              0.03
+            ],
+            [
+              3.0,
+              3.0,
+              0.03,
+              0.1,
+              0.1
+            ],
+            [
+              3.0,
+              3.0,
+              0.1,
+              0.1,
+              0.1
+            ],
+            [
+              3.0,
+              3.0,
+              0.1,
+              0.03,
+              0.1
+            ]
+          ],
+          "gamma": 17.732941,
+          "mcrmse": 0.470786,
+          "per_target": {
+            "Ca": 0.392195,
+            "P": 0.955345,
+            "pH": 0.357568,
+            "SOC": 0.305861,
+            "Sand": 0.34296
+          }
+        },
+        "30": {
+          "alpha_per_fold": [
+            [
+              1.0,
+              3.0,
+              0.1,
+              0.1,
+              0.1
+            ],
+            [
+              0.1,
+              3.0,
+              0.01,
+              0.1,
+              0.03
+            ],
+            [
+              3.0,
+              3.0,
+              0.03,
+              0.03,
+              0.1
+            ],
+            [
+              3.0,
+              3.0,
+              0.1,
+              0.1,
+              0.1
+            ],
+            [
+              3.0,
+              1.0,
+              0.1,
+              0.03,
+              0.1
+            ]
+          ],
+          "gamma": 18.330269,
+          "mcrmse": 0.471081,
+          "per_target": {
+            "Ca": 0.389891,
+            "P": 0.956895,
+            "pH": 0.35599,
+            "SOC": 0.310157,
+            "Sand": 0.342473
+          }
+        },
+        "31": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.1,
+              0.1
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.1,
+              0.1
+            ],
+            [
+              0.01,
+              1.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              0.1,
+              0.01,
+              0.1,
+              0.1
+            ]
+          ],
+          "gamma": 2.244916,
+          "mcrmse": 0.480865,
+          "per_target": {
+            "Ca": 0.346885,
+            "P": 0.954845,
+            "pH": 0.383342,
+            "SOC": 0.386627,
+            "Sand": 0.332627
+          }
+        },
+        "32": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.1,
+              0.1
+            ],
+            [
+              0.01,
+              0.3,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              0.1,
+              0.01,
+              0.03,
+              0.03
+            ]
+          ],
+          "gamma": 2.418873,
+          "mcrmse": 0.472842,
+          "per_target": {
+            "Ca": 0.330586,
+            "P": 0.94863,
+            "pH": 0.369281,
+            "SOC": 0.380953,
+            "Sand": 0.334762
+          }
+        },
+        "33": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              0.3,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.1,
+              0.03
+            ],
+            [
+              0.01,
+              0.3,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              0.1,
+              0.01,
+              0.03,
+              0.03
+            ]
+          ],
+          "gamma": 2.428044,
+          "mcrmse": 0.472128,
+          "per_target": {
+            "Ca": 0.329545,
+            "P": 0.948775,
+            "pH": 0.368034,
+            "SOC": 0.379744,
+            "Sand": 0.334542
+          }
+        },
+        "34": {
+          "alpha_per_fold": [
+            [
+              0.01,
+              0.3,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.003,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              0.3,
+              0.01,
+              0.03,
+              0.01
+            ],
+            [
+              0.03,
+              1.0,
+              0.003,
+              0.01,
+              0.03
+            ],
+            [
+              0.03,
+              0.1,
+              0.003,
+              0.03,
+              0.03
+            ]
+          ],
+          "gamma": 1.193876,
+          "mcrmse": 0.469345,
+          "per_target": {
+            "Ca": 0.344995,
+            "P": 0.948965,
+            "pH": 0.356725,
+            "SOC": 0.364053,
+            "Sand": 0.331987
+          }
+        },
+        "35": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              1.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              3.0,
+              0.03,
+              0.03,
+              0.1
+            ],
+            [
+              0.003,
+              0.3,
+              0.03,
+              0.1,
+              0.1
+            ]
+          ],
+          "gamma": 4.775503,
+          "mcrmse": 0.49517,
+          "per_target": {
+            "Ca": 0.355373,
+            "P": 0.94907,
+            "pH": 0.410616,
+            "SOC": 0.42242,
+            "Sand": 0.33837
+          }
+        },
+        "36": {
+          "alpha_per_fold": [
+            [
+              0.01,
+              0.3,
+              0.003,
+              0.01,
+              0.01
+            ],
+            [
+              0.01,
+              3.0,
+              0.003,
+              0.01,
+              0.01
+            ],
+            [
+              0.1,
+              0.1,
+              0.003,
+              0.01,
+              0.01
+            ],
+            [
+              0.03,
+              1.0,
+              0.003,
+              0.01,
+              0.01
+            ],
+            [
+              0.03,
+              0.03,
+              0.003,
+              0.01,
+              0.01
+            ]
+          ],
+          "gamma": 0.596938,
+          "mcrmse": 0.470357,
+          "per_target": {
+            "Ca": 0.353733,
+            "P": 0.954989,
+            "pH": 0.352932,
+            "SOC": 0.359563,
+            "Sand": 0.330569
+          }
+        },
+        "37": {
+          "gamma": 2.387752,
+          "mcrmse": 0.490814,
+          "per_target": {
+            "Ca": 0.394258,
+            "P": 0.946327,
+            "pH": 0.410679,
+            "SOC": 0.361209,
+            "Sand": 0.341599
+          }
+        },
+        "38": {
+          "gamma": 2.383051,
+          "mcrmse": 0.471583,
+          "per_target": {
+            "Ca": 0.357397,
+            "P": 0.92912,
+            "pH": 0.382941,
+            "SOC": 0.362959,
+            "Sand": 0.325494
+          }
+        },
+        "39": {
+          "gamma": 1.193876,
+          "mcrmse": 0.471881,
+          "per_target": {
+            "Ca": 0.360716,
+            "P": 0.934651,
+            "pH": 0.385477,
+            "SOC": 0.345532,
+            "Sand": 0.33303
+          }
+        },
+        "40": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.1,
+              3.0,
+              0.03,
+              0.03,
+              0.1
+            ],
+            [
+              0.1,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ]
+          ],
+          "gamma": 10.668181,
+          "mcrmse": 0.502407,
+          "per_target": {
+            "Ca": 0.41637,
+            "P": 0.960026,
+            "pH": 0.410475,
+            "SOC": 0.366006,
+            "Sand": 0.359158
+          }
+        },
+        "41": {
+          "alpha_per_fold": [
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ],
+            [
+              0.1,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.03,
+              0.03
+            ]
+          ],
+          "gamma": 17.732941,
+          "mcrmse": 0.472741,
+          "per_target": {
+            "Ca": 0.316706,
+            "P": 0.950155,
+            "pH": 0.383977,
+            "SOC": 0.358204,
+            "Sand": 0.354665
+          }
+        },
+        "42": {
+          "alpha_per_fold": [
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ],
+            [
+              0.1,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.03,
+              0.03
+            ]
+          ],
+          "gamma": 18.330269,
+          "mcrmse": 0.469086,
+          "per_target": {
+            "Ca": 0.309105,
+            "P": 0.949055,
+            "pH": 0.375679,
+            "SOC": 0.356036,
+            "Sand": 0.355555
+          }
+        },
+        "43": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              1.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              0.1,
+              0.03,
+              0.03,
+              0.1
+            ]
+          ],
+          "gamma": 2.256087,
+          "mcrmse": 0.494186,
+          "per_target": {
+            "Ca": 0.370007,
+            "P": 0.963219,
+            "pH": 0.404285,
+            "SOC": 0.399799,
+            "Sand": 0.333622
+          }
+        },
+        "44": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.1,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              0.3,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.01,
+              0.1
+            ],
+            [
+              0.01,
+              0.1,
+              0.01,
+              0.03,
+              0.1
+            ]
+          ],
+          "gamma": 2.429302,
+          "mcrmse": 0.489223,
+          "per_target": {
+            "Ca": 0.368979,
+            "P": 0.95702,
+            "pH": 0.391213,
+            "SOC": 0.394471,
+            "Sand": 0.334434
+          }
+        },
+        "45": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.003,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.03,
+              1.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.1
+            ],
+            [
+              0.003,
+              0.1,
+              0.03,
+              0.03,
+              0.1
+            ]
+          ],
+          "gamma": 1.817303,
+          "mcrmse": 0.509479,
+          "per_target": {
+            "Ca": 0.4154,
+            "P": 0.971743,
+            "pH": 0.419334,
+            "SOC": 0.405761,
+            "Sand": 0.335157
+          }
+        },
+        "46": {
+          "alpha_per_fold": [
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.01,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.03,
+              0.03,
+              0.03
+            ],
+            [
+              0.003,
+              1.0,
+              0.03,
+              0.01,
+              0.03
+            ]
+          ],
+          "gamma": 13.196505,
+          "mcrmse": 0.516388,
+          "per_target": {
+            "Ca": 0.357417,
+            "P": 0.97541,
+            "pH": 0.437349,
+            "SOC": 0.435987,
+            "Sand": 0.375776
+          }
+        },
+        "47": {
+          "alpha_per_fold": [
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.01,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.003,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.01,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.03,
+              0.003,
+              0.03
+            ]
+          ],
+          "gamma": 25.143027,
+          "mcrmse": 0.494052,
+          "per_target": {
+            "Ca": 0.301821,
+            "P": 0.96084,
+            "pH": 0.414453,
+            "SOC": 0.41925,
+            "Sand": 0.373897
+          }
+        },
+        "48": {
+          "alpha_per_fold": [
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.01,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.03,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.01,
+              0.003,
+              0.01
+            ],
+            [
+              0.01,
+              3.0,
+              0.01,
+              0.01,
+              0.03
+            ],
+            [
+              0.01,
+              3.0,
+              0.03,
+              0.003,
+              0.03
+            ]
+          ],
+          "gamma": 26.239807,
+          "mcrmse": 0.493187,
+          "per_target": {
+            "Ca": 0.304763,
+            "P": 0.959816,
+            "pH": 0.416466,
+            "SOC": 0.406149,
+            "Sand": 0.378744
+          }
+        },
+        "49": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.001,
+              0.001,
+              0.01
+            ],
+            [
+              0.03,
+              3.0,
+              0.003,
+              0.01,
+              0.01
+            ],
+            [
+              0.3,
+              1.0,
+              0.001,
+              0.001,
+              0.01
+            ],
+            [
+              0.01,
+              3.0,
+              0.001,
+              0.01,
+              0.003
+            ],
+            [
+              0.03,
+              0.001,
+              0.001,
+              0.001,
+              0.01
+            ]
+          ],
+          "gamma": 2.250842,
+          "mcrmse": 0.509233,
+          "per_target": {
+            "Ca": 0.377621,
+            "P": 0.990055,
+            "pH": 0.399927,
+            "SOC": 0.419546,
+            "Sand": 0.359017
+          }
+        },
+        "50": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.001,
+              0.001,
+              0.01
+            ],
+            [
+              0.03,
+              3.0,
+              0.003,
+              0.001,
+              0.003
+            ],
+            [
+              0.3,
+              0.3,
+              0.001,
+              0.001,
+              0.01
+            ],
+            [
+              0.01,
+              3.0,
+              0.001,
+              0.001,
+              0.003
+            ],
+            [
+              0.03,
+              0.001,
+              0.001,
+              0.001,
+              0.003
+            ]
+          ],
+          "gamma": 2.425791,
+          "mcrmse": 0.503882,
+          "per_target": {
+            "Ca": 0.375586,
+            "P": 0.984816,
+            "pH": 0.398486,
+            "SOC": 0.401175,
+            "Sand": 0.359349
+          }
+        },
+        "51": {
+          "alpha_per_fold": [
+            [
+              0.03,
+              1.0,
+              0.001,
+              0.001,
+              0.01
+            ],
+            [
+              0.03,
+              3.0,
+              0.003,
+              0.001,
+              0.003
+            ],
+            [
+              0.3,
+              0.3,
+              0.001,
+              0.001,
+              0.01
+            ],
+            [
+              0.01,
+              3.0,
+              0.001,
+              0.001,
+              0.003
+            ],
+            [
+              0.03,
+              0.001,
+              0.001,
+              0.001,
+              0.003
+            ]
+          ],
+          "gamma": 2.433329,
+          "mcrmse": 0.502943,
+          "per_target": {
+            "Ca": 0.375202,
+            "P": 0.981942,
+            "pH": 0.398441,
+            "SOC": 0.398684,
+            "Sand": 0.360448
+          }
+        },
+        "52": {
+          "alpha_per_fold": [
+            [
+              0.001,
+              1.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              3.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              1.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              3.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              0.1,
+              0.001,
+              0.001,
+              0.001
+            ]
+          ],
+          "gamma": 2.250842,
+          "mcrmse": 0.510077,
+          "per_target": {
+            "Ca": 0.383935,
+            "P": 0.95037,
+            "pH": 0.453812,
+            "SOC": 0.418035,
+            "Sand": 0.344232
+          }
+        },
+        "53": {
+          "alpha_per_fold": [
+            [
+              0.001,
+              1.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              3.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              1.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              3.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ]
+          ],
+          "gamma": 2.425791,
+          "mcrmse": 0.507259,
+          "per_target": {
+            "Ca": 0.37794,
+            "P": 0.944685,
+            "pH": 0.449169,
+            "SOC": 0.418467,
+            "Sand": 0.346035
+          }
+        },
+        "54": {
+          "alpha_per_fold": [
+            [
+              0.001,
+              1.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              3.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              1.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              3.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ]
+          ],
+          "gamma": 2.433329,
+          "mcrmse": 0.507308,
+          "per_target": {
+            "Ca": 0.377646,
+            "P": 0.9444,
+            "pH": 0.448861,
+            "SOC": 0.418586,
+            "Sand": 0.347045
+          }
+        },
+        "55": {
+          "alpha_per_fold": [
+            [
+              0.003,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              1.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.01,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.003,
+              3.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.003,
+              0.01,
+              0.001,
+              0.001,
+              0.001
+            ]
+          ],
+          "gamma": 10.668181,
+          "mcrmse": 0.511122,
+          "per_target": {
+            "Ca": 0.410599,
+            "P": 0.965992,
+            "pH": 0.412195,
+            "SOC": 0.391069,
+            "Sand": 0.375757
+          }
+        },
+        "56": {
+          "alpha_per_fold": [
+            [
+              0.003,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.01,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.003,
+              1.0,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.003,
+              0.003,
+              0.001,
+              0.001,
+              0.001
+            ]
+          ],
+          "gamma": 17.732941,
+          "mcrmse": 0.509296,
+          "per_target": {
+            "Ca": 0.410934,
+            "P": 0.957733,
+            "pH": 0.409948,
+            "SOC": 0.391587,
+            "Sand": 0.376276
+          }
+        },
+        "57": {
+          "alpha_per_fold": [
+            [
+              0.003,
+              0.001,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.001,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.01,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.003,
+              0.3,
+              0.001,
+              0.001,
+              0.001
+            ],
+            [
+              0.003,
+              0.001,
+              0.001,
+              0.001,
+              0.001
+            ]
+          ],
+          "gamma": 18.330269,
+          "mcrmse": 0.510533,
+          "per_target": {
+            "Ca": 0.410443,
+            "P": 0.961218,
+            "pH": 0.408726,
+            "SOC": 0.393216,
+            "Sand": 0.379064
+          }
+        },
+        "58": {
+          "n_components": 40,
+          "mcrmse": 0.549807,
+          "per_target": {
+            "Ca": 0.409015,
+            "P": 0.996214,
+            "pH": 0.485796,
+            "SOC": 0.475342,
+            "Sand": 0.382665
+          }
+        },
+        "59": {
+          "n_components": 40,
+          "mcrmse": 0.541152,
+          "per_target": {
+            "Ca": 0.408134,
+            "P": 0.974545,
+            "pH": 0.48827,
+            "SOC": 0.459365,
+            "Sand": 0.375445
+          }
+        },
+        "60": {
+          "n_components": 40,
+          "mcrmse": 0.549591,
+          "per_target": {
+            "Ca": 0.404547,
+            "P": 0.984499,
+            "pH": 0.497517,
+            "SOC": 0.474564,
+            "Sand": 0.386828
+          }
+        },
+        "61": {
+          "n_components": 25,
+          "mcrmse": 0.549912,
+          "per_target": {
+            "Ca": 0.416021,
+            "P": 0.978617,
+            "pH": 0.448466,
+            "SOC": 0.474906,
+            "Sand": 0.431551
+          }
+        },
+        "62": {
+          "n_components": 25,
+          "mcrmse": 0.536909,
+          "per_target": {
+            "Ca": 0.41405,
+            "P": 0.990183,
+            "pH": 0.426478,
+            "SOC": 0.434341,
+            "Sand": 0.419494
+          }
+        },
+        "63": {
+          "n_components": 25,
+          "mcrmse": 0.535486,
+          "per_target": {
+            "Ca": 0.41337,
+            "P": 0.992125,
+            "pH": 0.425566,
+            "SOC": 0.430166,
+            "Sand": 0.416201
+          }
+        },
+        "64": {
+          "n_components": 12,
+          "mcrmse": 0.566815,
+          "per_target": {
+            "Ca": 0.412723,
+            "P": 0.98661,
+            "pH": 0.547203,
+            "SOC": 0.446737,
+            "Sand": 0.4408
+          }
+        },
+        "65": {
+          "n_components": 35,
+          "mcrmse": 0.544888,
+          "per_target": {
+            "Ca": 0.381935,
+            "P": 1.086763,
+            "pH": 0.456179,
+            "SOC": 0.422066,
+            "Sand": 0.377498
+          }
+        },
+        "66": {
+          "n_components": 60,
+          "mcrmse": 0.534075,
+          "per_target": {
+            "Ca": 0.404184,
+            "P": 0.964131,
+            "pH": 0.463812,
+            "SOC": 0.458289,
+            "Sand": 0.37996
+          }
+        },
+        "67": {
+          "alpha_per_fold": [
+            [
+              0.3,
+              3.0,
+              0.1,
+              0.1,
+              0.03
+            ],
+            [
+              0.1,
+              3.0,
+              0.1,
+              0.3,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.3,
+              0.3,
+              0.03
+            ],
+            [
+              0.3,
+              3.0,
+              0.3,
+              0.3,
+              0.1
+            ],
+            [
+              0.1,
+              3.0,
+              0.1,
+              0.1,
+              0.03
+            ]
+          ],
+          "gamma": 0.696305,
+          "mcrmse": 0.726751,
+          "per_target": {
+            "Ca": 0.663257,
+            "P": 0.996394,
+            "pH": 0.596847,
+            "SOC": 0.779336,
+            "Sand": 0.59792
+          }
+        },
+        "68": {
+          "alpha_per_fold": [
+            [
+              0.3,
+              3.0,
+              0.1,
+              0.1,
+              0.03
+            ],
+            [
+              0.1,
+              3.0,
+              0.1,
+              0.3,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.3,
+              0.3,
+              0.03
+            ],
+            [
+              0.3,
+              3.0,
+              0.3,
+              0.3,
+              0.1
+            ],
+            [
+              0.1,
+              3.0,
+              0.1,
+              0.1,
+              0.03
+            ]
+          ],
+          "gamma": 0.696305,
+          "mcrmse": 0.726751,
+          "per_target": {
+            "Ca": 0.663257,
+            "P": 0.996394,
+            "pH": 0.596847,
+            "SOC": 0.779336,
+            "Sand": 0.59792
+          }
+        },
+        "69": {
+          "alpha_per_fold": [
+            [
+              0.3,
+              3.0,
+              0.1,
+              0.1,
+              0.03
+            ],
+            [
+              0.1,
+              3.0,
+              0.1,
+              0.3,
+              0.03
+            ],
+            [
+              0.03,
+              3.0,
+              0.3,
+              0.3,
+              0.03
+            ],
+            [
+              0.3,
+              3.0,
+              0.3,
+              0.3,
+              0.1
+            ],
+            [
+              0.1,
+              3.0,
+              0.1,
+              0.1,
+              0.03
+            ]
+          ],
+          "gamma": 0.696305,
+          "mcrmse": 0.726751,
+          "per_target": {
+            "Ca": 0.663257,
+            "P": 0.996394,
+            "pH": 0.596847,
+            "SOC": 0.779336,
+            "Sand": 0.59792
+          }
+        },
+        "70": {
+          "alpha_per_fold": [
+            [
+              0.003,
+              0.1,
+              0.001,
+              0.003,
+              0.003
+            ],
+            [
+              0.003,
+              3.0,
+              0.001,
+              0.003,
+              0.003
+            ],
+            [
+              0.03,
+              0.1,
+              0.001,
+              0.003,
+              0.003
+            ],
+            [
+              0.01,
+              1.0,
+              0.0003,
+              0.001,
+              0.003
+            ],
+            [
+              0.01,
+              0.01,
+              0.001,
+              0.001,
+              0.003
+            ]
+          ],
+          "gamma": 0.238775,
+          "mcrmse": 0.473991,
+          "per_target": {
+            "Ca": 0.355872,
+            "P": 0.962455,
+            "pH": 0.35342,
+            "SOC": 0.365597,
+            "Sand": 0.332612
+          }
+        },
+        "71": {
+          "alpha_per_fold": [
+            [
+              0.3,
+              0.3,
+              0.3,
+              0.3,
+              0.3
+            ],
+            [
+              0.3,
+              0.3,
+              0.3,
+              0.3,
+              0.3
+            ],
+            [
+              0.3,
+              0.3,
+              0.3,
+              0.3,
+              0.3
+            ],
+            [
+              0.3,
+              1.0,
+              0.3,
+              0.3,
+              0.3
+            ],
+            [
+              0.3,
+              0.3,
+              0.3,
+              0.3,
+              0.3
+            ]
+          ],
+          "gamma": 21.316439,
+          "mcrmse": 0.686914,
+          "per_target": {
+            "Ca": 0.667627,
+            "P": 0.971573,
+            "pH": 0.580705,
+            "SOC": 0.655031,
+            "Sand": 0.559634
+          }
+        },
+        "72": {
+          "gamma": 2.420394,
+          "mcrmse": 0.473656,
+          "per_target": {
+            "Ca": 0.360274,
+            "P": 0.928535,
+            "pH": 0.364696,
+            "SOC": 0.368368,
+            "Sand": 0.346407
+          }
+        },
+        "73": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72
+          ],
+          "per_target": true,
+          "weight_search": "greedy",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0,
+              0.0,
+              0.4107,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1429,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3214,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0179,
+              0.1071,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "P": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1698,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1887,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1132,
+              0.0,
+              0.0,
+              0.0755,
+              0.0,
+              0.0,
+              0.0943,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3585
+            ],
+            "pH": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0833,
+              0.0,
+              0.3,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0167,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1333,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1,
+              0.0,
+              0.2667
+            ],
+            "SOC": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.8036,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1786,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0179
+            ],
+            "Sand": [
+              0.0169,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0169,
+              0.1864,
+              0.0,
+              0.0,
+              0.0,
+              0.0169,
+              0.0,
+              0.2542,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.2034,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0339,
+              0.0169,
+              0.0678,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0678,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0169,
+              0.0,
+              0.0,
+              0.0,
+              0.0678,
+              0.0,
+              0.0339
+            ]
+          },
+          "mcrmse": 0.428772,
+          "per_target_rmse": {
+            "Ca": 0.283924,
+            "P": 0.907595,
+            "pH": 0.333645,
+            "SOC": 0.302079,
+            "Sand": 0.316619
+          }
+        },
+        "74": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72
+          ],
+          "per_target": true,
+          "weight_search": "bagged_greedy",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0,
+              0.0,
+              0.2362,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0461,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0056,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0193,
+              0.0541,
+              0.0,
+              0.0982,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0712,
+              0.1174,
+              0.0,
+              0.0,
+              0.0,
+              0.0127,
+              0.2117,
+              0.1275,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "P": [
+              0.0137,
+              0.0,
+              0.0034,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0121,
+              0.0,
+              0.0,
+              0.0,
+              0.0082,
+              0.1097,
+              0.0,
+              0.0587,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0018,
+              0.0018,
+              0.0,
+              0.0,
+              0.0017,
+              0.0,
+              0.0,
+              0.0,
+              0.0359,
+              0.0509,
+              0.0723,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0017,
+              0.0017,
+              0.0,
+              0.0184,
+              0.0283,
+              0.0,
+              0.0034,
+              0.0775,
+              0.0135,
+              0.0142,
+              0.0492,
+              0.0,
+              0.0,
+              0.1197,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3021
+            ],
+            "pH": [
+              0.0,
+              0.0265,
+              0.0,
+              0.0,
+              0.0089,
+              0.0,
+              0.0,
+              0.0,
+              0.0391,
+              0.0,
+              0.0193,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0055,
+              0.008,
+              0.0,
+              0.0142,
+              0.0134,
+              0.0705,
+              0.247,
+              0.0,
+              0.0,
+              0.0316,
+              0.0464,
+              0.0,
+              0.0196,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.037,
+              0.0418,
+              0.0,
+              0.0,
+              0.0,
+              0.011,
+              0.0,
+              0.0,
+              0.0,
+              0.035,
+              0.0812,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0018,
+              0.0017,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0664,
+              0.0,
+              0.1742
+            ],
+            "SOC": [
+              0.0,
+              0.0,
+              0.0034,
+              0.0,
+              0.005,
+              0.0,
+              0.0,
+              0.0,
+              0.0029,
+              0.0,
+              0.0927,
+              0.0,
+              0.0019,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0053,
+              0.3583,
+              0.2595,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0017,
+              0.0,
+              0.083,
+              0.0075,
+              0.0247,
+              0.0,
+              0.013,
+              0.0,
+              0.0,
+              0.0017,
+              0.0,
+              0.0,
+              0.0,
+              0.0025,
+              0.0,
+              0.0,
+              0.005,
+              0.0,
+              0.0,
+              0.0046,
+              0.0034,
+              0.0147,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.023,
+              0.0025,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.005,
+              0.0,
+              0.0786
+            ],
+            "Sand": [
+              0.0656,
+              0.0,
+              0.0,
+              0.01,
+              0.0017,
+              0.0,
+              0.015,
+              0.0,
+              0.0117,
+              0.0,
+              0.0222,
+              0.0,
+              0.0,
+              0.0,
+              0.0067,
+              0.1172,
+              0.0,
+              0.0017,
+              0.0033,
+              0.0067,
+              0.0503,
+              0.1708,
+              0.0,
+              0.0,
+              0.0117,
+              0.0033,
+              0.0,
+              0.0101,
+              0.0067,
+              0.1587,
+              0.015,
+              0.0067,
+              0.0,
+              0.0,
+              0.0,
+              0.0253,
+              0.0222,
+              0.0453,
+              0.0,
+              0.0,
+              0.0,
+              0.01,
+              0.0117,
+              0.0,
+              0.0017,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0403,
+              0.005,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.017,
+              0.0103,
+              0.0017,
+              0.0117,
+              0.0487,
+              0.0,
+              0.0543
+            ]
+          },
+          "mcrmse": 0.430371,
+          "per_target_rmse": {
+            "Ca": 0.286233,
+            "P": 0.909496,
+            "pH": 0.334565,
+            "SOC": 0.304436,
+            "Sand": 0.317125
+          }
+        },
+        "75": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72
+          ],
+          "per_target": true,
+          "weight_search": "dirichlet",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0,
+              0.0,
+              0.3483,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0048,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.054,
+              0.0,
+              0.1181,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3012,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0948,
+              0.0788,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "P": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1646,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1824,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1128,
+              0.0,
+              0.0129,
+              0.0685,
+              0.0,
+              0.0,
+              0.0942,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3645
+            ],
+            "pH": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.069,
+              0.042,
+              0.2645,
+              0.0,
+              0.0,
+              0.0,
+              0.0348,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1046,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0501,
+              0.0545,
+              0.0281,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0898,
+              0.0,
+              0.2626
+            ],
+            "SOC": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.8001,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1793,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0048,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0157
+            ],
+            "Sand": [
+              0.0876,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0042,
+              0.1547,
+              0.0,
+              0.0,
+              0.0,
+              0.0135,
+              0.1381,
+              0.1163,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.139,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0441,
+              0.0,
+              0.0737,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0107,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0758,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0046,
+              0.0,
+              0.0104,
+              0.0047,
+              0.0688,
+              0.0,
+              0.0538
+            ]
+          },
+          "mcrmse": 0.428899,
+          "per_target_rmse": {
+            "Ca": 0.284286,
+            "P": 0.907609,
+            "pH": 0.333828,
+            "SOC": 0.302076,
+            "Sand": 0.316695
+          }
+        },
+        "76": {
+          "members": [
+            0,
+            27,
+            29,
+            30,
+            32,
+            33,
+            34,
+            36,
+            38,
+            39,
+            41,
+            42
+          ],
+          "per_target": true,
+          "weight_search": "greedy",
+          "weights": {
+            "Ca": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.2203,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.7797
+            ],
+            "P": [
+              0.0,
+              0.0,
+              0.1429,
+              0.1429,
+              0.0,
+              0.0286,
+              0.0,
+              0.0,
+              0.6857,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "pH": [
+              0.0,
+              0.125,
+              0.0,
+              0.45,
+              0.0,
+              0.2,
+              0.025,
+              0.075,
+              0.0,
+              0.0,
+              0.0,
+              0.125
+            ],
+            "SOC": [
+              0.0,
+              0.0,
+              0.8333,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.15,
+              0.0167,
+              0.0,
+              0.0
+            ],
+            "Sand": [
+              0.1636,
+              0.0,
+              0.0,
+              0.3455,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.4909,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "mcrmse": 0.438032,
+          "per_target_rmse": {
+            "Ca": 0.307249,
+            "P": 0.9232,
+            "pH": 0.337544,
+            "SOC": 0.303471,
+            "Sand": 0.318696
+          }
+        },
+        "77": {
+          "gamma": 2.420394,
+          "mcrmse": 0.473656,
+          "per_target": {
+            "Ca": 0.360274,
+            "P": 0.928535,
+            "pH": 0.364696,
+            "SOC": 0.368368,
+            "Sand": 0.346407
+          }
+        },
+        "78": {
+          "gamma": 2.420394,
+          "mcrmse": 0.473656,
+          "per_target": {
+            "Ca": 0.360274,
+            "P": 0.928535,
+            "pH": 0.364696,
+            "SOC": 0.368368,
+            "Sand": 0.346407
+          }
+        },
+        "79": {
+          "gamma": 2.420394,
+          "mcrmse": 0.473656,
+          "per_target": {
+            "Ca": 0.360274,
+            "P": 0.928535,
+            "pH": 0.364696,
+            "SOC": 0.368368,
+            "Sand": 0.346407
+          }
+        }
+      },
+      "queues": {
+        "BLEND_idx": 11,
+        "VARIANT_idx": 3,
+        "krr_poly2_snv_bpush": [
+          "10:spatial_weight:2.0",
+          "10:spatial_weight:0.5",
+          "29:spatial_weight:1.0",
+          "29:spatial_weight:0.25"
+        ],
+        "krr_rbf_sg1w11_bpush": [
+          "7:spatial_weight:2.0",
+          "7:spatial_weight:0.5",
+          "32:spatial_weight:1.0",
+          "32:spatial_weight:0.25"
+        ],
+        "KRR_KERNEL_idx": 3,
+        "SVR_idx": 3,
+        "krr_rbf_snv_bpush": [
+          "4:spatial_weight:2.0",
+          "4:spatial_weight:0.5",
+          "41:spatial_weight:1.0",
+          "41:spatial_weight:0.25"
+        ],
+        "krr_rbf_sg2_bpush": [
+          "6:spatial_weight:2.0",
+          "6:spatial_weight:0.5",
+          "6:spatial_weight:4.0"
+        ],
+        "krr_rbf_raw_bpush": [
+          "3:spatial_weight:2.0",
+          "3:spatial_weight:0.5",
+          "47:spatial_weight:1.0",
+          "47:spatial_weight:0.25"
+        ],
+        "ridge_linear_sg1_bpush": [
+          "1:spatial_weight:2.0",
+          "1:spatial_weight:0.5",
+          "50:spatial_weight:1.0",
+          "50:spatial_weight:0.25"
+        ],
+        "krr_lap_sg1_bpush": [
+          "9:spatial_weight:2.0",
+          "9:spatial_weight:0.5",
+          "53:spatial_weight:1.0",
+          "53:spatial_weight:0.25"
+        ],
+        "ridge_linear_snv_bpush": [
+          "2:spatial_weight:2.0",
+          "2:spatial_weight:0.5",
+          "56:spatial_weight:1.0",
+          "56:spatial_weight:0.25"
+        ],
+        "lgbpca_sg1_bpush": [
+          "13:spatial_weight:2.0",
+          "13:spatial_weight:0.5",
+          "13:spatial_weight:4.0"
+        ],
+        "pls_snv_bpush": [
+          "12:spatial_weight:2.0",
+          "12:spatial_weight:0.5",
+          "62:spatial_weight:1.0",
+          "62:spatial_weight:0.25"
+        ],
+        "DIVERSE_idx": 3,
+        "krr_rbf_spatialonly_bpush": [
+          "14:spatial_weight:2.0",
+          "14:spatial_weight:0.5",
+          "14:spatial_weight:4.0"
+        ],
+        "EXPL_KITCHENSINK_idx": 4,
+        "EXPL_SPATIALFREE_bpush": [
+          "72:spatial_weight:2.0",
+          "72:spatial_weight:0.5",
+          "72:spatial_weight:4.0"
+        ]
+      },
+      "dedup_rejections": [
+        {
+          "mutation": "[BLEND] reblend kitchen-sink (all solos) via greedy, per-target weights over 16 members",
+          "dup_id": 16
+        },
+        {
+          "mutation": "[BLEND] reblend top20 via greedy, per-target weights over 16 members",
+          "dup_id": 16
+        },
+        {
+          "mutation": "[BLEND] reblend top16 via bagged_greedy, per-target weights over 16 members",
+          "dup_id": 17
+        },
+        {
+          "mutation": "[krr_poly2_snv] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+          "dup_id": 10
+        },
+        {
+          "mutation": "[krr_rbf_sg1w11] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+          "dup_id": 7
+        },
+        {
+          "mutation": "[krr_rbf_snv] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+          "dup_id": 4
+        },
+        {
+          "mutation": "[krr_rbf_raw] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+          "dup_id": 3
+        },
+        {
+          "mutation": "[ridge_linear_sg1] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+          "dup_id": 1
+        },
+        {
+          "mutation": "[krr_lap_sg1] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+          "dup_id": 9
+        },
+        {
+          "mutation": "[ridge_linear_snv] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+          "dup_id": 2
+        },
+        {
+          "mutation": "[pls_snv] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+          "dup_id": 12
+        },
+        {
+          "mutation": "[EXPL_KITCHENSINK] reblend kitchen-sink (all solos) via greedy, per-target weights over 64 members",
+          "dup_id": 73
+        }
+      ],
+      "boundary_log": []
+    },
+    "dedup_streak": {
+      "0": 0,
+      "16": 0,
+      "18": 0,
+      "21": 0,
+      "8": 0,
+      "10": 0,
+      "29": 0,
+      "7": 0,
+      "32": 0,
+      "5": 0,
+      "34": 0,
+      "15": 0,
+      "38": 0,
+      "4": 0,
+      "41": 0,
+      "6": 0,
+      "3": 0,
+      "47": 0,
+      "1": 0,
+      "50": 0,
+      "9": 0,
+      "53": 0,
+      "2": 0,
+      "56": 0,
+      "13": 0,
+      "12": 0,
+      "62": 0,
+      "11": 0,
+      "65": 0,
+      "14": 0,
+      "73": 0,
+      "72": 0
+    },
+    "tie_rate_log": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0147,
+      0.029,
+      0.0429,
+      0.04,
+      0.0395,
+      0.039,
+      0.0513,
+      0.0633,
+      0.075
+    ]
+  },
+  "evals_to_match_linear_best": 17,
+  "dedup_rejections": [
+    {
+      "mutation": "[BLEND] reblend kitchen-sink (all solos) via greedy, per-target weights over 16 members",
+      "dup_id": 16
+    },
+    {
+      "mutation": "[BLEND] reblend top20 via greedy, per-target weights over 16 members",
+      "dup_id": 16
+    },
+    {
+      "mutation": "[BLEND] reblend top16 via bagged_greedy, per-target weights over 16 members",
+      "dup_id": 17
+    },
+    {
+      "mutation": "[krr_poly2_snv] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+      "dup_id": 10
+    },
+    {
+      "mutation": "[krr_rbf_sg1w11] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+      "dup_id": 7
+    },
+    {
+      "mutation": "[krr_rbf_snv] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+      "dup_id": 4
+    },
+    {
+      "mutation": "[krr_rbf_raw] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+      "dup_id": 3
+    },
+    {
+      "mutation": "[ridge_linear_sg1] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+      "dup_id": 1
+    },
+    {
+      "mutation": "[krr_lap_sg1] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+      "dup_id": 9
+    },
+    {
+      "mutation": "[ridge_linear_snv] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+      "dup_id": 2
+    },
+    {
+      "mutation": "[pls_snv] spatial_weight 0.5 -> 1.0 (comp-local knob)",
+      "dup_id": 12
+    },
+    {
+      "mutation": "[EXPL_KITCHENSINK] reblend kitchen-sink (all solos) via greedy, per-target weights over 64 members",
+      "dup_id": 73
+    }
+  ],
+  "boundary_candidates_log": [],
+  "cost_guard_fired": []
+}

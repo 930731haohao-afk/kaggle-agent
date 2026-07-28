@@ -1,0 +1,878 @@
+{
+  "comp": "playground-series-s3e20",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: scripts/train_v5.py's exact Phase-B Round-3 config (EB shrinkage alpha=1.0 [neighbor smoothing subsumed Round-1's shrinkage], COVID year down-weight w2020=0.24, neighbor-week-smoothing weight wnb=0.28, window=+-1), OOF RMSE 21.1487 (experiments.json #7), verified digit-for-digit before searching begins",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1487,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[ALPHA] ALPHA fine re-sweep: 1.0->0.98 -- pre-flight probe found this the local single-axis optimum near Phase B's own alpha=1.0 (21.1487->21.1460, tiny but real; Phase B's Round-3 pre-sweep never checked alpha values strictly between 0.95 and 1.0) [PRIOR none -- pure numeric re-sweep of an existing knob]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.98,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.146,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[W2020] W2020 fine re-sweep: 0.24->0.22 -- HONEST check whether Phase B's Round-3 joint pre-sweep already found this axis's true optimum; pre-flight grid (0.15..0.32) shows 0.24 IS the single-axis minimum (0.22 alone scores 21.1508, worse) [PRIOR none]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.22,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1508,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[WNB] WNB fine re-sweep: 0.28->0.30 -- same honest-check purpose as W2020; pre-flight grid (0.20..0.40) shows 0.28 IS the single-axis minimum [PRIOR none]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.3,
+        "window": 1
+      },
+      "score": 21.1499,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[WINDOW] WINDOW: widen to +-2 weeks but with DECAYED weight (wnb**d per offset distance d) instead of Phase B's flat wnb for every offset -- Phase B's flat-weight +-2 was worse (21.2341, experiments.json #8); decay lets far neighbors contribute less, an untested combination [PRIOR: 具跨年穩定結構 section -- denoising the historical mean is the entire lever on this comp]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 2,
+        "neighbor_weight_mode": "decay"
+      },
+      "score": 21.2313,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[YEARWEIGHTS] YEARWEIGHTS (NEW axis): down-weight 2019 (ramp-up year of the sensor program, potentially less reliable) in addition to Phase B's own 2020 COVID down-weight -- Phase B invented 'down-weight an anomalous year' but never asked whether it applies to OTHER years too. Pre-flight: real improvement, 21.1487->21.0951 [PRIOR: 具跨年穩定結構 section -- same denoise-the-historical-mean lever generalized to a 2nd year]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.7,
+          "2020": 0.24
+        }
+      },
+      "score": 21.0951,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[PERLOCALPHA] PERLOCALPHA (NEW axis): replace the single global alpha with a per-location empirical-Bayes value (tau2_loc/(tau2_loc+sigma2_loc/(k*n_year)) -- locations with flatter/noisier weekly profiles shrink harder toward their own loc mean, strength constant k=4.0 chosen from a pre-flight k-grid (0.25..8.0). Phase B's alpha was always a single global scalar. Pre-flight: 21.1026, close to but NOT beating the root's plain scalar alpha=1.0 -- kept as an honest (moderately negative) new-idea result [PRIOR: 具跨年穩定結構 section]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 4.0
+      },
+      "score": 21.1026,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[CIRCULAR] CIRCULAR (NEW axis): wrap the neighbor-week lookup across the year boundary (week 52's +1 neighbor becomes week 0) instead of leaving edge weeks with only one real neighbor -- the annual cycle has no true edge. Pre-flight: worse (21.3295) -- Rwanda's week-0/week-52 seasons are evidently not alike enough for this prior to hold; kept as a quick honest negative result [PRIOR: 具跨年穩定結構 section, negative outcome]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "circular": true
+      },
+      "score": 21.3295,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[MONTHFALLBACK] MONTHFALLBACK (NEW axis): add a location-month mean as an extra fallback tier for any (loc,week) cell with no data in the source years. Pre-flight: EXACT tie with root (21.1487) -- this dataset's panel is PERFECTLY BALANCED (497 locs x 53 weeks x 3 years, every combination present every year), so the fallback tier can mathematically never fire in any LOYO fold. Kept as a documented, expected no-op -- itself a regime observation (fallback tiers are worthless on a complete panel) [PRIOR: 具跨年穩定結構 section]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "month_fallback": true
+      },
+      "score": 21.1487,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[GBDT] GBDT diagnostic (the ONE allowed per task brief): single lightweight LGB (log1p target, 63 sensor cols + lat/lon/week, n_estimators=400, LOYO CV) -- NOT a full 3-model ensemble, since Phase B already proved GBDTs get 0 blend weight against this structural signal 5 separate times (experiments.json #4-#8); this re-confirms the finding transfers to harness_v2's own OOF-cache + blend-search path without re-answering an already-answered question [PRIOR: 具跨年穩定結構 section -- GBDT-vs-structure is this section's own central finding]",
+      "config": {
+        "kind": "solo",
+        "method": "gbdt_lgb_quick",
+        "params": {
+          "n_estimators": 400,
+          "learning_rate": 0.05
+        }
+      },
+      "score": 51.4012,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 10,
+      "parent_id": 0,
+      "mutation": "[JOINT] JOINT (2-param move in ONE step, straight from root): alpha 1.0->0.98 AND w2020 0.24->0.20 TOGETHER -- this is the run's central thesis test: Phase B's per-round PROPOSAL step always changed exactly one axis (STATUS.md's own Round headers: 一次一項); joint re-tuning only ever happened as a separate, ad hoc manual scratch pre-sweep, never as the tree's own single mutation. A tree-search node can just BE a 2-param move [PRIOR: 具跨年穩定結構 section]",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.98,
+        "w2020": 0.2,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1538,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 5,
+      "mutation": "[YEARWEIGHTS] YEARWEIGHTS: 2019 weight 0.7->0.6, pre-flight grid showed 0.6-0.7 is the flat minimum region [PRIOR: 具跨年穩定結構 section] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.6,
+          "2020": 0.24
+        }
+      },
+      "score": 21.0978,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 5,
+      "mutation": "[YEARWEIGHTS] YEARWEIGHTS: fine step 2019 weight=0.65 [PRIOR: 具跨年穩定結構 section] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.65,
+          "2020": 0.24
+        }
+      },
+      "score": 21.0942,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 12,
+      "mutation": "[YEARWEIGHTS] YEARWEIGHTS: ALSO up-weight 2021 (closest year to the 2022 test year) within the same year-weights axis -- pre-flight found w21=1.2 alone is also a small win (21.1125); combine with the already-better 2019 weight [PRIOR: 具跨年穩定結構 section] (parent=#12)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.65,
+          "2020": 0.24,
+          "2021": 1.15
+        }
+      },
+      "score": 21.0808,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 6,
+      "mutation": "[PERLOCALPHA] PERLOCALPHA: k 4.0->2.0, pre-flight grid direction toward more shrinkage [PRIOR none] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 2.0
+      },
+      "score": 21.1369,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 6,
+      "mutation": "[PERLOCALPHA] PERLOCALPHA: k 4.0->8.0, other bracket direction (less shrinkage, closer to plain scalar) [PRIOR none] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 8.0
+      },
+      "score": 21.1074,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 6,
+      "mutation": "[PERLOCALPHA] fallback perturbation (queue exhausted): per_loc_k += -0.8676 [PRIOR none -- last-resort filler] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 3.1323803431429886
+      },
+      "score": 21.108,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 1,
+      "mutation": "[ALPHA] ALPHA: 0.98->0.99, bracket other direction [PRIOR none] (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.99,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1435,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 17,
+      "mutation": "[ALPHA] ALPHA: 0.98->0.965, refine toward finer optimum [PRIOR none] (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.965,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1647,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 17,
+      "mutation": "[ALPHA] ALPHA: push further to 0.95 [PRIOR none] (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.95,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.201,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 3,
+      "mutation": "[WNB] WNB: 0.30->0.26, bracket other direction around root's 0.28 [PRIOR none] (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.26,
+        "window": 1
+      },
+      "score": 21.1502,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 21,
+      "parent_id": 3,
+      "mutation": "[WNB] WNB: fine step 0.29 [PRIOR none] (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.29,
+        "window": 1
+      },
+      "score": 21.149,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 21,
+      "mutation": "[WNB] fallback perturbation (queue exhausted): wnb += -0.0347 [PRIOR none -- last-resort filler] (parent=#21)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.2552952137257195,
+        "window": 1
+      },
+      "score": 21.151,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 2,
+      "mutation": "[W2020] W2020: 0.22->0.26, bracket other direction around root's 0.24 [PRIOR none] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.26,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1503,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 24,
+      "parent_id": 23,
+      "mutation": "[W2020] W2020: fine step 0.25 [PRIOR none] (parent=#23)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.25,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1491,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 25,
+      "parent_id": 24,
+      "mutation": "[W2020] fallback perturbation (queue exhausted): w2020 += -0.0347 [PRIOR none -- last-resort filler] (parent=#24)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.21529521372571955,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1519,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 26,
+      "parent_id": 10,
+      "mutation": "[JOINT] JOINT (3rd+4th axis in one move): fold in wnb 0.28->0.30 AND the NEW year_weights axis (2019=0.7) on top of the alpha+w2020 move already made -- 4 structural knobs moved across 2 tree nodes total, something no single Phase-B round attempted [PRIOR: 具跨年穩定結構 section] (parent=#10)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.98,
+        "w2020": 0.2,
+        "wnb": 0.3,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.7,
+          "2020": 0.2
+        }
+      },
+      "score": 21.0801,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 27,
+      "parent_id": 26,
+      "mutation": "[JOINT] JOINT: refine year_weights further (2019 0.7->0.6, add 2021=1.2 up-weight) while keeping alpha/w2020/wnb fixed at this lineage's current point -- tests whether the single-axis YEARWEIGHTS-lineage's own best point still helps once composed with the other 3 axes [PRIOR: 具跨年穩定結構 section] (parent=#26)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.98,
+        "w2020": 0.2,
+        "wnb": 0.3,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.6,
+          "2020": 0.2,
+          "2021": 1.2
+        }
+      },
+      "score": 21.0594,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 28,
+      "parent_id": 27,
+      "mutation": "[JOINT] JOINT: fine nudge alpha 0.98->0.99 at this joint point -- local refinement of the composed optimum [PRIOR none] (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.99,
+        "w2020": 0.2,
+        "wnb": 0.3,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.6,
+          "2020": 0.2,
+          "2021": 1.2
+        }
+      },
+      "score": 21.0589,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 29,
+      "parent_id": 28,
+      "mutation": "[JOINT] JOINT: fine nudge w2020 0.20->0.22 at this joint point [PRIOR none] (parent=#28)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.99,
+        "w2020": 0.22,
+        "wnb": 0.3,
+        "window": 1,
+        "year_weights": {
+          "2019": 0.6,
+          "2020": 0.2,
+          "2021": 1.2
+        }
+      },
+      "score": 21.0589,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 30,
+      "parent_id": 4,
+      "mutation": "[WINDOW] WINDOW: widen decayed window +-2->+-3 -- does decay keep improving with more neighbors or already peaked at +-2? [PRIOR none] (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 3,
+        "neighbor_weight_mode": "decay"
+      },
+      "score": 21.2963,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 31,
+      "parent_id": 4,
+      "mutation": "[WINDOW] WINDOW: same +-2 decayed window, larger base wnb (0.28->0.45) since decay damps far neighbors anyway -- tests whether decay mode wants a different base weight than flat mode's optimum [PRIOR none] (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.45,
+        "window": 2,
+        "neighbor_weight_mode": "decay"
+      },
+      "score": 21.5873,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 32,
+      "parent_id": 7,
+      "mutation": "[CIRCULAR] CIRCULAR: lower wnb (0.28->0.20) to test whether circular wraparound only hurt because it was injecting a full-weight but poorly-matched neighbor at the season boundary [PRIOR none] (parent=#7)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.2,
+        "window": 1,
+        "circular": true
+      },
+      "score": 21.2849,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 33,
+      "parent_id": 15,
+      "mutation": "[PERLOCALPHA] fallback perturbation (queue exhausted): per_loc_k += +0.0092 [PRIOR none -- last-resort filler] (parent=#15)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 8.009239052378732
+      },
+      "score": 21.1074,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 34,
+      "parent_id": 15,
+      "mutation": "[PERLOCALPHA] fallback perturbation (queue exhausted): per_loc_k += +0.3025 [PRIOR none -- last-resort filler] (parent=#15)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 8.302494652302528
+      },
+      "score": 21.108,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 35,
+      "parent_id": 15,
+      "mutation": "[PERLOCALPHA] fallback perturbation (queue exhausted): per_loc_k += +0.4800 [PRIOR none -- last-resort filler] (parent=#15)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 1.0,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1,
+        "per_loc_alpha": true,
+        "per_loc_k": 8.4800346846179
+      },
+      "score": 21.1084,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 36,
+      "parent_id": 17,
+      "mutation": "[ALPHA] fallback perturbation (queue exhausted): alpha += -0.0347 [PRIOR none -- last-resort filler] (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "method": "te",
+        "alpha": 0.9552952137257196,
+        "w2020": 0.24,
+        "wnb": 0.28,
+        "window": 1
+      },
+      "score": 21.1861,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 37,
+      "parent_id": 0,
+      "mutation": "[BLEND] BLEND (the one materially-different pair this run tests): best structural TE node so far (#28, rmse=21.0589) + the GBDT diagnostic (#9, rmse=51.4012) -- weight-searched. Structural-vs-structural blends were deliberately NOT tried (root vs YEARWEIGHTS-seed OOF correlation = 0.99997, blend weight search already confirmed to give 100%/0% -- see module docstring) [PRIOR: Ensemble/後處理 section -- weight search arbitrates, no cost to trying once]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          9,
+          28
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 21.0332,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    }
+  ],
+  "search_state": {
+    "node_results": {
+      "0": {
+        "method": "te",
+        "rmse": 21.1487
+      },
+      "1": {
+        "method": "te",
+        "rmse": 21.146
+      },
+      "2": {
+        "method": "te",
+        "rmse": 21.1508
+      },
+      "3": {
+        "method": "te",
+        "rmse": 21.1499
+      },
+      "4": {
+        "method": "te",
+        "rmse": 21.2313
+      },
+      "5": {
+        "method": "te",
+        "rmse": 21.0951
+      },
+      "6": {
+        "method": "te",
+        "rmse": 21.1026
+      },
+      "7": {
+        "method": "te",
+        "rmse": 21.3295
+      },
+      "8": {
+        "method": "te",
+        "rmse": 21.1487
+      },
+      "9": {
+        "method": "gbdt_lgb_quick",
+        "n_estimators": 400,
+        "rmse": 51.4012
+      },
+      "10": {
+        "method": "te",
+        "rmse": 21.1538
+      },
+      "11": {
+        "method": "te",
+        "rmse": 21.0978
+      },
+      "12": {
+        "method": "te",
+        "rmse": 21.0942
+      },
+      "13": {
+        "method": "te",
+        "rmse": 21.0808
+      },
+      "14": {
+        "method": "te",
+        "rmse": 21.1369
+      },
+      "15": {
+        "method": "te",
+        "rmse": 21.1074
+      },
+      "16": {
+        "method": "te",
+        "rmse": 21.108
+      },
+      "17": {
+        "method": "te",
+        "rmse": 21.1435
+      },
+      "18": {
+        "method": "te",
+        "rmse": 21.1647
+      },
+      "19": {
+        "method": "te",
+        "rmse": 21.201
+      },
+      "20": {
+        "method": "te",
+        "rmse": 21.1502
+      },
+      "21": {
+        "method": "te",
+        "rmse": 21.149
+      },
+      "22": {
+        "method": "te",
+        "rmse": 21.151
+      },
+      "23": {
+        "method": "te",
+        "rmse": 21.1503
+      },
+      "24": {
+        "method": "te",
+        "rmse": 21.1491
+      },
+      "25": {
+        "method": "te",
+        "rmse": 21.1519
+      },
+      "26": {
+        "method": "te",
+        "rmse": 21.0801
+      },
+      "27": {
+        "method": "te",
+        "rmse": 21.0594
+      },
+      "28": {
+        "method": "te",
+        "rmse": 21.0589
+      },
+      "29": {
+        "method": "te",
+        "rmse": 21.0589
+      },
+      "30": {
+        "method": "te",
+        "rmse": 21.2963
+      },
+      "31": {
+        "method": "te",
+        "rmse": 21.5873
+      },
+      "32": {
+        "method": "te",
+        "rmse": 21.2849
+      },
+      "33": {
+        "method": "te",
+        "rmse": 21.1074
+      },
+      "34": {
+        "method": "te",
+        "rmse": 21.108
+      },
+      "35": {
+        "method": "te",
+        "rmse": 21.1084
+      },
+      "36": {
+        "method": "te",
+        "rmse": 21.1861
+      },
+      "37": {
+        "members": [
+          9,
+          28
+        ],
+        "weights": {
+          "9": 0.0217,
+          "28": 0.9783
+        },
+        "method": "dirichlet",
+        "rmse": 21.0332
+      }
+    },
+    "budget": {
+      "total_budget": 38,
+      "phase": "stopped",
+      "stop_reason": "faithful replay of committed tree"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+Done. Full pipeline complete, ~75 min wall.
+
+**Final: OOF AUC 0.803272** (honest leave-fold-out 0.803231), `competitions/cat-in-the-dat/submission.csv` written and format-validated (200k rows, id order matches sample_submission).
+
+**Pipeline as skill prescribes:**
+- **EDA**: 300k/200k, 23 all-categorical cols, no missing/dupes; ordinals' alphabetical order ≈ target order; high-card noms nearly fully shared train/test. StratifiedKFold(5, seed 42).
+- **Linear protocol**: 5 members. LR on full sparse OHE (16,552 cols, C=0.1) solo **0.803103**; LGBM+fold-safe TE 0.797328; LGBM native-cat 0.776214. Greedy blend 0.803169. All logged (experiments #1–4).
+- **Tree search** (harness_v3, full 60/60 nodes, root digit-verified, linear pool reseeded as cached-OOF nodes per afsis lesson): champion = mandatory explore-burst kitchen-sink mega-blend (node #55, 38 members, 17 nonzero weights, LR-family-dominated). Beat linear best at eval #10. Honest ledger in STATUS.md: dedup 10, cost-guard fired on all large blends (logged, never silent), both burst long-shots passed sanity gate. OOF-only, no LB anchor.
+- **Experience library updated**: new「全類別特徵」section — OHE+LR beats GBDT on encoding-benchmark data; explicit interaction crosses hurt saturated sparse LR (negative result); near-homogeneous LR-family blends give only noise-level AUC gain.
+
+Worth-it verdict, stated in STATUS.md: tree search gained only +0.0001 over the linear blend here — its real value was mapping dead ends (interactions dead, GBDT ceiling ~0.799, C optimum flat), confirming plain OHE+LR is essentially this feature space's ceiling at this budget.

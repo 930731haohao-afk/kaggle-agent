@@ -1,0 +1,17 @@
+Pipeline done.
+
+**Final CV: MCRMSE 0.44817** (nested/honest), vs naive mean baseline 1.02421. `submission.csv` written: 727 rows, `PIDN,Ca,P,pH,SOC,Sand` in sample-submission order, no nulls, PIDN order verified identical.
+
+What drove the result:
+
+The EDA finding that mattered most was that the 15 spatial columns take only 580 distinct values across 1,157 training rows — 565 sites each contribute a Topsoil/Subsoil pair. Plain KFold splits those pairs and leaks location, so every score here comes from GroupKFold(5) keyed on the spatial signature. That makes the numbers harder than a naive KFold would give, but honest.
+
+The biggest modeling lever was kernelization, not preprocessing. Best linear Ridge variant reached 0.48668; the same SNV + Savitzky-Golay-derivative spectra under Kernel Ridge RBF reached 0.46661. Blending 32 members (Kernel Ridge RBF, Ridge, SVR, PLS across 14 preprocessing variants) with per-target greedy forward selection got to 0.44817.
+
+I made the hyperparameter selection honest rather than trusting the first number. Picking each member's (gamma, alpha) on the full OOF gave 0.45244 for the best solo model, but inner-CV selection restricted to outer-training rows gave 0.46661 — a +0.014 selection bias. I rebuilt the whole pool with inner-CV selection; at blend level the bias washed out (0.44861 → 0.44817), which is itself a useful finding. The reported score also refits blend weights leave-fold-out, since fitting weights on the full OOF is optimistic by about +0.017.
+
+Three things tested and reverted: log-shifted and winsorized targets (skew is real at 7.45 for P, but the metric is plain RMSE, so squashing the tail costs more than it buys), Laplacian-kernel members (nested 0.44817 → 0.44903), and per-target shrink calibration (worth 0.0004, noise).
+
+P is the binding constraint at RMSE 0.90, roughly 2.8x every other target and barely below its own standard deviation of 0.995 — it is close to unpredictable from these spectra, and further MCRMSE gains would have to come from the other four.
+
+Written: `submission.csv`, `STATUS.md` (3-line summary at top), `experiments.json` (9 entries, chronological, via `log_experiment_v2`), and four new evidence-backed entries in `knowledge/experience.md` (new "p>>n 光譜資料" section, selection-bias quantification, greedy-search optimism magnitude, and a counterexample on weak-but-diverse blend members). I also corrected a stale memory note that read as "Ridge beats SVR" and could have steered a future run away from kernels. Not submitted to Kaggle — the competition closed in 2014.

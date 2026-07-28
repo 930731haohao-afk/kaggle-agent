@@ -1,57 +1,57 @@
-# Bug 報告:外部想法「注入」其實從未進入搜尋
+# Bug Report: External-Idea "Injection" Never Actually Entered the Search
 
-> **交付對象**:指導老師/督導。**日期**:發現 2026-07-08,修復 2026-07-13。
-> 技術全文:`docs/phase_j_j3_findings.md`(發現)、`docs/prior_wiring_findings.md`(修復與驗證)。
+> **Delivery target**: advisor/supervisor. **Dates**: discovered 2026-07-08, fixed 2026-07-13.
+> Full technical text: `docs/phase_j_j3_findings.md` (discovery), `docs/prior_wiring_findings.md` (fix and validation).
 
-## 一句話
+## One sentence
 
-階段 5「外部想法注入」的管線**只做了一半**:想法有被撈出來、有被記錄,但樹搜尋
-**從頭到尾沒有讀過**這份記錄——所以先前所有「注入無效果」的量測,量到的其實是
-「**想法根本沒送達**」,不是「想法沒用」。
+The Stage 5 "external-idea injection" pipeline was **only half done**: the ideas were fetched and logged, but the tree search
+**never read** this record from start to finish — so all prior measurements of "injection has no effect" actually measured
+"**the ideas were simply not delivered**," not "the ideas are useless."
 
-## 類比
+## Analogy
 
-顧問(想法庫)寫了建議書,也歸檔進了公司檔案櫃(`tree['priors']`),
-但廚房的菜單(搜尋要試的候選清單)**早就印好了**,而且出菜流程裡
-沒有「看檔案櫃」這個步驟。菜照常出、生意照常做——建議書一個字都沒影響到菜色。
+The consultant (idea bank) wrote a recommendation and filed it in the company's cabinet (`tree['priors']`),
+but the kitchen menu (the candidate list the search will try) **was already printed**, and the plating process
+had no "check the cabinet" step. The dishes went out as usual, business ran as usual — the recommendation affected not a single dish.
 
-## Bug 是什麼(資料流)
+## What the bug is (data flow)
 
 ```
-suggest_priors() 撈出相符先驗
+suggest_priors() fetches matching priors
         │
         ▼
-tree["priors"] ← 寫入、列印、存檔          ✅ 這半段是好的
+tree["priors"] ← written, printed, saved          ✅ this half is fine
         │
-        ✗  ←──────── 斷點:沒有任何程式讀這個欄位
+        ✗  ←──────── break point: no program reads this field
         │
-搜尋的候選(種子、mutation、展開)          ← 全部來自 driver 裡「手寫」的程式碼
+search candidates (seeds, mutations, expansions)   ← all come from "hand-written" code in the driver
 ```
 
-搜尋程式碼裡出現的 `[PRIOR P18]` 這類標記,是**作者手寫的註解字串**
-(寫種子時人工參考了先驗),不是自動管線的證據——它讓管線「看起來」有在運作,
-延後了 bug 被發現的時間。
+The `[PRIOR P18]` markers appearing in the search code are **hand-written comment strings by the author**
+(the author manually referenced priors when writing seeds), not evidence of an automatic pipeline — they made the pipeline
+"look like" it was working, delaying the bug's discovery.
 
-## 怎麼確認的(兩重證據)
+## How it was confirmed (two lines of evidence)
 
-1. **程式碼層(grep)**:全部搜尋引擎(harness v2/v3/v4)與全部 driver 中,
-   `tree["priors"]` 的讀取點 = **0 筆**。write-only。
-2. **實驗層(單一變因、逐位比對)**:在 s3e3 上只切換「注入開/關」重跑整個搜尋
-   (同種子、同折、同預算)——兩棵樹 **逐位元相同**(22 節點 max|Δscore| = 0,
-   18 個 OOF 向量 max|Δ| = 0)。多注入的 2 條外部想法若被任何環節讀到,
-   必然會改變某處;完全相同即是「沒被讀」的構造性證明。
+1. **Code level (grep)**: across all search engines (harness v2/v3/v4) and all drivers,
+   the number of read points of `tree["priors"]` = **0**. Write-only.
+2. **Experiment level (single variable, bit-for-bit comparison)**: on s3e3, re-running the entire search with only "injection on/off" toggled
+   (same seed, same folds, same budget) — the two trees are **bit-for-bit identical** (22 nodes max|Δscore| = 0,
+   18 OOF vectors max|Δ| = 0). If the 2 extra external ideas were read anywhere, they would necessarily change
+   something; complete identity is a constructive proof of "not read."
 
-## 影響範圍
+## Scope of impact
 
-- **階段 5 的舊結論需要改寫**:先前報告中「外部注入為 honest null(無可量測增益)」
-  的正確解讀是「**注入機制未接通,無法量測**」。
-- **階段 1–4 的結論不受影響**:樹搜尋的增益來自候選樹/回溯/權重搜尋本身,
-  與這條管線無關;經驗庫知識也確實有影響搜尋——但走的是「作者人工轉錄成種子」
-  這條路,不是自動注入。
-- 教訓:**「有寫入、有日誌」不等於「有被消費」**。管線驗收要驗到消費端
-  (本案最終以「開/關注入 → 輸出逐位相同」這種單一變因測試抓到)。
+- **The old Stage 5 conclusion needs rewriting**: the correct interpretation of "external injection is an honest null (no measurable gain)"
+  in prior reports is "**the injection mechanism was not connected and could not be measured**."
+- **The Stage 1–4 conclusions are unaffected**: the tree search's gains come from the candidate tree/backtracking/weight search themselves,
+  unrelated to this pipeline; the experience library's knowledge did affect the search — but via the path of "the author manually transcribing it into seeds,"
+  not automatic injection.
+- Lesson: **"written and logged" does not equal "consumed."** Pipeline acceptance must verify the consumption end
+  (in this case, ultimately caught by the single-variable test of "toggle injection on/off → output bit-for-bit identical").
 
-## 修復狀態(摘要)
+## Fix status (summary)
 
-2026-07-13 已把消費端接上(機械模板與 LLM 兩種翻譯器),並以三臂對照在 5 場競賽
-驗證「送達」與其效果;詳見 `docs/prior_wiring_findings.md`。本文件僅交付 bug 本身。
+On 2026-07-13 the consumption end was wired up (both a mechanical-template and an LLM translator), and a three-arm comparison over 5 competitions
+validated "delivery" and its effect; see `docs/prior_wiring_findings.md` for details. This document delivers only the bug itself.

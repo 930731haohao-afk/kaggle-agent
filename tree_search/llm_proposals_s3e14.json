@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "comp": "playground-series-s3e14",
+    "metric": "mae",
+    "proposer": "claude (propose-once / freeze / replay; same protocol as s6e1/s4e1/s6e2/s3e7)",
+    "strategy": "Pool lacks shallow XGB (only depth 5-6) and shallow CatBoost (only 7-9). Inject bias-dominated depth-2/3 MAE-objective members of the under-represented families to decorrelate the mid/deep pool (the s6e1/s4e1 archetype). Params within s3e14 whitelist; MAE objectives (regression_l1 / MAE / reg:absoluteerror).",
+    "whitelist_checked": true
+  },
+  "proposals": [
+    {
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "reg:absoluteerror",
+          "eval_metric": "mae",
+          "tree_method": "hist",
+          "max_depth": 3,
+          "learning_rate": 0.03,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 100,
+          "subsample": 0.7,
+          "colsample_bytree": 0.5,
+          "min_child_weight": 20,
+          "gamma": 1.0,
+          "reg_alpha": 2.0,
+          "reg_lambda": 8.0,
+          "random_state": 42
+        },
+        "features": {"drop": []}
+      },
+      "expected": "Solo MAE ~342-345 (above the mid-depth members) but lowest error-correlation; realistic shot at nonzero blend weight.",
+      "prior_tags": ["INT-02", "INT-05"],
+      "rationale": "Pool XGB is only depth 5-6. A depth-3, gamma+reg-heavy MAE XGB is bias-dominated -> maximal decorrelation (the s6e1/s4e1 winning archetype)."
+    },
+    {
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "MAE",
+          "eval_metric": "MAE",
+          "depth": 3,
+          "learning_rate": 0.03,
+          "iterations": 3000,
+          "l2_leaf_reg": 10.0,
+          "bagging_temperature": 1.0,
+          "random_seed": 42
+        },
+        "features": {"drop": []}
+      },
+      "expected": "Solo MAE ~342-345; shallow ordered-boosting MAE CatBoost, differently-correlated error surface than shallow XGB.",
+      "prior_tags": ["INT-02"],
+      "rationale": "Pool CatBoost is only depth 7-9. A depth-3, high-l2 MAE CatBoost adds a second bias-dominated family for decorrelation."
+    },
+    {
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "regression_l1",
+          "metric": "mae",
+          "max_depth": 2,
+          "num_leaves": 4,
+          "learning_rate": 0.03,
+          "n_estimators": 3000,
+          "early_stopping_rounds": 100,
+          "colsample_bytree": 0.5,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "min_child_samples": 100,
+          "extra_trees": true,
+          "reg_alpha": 2.0,
+          "reg_lambda": 8.0,
+          "random_state": 42
+        },
+        "features": {"drop": []}
+      },
+      "expected": "Solo MAE ~343-347; an extreme-bias depth-2 extra-trees L1 LGB, most decorrelated of the three.",
+      "prior_tags": ["INT-02", "INT-04"],
+      "rationale": "A depth-2 num_leaves-4 extra_trees L1 LGB is a heterogeneous bias-dominated member; suboptimal-but-diverse is an asset (INT-04)."
+    }
+  ]
+}

@@ -1,139 +1,140 @@
-# Phase J J-3 歸因發現:階段5 注入 hook 已建置,但尚未接入搜尋消費端
+# Phase J J-3 Attribution Finding: the Stage 5 injection hook is built, but not yet wired into the search consumption end
 
-> 這是一個**誠實的負面/架構級結果**,需要決策(見「下一步的分岔」)。日期:2026-07-08。
+> This is an **honest negative/architecture-level result** requiring a decision (see "The next fork"). Date: 2026-07-08.
 
-## 一句話
+## One sentence
 
-外部想法注入(階段5)的 hook 本身正確,但現行樹搜尋架構下 **`tree['priors']` 是 write-only**
-(只寫來列印/記錄,沒有任何搜尋算子讀它),所以「純 [INT] vs [INT]+[EXT]」的單一變因對照
-得到**構造性的 delta = 0**——不是噪音級的接近零,是**逐位元相同**。
+The hook for external-idea injection (Stage 5) is itself correct, but under the current tree-search architecture **`tree['priors']` is write-only**
+(written only for printing/logging, with no search operator reading it), so the single-variable comparison of "pure [INT] vs [INT]+[EXT]"
+yields a **constructive delta = 0** — not a noise-level near-zero, but **bit-for-bit identical**.
 
-## 怎麼測的(單一變因)
+## How it was measured (single variable)
 
-以 s3e3(AUC,資料小、全搜尋 ~17s,可乾淨確定性重跑)為對象:
+Using s3e3 (AUC, small data, full search ~17s, cleanly deterministic re-run) as the target:
 
-- 建 `tree_search/run_s3e3_v4.py`,**唯一搜尋相關改動** = 把 driver 開頭那次
-  `suggest_priors(COMP_META)` 換成 `harness_v4.suggest_priors_v4(COMP_META, mode=V4_MODE)`
-  (mode 讀環境變數)。其餘種子、折、預算、mutation、評估器全部不動。
-- 正確性閘門:(1) `mode='off'` 的先驗與 `hv2.suggest_priors` **逐字相同**(通過);
-  (2) `mode='ext'` 對本場**淨新注入 2 條** [EXT]——EXT-12(rank averaging)、EXT-14
-  (對抗驗證)(通過)。
-- 同 seed=42、同折、各跑到底,比較全域最佳 OOF。
+- Built `tree_search/run_s3e3_v4.py`, whose **only search-relevant change** = replacing the driver's opening
+  `suggest_priors(COMP_META)` call with `harness_v4.suggest_priors_v4(COMP_META, mode=V4_MODE)`
+  (mode read from an environment variable). All other seeds, folds, budget, mutation, evaluator unchanged.
+- Correctness gate: (1) `mode='off'` priors are **verbatim identical** to `hv2.suggest_priors` (passed);
+  (2) `mode='ext'` for this event **injects 2 net-new** [EXT] — EXT-12 (rank averaging), EXT-14
+  (adversarial validation) (passed).
+- Same seed=42, same folds, each run to completion, comparing the global-best OOF.
 
-## 結果
+## Result
 
-| | 全域最佳節點 | AUC | tree['priors'] 條數 |
+| | Global-best node | AUC | tree['priors'] count |
 |---|---|---|---|
-| off([INT] only) | node #11 | 0.841442 | 8 |
-| ext([INT]+[EXT]) | node #11 | 0.841442 | 10(多 2 條 [EXT]) |
+| off ([INT] only) | node #11 | 0.841442 | 8 |
+| ext ([INT]+[EXT]) | node #11 | 0.841442 | 10 (2 extra [EXT]) |
 
-- **delta (ext − off) = +0.00000000**。
-- 逐節點比對(22 節點):結構性差異 0 處、分數差異 0 處(max|Δscore|=0)、18 個快取 OOF
-  向量 max|Δ|=0。**off 與 ext 逐位元相同。**
+- **delta (ext − off) = +0.00000000**.
+- Node-by-node comparison (22 nodes): 0 structural differences, 0 score differences (max|Δscore|=0), 18 cached OOF
+  vectors max|Δ|=0. **off and ext are bit-for-bit identical.**
 
-## 根因(grep + 實證雙重確認)
+## Root cause (grep + empirical double confirmation)
 
-`suggest_priors` 的回傳只寫入 `tree['priors']` 供列印/記錄;種子(`SOLO_SEEDS`)、mutation
-佇列、`propose_child`、`select_next_parent`、評估器**沒有一個讀 `tree['priors']`**。driver 裡
-`[PRIOR Pk]` 標籤是作者在種子/佇列裡**手寫的字串常數**,`prior_usage_summary` 也只 regex 解析
-這些手寫標籤、從不回溯 `tree['priors']`。harness_v2/v3 內查無任何 `tree['priors']` 讀取點。
-**bit-identical 的結果本身就是證明**:唯一差異(2 條額外先驗)若被任何算子讀到必會改變某處;
-它什麼都沒改 → `tree['priors']` 確為 write-only。此為**架構級**(四個候選 driver 同一模式),
-非 s3e3 特性。
+`suggest_priors`'s return is only written to `tree['priors']` for printing/logging; the seeds (`SOLO_SEEDS`), mutation
+queue, `propose_child`, `select_next_parent`, and evaluator — **none of them read `tree['priors']`**. In the driver, the
+`[PRIOR Pk]` labels are **hand-written string constants** by the author in the seeds/queue, and `prior_usage_summary` also only regex-parses
+these hand-written labels, never tracing back to `tree['priors']`. Within harness_v2/v3 no `tree['priors']` read point is found.
+**The bit-identical result is itself the proof**: the only difference (2 extra priors), if read by any operator, would necessarily change something;
+it changed nothing → `tree['priors']` is indeed write-only. This is **architecture-level** (all four candidate drivers share the same pattern),
+not an s3e3 idiosyncrasy.
 
-## 重要的區辨(不要誤讀這個 0)
+## Important distinction (do not misread this 0)
 
-1. **注入機制本身是對的**:harness_v4 正確併池 [INT]+[EXT]、去重、閘門通過。問題在**消費端**。
-2. **階段 4 的價值仍然真實**:樹搜尋 stage4 > stage3 的增益來自**搜尋機制本身**(候選樹、
-   回溯、OOF 權重搜尋、探索爆發),與 `suggest_priors` 無關——這些結果不受本發現影響。
-3. **經驗庫知識確實影響了搜尋,但透過的是「作者手寫種子」而非自動注入**:driver 作者讀
-   experience.md 後把先驗手寫進種子配置;`suggest_priors` 這個**函式的輸出**是裝飾性的。
-   因此各場報告「階段 4.3 先驗注入+去重 — 使用」在「知識有引導」意義上成立,但「自動注入
-   plumbing 被搜尋消費」的隱含意義**不成立**——這點值得在報告語言上誠實校準(非緊急)。
+1. **The injection mechanism is itself correct**: harness_v4 correctly merges [INT]+[EXT] into the pool, deduplicates, and passes the gate. The problem is at the **consumption end**.
+2. **The value of Stage 4 remains real**: the gain of tree-search stage4 > stage3 comes from the **search mechanism itself** (candidate tree,
+   backtracking, OOF weight search, explore burst), unrelated to `suggest_priors` — these results are unaffected by this finding.
+3. **The experience library's knowledge did affect the search, but via "the author's hand-written seeds" rather than automatic injection**: after reading
+   experience.md, the driver author hand-wrote priors into the seed configs; the **output of the `suggest_priors` function** is decorative.
+   Therefore each event report's "Stage 4.3 prior injection + deduplication — used" holds in the "knowledge did guide" sense, but its implied meaning of "the automatic-injection
+   plumbing was consumed by the search" **does not hold** — this deserves honest calibration in report language (non-urgent).
 
-## 下一步的分岔(需決策)
+## The next fork (decision needed)
 
-要真正量測階段5 的邊際價值,必須先讓 priors **通電**——把 `tree['priors']` 接進搜尋決策,例如:
+To truly measure Stage 5's marginal value, the priors must first be **powered up** — wiring `tree['priors']` into the search decisions, e.g.:
 
-- 把 **EXT-12(rank averaging)** 轉成「加一個 rank-average blend 成員」的候選節點;
-- 把 **EXT-14(對抗驗證)** 轉成「跑對抗驗證、據以重排/加權 CV」的候選動作;
-- 更一般地:讓 `propose_child` / 種子邏輯真的讀 `tree['priors']`,把每條先驗映射成一個
-  可執行的 mutation/候選,並在 mutation 記錄裡標 provenance([INT]/[EXT])。
+- turn **EXT-12 (rank averaging)** into a candidate node "add a rank-average blend member";
+- turn **EXT-14 (adversarial validation)** into a candidate action "run adversarial validation, then reorder/reweight CV accordingly";
+- more generally: make `propose_child` / seed logic actually read `tree['priors']`, mapping each prior into an
+  executable mutation/candidate, and marking provenance ([INT]/[EXT]) in the mutation record.
 
-**選項 A**:做這個 wiring(工程量中等,但會改變樹搜尋對**所有場**的行為 → 需重跑、可能重開
-既有 stage4 結果)。**選項 B**:接受此誠實發現,把階段5 描述為「注入 hook 建置完成、待接入
-消費端」,不宣稱其增益。
+**Option A**: do this wiring (moderate engineering, but it will change the tree search's behavior for **all events** → requires re-running, possibly reopening
+existing stage4 results). **Option B**: accept this honest finding, describe Stage 5 as "injection hook built, pending wiring to the
+consumption end," and not claim its gain.
 
-> 這兩個選項牽動研究方向與既有結果,留待督導/使用者決定;在此之前不自行大改。
-> 證據檔:`tree_search/run_s3e3_v4.py`(+ 過程狀態檔,未入版控的實驗產物)。
+> These two options affect the research direction and existing results, and are left to the supervisor/user to decide; no large self-directed changes before then.
+> Evidence file: `tree_search/run_s3e3_v4.py` (+ process state files, unversioned experimental artifacts).
 
 ---
 
-## 接線 pilot 已執行(2026-07-08,使用者選 A,設計為「plateau 觸發、限次數」)
+## Wiring pilot executed (2026-07-08, user chose A, designed as "plateau-triggered, count-limited")
 
-使用者選 A(接線),並提出好設計:**外部想法注入做成選配——階段4 plateau 推不動時才觸發、
-且限制執行次數**(正是計畫書 §6 迭代策略「停滯時搜尋外部想法」的實作)。據此執行:
+The user chose A (wiring) and proposed a good design: **make external-idea injection optional — triggered only when Stage 4 plateaus and cannot push further,
+and with a limited number of executions** (precisely the implementation of the plan's §6 iteration strategy "search for external ideas when stalled"). Executed accordingly:
 
-**① 機制建成並自測通過** —— `tree_search/idea_injection.py`:讀 `idea_bank.md` → 依 comp_meta
-篩選 + [INT] 去重 → 用**翻譯器登錄表**把 [EXT] 想法轉成搜尋候選 config → 標 `[EXT-NN]`
-provenance。這條「自動注入」的線**是通的**(J-3 的 write-only 死路已被繞過)。首個乾淨翻譯器:
-EXT-12(rank averaging)→ rank 空間 blend。
+**① Mechanism built and self-test passed** — `tree_search/idea_injection.py`: reads `idea_bank.md` → filters by comp_meta
++ [INT] deduplication → uses a **translator registry** to turn [EXT] ideas into search-candidate configs → marks `[EXT-NN]`
+provenance. This "automatic injection" line **is now connected** (the J-3 write-only dead end is bypassed). First clean translator:
+EXT-12 (rank averaging) → rank-space blend.
 
-**② 快速、真實的價值量測**(在階段4贏家=收斂/plateau 點注入,用**快取 OOF** 直接評估,不重訓):
+**② Fast, real value measurement** (inject at the Stage 4 winner = convergence/plateau point, evaluate directly using **cached OOF**, no retraining):
 
-| 場(AUC) | prob 空間(階段4) | rank 空間(EXT-12 注入) | delta | 判定 |
+| Event (AUC) | prob space (Stage 4) | rank space (EXT-12 injection) | delta | Verdict |
 |---|---|---|---|---|
-| s3e3 | ~0.841(最佳) | 0.8329 / 0.8143(樹內既有 rank 節點) | 明顯更差 | 無增益 |
-| s4e1 | 0.894368 | 0.894359 | −0.000008 | 噪音級 |
-| s6e2 | 0.954527 | 0.954528 | +0.000001 | 噪音級 |
+| s3e3 | ~0.841 (best) | 0.8329 / 0.8143 (existing rank nodes in tree) | clearly worse | no gain |
+| s4e1 | 0.894368 | 0.894359 | −0.000008 | noise-level |
+| s6e2 | 0.954527 | 0.954528 | +0.000001 | noise-level |
 
-**③ 全 15 場快評 sweep**(`docs/scripts/stage5_sweep.py`):加入第二個通用翻譯器 **stacking
-(EXT-09,meta 模型,任何指標適用)**,對 15 場各在階段4贏家(收斂點)注入候選、用快取 OOF
-評估,與 **committed tier4**(authoritative 階段4)比較:
+**③ Fast-eval sweep over all 15 events** (`docs/scripts/stage5_sweep.py`): added a second general translator **stacking
+(EXT-09, meta model, applicable to any metric)**, injecting candidates at the Stage 4 winner (convergence point) for each of 15 events, evaluating with cached OOF,
+and comparing against the **committed tier4** (authoritative Stage 4):
 
-| 判定 | 場數 | 場次 |
+| Verdict | # events | Events |
 |---|---|---|
-| 持平/噪音(\|delta\|≤1e-4) | 6 | s3e1, s3e7, s4e1, s5e10, s6e1, s6e2 |
-| 注入候選明顯更差 | 8 | s3e3, s3e5, s3e9, s3e11, s3e14, s3e16, s3e19, s4e11 |
-| 數值「勝出」但=已排除的 CV 噪音 | 1 | s3e20 |
+| tie/noise (\|delta\|≤1e-4) | 6 | s3e1, s3e7, s4e1, s5e10, s6e1, s6e2 |
+| injected candidate clearly worse | 8 | s3e3, s3e5, s3e9, s3e11, s3e14, s3e16, s3e19, s4e11 |
+| numerically "wins" but = already-excluded CV noise | 1 | s3e20 |
 
-**框架(重要)**:真正的階段5(搜尋 plateau 注入後**保留最佳**)**= 階段4,15 場全持平**——
-搜尋會丟棄較差的注入候選,不被拖累;上表「更差」量的是**注入候選本身**輸給階段4(即該想法
-沒產生更好的解),非階段5被拖累。**過程抓到兩個假正例**,正說明此 sweep 的嚴謹:
-- **s3e7**:一開始用快評權重搜尋當基線(0.900028)看似 stacking 勝,但 committed tier4 其實
-  0.900455 更高——弱基線假象,改用 committed tier4 後為 null。
-- **s3e20**:唯一數值勝出,但 stacking 榨出的是 STATUS.md 標為**低信度 CV 噪音**的 GBDT-blend
-  成員(節點 #37, 21.0332),而 tier4 刻意排除之、只認純結構解 #28(21.0589)——非真增益。
+**Framing (important)**: the true Stage 5 (inject at search plateau, then **keep the best**) **= Stage 4, all 15 events tie** —
+the search discards worse injected candidates and is not dragged down; the "worse" in the table above measures the **injected candidate itself**
+losing to Stage 4 (i.e. that idea did not produce a better solution), not Stage 5 being dragged down. **Two false positives were caught in the process**,
+which precisely demonstrates the rigor of this sweep:
+- **s3e7**: at first, using the fast-eval weight search as the baseline (0.900028) made stacking appear to win, but the committed tier4 is actually
+  higher at 0.900455 — a weak-baseline illusion; switching to the committed tier4 made it null.
+- **s3e20**: the only numerical win, but stacking squeezed out the GBDT-blend member (node #37, 21.0332) that STATUS.md marks as **low-confidence CV noise**,
+  which tier4 deliberately excludes, recognizing only the pure-structure solution #28 (21.0589) — not a real gain.
 
-## 為什麼外部注入贏不過階段4(合理解釋)
+## Why external injection cannot beat Stage 4 (a reasonable explanation)
 
-null 不是機制無能,而是有紮實的原因:
+The null is not the mechanism being incompetent, but has solid reasons:
 
-1. **階段4優化器在現有成員上已近最優**:樹搜尋的 OOF 權重搜尋(dirichlet k=800 + 座標上升)
-   已找到成員池的近最優凸組合;能乾淨注入的想法(rank 平均、stacking)本質只是**用不同方式
-   組合同一批成員**,贏不過已近最優的權重搜尋。
-2. **可注入的想法冗餘或與指標不對齊**:rank 平均只是組合前的單調重排,對權重搜尋已直接優化
-   的指標無新資訊;stacking meta 模型比凸權重搜尋更有彈性 → **過擬合 CV 噪音**(成員多為高度
-   相關 GBDT),且 ridge 最小化平方誤差、對 MAE/SMAPE 不對齊 → s3e14 −5、s3e19 −41 爆掉
-   (與 s3e14 既有發現「Ridge stacking 輸 simplex」一致)。
-3. **有用的領域想法早已被 LLM 作者手寫進搜尋**(J-3 的發現):外部庫裡該場適用的條目,大多與
-   driver 種子/變異重疊,自動注入是多餘的。
-4. **訊號已被榨到噪音地板**(bootstrap 的發現):階段4最佳已逼近 OOF 估計天花板,可壓縮空間
-   ≤0.0x%、常在噪音內——**任何**方法都難再擠出,不是外部想法特別無能。
-5. **能帶來新訊號的想法恰好難注入 + 資料相依**:對抗驗證、entity embedding、目標編碼變體需
-   新特徵/重訓、無法乾淨自動注入,且效果看資料(如對抗驗證只在有 train/test 漂移時有用,而
-   這些合成 Playground 資料幾乎無漂移)。
+1. **The Stage 4 optimizer is already near-optimal over existing members**: the tree search's OOF weight search (Dirichlet k=800 + coordinate ascent)
+   has already found the near-optimal convex combination of the member pool; the ideas that can be cleanly injected (rank averaging, stacking) are essentially just
+   **combining the same members in a different way**, and cannot beat the already-near-optimal weight search.
+2. **The injectable ideas are redundant or misaligned with the metric**: rank averaging is just a monotone reordering before combination, providing no new information for the metric
+   the weight search already directly optimizes; the stacking meta model is more flexible than the convex weight search → **overfits CV noise** (members mostly being highly-correlated
+   GBDT), and ridge minimizes squared error, misaligned with MAE/SMAPE → s3e14 −5, s3e19 −41 blowups
+   (consistent with s3e14's existing finding that "Ridge stacking loses to simplex").
+3. **Useful domain ideas were long ago hand-written into the search by the LLM author** (the J-3 finding): the entries in the external bank applicable to an event mostly overlap with the
+   driver seeds/mutations, making automatic injection redundant.
+4. **The signal has been squeezed to the noise floor** (the bootstrap finding): the Stage 4 best already approaches the OOF-estimate ceiling, with compressible room
+   ≤0.0x% and often within noise — **any** method struggles to squeeze out more, not that external ideas are especially incompetent.
+5. **Ideas that could bring new signal happen to be hard to inject + data-dependent**: adversarial validation, entity embedding, target-encoding variants need
+   new features/retraining and cannot be cleanly auto-injected, and their effect depends on the data (e.g. adversarial validation is useful only when there is train/test drift, whereas
+   these synthetic Playground datasets have almost no drift).
 
-## 最終結論(stage 5 / ERA 第二支柱)
+## Final conclusion (Stage 5 / ERA's second pillar)
 
-> **外部想法注入的機制可以建、也真的通電(`idea_injection.py`);但實測 15 場,外部注入從未
-> 產生一個能勝過階段4的候選——階段5 = 階段4(全持平)。原因:能乾淨注入的想法只是重組
-> 「已被近最優組合的成員池」、真正有用的領域想法已被手寫進搜尋、而訊號已被前四階段榨到噪音
-> 地板。外部知識只在「引入搜尋錯過的新訊號」時才有價值,而這些成熟的表格題幾乎沒有被錯過的
-> 結構可撿。∴在此設定下,ERA 第二支柱無可量測的系統性增益(無害亦無益)。**
+> **The mechanism for external-idea injection can be built, and is truly powered up (`idea_injection.py`); but across 15 events measured, external injection never
+> produced a candidate able to beat Stage 4 — Stage 5 = Stage 4 (all tie). Reason: the ideas that can be cleanly injected merely recombine
+> "the member pool already combined near-optimally," truly useful domain ideas were already hand-written into the search, and the signal has been squeezed to the noise
+> floor by the first four stages. External knowledge is valuable only when it "introduces new signal the search missed," and these mature tabular problems have almost no missed
+> structure to pick up. ∴ In this setting, ERA's second pillar has no measurable systematic gain (neither harmful nor helpful).**
 
-這是**嚴謹建立的誠實負面結果**(真實資料、15 場實測、可重現、兩個假正例已抓除),與本專案
-J-3、determinism、統計噪音等發現同一誠實水準。階段4(第一支柱)的價值不受影響。
+This is a **rigorously established honest negative result** (real data, 15 events measured, reproducible, two false positives already removed), at the same honesty level as this project's
+J-3, determinism, and statistical-noise findings. The value of Stage 4 (the first pillar) is unaffected.
 
-**可重現**:`uv run python3 docs/scripts/stage5_sweep.py`(15 場快評)、
-`uv run python3 tree_search/stage5_inject_pilot.py s4e1`(單場);機制見 `tree_search/idea_injection.py`。
+**Reproducible**: `uv run python3 docs/scripts/stage5_sweep.py` (15-event fast eval),
+`uv run python3 tree_search/stage5_inject_pilot.py s4e1` (single event); mechanism in `tree_search/idea_injection.py`.

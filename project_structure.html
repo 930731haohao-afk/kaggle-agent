@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaggle AI Agent · 專案結構視覺化</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3;
+    --muted:#8b949e; --accent:#58a6ff; --green:#3fb950; --yellow:#d29922;
+    --purple:#bc8cff; --pink:#f778ba; --orange:#ff7b39;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.55;padding:32px;max-width:1200px;margin:0 auto}
+  h1{font-size:26px;margin-bottom:4px}
+  h1 .emoji{margin-right:8px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .path{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--accent);font-size:13px}
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .tab{padding:8px 16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;font-size:14px;transition:.15s;user-select:none}
+  .tab:hover{border-color:var(--accent)}
+  .tab.active{background:var(--accent);color:#0d1117;font-weight:600;border-color:var(--accent)}
+  .view{display:none} .view.active{display:block}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+
+  /* ---- Stats row ---- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+  .stat .num{font-size:28px;font-weight:700;color:var(--accent)}
+  .stat .lbl{color:var(--muted);font-size:13px;margin-top:2px}
+
+  /* ---- Tree ---- */
+  .tree{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px}
+  details{margin-left:2px}
+  summary{cursor:pointer;padding:2px 4px;border-radius:5px;list-style:none;outline:none}
+  summary::-webkit-details-marker{display:none}
+  summary:hover{background:#1f2630}
+  summary::before{content:"▸ ";color:var(--muted)}
+  details[open]>summary::before{content:"▾ "}
+  .leaf{padding:2px 4px 2px 22px;color:var(--text)}
+  .dir{color:var(--yellow);font-weight:600}
+  .skill{color:var(--purple);font-weight:600}
+  .file{color:var(--text)}
+  .cfg{color:var(--green)}
+  .doc{color:var(--pink)}
+  .note{color:var(--muted);font-style:italic;font-size:12px}
+  .size{color:var(--orange);font-size:11.5px;margin-left:6px}
+  ul{list-style:none;margin-left:22px}
+
+  /* ---- Treemap ---- */
+  #treemap{position:relative;width:100%;height:520px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .cell{position:absolute;overflow:hidden;border:1px solid rgba(13,17,23,.85);
+    padding:6px 8px;font-size:12px;transition:filter .15s;cursor:default}
+  .cell:hover{filter:brightness(1.25)}
+  .cell .cname{font-weight:600;font-size:12px;line-height:1.2;word-break:break-word}
+  .cell .csize{font-size:11px;opacity:.85}
+  .legend{margin-top:12px;color:var(--muted);font-size:13px}
+
+  /* ---- Table ---- */
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel);cursor:pointer}
+  th:hover{color:var(--accent)}
+  tr:hover td{background:#1f2630}
+  td.r,th.r{text-align:right;font-family:ui-monospace,monospace}
+  .bar{height:8px;background:var(--accent);border-radius:4px;min-width:2px}
+  .badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;background:#1f2630;color:var(--muted)}
+  .badge.m{background:rgba(188,140,255,.15);color:var(--purple)}
+  footer{color:var(--muted);font-size:12px;margin-top:24px;text-align:center}
+</style>
+</head>
+<body>
+  <h1><span class="emoji">🗂️</span>Kaggle AI Agent · 專案結構</h1>
+  <div class="sub"><span class="path">/home/tjyen/ai_agents/kaggle</span> · 快照 2026-07-02</div>
+
+  <div class="stats">
+    <div class="stat"><div class="num">~20 G</div><div class="lbl">專案總大小</div></div>
+    <div class="stat"><div class="num">30</div><div class="lbl">競賽工作區</div></div>
+    <div class="stat"><div class="num">3</div><div class="lbl">Claude Skills</div></div>
+    <div class="stat"><div class="num">14 G</div><div class="lbl">competitions 資料</div></div>
+    <div class="stat"><div class="num">6.1 G</div><div class="lbl">.venv 環境</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-view="tree">🌳 樹狀結構</div>
+    <div class="tab" data-view="map">📊 磁碟占用 Treemap</div>
+    <div class="tab" data-view="table">🏆 競賽總表</div>
+  </div>
+
+  <!-- ============ TREE ============ -->
+  <div class="view active" id="tree">
+    <div class="panel tree">
+      <details open>
+        <summary><span class="path">kaggle/</span> <span class="note">根目錄</span></summary>
+
+        <details open>
+          <summary class="skill">🧩 .claude/skills/ <span class="note">Agent 核心</span></summary>
+          <details>
+            <summary class="skill">kaggle-agent/ <span class="note">主 Skill · 6 階段 pipeline</span></summary>
+            <div class="leaf file">📄 SKILL.md</div>
+            <details>
+              <summary class="dir">assets/</summary>
+              <div class="leaf note">templates/ — eda · feature · train · submit 範本</div>
+              <div class="leaf note">utils/ — data_loader · evaluation · experiment_log · kaggle_auth</div>
+            </details>
+            <details>
+              <summary class="dir">references/</summary>
+              <div class="leaf file">01_setup.md → 06_submission.md（6 份指南）</div>
+            </details>
+          </details>
+          <details>
+            <summary class="skill">kaggle-agent-self-improvement/ <span class="note">自我改進版</span></summary>
+            <div class="leaf file">📄 SKILL.md</div>
+            <div class="leaf note">assets/ (templates + utils)</div>
+            <div class="leaf file">references/ 01→07（多 07_self_improvement.md）</div>
+          </details>
+          <details>
+            <summary class="skill">kaggle-safe-submit/ <span class="note">安全提交</span></summary>
+            <div class="leaf file">📄 SKILL.md · scripts/ · references/</div>
+          </details>
+          <div class="leaf note">kaggle-agent.skill（打包檔）</div>
+        </details>
+
+        <details>
+          <summary class="dir">🛠️ templates/ &amp; utils/ <span class="note">根目錄共用工具</span></summary>
+          <div class="leaf file">templates/ — eda · feature · train · submit</div>
+          <div class="leaf file">utils/ — data_loader · evaluation · experiment_log · kaggle_auth.sh</div>
+        </details>
+
+        <details>
+          <summary class="doc">📚 documents/ <span class="size">84K</span></summary>
+          <div class="leaf doc">Claude_Code_Kaggle_AI_Agent_discussion_08022026.md</div>
+          <div class="leaf doc">AI_Self_Improvement_discussion_11022026.md</div>
+          <div class="leaf doc">KAGGLE_AGENT_IMPROVEMENT_PLAN.md</div>
+          <div class="leaf doc">SUMMARY_REPORT_23022026.md</div>
+          <div class="leaf doc">GPU_SETUP.md · PYTORCH_SETUP.md</div>
+        </details>
+
+        <details>
+          <summary class="dir">🏆 competitions/ <span class="size">14 G · 30 個</span></summary>
+          <div class="leaf note">每個競賽統一結構：config.yaml · data/ · scripts/ · submissions/ · experiments.json · STATUS.md（影像/序列類另含 models/）</div>
+          <div class="leaf note">→ 切換上方「Treemap / 競賽總表」查看細節</div>
+        </details>
+
+        <details>
+          <summary class="dir">⚙️ 環境／產物 <span class="note">大型、非原始碼</span></summary>
+          <div class="leaf note">.venv/ <span class="size">6.1 G</span> — uv 虛擬環境</div>
+          <div class="leaf note">.git/ <span class="size">355M</span></div>
+          <div class="leaf note">catboost_info/ — 訓練日誌產物</div>
+        </details>
+
+        <div class="leaf cfg">📄 CLAUDE.md · pyproject.toml · uv.lock · requirements.txt · .python-version</div>
+        <div class="leaf file">📄 main.py · STATUS.md <span class="size">56K</span> · README.md · test_torch_geometric_gpu.py</div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ============ TREEMAP ============ -->
+  <div class="view" id="map">
+    <div class="panel">
+      <div id="treemap"></div>
+      <div class="legend">方塊面積 ∝ 磁碟占用；顏色深淺表示相對大小。滑鼠移上顯示完整名稱與大小。</div>
+    </div>
+  </div>
+
+  <!-- ============ TABLE ============ -->
+  <div class="view" id="table">
+    <div class="panel" style="max-height:640px;overflow:auto">
+      <table id="ctable">
+        <thead><tr>
+          <th data-k="name">競賽 ▲▼</th>
+          <th class="r" data-k="bytes">大小 ▲▼</th>
+          <th>占用比例</th>
+          <th data-k="models">models/</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>由 Claude Code 產生 · 資料來源：<span class="path">du -sh</span> 快照</footer>
+
+<script>
+const comps = [
+  {name:"cifar-10",bytes:2347884888,models:false},
+  {name:"dogs-vs-cats",bytes:2657521007,models:false},
+  {name:"child-mind-institute-detect-sleep-states",bytes:1838309582,models:true},
+  {name:"global-wheat-detection",bytes:1446034076,models:true},
+  {name:"predict-energy-behavior-of-prosumers",bytes:1339304139,models:true},
+  {name:"the-icml-2013-whale-challenge-right-whale-redux",bytes:1264223120,models:false},
+  {name:"linking-writing-processes-to-writing-quality",bytes:486804555,models:false},
+  {name:"playground-series-s3e20",bytes:271883313,models:false},
+  {name:"llm-classification-finetuning",bytes:244248176,models:false},
+  {name:"cat-in-the-dat",bytes:227472409,models:false},
+  {name:"conway-s-reverse-game-of-life",bytes:213414406,models:false},
+  {name:"store-sales-time-series-forecasting",bytes:147986403,models:false},
+  {name:"icdar2013-stroke-recovery-from-offline-data",bytes:132796122,models:false},
+  {name:"digit-recognizer",bytes:129070993,models:false},
+  {name:"forest-cover-type",bytes:115149454,models:false},
+  {name:"afsis-soil-properties",bytes:107171484,models:false},
+  {name:"tmdb-box-office-prediction",bytes:89399603,models:false},
+  {name:"playground-series-s6e1",bytes:88317589,models:false},
+  {name:"playground-series-s6e2",bytes:85129465,models:false},
+  {name:"playground-series-s5e10",bytes:64898126,models:false},
+  {name:"emvic",bytes:36446851,models:false},
+  {name:"playground-series-s4e11",bytes:28945066,models:false},
+  {name:"playground-series-s4e1",bytes:24595200,models:false},
+  {name:"tabular-playground-series-aug-2022",bytes:10163700,models:false},
+  {name:"house-prices-advanced-regression-techniques",bytes:3575775,models:false},
+  {name:"tabular-playground-series-jan-2022",bytes:2053789,models:false},
+  {name:"spaceship-titanic",bytes:1847460,models:false},
+  {name:"bike-sharing-demand",bytes:1561811,models:false},
+  {name:"home-data-for-ml-course",bytes:1295687,models:false},
+  {name:"titanic",bytes:427169,models:false},
+];
+const fmt=b=>b>=1e9?(b/1e9).toFixed(1)+" G":b>=1e6?(b/1e6).toFixed(0)+" M":(b/1e3).toFixed(0)+" K";
+const total=comps.reduce((s,c)=>s+c.bytes,0);
+
+// ---- tabs ----
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");
+  document.getElementById(t.dataset.view).classList.add("active");
+  if(t.dataset.view==="map") drawTreemap();
+});
+
+// ---- treemap (squarified) ----
+function drawTreemap(){
+  const el=document.getElementById("treemap");
+  el.innerHTML="";
+  const W=el.clientWidth,H=el.clientHeight;
+  const data=[...comps].sort((a,b)=>b.bytes-a.bytes);
+  const scale=(W*H)/total;
+  const items=data.map(d=>({...d,area:d.bytes*scale}));
+  const max=data[0].bytes;
+  // squarify
+  let x=0,y=0,w=W,h=H,i=0;
+  function worst(row,len){
+    const s=row.reduce((a,b)=>a+b.area,0);
+    const mx=Math.max(...row.map(r=>r.area)),mn=Math.min(...row.map(r=>r.area));
+    return Math.max(len*len*mx/(s*s),s*s/(len*len*mn));
+  }
+  function layoutRow(row,len,horiz){
+    const s=row.reduce((a,b)=>a+b.area,0);
+    let off=horiz?y:x;
+    const thick=s/len;
+    row.forEach(r=>{
+      const cw=horiz?thick:r.area/thick, ch=horiz?r.area/thick:thick;
+      const cx=horiz?x:off, cy=horiz?off:y;
+      addCell(r,cx,cy,horiz?thick:r.area/thick,horiz?r.area/thick:thick);
+      off+=horiz?r.area/thick:r.area/thick;
+    });
+    if(horiz){x+=thick;w-=thick;}else{y+=thick;h-=thick;}
+  }
+  function addCell(r,cx,cy,cw,ch){
+    const d=document.createElement("div");
+    d.className="cell";
+    d.style.left=cx+"px";d.style.top=cy+"px";
+    d.style.width=Math.max(0,cw-1)+"px";d.style.height=Math.max(0,ch-1)+"px";
+    const t=Math.pow(r.bytes/max,.4);
+    const c1=[13,71,161],c2=[88,166,255];
+    const col=c1.map((v,i)=>Math.round(v+(c2[i]-v)*t));
+    d.style.background=`rgb(${col[0]},${col[1]},${col[2]})`;
+    d.style.color = t>0.5? "#0d1117":"#e6edf3";
+    if(cw>52&&ch>28){
+      d.innerHTML=`<div class="cname">${r.name.replace(/-/g,'&#8209;')}</div><div class="csize">${fmt(r.bytes)}</div>`;
+    }
+    d.title=`${r.name}\n${fmt(r.bytes)} (${(r.bytes/total*100).toFixed(1)}%)`;
+    el.appendChild(d);
+  }
+  let idx=0;
+  while(idx<items.length){
+    const horiz = w<h; // stack along shorter side
+    const len = horiz? h : w;
+    let row=[items[idx]];
+    idx++;
+    while(idx<items.length){
+      const test=[...row,items[idx]];
+      if(worst(row,len)>=worst(test,len)){row=test;idx++;}
+      else break;
+    }
+    layoutRow(row,len,!horiz? false:false); // custom below
+    // simpler: place row manually
+  }
+  // The above squarify is finicky across browsers; fall back to robust slice-and-dice:
+  el.innerHTML="";
+  robustTreemap(el,data,W,H);
+}
+function robustTreemap(el,data,W,H){
+  const t=data.reduce((s,d)=>s+d.bytes,0);
+  const max=data[0].bytes;
+  let x=0,y=0,w=W,h=H,rest=[...data],remain=t;
+  while(rest.length){
+    const horiz=w>=h;
+    const len=horiz?w:h;
+    // take a row whose aspect ratios are decent
+    let row=[],rowSum=0;
+    const side=horiz?h:w;
+    let bestRatio=Infinity;
+    for(let k=0;k<rest.length;k++){
+      const cand=rest.slice(0,k+1);
+      const cs=cand.reduce((s,d)=>s+d.bytes,0);
+      const thick=(cs/remain)*len;
+      const ratios=cand.map(d=>{const seg=(d.bytes/cs)*side;return Math.max(thick/seg,seg/thick);});
+      const worst=Math.max(...ratios);
+      if(worst<=bestRatio){bestRatio=worst;row=cand;rowSum=cs;}
+      else break;
+    }
+    const thick=(rowSum/remain)*len;
+    let off=horiz?y:x;
+    row.forEach(d=>{
+      const seg=(d.bytes/rowSum)*side;
+      const cx=horiz?x:off, cy=horiz?off:y;
+      const cw=horiz?thick:seg, ch=horiz?seg:thick;
+      cell(el,d,cx,cy,cw,ch,max,t);
+      off+=seg;
+    });
+    if(horiz){x+=thick;w-=thick;}else{y+=thick;h-=thick;}
+    remain-=rowSum;
+    rest=rest.slice(row.length);
+  }
+}
+function cell(el,r,cx,cy,cw,ch,max,total){
+  const d=document.createElement("div");
+  d.className="cell";
+  d.style.left=cx+"px";d.style.top=cy+"px";
+  d.style.width=Math.max(0,cw-1)+"px";d.style.height=Math.max(0,ch-1)+"px";
+  const tt=Math.pow(r.bytes/max,.4);
+  const c1=[22,45,90],c2=[88,166,255];
+  const col=c1.map((v,i)=>Math.round(v+(c2[i]-v)*tt));
+  d.style.background=`rgb(${col[0]},${col[1]},${col[2]})`;
+  d.style.color=tt>0.55?"#0d1117":"#e6edf3";
+  if(cw>54&&ch>30){
+    d.innerHTML=`<div class="cname">${r.name.replace(/-/g,'&#8209;')}</div><div class="csize">${fmt(r.bytes)}</div>`;
+  }
+  d.title=`${r.name}\n${fmt(r.bytes)} (${(r.bytes/total*100).toFixed(1)}%)`;
+  el.appendChild(d);
+}
+
+// ---- table ----
+let sortK="bytes",asc=false;
+function renderTable(){
+  const tb=document.querySelector("#ctable tbody");
+  const rows=[...comps].sort((a,b)=>{
+    let r = sortK==="name"? a.name.localeCompare(b.name)
+          : sortK==="models"? (a.models===b.models?0:a.models?-1:1)
+          : a.bytes-b.bytes;
+    return asc?r:-r;
+  });
+  const max=Math.max(...comps.map(c=>c.bytes));
+  tb.innerHTML=rows.map(c=>`<tr>
+    <td>${c.name}</td>
+    <td class="r">${fmt(c.bytes)}</td>
+    <td><div class="bar" style="width:${(c.bytes/max*100).toFixed(1)}%"></div></td>
+    <td>${c.models?'<span class="badge m">有 models/</span>':'<span class="badge">—</span>'}</td>
+  </tr>`).join("");
+}
+document.querySelectorAll("#ctable th[data-k]").forEach(th=>th.onclick=()=>{
+  const k=th.dataset.k; if(sortK===k)asc=!asc; else{sortK=k;asc=(k==="name");}
+  renderTable();
+});
+renderTable();
+window.addEventListener("resize",()=>{if(document.getElementById("map").classList.contains("active"))drawTreemap();});
+</script>
+</body>
+</html>

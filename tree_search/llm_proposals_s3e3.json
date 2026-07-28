@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "comp": "s3e3",
+    "proposer": "claude (mirror-existing-schema variant)",
+    "strategy": "bias-dominated shallow variants of existing pool members for decorrelation"
+  },
+  "proposals": [
+    {
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 7,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 2,
+          "min_child_weight": 40,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "expected": "Solo (shallow xgb) below the pool's best member but decorrelated; tests whether a bias-dominated external member lifts the reblend.",
+      "prior_tags": [
+        "INT-02",
+        "INT-04"
+      ],
+      "rationale": "Shallow, heavily-regularized xgb = bias-dominated member to decorrelate the variance-leaning pool (the s6e1/s4e1 winning archetype). Mirrors an existing pool config's schema; only depth/reg/seed changed."
+    },
+    {
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 12.0,
+          "random_seed": 8
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "expected": "Solo (shallow cat) below the pool's best member but decorrelated; tests whether a bias-dominated external member lifts the reblend.",
+      "prior_tags": [
+        "INT-02",
+        "INT-04"
+      ],
+      "rationale": "Shallow, heavily-regularized cat = bias-dominated member to decorrelate the variance-leaning pool (the s6e1/s4e1 winning archetype). Mirrors an existing pool config's schema; only depth/reg/seed changed."
+    }
+  ]
+}

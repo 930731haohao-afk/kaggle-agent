@@ -1,0 +1,110 @@
+<mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1360" pageHeight="800" math="0" shadow="0">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+
+    <mxCell id="title" value="s3e9 search-tree snapshot — node states across all 5 lineages (RMSE, lower is better)" style="text;html=1;whiteSpace=wrap;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;fillColor=#eef3fb;strokeColor=#6c8ebf;rounded=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="20" width="1280" height="40" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="root" value="root&#10;12.111  (reference LGB)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="560" y="90" width="240" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="cat" value="CAT (head)&#10;12.075&#10;◆ ACTIVE lineage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="200" width="220" height="64" as="geometry"/>
+    </mxCell>
+    <mxCell id="c1" value="c1  [l2=9]&#10;12.062  ✓" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="40" y="310" width="220" height="54" as="geometry"/>
+    </mxCell>
+    <mxCell id="c2" value="c2  [+depth=5]&#10;12.058  ★ GLOBAL BEST" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="400" width="220" height="54" as="geometry"/>
+    </mxCell>
+    <mxCell id="c3" value="c3  [+bag_temp]&#10;12.060  ✗  (1 non-improving)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="40" y="490" width="220" height="64" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="feat" value="FEAT (head)&#10;12.070&#10;runner-up direction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef3fb;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="300" y="200" width="220" height="64" as="geometry"/>
+    </mxCell>
+    <mxCell id="f1" value="f1  [drop 6 feats]&#10;12.066  ✓" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eef3fb;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="300" y="310" width="220" height="54" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="robust" value="ROBUST (head)&#10;12.090&#10;✖ FROZEN (plateaued)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#b3b3b3;fontColor=#777777;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="560" y="200" width="220" height="64" as="geometry"/>
+    </mxCell>
+    <mxCell id="r1" value="r1  [fair loss]&#10;12.088  ✗" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#b3b3b3;fontColor=#777777;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="560" y="310" width="220" height="54" as="geometry"/>
+    </mxCell>
+    <mxCell id="r2" value="r2  [alpha=5]&#10;12.089  ✗" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#b3b3b3;fontColor=#777777;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="560" y="400" width="220" height="54" as="geometry"/>
+    </mxCell>
+    <mxCell id="r3" value="r3  [alpha=15]&#10;12.091  ✗  (3rd → freeze lineage)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#b3b3b3;fontColor=#777777;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="560" y="490" width="220" height="64" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="reg" value="REG (head)&#10;12.095&#10;✖ FROZEN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#b3b3b3;fontColor=#777777;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="820" y="200" width="220" height="64" as="geometry"/>
+    </mxCell>
+    <mxCell id="g1" value="g1  [num_leaves=7]&#10;FAILED  (eval timeout)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="820" y="310" width="220" height="54" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="xgb" value="XGB (head)&#10;12.121&#10;✖ FROZEN (worse than root)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#b3b3b3;fontColor=#777777;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="1080" y="200" width="220" height="64" as="geometry"/>
+    </mxCell>
+    <mxCell id="x1" value="x1  [max_depth=3]&#10;12.118  ✗" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#b3b3b3;fontColor=#777777;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="1080" y="310" width="220" height="54" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="legend" value="Node states&#10;&#10;★  = current global best&#10;◆ ACTIVE  = lineage being expanded now&#10;✖ FROZEN  = plateaued, excluded from selection (3 non-improving children, or budget exhausted)&#10;FAILED  = eval errored / timed out (status = failed)&#10;✓ / ✗  = improved the global best when added, or not&#10;[x]  = the change applied vs the parent" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+      <mxGeometry x="820" y="410" width="480" height="200" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="e_root_cat" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="root" target="cat">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_root_feat" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="root" target="feat">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_root_robust" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="root" target="robust">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_root_reg" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="root" target="reg">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_root_xgb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="root" target="xgb">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="e_cat_c1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="cat" target="c1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_c1_c2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="c1" target="c2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_c2_c3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="c2" target="c3">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_feat_f1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="feat" target="f1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_robust_r1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="robust" target="r1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_r1_r2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="r1" target="r2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_r2_r3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="r2" target="r3">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_reg_g1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="reg" target="g1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e_xgb_x1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;jettySize=auto;" edge="1" parent="1" source="xgb" target="x1">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+  </root>
+</mxGraphModel>

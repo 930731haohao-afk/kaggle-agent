@@ -1,0 +1,27 @@
+competition: llm-classification-finetuning
+task_type: multi-class classification (3 classes)
+metric: logloss (assumed - typical for probability predictions)
+target_columns:
+  - winner_model_a
+  - winner_model_b
+  - winner_tie
+id_column: id
+text_columns:
+  - prompt
+  - response_a
+  - response_b
+  - model_a
+  - model_b
+train_file: data/train.csv
+test_file: data/test.csv
+submission_file: data/sample_submission.csv
+n_folds: 5
+random_seed: 42
+gpu: true
+notes: |
+  - LLM response quality classification
+  - Need to compare two responses and predict which is better
+  - Output is probabilities (not hard labels)
+  - Very small test set (3 samples)
+  - Best approach: Fine-tune transformer model (BERT/RoBERTa/DeBERTa)
+  - Input: concatenate prompt + response_a + response_b

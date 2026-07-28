@@ -1,0 +1,73 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-19T06:34:09.763006+00:00",
+    "stage": "baseline",
+    "model": "lag_24_predictor",
+    "features": "target_lag_24_only",
+    "params": {},
+    "cv_strategy": "time_split_block_550",
+    "cv_scores": [],
+    "cv_mean": 86.5208,
+    "cv_std": 0,
+    "notes": "Predict using yesterday's same-hour value"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-19T06:34:09.763021+00:00",
+    "stage": "modeling",
+    "model": "LightGBM-single",
+    "features": "engineered_v1_56_features",
+    "params": {
+      "objective": "mae",
+      "metric": "mae",
+      "learning_rate": 0.05,
+      "num_leaves": 255,
+      "max_depth": -1,
+      "min_child_samples": 50,
+      "feature_fraction": 0.8,
+      "bagging_fraction": 0.8,
+      "bagging_freq": 1,
+      "verbose": -1,
+      "n_jobs": -1,
+      "seed": 42
+    },
+    "cv_strategy": "time_split_block_550",
+    "cv_scores": [],
+    "cv_mean": 35.5532,
+    "cv_std": 0,
+    "training_time_sec": 69.4,
+    "best_iteration": 827,
+    "notes": "Single LightGBM for all segments"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-19T06:34:09.763024+00:00",
+    "stage": "modeling",
+    "model": "LightGBM-split-prod-cons",
+    "features": "engineered_v1_56_features",
+    "params": {
+      "objective": "mae",
+      "metric": "mae",
+      "learning_rate": 0.05,
+      "num_leaves": 255,
+      "max_depth": -1,
+      "min_child_samples": 50,
+      "feature_fraction": 0.8,
+      "bagging_fraction": 0.8,
+      "bagging_freq": 1,
+      "verbose": -1,
+      "n_jobs": -1,
+      "seed": 42
+    },
+    "cv_strategy": "time_split_block_550",
+    "cv_scores": [
+      43.0852,
+      33.4248
+    ],
+    "cv_mean": 38.255,
+    "cv_std": 0,
+    "training_time_sec": 144.1,
+    "notes": "Separate LightGBM for production and consumption"
+  }
+]

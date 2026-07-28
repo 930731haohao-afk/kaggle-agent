@@ -1,0 +1,25 @@
+name: emvic
+url: https://www.kaggle.com/c/emvic
+description: Eye Movements Verification and Identification — identify a person from eye movement recordings
+problem_type: multiclass_classification
+evaluation_metric: log_loss  # probability-based submission
+optimization_direction: minimize
+target_column: class
+id_column: null  # no ID column
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: uniform_benchmark.csv
+n_classes: 37
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes:
+  - "8192 features = 4 channels x 2048 timepoints (lx, ly, rx, ry = left/right eye x/y coordinates)"
+  - "652 train, 326 test samples — very small dataset"
+  - "37 classes (person IDs) — severely imbalanced (2-105 samples per class)"
+  - "Submission: 326 rows x 37 cols of probabilities, NO header, NO ID column"
+  - "Probabilities should sum to ~1.0, minimum value appears to be 0.001"
+  - "Benchmark files: rf_benchmark, svm_benchmark, uniform_benchmark"
+  - "Test class column is '?' for all rows"

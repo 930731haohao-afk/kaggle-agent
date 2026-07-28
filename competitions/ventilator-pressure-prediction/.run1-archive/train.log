@@ -1,0 +1,32 @@
+[     0.0s] loading data ...
+[     7.9s] train rows 5432400  test rows 603600
+[    17.2s] features: train (67905, 80, 41)  test (7545, 80, 41)  pressure grid 950
+[   262.7s] fold 0 ep 5/100 train 0.1539 val_maskedMAE 1.27361
+[   502.1s] fold 0 ep 10/100 train 0.1184 val_maskedMAE 1.02404
+[   735.2s] fold 0 ep 15/100 train 0.0885 val_maskedMAE 0.86211
+[   968.4s] fold 0 ep 20/100 train 0.0824 val_maskedMAE 0.80621
+[  1201.5s] fold 0 ep 25/100 train 0.0696 val_maskedMAE 0.64070
+[  1434.6s] fold 0 ep 30/100 train 0.0637 val_maskedMAE 0.69183
+[  1665.9s] fold 0 ep 35/100 train 0.0574 val_maskedMAE 0.60168
+[  1897.9s] fold 0 ep 40/100 train 0.0561 val_maskedMAE 0.47519
+[  2131.3s] fold 0 ep 45/100 train 0.0451 val_maskedMAE 0.42699
+[  2361.3s] fold 0 ep 50/100 train 0.0468 val_maskedMAE 0.40426
+[  2593.2s] fold 0 ep 55/100 train 0.0391 val_maskedMAE 0.34372
+[  2826.6s] fold 0 ep 60/100 train 0.0379 val_maskedMAE 0.33885
+[  3057.7s] fold 0 ep 65/100 train 0.0326 val_maskedMAE 0.29866
+[  3289.4s] fold 0 ep 70/100 train 0.0295 val_maskedMAE 0.29714
+[  3520.8s] fold 0 ep 75/100 train 0.0293 val_maskedMAE 0.27447
+[  3752.1s] fold 0 ep 80/100 train 0.0261 val_maskedMAE 0.25488
+[  3981.0s] fold 0 ep 85/100 train 0.0241 val_maskedMAE 0.24900
+[  4209.4s] fold 0 ep 90/100 train 0.0232 val_maskedMAE 0.24407
+[  4442.3s] fold 0 ep 95/100 train 0.0225 val_maskedMAE 0.24177
+[  4673.4s] fold 0 ep 100/100 train 0.0224 val_maskedMAE 0.24109
+[  4673.4s] fold 0 best masked MAE 0.24109
+[  4675.6s] OOF (13581 breaths) masked MAE raw 0.24109  snapped 0.24004
+[  4676.2s] wrote /home/tjyen/ai_agents/kaggle/competitions/ventilator-pressure-prediction/submission.csv  snap=True  folds_trained=1
+Traceback (most recent call last):
+  File "/home/tjyen/ai_agents/kaggle/competitions/ventilator-pressure-prediction/scripts/train.py", line 236, in <module>
+    el.log_experiment_v2(
+    ...<6 lines>...
+        submission="submission.csv",
+TypeError: log_experiment_v2() got an unexpected keyword argument 'params'

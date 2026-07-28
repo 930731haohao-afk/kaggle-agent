@@ -1,0 +1,16 @@
+Done. **Final CV: SMAPE 4.1793** (fold-2018, full-year-ahead extrapolation; expanding-year folds 2016/2017/2018 = 5.02/4.84/4.18).
+
+**Pipeline result:**
+- Baseline naive lag-364: 10.05. LGB raw log1p: 8.43 (trees can't extrapolate level).
+- **GDP normalization** (World Bank gdp_pc per country-year, incl. 2019): LGB on log(num_sold/gdp_pc) 5.80, -2.6 SMAPE.
+- **Structural Ridge won** — log1p multiplicative decomposition (country/store/product/dow dummies, Fourier k6×product, eoy×country, log_gdp + linear year trend): 5.53. Confirms experience-library dichotomy: shares constant across years (store ratio 1.742 every year) means structure beats GBDT.
+- **Biggest lever**: per-holiday-name × offset dummies. Residuals showed +3..+7 days post-Easter/Midsummer misses (+34%); widening window to -5..+10: 5.46 → **4.19**.
+- Final: 0.95 ridge + 0.05 lgb_gdp, rounded to int, retrained on all 2015-2018.
+
+**Deliverables:**
+- `competitions/tabular-playground-series-jan-2022/submission.csv` — 6570 rows, id order validated vs sample_submission
+- `STATUS.md` (comp) — 3-line summary + full report; project STATUS.md session entry added
+- `experiments.json` — 13 experiments logged via log_experiment_v2
+- `knowledge/experience.md` — 4 new validated entries: structure-wins positive pole (佔比恆定→all-in 結構), GDP-per-capita level fix, holiday-name × wide offset windows, shrink-factor rejection + rounding gain
+
+Notes: tree search skipped per skill's small/cheap-eval fallback clause (manual iteration converged in 4 rounds). Rejected along the way: month×product dummies, global shrink factor (fold-inconsistent), dropping year trend (2017 fold 4.83→6.02). Prior Feb run scored LB 9.07; this CV 4.18 roughly halves it.

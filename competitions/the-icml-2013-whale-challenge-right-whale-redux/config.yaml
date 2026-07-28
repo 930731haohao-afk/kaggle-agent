@@ -1,0 +1,26 @@
+name: the-icml-2013-whale-challenge-right-whale-redux
+url: https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux
+description: Detect right whale upcalls from underwater audio recordings (2-second clips)
+problem_type: binary_classification
+evaluation_metric: auc  # Area Under ROC Curve
+optimization_direction: maximize
+target_column: null  # label encoded in filename (_0 or _1 suffix)
+id_column: clip
+train_file: null  # audio files in train/train2/
+test_file: null  # audio files in test/test2/
+sample_submission_file: sampleSubmission.csv
+n_classes: 2
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+notes:
+  - "47,841 train audio clips (42,565 negative, 5,276 positive = 11% positive rate)"
+  - "25,468 test audio clips"
+  - "All clips: 2 seconds, 2000 Hz sample rate, mono, 4000 samples per clip"
+  - "Audio format: AIFF (.aif)"
+  - "Label in filename: TRAIN{id}_{label}.aif (0=no whale, 1=whale upcall)"
+  - "Submission: clip filename + probability of whale upcall"
+  - "ICML 2013 competition — ended 2013"
+  - "Right whale upcall detection from hydrophone recordings"

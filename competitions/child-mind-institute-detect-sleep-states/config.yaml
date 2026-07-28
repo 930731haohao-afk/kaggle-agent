@@ -1,0 +1,31 @@
+competition:
+  name: child-mind-institute-detect-sleep-states
+  url: https://www.kaggle.com/competitions/child-mind-institute-detect-sleep-states
+  type: event_detection
+  metric: event_detection_average_precision  # EDAP
+  metric_direction: maximize
+  target: sleep onset and wakeup events
+  id_column: series_id
+  submission_format: row_id,series_id,step,event,score
+
+data:
+  train_series: train_series.parquet  # 127.9M rows, 277 series, 941MB
+  train_events: train_events.csv       # 14,508 rows (7,254 onset + 7,254 wakeup)
+  test_series: test_series.parquet     # 450 rows (3 series, 150 steps each) — placeholder
+  sample_submission: sample_submission.csv
+  sensors: [enmo, anglez]
+  sampling_rate: 5s  # 1 step per 5 seconds = 17,280 steps/day
+  n_train_series: 277
+  n_train_events: 14508
+
+notes:
+  - Detect sleep onset and wakeup events from wrist-worn accelerometer data
+  - Two sensor channels: enmo (movement intensity) and anglez (wrist angle)
+  - Metric is Event Detection Average Precision (EDAP) — similar to object detection AP
+  - Must predict event type (onset/wakeup), step number, and confidence score
+  - 4,923 null step/timestamp entries in train_events (~34%) — nights without annotations
+  - 277 train series, recording duration 2-83 days (mean 26.7 days)
+  - Test series appears to be placeholder (only 3 series with 150 steps each)
+  - Mixed timezones across series
+  - Sleep onset typically detected by low enmo + stable anglez
+  - anglez range: -90 to 90, enmo range: 0 to 11.4 (right-skewed)

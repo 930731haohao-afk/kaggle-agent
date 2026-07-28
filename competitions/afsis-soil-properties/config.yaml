@@ -1,0 +1,36 @@
+competition:
+  name: afsis-soil-properties
+  title: "Africa Soil Property Prediction Challenge"
+  url: https://www.kaggle.com/competitions/afsis-soil-properties
+  description: "Predict physical and chemical properties of soil using spectral measurements"
+  category: Research
+  reward: "$8,000 USD"
+  deadline: 2014-10-21
+  team_count: 1231
+  max_daily_submissions: 3
+
+task:
+  type: regression
+  metric: MCRMSE  # Mean Columnwise Root Mean Squared Error (avg RMSE across 5 targets)
+  metric_direction: minimize
+  targets:
+    - Ca    # Calcium
+    - P     # Phosphorus
+    - pH    # Soil pH
+    - SOC   # Soil Organic Carbon
+    - Sand  # Sand content
+
+data:
+  train_file: training.csv
+  test_file: sorted_test.csv
+  sample_submission: sample_submission.csv
+  train_rows: 1157
+  test_rows: 727
+  id_column: PIDN
+  features:
+    spectral: 3578 columns (m599.76 to m7497.96, mid-infrared spectroscopy)
+    spatial: 15 columns (BSAN, BSAS, BSAV, CTI, ELEV, EVI, LSTD, LSTN, REF1, REF2, REF3, REF7, RELI, TMAP, TMFI)
+    categorical: 1 column (Depth - Topsoil/Subsoil)
+  total_features: 3594
+  no_nulls: true
+  note: "All features appear to be standardized (zero-centered). Spectral features are mid-infrared absorbance values."

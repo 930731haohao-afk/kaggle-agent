@@ -1,0 +1,148 @@
+#!/bin/bash
+# my-agent lanes, unattended — headless Claude Code sessions, one competition at a time.
+#
+# The earlier claim that this lane "cannot run unattended" was wrong, and AIDE is the
+# counterexample: an LLM makes every decision there too, it just does so from a detached
+# process. `claude -p` gives my-agent the same property — the full skill-driven loop
+# (EDA -> features -> modeling -> evaluation -> iterate) runs inside one headless session
+# per competition. What a session loses by having no human is recoverable: the watchdog
+# flags stalls, and a dead session leaves its workspace for the next one to pick up.
+#
+# February leftovers are archived (.feb-archive) and data/ points at the manifest-verified
+# clean root, so a re-run cannot warm-start off its own old intermediates — the same rule
+# that voided AIDE's contaminated cells.
+#
+# Usage:  setsid nohup bash run_myagent_headless.sh > myagent_lanes.log 2>&1 < /dev/null &
+set -uo pipefail
+
+BASE=/home/tjyen/ai_agents/kaggle
+NV_MARKER=/home/tjyen/ai_agents/nvidia-kaggle-runs/RUN_READY_STATUS.md
+AIDE_MARKER=/home/tjyen/ai_agents/aideml-runs/PHASE9A_STATUS.md
+STATUS=$BASE/MYAGENT_LANES_STATUS.md
+CLAUDE=/home/tjyen/.local/bin/claude
+PER_COMP_SECS=21600         # 6 h safety net — original method was uncapped; observed singles 0.4-4 h, so the cap must sit above the max, not inside the range
+STALL_MIN=30                # kill a session that has written nothing for this long — longest observed legitimate quiet gap is a single training epoch, well under this
+MAX_WAIT_SECS=$((16*3600))
+
+# Kill a process and all descendants. `kill $pid` alone leaves the claude (node) process
+# orphaned under init, still holding its dead HTTP stream: the subshell dies, timeout dies,
+# and the actual hung process survives — the one thing the stall handler exists to remove.
+kill_tree(){ local p; for p in $(pgrep -P "$1" 2>/dev/null); do kill_tree "$p"; done; kill -9 "$1" 2>/dev/null; }
+
+# conway moved last: attempt 3 hung on a dead HTTP stream on 2026-07-28 and was killed by
+# hand. aug-2022 and jan-2022 are what bring the significance-testable set to 19, so they
+# run first; conway then gets its retry with the stall watchdog rather than being dropped.
+COMPS="afsis-soil-properties cat-in-the-dat tabular-playground-series-aug-2022 tabular-playground-series-jan-2022 conway-s-reverse-game-of-life"
+
+log(){ echo "- \`$(date '+%m-%d %H:%M')\` $*" | tee -a "$STATUS"; }
+
+# Append on relaunch — truncating would erase the record of lanes already run.
+[ -f "$STATUS" ] || printf '# my-agent lanes — headless overnight runs\n\n' > "$STATUS"
+
+# Wait for EVERY upstream lane, not just one of them.
+#
+# This originally waited only on NVIDIA. NVIDIA finished at 23:42 on 2026-07-27 while the
+# AIDE lanes ran until the next morning, so my-agent started against a loaded machine: AIDE
+# had run afsis alone in 70.9 min, and my-agent began the same competition at load average
+# 17. Same competition, different conditions per lane — precisely the defect that voided
+# RUN1. Bounded, because an unbounded wait turns one false reading into a night of idling.
+waited=0
+until grep -q "NVIDIA LANES COMPLETE" "$NV_MARKER" 2>/dev/null \
+   && grep -q "PHASE 9A AIDE LANES COMPLETE" "$AIDE_MARKER" 2>/dev/null; do
+  [ $waited -ge $MAX_WAIT_SECS ] && { log "WARNING: upstream lanes unfinished after $((MAX_WAIT_SECS/3600))h — starting anyway, conditions were contended"; break; }
+  [ $((waited % 1800)) -eq 0 ] && log "waiting for the NVIDIA and AIDE lanes ($((waited/60)) min)"
+  sleep 120; waited=$((waited+120))
+done
+
+source /home/tjyen/ai_agents/lane_lock.sh
+
+for c in $COMPS; do
+  # Relaunch-safe: a competition that already produced its submission is done.
+  if [ -f "$BASE/competitions/$c/submission.csv" ]; then
+    log "SKIP $c: submission already present"
+    continue
+  fi
+
+  # Hold the machine for exactly one competition, then hand it on. The upstream-marker wait
+  # above establishes ordering; this makes non-overlap a mechanism rather than a convention
+  # that every driver has to implement correctly.
+  lane_acquire "my-agent/$c" || log "WARNING: started $c without the lane lock — contended"
+  log "START $c"
+  start=$(date +%s)
+
+  PROMPT="You are running ONE benchmark competition with the kaggle-agent skill: $c.
+
+Work in competitions/$c/ (config.yaml present; data/ symlinks to the official files).
+
+Follow the kaggle-agent skill as written — read SKILL.md and its references and do what they say. Do not treat this prompt as the definition of the pipeline; the skill is. In particular the skill designates **tree search as the preferred Stage 4 optimisation loop** (references/07_tree_search.md, harness tree_search/harness_v3.py), to be entered once the linear Iteration Protocol has produced a baseline solo model plus at least one blend, with the linear protocol kept only as the first-pass fallback and for competitions where a ~60-node budget is not worth it. An earlier run of this benchmark listed the stages in the prompt and silently omitted tree search; every competition then finished in 5-32 minutes having never entered it, which is not this agent's method. If you judge a competition too cheap to justify the search, say so explicitly in STATUS.md with the reason.
+
+Also per the skill: consult knowledge/experience.md before EDA and before modeling, append every experiment to competitions/$c/experiments.json, and write validated new insights back to knowledge/experience.md.
+
+CRITICAL — run every training job in the FOREGROUND and wait for it. No '&', nohup or setsid, and never end a turn while a job is still running: this session ends the moment you stop calling tools, so a backgrounded job dies unfinished and the competition produces nothing. A previous conway attempt failed exactly this way. If a configuration would not finish in the budget, shrink it until it completes in the foreground.
+
+Constraints:
+- STRICT lane isolation: never read or reference anything under ~/ai_agents/aideml*, ~/ai_agents/nvidia-kaggle*, or other agents' outputs. Do not touch .feb-archive/ — it is a quarantined stale run.
+- Machine is shared: cap threads at 10 (LightGBM num_threads, OMP). Fix seeds; deterministic=true, force_row_wise=true for LightGBM.
+- Budget: work at your normal pace; the pipeline decides when it is done (6 h hard safety net). A completed modest pipeline beats an unfinished ambitious one.
+- Finish by writing competitions/$c/submission.csv (columns/id order per sample_submission.csv) and a 3-line summary at the top of competitions/$c/STATUS.md with the final CV score.
+
+Work autonomously; never ask questions; take documented fallbacks when blocked."
+
+  # Stall watchdog for this one competition.
+  #
+  # Neither file output nor process state alone can tell a stall from work:
+  #   - conway 2026-07-28 looked hung by every process signal (2h47m elapsed, 1m42s CPU,
+  #     idle TCP) while a foreground cnn_v2 training was legitimately running — and that
+  #     training wrote NO file for 70 minutes, so an output-only check would kill it too.
+  #     It was killed by hand on those signals; the training survived as an orphan and the
+  #     result was salvaged, but the kill itself was a misdiagnosis.
+  #   - a genuinely wedged session (dead HTTP stream) also writes nothing, but burns no CPU.
+  # So a stall requires BOTH: no file written under the workspace for STALL_MIN AND no CPU
+  # consumed by the process tree across the check interval. Training always burns CPU;
+  # a dead stream never does.
+  ( cd "$BASE" && timeout $PER_COMP_SECS "$CLAUDE" -p "$PROMPT" \
+      --dangerously-skip-permissions \
+      > "competitions/$c/headless_run.log" 2>&1 ) &
+  run_pid=$!
+
+  (
+    tree_cpu(){ # total CPU jiffies of $1 and all descendants
+      local p sum=0 jif
+      for p in $1 $(pgrep -P "$1" 2>/dev/null); do
+        [ "$p" = "$1" ] || { jif=$(tree_cpu "$p"); sum=$((sum + jif)); }
+      done
+      jif=$(awk '{print $14+$15}' "/proc/$1/stat" 2>/dev/null || echo 0)
+      echo $((sum + jif))
+    }
+    prev_cpu=0
+    while kill -0 $run_pid 2>/dev/null; do
+      sleep 300
+      kill -0 $run_pid 2>/dev/null || break
+      cur_cpu=$(tree_cpu $run_pid)
+      quiet_files=0
+      [ -z "$(find "$BASE/competitions/$c" -newermt "-${STALL_MIN} minutes" -type f 2>/dev/null | head -1)" ] && quiet_files=1
+      # Under 5 CPU-seconds across 5 minutes = idle; an API round-trip alone costs more.
+      if [ "$quiet_files" = "1" ] && [ $((cur_cpu - prev_cpu)) -lt 500 ]; then
+        log "STALLED $c: no output for ${STALL_MIN}min and no CPU in 5min — killing the session"
+        kill_tree $run_pid
+        break
+      fi
+      prev_cpu=$cur_cpu
+    done
+  ) &
+  stall_pid=$!
+
+  wait $run_pid
+  rc=$?
+  kill $stall_pid 2>/dev/null
+
+  lane_release
+  mins=$(( ($(date +%s) - start) / 60 ))
+  if [ -f "$BASE/competitions/$c/submission.csv" ]; then
+    log "DONE $c: submission written (${mins} min, rc=$rc)"
+  else
+    log "DONE $c: NO SUBMISSION (${mins} min, rc=$rc) — needs a human look"
+  fi
+done
+
+log "MY-AGENT LANES COMPLETE"

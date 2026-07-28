@@ -1,0 +1,750 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-10T14:34:44.656097",
+    "model": "RandomForest",
+    "n_features": 32,
+    "params": {
+      "n_estimators": "500",
+      "max_depth": "15",
+      "min_samples_split": "5",
+      "max_features": "sqrt"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.807936,
+      0.792409,
+      0.80391,
+      0.806674,
+      0.790564
+    ],
+    "cv_mean": 0.800299,
+    "cv_std": 0.007335,
+    "eval_metric": "accuracy",
+    "notes": "Tuned RF for binary classification"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-10T14:34:46.989000",
+    "model": "ExtraTrees",
+    "n_features": 32,
+    "params": {
+      "n_estimators": "500",
+      "max_depth": "15",
+      "min_samples_split": "5",
+      "max_features": "sqrt"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.818286,
+      0.788959,
+      0.80621,
+      0.803797,
+      0.787112
+    ],
+    "cv_mean": 0.800873,
+    "cv_std": 0.011589,
+    "eval_metric": "accuracy",
+    "notes": "Tuned Extra Trees"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-10T14:34:52.615686",
+    "model": "LightGBM",
+    "n_features": 32,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.05",
+      "num_leaves": "31",
+      "max_depth": "-1",
+      "min_child_samples": "20",
+      "subsample": "0.8",
+      "colsample_bytree": "0.8",
+      "reg_alpha": "0.1",
+      "reg_lambda": "0.1"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.812536,
+      0.803335,
+      0.80621,
+      0.811277,
+      0.798619
+    ],
+    "cv_mean": 0.806396,
+    "cv_std": 0.005127,
+    "eval_metric": "accuracy",
+    "notes": "Tuned LightGBM binary"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-10T14:34:54.152289",
+    "model": "XGBoost",
+    "n_features": 32,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.05",
+      "max_depth": "6",
+      "subsample": "0.8",
+      "colsample_bytree": "0.8",
+      "reg_alpha": "0.1",
+      "reg_lambda": "1.0"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.815986,
+      0.812536,
+      0.807936,
+      0.817031,
+      0.796893
+    ],
+    "cv_mean": 0.810076,
+    "cv_std": 0.007317,
+    "eval_metric": "accuracy",
+    "notes": "Tuned XGBoost binary"
+  },
+  {
+    "experiment_id": 5,
+    "timestamp": "2026-03-18T16:42:35.115334",
+    "model": "XGBoost-Enhanced",
+    "n_features": 43,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.03",
+      "max_depth": "5",
+      "subsample": "0.8",
+      "colsample_bytree": "0.7",
+      "reg_alpha": "0.3",
+      "reg_lambda": "1.0"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.824037,
+      0.807936,
+      0.813111,
+      0.825662,
+      0.798044
+    ],
+    "cv_mean": 0.813758,
+    "cv_std": 0.010282,
+    "eval_metric": "accuracy",
+    "notes": "XGBoost with enhanced features + tuned hyperparams"
+  },
+  {
+    "experiment_id": 6,
+    "timestamp": "2026-03-18T16:42:36.272812",
+    "model": "LightGBM-Enhanced",
+    "n_features": 43,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.03",
+      "num_leaves": "25",
+      "max_depth": "5",
+      "min_child_samples": "20",
+      "subsample": "0.8",
+      "colsample_bytree": "0.7",
+      "reg_alpha": "0.5",
+      "reg_lambda": "1.0"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.815986,
+      0.812536,
+      0.811961,
+      0.823936,
+      0.806099
+    ],
+    "cv_mean": 0.814104,
+    "cv_std": 0.005854,
+    "eval_metric": "accuracy",
+    "notes": "LightGBM with enhanced features + more regularization"
+  },
+  {
+    "experiment_id": 7,
+    "timestamp": "2026-03-18T16:42:41.374391",
+    "model": "CatBoost-Enhanced",
+    "n_features": 43,
+    "params": {
+      "iterations": "500",
+      "learning_rate": "0.05",
+      "depth": "6",
+      "l2_leaf_reg": "3.0",
+      "random_seed": "42",
+      "verbose": "0"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.816561,
+      0.817711,
+      0.813686,
+      0.82336,
+      0.798619
+    ],
+    "cv_mean": 0.813988,
+    "cv_std": 0.008302,
+    "eval_metric": "accuracy",
+    "notes": "CatBoost with enhanced features"
+  },
+  {
+    "experiment_id": 8,
+    "timestamp": "2026-03-18T16:42:46.822739",
+    "model": "RandomForest-Enhanced",
+    "n_features": 43,
+    "params": {
+      "n_estimators": "800",
+      "max_depth": "20",
+      "min_samples_split": "3",
+      "max_features": "sqrt"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.824037,
+      0.801035,
+      0.803335,
+      0.800921,
+      0.785386
+    ],
+    "cv_mean": 0.802943,
+    "cv_std": 0.012338,
+    "eval_metric": "accuracy",
+    "notes": "Deeper RF with enhanced features"
+  },
+  {
+    "experiment_id": 9,
+    "timestamp": "2026-03-18T16:42:47.007046",
+    "model": "LogisticRegression-Enhanced",
+    "n_features": 43,
+    "params": {
+      "C": "1.0",
+      "max_iter": "1000"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.80391,
+      0.785509,
+      0.79356,
+      0.808976,
+      0.79229
+    ],
+    "cv_mean": 0.796849,
+    "cv_std": 0.008451,
+    "eval_metric": "accuracy",
+    "notes": "Logistic regression with scaled enhanced features"
+  },
+  {
+    "experiment_id": 10,
+    "timestamp": "2026-03-18T16:43:02.836003",
+    "model": "SoftVoting-4Model",
+    "n_features": 43,
+    "params": {
+      "models": "XGB+LGB+CatBoost+RF",
+      "voting": "soft"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.819436,
+      0.812536,
+      0.813686,
+      0.82336,
+      0.802071
+    ],
+    "cv_mean": 0.814218,
+    "cv_std": 0.007231,
+    "eval_metric": "accuracy",
+    "notes": "4-model soft voting with enhanced features"
+  },
+  {
+    "experiment_id": 11,
+    "timestamp": "2026-03-18T16:43:37.052341",
+    "model": "SoftVoting-6Model",
+    "n_features": 43,
+    "params": {
+      "models": "XGB+LGB+CB+RF+SVM+LR",
+      "voting": "soft"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.822312,
+      0.808511,
+      0.810811,
+      0.813579,
+      0.798044
+    ],
+    "cv_mean": 0.810651,
+    "cv_std": 0.00785,
+    "eval_metric": "accuracy",
+    "notes": "6-model soft voting with enhanced features"
+  },
+  {
+    "experiment_id": 12,
+    "timestamp": "2026-03-18T16:54:38.589182",
+    "model": "XGBoost-Adaptive",
+    "n_features": 50,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.03",
+      "max_depth": "5",
+      "subsample": "0.8",
+      "colsample_bytree": "0.7",
+      "reg_alpha": "0.3",
+      "reg_lambda": "1.0"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.762507,
+      0.73548,
+      0.751006,
+      0.745685,
+      0.745685
+    ],
+    "cv_mean": 0.748073,
+    "cv_std": 0.008797,
+    "eval_metric": "accuracy",
+    "notes": "XGBoost with transport rates + smart imputation + spending clusters"
+  },
+  {
+    "experiment_id": 13,
+    "timestamp": "2026-03-18T16:54:39.699945",
+    "model": "LightGBM-Adaptive",
+    "n_features": 50,
+    "params": {
+      "n_estimators": "500",
+      "learning_rate": "0.03",
+      "num_leaves": "25",
+      "max_depth": "5",
+      "min_child_samples": "20",
+      "subsample": "0.8",
+      "colsample_bytree": "0.7",
+      "reg_alpha": "0.5",
+      "reg_lambda": "1.0"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.757332,
+      0.73088,
+      0.755607,
+      0.739356,
+      0.749137
+    ],
+    "cv_mean": 0.746462,
+    "cv_std": 0.010022,
+    "eval_metric": "accuracy",
+    "notes": "LightGBM with transport rates + smart imputation + spending clusters"
+  },
+  {
+    "experiment_id": 14,
+    "timestamp": "2026-03-18T16:54:44.717815",
+    "model": "CatBoost-Adaptive",
+    "n_features": 50,
+    "params": {
+      "iterations": "500",
+      "learning_rate": "0.05",
+      "depth": "6",
+      "l2_leaf_reg": "3.0",
+      "random_seed": "42",
+      "verbose": "0"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.764232,
+      0.743531,
+      0.761932,
+      0.757768,
+      0.75374
+    ],
+    "cv_mean": 0.756241,
+    "cv_std": 0.007299,
+    "eval_metric": "accuracy",
+    "notes": "CatBoost with transport rates + smart imputation + spending clusters"
+  },
+  {
+    "experiment_id": 15,
+    "timestamp": "2026-03-18T16:55:01.022539",
+    "model": "SoftVoting-4Model-Adaptive",
+    "n_features": 50,
+    "params": {
+      "models": "XGB+LGB+CB+RF",
+      "new_features": "transport_rates+clusters"
+    },
+    "cv_strategy": "5-fold-stratified",
+    "cv_scores": [
+      0.760207,
+      0.737205,
+      0.757332,
+      0.74626,
+      0.750288
+    ],
+    "cv_mean": 0.750258,
+    "cv_std": 0.00819,
+    "eval_metric": "accuracy",
+    "notes": "4-model ensemble with transport rates + smart imputation"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 16,
+    "timestamp": "2026-07-20T15:54:00",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.77131,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_accuracy_0.77131.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.3), 'xgb': np.float64(0.4), 'lgb_v2': np.float64(0.3)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 17,
+    "timestamp": "2026-07-20T15:54:52",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.776142,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_accuracy_0.77614.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.1), 'xgb': np.float64(0.3), 'cat': np.float64(0.6)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 18,
+    "timestamp": "2026-07-20T15:55:48",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.795468,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_accuracy_0.79547.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.004, 'xgb': 0.081, 'cat': 0.014, 'cat_tuned': 0.727, 'cat_tuned_s2024': 0.175}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 19,
+    "timestamp": "2026-07-20T15:57:20",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.77131,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_accuracy_0.77131.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.3), 'xgb': np.float64(0.4), 'lgb_v2': np.float64(0.3)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 20,
+    "timestamp": "2026-07-20T15:58:12",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.776142,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_accuracy_0.77614.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.1), 'xgb': np.float64(0.3), 'cat': np.float64(0.6)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 21,
+    "timestamp": "2026-07-20T15:59:09",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.795468,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_accuracy_0.79547.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.004, 'xgb': 0.081, 'cat': 0.014, 'cat_tuned': 0.727, 'cat_tuned_s2024': 0.175}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 22,
+    "timestamp": "2026-07-20T15:59:16",
+    "model": "[LADDER s4] tree search 4 nodes; champ #7 blend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.795698,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage4_accuracy_0.79570.csv",
+    "notes": "ladder stage 4; weights=None; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 23,
+    "timestamp": "2026-07-20T15:59:43",
+    "model": "[LADDER s5] idea-injected pool, final blend (9 members)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.795698,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage5_accuracy_0.79570.csv",
+    "notes": "ladder stage 5; weights=None; priors=['**balanced accuracy INVERTS the AUC imbalance-weighting rule: here class balancing is MANDATORY.** balanced accuracy averages per-class recall, so the majority class is capped at weight 1/K; class_weight=\\'balanced\\' (LGB) / auto_class_weights=\\'Balanced\\' (CAT) / sample_weight (XGB) is essential (predict-all-majority scores only 1/K). Do NOT transfer the \"remove imbalance weighting helps AUC\" prior to this metric. | \u8b49\u64da:s6e7 (health_condition, 86/8/6% split), LGB/XGB/CAT all class-balanced -> CV balacc 0.949; blend 0.94994 -> Public LB 0.94939.', '**Per-class posterior multiplier tuned on OOF beats plain argmax for balanced accuracy.** After balanced training, grid-search a minority-class probability scale (e.g. x1.5) on OOF balanced accuracy; shifts predictions toward minorities (pred dist 0.81/0.07/0.12 vs true prior 0.86/0.06/0.08). | \u8b49\u64da:s6e7, blend raw->adjusted lifted balacc, adj=[1,1.5,1.5].', '**CatBoost cat_features reject NaN** \u2014 fill categorical NaN with a \"missing\" string first (LGB/XGB handle NaN natively; only CatBoost errors). | \u8b49\u64da:s6e7 CatBoostError object_idx NaN -> fixed with fillna(\"missing\").', '**At a metric ceiling, non-GBDT diversity barely enters the blend but can still lift the real LB.** When decision-opt is maxed and a GBDT-family blend has plateaued, adding structurally-diverse learners (a class-weighted MLP, ExtraTrees) earns only ~1\u20135% blend weight each (CV \u0394 \u2248 +0.00007, noise) \u2014 so CV says \"ceiling confirmed\" \u2014 yet the wider pool + finer continuous weight search beat the first submission on the actual leaderboard. Don\\'t judge diversity solely by CV \u0394; a small real-LB gain can still appear. | \u8b49\u64da:s6e7, v1 LB 0.94939 -> v3b (5 GBDT + ET + MLP) LB 0.94985 (+0.00046); MLP/ET blend weight 0.011/0.050.']"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 24,
+    "timestamp": "2026-07-20T16:01:15",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.77131,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_accuracy_0.77131.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.3), 'xgb': np.float64(0.4), 'lgb_v2': np.float64(0.3)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 25,
+    "timestamp": "2026-07-20T16:02:06",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.776142,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_accuracy_0.77614.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.1), 'xgb': np.float64(0.3), 'cat': np.float64(0.6)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 26,
+    "timestamp": "2026-07-20T16:04:22",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.796733,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_accuracy_0.79673.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.036, 'cat': 0.002, 'cat_tuned': 0.382, 'cat_tuned_s2024': 0.58}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 27,
+    "timestamp": "2026-07-20T16:05:24",
+    "model": "[LADDER s4] tree search 24 nodes; champ #10 solo",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.797193,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage4_accuracy_0.79719.csv",
+    "notes": "ladder stage 4; weights=None; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 28,
+    "timestamp": "2026-07-20T16:06:05",
+    "model": "[LADDER s5] idea-injected pool, final blend (20 members)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.797193,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage5_accuracy_0.79719.csv",
+    "notes": "ladder stage 5; weights=None; priors=['**balanced accuracy INVERTS the AUC imbalance-weighting rule: here class balancing is MANDATORY.** balanced accuracy averages per-class recall, so the majority class is capped at weight 1/K; class_weight=\\'balanced\\' (LGB) / auto_class_weights=\\'Balanced\\' (CAT) / sample_weight (XGB) is essential (predict-all-majority scores only 1/K). Do NOT transfer the \"remove imbalance weighting helps AUC\" prior to this metric. | \u8b49\u64da:s6e7 (health_condition, 86/8/6% split), LGB/XGB/CAT all class-balanced -> CV balacc 0.949; blend 0.94994 -> Public LB 0.94939.', '**Per-class posterior multiplier tuned on OOF beats plain argmax for balanced accuracy.** After balanced training, grid-search a minority-class probability scale (e.g. x1.5) on OOF balanced accuracy; shifts predictions toward minorities (pred dist 0.81/0.07/0.12 vs true prior 0.86/0.06/0.08). | \u8b49\u64da:s6e7, blend raw->adjusted lifted balacc, adj=[1,1.5,1.5].', '**CatBoost cat_features reject NaN** \u2014 fill categorical NaN with a \"missing\" string first (LGB/XGB handle NaN natively; only CatBoost errors). | \u8b49\u64da:s6e7 CatBoostError object_idx NaN -> fixed with fillna(\"missing\").', '**At a metric ceiling, non-GBDT diversity barely enters the blend but can still lift the real LB.** When decision-opt is maxed and a GBDT-family blend has plateaued, adding structurally-diverse learners (a class-weighted MLP, ExtraTrees) earns only ~1\u20135% blend weight each (CV \u0394 \u2248 +0.00007, noise) \u2014 so CV says \"ceiling confirmed\" \u2014 yet the wider pool + finer continuous weight search beat the first submission on the actual leaderboard. Don\\'t judge diversity solely by CV \u0394; a small real-LB gain can still appear. | \u8b49\u64da:s6e7, v1 LB 0.94939 -> v3b (5 GBDT + ET + MLP) LB 0.94985 (+0.00046); MLP/ET blend weight 0.011/0.050.']"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 29,
+    "timestamp": "2026-07-20T16:12:37",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.801334,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_accuracy_0.80133.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.1), 'xgb': np.float64(0.4), 'lgb_v2': np.float64(0.5)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 30,
+    "timestamp": "2026-07-20T16:13:35",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.807546,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_accuracy_0.80755.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.1), 'xgb': np.float64(0.25), 'cat': np.float64(0.65)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 31,
+    "timestamp": "2026-07-20T16:14:31",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.812148,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_accuracy_0.81215.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.003, 'xgb': 0.017, 'cat': 0.224, 'cat_tuned': 0.648, 'cat_tuned_s2024': 0.109}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 32,
+    "timestamp": "2026-07-20T16:14:38",
+    "model": "[LADDER s4] tree search 4 nodes; champ #9 blend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.813068,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage4_accuracy_0.81307.csv",
+    "notes": "ladder stage 4; weights=None; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 33,
+    "timestamp": "2026-07-20T16:15:10",
+    "model": "[LADDER s5] idea-injected pool, final blend (9 members)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.813068,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage5_accuracy_0.81307.csv",
+    "notes": "ladder stage 5; weights=None; priors=['**balanced accuracy INVERTS the AUC imbalance-weighting rule: here class balancing is MANDATORY.** balanced accuracy averages per-class recall, so the majority class is capped at weight 1/K; class_weight=\\'balanced\\' (LGB) / auto_class_weights=\\'Balanced\\' (CAT) / sample_weight (XGB) is essential (predict-all-majority scores only 1/K). Do NOT transfer the \"remove imbalance weighting helps AUC\" prior to this metric. | \u8b49\u64da:s6e7 (health_condition, 86/8/6% split), LGB/XGB/CAT all class-balanced -> CV balacc 0.949; blend 0.94994 -> Public LB 0.94939.', '**Per-class posterior multiplier tuned on OOF beats plain argmax for balanced accuracy.** After balanced training, grid-search a minority-class probability scale (e.g. x1.5) on OOF balanced accuracy; shifts predictions toward minorities (pred dist 0.81/0.07/0.12 vs true prior 0.86/0.06/0.08). | \u8b49\u64da:s6e7, blend raw->adjusted lifted balacc, adj=[1,1.5,1.5].', '**CatBoost cat_features reject NaN** \u2014 fill categorical NaN with a \"missing\" string first (LGB/XGB handle NaN natively; only CatBoost errors). | \u8b49\u64da:s6e7 CatBoostError object_idx NaN -> fixed with fillna(\"missing\").', '**At a metric ceiling, non-GBDT diversity barely enters the blend but can still lift the real LB.** When decision-opt is maxed and a GBDT-family blend has plateaued, adding structurally-diverse learners (a class-weighted MLP, ExtraTrees) earns only ~1\u20135% blend weight each (CV \u0394 \u2248 +0.00007, noise) \u2014 so CV says \"ceiling confirmed\" \u2014 yet the wider pool + finer continuous weight search beat the first submission on the actual leaderboard. Don\\'t judge diversity solely by CV \u0394; a small real-LB gain can still appear. | \u8b49\u64da:s6e7, v1 LB 0.94939 -> v3b (5 GBDT + ET + MLP) LB 0.94985 (+0.00046); MLP/ET blend weight 0.011/0.050.']"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 34,
+    "timestamp": "2026-07-20T16:19:40",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.801219,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_accuracy_0.80122.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.1), 'xgb': np.float64(0.4), 'lgb_v2': np.float64(0.5)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 35,
+    "timestamp": "2026-07-20T16:20:38",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.807546,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_accuracy_0.80755.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.1), 'xgb': np.float64(0.25), 'cat': np.float64(0.65)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 36,
+    "timestamp": "2026-07-20T16:23:43",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.812148,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_accuracy_0.81215.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.003, 'xgb': 0.017, 'cat': 0.224, 'cat_tuned': 0.648, 'cat_tuned_s2024': 0.109}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 37,
+    "timestamp": "2026-07-20T16:24:49",
+    "model": "[LADDER s4] tree search 24 nodes; champ #23 blend",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.814333,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage4_accuracy_0.81433.csv",
+    "notes": "ladder stage 4; weights=None; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 38,
+    "timestamp": "2026-07-20T16:25:38",
+    "model": "[LADDER s5] idea-injected pool, final blend (20 members)",
+    "metric": "accuracy",
+    "direction": "maximize",
+    "score": 0.814333,
+    "cv": {
+      "scheme": "StratifiedKFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage5_accuracy_0.81433.csv",
+    "notes": "ladder stage 5; weights=None; priors=['**balanced accuracy INVERTS the AUC imbalance-weighting rule: here class balancing is MANDATORY.** balanced accuracy averages per-class recall, so the majority class is capped at weight 1/K; class_weight=\\'balanced\\' (LGB) / auto_class_weights=\\'Balanced\\' (CAT) / sample_weight (XGB) is essential (predict-all-majority scores only 1/K). Do NOT transfer the \"remove imbalance weighting helps AUC\" prior to this metric. | \u8b49\u64da:s6e7 (health_condition, 86/8/6% split), LGB/XGB/CAT all class-balanced -> CV balacc 0.949; blend 0.94994 -> Public LB 0.94939.', '**Per-class posterior multiplier tuned on OOF beats plain argmax for balanced accuracy.** After balanced training, grid-search a minority-class probability scale (e.g. x1.5) on OOF balanced accuracy; shifts predictions toward minorities (pred dist 0.81/0.07/0.12 vs true prior 0.86/0.06/0.08). | \u8b49\u64da:s6e7, blend raw->adjusted lifted balacc, adj=[1,1.5,1.5].', '**CatBoost cat_features reject NaN** \u2014 fill categorical NaN with a \"missing\" string first (LGB/XGB handle NaN natively; only CatBoost errors). | \u8b49\u64da:s6e7 CatBoostError object_idx NaN -> fixed with fillna(\"missing\").', '**At a metric ceiling, non-GBDT diversity barely enters the blend but can still lift the real LB.** When decision-opt is maxed and a GBDT-family blend has plateaued, adding structurally-diverse learners (a class-weighted MLP, ExtraTrees) earns only ~1\u20135% blend weight each (CV \u0394 \u2248 +0.00007, noise) \u2014 so CV says \"ceiling confirmed\" \u2014 yet the wider pool + finer continuous weight search beat the first submission on the actual leaderboard. Don\\'t judge diversity solely by CV \u0394; a small real-LB gain can still appear. | \u8b49\u64da:s6e7, v1 LB 0.94939 -> v3b (5 GBDT + ET + MLP) LB 0.94985 (+0.00046); MLP/ET blend weight 0.011/0.050.']"
+  }
+]

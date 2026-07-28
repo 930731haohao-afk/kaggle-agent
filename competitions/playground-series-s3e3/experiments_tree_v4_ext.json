@@ -1,0 +1,861 @@
+{
+  "comp": "playground-series-s3e3",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: s3e3 linear-winner's tuned-LGB config -- Optuna direct-full-5-fold-CV-AUC-objective tuning (STATUS.md exp #4), solo OOF AUC ~0.837305, strongest single learner (weight 0.7 in the linear-iteration's final blend) [PRIOR P1: Optuna-direct-final-metric-on-full-CV transfers cleanly to AUC, no discretization trap like QWK]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.837305
+        }
+      },
+      "score": -0.837305,
+      "status": "evaluated",
+      "wall_s": 0.3,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[LGBORIG] model-variant: exp #3's original (non-Optuna) LGB, num_leaves=7 heavily regularized -- solo ~0.832925, cheap diversity source distinct from the Optuna optimum, known non-zero blend member (weight 0.3 in linear best) [PRIOR P0: AUC is a ranking metric -- no imbalance weighting, regularization over capacity is what worked here]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 7,
+          "min_child_samples": 30,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 2.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.832925
+        }
+      },
+      "score": -0.832925,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[XGBTUNED] model-type: Optuna-tuned XGB (30 trials, TPE, full 5-fold CV AUC objective, 86.5s, one-time pre-tune -- NEVER done for XGB in the linear-iteration run, which only ever Optuna-tuned LGB) -- solo OOF AUC 0.835633 vs vanilla XGB 0.807634, closing most of the gap to LGB_tuned's 0.837305 [PRIOR P1: apply the direct-final-metric-on-full-CV Optuna recipe to a model type it was never tried on]",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 42,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 2,
+          "min_child_weight": 13,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 0.8448951877348988
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.835633
+        }
+      },
+      "score": -0.835633,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[CATORIG] model-type: CatBoost, label/freq-encoded features, exp #3 unchanged config -- solo ~0.762684, weakest learner; kept ONLY as an inert blend-diversity seed, no further solo-direction mutation queue (see CATORIG_QUEUE=[]) [PRIOR P3: CatBoost structurally weak on this ~1.7k-row dataset, zeroed by weight search twice already -- do not retry as a solo direction]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.03,
+          "depth": 5,
+          "l2_leaf_reg": 8.0,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.762684
+        }
+      },
+      "score": -0.762684,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[CATNATIVE] model-type: CatBoost w/ native categorical handling (round-3 winning depth=3/l2=16/lr=0.05 config) -- solo ~0.814259, best CatBoost variant but still 2.3pt below LGB_tuned; CLOSED item per STATUS.md, no further mutation queue (CATNATIVE_QUEUE=[]), kept only as a blend-diversity seed [PRIOR P4: native cat_features narrows the CatBoost gap but cannot flip the ranking -- necessary but not sufficient, do not retry again]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 3,
+          "l2_leaf_reg": 16.0,
+          "random_seed": 42
+        },
+        "features": {
+          "drop": [],
+          "native_cat": true
+        },
+        "result": {
+          "n_feats": 40,
+          "auc": 0.814259
+        }
+      },
+      "score": -0.814259,
+      "status": "evaluated",
+      "wall_s": 1.2,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[SEEDBAG] seed variation: LGB_tuned params, random_state 42->2024 -- STATUS.md exp #5's 5th blend member (solo ~same order as root, seed-bag of the Optuna optimum) [PRIOR P2: 'add tuned to pool + seed bag' compounds small but real gains on AUC, diminishing with iteration count]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 2024
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.83345
+        }
+      },
+      "score": -0.83345,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[FEAT] feature-subset SUBTRACTION on the tuned-LGB hyperparams: drop the 5 raw tenure columns now condensed into role_tenure_ratio/mgr_tenure_ratio/promo_ratio/company_tenure_ratio/income_per_year_worked/age_at_join (computed upstream in features.py before this drop, so still valid) -- 43-feature test, UNTESTED in the linear-iteration run [PRIOR none -- sourced from STATUS.md's own 'Next ideas': 'drop redundant raw tenure columns, keep engineered ratios only -- untested hypothesis']",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears"
+          ]
+        },
+        "result": {
+          "n_feats": 43,
+          "auc": 0.838903
+        }
+      },
+      "score": -0.838903,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: 3-way blend of root LGB_tuned(#0) + XGBTUNED(#2) + LGBORIG(#1) CACHED OOF, dirichlet weight search, prob-space -- this tree-search's entry point into ensemble space; no retraining, evaluates in <1s [PRIOR none -- generic ensemble-default node-space seed, the recommendation #1 mechanism itself]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1
+        ],
+        "weight_search": "dirichlet",
+        "space": "prob",
+        "result": {
+          "members": [
+            0,
+            2,
+            1
+          ],
+          "weights": [
+            0.5602,
+            0.4221,
+            0.0177
+          ],
+          "method": "dirichlet",
+          "space": "prob",
+          "auc": 0.83954
+        }
+      },
+      "score": -0.83954,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 8,
+      "parent_id": 7,
+      "mutation": "[BLEND] BLEND: add CATORIG solo member (#3) -> 4-way, dirichlet weight search, prob-space [PRIOR none -- STATUS.md exp #7 pattern: let weight search decide even for a closed-solo-direction model] (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "weight_search": "dirichlet",
+        "space": "prob",
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            3
+          ],
+          "weights": [
+            0.4929,
+            0.4369,
+            0.0701,
+            0.0002
+          ],
+          "method": "dirichlet",
+          "space": "prob",
+          "auc": 0.839448
+        }
+      },
+      "score": -0.839448,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 9,
+      "parent_id": 7,
+      "mutation": "[BLEND] BLEND: add CATNATIVE solo member (#4) -> 4-way, dirichlet weight search, prob-space [PRIOR P3/P4 -- same closed-item logic, weight search is expected to zero it per experience.md] (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          4
+        ],
+        "weight_search": "dirichlet",
+        "space": "prob",
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            4
+          ],
+          "weights": [
+            0.4958,
+            0.4264,
+            0.0765,
+            0.0013
+          ],
+          "method": "dirichlet",
+          "space": "prob",
+          "auc": 0.839441
+        }
+      },
+      "score": -0.839441,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 7,
+      "mutation": "[BLEND] BLEND: add SEEDBAG solo member (#5) -> 4-way, dirichlet weight search, prob-space [PRIOR P2 -- add-to-pool + seed-bag] (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          2,
+          1,
+          5
+        ],
+        "weight_search": "dirichlet",
+        "space": "prob",
+        "result": {
+          "members": [
+            0,
+            2,
+            1,
+            5
+          ],
+          "weights": [
+            0.5185,
+            0.4044,
+            0.073,
+            0.0042
+          ],
+          "method": "dirichlet",
+          "space": "prob",
+          "auc": 0.839445
+        }
+      },
+      "score": -0.839445,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 11,
+      "parent_id": 6,
+      "mutation": "[FEAT] FEAT: further trim income_per_year_worked (redundant with income_per_joblevel + MonthlyIncome itself) -- 42 feats [PRIOR none -- untested extension of the STATUS.md next-idea] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked"
+          ]
+        },
+        "result": {
+          "n_feats": 42,
+          "auc": 0.841442
+        }
+      },
+      "score": -0.841442,
+      "status": "evaluated",
+      "wall_s": 0.4,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 11,
+      "mutation": "[FEAT] FEAT: restore TotalWorkingYears only, isolate its marginal effect vs the aggressive 5-column tenure trim [PRIOR none] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 42
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "income_per_year_worked"
+          ]
+        },
+        "result": {
+          "n_feats": 43,
+          "auc": 0.836977
+        }
+      },
+      "score": -0.836977,
+      "status": "evaluated",
+      "wall_s": 0.3,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 11,
+      "mutation": "[FEAT] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked"
+          ]
+        },
+        "result": {
+          "n_feats": 42,
+          "auc": 0.837563
+        }
+      },
+      "score": -0.837563,
+      "status": "evaluated",
+      "wall_s": 0.4,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 11,
+      "mutation": "[FEAT] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3001 [PRIOR none -- fallback] (parent=#11)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3001
+        },
+        "features": {
+          "drop": [
+            "YearsAtCompany",
+            "YearsInCurrentRole",
+            "YearsWithCurrManager",
+            "YearsSinceLastPromotion",
+            "TotalWorkingYears",
+            "income_per_year_worked"
+          ]
+        },
+        "result": {
+          "n_feats": 42,
+          "auc": 0.833294
+        }
+      },
+      "score": -0.833294,
+      "status": "evaluated",
+      "wall_s": 0.3,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 2,
+      "mutation": "[XGBTUNED] XGBTUNED: seed variation on the Optuna-tuned params (random_state 42->2024) -- independent seed-bag source for the newly-tuned XGB [PRIOR P2: add-to-pool + seed-bag] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 2024,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 2,
+          "min_child_weight": 13,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 0.8448951877348988
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.82911
+        }
+      },
+      "score": -0.82911,
+      "status": "evaluated",
+      "wall_s": 1.2,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 2,
+      "mutation": "[XGBTUNED] XGBTUNED: min_child_weight 13->25, reg_lambda 0.84->2.0 -- push regularization further along the Optuna-found direction [PRIOR P5] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 42,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 2,
+          "min_child_weight": 25,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 2.0
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.819909
+        }
+      },
+      "score": -0.819909,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 2,
+      "mutation": "[XGBTUNED] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "n_estimators": 2000,
+          "eval_metric": "auc",
+          "early_stopping_rounds": 100,
+          "random_state": 3000,
+          "learning_rate": 0.0468274656210896,
+          "max_depth": 2,
+          "min_child_weight": 13,
+          "subsample": 0.6879111669199495,
+          "colsample_bytree": 0.8287002153933888,
+          "reg_alpha": 0.0022483066052387973,
+          "reg_lambda": 0.8448951877348988
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.829492
+        }
+      },
+      "score": -0.829492,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 5,
+      "mutation": "[SEEDBAG] SEEDBAG: reg_lambda 0.00115->0.01, push L2 further along the tuned direction while keeping the seed=2024 bag [PRIOR P5] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.01,
+          "random_state": 2024
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.832671
+        }
+      },
+      "score": -0.832671,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 5,
+      "mutation": "[SEEDBAG] SEEDBAG: third seed variant (2024->777) [PRIOR P2: add-to-pool + seed-bag, diminishing but real gains] (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 777
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.83479
+        }
+      },
+      "score": -0.83479,
+      "status": "evaluated",
+      "wall_s": 0.6,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 19,
+      "mutation": "[SEEDBAG] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#19)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.050253069663926536,
+          "num_leaves": 3,
+          "max_depth": 4,
+          "min_child_samples": 60,
+          "subsample": 0.8995656675058548,
+          "colsample_bytree": 0.7246802411328122,
+          "reg_alpha": 0.06815791273889091,
+          "reg_lambda": 0.0011513245661312597,
+          "random_state": 3000
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.831913
+        }
+      },
+      "score": -0.831913,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 21,
+      "parent_id": 1,
+      "mutation": "[LGBORIG] LGBORIG: reg_lambda 2.0->4.0, push L2 further along the known-good direction [PRIOR P5: small sample + correlated engineered features -> regularize over capacity] (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 7,
+          "min_child_samples": 30,
+          "subsample": 0.7,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.6,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 48,
+          "auc": 0.813597
+        }
+      },
+      "score": -0.813597,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 1,
+    "streak": {
+      "7": 3,
+      "6": 3,
+      "2": 3,
+      "5": 3,
+      "1": 1
+    },
+    "plateaued": [
+      7,
+      6,
+      2,
+      5
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 10,
+        "plateaued_lineage": 7,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.83954 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 14,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.841442 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 17,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.841442 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 20,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.841442 (tie_rate=0.000, discretized=False)"
+      }
+    ],
+    "tie_rate_log": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "priors": [
+    "AUC \u662f\u6392\u540d\u6307\u6a19:\u5c0d\u4e0d\u5e73\u8861\u4e8c\u5206\u985e\u52a0 scale_pos_weight/class_weights \u4e3b\u8981\u662f\u64fe\u52d5\u640d\u5931\u9762\u800c\u975e\u6539\u5584\u6392\u540d,\u5728\u5c0f\u6a23\u672c\u4e0a\u662f\u58de\u4ea4\u6613;\u79fb\u9664\u4e0d\u5e73\u8861\u52a0\u6b0a + \u52a0\u5f37\u6b63\u5247\u5316\u624d\u662f\u89e3\u65b9\u3002 | \u8b49\u64da:s3e3, exp #2(48 \u7279\u5fb5+\u4e0d\u5e73\u8861\u52a0\u6b0a)0.81901 \u2192 exp #3(\u540c\u7279\u5fb5\u3001\u79fb\u9664\u52a0\u6b0a\u3001LGB num_leaves 15\u21927\u3001L1 0.5\u21921.0\u3001L2 1.0\u21922.0)0.83292(+0.017)\u3002",
+    "**s3e5 \u7684\u300cOptuna \u76ee\u6a19\u51fd\u5f0f\u76f4\u63a5\u8a2d\u70ba\u5b8c\u6574 CV \u4e0a\u7684\u6700\u7d42\u6307\u6a19\u300d\u914d\u65b9(\u539f\u672c\u53ea\u5728 QWK/\u96e2\u6563\u5316\u5f8c\u8655\u7406\u5834\u666f\u9a57\u8b49\u904e)\u9077\u79fb\u5230 AUC \u540c\u6a23\u6709\u6548,\u4e14 AUC \u662f\u9023\u7e8c\u6392\u540d\u6307\u6a19,\u5b8c\u5168\u6c92\u6709 QWK \u90a3\u7a2e\u96e2\u6563\u5316\u9677\u9631**:\u5c0f\u8cc7\u6599(1677 \u5217)\u4e0a 50 trials \u5b8c\u6574 5-fold CV \u50c5\u9700 111.3 \u79d2,\u76f4\u63a5\u4ee5 OOF ROC-AUC(\u800c\u975e\u67d0\u4ee3\u7406 loss)\u70ba Optuna \u76ee\u6a19,\u627e\u5230\u7684\u6700\u512a\u89e3\u751a\u81f3\u6bd4\u65e2\u6709\u300c\u6dfa\u800c\u5f37\u6b63\u5247\u300d\u7684 exp #3 LGB \u66f4\u6dfa(num_leaves 7\u21923)\u4f46\u6b63\u5247\u53cd\u800c\u66f4\u8f15(reg_lambda 2.0\u21920.0012,\u9760 min_child_samples=60 \u63a7\u5236\u904e\u64ec\u5408)\u3002 | \u8b49\u64da:s3e3, exp #4,LGB \u55ae\u6a21 0.832925 \u2192 0.837305(+0.00438)\u3002",
+    "\u8abf\u53c3\u5f8c\u300c\u52a0\u5165\u6c60\u800c\u975e\u53d6\u4ee3 + seed bagging\u300d\u914d\u65b9\u5728 AUC \u4e0a\u540c\u6a23\u53ef\u758a\u52a0\u5c0f\u5e45\u589e\u76ca,\u60df\u91cf\u7d1a\u96a8\u8fed\u4ee3\u6b21\u6578\u905e\u6e1b(+0.0044\u2192+0.0005),\u8207 s3e14/s3e11 \u89c0\u5bdf\u4e00\u81f4\u3002 | \u8b49\u64da:s3e3, exp #5,5-way \u6b0a\u91cd\u641c\u5c0b blend 0.837305 \u2192 0.837776,\u6b0a\u91cd\u96c6\u4e2d\u5728 LGB_orig(0.3)+LGB_tuned(0.7),seed-bag \u7248\u672c\u6b0a\u91cd 0\u3002",
+    "**\u300c\u79fb\u9664\u4e0d\u5e73\u8861\u52a0\u6b0a\u5c0d AUC \u6709\u5229\u300d\u7684\u7d50\u8ad6\u539f\u50c5\u5728\u5c0f\u6a23\u672c(1,677 \u5217)\u9a57\u8b49\u904e;\u8de8\u5b63\u6cdb\u5316\u9996\u6e2c(s4e1,165,034 \u5217,\u9280\u884c\u6d41\u5931\u9810\u6e2c)\u9996\u6b21\u5728\u5927\u6a23\u672c\u4e0a\u505a\u9010\u4f4d\u5143\u53ef\u6bd4\u7684\u6d88\u878d,\u7d50\u8ad6\u540c\u5411\u6210\u7acb**:\u540c\u4e00 28 \u7279\u5fb5\u96c6\u3001\u540c\u4e00 5-fold StratifiedKFold(seed=42),LGB \u52a0 `is_unbalance=True` OOF AUC 0.893235 vs \u4e0d\u52a0 0.893650,delta \u22120.000415\u2014\u2014\u65b9\u5411\u8207 s3e3 \u4e00\u81f4\u4f46\u91cf\u7d1a\u5c0f\u5f97\u591a(\u5927\u6a23\u672c\u4e0b\u52a0\u6b0a\u5c0d\u6392\u5e8f\u7684\u64fe\u52d5\u672c\u5c31\u8f03\u5f31)\u3002\u9644\u5e36\u767c\u73fe:2026-02 \u8a72\u8cfd\u7684\u820a\u57fa\u7dda(is_unbalance=True,CV 0.89653)\u4e4b\u6240\u4ee5\u770b\u8d77\u4f86\u5927\u5e45\u512a\u65bc\u672c\u6b21\u4e0d\u52a0\u6b0a\u7248\u672c,\u4e3b\u56e0\u4e26\u975e is_unbalance \u672c\u8eab,\u800c\u662f\u820a\u7248 surname \u76ee\u6a19\u7de8\u78bc\u4f7f\u7528\u8207\u6a21\u578b\u8a13\u7df4\u6298\u300c\u4e0d\u540c\u7684\u300d\u7368\u7acb 5-fold(seed=99)\u8a08\u7b97 OOF\u2014\u2014\u56e0\u7de8\u78bc\u5206\u7d44(\u59d3\u6c0f)\u5728\u5169\u7a2e\u6298\u5283\u5206\u9593\u5171\u4eab,\u53ef\u80fd\u9020\u6210\u6a21\u578b\u8a13\u7df4\u6298\u7684\u7279\u5fb5\u503c\u90e8\u5206\u5e36\u6709\u8a72\u6298\u9a57\u8b49\u6a23\u672c\u76ee\u6a19\u7684\u8cc7\u8a0a,\u662f\u6bd4 is_unbalance \u66f4\u503c\u5f97\u61f7\u7591\u7684\u5206\u6578\u81a8\u8139\u4f86\u6e90;\u6539\u70ba\u8207\u6a21\u578b\u8a13\u7df4\u6298\u5b8c\u5168\u76f8\u540c\u7684 fold-safe \u7de8\u78bc\u5f8c,\u540c\u914d\u65b9 solo LGB \u5206\u6578\u964d\u81f3 0.8937 \u91cf\u7d1a\u3002**\u6559\u8a13:\u76ee\u6a19\u7de8\u78bc\u7684 OOF \u6298\u5fc5\u9808\u8207\u6a21\u578b\u8a55\u4f30\u6298\u5b8c\u5168\u76f8\u540c,\u7528\u4e0d\u540c seed \u7684\u7368\u7acb\u6298\u300c\u770b\u4f3c\u907f\u514d\u6d29\u6f0f\u300d\u5b9e\u4e3a\u53e6\u4e00\u7a2e\u6d29\u6f0f\u8def\u5f91\u3002** | \u8b49\u64da:s4e1, tier3 r1(is_unbalance \u6d88\u878d),0.893650\u21920.893235(\u0394\u22120.000415);\u5c0d\u7167 STATUS.md(Feb 2026)exp#2 \u820a\u57fa\u7dda 0.89653\u3002",
+    "\u5c0f\u6a23\u672c\u4e0a CatBoost \u53ef\u80fd\u6301\u7e8c\u52a3\u65bc LGB/XGB \u4e14\u88ab\u6b0a\u91cd\u641c\u5c0b\u6b78\u96f6\u2014\u2014\u4e0d\u8981\u5047\u8a2d\u4e09\u6a21\u578b blend \u6c38\u9060\u6709\u76ca,\u5148\u770b\u5404\u6a21\u578b OOF\u3002 | \u8b49\u64da:s3e3(1,677 \u5217), exp #2/#3,CAT 0.77663/0.76268 \u9060\u4f4e\u65bc LGB 0.81901/0.83292,\u5169\u6b21 blend \u6b0a\u91cd\u7686 LGB=1.0\u3002",
+    "**\u300cCatBoost \u5728\u5c0f\u8cc7\u6599\u4e0a\u504f\u5f31\u300d\u7684\u8a3a\u65b7\u7d50\u8ad6\u5df2\u91d0\u6e05:\u539f\u751f\u985e\u5225\u8655\u7406(cat_features \u50b3\u539f\u59cb\u5b57\u4e32,\u800c\u975e label/freq \u9810\u7de8\u78bc)\u53ef\u5927\u5e45\u7e2e\u5c0f\u5dee\u8ddd,\u4f46\u7121\u6cd5\u9006\u8f49\u6392\u5e8f\u2014\u2014\u662f\u300c\u7de8\u78bc\u65b9\u5f0f\u300d\u8207\u300c\u6a21\u578b/\u8cc7\u6599\u898f\u6a21\u4e0d\u5339\u914d\u300d\u5169\u500b\u7368\u7acb\u554f\u984c\u758a\u52a0,\u4e14\u5f8c\u8005\u624d\u662f\u4e3b\u56e0\u3002** \u5c0d s3e3(1,677 \u5217)\u91cd\u8a66 CatBoost,\u6539\u7528\u539f\u751f cat_features(7 \u500b\u985e\u5225\u6b04\u4f4d\u4fdd\u7559\u539f\u59cb\u5b57\u4e32)+ `allow_writing_files=False` + \u660e\u78ba thread_count,OOF \u7531\u6a19\u7c64/\u983b\u7387\u7de8\u78bc\u7248\u7684 0.762684 \u5927\u5e45\u56de\u5347\u81f3 0.814259(+0.0516,\u6df1\u5ea6 3\u3001l2_leaf_reg 16\u3001lr 0.05 \u4e4b\u6dfa\u6a39\u5f37\u6b63\u5247\u914d\u7f6e\u6700\u4f73),\u8b49\u660e\u539f\u672c\u843d\u5f8c\u7684\u4e00\u90e8\u5206\u539f\u56e0\u78ba\u5be6\u662f\u7de8\u78bc\u65b9\u5f0f\u4e0d\u7576;\u4f46\u5373\u4f7f\u539f\u751f\u8655\u7406\u5f8c\u4ecd\u6bd4\u540c\u8cc7\u6599\u4e0a\u7684 LGB(0.837305)\u4f4e 2.3 \u500b\u767e\u5206\u9ede,\u52a0\u5165 6-way blend \u6c60\u5f8c\u6b0a\u91cd\u641c\u5c0b\u4f9d\u7136\u7d66\u4e88 0 \u6b0a\u91cd(\u8207\u672a\u539f\u751f\u8655\u7406\u6642\u7684\u5224\u5b9a\u4e00\u81f4)\u3002**\u7d50\u8ad6:\u300cCatBoost \u5728\u6975\u5c0f\u8868\u683c\u8cc7\u6599\u4e0a\u7d50\u69cb\u6027\u504f\u5f31\u300d\u624d\u662f\u8010\u7528\u7684\u6559\u8a13,\u539f\u751f\u985e\u5225\u8655\u7406\u662f\u5fc5\u8981\u4f46\u4e0d\u5145\u5206\u7684\u7de9\u89e3,\u4e0d\u5fc5\u518d\u5c0d\u540c\u6578\u91cf\u7d1a\u8cc7\u6599\u91cd\u8a66\u6b64\u6a21\u578b\u3002** | \u8b49\u64da:s3e3, exp #6(CAT_native \u8a3a\u65b7,solo 0.814259)\u3001exp #7(6-way blend \u542b CAT_native,\u6b0a\u91cd\u641c\u5c0b\u4ecd\u7d66 0,blend \u5206\u6578\u8207\u672a\u542b CAT_native \u7684 exp #5 \u5728 prob-space \u76f8\u540c 0.837776)\u3002",
+    "\u5c0f\u6a23\u672c + \u76f8\u95dc\u6027\u9ad8\u7684\u5de5\u7a0b\u7279\u5fb5 \u2192 \u512a\u5148\u52a0\u6b63\u5247\u5316\u800c\u975e\u52a0\u5bb9\u91cf\u3002 | \u8b49\u64da:s3e3, exp #3 \u9760\u7dca\u7e2e LGB \u6b63\u5247\u62ff\u5230 +0.017;s3e9, exp #2 \u540c\u7406(\u898b\u4e0b)\u3002",
+    "\u5c0f\u6a23\u672c per-fold \u5206\u6578\u6ce2\u52d5\u5927(AUC 0.79\u20130.89)\u662f\u5e38\u614b,\u4e0d\u662f bug;\u62ff\u5230\u660e\u78ba\u589e\u76ca\u5f8c\u61c9\u300c\u898b\u597d\u5c31\u6536\u300d,\u907f\u514d\u5728\u566a\u97f3\u4e0a\u904e\u5ea6\u641c\u5c0b\u3002 | \u8b49\u64da:s3e3, STATUS.md \u660e\u793a plateau \u505c\u6b62\u6e96\u5247,\u4e00\u8f2a reflexion \u5f8c\u505c\u3002",
+    "Rank averaging(\u6392\u540d\u5e73\u5747\u96c6\u6210) | \u6a5f\u5236: \u5148\u628a\u5404\u6a21\u578b\u9810\u6e2c\u8f49\u6210\u540d\u6b21\u518d\u5e73\u5747\u2014\u2014\u7576\u6a21\u578b\u672a\u6821\u6e96\u6216\u8f38\u51fa\u5c3a\u5ea6/\u5206\u5e03\u4e0d\u540c\u6642,rank \u7a7a\u9593\u5e73\u5747\u6bd4\u6a5f\u7387\u7a7a\u9593\u5e73\u5747\u66f4\u7a69\u5065\u3002 | \u9069\u7528: \u6392\u540d\u578b\u6307\u6a19(AUC)\u3001\u6216\u6210\u54e1\u6821\u6e96\u5dee\u7570\u5927\u6642;\u5c0d\u56b4\u683c\u770b\u6a5f\u7387\u503c\u7684\u6307\u6a19(logloss)\u4e0d\u5b9c\u3002 | [EXT \u6587\u737b\u5148\u9a57 EXT-12,\u51fa\u8655\u898b idea_bank.md;\u7121\u672c\u5834 [INT] \u5be6\u8b49]",
+    "Adversarial validation(\u5c0d\u6297\u9a57\u8b49,\u5075\u6e2c train/test \u5206\u5e03\u4f4d\u79fb) | \u6a5f\u5236: \u5408\u4f75 train/test\u3001\u6a19 0/1,\u8a13\u4e00\u500b\u4e8c\u5206\u985e\u5668\u53bb\u5206\u8fa8\u5169\u8005\u3002AUC\u22480.5 \u2192 \u5206\u5e03\u4e00\u81f4;AUC \u986f\u8457>0.5 \u2192 \u6709\u4f4d\u79fb,\u4e14\u53ef\u7528\u8a72\u5206\u985e\u5668\u5c0d\u8a13\u7df4\u5217\u7684\u300c\u50cf test \u7a0b\u5ea6\u300d\u8a55\u5206,\u9078\u6700\u50cf test \u7684\u5b50\u96c6\u7576\u9a57\u8b49\u96c6,\u6216\u627e\u51fa\u4e26\u8655\u7406\u9020\u6210\u4f4d\u79fb\u7684\u6b04\u4f4d\u3002 | \u9069\u7528: \u61f7\u7591 train/test \u5206\u5e03\u4e0d\u540c\u3001\u6216 CV\u2194LB \u812b\u7bc0\u6642;\u4efb\u4f55\u6307\u6a19\u3002 | [EXT \u6587\u737b\u5148\u9a57 EXT-14,\u51fa\u8655\u898b idea_bank.md;\u7121\u672c\u5834 [INT] \u5be6\u8b49]"
+  ],
+  "v4_mode": "ext",
+  "prior_usage_summary": {
+    "n_informed": 7,
+    "n_uninformed": 7,
+    "informed_win_rate": 0.14285714285714285,
+    "uninformed_win_rate": 0.14285714285714285
+  },
+  "dedup_rejections": []
+}

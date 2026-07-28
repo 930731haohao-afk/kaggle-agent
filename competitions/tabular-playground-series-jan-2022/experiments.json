@@ -1,0 +1,86 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T15:27:18",
+    "model": "ridge_base",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 10.806697,
+    "features": "{\"model\": \"ridge\", \"alpha\": 0.1, \"fourier_k\": 4, \"fourier_product\": false, \"holidays\": false}",
+    "n_features": 93,
+    "notes": "fold2017=10.8751 fold2018=10.7383 expanding-year folds"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T15:27:18",
+    "model": "ridge_fp",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 7.021504,
+    "features": "{\"model\": \"ridge\", \"alpha\": 0.1, \"fourier_k\": 8, \"fourier_product\": true, \"holidays\": false}",
+    "n_features": 92,
+    "notes": "fold2017=7.3576 fold2018=6.6854 expanding-year folds"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T15:27:19",
+    "model": "ridge_hol",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 4.415985,
+    "features": "{\"model\": \"ridge\", \"alpha\": 0.1, \"fourier_k\": 8, \"fourier_product\": true, \"holidays\": true, \"hol_lo\": -5, \"hol_hi\": 10}",
+    "n_features": 119,
+    "notes": "fold2017=4.6457 fold2018=4.1862 expanding-year folds"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T15:27:20",
+    "model": "lgb_gdp",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 6.329287,
+    "features": "{\"model\": \"lgb\", \"num_leaves\": 31, \"lr\": 0.05, \"n_estimators\": 800}",
+    "n_features": 67,
+    "notes": "fold2017=6.6270 fold2018=6.0316 expanding-year folds"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T15:27:20",
+    "model": "blend_ridge_lgb",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 4.415985,
+    "features": "w_ridge=1.00",
+    "n_features": 12,
+    "notes": "grid blend ridge_hol+lgb_gdp, fold2017=4.6457 fold2018=4.1862"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-28T15:35:08",
+    "model": "tree_search_v3_60nodes",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 4.40502,
+    "features": "harness_v3, 60 nodes (44 solo/16 blend), 9 lineages + 5-seed explore burst",
+    "n_features": 74,
+    "notes": "Global best #59 37-member mega-blend pooled OOF 4.40502 (root 4.415985); wall 91s; 1 dedup rejection; cost-guard 0; sanity gate killed EXPL_COMBO + EXPL_LGBBIG; stop_reason=hard budget cap 60/60. All lineage gains over root came from fitted-weight blends."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-28T15:35:08",
+    "model": "final_root_solo_ridge_hol",
+    "metric": "SMAPE",
+    "direction": "minimize",
+    "score": 4.415985,
+    "features": "{\"alpha\": 0.1, \"fourier_k\": 8, \"fourier_product\": true, \"holidays\": true, \"hol_lo\": -5, \"hol_hi\": 10}",
+    "n_features": 101,
+    "notes": "FINAL. LOFO honest gate (weights refit leave-year-out): champion #59 honest 4.437388 (optimism +0.032), megablend #48 4.432727, blend #17 4.431641, seed blend #9 4.417713 \u2014 ALL lose to root solo 4.415985. Submitted root solo; submission.csv from full-train refit, round-to-int, clip>=1."
+  }
+]

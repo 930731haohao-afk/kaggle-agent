@@ -1,0 +1,14 @@
+Done. Full pipeline complete for tabular-playground-series-aug-2022.
+
+**Final: OOF AUC 0.591645** (per-group rank-pp, leave-one-group-out GroupKFold) — unfitted equal-weight pair of two LR models: prior-run 5-feature set + the same set with measurement_9 added. `submission.csv` written (20,775 rows, format verified against sample_submission).
+
+**Pipeline as run:**
+- **EDA**: confirmed disjoint groups (train A–E, test F–I), attributes constant within code, loading dominant, missingness-as-signal (m3_na/m5_na).
+- **Features**: per-code z-scale, Huber per-code m17 imputation, NA flags.
+- **Linear stage**: LR 0.591248 (reproduced prior run digit-close), shallow LGB 0.58174, LR+LGB blend degenerate (w_lr=1.0).
+- **Tree search** (harness_v3, 60 nodes, ~7 min): root digit-verified, pool reseeded, 5 lineages + mandatory explore burst. Best solo #17 (+measurement_9) 0.591447; kitchen-sink 38-member mega-blend 0.591955 in-sample. Sanity gate correctly killed deep-LGB long shot; dedup 0; cost guard never fired.
+- **Honest audit — the decisive step**: mega-blend leave-fold-out weight refit scored **0.590944 < root solo 0.591248** — its apparent win was pure weight-fitting optimism (+0.001011 measured). LOFO-selection over 5 candidates gave 0.591204 ≈ root: no candidate robustly beats root. Final choice is the unfitted 2-member average — no weight optimism, downside bounded at noise, seed-bag rationale.
+
+**Caveat** (per honest-reporting rules): OOF-only, no LB anchor; all gains beyond root LR sit inside the ±0.0005 CV noise band (fold AUCs 0.586–0.600).
+
+**Knowledge written back** to `knowledge/experience.md`: (1) first direct quantification on AUC of fitted-blend-weight optimism (+0.001, enough to invert the leaderboard — honest gate mandatory); (2) LOFO-selection as a zero-cost honest gate for model/member-set selection. STATUS.md carries the 3-line summary + full report; experiments.json has 6 entries with rejected candidates labeled as such.

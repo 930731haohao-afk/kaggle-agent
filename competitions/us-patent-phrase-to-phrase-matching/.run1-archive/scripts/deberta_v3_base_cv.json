@@ -1,0 +1,26 @@
+{
+  "model": "deberta_v3_base",
+  "oof_pearson": 0.804052671980817,
+  "fold_scores": [
+    0.8106185759594811,
+    0.8086103076513765,
+    0.8002306596097523,
+    0.8048069449266514
+  ],
+  "n_folds": 4,
+  "args": {
+    "folds": 4,
+    "n_splits": 4,
+    "epochs": 4,
+    "batch": 32,
+    "lr": 2e-05,
+    "head_lr": 0.0001,
+    "wd": 0.01,
+    "max_len": 64,
+    "amp": "bf16",
+    "opt_impl": "fused",
+    "subset": 0,
+    "max_steps": 0,
+    "tag": "deberta_v3_base"
+  }
+}

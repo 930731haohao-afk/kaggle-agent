@@ -1,0 +1,36 @@
+[17:53:27] dogs-vs-cats train=(25000, 160, 160, 3) pos_rate=0.500 metric=logloss img=160
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[17:54:11] tier2a resnet18                 best lr=0.001 acc=0.9687 {'0.0001': 0.8488333333333333, '0.0003': 0.9351666666666666, '0.001': 0.9686666666666667}
+[17:55:33] tier2a efficientnet_b0          best lr=0.001 acc=0.9420 {'0.0001': 0.8985, '0.0003': 0.9381666666666667, '0.001': 0.9419999999999998}
+[17:56:26] tier2a mobilenetv3_large_100    best lr=0.001 acc=0.9453 {'0.0001': 0.8961666666666667, '0.0003': 0.9353333333333333, '0.001': 0.9453333333333332}
+[17:57:16] tier2a convnext_atto            best lr=0.0001 acc=0.9793 {'0.0001': 0.9793333333333334, '0.0003': 0.9736666666666668, '0.001': 0.5363333333333333}
+[17:57:53] tier2a vit_tiny_patch16_224     best lr=0.0001 acc=0.9612 {'0.0001': 0.9611666666666666, '0.0003': 0.9546666666666667, '0.001': 0.5708333333333334}
+[17:58:28] tier2b convnext_atto            best aug=none acc=0.9793 {'none': 0.9793333333333334, 'light': 0.9786666666666667, 'medium': 0.9766666666666666}
+[17:59:00] tier2b resnet18                 best aug=light acc=0.9692 {'none': 0.9686666666666667, 'light': 0.9691666666666666, 'medium': 0.9630000000000001}
+[17:59:25] tier2b vit_tiny_patch16_224     best aug=none acc=0.9612 {'none': 0.9611666666666666, 'light': 0.9584999999999999, 'medium': 0.9568333333333333}
+[17:59:25] PROMOTE: ['convnext_atto_none', 'resnet18_light', 'vit_tiny_patch16_224_none']
+[17:59:25]   preload test_arr.npy 0/12500
+[17:59:28]   preload test_arr.npy 5000/12500
+[17:59:32]   preload test_arr.npy 10000/12500
+[17:59:34] test=(12500, 160, 160, 3)
+[18:00:47] V3 convnext_atto_none fold0: acc=0.9872 (73s)
+[18:02:01] V3 convnext_atto_none fold1: acc=0.9896 (147s)
+[18:03:15] V3 convnext_atto_none fold2: acc=0.9862 (221s)
+[18:04:29] V3 convnext_atto_none fold3: acc=0.9912 (295s)
+[18:05:43] V3 convnext_atto_none fold4: acc=0.9882 (369s)
+[18:05:43] V3 CONFIG DONE convnext_atto_none: OOF=0.9885
+[18:06:46] V3 resnet18_light fold0: acc=0.9850 (63s)
+[18:07:49] V3 resnet18_light fold1: acc=0.9866 (126s)
+[18:08:52] V3 resnet18_light fold2: acc=0.9840 (188s)
+[18:09:54] V3 resnet18_light fold3: acc=0.9866 (251s)
+[18:10:56] V3 resnet18_light fold4: acc=0.9818 (313s)
+[18:10:56] V3 CONFIG DONE resnet18_light: OOF=0.9848
+[18:11:50] V3 vit_tiny_patch16_224_none fold0: acc=0.9842 (54s)
+[18:12:43] V3 vit_tiny_patch16_224_none fold1: acc=0.9858 (107s)
+[18:13:37] V3 vit_tiny_patch16_224_none fold2: acc=0.9822 (160s)
+[18:14:30] V3 vit_tiny_patch16_224_none fold3: acc=0.9836 (214s)
+[18:15:24] V3 vit_tiny_patch16_224_none fold4: acc=0.9826 (267s)
+[18:15:24] V3 CONFIG DONE vit_tiny_patch16_224_none: OOF=0.9837
+[18:15:24] metric=logloss solo={'convnext_atto_none': 0.03642, 'resnet18_light': 0.04375, 'vit_tiny_patch16_224_none': 0.04955} equal=0.03013 blend=0.02914 -> blend{'convnext_atto_none': 0.591, 'resnet18_light': 0.195, 'vit_tiny_patch16_224_none': 0.215}
+[18:15:24] submission: /home/tjyen/ai_agents/kaggle/competitions_vision/dogs-vs-cats/submissions/vp_submission.csv (12500 rows)
+[18:15:24] dogs-vs-cats DONE: logloss=0.02914 chosen=blend{'convnext_atto_none': 0.591, 'resnet18_light': 0.195, 'vit_tiny_patch16_224_none': 0.215} sub=/home/tjyen/ai_agents/kaggle/competitions_vision/dogs-vs-cats/submissions/vp_submission.csv

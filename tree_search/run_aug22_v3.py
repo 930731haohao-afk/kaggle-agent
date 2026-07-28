@@ -1,0 +1,531 @@
+"""tree_search/run_aug22_v3.py -- Stage-4 harness_v3 tree-search driver for
+tabular-playground-series-aug-2022 (binary, ROC-AUC after per-group rank-pp, MAXIMIZE).
+
+Follows the 07_tree_search.md driver checklist, modeled on run_citd_v3.py:
+  - Root: linear-stage best solo (LR C=0.01 on prior-run 5-feature set), RETRAINED
+    via eval_aug22 in a subprocess and asserted digit-for-digit vs 0.591248.
+  - Linear pool (lgb_base) reseeded as cached-OOF first-generation node (zero compute)
+    per the afsis run-1 lesson (full-pool reseed or the blend ceiling is capped).
+  - Lineages: LRC (C exploration + boundary push), LRFEAT (comp-local lever:
+    feature-set search around the prior-run 5-feature optimum), LGBREG (regularization
+    direction -- disjoint groups punish capacity), SEEDBAG (lgb seed), BLEND.
+    Explore burst: kitchen-sink mega-blend + 2 long-shot solos (sanity-gated).
+
+SIGN CONVENTION: harness score = -AUC_pp (lower better).
+Run: `uv run python3 tree_search/run_aug22_v3.py` (resumable; state at
+competitions/tabular-playground-series-aug-2022/experiments_tree_v3.json).
+"""
+import copy
+import json
+import os
+import sys
+import time
+import warnings
+
+import numpy as np
+
+warnings.filterwarnings("ignore")
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)
+import harness_v2 as hv2  # noqa: E402
+import harness_v3 as hv3  # noqa: E402
+import eval_aug22 as ev  # noqa: E402
+
+COMP = "tabular-playground-series-aug-2022"
+_COMP_DIR = os.path.join(os.path.dirname(_HERE), "competitions", COMP)
+TREE_PATH = os.path.join(_COMP_DIR, "experiments_tree_v3.json")
+EVAL_MODULE_PATH = os.path.join(_HERE, "eval_aug22.py")
+PREDS_DIR = os.path.join(_COMP_DIR, "preds")
+EVAL_TIMEOUT_S = 600
+MAX_WALL_S = 3 * 60 * 60
+ITER_SAFETY_CAP = 200
+
+ROOT_KNOWN_AUC = 0.591248  # scripts/baseline.py lr_base rank-pp OOF (experiments.json #1)
+
+PRIOR5 = sorted(["loading", "measurement_17", "measurement_3_na", "measurement_5_na",
+                 "measurement_2"])
+NA_FLAGS = sorted(["loading_na"] + [f"measurement_{i}_na" for i in range(3, 18)])
+Z_COLS = sorted(["loading"] + [f"measurement_{i}" for i in range(18)])
+FULL = sorted(Z_COLS + NA_FLAGS)
+
+LR_SEARCH_SPACE = {"C": {"low": 0.003, "high": 0.03, "log": True}}
+
+
+def dc(x):
+    return copy.deepcopy(x)
+
+
+def core(cfg):
+    out = {k: v for k, v in cfg.items() if k != "result"}
+    if out.get("kind") == "blend" and "members" in out:
+        out = dict(out, members=sorted(out["members"]))
+    if out.get("kind") == "solo" and out.get("features", {}).get("cols"):
+        out = dict(out, features={"cols": sorted(out["features"]["cols"])})
+    return out
+
+
+def _driver_state(tree):
+    return tree.setdefault("search_state", {}).setdefault("driver_state", {})
+
+
+def _dedup_rejections(tree):
+    return _driver_state(tree).setdefault("dedup_rejections", [])
+
+
+def _node_results(tree):
+    return tree.setdefault("search_state", {}).setdefault("node_results", {})
+
+
+def result_of(tree, nid):
+    return _node_results(tree).get(str(nid))
+
+
+def auc_of(info):
+    if info is None:
+        return None
+    if info.get("result") and "auc_pp" in info["result"]:
+        return info["result"]["auc_pp"]
+    if info.get("result") and "auc" in info["result"]:
+        return info["result"]["auc"]
+    return -info["score"] if info.get("score") is not None else None
+
+
+def lr_cfg(C, cols=None):
+    return {"kind": "solo", "model": "lr",
+            "params": {"C": C, "max_iter": 2000, "random_state": 42},
+            "features": {"cols": sorted(cols or PRIOR5)}}
+
+
+def lgb_cfg(params=None, cols=None):
+    return {"kind": "solo", "model": "lgb", "params": dict(params or {}),
+            "features": {"cols": sorted(cols or FULL)}}
+
+
+ROOT_CFG = lr_cfg(0.01)
+POOL_LGB_CFG = lgb_cfg()  # exactly scripts/baseline.py lgb_base
+
+
+# ---------------------------------------------------------------------------
+# eval_and_add (same contract as run_citd_v3.py)
+# ---------------------------------------------------------------------------
+def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False):
+    stored = core(proposal_cfg)
+    if not is_root:
+        dup_id = hv3.find_duplicate_config(tree, stored)
+        if dup_id is not None:
+            _dedup_rejections(tree).append(dict(mutation=mutation, dup_id=dup_id))
+            nid_null, dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
+                                              stored, None, "failed", 0.0)
+            assert nid_null is None
+            hv3.save_search_state(tree, TREE_PATH)
+            return None, dup_id, None
+
+    nid = hv3.next_id(tree)
+    kind = stored.get("kind", "solo")
+
+    if kind == "solo":
+        r = hv3.eval_solo_subprocess(EVAL_MODULE_PATH, stored, EVAL_TIMEOUT_S, node_id=nid)
+        score, status, wall_s, result = r["score"], r["status"], r["wall_s"], r["result"]
+        if status == "failed":
+            mutation = mutation + f" [ERROR: {r.get('error')}]"
+    elif kind == "blend":
+        try:
+            t0 = time.time()
+            best_w, best_neg, oofs, warning = hv3.eval_blend_with_cost_guard(
+                ev.CACHE_DIR, stored["members"], lambda vec: -ev.auc_pp(vec), tree=tree)
+            best_score = -best_neg
+            wall_s = time.time() - t0
+            result = dict(members=stored["members"],
+                          weights=[round(float(w), 4) for w in best_w],
+                          auc_pp=round(best_score, 6))
+            if warning:
+                result["cost_guard_warning"] = warning
+            score, status = round(-best_score, 6), "evaluated"
+        except Exception as e:  # noqa: BLE001
+            score, status, wall_s, result = None, "failed", 0.0, None
+            mutation = mutation + f" [ERROR: {type(e).__name__}: {e}]"
+    else:
+        raise ValueError(f"unknown node kind {kind!r}")
+
+    if is_root:
+        real_nid = hv3.add_root(tree, mutation, stored, score, status, wall_s)
+    else:
+        real_nid, dup = hv3.add_node(tree, parent_id, mutation, stored, score, status, wall_s)
+        assert dup is None, f"unexpected post-eval dedup (dup=#{dup})"
+    assert real_nid == nid
+    if result is not None:
+        _node_results(tree)[str(real_nid)] = result
+    hv3.save_search_state(tree, TREE_PATH)
+    return real_nid, None, dict(score=score, status=status, wall_s=wall_s, result=result)
+
+
+def add_pool_node(tree, root_id, name, npz_stem, cfg):
+    """Reseed a linear-pool member as a cached-OOF first-generation node (zero compute)."""
+    stored = core(cfg)
+    if hv3.find_duplicate_config(tree, stored) is not None:
+        return None
+    d = np.load(os.path.join(PREDS_DIR, f"{npz_stem}.npz"), allow_pickle=True)
+    oof, pred = d["oof"], d["test"]
+    score = ev.auc_pp(oof)  # recompute = digit-verified vs experiments.json
+    nid = hv3.next_id(tree)
+    hv2.cache_oof(ev.CACHE_DIR, nid, oof, pred=pred, auc=score)
+    real_nid, dup = hv3.add_node(
+        tree, root_id,
+        f"[{name}] linear-pool reseed (cached OOF reuse, scripts/baseline.py {npz_stem}; "
+        f"zero retraining) [PRIOR: full-pool reseed lesson, afsis run-1 vs run-2]",
+        stored, round(-score, 6), "evaluated", 0.0)
+    assert dup is None and real_nid == nid
+    _node_results(tree)[str(real_nid)] = {"auc_pp": round(score, 6)}
+    hv3.save_search_state(tree, TREE_PATH)
+    return real_nid
+
+
+# ---------------------------------------------------------------------------
+# lineage seeds + mutation queues
+# ---------------------------------------------------------------------------
+def seed_lrc():
+    return (lr_cfg(0.03),
+            "C exploration above the baseline point (0.01 was picked without a grid; "
+            "probe weaker regularization)")
+
+
+def seed_lrfeat():
+    cols = PRIOR5 + ["measurement_5", "measurement_6", "measurement_7", "measurement_8"]
+    return (lr_cfg(0.01, cols=cols),
+            "comp-local lever: extend the prior-run 5-feature optimum with the next "
+            "4 measurements by |corr| (m5 .018, m8 .017, m7 .017, m6 .015)")
+
+
+def seed_lgbreg():
+    return (lgb_cfg({"num_leaves": 3, "min_child_samples": 150}),
+            "harder-regularized LGB (leaves 7->3, mcs 80->150) -- disjoint train/test "
+            "groups punish per-group capacity [PRIOR: aug-2022 LR>LGBM lesson]")
+
+
+def seed_seedbag():
+    return (lgb_cfg({"random_state": 2024}),
+            "seed variation of pool lgb_base (seed 42->2024) [PRIOR: seed bagging is "
+            "the cheapest residual gain]")
+
+
+def _pool_ids(tree):
+    out = {}
+    names = ["POOL_LGB", "LRC", "LRFEAT", "LGBREG", "SEEDBAG", "BLEND",
+             "EXPL_MEGABLEND", "EXPL_DEEPLGB", "EXPL_LRLOWREG"]
+    for n in tree["nodes"]:
+        if n["parent_id"] == tree["root_id"] and n["status"] == "evaluated":
+            for name in names:
+                if n["mutation"].startswith(f"[{name}]"):
+                    out.setdefault(name, n["id"])
+    return out
+
+
+def seed_blend(tree):
+    ids = _pool_ids(tree)
+    members = sorted({tree["root_id"], ids.get("POOL_LGB")} - {None})
+    return ({"kind": "blend", "members": members, "weight_search": "dirichlet"},
+            f"ensemble seed: root LR + pool lgb_base ({members})")
+
+
+def solo_pool(tree):
+    nodes = [n for n in tree["nodes"]
+             if n["status"] == "evaluated" and n["config"].get("kind") == "solo"]
+    nodes.sort(key=lambda n: n["score"])
+    return [n["id"] for n in nodes]
+
+
+def _best_in_lineage(tree, lineage_id):
+    best = None
+    for n in tree["nodes"]:
+        if n["status"] != "evaluated" or n["id"] == tree["root_id"]:
+            continue
+        if hv3.lineage_of(tree, n["id"]) == lineage_id:
+            if best is None or n["score"] < best["score"]:
+                best = n
+    return best
+
+
+def _bump_params(cfg, **kw):
+    c = dc(cfg)
+    c.setdefault("params", {}).update(kw)
+    return c
+
+
+def _lrc_boundary(tree, parent_node):
+    cfg = parent_node["config"]
+    if cfg.get("model") != "lr":
+        return None
+    edges = hv3.boundary_candidates(cfg, LR_SEARCH_SPACE)
+    if not edges:
+        return None
+    p = dc(cfg)
+    descs = []
+    for e in edges:
+        p["params"][e["param"]] = round(e["new_value"], 5)
+        descs.append(f"{e['param']} {e['old_value']}->{round(e['new_value'], 5)}")
+    return p, f"boundary_candidates push: {', '.join(descs)} [feature 4]"
+
+
+LRC_QUEUE = [
+    lambda t, n: (lr_cfg(0.003), "LRC: C=0.003 (probe stronger regularization)"),
+    lambda t, n: _lrc_boundary(t, n),
+    lambda t, n: (lr_cfg(0.1), "LRC: C=0.1 (weak-reg end)"),
+]
+LRFEAT_QUEUE = [
+    lambda t, n: (lr_cfg(0.01, cols=[c for c in PRIOR5 if c != "measurement_2"]),
+                  "LRFEAT: ablate measurement_2 (weakest of the prior-run 5)"),
+    lambda t, n: (lr_cfg(0.01, cols=sorted(set(PRIOR5) | set(NA_FLAGS))),
+                  "LRFEAT: prior5 + ALL 16 na flags (missingness-as-signal direction)"),
+    lambda t, n: (lr_cfg(0.01, cols=PRIOR5 + ["measurement_0", "measurement_1"]),
+                  "LRFEAT: prior5 + integer counters m0, m1"),
+]
+LGBREG_QUEUE = [
+    lambda t, n: (_bump_params(n["config"], learning_rate=0.02, n_estimators=600),
+                  "LGBREG: slower lr 0.03->0.02, trees 300->600"),
+    lambda t, n: (lgb_cfg({"num_leaves": 3, "min_child_samples": 150}, cols=PRIOR5),
+                  "LGBREG: restrict LGB to the LR-validated 5-feature set"),
+    lambda t, n: (_bump_params(n["config"], colsample_bytree=0.5),
+                  "LGBREG: colsample 0.7->0.5"),
+]
+SEEDBAG_QUEUE = [
+    lambda t, n: (lgb_cfg({"random_state": 777}), "SEEDBAG: third seed 777"),
+]
+
+FEAT_LADDER = ["measurement_4", "measurement_9", "measurement_10", "measurement_1",
+               "measurement_0", "measurement_11", "measurement_12", "measurement_13"]
+
+
+def solo_fallback(tree, parent_node, attempt):
+    cfg = parent_node["config"]
+    if cfg.get("model") == "lr":
+        base_cols = cfg.get("features", {}).get("cols", PRIOR5)
+        for extra in FEAT_LADDER:
+            if extra in base_cols:
+                continue
+            cand = lr_cfg(cfg["params"].get("C", 0.01), cols=sorted(set(base_cols) | {extra}))
+            if hv3.find_duplicate_config(tree, core(cand)) is None:
+                return cand, f"fallback: add next |corr| feature {extra}"
+        for c in [0.005, 0.02, 0.05, 0.3, 1.0]:
+            cand = lr_cfg(c, cols=base_cols)
+            if hv3.find_duplicate_config(tree, core(cand)) is None:
+                return cand, f"fallback: next untried C={c}"
+        return None
+    cand = _bump_params(cfg, random_state=4000 + attempt)
+    if hv3.find_duplicate_config(tree, core(cand)) is None:
+        return cand, f"fallback seed-variation: seed={4000 + attempt}"
+    return None
+
+
+def _mk_blend_add_best(name):
+    def fn(tree, parent_node):
+        ids = _pool_ids(tree)
+        if name not in ids:
+            return None
+        best = _best_in_lineage(tree, ids[name])
+        add_id = best["id"] if best else ids[name]
+        members = parent_node["config"]["members"]
+        if add_id in members:
+            return None
+        return ({"kind": "blend", "members": sorted(members + [add_id]),
+                 "weight_search": "dirichlet"}, f"BLEND: add best-of-{name} (#{add_id})")
+    return fn
+
+
+def _blend_remove_weakest(tree, parent_node):
+    res = result_of(tree, parent_node["id"]) or {}
+    weights = res.get("weights")
+    members = parent_node["config"]["members"]
+    if not weights or len(members) <= 2:
+        return None
+    idx = int(np.argmin(weights))
+    child = dc(parent_node["config"])
+    child["members"] = sorted([m for m in members if m != members[idx]])
+    return child, f"BLEND: remove lowest-weight member #{members[idx]} (w={weights[idx]:.3f})"
+
+
+def blend_fallback(tree, parent_node, attempt):
+    pool = solo_pool(tree)
+    members = parent_node["config"]["members"]
+    for add_id in [nid for nid in pool if nid not in members]:
+        child = {"kind": "blend", "members": sorted(members + [add_id]),
+                 "weight_search": "dirichlet"}
+        if hv3.find_duplicate_config(tree, child) is None:
+            return child, f"BLEND fallback: add next-best unused pool member #{add_id}"
+    return None
+
+
+BLEND_QUEUE = [_mk_blend_add_best("LRFEAT"), _mk_blend_add_best("LRC"),
+               _mk_blend_add_best("LGBREG"), _mk_blend_add_best("SEEDBAG"),
+               _blend_remove_weakest]
+
+SOLO_QUEUES = {"LRC": LRC_QUEUE, "LRFEAT": LRFEAT_QUEUE, "LGBREG": LGBREG_QUEUE,
+               "SEEDBAG": SEEDBAG_QUEUE}
+LINEAGE_NAMES = {}
+
+
+def propose_child(tree, parent_id, lineage_id):
+    parent_node = next(n for n in tree["nodes"] if n["id"] == parent_id)
+    name = LINEAGE_NAMES.get(lineage_id, f"L{lineage_id}")
+    idx = hv3.lineage_size(tree, lineage_id) - 1
+    kind = next(n for n in tree["nodes"] if n["id"] == lineage_id)["config"].get("kind", "solo")
+    if kind == "blend":
+        result = None
+        if idx < len(BLEND_QUEUE):
+            result = BLEND_QUEUE[idx](tree, parent_node)
+        if result is None:
+            result = blend_fallback(tree, parent_node, idx)
+        if result is None:
+            return None, None
+        child_cfg, desc = result
+    else:
+        queue = SOLO_QUEUES.get(name, [])
+        result = queue[idx](tree, parent_node) if idx < len(queue) else None
+        if result is None:
+            result = solo_fallback(tree, parent_node, idx)
+        if result is None:
+            return None, None
+        child_cfg, desc = result
+    return child_cfg, f"[{name}] {desc} (parent=#{parent_id})"
+
+
+def inject_explore_burst(tree):
+    pool = solo_pool(tree)
+    seeds = []
+    if len(pool) >= 2:
+        seeds.append(({"kind": "blend", "members": sorted(pool), "weight_search": "dirichlet"},
+                      f"[EXPL_MEGABLEND] explore-burst: kitchen-sink blend of the entire "
+                      f"solo pool ({len(pool)} members) [PRIOR: mandatory mega-blend, "
+                      f"07_tree_search.md Section 3]"))
+    seeds.append((lgb_cfg({"num_leaves": 63, "max_depth": -1, "learning_rate": 0.05,
+                           "min_child_samples": 20}),
+                  "[EXPL_DEEPLGB] explore-burst long-shot: deep LGB (leaves->63, no "
+                  "depth cap, mcs->20) -- capacity contrarian bet"))
+    seeds.append((lr_cfg(1.0, cols=FULL),
+                  "[EXPL_LRLOWREG] explore-burst long-shot: near-unregularized LR "
+                  "(C=1.0) on the full 35-col feature set"))
+    return seeds
+
+
+# ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
+def main():
+    global MAX_WALL_S
+    if "--wall" in sys.argv:
+        MAX_WALL_S = int(sys.argv[sys.argv.index("--wall") + 1])
+    t_start = time.time()
+    resumed = os.path.exists(TREE_PATH)
+    tree = hv3.load_search_state(TREE_PATH) if resumed else hv3.new_tree(COMP)
+    hv3.init_budget(tree)
+
+    priors = hv2.suggest_priors({"metric": "auc", "tags": ["binary", "group", "rank"],
+                                 "data_type": "tabular"})
+    print(f"[priors] {len(priors)} experience.md hits (queried once, per 07_tree_search.md §5)")
+
+    if not resumed:
+        mutation = (f"root: linear-stage best solo (LR C=0.01 prior-run 5-feature set), "
+                    f"retrained via eval_aug22 for digit-for-digit verification vs "
+                    f"{ROOT_KNOWN_AUC}")
+        nid, _, info = eval_and_add(tree, None, mutation, ROOT_CFG, is_root=True)
+        got = auc_of(info)
+        assert got is not None and round(got, 6) == round(ROOT_KNOWN_AUC, 6), (
+            f"ROOT VERIFICATION FAILED: retrained AUC {got} != cached {ROOT_KNOWN_AUC}")
+        print(f"[root] verified digit-for-digit: {got:.6f} == {ROOT_KNOWN_AUC:.6f}")
+    else:
+        print(f"[resume] {len(tree['nodes'])} nodes ({hv3.n_evaluated(tree)} evaluated)")
+
+    root_id = tree["root_id"]
+    existing = _pool_ids(tree)
+    for name, nid in existing.items():
+        LINEAGE_NAMES[nid] = name
+
+    if "POOL_LGB" not in existing:
+        nid = add_pool_node(tree, root_id, "POOL_LGB", "lgb_base", POOL_LGB_CFG)
+        if nid is not None:
+            LINEAGE_NAMES[nid] = "POOL_LGB"
+            print(f"[pool POOL_LGB] node #{nid} AUC_pp={-tree['nodes'][-1]['score']:.6f} (cached reuse)")
+
+    for name, fn in [("LRC", seed_lrc), ("LRFEAT", seed_lrfeat),
+                     ("LGBREG", seed_lgbreg), ("SEEDBAG", seed_seedbag)]:
+        if name in existing:
+            continue
+        cfg, desc = fn()
+        nid, dup, info = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
+        if nid is not None:
+            LINEAGE_NAMES[nid] = name
+            print(f"[seed {name}] node #{nid} AUC_pp={auc_of(info)}")
+    if "BLEND" not in existing:
+        cfg, desc = seed_blend(tree)
+        nid, dup, info = eval_and_add(tree, root_id, f"[BLEND] {desc}", cfg)
+        if nid is not None:
+            LINEAGE_NAMES[nid] = "BLEND"
+            print(f"[seed BLEND] node #{nid} AUC_pp={auc_of(info)}")
+
+    burst_injected = bool(_driver_state(tree).get("burst_injected"))
+    it = 0
+    while not hv3.should_stop(tree) and it < ITER_SAFETY_CAP and (time.time() - t_start) < MAX_WALL_S:
+        it += 1
+        phase = tree["search_state"]["budget"]["phase"]
+        if phase == "explore_burst" and not burst_injected:
+            print(f"\n>>> PHASE -> explore_burst (n_eval={hv3.n_evaluated(tree)})")
+            for cfg, desc in inject_explore_burst(tree):
+                name = desc.split("]")[0][1:]
+                nid, dup, info = eval_and_add(tree, root_id, desc, cfg)
+                if nid is not None:
+                    LINEAGE_NAMES[nid] = name
+                    print(f"[burst {name}] node #{nid} AUC_pp={auc_of(info)}")
+                    if cfg.get("kind") == "solo" and auc_of(info) is not None:
+                        ok, bound = hv3.apply_burst_seed_sanity_gate(tree, nid)
+                        print(f"    sanity gate: {'PASS' if ok else 'FAIL (plateaued)'} (bound={bound})")
+            _driver_state(tree)["burst_injected"] = True
+            burst_injected = True
+            hv3.save_search_state(tree, TREE_PATH)
+            continue
+
+        parent_id, lineage_id = hv3.select_next_parent(tree)
+        if parent_id is None:
+            print("[stop] select_next_parent returned None")
+            break
+        if lineage_id not in LINEAGE_NAMES:
+            for n in tree["nodes"]:
+                if n["id"] == lineage_id and n["parent_id"] == root_id:
+                    LINEAGE_NAMES[lineage_id] = n["mutation"].split("]")[0].lstrip("[")
+        child_cfg, desc = propose_child(tree, parent_id, lineage_id)
+        if child_cfg is None:
+            st = tree["search_state"]
+            plat = set(st.get("plateaued", []))
+            if lineage_id not in plat:
+                plat.add(lineage_id)
+                st["plateaued"] = sorted(plat)
+                st.setdefault("backtrack_log", []).append(dict(
+                    at_node_id=None, plateaued_lineage=lineage_id,
+                    reason=f"propose_child exhausted for lineage "
+                           f"{LINEAGE_NAMES.get(lineage_id, lineage_id)} (driver-side plateau)"))
+                print(f"[plateau] lineage {LINEAGE_NAMES.get(lineage_id, lineage_id)} exhausted")
+            if st.get("active_lineage") == lineage_id:
+                st["active_lineage"] = None
+            hv3.save_search_state(tree, TREE_PATH)
+            continue
+        nid, dup, info = eval_and_add(tree, parent_id, desc, child_cfg)
+        if nid is None:
+            continue
+        gb = hv3.global_best(tree)
+        print(f"[eval {it}] node #{nid} (parent #{parent_id}, "
+              f"{LINEAGE_NAMES.get(lineage_id, lineage_id)}) AUC_pp={auc_of(info)}  "
+              f"n_eval={hv3.n_evaluated(tree)}  best={-gb['score'] if gb else None:.6f}")
+
+    gb = hv3.global_best(tree)
+    print(f"\n=== stopped: phase={tree['search_state']['budget']['phase']} "
+          f"reason={tree['search_state']['budget'].get('stop_reason')} ===")
+    print(f"n_evaluated={hv3.n_evaluated(tree)}  wall={time.time()-t_start:.1f}s")
+    print(f"global best: node #{gb['id']}  AUC_pp={-gb['score']:.6f}  kind={gb['config'].get('kind')}")
+    print(f"dedup_rejections={len(_dedup_rejections(tree))}")
+    print(f"backtrack_log={json.dumps(tree['search_state'].get('backtrack_log', []), indent=1)}")
+    print(f"cost_guard_log={tree['search_state'].get('cost_guard_log', [])}")
+    hv3.save_search_state(tree, TREE_PATH)
+    print(f"\nRESULT {json.dumps(dict(n_evaluated=hv3.n_evaluated(tree), best_node=gb['id'], best_auc_pp=-gb['score']))}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,3025 @@
+{
+  "comp": "tabular-playground-series-aug-2022",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: linear-stage best solo (LR C=0.01 prior-run 5-feature set), retrained via eval_aug22 for digit-for-digit verification vs 0.591248",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.01,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.591248,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[POOL_LGB] linear-pool reseed (cached OOF reuse, scripts/baseline.py lgb_base; zero retraining) [PRIOR: full-pool reseed lesson, afsis run-1 vs run-2]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {},
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.58174,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[LRC] C exploration above the baseline point (0.01 was picked without a grid; probe weaker regularization)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.03,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.591172,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[LRFEAT] comp-local lever: extend the prior-run 5-feature optimum with the next 4 measurements by |corr| (m5 .018, m8 .017, m7 .017, m6 .015)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.01,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_7",
+            "measurement_8"
+          ]
+        }
+      },
+      "score": -0.590598,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[LGBREG] harder-regularized LGB (leaves 7->3, mcs 80->150) -- disjoint train/test groups punish per-group capacity [PRIOR: aug-2022 LR>LGBM lesson]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 3,
+          "min_child_samples": 150
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.586038,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[SEEDBAG] seed variation of pool lgb_base (seed 42->2024) [PRIOR: seed bagging is the cheapest residual gain]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 2024
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.580609,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: root LR + pool lgb_base ([0, 1])",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591249,
+      "status": "evaluated",
+      "wall_s": 8.934117794036865,
+      "kind": "blend"
+    },
+    {
+      "id": 7,
+      "parent_id": 6,
+      "mutation": "[BLEND] BLEND: add best-of-LRFEAT (#3) (parent=#6)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.59125,
+      "status": "evaluated",
+      "wall_s": 9.221550703048706,
+      "kind": "blend"
+    },
+    {
+      "id": 8,
+      "parent_id": 7,
+      "mutation": "[BLEND] BLEND: add best-of-LRC (#2) (parent=#7)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591251,
+      "status": "evaluated",
+      "wall_s": 9.603843688964844,
+      "kind": "blend"
+    },
+    {
+      "id": 9,
+      "parent_id": 8,
+      "mutation": "[BLEND] BLEND: add best-of-LGBREG (#4) (parent=#8)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.59125,
+      "status": "evaluated",
+      "wall_s": 9.447689294815063,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 8,
+      "mutation": "[BLEND] BLEND: add best-of-SEEDBAG (#5) (parent=#8)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591251,
+      "status": "evaluated",
+      "wall_s": 10.154809713363647,
+      "kind": "blend"
+    },
+    {
+      "id": 11,
+      "parent_id": 8,
+      "mutation": "[BLEND] BLEND: remove lowest-weight member #3 (w=0.000) (parent=#8)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591251,
+      "status": "evaluated",
+      "wall_s": 9.593928813934326,
+      "kind": "blend"
+    },
+    {
+      "id": 12,
+      "parent_id": 10,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #4 (parent=#10)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591251,
+      "status": "evaluated",
+      "wall_s": 9.677028179168701,
+      "kind": "blend"
+    },
+    {
+      "id": 13,
+      "parent_id": 2,
+      "mutation": "[LRC] LRC: C=0.003 (probe stronger regularization) (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.003,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.591054,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 2,
+      "mutation": "[LRC] boundary_candidates push: C 0.03->0.045 [feature 4] (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.591121,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 2,
+      "mutation": "[LRC] LRC: C=0.1 (weak-reg end) (parent=#2)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.1,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.591094,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 14,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_4 (parent=#14)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.591349,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 16,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_9 (parent=#16)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.591447,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 17,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_10 (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_10",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.591402,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 17,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_1 (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_1",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.591187,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 17,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_0 (parent=#17)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_0",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.590934,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 21,
+      "parent_id": 18,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_1 (parent=#18)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_1",
+            "measurement_10",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.59113,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 18,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_0 (parent=#18)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_0",
+            "measurement_10",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.590866,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 10,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #17 (parent=#10)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591648,
+      "status": "evaluated",
+      "wall_s": 11.244888544082642,
+      "kind": "blend"
+    },
+    {
+      "id": 24,
+      "parent_id": 23,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #18 (parent=#23)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17,
+          18
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591598,
+      "status": "evaluated",
+      "wall_s": 9.800706148147583,
+      "kind": "blend"
+    },
+    {
+      "id": 25,
+      "parent_id": 23,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #16 (parent=#23)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          16,
+          17
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591585,
+      "status": "evaluated",
+      "wall_s": 9.818969488143921,
+      "kind": "blend"
+    },
+    {
+      "id": 26,
+      "parent_id": 23,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #19 (parent=#23)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17,
+          19
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591616,
+      "status": "evaluated",
+      "wall_s": 10.245300531387329,
+      "kind": "blend"
+    },
+    {
+      "id": 27,
+      "parent_id": 3,
+      "mutation": "[LRFEAT] LRFEAT: ablate measurement_2 (weakest of the prior-run 5) (parent=#3)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.01,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.590672,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 28,
+      "parent_id": 27,
+      "mutation": "[LRFEAT] LRFEAT: prior5 + ALL 16 na flags (missingness-as-signal direction) (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.01,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_10_na",
+            "measurement_11_na",
+            "measurement_12_na",
+            "measurement_13_na",
+            "measurement_14_na",
+            "measurement_15_na",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4_na",
+            "measurement_5_na",
+            "measurement_6_na",
+            "measurement_7_na",
+            "measurement_8_na",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.589281,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 29,
+      "parent_id": 27,
+      "mutation": "[LRFEAT] LRFEAT: prior5 + integer counters m0, m1 (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.01,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_0",
+            "measurement_1",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.590467,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 30,
+      "parent_id": 4,
+      "mutation": "[LGBREG] LGBREG: slower lr 0.03->0.02, trees 300->600 (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 3,
+          "min_child_samples": 150,
+          "learning_rate": 0.02,
+          "n_estimators": 600
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.585312,
+      "status": "evaluated",
+      "wall_s": 1.2,
+      "kind": "solo"
+    },
+    {
+      "id": 31,
+      "parent_id": 4,
+      "mutation": "[LGBREG] LGBREG: restrict LGB to the LR-validated 5-feature set (parent=#4)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 3,
+          "min_child_samples": 150
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.590123,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 32,
+      "parent_id": 31,
+      "mutation": "[LGBREG] LGBREG: colsample 0.7->0.5 (parent=#31)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 3,
+          "min_child_samples": 150,
+          "colsample_bytree": 0.5
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.590185,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 33,
+      "parent_id": 1,
+      "mutation": "[POOL_LGB] fallback seed-variation: seed=4000 (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 4000
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.581343,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 34,
+      "parent_id": 1,
+      "mutation": "[POOL_LGB] fallback seed-variation: seed=4001 (parent=#1)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 4001
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.582135,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 35,
+      "parent_id": 34,
+      "mutation": "[POOL_LGB] fallback seed-variation: seed=4002 (parent=#34)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 4002
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.582147,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "solo"
+    },
+    {
+      "id": 36,
+      "parent_id": 5,
+      "mutation": "[SEEDBAG] SEEDBAG: third seed 777 (parent=#5)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 777
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.582653,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 37,
+      "parent_id": 26,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #18 (parent=#26)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17,
+          18,
+          19
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591613,
+      "status": "evaluated",
+      "wall_s": 11.897631406784058,
+      "kind": "blend"
+    },
+    {
+      "id": 38,
+      "parent_id": 26,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #16 (parent=#26)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          16,
+          17,
+          19
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591605,
+      "status": "evaluated",
+      "wall_s": 11.213069438934326,
+      "kind": "blend"
+    },
+    {
+      "id": 39,
+      "parent_id": 26,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #21 (parent=#26)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17,
+          19,
+          21
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.5916,
+      "status": "evaluated",
+      "wall_s": 11.168348550796509,
+      "kind": "blend"
+    },
+    {
+      "id": 40,
+      "parent_id": 18,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_11 (parent=#18)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_10",
+            "measurement_11",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.591327,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 41,
+      "parent_id": 16,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_10 (parent=#16)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_10",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.5913,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 42,
+      "parent_id": 16,
+      "mutation": "[LRC] fallback: add next |corr| feature measurement_1 (parent=#16)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.045,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_1",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.591142,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 43,
+      "parent_id": 27,
+      "mutation": "[LRFEAT] fallback: add next |corr| feature measurement_4 (parent=#27)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.01,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.590961,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 44,
+      "parent_id": 43,
+      "mutation": "[LRFEAT] fallback: add next |corr| feature measurement_9 (parent=#43)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.01,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.591027,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 45,
+      "parent_id": 44,
+      "mutation": "[LRFEAT] fallback: add next |corr| feature measurement_10 (parent=#44)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.01,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_10",
+            "measurement_17",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_5_na",
+            "measurement_9"
+          ]
+        }
+      },
+      "score": -0.590944,
+      "status": "evaluated",
+      "wall_s": 0.1,
+      "kind": "solo"
+    },
+    {
+      "id": 46,
+      "parent_id": 32,
+      "mutation": "[LGBREG] fallback seed-variation: seed=4003 (parent=#32)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 3,
+          "min_child_samples": 150,
+          "colsample_bytree": 0.5,
+          "random_state": 4003
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.589755,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 47,
+      "parent_id": 32,
+      "mutation": "[LGBREG] fallback seed-variation: seed=4004 (parent=#32)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 3,
+          "min_child_samples": 150,
+          "colsample_bytree": 0.5,
+          "random_state": 4004
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.590183,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 48,
+      "parent_id": 32,
+      "mutation": "[LGBREG] fallback seed-variation: seed=4005 (parent=#32)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 3,
+          "min_child_samples": 150,
+          "colsample_bytree": 0.5,
+          "random_state": 4005
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "measurement_17",
+            "measurement_2",
+            "measurement_3_na",
+            "measurement_5_na"
+          ]
+        }
+      },
+      "score": -0.590254,
+      "status": "evaluated",
+      "wall_s": 0.5,
+      "kind": "solo"
+    },
+    {
+      "id": 49,
+      "parent_id": 35,
+      "mutation": "[POOL_LGB] fallback seed-variation: seed=4003 (parent=#35)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 4003
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.581515,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "solo"
+    },
+    {
+      "id": 50,
+      "parent_id": 35,
+      "mutation": "[POOL_LGB] fallback seed-variation: seed=4004 (parent=#35)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 4004
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.58093,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "solo"
+    },
+    {
+      "id": 51,
+      "parent_id": 35,
+      "mutation": "[POOL_LGB] fallback seed-variation: seed=4005 (parent=#35)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "random_state": 4005
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.581659,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "solo"
+    },
+    {
+      "id": 52,
+      "parent_id": 0,
+      "mutation": "[EXPL_MEGABLEND] explore-burst: kitchen-sink blend of the entire solo pool (38 members) [PRIOR: mandatory mega-blend, 07_tree_search.md Section 3]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591955,
+      "status": "evaluated",
+      "wall_s": 31.28614616394043,
+      "kind": "blend"
+    },
+    {
+      "id": 53,
+      "parent_id": 0,
+      "mutation": "[EXPL_DEEPLGB] explore-burst long-shot: deep LGB (leaves->63, no depth cap, mcs->20) -- capacity contrarian bet",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 63,
+          "max_depth": -1,
+          "learning_rate": 0.05,
+          "min_child_samples": 20
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.551095,
+      "status": "evaluated",
+      "wall_s": 3.4,
+      "kind": "solo"
+    },
+    {
+      "id": 54,
+      "parent_id": 0,
+      "mutation": "[EXPL_LRLOWREG] explore-burst long-shot: near-unregularized LR (C=1.0) on the full 35-col feature set",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 1.0,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.584087,
+      "status": "evaluated",
+      "wall_s": 2.5,
+      "kind": "solo"
+    },
+    {
+      "id": 55,
+      "parent_id": 52,
+      "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #54 (parent=#52)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          54
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591941,
+      "status": "evaluated",
+      "wall_s": 40.64956736564636,
+      "kind": "blend"
+    },
+    {
+      "id": 56,
+      "parent_id": 52,
+      "mutation": "[EXPL_MEGABLEND] BLEND fallback: add next-best unused pool member #53 (parent=#52)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          53
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": -0.591939,
+      "status": "evaluated",
+      "wall_s": 28.916962146759033,
+      "kind": "blend"
+    },
+    {
+      "id": 57,
+      "parent_id": 54,
+      "mutation": "[EXPL_LRLOWREG] fallback: next untried C=0.005 (parent=#54)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.005,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.586375,
+      "status": "evaluated",
+      "wall_s": 1.2,
+      "kind": "solo"
+    },
+    {
+      "id": 58,
+      "parent_id": 57,
+      "mutation": "[EXPL_LRLOWREG] fallback: next untried C=0.02 (parent=#57)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.02,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.585403,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "solo"
+    },
+    {
+      "id": 59,
+      "parent_id": 57,
+      "mutation": "[EXPL_LRLOWREG] fallback: next untried C=0.05 (parent=#57)",
+      "config": {
+        "kind": "solo",
+        "model": "lr",
+        "params": {
+          "C": 0.05,
+          "max_iter": 2000,
+          "random_state": 42
+        },
+        "features": {
+          "cols": [
+            "loading",
+            "loading_na",
+            "measurement_0",
+            "measurement_1",
+            "measurement_10",
+            "measurement_10_na",
+            "measurement_11",
+            "measurement_11_na",
+            "measurement_12",
+            "measurement_12_na",
+            "measurement_13",
+            "measurement_13_na",
+            "measurement_14",
+            "measurement_14_na",
+            "measurement_15",
+            "measurement_15_na",
+            "measurement_16",
+            "measurement_16_na",
+            "measurement_17",
+            "measurement_17_na",
+            "measurement_2",
+            "measurement_3",
+            "measurement_3_na",
+            "measurement_4",
+            "measurement_4_na",
+            "measurement_5",
+            "measurement_5_na",
+            "measurement_6",
+            "measurement_6_na",
+            "measurement_7",
+            "measurement_7_na",
+            "measurement_8",
+            "measurement_8_na",
+            "measurement_9",
+            "measurement_9_na"
+          ]
+        }
+      },
+      "score": -0.584781,
+      "status": "evaluated",
+      "wall_s": 2.2,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 54,
+    "streak": {
+      "6": 3,
+      "2": 3,
+      "3": 3,
+      "4": 3,
+      "1": 3,
+      "5": 0,
+      "52": 2,
+      "54": 3
+    },
+    "plateaued": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      52,
+      53,
+      54
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 6,
+        "reason": "propose_child exhausted for lineage BLEND (driver-side plateau)"
+      },
+      {
+        "at_node_id": 16,
+        "plateaued_lineage": null,
+        "reopened_lineages": [
+          6
+        ],
+        "reason": "solo node #16 became the new global best (score=-0.591349) post-plateau -- auto-reopening blend lineage(s) [6] so they can absorb it as a member (D-6 lesson, formalized as a default)"
+      },
+      {
+        "at_node_id": 22,
+        "plateaued_lineage": 2,
+        "reason": "5 consecutive non-improving children of the active lineage failed to beat prior global best -0.591447 (tie_rate=0.174, discretized=True)"
+      },
+      {
+        "at_node_id": 26,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.148, discretized=False)"
+      },
+      {
+        "at_node_id": 29,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.133, discretized=False)"
+      },
+      {
+        "at_node_id": 32,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.121, discretized=False)"
+      },
+      {
+        "at_node_id": 35,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.111, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 5,
+        "reason": "propose_child exhausted for lineage SEEDBAG (driver-side plateau)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": null,
+        "reason": "all lineages plateaued -> reopened once (fallback so the search can keep going toward the node budget)"
+      },
+      {
+        "at_node_id": 39,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.100, discretized=False)"
+      },
+      {
+        "at_node_id": 42,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.093, discretized=False)"
+      },
+      {
+        "at_node_id": 45,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.087, discretized=False)"
+      },
+      {
+        "at_node_id": 48,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.082, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 5,
+        "reason": "propose_child exhausted for lineage SEEDBAG (driver-side plateau)"
+      },
+      {
+        "at_node_id": 51,
+        "plateaued_lineage": 1,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591648 (tie_rate=0.077, discretized=False)"
+      },
+      {
+        "at_node_id": 53,
+        "plateaued_lineage": 53,
+        "reason": "burst-seed sanity gate FAILED: node #53's score -0.551095 exceeds the sanity bound -0.562357 (factor=3.0x the root-to-global-best gap, floor=5% of |global best|) -- burning this seed's own already-sunk evaluation cost only, NOT opening a mutation lineage on top of it (feature 9; F-2 s3e14 lesson)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": 52,
+        "reason": "propose_child exhausted for lineage EXPL_MEGABLEND (driver-side plateau)"
+      },
+      {
+        "at_node_id": 59,
+        "plateaued_lineage": 54,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.591955 (tie_rate=0.067, discretized=False)"
+      }
+    ],
+    "budget": {
+      "total_budget": 60,
+      "explore_burst_size": 6,
+      "post_burst_patience": 20,
+      "phase": "stopped",
+      "burst_start_eval": 52,
+      "best_at_burst_start": -0.591955,
+      "evals_since_burst_improve": 6,
+      "stop_reason": "hard budget cap reached (60/60 evaluated nodes)"
+    },
+    "node_results": {
+      "0": {
+        "auc_pp": 0.591248,
+        "auc_raw": 0.59044
+      },
+      "1": {
+        "auc_pp": 0.58174
+      },
+      "2": {
+        "auc_pp": 0.591172,
+        "auc_raw": 0.590432
+      },
+      "3": {
+        "auc_pp": 0.590598,
+        "auc_raw": 0.589774
+      },
+      "4": {
+        "auc_pp": 0.586038,
+        "auc_raw": 0.585225
+      },
+      "5": {
+        "auc_pp": 0.580609,
+        "auc_raw": 0.580033
+      },
+      "6": {
+        "members": [
+          0,
+          1
+        ],
+        "weights": [
+          0.9999,
+          0.0001
+        ],
+        "auc_pp": 0.591249
+      },
+      "7": {
+        "members": [
+          0,
+          1,
+          3
+        ],
+        "weights": [
+          0.9901,
+          0.0,
+          0.0099
+        ],
+        "auc_pp": 0.59125
+      },
+      "8": {
+        "members": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "weights": [
+          0.9958,
+          0.0001,
+          0.0041,
+          0.0
+        ],
+        "auc_pp": 0.591251
+      },
+      "9": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "weights": [
+          0.9943,
+          0.0,
+          0.0052,
+          0.0004,
+          0.0
+        ],
+        "auc_pp": 0.59125
+      },
+      "10": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "weights": [
+          0.9953,
+          0.0,
+          0.0046,
+          0.0,
+          0.0001
+        ],
+        "auc_pp": 0.591251
+      },
+      "11": {
+        "members": [
+          0,
+          1,
+          2
+        ],
+        "weights": [
+          0.9958,
+          0.0001,
+          0.0041
+        ],
+        "auc_pp": 0.591251
+      },
+      "12": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "weights": [
+          0.9944,
+          0.0,
+          0.005,
+          0.0006,
+          0.0,
+          0.0
+        ],
+        "auc_pp": 0.591251
+      },
+      "13": {
+        "auc_pp": 0.591054,
+        "auc_raw": 0.590178
+      },
+      "14": {
+        "auc_pp": 0.591121,
+        "auc_raw": 0.590394
+      },
+      "15": {
+        "auc_pp": 0.591094,
+        "auc_raw": 0.590355
+      },
+      "16": {
+        "auc_pp": 0.591349,
+        "auc_raw": 0.590631
+      },
+      "17": {
+        "auc_pp": 0.591447,
+        "auc_raw": 0.590716
+      },
+      "18": {
+        "auc_pp": 0.591402,
+        "auc_raw": 0.590658
+      },
+      "19": {
+        "auc_pp": 0.591187,
+        "auc_raw": 0.590479
+      },
+      "20": {
+        "auc_pp": 0.590934,
+        "auc_raw": 0.590208
+      },
+      "21": {
+        "auc_pp": 0.59113,
+        "auc_raw": 0.590407
+      },
+      "22": {
+        "auc_pp": 0.590866,
+        "auc_raw": 0.590144
+      },
+      "23": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17
+        ],
+        "weights": [
+          0.244,
+          0.0,
+          0.1355,
+          0.0,
+          0.0,
+          0.6205
+        ],
+        "auc_pp": 0.591648
+      },
+      "24": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17,
+          18
+        ],
+        "weights": [
+          0.1327,
+          0.0001,
+          0.169,
+          0.0939,
+          0.0,
+          0.4442,
+          0.1601
+        ],
+        "auc_pp": 0.591598
+      },
+      "25": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          16,
+          17
+        ],
+        "weights": [
+          0.1159,
+          0.0,
+          0.2096,
+          0.0632,
+          0.0,
+          0.3902,
+          0.2211
+        ],
+        "auc_pp": 0.591585
+      },
+      "26": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17,
+          19
+        ],
+        "weights": [
+          0.1456,
+          0.0,
+          0.2701,
+          0.0077,
+          0.0,
+          0.487,
+          0.0895
+        ],
+        "auc_pp": 0.591616
+      },
+      "27": {
+        "auc_pp": 0.590672,
+        "auc_raw": 0.589872
+      },
+      "28": {
+        "auc_pp": 0.589281,
+        "auc_raw": 0.588469
+      },
+      "29": {
+        "auc_pp": 0.590467,
+        "auc_raw": 0.589676
+      },
+      "30": {
+        "auc_pp": 0.585312,
+        "auc_raw": 0.584675
+      },
+      "31": {
+        "auc_pp": 0.590123,
+        "auc_raw": 0.58937
+      },
+      "32": {
+        "auc_pp": 0.590185,
+        "auc_raw": 0.589521
+      },
+      "33": {
+        "auc_pp": 0.581343,
+        "auc_raw": 0.580767
+      },
+      "34": {
+        "auc_pp": 0.582135,
+        "auc_raw": 0.58154
+      },
+      "35": {
+        "auc_pp": 0.582147,
+        "auc_raw": 0.581576
+      },
+      "36": {
+        "auc_pp": 0.582653,
+        "auc_raw": 0.581963
+      },
+      "37": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17,
+          18,
+          19
+        ],
+        "weights": [
+          0.1625,
+          0.0,
+          0.2585,
+          0.0,
+          0.0,
+          0.4191,
+          0.0573,
+          0.1027
+        ],
+        "auc_pp": 0.591613
+      },
+      "38": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          16,
+          17,
+          19
+        ],
+        "weights": [
+          0.1599,
+          0.0,
+          0.0593,
+          0.0809,
+          0.0,
+          0.0,
+          0.6998,
+          0.0
+        ],
+        "auc_pp": 0.591605
+      },
+      "39": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          17,
+          19,
+          21
+        ],
+        "weights": [
+          0.1854,
+          0.0,
+          0.2982,
+          0.0052,
+          0.0,
+          0.4386,
+          0.0205,
+          0.052
+        ],
+        "auc_pp": 0.5916
+      },
+      "40": {
+        "auc_pp": 0.591327,
+        "auc_raw": 0.590558
+      },
+      "41": {
+        "auc_pp": 0.5913,
+        "auc_raw": 0.590561
+      },
+      "42": {
+        "auc_pp": 0.591142,
+        "auc_raw": 0.590408
+      },
+      "43": {
+        "auc_pp": 0.590961,
+        "auc_raw": 0.590224
+      },
+      "44": {
+        "auc_pp": 0.591027,
+        "auc_raw": 0.590288
+      },
+      "45": {
+        "auc_pp": 0.590944,
+        "auc_raw": 0.590217
+      },
+      "46": {
+        "auc_pp": 0.589755,
+        "auc_raw": 0.589099
+      },
+      "47": {
+        "auc_pp": 0.590183,
+        "auc_raw": 0.58947
+      },
+      "48": {
+        "auc_pp": 0.590254,
+        "auc_raw": 0.589585
+      },
+      "49": {
+        "auc_pp": 0.581515,
+        "auc_raw": 0.580981
+      },
+      "50": {
+        "auc_pp": 0.58093,
+        "auc_raw": 0.580354
+      },
+      "51": {
+        "auc_pp": 0.581659,
+        "auc_raw": 0.580998
+      },
+      "52": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51
+        ],
+        "weights": [
+          0.0645,
+          0.0,
+          0.0234,
+          0.0,
+          0.0,
+          0.0,
+          0.0471,
+          0.0029,
+          0.0,
+          0.005,
+          0.3599,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0571,
+          0.0,
+          0.0,
+          0.0,
+          0.0488,
+          0.0468,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0007,
+          0.0007,
+          0.0738,
+          0.1155,
+          0.0648,
+          0.0,
+          0.0387,
+          0.0505,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "auc_pp": 0.591955
+      },
+      "53": {
+        "auc_pp": 0.551095,
+        "auc_raw": 0.550988
+      },
+      "54": {
+        "auc_pp": 0.584087,
+        "auc_raw": 0.583395
+      },
+      "55": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          54
+        ],
+        "weights": [
+          0.0096,
+          0.0,
+          0.0,
+          0.0087,
+          0.0,
+          0.0,
+          0.0554,
+          0.0172,
+          0.0,
+          0.0046,
+          0.4158,
+          0.0092,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0673,
+          0.0,
+          0.0,
+          0.0,
+          0.0683,
+          0.0381,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0049,
+          0.0,
+          0.0963,
+          0.0695,
+          0.0652,
+          0.0,
+          0.0544,
+          0.0156,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "auc_pp": 0.591941
+      },
+      "56": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          53
+        ],
+        "weights": [
+          0.0282,
+          0.0,
+          0.0,
+          0.005,
+          0.0,
+          0.0,
+          0.129,
+          0.0,
+          0.0,
+          0.0,
+          0.3493,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0542,
+          0.0,
+          0.0,
+          0.0,
+          0.0642,
+          0.0221,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0113,
+          0.0099,
+          0.0002,
+          0.0674,
+          0.0846,
+          0.0597,
+          0.0,
+          0.0586,
+          0.0565,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "auc_pp": 0.591939
+      },
+      "57": {
+        "auc_pp": 0.586375,
+        "auc_raw": 0.585549
+      },
+      "58": {
+        "auc_pp": 0.585403,
+        "auc_raw": 0.584615
+      },
+      "59": {
+        "auc_pp": 0.584781,
+        "auc_raw": 0.584023
+      }
+    },
+    "dedup_streak": {
+      "0": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "10": 0,
+      "2": 0,
+      "14": 0,
+      "16": 0,
+      "17": 0,
+      "18": 0,
+      "23": 0,
+      "3": 0,
+      "27": 0,
+      "4": 0,
+      "31": 0,
+      "1": 0,
+      "34": 0,
+      "5": 0,
+      "26": 0,
+      "43": 0,
+      "44": 0,
+      "32": 0,
+      "35": 0,
+      "52": 0,
+      "54": 0,
+      "57": 0
+    },
+    "driver_state": {
+      "burst_injected": true,
+      "dedup_rejections": []
+    },
+    "tie_rate_log": [
+      0.0,
+      0.0,
+      0.1,
+      0.1818,
+      0.25,
+      0.3077,
+      0.2857,
+      0.2667,
+      0.25,
+      0.2353,
+      0.2222,
+      0.2105,
+      0.2,
+      0.1905,
+      0.1818,
+      0.1739,
+      0.1667,
+      0.16,
+      0.1538,
+      0.1481,
+      0.1429,
+      0.1379,
+      0.1333,
+      0.129,
+      0.125,
+      0.1212,
+      0.1176,
+      0.1143,
+      0.1111,
+      0.1081,
+      0.1053,
+      0.1026,
+      0.1,
+      0.0976,
+      0.0952,
+      0.093,
+      0.0909,
+      0.0889,
+      0.087,
+      0.0851,
+      0.0833,
+      0.0816,
+      0.08,
+      0.0784,
+      0.0769,
+      0.0714,
+      0.0702,
+      0.069,
+      0.0678,
+      0.0667
+    ]
+  }
+}

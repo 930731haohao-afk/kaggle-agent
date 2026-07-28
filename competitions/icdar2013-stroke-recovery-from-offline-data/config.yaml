@@ -1,0 +1,38 @@
+name: icdar2013-stroke-recovery-from-offline-data
+url: https://www.kaggle.com/competitions/icdar2013-stroke-recovery-from-offline-data
+description: Recover pen stroke trajectories (x,y over time) from offline signature images
+problem_type: regression
+evaluation_metric: rmse
+optimization_direction: minimize
+target_columns: [x, y]
+id_column: prediction_id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: example_submission.csv
+special_rules:
+  external_data_allowed: false
+  pretrained_models_allowed: false
+  internet_access_allowed: false
+  daily_submission_limit: 5
+  competition_status: closed (2013)
+
+# Data summary
+data:
+  train_signatures: 605  # IDs 1-605
+  test_signatures: 476   # IDs 606-1081
+  train_writers: 120      # IDs 1-120
+  test_writers: 80        # IDs 121-200
+  writer_overlap: false
+  total_images: 1081
+  train_points: 148083
+  test_points: 122911
+  avg_points_per_sig: 245
+  normalization: per-signature min-max to [0,1]
+  image_sizes: variable (350-1600 x 350-1050)
+  occurrence_id: rotates 1-6 per writer (each sig has exactly 1)
+
+# Competition concept
+# Task: Given an image of a handwritten signature, predict the temporal pen trajectory.
+# Input: Signature image + known number of time steps
+# Output: (x, y) coordinates at each time step, normalized [0,1] per signature
+# Challenge: Recovering temporal ORDER from spatial image (which direction was pen moving?)

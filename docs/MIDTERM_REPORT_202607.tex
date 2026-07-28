@@ -1,0 +1,725 @@
+% Midterm Report -- AI Agents for Kaggle Competitions
+% Compile with pdfLaTeX (Overleaf default). No external assets required.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{newtxtext,newtxmath}
+\usepackage{float}
+\usepackage[section]{placeins}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{microtype}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage[hyphens]{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc,decorations.pathreplacing}
+
+\emergencystretch=1.5em
+
+\captionsetup{font=small,labelfont=bf}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\renewcommand{\arraystretch}{1.15}
+\newcommand{\dn}{\ensuremath{\downarrow}}
+\newcommand{\up}{\ensuremath{\uparrow}}
+% Agent abbreviations used in verdict columns
+\newcommand{\M}{M}   % my-agent
+\newcommand{\N}{N}   % NVIDIA
+\newcommand{\A}{A}   % AIDE
+
+\title{\textbf{Benchmarking AI Agents for Kaggle Competitions:\\
+A Fair Three-Way Comparison with Paired Significance Testing}\\
+\large Midterm Report --- July 2026}
+\author{Wei-Hao Huang\\\small Advisor: Tso-Jung Yen}
+\date{July 28, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+AI agents that automatically solve machine-learning competitions have advanced rapidly, but the methodology for deciding whether one agent is genuinely better than another remains weak: single runs, single scores, and no error model. We benchmark three methodologically distinct agents --- \textbf{my-agent}, a hybrid LLM + Auto-ML agent with a cross-competition experience library built as a Claude Code Skill; \textbf{AIDE}, an open-source LLM tree-search agent with no cross-competition memory; and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel --- on 18 Kaggle competitions under a mechanically enforced fairness protocol (manifest-validated data isolation, a lane mutex, instruction isolation). We introduce a paired significance test whose error scale comes from Kaggle's own public/private test split: a win counts only if the ordering replicates across the two disjoint subsets and the gap exceeds its own movement. Under this test, my-agent wins 59\% of decidable duels versus 46\% (AIDE) and 45\% (NVIDIA), while 26\% of duels are statistically undecidable --- noise that a naive ``higher score wins'' tally would have reported as conclusions. We further show that local cross-validation disagrees with the true leaderboard in 10 of the 13 competitions for which CV comparisons are available, that the ranking of the three agents fully reverses when the evaluation set shifts from Playground-only to a broader mix, and we identify a systematic failure mode of each method. We conclude that agent-benchmark claims must be stated jointly with the composition of the evaluation set, and must be accompanied by a noise model.
+\end{abstract}
+
+\section{Introduction}
+
+\subsection{Core Problems}
+
+This study addresses two intertwined problems.
+
+\paragraph{Problem 1: Where does our own agent actually stand?}
+This project implements a hybrid Kaggle agent (LLM reasoning + Auto-ML tools) as a Claude Code Skill. It produces reasonable scores on individual competitions --- but ``reasonable'' relative to whom? Without external reference points, any self-assessment is circular. Only a comparison against methodologically \emph{different} existing approaches can locate the strengths and blind spots of this design.
+
+\paragraph{Problem 2: How much of an agent benchmark's conclusion is noise?}
+Current agent evaluations typically report ``one run, one score, higher wins.'' But competition metrics carry sampling error, and agent execution is itself stochastic (the LLM samples different code at every step). If the gap between two agents is smaller than these errors, ``A beats B'' is reporting noise. This study asks: at a measurable error scale, in how many competitions can the three agents actually be told apart?
+
+\subsection{Why the Kaggle Playground Series}
+
+The Kaggle Playground series offers rare evaluation conditions: homogeneous tasks (tabular supervised learning), well-defined metrics, a public leaderboard as an external absolute reference, and --- critically --- two mutually exclusive test subsets (public/private) per competition. The latter is exactly what this study uses to estimate measurement error (Section~\ref{sec:exp2}).
+
+\section{Methods}
+
+\subsection{my-agent: A Hybrid Kaggle Agent}
+
+The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}). Its core design is a division of labor between LLM reasoning and Auto-ML tools: the LLM (Claude Code) handles problem understanding, validation-strategy design, creative feature engineering, result interpretation, and deciding the next step; LightGBM / XGBoost / CatBoost / Optuna --- invoked by the LLM via the shell --- handle model selection, hyperparameter optimization, and stacking/ensembling.
+
+Execution proceeds in six stages: data ingestion $\to$ EDA $\to$ feature engineering $\to$ modeling $\to$ evaluation $\to$ submission, where stages four and five run in one of two optimization modes:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Linear iteration protocol}: propose a hypothesis, run the experiment, record the result --- used for the first pass and for small competitions.
+  \item \textbf{Tree search (preferred)}: once the linear protocol has produced a baseline single model and at least one blend, the agent switches to tree search (harness v3; protocol in Figure~\ref{fig:tree}). Internal evaluation shows tree search winning 9 of 10 competitions with 1 tie and 0 losses.
+\end{itemize}
+
+Two supporting mechanisms:
+
+\paragraph{Cross-competition experience library} (\path{knowledge/experience.md}): every insight must carry an evidence field (\texttt{competition, exp \#N, score A $\to$ score B}); entries without a score delta are rejected. The agent queries the library before EDA and before modeling, and writes validated new insights back after experiments. This is the most fundamental design difference between my-agent and the two reference methods.
+
+\paragraph{Experiment records.} Every experiment's parameters, features, split scheme, and scores are logged in structured form (\path{experiments.json}, \path{experiments_tree_v3.json}), making every number in this report traceable.
+
+Figure~\ref{fig:arch} summarizes the architecture and how the two mechanisms connect to the search loop.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  stage/.style={draw, rounded corners=2pt, align=center, inner sep=4pt, fill=gray!8, minimum height=9mm, minimum width=17mm},
+  mech/.style={draw, rounded corners=2pt, align=center, inner sep=4pt, fill=blue!8},
+  tool/.style={draw, rounded corners=2pt, align=center, inner sep=4pt, fill=gray!15},
+  arr/.style={-{Stealth[length=2.5mm]}, semithick},
+  darr/.style={arr, dashed}
+]
+% six-stage pipeline
+\node[stage] (s1) {Data\\ingestion};
+\node[stage, right=4mm of s1] (s2) {EDA};
+\node[stage, right=4mm of s2] (s3) {Feature\\eng.};
+\node[stage, right=4mm of s3] (s4) {Modeling};
+\node[stage, right=4mm of s4] (s5) {Evaluation};
+\node[stage, right=4mm of s5] (s6) {Submission};
+\foreach \a/\b in {s1/s2, s2/s3, s3/s4, s4/s5, s5/s6}{\draw[arr] (\a) -- (\b);}
+% LLM annotation above
+\draw[decorate, decoration={brace, amplitude=2mm}]
+  ([yshift=12mm]s1.north west) -- ([yshift=12mm]s6.north east)
+  node[midway, above=3mm]{\textbf{Claude Code (LLM)} --- reasons and decides at every stage};
+% tree-search loop over stages 4-5
+\draw[arr] (s5.north) to[out=130, in=50]
+  node[pos=0.5, above=0.5mm, inner sep=1pt]{\scriptsize tree search: expand best / backtrack (25--80 nodes)} (s4.north);
+% auto-ml tools under modeling
+\node[tool, below=10mm of s4, text width=34mm] (tools)
+  {LightGBM / XGBoost /\\CatBoost / Optuna\\(invoked via shell)};
+\draw[arr, {Stealth[length=2.5mm]}-{Stealth[length=2.5mm]}] (s4.south) -- (tools.north);
+% experience library, bottom left
+\node[mech, below=10mm of s1.south east, text width=30mm, anchor=north] (lib)
+  {\textbf{Experience library}\\cross-competition priors,\\every entry evidence-backed};
+\draw[arr] (lib.north) -- node[right, inner sep=2pt, pos=0.35]{priors} (s2.south);
+\draw[arr] (lib.north east) to[out=25, in=245] ([xshift=-6mm]s4.south);
+% experiment records, bottom right
+\node[mech, below=10mm of s6.south west, text width=26mm, anchor=north] (rec)
+  {\textbf{Experiment records}\\every run logged\\(params, split, scores)};
+\draw[arr] (s5.south) -- node[right, inner sep=2pt, pos=0.35]{log} (rec.north);
+% write-back loop
+\draw[darr] (rec.south) -- ++(0,-4mm) -| node[near start, below, inner sep=2pt]{validated insights (score-delta evidence) written back} (lib.south);
+\end{tikzpicture}
+\caption{Architecture of my-agent, organized around its six-stage pipeline. The LLM (Claude Code) drives every stage; in the modeling--evaluation stages it iterates via tree search (25--80 CV-scored nodes per competition) and invokes Auto-ML tools through the shell. Two cross-cutting mechanisms close the loop: the experience library supplies evidence-backed priors before EDA and modeling, and every run is logged to structured experiment records, from which insights validated by a score delta are written back to the library for future competitions.}
+\label{fig:arch}
+\end{figure}
+
+\paragraph{Tree-search protocol.} The search harness evolved as four strict supersets: v1 introduced the minimal candidate tree (a node is a complete solution; a lineage backtracks after three children without improvement); v2 made ensembles first-class node kinds (solo/blend) with out-of-fold caching and weight search; v3 --- the version used for every run in this report --- added a budget phase machine, duplicate handling, sandboxed evaluation, and resume safety; v4 adds external idea injection and is not enabled here. Figure~\ref{fig:tree} shows the v3 loop.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  sbox/.style={draw, rounded corners=2pt, align=center, inner sep=5pt, fill=gray!8, text width=62mm},
+  side/.style={align=center, text width=40mm},
+  arr/.style={-{Stealth[length=2.5mm]}, semithick},
+  node distance=4.5mm
+]
+\node[sbox] (phase) {\textbf{budget phase machine}: exploit $\to$ explore-burst $\to$ stop\\(hard cap 60 evaluated nodes; patience 20 evals without improvement)};
+\node[sbox, below=of phase] (select) {\textbf{select parent lineage}\\(backtrack when a lineage plateaus: 3 children without improvement)};
+\node[sbox, below=of select] (propose) {\textbf{propose mutation}: seed / hyperparameters / blend weights / boundary push};
+\node[sbox, below=of propose] (dedup) {\textbf{duplicate gate} (config hash; a repeated proposal burns budget instead of looping)};
+\node[sbox, below=of dedup] (eval) {\textbf{evaluate in child process}\\(CV score; hard timeout; blend cost guard)};
+\node[sbox, below=of eval] (add) {\textbf{add node, update global best}\\(a solo breakthrough reopens plateaued blend lineages)};
+\foreach \a/\b in {phase/select, select/propose, propose/dedup, dedup/eval, eval/add}{\draw[arr] (\a) -- (\b);}
+% loop back
+\draw[arr] (add.east) -- ++(9mm,0) |- node[pos=0.25, right, inner sep=2pt]{loop} ([yshift=-4mm]phase.east);
+% priors in
+\node[side, left=9mm of propose] (prior) {priors from\\experience library};
+\draw[arr, dashed] (prior) -- (propose);
+% exit
+\node[side, right=16mm of phase, yshift=4mm] (out) {on stop:\\best node $\to$ submission};
+\draw[arr] ([yshift=4mm]phase.east) -- (out.west);
+\end{tikzpicture}
+\caption{The v3 tree-search loop used in all my-agent runs of this report (25--80 nodes per competition). Each node is a complete, executable solution scored by local cross-validation; lineages are abandoned on plateau and the budget phase machine forces an exploration burst before stopping.}
+\label{fig:tree}
+\end{figure}
+
+\subsection{Two Reference Methods (Yardsticks)}
+
+\paragraph{AIDE} (open-source agent, gen-1): LLM-driven tree search. At each step it writes a complete solution, executes it, reads the error or score, and mutates accordingly. No cross-competition memory --- every competition starts from zero; the journal only persists within a single run. Executed with its default budget of 20 steps.
+
+\paragraph{NVIDIA Kaggle Agent} (skill): its method is ``reproduce the strongest public kernel'' --- research the competition context, select the highest-\emph{voted} solution-type kernel, port it faithfully, and retrain on local data. Its knowledge comes from publicly available solutions fetched fresh each time; nothing accumulates across competitions.
+
+\paragraph{Key methodological decision.} Both reference methods are frozen --- no improvements of any kind. During the study we found that NVIDIA's vote-based kernel selection is a structural weakness (Section~\ref{sec:exp4}), and the skill itself even ships a score-based selection tool, but we deliberately did not enable it. Rationale: the purpose of this study is to use them as fixed yardsticks for measuring my-agent; improving the yardsticks mid-study would make earlier and later data incomparable, and would quietly turn the benchmark into an optimization of the reference methods.
+
+\subsection{Fairness Protocol}
+
+The three agents share one machine, so the rules in Table~\ref{tab:fairness} are defined and mechanically enforced.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Fairness protocol: rules and their enforcement.}
+\label{tab:fairness}
+\begin{tabular}{@{}L{2.4cm}L{6.6cm}L{5.6cm}@{}}
+\toprule
+\textbf{Aspect} & \textbf{Rule} & \textbf{Enforcement} \\
+\midrule
+Data isolation & Each side reads only \path{bench-comps/<comp>/}, containing files validated against the official Kaggle manifest & \path{build_isolated_roots.py}; officialness judged by the Kaggle API manifest, incl.\ members extracted from official archives \\
+Workspace isolation & The three output directories are fully separated; each side is scored independently & Directory structure \\
+Instruction isolation & Prompts may contain only environment facts and metric thresholds; no modeling recipes, no other side's scores, no environment workarounds discovered by another side & Manual protocol + incident log \\
+Resource isolation & Only one lane executes at any moment & \path{lane_lock.sh} mutex (atomic directory creation, reclamation on holder death, bounded waiting) \\
+Environment defects & Always fix the environment rather than give hints (fixing removes the confound; hinting compensates only one side) & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Experiments}
+
+\subsection{Overview of Experimental Design}
+
+\paragraph{Evaluation set.} 18 tabular competitions --- 13 from the Kaggle Playground Series, plus afsis-soil-properties (2014, spectral regression), conway-s-reverse-game-of-life (2014, structured multi-output), cat-in-the-dat (2019, purely categorical features), tabular-playground aug-2022, and jan-2022. Every competition provides both a public and a private test-subset score --- this is the inclusion criterion, because the significance test (Section~\ref{sec:exp2}) is built on the score difference between the two subsets. The three agents also ran 4 competitions for which private scores cannot be obtained (late submission closed, rolling leaderboards); these are excluded. The 18-competition set is the fixed baseline of this study.
+
+\paragraph{Execution conditions.} The three agents ran serially, with the mutex guaranteeing no overlap. AIDE: 20 steps (its default budget; conway stopped at 16 steps due to the 4-hour cap). NVIDIA: reproduced public kernels per its method. my-agent: the full six-stage pipeline including tree search (25--80 nodes per competition; Appendix~\ref{app:treesize}).
+
+\subsection{Experiment 1: Three-Way Capability Comparison (Raw Scores)}
+\label{sec:exp1}
+
+\paragraph{Goal and procedure.} Measure the absolute performance of the three methods on the same set of competitions. Each side independently produces a submission, uploaded to Kaggle via late submission to obtain public and private scores, along with the percentile rank relative to all participating teams of that competition.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Competition descriptions. Tasks fall into two families: classification (binary, ordinal; 7 competitions) and prediction/regression (incl.\ time series and multi-target; 11 competitions).}
+\label{tab:comps}
+\begin{tabular}{@{}rllr@{}}
+\toprule
+\# & \textbf{Competition} & \textbf{Task type} & \textbf{Train rows $\times$ cols} \\
+\midrule
+1 & s3e1 & Regression & $37{,}137 \times 10$ \\
+2 & s3e3 & Classification (binary) & $1{,}677 \times 35$ \\
+3 & s3e5 & Classification (ordinal) & $2{,}056 \times 13$ \\
+4 & s3e7 & Classification (binary) & $42{,}100 \times 19$ \\
+5 & s3e9 & Regression & $5{,}407 \times 10$ \\
+6 & s3e11 & Regression & $360{,}336 \times 17$ \\
+7 & s3e14 & Regression & $15{,}289 \times 18$ \\
+8 & s3e16 & Regression & $74{,}051 \times 10$ \\
+9 & s3e19 & Regression (time series) & $136{,}950 \times 6$ \\
+10 & s4e11 & Classification (binary) & $140{,}700 \times 20$ \\
+11 & s5e10 & Regression & $517{,}754 \times 14$ \\
+12 & s6e1 & Regression & $630{,}000 \times 13$ \\
+13 & s6e2 & Classification (binary) & $630{,}000 \times 15$ \\
+14 & afsis-soil-properties & Regression (multi-target) & $1{,}157 \times 3{,}600$ \\
+15 & cat-in-the-dat & Classification (binary) & $300{,}000 \times 25$ \\
+16 & conway-s-reverse-game-of-life & Structured multi-output & $50{,}000 \times 802$ \\
+17 & tps-aug-2022 & Classification (binary) & $26{,}570 \times 26$ \\
+18 & tps-jan-2022 & Regression (time series) & $26{,}298 \times 6$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Three-way performance, public leaderboard. \dn{} = lower is better, \up{} = higher is better.}
+\label{tab:public}
+\begin{tabular}{@{}rllrrr@{}}
+\toprule
+\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} \\
+\midrule
+1 & s3e1 & RMSE \dn & 0.56083 & 0.55332 & 0.55899 \\
+2 & s3e3 & ROC-AUC \up & 0.89262 & 0.93526 & 0.88484 \\
+3 & s3e5 & QWK \up & 0.57921 & 0.57515 & 0.59362 \\
+4 & s3e7 & ROC-AUC \up & 0.91116 & 0.91230 & 0.90934 \\
+5 & s3e9 & RMSE \dn & 11.84951 & 11.83399 & 11.86657 \\
+6 & s3e11 & RMSLE \dn & 0.29534 & 0.29559 & 0.29389 \\
+7 & s3e14 & MAE \dn & 341.26711 & 338.36524 & 342.44918 \\
+8 & s3e16 & MAE \dn & 1.34315 & 1.33566 & 1.33920 \\
+9 & s3e19 & SMAPE \dn & 50.22497 & 47.52145 & 48.39715 \\
+10 & s4e11 & Accuracy \up & 0.94125 & 0.94136 & 0.94184 \\
+11 & s5e10 & RMSE \dn & 0.05551 & 0.05562 & 0.05555 \\
+12 & s6e1 & Error \dn & 8.69338 & 8.70480 & 8.69449 \\
+13 & s6e2 & ROC-AUC \up & 0.95367 & 0.95348 & 0.95364 \\
+14 & afsis & MCRMSE \dn & 0.45207 & 0.61276 & 0.45636 \\
+15 & cat-in-the-dat & ROC-AUC \up & 0.80801 & 0.77641 & 0.80790 \\
+16 & conway & MAE \dn & 0.10771 & 0.11094 & 0.10960 \\
+17 & tps-aug-2022 & ROC-AUC \up & 0.58559 & 0.57920 & 0.58479 \\
+18 & tps-jan-2022 & SMAPE \dn & 4.90883 & 4.43958 & 10.11598 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\caption{Three-way performance, private leaderboard; percentile rank (PR) in parentheses. In the verdict column, \M{} = my-agent, \N{} = NVIDIA, \A{} = AIDE; ``$>$'' means the gap passes the paired significance test of Section~\ref{sec:exp2}, ``$\approx$'' means indistinguishable within error.}
+\label{tab:private}
+\begin{tabular}{@{}rllrrrl@{}}
+\toprule
+\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent (PR)} & \textbf{NVIDIA (PR)} & \textbf{AIDE (PR)} & \textbf{Paired verdict} \\
+\midrule
+1 & s3e1 & RMSE \dn & 0.55987 (63.3) & 0.55550 (93.2) & 0.55552 (81.0) & $\N \approx \A > \M$ \\
+2 & s3e3 & ROC-AUC \up & 0.87303 (29.4) & 0.89537 (66.8) & 0.86863 (26.4) & $\N > \M > \A$ \\
+3 & s3e5 & QWK \up & 0.59743 (78.8) & 0.56974 (75.7) & 0.58138 (79.8) & $\M \approx \A > \N$ \\
+4 & s3e7 & ROC-AUC \up & 0.90257 (74.3) & 0.90458 (78.1) & 0.90109 (67.1) & $\N > \M > \A$ \\
+5 & s3e9 & RMSE \dn & 12.29871 (50.6) & 12.22913 (59.1) & 12.30667 (44.5) & $\N > \M \approx \A$ \\
+6 & s3e11 & RMSLE \dn & 0.29597 (67.4) & 0.29624 (66.6) & 0.29445 (73.3) & $\A > \M > \N$ \\
+7 & s3e14 & MAE \dn & 332.43560 (76.1) & 330.71616 (89.2) & 332.31556 (71.2) & $\N \approx \A \approx \M$ \\
+8 & s3e16 & MAE \dn & 1.33859 (84.2) & 1.34001 (96.4) & 1.34224 (91.4) & $\M \approx \N > \A$ \\
+9 & s3e19 & SMAPE \dn & 50.45537 (28.5) & 48.26558 (41.4) & 48.34131 (40.1) & $\N \approx \A > \M$ \\
+10 & s4e11 & Accuracy \up & 0.94043 (50.7) & 0.94076 (52.8) & 0.94056 (62.1) & $\N \approx \A \approx \M$ \\
+11 & s5e10 & RMSE \dn & 0.05576 (85.7) & 0.05588 (59.4) & 0.05579 (78.9) & $\M > \A > \N$ \\
+12 & s6e1 & Error \dn & 8.71733 (75.2) & 8.73239 (69.5) & 8.72191 (74.8) & $\M > \A > \N$ \\
+13 & s6e2 & ROC-AUC \up & 0.95516 (78.8) & 0.95508 (63.0) & 0.95516 (76.5) & $\M \approx \A \approx \N$ \\
+14 & afsis & MCRMSE \dn & 0.49517 (46.6) & 0.69855 (18.8) & 0.49861 (45.6) & $\M > \A > \N$ \\
+15 & cat-in-the-dat & ROC-AUC \up & 0.80241 (73.1) & 0.77084 (32.6) & 0.80217 (70.3) & $\M > \A > \N$ \\
+16 & conway & MAE \dn & 0.10875 (98.6) & 0.11189 (96.5) & 0.11065 (97.9) & $\M > \A > \N$ \\
+17 & tps-aug-2022 & ROC-AUC \up & 0.59055 (66.0) & 0.58730 (43.0) & 0.59106 (60.5) & $\M \approx \A > \N$ \\
+18 & tps-jan-2022 & SMAPE \dn & 6.46156 (71.5) & 4.63651 (76.4) & 10.66638 (28.9) & $\N > \M > \A$ \\
+\midrule
+\multicolumn{3}{@{}l}{Median PR (range)} & \textbf{72.3} (28.5--98.6) & 66.7 (18.8--96.5) & 70.8 (26.4--97.9) & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+PR (percentile rank) is the submission's percentile among all teams that participated in that competition; higher means more teams beaten. This column provides an \emph{absolute} capability reference --- it answers ``where would this agent have placed had it entered the competition,'' which is a separate question from the relative ordering among the three. For example, on s3e19 the three PRs are only 28.5--41.4, showing all three fell far behind typical participants; conversely on s3e16 the PRs are 84.2--96.4 --- all three are in the top tier, and their small mutual gaps carry little practical meaning there.
+
+Public and private scores are shown in separate tables precisely because the paired test is built on their difference --- the score gap of one submission across two disjoint subsets is that competition's sampling noise.
+
+Under a naive ``bigger number wins'' count, the tally is roughly my-agent 7, NVIDIA 7, AIDE 4. But that count cannot be trusted, as the next section shows.
+
+\subsection{Experiment 2: Paired Significance Testing}
+\label{sec:exp2}
+
+\paragraph{Why.} In Table~\ref{tab:private}, several top-two gaps sit at the fourth or fifth decimal place (s5e10: 0.00003; s6e2: 0.00000). Do such gaps exceed measurement error? If not, the ``verdict'' is noise.
+
+\paragraph{How --- the error scale comes from the data itself, not from assumptions.} Kaggle randomly splits each test set into two disjoint subsets, public and private, and one submission receives one score on each. These are two independent estimates of the same model, so their difference is that competition's metric sampling noise.
+
+\paragraph{A failed first attempt, worth recording.} We initially used a single agent's own public--private gap as the threshold, and 8 of 10 competitions came out as ties. The reason is that this gap is mostly \emph{shared} across the three agents --- which rows land in which subset shifts everyone together. On s5e10 the three drifts were $+0.00025$ / $+0.00026$ / $+0.00024$: a common shift of $0.00025$ with mutual scatter of only $0.00002$. Using the common shift as the threshold inflates the true noise more than tenfold --- it measures a paired question with an unpaired scale.
+
+\paragraph{The correct construction.} Measure how much the \emph{gap between two agents} moves across the two subsets --- the common drift cancels in the subtraction. Writing $d_{\mathrm{pub}}$ and $d_{\mathrm{priv}}$ for the between-agent score difference on the public and private subsets, a verdict requires both:
+\begin{align}
+\operatorname{sign}(d_{\mathrm{priv}}) &= \operatorname{sign}(d_{\mathrm{pub}})
+  && \text{(the ordering replicates on disjoint samples)} \\
+|d_{\mathrm{priv}}| &> |d_{\mathrm{priv}} - d_{\mathrm{pub}}|
+  && \text{(the gap exceeds its own movement)}
+\end{align}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Empirical evidence for common drift (excerpt). Drift = private minus public score of the same submission. In seven competitions the mutual scatter is less than half the common shift.}
+\label{tab:drift}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+\textbf{Competition} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} & \textbf{Common shift} & \textbf{Mutual scatter} \\
+\midrule
+s5e10 & $+0.00025$ & $+0.00026$ & $+0.00024$ & $+0.00025$ & \textbf{0.00002} \\
+s6e2  & $+0.00149$ & $+0.00160$ & $+0.00152$ & $+0.00154$ & 0.00011 \\
+s3e11 & $+0.00063$ & $+0.00065$ & $+0.00056$ & $+0.00061$ & 0.00009 \\
+s3e7  & $-0.00859$ & $-0.00772$ & $-0.00825$ & $-0.00819$ & 0.00087 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Paired-test results: 18 competitions $\times$ 3 pairings $= 54$ duels, of which 40 are decidable and 14 (26\%) are ties.}
+\label{tab:winrates}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Method} & \textbf{Wins} & \textbf{Losses} & \textbf{Win rate (excl.\ ties)} \\
+\midrule
+my-agent & 16 & 11 & \textbf{59\%} \\
+AIDE     & 11 & 13 & 46\% \\
+NVIDIA   & 13 & 16 & 45\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation.} my-agent leads; AIDE and NVIDIA are hard to separate within error. A quarter of all duels cannot be decided under this test --- had we reported raw counts without this layer, that fraction of the ``conclusion'' would have been noise. Notably, the ranking is sensitive to sample composition: restricted to the Playground subset (13 of the 18) it is NVIDIA 58\% / AIDE 47\% / my-agent 44\%, while the full 18-competition baseline reverses it completely (Section~\ref{sec:reversal}).
+
+\paragraph{Known limitation.} The test covers only test-set sampling noise, not between-run agent variance (AIDE resamples code from the LLM at every step; that term should be larger). The upcoming repeatability experiment (Section~\ref{sec:future}) measures exactly this.
+
+\subsection{Experiment 3: Local CV and the Leaderboard Disagree}
+\label{sec:exp3}
+
+\paragraph{Why.} The attached per-competition specification reports (Appendix~\ref{app:specs}) compare the three agents on local CV, while Experiments 1--2 use the actual leaderboard. If the two agree, CV is a reliable proxy and agent evaluation need not pay the cost of real submissions; if they disagree, every CV-based agent benchmark needs re-examination. The comparison is free --- both datasets already exist.
+
+\paragraph{Result: 10 of 13 competitions disagree} (the comparison is limited to the 13 Playground competitions covered by the spec reports). The most extreme case is s3e19 (Table~\ref{tab:cvlb}): the direction is fully reversed. In the same competition, CV says my-agent leads by 3.7 points; the leaderboard says it trails by 2.2. Other disagreement patterns include: CV declares a tie while the LB separates the sides (s3e7, s3e9, s3e11, s5e10, s6e1), and CV declares a winner while the LB declares a tie (s3e14, s3e16).
+
+\begin{table}[htbp]
+\centering\small
+\caption{The most extreme CV--LB disagreement, s3e19 (SMAPE, lower is better).}
+\label{tab:cvlb}
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+\textbf{Basis} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{Verdict} \\
+\midrule
+Local CV (TimeSeriesSplit, same split for both) & 10.02 & 13.72 & my-agent by a wide margin \\
+Private leaderboard & 50.46 & 48.27 & NVIDIA wins \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Why this happens.} CV and LB measure different things: CV asks ``how well do we do on resamples of the training data,'' LB asks ``how well do we do on a batch of never-seen data.'' The two correlate strongly when distributions are stable, and decouple as soon as the test--train relationship changes. s3e19 is the extreme case --- all three agents' CVs sit at 10--14 while their LB scores sit at 48--50: everyone misfires together, and the magnitude of the misfire is unrelated to the CV ordering. That competition's leaderboard is bimodal (of 1{,}174 teams, 265 score below 10 and 570 land in 40--60); all three agents fell into the lower mode, which CV had no way to predict.
+
+\paragraph{Methodological implication.} This is direct evidence for this study's claim that agent benchmarks must submit to the real leaderboard. Comparing agents by CV is cheap and convenient, but in 10 of 13 competitions it yields conclusions that differ from real performance. The attached per-competition reports are therefore explicitly labeled CV-only, and their conclusions must not be mixed with the leaderboard verdicts of Table~\ref{tab:private} --- the two are not two answers to one question but answers to two different questions.
+
+\subsection{Experiment 4: Failure-Mode Analysis}
+\label{sec:exp4}
+
+Score tables cannot answer ``why.'' Reading the three agents' execution logs and champion code competition by competition reveals systematic method-level weaknesses --- worth more to agent design than any ranking.
+
+\subsubsection{AIDE: Can Diagnose, but No Mechanism Lets the Diagnosis Veto the Score}
+
+\paragraph{s3e16.} At steps 16 and 18 AIDE ran nested CV on its own initiative, measured calibrated values of 1.3396 / 1.3412, and wrote in its own report that ``the in-sample number is optimistic'' --- yet still selected the in-sample node. The private LB of 1.34224 confirms that the honest estimate it discarded was the correct one.
+
+\paragraph{s3e19.} Worse. The metric trajectory jumps from 18.42 to 4.41 within a single step:
+
+\begin{verbatim}
+step 0-10 : 18.42 ... 22.20 ... 18.42   (time-based validation)
+step 11   : 4.41                        <- switched to KFold(shuffle=True)
+step 12-19: 4.40, 4.37, 4.40, 4.49      (nine steps polishing a leaked number)
+\end{verbatim}
+
+Step 11's plan was merely to fix a LightGBM API compatibility issue; while rewriting the training loop it incidentally replaced the validation split with shuffled KFold. The SMAPE definition is identical before and after. This study confirmed the effect with a controlled experiment (same features, same model, split changed only): \texttt{KFold(shuffle=True)} yields SMAPE 4.56, while training on 2017--2020 and validating on 2021 yields 20.41 --- a $4.5\times$ gap. The competition's test set is one full future year; shuffling rows lets the model interpolate within sequences it has memorized. AIDE noticed nothing, and spent its remaining nine steps tuning against a fake metric.
+
+\paragraph{Contrast.} my-agent also tried shuffled KFold in the same competition (SMAPE 4.2814) but explicitly tagged it in \texttt{experiments.json} as ``DIAGNOSTIC: not used for submission,'' its purpose being to isolate whether a score regression came from the split or from the features. Same trap --- one side misused it, the other quarantined it.
+
+\subsubsection{NVIDIA: Votes Do Not Equal Quality}
+\label{sec:votes}
+
+The method selects kernels by votes, but votes measure popularity and pedagogical value. On s3e3, a battle-tested solution with only 89 votes (\path{chunweishen/ps-s03e03-ensembling}) took the three-way best, while high-vote kernels are often tutorial-oriented rather than competition-oriented (in a getting-started competition outside this report, a 7{,}859-vote tutorial kernel left NVIDIA last of the three). Moreover, the s3e19 kernel it reproduced (\path{tumpanjawat/s3e19-course-eda-fe-lightgbm}) claims in its header ``same idea as the 2nd-place solution''; NVIDIA faithfully reproduced its skeleton but missed the year-scaling step that decides the outcome (48.27 vs.\ the leaderboard top of 4.67) --- nothing in the method ever checks the reproduced score against the source's claimed rank.
+
+\subsubsection{A Gap Shared by All Three: Recognizing the Need for External Data}
+\label{sec:external}
+
+The s3e19 leaderboard is bimodal: of 1{,}174 teams, 265 score below 10 and 570 land in 40--60; the 10th percentile is 6.1 while the 25th percentile jumps to 22.8. All three agents (48.3 / 49.6 / 50.5) fell into the lower mode. The competition's accepted solutions require joining per-country GDP data.
+
+But this is not a capability ceiling: on the same-type task tps-jan-2022, my-agent proactively joined World Bank GDP-per-capita data (CV SMAPE 4.1793), and AIDE, using only official data, discovered calendar and Black-Friday features on its own (6.1551). s3e19 was a miss in that competition, not a ceiling of the task type.
+
+\section{Discussion}
+
+\subsection{What This Study Has Achieved}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{A credible three-way agent comparison}: 18 competitions meeting the significance-test criterion, each agent running its full method, yielding win rates of my-agent 59\% / AIDE 46\% / NVIDIA 45\%, with a quarter of duels undecidable.
+  \item \textbf{A paired significance test suited to agent benchmarks}: the error scale is taken from Kaggle's own public/private split, requiring no extra experiments to decide whether a win exceeds noise; the existence of common drift and its destruction of unpaired estimates were demonstrated empirically.
+  \item \textbf{Evidence that local CV is not a reliable proxy for the leaderboard}: conclusions disagree in 10 of 13 competitions, and on s3e19 the direction fully reverses.
+  \item \textbf{Identification of each method's systematic weakness}: AIDE lacks a mechanism letting diagnoses veto scores; NVIDIA's selection signal (votes) is decoupled from quality with no post-reproduction verification; all three lack the judgment ``does this task need external data.''
+\end{enumerate}
+
+\subsection{Comparing the Three Methods}
+
+The differences lie not in tuning skill but in where knowledge comes from and how the next step is decided (Table~\ref{tab:threeway}).
+
+\begin{table}[htbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Design comparison of the three methods.}
+\label{tab:threeway}
+\begin{tabular}{@{}L{3.2cm}L{4.2cm}L{3.4cm}L{3.6cm}@{}}
+\toprule
+\textbf{Aspect} & \textbf{my-agent} & \textbf{AIDE} & \textbf{NVIDIA} \\
+\midrule
+Knowledge source & Cross-competition experience library (accumulating) & None (from zero each time) & Public kernels fetched fresh each time \\
+Search strategy & Six-stage pipeline + tree search (25--80 nodes) & Tree-shaped trial and error, 20 steps & No search; faithful reproduction \\
+Basis for next step & Experience-library priors + OOF diagnostics & Previous step's error or score & Highest-voted kernel \\
+Validation rigor & Split chosen by task type; diagnostics tagged and excluded & No concept of split legality & Inherits the kernel's split \\
+External data & Proactively joined (GDP in jan-2022) & Never considered & Inherited from the kernel \\
+Paired win rate (18 comps) & \textbf{59\%} & 46\% & 45\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Respective strengths.}
+\textbf{NVIDIA's strength is standing on shoulders, not its own reasoning.} It wins on s3e3, s3e7, s3e9, s3e14, and jan-2022 --- competitions with mature, high-quality public solutions. It skips the entire exploration process and directly harvests hundreds of community person-hours, which is highly efficient whenever a good public solution exists; within the 13-competition Playground subset its win rate is actually the highest of the three (58\%).
+\textbf{AIDE's strength is search depth.} s3e11 is its only outright first place, and the edge came from a bug-fix node that accidentally enabled native categorical handling --- massive trial and error stumbles into combinations a person would not think of. It needs no external knowledge to operate.
+\textbf{my-agent's strength is validation rigor and knowledge accumulation.} It takes outright first on s5e10 and s6e1, and places high on s3e5 and s3e16. More important is the methodological layer: facing the same shuffled-KFold trap on s3e19, AIDE misused it for its official submission ($4.5\times$ optimism bias) while my-agent tagged it ``DIAGNOSTIC: not used for submission'' and excluded it. This distinction never shows up in a single score, yet it determines reliability on unseen tasks.
+
+\paragraph{Respective limitations.}
+\textbf{NVIDIA's bottleneck is its selection signal.} Votes measure popularity, not quality (Section~\ref{sec:votes}); it never checks the reproduced score against the source's claimed rank, and when no public solution exists, the method has nothing to work with.
+\textbf{AIDE's bottleneck is the missing mechanism to let diagnoses veto scores.} It can produce correct diagnoses --- on s3e16 it ran nested CV unprompted and wrote ``in-sample is optimistic'' --- yet still chose the optimistic node. On s3e19 its own metric improved $4\times$ in one step without raising any alarm. It optimizes the displayed number, not true performance.
+\textbf{my-agent's bottleneck is judgment at the problem-identification level.} The experience library holds validated techniques (``use an L1 objective for MAE tasks''), but s3e19 required the upstream judgment ``this task needs external data,'' where the library has no leverage --- and on jan-2022, my-agent joined GDP data yet still lost to the kernel NVIDIA reproduced, showing a gap between having the right idea and executing it fully. Moreover, its 59\% lead is concentrated in the 5 non-Playground competitions (8 wins of 9 decidable duels in that subset); within the Playground subset it sits at 44\% (Section~\ref{sec:reversal}).
+
+\paragraph{Shared limitation.} On s3e19 all three landed in the lower mode of the bimodal leaderboard (48--50 vs.\ top score 4.67), none recognizing the need for GDP data. Yet on the same-type jan-2022, my-agent did (CV SMAPE 4.1793) and AIDE reached 6.16 on official data alone --- a per-competition miss, not a task-type ceiling.
+
+\subsection{A Ranking Is Not a Property of the Method, but of Method $\times$ Evaluation Set}
+\label{sec:reversal}
+
+The most important methodological lesson of this study: same agents, same test --- swap the competition set and the ranking fully reverses (Table~\ref{tab:reversal}).
+
+\begin{table}[htbp]
+\centering\small
+\caption{Ranking reversal across evaluation sets.}
+\label{tab:reversal}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Evaluation set} & \textbf{my-agent} & \textbf{AIDE} & \textbf{NVIDIA} \\
+\midrule
+Playground subset, 13 comps (win rate) & 44\% (last) & 47\% & \textbf{58\%} (first) \\
+Full baseline, 18 comps (win rate) & \textbf{59\%} (first) & 46\% & 45\% (last) \\
+Median PR (13 comps) & \textbf{74.3} & 73.3 & 66.8 \\
+Median PR (18 comps) & \textbf{72.3} & 70.8 & 66.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The reversal mechanism is clearly identifiable and maps directly onto each method's knowledge source. Three of the five non-Playground competitions are old or non-mainstream (afsis 2014, conway 2014, cat-in-the-dat 2019): their public kernels are either stale or tutorial-grade, so NVIDIA's ``reproduce the top-voted kernel'' loses the mature solution ecosystem it enjoys in the Playground series --- its PR drops to 18.8 (afsis) and 32.6 (cat-in-the-dat). my-agent takes 8 of the 9 decidable duels in these 5 competitions --- not because it got stronger, but because its opponent's precondition disappeared.
+
+Two observations:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Median PR orders the three identically on both evaluation sets} (my-agent $>$ AIDE $>$ NVIDIA), while the paired win rate reverses. Absolute-position metrics are more stable than relative verdicts, because the latter binarize many near-tie gaps and are therefore highly sensitive to sample composition.
+  \item \textbf{``Which agent is stronger'' is an incomplete question.} The correct question is ``stronger on what distribution of competitions'': with mature public solutions, reproduction (NVIDIA) dominates; on obscure, old, build-your-own-pipeline tasks, autonomous methods (my-agent) dominate. Any single-number benchmark ranking hides an unstated assumption about the competition distribution.
+\end{enumerate}
+
+\paragraph{Methodological implication.} An agent benchmark's conclusion must be stated together with the composition of its evaluation set, and should report both an absolute metric (PR) and a relative one (paired win rate) --- the contrast between this study's two evaluation sets is direct evidence for that claim.
+
+\subsection{Limitations of the Experimental Design}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{The significance test covers only test-set sampling noise}, not between-run agent variance. AIDE's term is expected to be largest (the LLM resamples code at every step); once included, some of the current 40 decisive results may revert to ties.
+  \item \textbf{The asymmetry created by the experience library is disclosed, not eliminated.} my-agent carries cross-competition memory; the other two cold-start --- a design difference rather than a flaw, but it colors the interpretation of the conclusions.
+  \item \textbf{The sample is small, and Section~\ref{sec:reversal} shows the ranking is sensitive to set composition.} With 18 competitions and 54 duels, the gap between 59\% and 45\% remains a rough estimate; adding or removing a single competition can move it by one to two percentage points.
+\end{itemize}
+
+\subsection{Work in Progress and Future Directions}
+\label{sec:future}
+
+\paragraph{In progress.}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Repeatability experiment}: take the 5 closest-fought competitions (s6e2, s4e11, s5e10, s3e16, s3e11), re-run AIDE twice on each, measure between-run variance, and produce error bars --- the direct remedy for the first limitation above.
+  \item \textbf{Mid-complexity competitions}: us-patent (NLP), ventilator (time series), SIIM-ISIC (imaging) --- re-run all three agents with the machine fully dedicated, testing whether the conclusions extend beyond Playground-type tasks.
+\end{enumerate}
+
+\paragraph{Future directions.}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Extend the experience library to the problem-identification level}: it currently stores techniques (``use L1 objectives for MAE tasks'') but lacks upstream judgments such as ``does this task type need external data'' or ``is the test set a future time window.'' The s3e19 miss falls exactly in this gap.
+  \item \textbf{Introduce validation gates}: AIDE's two failures (choosing the optimistic node on s3e16; tuning a leaked metric on s3e19) both stem from having no mechanism that lets a diagnosis veto a score. my-agent could add a hard rule --- a single-step metric improvement beyond a threshold automatically triggers a split-legality check.
+  \item \textbf{Study the selection signal}: NVIDIA's bottleneck (votes $\neq$ quality) is a concrete, improvable mechanism. my-agent is not bound by the yardstick freeze and can implement selection by author rank or kernel-claimed score, checking reproduced scores against source claims.
+  \item \textbf{Measure the experience library's actual value}: we currently know only that it creates an asymmetry, not how much it contributes. An ablation with the library disabled would measure it directly.
+\end{itemize}
+
+\appendix
+
+\section{Experimental Procedure and Per-Competition Specification Reports}
+\label{app:specs}
+
+\subsection{Per-Competition ML Specification Reports (Attached)}
+
+Full specifications for every agent on every competition, written to the five sections of Tso-Jung Yen's ML specification framework (\path{ml_pipeline_modules}) --- Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking --- per competition: 15 reports for my-agent (\path{kaggle/docs/ml_specs/}, MD + PDF) and 17 for AIDE (\path{aideml-runs/docs/ml_specs_aide/}, MD + PDF).
+
+Every number in these reports is extracted deterministically by \texttt{collect.py} / \path{collect_aide_facts.py} from that competition's structured records (\texttt{facts.json}, \path{eda_summary.json}, \path{experiments_tree_v3.json}, \texttt{journal.json}), never generated by an LLM; unavailable fields are marked ``not recorded'' rather than left blank or estimated. The my-agent report set additionally ships \texttt{RUBRIC.md}, an 8-item plan-alignment checklist verified per competition (all 15 pass 8/8).
+
+This appendix does not repeat per-competition content; below are only the cross-competition rules and the execution environment that individual reports cannot cover.
+
+\subsection{Cross-Competition Rule: Split Strategy Is Determined by Task Type}
+
+This is the single highest-impact design item in the study, visible only through cross-competition comparison (Table~\ref{tab:splits}).
+
+\begin{table}[H]
+\centering\small
+\caption{Validation-split policy by task type.}
+\label{tab:splits}
+\begin{tabular}{@{}L{4.2cm}L{4.4cm}L{6.0cm}@{}}
+\toprule
+\textbf{Task type} & \textbf{Required split} & \textbf{Rationale} \\
+\midrule
+Time-series extrapolation (test set later than training period) & Time-based split (\texttt{year < y} vs \texttt{year == y}) or TimeSeriesSplit & Each validation block must be strictly later than its training window, mirroring the true train--test gap \\
+Text pairing (same anchor in many rows) & GroupKFold by anchor & Otherwise one anchor spans train and validation, and the model memorizes anchors instead of semantic relations \\
+Generic tabular (continuous i.i.d.\ target) & Shuffled KFold / StratifiedKFold & No temporal or group structure \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Shuffled KFold on time-series data is strictly forbidden. AIDE switched to shuffled KFold on s3e19 as a side effect of an unrelated bug fix; a controlled experiment measured a $4.5\times$ optimism bias from that one error (same features, same model, split changed only: 4.56 vs.\ 20.41). my-agent tried the same split in the same competition but explicitly tagged it as diagnostic and excluded it from submission.
+
+\subsection{Cross-Competition Rule: DL-to-GBDT Field Mapping}
+
+The specification framework contains several deep-learning-specific fields; this study is GBDT-centric, and all per-competition reports follow the mapping in Table~\ref{tab:dlgbdt}.
+
+\begin{table}[H]
+\centering\small
+\caption{Mapping of deep-learning framework fields to their GBDT counterparts.}
+\label{tab:dlgbdt}
+\begin{tabular}{@{}L{4.6cm}L{9.8cm}@{}}
+\toprule
+\textbf{Framework field} & \textbf{GBDT counterpart} \\
+\midrule
+Learning Rate & Boosting shrinkage (\path{learning_rate}) \\
+Learning Rate Scheduler & N/A --- convergence governed by CV early stopping, not a schedule \\
+Batch Size & N/A --- full-dataset histogram boosting, not mini-batches \\
+Model Complexity & Expressed as ``number of trees $\times$ leaves,'' not dense parameter count \\
+Transfer Learning & N/A (no pretrained weights); analogue: prior injection from the experience library \\
+Data Augmentation & N/A (tabular); analogue: feature engineering and seed bagging \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Execution Environment and Reproducibility}
+
+\begin{table}[H]
+\centering\small
+\caption{Execution environment.}
+\label{tab:env}
+\begin{tabular}{@{}L{3.6cm}L{10.8cm}@{}}
+\toprule
+\textbf{Item} & \textbf{Detail} \\
+\midrule
+Hardware & ARM64 Linux (Ubuntu 24.04), NVIDIA GB10 GPU \\
+Environment management & uv + \texttt{uv.lock} (frozen versions); Python 3.13 \\
+Data source & \path{bench-comps/<comp>/data/} --- symlinks to official files validated against the Kaggle manifest \\
+Resource isolation & \path{lane_lock.sh} mutex; only one lane runs at any moment \\
+Monitoring & \texttt{bench-watchdog.timer}, checking every 15 minutes for (a) machine idle with work pending, (b) process alive but no output for 30 minutes, (c) individual driver death \\
+Determinism & Fixed seeds; LightGBM with \texttt{deterministic=true}, \path{force_row_wise=true}, fixed \path{num_threads} --- necessary for cross-process reproducibility \\
+Per-step memory cap & 32 GB (exceeding it marks the node buggy; a single step once consumed 76 GB and stalled the machine) \\
+Output isolation & my-agent \path{kaggle/competitions/}; AIDE \path{aideml-runs/}; NVIDIA \path{nvidia-kaggle-runs/} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Silent Failures Encountered and Fixed}
+\label{sec:exp5}
+
+During the study we found five classes of failure that raise no errors; all were fixed and mechanized before the reported runs (Table~\ref{tab:failures}).
+
+\begin{table}[H]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Five silent failures of the experimental design, their detection, and fixes.}
+\label{tab:failures}
+\begin{tabular}{@{}rL{4.4cm}L{2.6cm}L{3.4cm}L{3.4cm}@{}}
+\toprule
+\# & \textbf{Failure} & \textbf{Impact} & \textbf{Detection} & \textbf{Fix} \\
+\midrule
+1 & Harness copied my-agent's entire working directory to AIDE, exposing processed features and tuned hyperparameters & 4 AIDE results voided & Inspecting which files the champion code actually opened & Manifest-validated isolated roots; 4 competitions re-run \\
+2 & Runs under resource contention (one lane at load 17, another with the machine to itself) & Unequal conditions & Comparing lane execution windows & \path{lane_lock.sh} mutex \\
+3 & Watchdog judged health by ``machine busy overall''; a dead lane went unnoticed all night & One night of capacity lost & Per-driver check (no completion marker, no process) & Watchdog extended with per-driver checks \\
+4 & Aggregation took ``best score across all experiments,'' counting leakage experiments tagged as diagnostic & 3 competitions' numbers wrong & Scanning logs for exclusion tags & Fixed and disclosed \\
+5 & Headless-agent instructions enumerated six stages but omitted tree search; the agent followed the prompt, not the skill & 5 competitions ran a truncated method & Checking for \path{experiments_tree*.json} & Prompt changed to ``follow the skill; this prompt is not a pipeline definition'' \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Measured contrast for failure 5} (afsis-soil-properties): the truncated run produced 0 tree-search nodes, CV MCRMSE 0.44817, in 32 minutes; the fixed run produced 80 nodes, CV MCRMSE 0.444076, in 17 minutes. After the fix, the score improved \emph{and} the run got faster --- consistent with the skill's internal evidence that tree search wins 9 / ties 1 / loses 0.
+
+\subsection{Tree-Search Size per Competition (my-agent)}
+\label{app:treesize}
+
+\begin{table}[H]
+\centering\small
+\caption{Tree-search node counts per competition (my-agent).}
+\label{tab:nodes}
+\begin{tabular}{@{}lr@{\hspace{2em}}lr@{\hspace{2em}}lr@{}}
+\toprule
+\textbf{Competition} & \textbf{Nodes} & \textbf{Competition} & \textbf{Nodes} & \textbf{Competition} & \textbf{Nodes} \\
+\midrule
+s3e1 & 22 & s3e14 & 62 & s5e10 & 50 \\
+s3e3 & 22 & s3e16 & 24 & s6e1 & 48 \\
+s3e5 & 23 & s3e19 & 22 & s6e2 & 60 \\
+s3e7 & 63 & s4e11 & 60 & afsis & 80 \\
+s3e9 & 26 & cat-in-the-dat & 65 & conway & 25 \\
+tps-aug-2022 & 60 & tps-jan-2022 & 60 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Code and Skill Packaging}
+
+\subsection{my-agent Skill Definition}
+
+\begin{table}[H]
+\centering\small
+\caption{Skill definition files.}
+\begin{tabular}{@{}L{7.6cm}L{6.8cm}@{}}
+\toprule
+\textbf{File} & \textbf{Purpose} \\
+\midrule
+\path{kaggle/.claude/skills/kaggle-agent/SKILL.md} & Main skill definition: six-stage pipeline, tree-search switching condition, experience-library query timing \\
+\path{.../references/01_setup.md} -- \path{06_submission.md} & Detailed per-stage instructions \\
+\path{.../references/07_tree_search.md} & Tree-search protocol (preferred optimization mode) \\
+\path{kaggle/tree_search/harness_v3.py} & Tree-search harness \\
+\path{kaggle/knowledge/experience.md} & Cross-competition experience library (every entry carries an evidence field) \\
+\path{kaggle/knowledge/idea_bank.md} & Pool of unvalidated ideas \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experiment Execution Scripts}
+
+\begin{table}[H]
+\centering\small
+\caption{Experiment execution scripts.}
+\begin{tabular}{@{}L{7.6cm}L{6.8cm}@{}}
+\toprule
+\textbf{File} & \textbf{Purpose} \\
+\midrule
+\path{ai_agents/bench-comps/build_isolated_roots.py} & Build manifest-validated isolated data roots; officialness judged via the Kaggle API, incl.\ members of official archives \\
+\path{ai_agents/lane_lock.sh} & Lane mutex (atomic directory creation, reclamation on holder death, bounded waiting) \\
+\path{ai_agents/bench_watchdog.sh} & Dual-signal monitoring: machine level (alive + advancing) and per driver \\
+\path{ai_agents/kaggle/run_myagent_headless.sh} & Unattended my-agent execution (one headless session per competition) \\
+\path{ai_agents/aideml/run_comp.py} & Single-competition AIDE run (supports \path{AIDE_COMP_ROOT}) \\
+\path{ai_agents/aideml/rerun_20steps.py} & Batch AIDE runs (20-step budget) \\
+\path{ai_agents/aideml/collect_aide_facts.py} & Deterministic fact extraction from AIDE journals \\
+\path{ai_agents/nvidia-kaggle-runs/run_ready_reproductions.py} & NVIDIA reproduction runner (only scripts passing smoke tests) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data and Results}
+
+\begin{table}[H]
+\centering\small
+\caption{Data and result artifacts.}
+\begin{tabular}{@{}L{6.4cm}L{8.0cm}@{}}
+\toprule
+\textbf{Item} & \textbf{Path} \\
+\midrule
+Three-way score master table & \path{ai_agents/aideml-runs/three_way_scores.csv} \\
+Full three-way comparison report & \path{ai_agents/aideml-runs/THREE_WAY_REPORT.md} (with PDF) \\
+AIDE per-competition ML spec reports (17) & \path{ai_agents/aideml-runs/docs/ml_specs_aide/} \\
+my-agent per-competition ML spec reports (15) & \path{ai_agents/kaggle/docs/ml_specs/} \\
+Coverage status table & \path{ai_agents/BENCHMARK_COVERAGE.md} \\
+Per-competition experiment logs & \path{kaggle/competitions/<comp>/experiments.json}, \path{experiments_tree_v3.json} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Minimal Steps to Reproduce This Study}
+
+\begin{verbatim}
+# 1) Build isolated data roots (per official Kaggle manifest)
+python ai_agents/bench-comps/build_isolated_roots.py --write <comp>
+
+# 2) my-agent, one competition
+cd ai_agents/kaggle && claude -p "<see run_myagent_headless.sh PROMPT>" \
+    --dangerously-skip-permissions
+
+# 3) AIDE, one competition (20 steps)
+AIDE_COMP_ROOT=~/ai_agents/bench-comps \
+    python ai_agents/aideml/run_comp.py <comp> --shim --steps 20
+
+# 4) NVIDIA, one competition
+cd ai_agents/nvidia-kaggle-runs/<comp> && python reproduce.py
+
+# 5) Submit and retrieve public/private scores
+KAGGLE_API_TOKEN=$(cat ~/.kaggle/huang_token) \
+    kaggle competitions submit -c <comp> -f submission.csv -m "<msg>"
+\end{verbatim}
+
+Environment: ARM64 Linux (Ubuntu 24.04), NVIDIA GB10 GPU, uv-managed Python 3.13, versions frozen in \texttt{uv.lock}.
+
+\vspace{1em}
+\noindent\emph{Every number in this report is traceable to the structured records listed above. Experiments are ongoing; this report will be updated as the items in Section~\ref{sec:future} complete.}
+
+\end{document}

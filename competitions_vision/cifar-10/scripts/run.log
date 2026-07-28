@@ -1,0 +1,39 @@
+[17:01:49] cifar-10 train=(50000, 32, 32, 3) classes=10 img=128
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[17:02:32] tier2a resnet18                 best lr=0.001 acc=0.7976 {'0.0001': 0.3570016988686617, '0.0003': 0.6400009732466861, '0.001': 0.7976267595207763}
+[17:03:51] tier2a efficientnet_b0          best lr=0.001 acc=0.7955 {'0.0001': 0.5116249066016035, '0.0003': 0.7330013043193307, '0.001': 0.7954991184991598}
+[17:04:38] tier2a mobilenetv3_large_100    best lr=0.001 acc=0.7819 {'0.0001': 0.530250954189616, '0.0003': 0.7103772568563963, '0.001': 0.7818771809562816}
+[17:05:24] tier2a convnext_atto            best lr=0.0003 acc=0.8779 {'0.0001': 0.845001229684999, '0.0003': 0.8778765276245944, '0.001': 0.6346353648779649}
+[17:05:59] tier2a vit_tiny_patch16_224     best lr=0.0003 acc=0.8558 {'0.0001': 0.8393774484115967, '0.0003': 0.8557534021675647, '0.001': 0.2137472875905516}
+[17:06:31] tier2b convnext_atto            best aug=none acc=0.8779 {'none': 0.8778765276245944, 'light': 0.860750573845186, 'medium': 0.8433762921420268}
+[17:06:55] tier2b vit_tiny_patch16_224     best aug=none acc=0.8558 {'none': 0.8557534021675647, 'light': 0.8546258236850176, 'medium': 0.7053644269710097}
+[17:07:25] tier2b resnet18                 best aug=none acc=0.7976 {'none': 0.7976267595207763, 'light': 0.750000210963877, 'medium': 0.7138750848191989}
+[17:07:25] PROMOTE: ['convnext_atto_none', 'vit_tiny_patch16_224_none', 'resnet18_none']
+[17:07:25]   preload test 0/300000
+[17:07:28]   preload test 50000/300000
+[17:07:30]   preload test 100000/300000
+[17:07:33]   preload test 150000/300000
+[17:07:35]   preload test 200000/300000
+[17:07:38]   preload test 250000/300000
+[17:07:40] test=300000
+[17:10:25] V3 convnext_atto_none fold0: acc=0.9551 (165s)
+[17:13:08] V3 convnext_atto_none fold1: acc=0.9581 (328s)
+[17:15:53] V3 convnext_atto_none fold2: acc=0.9585 (493s)
+[17:18:40] V3 convnext_atto_none fold3: acc=0.9589 (660s)
+[17:21:26] V3 convnext_atto_none fold4: acc=0.9584 (825s)
+[17:21:26] V3 CONFIG DONE convnext_atto_none: OOF=0.9578
+[17:23:33] V3 vit_tiny_patch16_224_none fold0: acc=0.9560 (127s)
+[17:25:38] V3 vit_tiny_patch16_224_none fold1: acc=0.9509 (252s)
+[17:27:44] V3 vit_tiny_patch16_224_none fold2: acc=0.9541 (378s)
+[17:29:49] V3 vit_tiny_patch16_224_none fold3: acc=0.9527 (503s)
+[17:31:56] V3 vit_tiny_patch16_224_none fold4: acc=0.9558 (630s)
+[17:31:56] V3 CONFIG DONE vit_tiny_patch16_224_none: OOF=0.9539
+[17:34:30] V3 resnet18_none fold0: acc=0.9416 (154s)
+[17:37:03] V3 resnet18_none fold1: acc=0.9444 (306s)
+[17:39:35] V3 resnet18_none fold2: acc=0.9491 (458s)
+[17:42:08] V3 resnet18_none fold3: acc=0.9452 (612s)
+[17:44:43] V3 resnet18_none fold4: acc=0.9430 (766s)
+[17:44:43] V3 CONFIG DONE resnet18_none: OOF=0.9447
+[17:44:43] solo={'convnext_atto_none': 0.9578, 'vit_tiny_patch16_224_none': 0.9539, 'resnet18_none': 0.94466} equal=0.96638 blend=0.96674 -> blend{'convnext_atto_none': 0.409, 'vit_tiny_patch16_224_none': 0.375, 'resnet18_none': 0.216}
+[17:44:43] submission: /home/tjyen/ai_agents/kaggle/competitions_vision/cifar-10/submissions/vp_submission.csv (300000 rows)
+[17:44:43] cifar-10 DONE: OOF=0.96674 chosen=blend{'convnext_atto_none': 0.409, 'vit_tiny_patch16_224_none': 0.375, 'resnet18_none': 0.216} sub=/home/tjyen/ai_agents/kaggle/competitions_vision/cifar-10/submissions/vp_submission.csv

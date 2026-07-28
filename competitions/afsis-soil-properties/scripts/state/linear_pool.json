@@ -1,0 +1,379 @@
+{
+ "mean": {
+  "node_id": 9000,
+  "config": {
+   "kind": "solo",
+   "model": "mean",
+   "variant": "sg1",
+   "use_spatial": false
+  },
+  "score": 1.024945,
+  "status": "evaluated"
+ },
+ "ridge_linear_sg1": {
+  "node_id": 9001,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "sg1",
+   "use_spatial": true,
+   "params": {
+    "kernel": "linear"
+   }
+  },
+  "score": 0.507098,
+  "status": "evaluated"
+ },
+ "ridge_linear_snv": {
+  "node_id": 9002,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "snv",
+   "use_spatial": true,
+   "params": {
+    "kernel": "linear"
+   }
+  },
+  "score": 0.509952,
+  "status": "evaluated"
+ },
+ "krr_rbf_raw": {
+  "node_id": 9003,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "raw",
+   "use_spatial": true,
+   "params": {
+    "kernel": "rbf",
+    "gamma_scale": 1.0
+   }
+  },
+  "score": 0.497413,
+  "status": "evaluated"
+ },
+ "krr_rbf_snv": {
+  "node_id": 9004,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "snv",
+   "use_spatial": true,
+   "params": {
+    "kernel": "rbf",
+    "gamma_scale": 1.0
+   }
+  },
+  "score": 0.483994,
+  "status": "evaluated"
+ },
+ "krr_rbf_sg1": {
+  "node_id": 9005,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "sg1",
+   "use_spatial": true,
+   "params": {
+    "kernel": "rbf",
+    "gamma_scale": 1.0
+   }
+  },
+  "score": 0.475432,
+  "status": "evaluated"
+ },
+ "krr_rbf_sg2": {
+  "node_id": 9006,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "sg2",
+   "use_spatial": true,
+   "params": {
+    "kernel": "rbf",
+    "gamma_scale": 1.0
+   }
+  },
+  "score": 0.48899,
+  "status": "evaluated"
+ },
+ "krr_rbf_sg1w11": {
+  "node_id": 9007,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "sg1w11",
+   "use_spatial": true,
+   "params": {
+    "kernel": "rbf",
+    "gamma_scale": 1.0
+   }
+  },
+  "score": 0.474935,
+  "status": "evaluated"
+ },
+ "krr_rbf_sg1_nospatial": {
+  "node_id": 9008,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "sg1",
+   "use_spatial": false,
+   "params": {
+    "kernel": "rbf",
+    "gamma_scale": 1.0
+   }
+  },
+  "score": 0.473573,
+  "status": "evaluated"
+ },
+ "krr_lap_sg1": {
+  "node_id": 9009,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "sg1",
+   "use_spatial": true,
+   "params": {
+    "kernel": "laplacian",
+    "gamma_scale": 1.0
+   }
+  },
+  "score": 0.507486,
+  "status": "evaluated"
+ },
+ "krr_poly2_snv": {
+  "node_id": 9010,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "snv",
+   "use_spatial": true,
+   "params": {
+    "kernel": "poly",
+    "degree": 2,
+    "gamma_scale": 1.0,
+    "coef0": 1.0
+   }
+  },
+  "score": 0.474339,
+  "status": "evaluated"
+ },
+ "svr_rbf_sg1": {
+  "node_id": 9011,
+  "config": {
+   "kind": "solo",
+   "model": "svr",
+   "variant": "sg1",
+   "use_spatial": true,
+   "params": {
+    "kernel": "rbf",
+    "gamma_scale": 1.0,
+    "C": 10.0,
+    "epsilon": 0.1
+   }
+  },
+  "score": 0.471939,
+  "status": "evaluated"
+ },
+ "pls_sg1": {
+  "node_id": 9012,
+  "config": {
+   "kind": "solo",
+   "model": "pls",
+   "variant": "sg1",
+   "use_spatial": true,
+   "params": {
+    "n_components": 20
+   }
+  },
+  "score": 0.548804,
+  "status": "evaluated"
+ },
+ "pls_snv": {
+  "node_id": 9013,
+  "config": {
+   "kind": "solo",
+   "model": "pls",
+   "variant": "snv",
+   "use_spatial": true,
+   "params": {
+    "n_components": 25
+   }
+  },
+  "score": 0.548192,
+  "status": "evaluated"
+ },
+ "lgbpca_sg1": {
+  "node_id": 9014,
+  "config": {
+   "kind": "solo",
+   "model": "lgbpca",
+   "variant": "sg1",
+   "use_spatial": true,
+   "params": {
+    "n_components": 40
+   }
+  },
+  "score": 0.534282,
+  "status": "evaluated"
+ },
+ "krr_rbf_spatialonly": {
+  "node_id": 9015,
+  "config": {
+   "kind": "solo",
+   "model": "krr",
+   "variant": "spatial",
+   "use_spatial": false,
+   "params": {
+    "kernel": "rbf",
+    "gamma_scale": 1.0
+   }
+  },
+  "score": 0.726751,
+  "status": "evaluated"
+ },
+ "_blend": {
+  "node_id": 9500,
+  "config": {
+   "kind": "blend",
+   "members": [
+    9001,
+    9002,
+    9003,
+    9004,
+    9005,
+    9006,
+    9007,
+    9008,
+    9009,
+    9010,
+    9011,
+    9012,
+    9013,
+    9014,
+    9015
+   ],
+   "per_target": true,
+   "weight_search": "dirichlet"
+  },
+  "score": 0.433219,
+  "status": "evaluated",
+  "result": {
+   "members": [
+    9001,
+    9002,
+    9003,
+    9004,
+    9005,
+    9006,
+    9007,
+    9008,
+    9009,
+    9010,
+    9011,
+    9012,
+    9013,
+    9014,
+    9015
+   ],
+   "per_target": true,
+   "weights": {
+    "Ca": [
+     0.0,
+     0.0,
+     0.648,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.352,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "P": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.5661,
+     0.0,
+     0.1047,
+     0.3292,
+     0.0
+    ],
+    "pH": [
+     0.1893,
+     0.0,
+     0.0,
+     0.0199,
+     0.0,
+     0.0,
+     0.0,
+     0.3673,
+     0.0,
+     0.4236,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "SOC": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0154,
+     0.0,
+     0.8267,
+     0.1382,
+     0.0,
+     0.0197,
+     0.0,
+     0.0
+    ],
+    "Sand": [
+     0.0468,
+     0.0,
+     0.0284,
+     0.0,
+     0.0,
+     0.0565,
+     0.0,
+     0.0,
+     0.0,
+     0.2713,
+     0.5495,
+     0.0,
+     0.0,
+     0.0152,
+     0.0324
+    ]
+   },
+   "mcrmse": 0.433219,
+   "per_target_rmse": {
+    "Ca": 0.289033,
+    "P": 0.913854,
+    "pH": 0.337656,
+    "SOC": 0.307104,
+    "Sand": 0.318446
+   }
+  }
+ }
+}

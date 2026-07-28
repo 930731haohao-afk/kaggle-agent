@@ -1,0 +1,1093 @@
+{
+  "comp": "playground-series-s3e19",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: s3e19 linear-winner's strongest solo config -- Optuna fold-5-proxy-tuned LGB (40 trials, 42.0s, STATUS.md exp #7/Phase B Round 4), solo OOF SMAPE 10.14833 (best single model, vs LGB_s42 10.17758), weight 0.5 in the linear run's 6-way blend (10.01946) [PRIOR: this run's own fold-5-proxy Optuna recipe, s3e19 is itself the sole evidence source for the 'TimeSeriesSplit proxy = LAST fold, not fold-0' lesson in experience.md's SMAPE/\u6642\u5e8f section]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 20,
+          "min_child_samples": 38,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 0.0010341384364001556,
+          "reg_lambda": 0.43011494608925666,
+          "n_estimators": 2000,
+          "random_state": 42,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.148325,
+      "status": "evaluated",
+      "wall_s": 3.3,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[LGB_S42] model-variant: exp #2's original (non-Optuna) hand-set LGB, seed=42 -- solo OOF 10.17758, the linear pool's LGB_s42 member (weight 0 in the final 6-way blend, but kept as diversity/reproduction anchor) [PRIOR none -- STATUS.md base model, verbatim]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 63,
+          "min_child_samples": 20,
+          "subsample": 0.9,
+          "colsample_bytree": 0.8,
+          "reg_lambda": 1.0,
+          "random_state": 42,
+          "verbosity": -1,
+          "objective": "rmse"
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.177577,
+      "status": "evaluated",
+      "wall_s": 5.8,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[LGB_S2024] seed variation: hand-set LGB params, random_state 42->2024 -- STATUS.md exp #5/#7's LGB_s2024 member, solo OOF 10.21059, weight 0.1 in the linear 6-way blend [PRIOR P29 -- seed bagging is effective under time-series extrapolation too, s3e19 exp #5/#6 are themselves the validating evidence]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 63,
+          "min_child_samples": 20,
+          "subsample": 0.9,
+          "colsample_bytree": 0.8,
+          "reg_lambda": 1.0,
+          "random_state": 2024,
+          "verbosity": -1,
+          "objective": "rmse"
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.210617,
+      "status": "evaluated",
+      "wall_s": 5.6,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[LGB_S7] seed variation: hand-set LGB params, random_state 42->7 -- STATUS.md exp #6/#7's LGB_s7 member, solo OOF 10.19446, LARGEST weight (0.4) of any non-tuned member in the linear 6-way blend [PRIOR P29 -- seed bagging, same evidence as LGB_s2024]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 63,
+          "min_child_samples": 20,
+          "subsample": 0.9,
+          "colsample_bytree": 0.8,
+          "reg_lambda": 1.0,
+          "random_state": 7,
+          "verbosity": -1,
+          "objective": "rmse"
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.19448,
+      "status": "evaluated",
+      "wall_s": 6.6,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[CAT_S42] model-type: hand-set CatBoost, seed=42 -- STATUS.md exp #2/#7's CAT_s42 member, solo OOF 10.73064, weakest-but-kept-for-diversity learner (weight 0 in the final blend) [PRIOR none -- STATUS.md base model, verbatim]",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 8,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 42,
+          "loss_function": "RMSE",
+          "verbose": false
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.730642,
+      "status": "evaluated",
+      "wall_s": 81.3,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[CAT_S2024] seed variation: hand-set CatBoost, random_seed 42->2024 -- STATUS.md exp #6/#7's CAT_s2024 member, solo OOF 10.98383 (weakest single member), weight 0 in the linear blend [PRIOR P29 -- seed bagging, kept as pool diversity even though individually weak, per experience.md's 'weight search often zeroes weak members, that is a feature not a bug']",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "iterations": 2000,
+          "learning_rate": 0.05,
+          "depth": 8,
+          "l2_leaf_reg": 3.0,
+          "random_seed": 2024,
+          "loss_function": "RMSE",
+          "verbose": false
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.983835,
+      "status": "evaluated",
+      "wall_s": 45.2,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[SEEDBAG_TUNED] UNTRIED per STATUS.md 'Potential improvements': seed-bag the Optuna-tuned LGB itself, random_state 42->2024 -- experience.md flags a real counter-example (s3e5: seed-bagging a config whose Optuna objective WAS the final metric can be neutral/negative, since the tuned config already converged to a shallow, low-variance solution) but s3e19's LGB_tuned was tuned on a FOLD-5 PROXY (not the full-OOF final metric directly), so its variance profile may differ -- honest test, not assumed to help [PRIOR P8 -- seed bagging is the cheapest reliable post-tuning residual gain, but flagged with the s3e5 counter-example caveat for directly-tuned configs]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 20,
+          "min_child_samples": 38,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 0.0010341384364001556,
+          "reg_lambda": 0.43011494608925666,
+          "n_estimators": 2000,
+          "random_state": 2024,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.974778,
+      "status": "evaluated",
+      "wall_s": 3.0,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[DEEPLGB] model-variant: DELIBERATELY diverse deep/high-capacity/light-reg LGB (num_leaves 63->127, reg_lambda 1.0->0.05, reg_alpha 0->0, min_child 20->10) -- pushed AWAY from LGB_tuned's shallow-and-regularized optimum (num_leaves 20) rather than toward it, since XGB is banned as a diversity source here (weight-searched to 0 twice, dropped per instruction). Direct application of s3e7's diversity-preservation lesson using LGB itself as the diversity axis [PRIOR none -- this run's own diversity-seeking probe, no experience.md precedent for LGB-vs-LGB capacity diversity specifically]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.05,
+          "num_leaves": 127,
+          "min_child_samples": 10,
+          "subsample": 0.85,
+          "colsample_bytree": 0.9,
+          "reg_lambda": 0.05,
+          "random_state": 42,
+          "verbosity": -1,
+          "objective": "rmse",
+          "reg_alpha": 0.0
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.347073,
+      "status": "evaluated",
+      "wall_s": 5.7,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[CALSUBSET] calendar-feature-SUBSET probe: drop weekofyear (redundant with day_of_year/month) and day (raw day-of-month, weak signal vs dow/cyclical) from the hand-set LGB_s42 baseline -- tests whether trimming redundant calendar columns helps time-series extrapolation (regularization-via-feature-reduction, per experience.md's collinearity/excess-feature-hurts pattern, applied here to the calendar-feature context specifically) [PRIOR P value -- 'features\u904e\u591a\u53cd\u800c\u9000\u6b65' pattern from s3e7/s3e14/s3e9, untested on s3e19's calendar-feature set]",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 63,
+          "min_child_samples": 20,
+          "subsample": 0.9,
+          "colsample_bytree": 0.8,
+          "reg_lambda": 1.0,
+          "random_state": 42,
+          "verbosity": -1,
+          "objective": "rmse"
+        },
+        "features": {
+          "drop": [
+            "weekofyear",
+            "day"
+          ]
+        }
+      },
+      "score": 10.137705,
+      "status": "evaluated",
+      "wall_s": 6.0,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[BLEND] ensemble seed: 6-way blend of root LGB_tuned(#0) + LGB_S42(#1) + LGB_S2024(#2) + LGB_S7(#3) + CAT_S42(#4) + CAT_S2024(#5) CACHED OOF, dirichlet weight search -- reproduces the linear-iteration's exp #7 6-member pool under harness_v2's ensemble machinery, no retraining, scored on the IDENTICAL IDX-masked OOF rows [PRIOR none -- generic ensemble-default node-space seed, the recommendation #1 mechanism itself]",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 10.027281,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 6,
+      "mutation": "[SEEDBAG_TUNED] SEEDBAG_TUNED: second seed variant on the tuned config (2024->777) -- further test of whether seed-bagging a fold-5-proxy-tuned (not directly-final-metric-tuned) config behaves like a normal seed-bag or like s3e5's neutral counter-example [PRIOR P8 -- continue testing the seed-bag-the-tuned-config idea] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 20,
+          "min_child_samples": 38,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 0.0010341384364001556,
+          "reg_lambda": 0.43011494608925666,
+          "n_estimators": 2000,
+          "random_state": 777,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.074527,
+      "status": "evaluated",
+      "wall_s": 2.9,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 6,
+      "mutation": "[SEEDBAG_TUNED] SEEDBAG_TUNED: reg_lambda 0.430->0.6, push L2 further while keeping seed=2024 [PRIOR none -- generic hand-nudge] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 20,
+          "min_child_samples": 38,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 0.0010341384364001556,
+          "reg_lambda": 0.6,
+          "n_estimators": 2000,
+          "random_state": 2024,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.005742,
+      "status": "evaluated",
+      "wall_s": 3.1,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 6,
+      "mutation": "[SEEDBAG_TUNED] fallback seed-variation (lineage's authored mutation queue exhausted): same config, alt random_state=3000 [PRIOR none -- fallback] (parent=#6)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 20,
+          "min_child_samples": 38,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 0.0010341384364001556,
+          "reg_lambda": 0.43011494608925666,
+          "n_estimators": 2000,
+          "random_state": 3000,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.990227,
+      "status": "evaluated",
+      "wall_s": 3.4,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 9,
+      "mutation": "[BLEND] BLEND: add SEEDBAG_TUNED solo member (#6) -> 7-way, dirichlet weight search [PRIOR P8 -- add-to-pool-not-replace, untried seed-bag-the-tuned-config idea, weight search arbitrates whether it helps at zero extra cost] (parent=#9)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.951185,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 14,
+      "parent_id": 13,
+      "mutation": "[BLEND] BLEND: add DEEPLGB solo member (#7) -> 8-way, dirichlet weight search [PRIOR none -- deliberate-diversity LGB as blend member, s3e7's diversity lesson applied via LGB capacity instead of a banned second model family] (parent=#13)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.943698,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 15,
+      "parent_id": 14,
+      "mutation": "[BLEND] BLEND: UNTRIED global-multiplier postprocess toggle auto_scale=False->True -- grid-search a flat scalar multiplier on the blended OOF (applied inside metric_fn per harness_v2.eval_blend's contract, so the weight search itself is scale-aware) -- STRUCTURALLY DIFFERENT from the already-REJECTED ratio-decomposition (STATUS.md Round 1, RD weight 0): no country/date-conditional structure at all, just a level-fit; task brief flags this as cheap+untried, linear iteration never tried it [PRIOR none -- this run's own untried lever] (parent=#14)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "auto_scale": true
+        }
+      },
+      "score": 9.775774,
+      "status": "evaluated",
+      "wall_s": 29.0,
+      "kind": "blend"
+    },
+    {
+      "id": 16,
+      "parent_id": 15,
+      "mutation": "[BLEND] BLEND: add CALSUBSET solo member (#8) -> 9-way, dirichlet weight search [PRIOR none -- calendar-feature-subset member, let weight search decide whether the leaner feature set adds value even if its solo score is worse] (parent=#15)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "auto_scale": true
+        }
+      },
+      "score": 9.771093,
+      "status": "evaluated",
+      "wall_s": 23.0,
+      "kind": "blend"
+    },
+    {
+      "id": 17,
+      "parent_id": 16,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #12 -> 10-way [PRIOR none -- fallback] (parent=#16)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "auto_scale": true
+        }
+      },
+      "score": 9.75707,
+      "status": "evaluated",
+      "wall_s": 21.8,
+      "kind": "blend"
+    },
+    {
+      "id": 18,
+      "parent_id": 17,
+      "mutation": "[BLEND] BLEND: remove lowest-weight member #4 (w=0.000) -> leaner 9-way, test whether it was truly adding value or just being tolerated by the weight search [PRIOR P14 -- removing (near-)zero-weight members is zero-cost, per experience.md Ensemble/\u5f8c\u8655\u7406] (parent=#17)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          8,
+          12
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "auto_scale": true
+        }
+      },
+      "score": 9.757173,
+      "status": "evaluated",
+      "wall_s": 22.0,
+      "kind": "blend"
+    },
+    {
+      "id": 19,
+      "parent_id": 17,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #11 -> 11-way [PRIOR none -- fallback] (parent=#17)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          11,
+          12
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "auto_scale": true
+        }
+      },
+      "score": 9.760238,
+      "status": "evaluated",
+      "wall_s": 21.9,
+      "kind": "blend"
+    },
+    {
+      "id": 20,
+      "parent_id": 17,
+      "mutation": "[BLEND] BLEND fallback: add next-best unused pool member #10 -> 11-way [PRIOR none -- fallback] (parent=#17)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          12
+        ],
+        "weight_search": "dirichlet",
+        "postprocess": {
+          "auto_scale": true
+        }
+      },
+      "score": 9.763023,
+      "status": "evaluated",
+      "wall_s": 22.1,
+      "kind": "blend"
+    },
+    {
+      "id": 21,
+      "parent_id": 8,
+      "mutation": "[CALSUBSET] CALSUBSET: more aggressive subset -- also drop is_month_start/is_month_end (rare/near-constant flags) on top of weekofyear/day [PRIOR none -- continue the feature-reduction probe] (parent=#8)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.03,
+          "num_leaves": 63,
+          "min_child_samples": 20,
+          "subsample": 0.9,
+          "colsample_bytree": 0.8,
+          "reg_lambda": 1.0,
+          "random_state": 42,
+          "verbosity": -1,
+          "objective": "rmse"
+        },
+        "features": {
+          "drop": [
+            "weekofyear",
+            "day",
+            "is_month_start",
+            "is_month_end"
+          ]
+        }
+      },
+      "score": 10.227741,
+      "status": "evaluated",
+      "wall_s": 6.5,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 0,
+      "mutation": "[PRIOR-INT-01] pool blend over 13 cached members, dirichlet weight search <= wired from prior: \u5916\u63a8\u60c5\u5883\u4e0b\u6a21\u578b\u6392\u5e8f\u6703\u6539\u8b8a:\u5167\u63d2\u6642\u4e09\u6a21\u578b\u5e7e\u4e4e\u7b49\u5f37(blend 0.4/0.2/0.4),\u5916\u63a8\u6642 LGB \u660e\u986f\u9818\u5148\u3001XGB \u88ab\u6b0a\u91cd\u641c\u5c0b\u6b78\u96f6\u2014\u2014\u5be6\u969b\u63d0\u4ea4\u61c9\u63a1\u300c\u8207 test \u60c5\u5883\u76f8\u540c\u7684 C",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          21
+        ],
+        "weight_search": "dirichlet",
+        "result": {
+          "members": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            10,
+            11,
+            12,
+            21
+          ],
+          "weights": [
+            0.0174,
+            0.0115,
+            0.0347,
+            0.0304,
+            0.0038,
+            0.0013,
+            0.3161,
+            0.0932,
+            0.0017,
+            0.0121,
+            0.0544,
+            0.391,
+            0.0322
+          ],
+          "method": "dirichlet",
+          "scale_used": 1.0,
+          "smape": 9.938795
+        }
+      },
+      "score": 9.938795,
+      "status": "evaluated",
+      "wall_s": 2.6,
+      "kind": "blend"
+    },
+    {
+      "id": 23,
+      "parent_id": 0,
+      "mutation": "[PRIOR-INT-05] seed-bag member: champion config, random_state=101 <= wired from prior: seed bagging \u914d\u65b9\u5728 SMAPE/\u6642\u5e8f\u5916\u63a8\u60c5\u5883\u540c\u6a23\u6709\u6548,\u5169\u8f2a\u7686\u6b63\u589e\u76ca(\u8207 s3e9/s3e14 \u4e00\u81f4):+LGB seed2024 \u5f97 10.17489\u219210.1660",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 20,
+          "min_child_samples": 38,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 0.0010341384364001556,
+          "reg_lambda": 0.43011494608925666,
+          "n_estimators": 2000,
+          "random_state": 101,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 20,
+          "smape": 10.126297,
+          "scale_used": 1.0
+        }
+      },
+      "score": 10.126297,
+      "status": "evaluated",
+      "wall_s": 3.3,
+      "kind": "solo"
+    },
+    {
+      "id": 24,
+      "parent_id": 0,
+      "mutation": "[PRIOR-INT-05] seed-bag member: champion config, random_state=202 <= wired from prior: seed bagging \u914d\u65b9\u5728 SMAPE/\u6642\u5e8f\u5916\u63a8\u60c5\u5883\u540c\u6a23\u6709\u6548,\u5169\u8f2a\u7686\u6b63\u589e\u76ca(\u8207 s3e9/s3e14 \u4e00\u81f4):+LGB seed2024 \u5f97 10.17489\u219210.1660",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 20,
+          "min_child_samples": 38,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 0.0010341384364001556,
+          "reg_lambda": 0.43011494608925666,
+          "n_estimators": 2000,
+          "random_state": 202,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        },
+        "result": {
+          "n_feats": 20,
+          "smape": 10.016757,
+          "scale_used": 1.0
+        }
+      },
+      "score": 10.016757,
+      "status": "evaluated",
+      "wall_s": 3.4,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 8,
+    "streak": {
+      "6": 3,
+      "9": 3,
+      "8": 1
+    },
+    "plateaued": [
+      6,
+      9
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 12,
+        "plateaued_lineage": 6,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 9.974778 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 20,
+        "plateaued_lineage": 9,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 9.75707 (tie_rate=0.000, discretized=False)"
+      }
+    ],
+    "tie_rate_log": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "node_results": {
+      "0": {
+        "n_feats": 20,
+        "smape": 10.148325,
+        "scale_used": 1.0
+      },
+      "1": {
+        "n_feats": 20,
+        "smape": 10.177577,
+        "scale_used": 1.0
+      },
+      "2": {
+        "n_feats": 20,
+        "smape": 10.210617,
+        "scale_used": 1.0
+      },
+      "3": {
+        "n_feats": 20,
+        "smape": 10.19448,
+        "scale_used": 1.0
+      },
+      "4": {
+        "n_feats": 20,
+        "smape": 10.730642,
+        "scale_used": 1.0
+      },
+      "5": {
+        "n_feats": 20,
+        "smape": 10.983835,
+        "scale_used": 1.0
+      },
+      "6": {
+        "n_feats": 20,
+        "smape": 9.974778,
+        "scale_used": 1.0
+      },
+      "7": {
+        "n_feats": 20,
+        "smape": 10.347073,
+        "scale_used": 1.0
+      },
+      "8": {
+        "n_feats": 18,
+        "smape": 10.137705,
+        "scale_used": 1.0
+      },
+      "9": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "weights": [
+          0.508,
+          0.0041,
+          0.1692,
+          0.2803,
+          0.0349,
+          0.0034
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.0,
+        "smape": 10.027281
+      },
+      "10": {
+        "n_feats": 20,
+        "smape": 10.074527,
+        "scale_used": 1.0
+      },
+      "11": {
+        "n_feats": 20,
+        "smape": 10.005742,
+        "scale_used": 1.0
+      },
+      "12": {
+        "n_feats": 20,
+        "smape": 9.990227,
+        "scale_used": 1.0
+      },
+      "13": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "weights": [
+          0.065,
+          0.015,
+          0.0879,
+          0.2178,
+          0.001,
+          0.0205,
+          0.5927
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.0,
+        "smape": 9.951185
+      },
+      "14": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": [
+          0.031,
+          0.0401,
+          0.0478,
+          0.198,
+          0.0036,
+          0.0033,
+          0.667,
+          0.0091
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.0,
+        "smape": 9.943698
+      },
+      "15": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "weights": [
+          0.0303,
+          0.1097,
+          0.0291,
+          0.2304,
+          0.0092,
+          0.0052,
+          0.4386,
+          0.1475
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.02,
+        "smape": 9.775774
+      },
+      "16": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "weights": [
+          0.0657,
+          0.0234,
+          0.0364,
+          0.0714,
+          0.0067,
+          0.0015,
+          0.4132,
+          0.1595,
+          0.2223
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.02,
+        "smape": 9.771093
+      },
+      "17": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12
+        ],
+        "weights": [
+          0.0089,
+          0.0238,
+          0.0115,
+          0.1989,
+          0.0003,
+          0.0032,
+          0.2448,
+          0.0746,
+          0.1781,
+          0.2559
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.02,
+        "smape": 9.75707
+      },
+      "18": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          8,
+          12
+        ],
+        "weights": [
+          0.0048,
+          0.0168,
+          0.0156,
+          0.2162,
+          0.002,
+          0.3437,
+          0.0371,
+          0.1784,
+          0.1854
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.02,
+        "smape": 9.757173
+      },
+      "19": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12,
+          11
+        ],
+        "weights": [
+          0.0073,
+          0.0147,
+          0.0005,
+          0.1508,
+          0.0062,
+          0.0228,
+          0.2171,
+          0.0265,
+          0.3027,
+          0.1905,
+          0.061
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.02,
+        "smape": 9.760238
+      },
+      "20": {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12,
+          10
+        ],
+        "weights": [
+          0.0073,
+          0.0147,
+          0.0005,
+          0.1508,
+          0.0062,
+          0.0228,
+          0.2171,
+          0.0265,
+          0.3027,
+          0.1905,
+          0.061
+        ],
+        "method": "dirichlet",
+        "scale_used": 1.02,
+        "smape": 9.763023
+      },
+      "21": {
+        "n_feats": 16,
+        "smape": 10.227741,
+        "scale_used": 1.0
+      }
+    },
+    "budget": {
+      "total_budget": 22,
+      "phase": "stopped",
+      "stop_reason": "adapted from committed v1/v2 tree (no re-search)",
+      "best_at_burst_start": 9.75707
+    }
+  },
+  "prior_usage_summary": {
+    "n_informed": 3,
+    "n_uninformed": 9,
+    "informed_win_rate": 0.3333333333333333,
+    "uninformed_win_rate": 0.4444444444444444
+  },
+  "dedup_rejections": [],
+  "boundary_candidates_log": [],
+  "cost_guard_fired": []
+}

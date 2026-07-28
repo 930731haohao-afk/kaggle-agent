@@ -1,0 +1,53 @@
+{
+  "comp": "spaceship-titanic",
+  "metric": "accuracy",
+  "higher": true,
+  "stages": {
+    "stage1": {
+      "score": 0.801219,
+      "sub": "ladder_stage1_accuracy_0.80122.csv",
+      "weights": {
+        "lgb": 0.1,
+        "xgb": 0.4,
+        "lgb_v2": 0.5
+      }
+    },
+    "stage2": {
+      "score": 0.807546,
+      "sub": "ladder_stage2_accuracy_0.80755.csv",
+      "weights": {
+        "lgb": 0.1,
+        "xgb": 0.25,
+        "cat": 0.65
+      }
+    },
+    "stage3": {
+      "score": 0.812148,
+      "sub": "ladder_stage3_accuracy_0.81215.csv",
+      "weights": {
+        "lgb": 0.003,
+        "xgb": 0.017,
+        "cat": 0.224,
+        "cat_tuned": 0.648,
+        "cat_tuned_s2024": 0.109
+      }
+    },
+    "stage4": {
+      "score": 0.814333,
+      "sub": "ladder_stage4_accuracy_0.81433.csv",
+      "weights": null
+    },
+    "stage5": {
+      "score": 0.814333,
+      "sub": "ladder_stage5_accuracy_0.81433.csv",
+      "weights": null
+    }
+  },
+  "ladder": [
+    0.801219,
+    0.807546,
+    0.812148,
+    0.814333,
+    0.814333
+  ]
+}

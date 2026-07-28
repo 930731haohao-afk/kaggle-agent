@@ -1,0 +1,23 @@
+name: tabular-playground-series-jan-2022
+url: https://www.kaggle.com/competitions/tabular-playground-series-jan-2022
+description: Predict daily product sales for Kaggle merchandise stores
+problem_type: regression_timeseries
+evaluation_metric: SMAPE
+optimization_direction: minimize
+target_column: num_sold
+id_column: row_id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: true
+  pretrained_models_allowed: true
+  internet_access_allowed: true
+  daily_submission_limit: 5
+notes: |
+  Time series forecasting: 18 series (3 countries x 2 stores x 3 products).
+  Train: 2015-2018 daily (26,298 rows), Test: 2019 daily (6,570 rows).
+  No missing values. Target is integer count (num_sold).
+  Trend: sales growing ~5% year-over-year.
+  Seasonality: monthly (high Dec/Jan/Apr, low Aug/Sep) and weekly patterns.
+  Metric: SMAPE = (2/n) * sum(|F-A| / (|A|+|F|)).

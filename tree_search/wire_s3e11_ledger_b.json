@@ -1,0 +1,45 @@
+{
+  "comp": "playground-series-s3e11",
+  "off": {
+    "champion_id": 20,
+    "champion_metric": 0.29528
+  },
+  "arm": {
+    "nodes": 27,
+    "champion_id": 20,
+    "champion_metric": 0.29528
+  },
+  "ledger": [
+    {
+      "tag": "PRIOR-LLM-00",
+      "status": "evaluated",
+      "node_id": 24,
+      "metric": 0.300909,
+      "wall_s": 57.0,
+      "prior_tags": [
+        "INT-02",
+        "INT-04"
+      ],
+      "expected": "Solo (shallow cat) below the pool's best member but decorrelated; tests whether a bias-dominated external member lifts the reblend."
+    },
+    {
+      "tag": "PRIOR-LLM-01",
+      "status": "evaluated",
+      "node_id": 25,
+      "metric": 0.301961,
+      "wall_s": 15.9,
+      "prior_tags": [
+        "INT-02",
+        "INT-04"
+      ],
+      "expected": "Solo (shallow lgb) below the pool's best member but decorrelated; tests whether a bias-dominated external member lifts the reblend."
+    },
+    {
+      "tag": "PRIOR-LLM-REBLEND",
+      "status": "evaluated",
+      "node_id": 26,
+      "metric": 0.295372,
+      "wall_s": 17.4
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "comp": "home-data-for-ml-course",
+  "metric": "mae",
+  "higher": false,
+  "stages": {
+    "stage1": {
+      "score": 15550.944948,
+      "sub": "ladder_stage1_mae_15550.94495.csv",
+      "weights": {
+        "lgb": 0.1,
+        "xgb": 0.5,
+        "lgb_v2": 0.4
+      }
+    },
+    "stage2": {
+      "score": 14873.038262,
+      "sub": "ladder_stage2_mae_14873.03826.csv",
+      "weights": {
+        "lgb": 0.15,
+        "xgb": 0.15,
+        "cat": 0.7
+      }
+    },
+    "stage3": {
+      "score": 14386.346954,
+      "sub": "ladder_stage3_mae_14386.34695.csv",
+      "weights": {
+        "lgb": 0.012,
+        "xgb": 0.102,
+        "cat": 0.086,
+        "cat_tuned": 0.428,
+        "cat_tuned_s2024": 0.372
+      }
+    },
+    "stage4": {
+      "score": 14321.293122,
+      "sub": "ladder_stage4_mae_14321.29312.csv",
+      "weights": null
+    },
+    "stage5": {
+      "score": 14321.293122,
+      "sub": "ladder_stage5_mae_14321.29312.csv",
+      "weights": null
+    }
+  },
+  "ladder": [
+    15550.944948,
+    14873.038262,
+    14386.346954,
+    14321.293122,
+    14321.293122
+  ]
+}

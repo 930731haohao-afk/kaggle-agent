@@ -1,0 +1,8 @@
+CatBoost fold 0: AUC 0.796737 (between LGB and LR) — ~2 min/fold, ~8 min remain. Will resume on completion for final 5-way blend + outputs.
+
+Status so far:
+- LR OHE (C=0.12): **0.803135**
+- LR3 OHE+ordinal-numeric (C=0.12): **0.803219** (current best solo)
+- LR2 TE-variant: 0.790289
+- LGB fold-safe TE: 0.784688
+- CatBoost native: in progress (fold 0: 0.796737)

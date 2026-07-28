@@ -1,0 +1,153 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-22T04:28:27.316033+00:00",
+    "stage": "baseline",
+    "model": "mean-predictor",
+    "features": "none",
+    "cv_scores": [
+      1.0247300748982626
+    ],
+    "cv_mean": 1.02473,
+    "notes": "Naive baseline: predict global mean"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-22T04:28:27.324925+00:00",
+    "stage": "baseline",
+    "model": "Ridge",
+    "features": "processed_v1 (66 features)",
+    "cv_strategy": "KFold-5",
+    "cv_scores": [
+      0.59942,
+      0.71655,
+      0.69448,
+      0.70637,
+      0.70573
+    ],
+    "cv_mean": 0.68451,
+    "cv_std": 0.04312,
+    "notes": "Ridge regression baseline"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-22T04:28:28.877362+00:00",
+    "stage": "baseline",
+    "model": "LightGBM-default",
+    "features": "processed_v1 (66 features)",
+    "cv_strategy": "KFold-5",
+    "cv_scores": [
+      0.60575,
+      0.70356,
+      0.6774,
+      0.70527,
+      0.64184
+    ],
+    "cv_mean": 0.66676,
+    "cv_std": 0.0382,
+    "notes": "LightGBM default params, early stopping 50"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-22T04:28:32.928678+00:00",
+    "stage": "tuned",
+    "model": "LightGBM-tuned",
+    "features": "processed_v1 (66 features)",
+    "params": {
+      "learning_rate": 0.03,
+      "num_leaves": 31,
+      "max_depth": 6,
+      "min_child_samples": 30,
+      "feature_fraction": 0.7,
+      "bagging_fraction": 0.7,
+      "bagging_freq": 5,
+      "reg_alpha": 0.5,
+      "reg_lambda": 1.0,
+      "seed": 42
+    },
+    "cv_strategy": "KFold-5",
+    "cv_scores": [
+      0.59155,
+      0.69524,
+      0.65598,
+      0.68313,
+      0.62835
+    ],
+    "cv_mean": 0.65085,
+    "cv_std": 0.03758,
+    "notes": "LightGBM tuned with regularization for small dataset"
+  },
+  {
+    "experiment_id": 5,
+    "timestamp": "2026-02-22T04:28:37.961762+00:00",
+    "stage": "tuned",
+    "model": "XGBoost-tuned",
+    "features": "processed_v1 (66 features)",
+    "params": {
+      "learning_rate": 0.03,
+      "max_depth": 5,
+      "min_child_weight": 30,
+      "subsample": 0.7,
+      "colsample_bytree": 0.7,
+      "reg_alpha": 0.5,
+      "reg_lambda": 2.0,
+      "seed": 42
+    },
+    "cv_strategy": "KFold-5",
+    "cv_scores": [
+      0.59183,
+      0.69161,
+      0.6549,
+      0.68596,
+      0.63544
+    ],
+    "cv_mean": 0.65195,
+    "cv_std": 0.0364,
+    "notes": "XGBoost tuned with strong regularization"
+  },
+  {
+    "experiment_id": 6,
+    "timestamp": "2026-02-22T04:28:42.077918+00:00",
+    "stage": "tuned",
+    "model": "CatBoost",
+    "features": "processed_v1 (66 features)",
+    "params": {
+      "depth": 6,
+      "l2_leaf_reg": 5.0,
+      "learning_rate": 0.03
+    },
+    "cv_strategy": "KFold-5",
+    "cv_scores": [
+      0.5966,
+      0.68334,
+      0.66142,
+      0.67809,
+      0.63121
+    ],
+    "cv_mean": 0.65013,
+    "cv_std": 0.03236,
+    "notes": "CatBoost with strong regularization"
+  },
+  {
+    "experiment_id": 7,
+    "timestamp": "2026-02-22T04:28:51.835782+00:00",
+    "stage": "ensemble",
+    "model": "Weighted Ensemble (LGB=0.3, XGB=0.2, Cat=0.5)",
+    "features": "processed_v1 (66 features)",
+    "cv_strategy": "KFold-5 OOF",
+    "cv_mean": 0.64827,
+    "notes": "Optimized weights. Simple avg: 0.64850"
+  },
+  {
+    "experiment_id": 8,
+    "timestamp": "2026-02-22T04:32:17.941911+00:00",
+    "stage": "submission",
+    "model": "Weighted Ensemble (LGB=0.3, XGB=0.2, Cat=0.5)",
+    "features": "processed_v1 (66 features)",
+    "cv_mean": 0.648,
+    "retrained_on_full_data": true,
+    "post_processing": "clip to [0.5, 6.0]",
+    "submission_file": "submission_ensemble3_cv0.648_20260222_123217.csv",
+    "notes": "Weighted ensemble retrained on full data"
+  }
+]

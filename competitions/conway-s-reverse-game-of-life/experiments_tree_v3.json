@@ -1,0 +1,1470 @@
+{
+  "comp": "conway-s-reverse-game-of-life",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root: cnn_v1 fold-0 cached reuse (digit-verified)",
+      "config": {
+        "kind": "solo",
+        "model": "reuse",
+        "params": {
+          "name": "cnn_v1"
+        }
+      },
+      "score": 0.11292925,
+      "status": "evaluated",
+      "wall_s": 0.3,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "seed:LGBREUSE",
+      "config": {
+        "kind": "solo",
+        "model": "reuse",
+        "params": {
+          "name": "lgb_v1"
+        }
+      },
+      "score": 0.12378675,
+      "status": "evaluated",
+      "wall_s": 0.26,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "seed:ARCH searchgrade base",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 64,
+          "depth": 8,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 42,
+          "per_delta": false
+        }
+      },
+      "score": 0.1157515,
+      "status": "evaluated",
+      "wall_s": 198.75,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "seed:PERDELTA",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 64,
+          "depth": 8,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 42,
+          "per_delta": true
+        }
+      },
+      "score": 0.11848,
+      "status": "evaluated",
+      "wall_s": 185.97,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "seed:SEEDBAG cnn seed777",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 64,
+          "depth": 8,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 777,
+          "per_delta": false
+        }
+      },
+      "score": 0.11566375,
+      "status": "evaluated",
+      "wall_s": 188.56,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "seed:BLEND root+lgb",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1
+        ],
+        "per_delta_weights": false,
+        "thresh_sweep": false
+      },
+      "score": 0.1129245,
+      "status": "evaluated",
+      "wall_s": 9.49,
+      "kind": "blend"
+    },
+    {
+      "id": 6,
+      "parent_id": 5,
+      "mutation": "blend per-delta weights",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1
+        ],
+        "per_delta_weights": true,
+        "thresh_sweep": false
+      },
+      "score": 0.11291575,
+      "status": "evaluated",
+      "wall_s": 2.34,
+      "kind": "blend"
+    },
+    {
+      "id": 7,
+      "parent_id": 6,
+      "mutation": "blend thresh sweep",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1
+        ],
+        "per_delta_weights": true,
+        "thresh_sweep": true
+      },
+      "score": 0.112899,
+      "status": "evaluated",
+      "wall_s": 2.43,
+      "kind": "blend"
+    },
+    {
+      "id": 8,
+      "parent_id": 7,
+      "mutation": "blend add node4",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4
+        ],
+        "per_delta_weights": true,
+        "thresh_sweep": true
+      },
+      "score": 0.11291225,
+      "status": "evaluated",
+      "wall_s": 3.09,
+      "kind": "blend"
+    },
+    {
+      "id": 9,
+      "parent_id": 7,
+      "mutation": "no-proposal",
+      "config": {
+        "kind": "noop",
+        "parent": 7,
+        "n": 1
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 7,
+      "mutation": "no-proposal",
+      "config": {
+        "kind": "noop",
+        "parent": 7,
+        "n": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 11,
+      "parent_id": 8,
+      "mutation": "blend add node2",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "per_delta_weights": true,
+        "thresh_sweep": true
+      },
+      "score": 0.1129065,
+      "status": "evaluated",
+      "wall_s": 3.15,
+      "kind": "blend"
+    },
+    {
+      "id": 12,
+      "parent_id": 11,
+      "mutation": "blend add node3",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "per_delta_weights": true,
+        "thresh_sweep": true
+      },
+      "score": 0.112902,
+      "status": "evaluated",
+      "wall_s": 3.78,
+      "kind": "blend"
+    },
+    {
+      "id": 13,
+      "parent_id": 4,
+      "mutation": "cnn ch96",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 96,
+          "depth": 8,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 777,
+          "per_delta": false
+        }
+      },
+      "score": 0.11470975,
+      "status": "evaluated",
+      "wall_s": 280.43,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 13,
+      "mutation": "cnn depth12",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 96,
+          "depth": 12,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 777,
+          "per_delta": false
+        }
+      },
+      "score": 0.1162235,
+      "status": "evaluated",
+      "wall_s": 410.57,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 13,
+      "mutation": "cnn lr3e-3",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 96,
+          "depth": 8,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.003,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 777,
+          "per_delta": false
+        }
+      },
+      "score": 0.11418275,
+      "status": "evaluated",
+      "wall_s": 275.67,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 2,
+      "mutation": "cnn ch96",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 96,
+          "depth": 8,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 42,
+          "per_delta": false
+        }
+      },
+      "score": 0.1143615,
+      "status": "evaluated",
+      "wall_s": 291.87,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 16,
+      "mutation": "cnn depth12",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 96,
+          "depth": 12,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 42,
+          "per_delta": false
+        }
+      },
+      "score": 0.11483875,
+      "status": "evaluated",
+      "wall_s": 422.47,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 16,
+      "mutation": "cnn lr3e-3",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 96,
+          "depth": 8,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.003,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 42,
+          "per_delta": false
+        }
+      },
+      "score": 0.113895,
+      "status": "evaluated",
+      "wall_s": 296.02,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 3,
+      "mutation": "cnn ch96",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 96,
+          "depth": 8,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 42,
+          "per_delta": true
+        }
+      },
+      "score": 0.11820725,
+      "status": "evaluated",
+      "wall_s": 288.83,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 0,
+      "mutation": "burst:kitchen-sink blend",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "per_delta_weights": true,
+        "thresh_sweep": true
+      },
+      "score": 0.112935,
+      "status": "evaluated",
+      "wall_s": 72.1,
+      "kind": "blend"
+    },
+    {
+      "id": 21,
+      "parent_id": 0,
+      "mutation": "burst:kitchen-sink blend no-thresh",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "per_delta_weights": true,
+        "thresh_sweep": false
+      },
+      "score": 0.11295525,
+      "status": "evaluated",
+      "wall_s": 70.15,
+      "kind": "blend"
+    },
+    {
+      "id": 22,
+      "parent_id": 0,
+      "mutation": "burst:longshot lr3e-3 synth100k epochs14",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 64,
+          "depth": 8,
+          "residual": true,
+          "epochs": 14,
+          "batch": 512,
+          "lr": 0.003,
+          "wd": 0.0001,
+          "synth_n": 100000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 42,
+          "per_delta": false
+        }
+      },
+      "score": 0.1132135,
+      "status": "evaluated",
+      "wall_s": 385.56,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 0,
+      "mutation": "burst:kitchen-sink blend v2",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          22
+        ],
+        "per_delta_weights": true,
+        "thresh_sweep": true
+      },
+      "score": 0.11297575,
+      "status": "evaluated",
+      "wall_s": 76.5,
+      "kind": "blend"
+    },
+    {
+      "id": 24,
+      "parent_id": 19,
+      "mutation": "cnn depth12",
+      "config": {
+        "kind": "solo",
+        "model": "cnn",
+        "params": {
+          "channels": 96,
+          "depth": 12,
+          "residual": true,
+          "epochs": 10,
+          "batch": 512,
+          "lr": 0.002,
+          "wd": 0.0001,
+          "synth_n": 50000,
+          "d4_aug": true,
+          "tta": true,
+          "seed": 42,
+          "per_delta": true
+        }
+      },
+      "score": 0.11624225,
+      "status": "evaluated",
+      "wall_s": 428.33,
+      "kind": "solo"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 3,
+    "streak": {
+      "5": 3,
+      "4": 3,
+      "2": 3,
+      "3": 2
+    },
+    "plateaued": [
+      5,
+      4,
+      2
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 12,
+        "plateaued_lineage": 5,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.112899 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 15,
+        "plateaued_lineage": 4,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.112899 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 18,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best 0.112899 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": null,
+        "plateaued_lineage": null,
+        "reason": "driver intervention: budget shrunk 40->30, patience 12->5, phase forced to explore_burst at n_eval=18 \u2014 CNN solo evals cost 5-7 min (vs ~3 min planned), session time budget would be blown; exploit signal already clear (lr3e-3 + ch96 best levers)"
+      }
+    ],
+    "budget": {
+      "total_budget": 30,
+      "explore_burst_size": 5,
+      "post_burst_patience": 5,
+      "phase": "stopped",
+      "burst_start_eval": 18,
+      "best_at_burst_start": 0.112899,
+      "evals_since_burst_improve": 5,
+      "stop_reason": "5 evals without improvement post-burst (patience=5)"
+    },
+    "driver_state": {
+      "seed_ids": {
+        "lgbreuse": 1,
+        "arch": 2,
+        "perdelta": 3,
+        "seedbag": 4,
+        "blend": 5
+      },
+      "results": {
+        "1": {
+          "mae": 0.123787,
+          "model": "reuse",
+          "meta": {
+            "model": "lgb-percell-perdelta",
+            "window": 7,
+            "objective": "binary",
+            "learning_rate": "0.1",
+            "num_leaves": "63",
+            "max_depth": "-1",
+            "min_child_samples": "100",
+            "subsample": "0.9",
+            "subsample_freq": "1",
+            "colsample_bytree": "0.9",
+            "n_estimators": "150",
+            "num_threads": "10",
+            "deterministic": "True",
+            "force_row_wise": "True",
+            "random_state": "42",
+            "verbosity": "-1"
+          }
+        },
+        "2": {
+          "mae": 0.115751,
+          "model": "cnn",
+          "meta": {
+            "channels": 64,
+            "depth": 8,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 42,
+            "per_delta": false
+          }
+        },
+        "3": {
+          "mae": 0.11848,
+          "model": "cnn",
+          "meta": {
+            "channels": 64,
+            "depth": 8,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 42,
+            "per_delta": true
+          }
+        },
+        "4": {
+          "mae": 0.115664,
+          "model": "cnn",
+          "meta": {
+            "channels": 64,
+            "depth": 8,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 777,
+            "per_delta": false
+          }
+        },
+        "5": {
+          "members": [
+            0,
+            1
+          ],
+          "weights": {
+            "all": [
+              0.9902,
+              0.0098
+            ]
+          },
+          "per_delta_weights": false,
+          "thresholds": null
+        },
+        "6": {
+          "members": [
+            0,
+            1
+          ],
+          "weights": {
+            "1": [
+              1.0,
+              0.0
+            ],
+            "2": [
+              0.9935,
+              0.0065
+            ],
+            "3": [
+              0.9905,
+              0.0095
+            ],
+            "4": [
+              0.9886,
+              0.0114
+            ],
+            "5": [
+              0.9905,
+              0.0095
+            ]
+          },
+          "per_delta_weights": true,
+          "thresholds": null
+        },
+        "7": {
+          "members": [
+            0,
+            1
+          ],
+          "weights": {
+            "1": [
+              1.0,
+              0.0
+            ],
+            "2": [
+              0.9935,
+              0.0065
+            ],
+            "3": [
+              0.9905,
+              0.0095
+            ],
+            "4": [
+              0.9886,
+              0.0114
+            ],
+            "5": [
+              0.9905,
+              0.0095
+            ]
+          },
+          "per_delta_weights": true,
+          "thresholds": {
+            "1": 0.49,
+            "2": 0.5,
+            "3": 0.5,
+            "4": 0.49,
+            "5": 0.48
+          }
+        },
+        "8": {
+          "members": [
+            0,
+            1,
+            4
+          ],
+          "weights": {
+            "1": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "2": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "3": [
+              0.987,
+              0.0,
+              0.013
+            ],
+            "4": [
+              0.9611,
+              0.0,
+              0.0389
+            ],
+            "5": [
+              0.9825,
+              0.0175,
+              0.0
+            ]
+          },
+          "per_delta_weights": true,
+          "thresholds": {
+            "1": 0.49,
+            "2": 0.5,
+            "3": 0.5,
+            "4": 0.49,
+            "5": 0.5
+          }
+        },
+        "11": {
+          "members": [
+            0,
+            1,
+            4,
+            2
+          ],
+          "weights": {
+            "1": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "2": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "3": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "4": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "5": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "per_delta_weights": true,
+          "thresholds": {
+            "1": 0.49,
+            "2": 0.5,
+            "3": 0.5,
+            "4": 0.49,
+            "5": 0.48
+          }
+        },
+        "12": {
+          "members": [
+            0,
+            1,
+            2,
+            4,
+            3
+          ],
+          "weights": {
+            "1": [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "2": [
+              0.9925,
+              0.0,
+              0.0,
+              0.0,
+              0.0075
+            ],
+            "3": [
+              0.989,
+              0.011,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "4": [
+              0.8865,
+              0.0002,
+              0.0,
+              0.0004,
+              0.1128
+            ],
+            "5": [
+              0.9931,
+              0.0069,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "per_delta_weights": true,
+          "thresholds": {
+            "1": 0.49,
+            "2": 0.5,
+            "3": 0.5,
+            "4": 0.48,
+            "5": 0.5
+          }
+        },
+        "13": {
+          "mae": 0.11471,
+          "model": "cnn",
+          "meta": {
+            "channels": 96,
+            "depth": 8,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 777,
+            "per_delta": false
+          }
+        },
+        "14": {
+          "mae": 0.116223,
+          "model": "cnn",
+          "meta": {
+            "channels": 96,
+            "depth": 12,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 777,
+            "per_delta": false
+          }
+        },
+        "15": {
+          "mae": 0.114183,
+          "model": "cnn",
+          "meta": {
+            "channels": 96,
+            "depth": 8,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.003,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 777,
+            "per_delta": false
+          }
+        },
+        "16": {
+          "mae": 0.114362,
+          "model": "cnn",
+          "meta": {
+            "channels": 96,
+            "depth": 8,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 42,
+            "per_delta": false
+          }
+        },
+        "17": {
+          "mae": 0.114839,
+          "model": "cnn",
+          "meta": {
+            "channels": 96,
+            "depth": 12,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 42,
+            "per_delta": false
+          }
+        },
+        "18": {
+          "mae": 0.113895,
+          "model": "cnn",
+          "meta": {
+            "channels": 96,
+            "depth": 8,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.003,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 42,
+            "per_delta": false
+          }
+        },
+        "19": {
+          "mae": 0.118207,
+          "model": "cnn",
+          "meta": {
+            "channels": 96,
+            "depth": 8,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 42,
+            "per_delta": true
+          }
+        },
+        "20": {
+          "members": [
+            0,
+            18,
+            15,
+            16,
+            13,
+            17,
+            4,
+            2,
+            14,
+            19,
+            3,
+            1
+          ],
+          "weights": {
+            "1": [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "2": [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "3": [
+              0.9479,
+              0.0,
+              0.0476,
+              0.0,
+              0.0,
+              0.0,
+              0.0045,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "4": [
+              0.9166,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0834,
+              0.0
+            ],
+            "5": [
+              0.5515,
+              0.0,
+              0.0275,
+              0.0909,
+              0.0,
+              0.1866,
+              0.0007,
+              0.0,
+              0.0605,
+              0.0655,
+              0.0,
+              0.0168
+            ]
+          },
+          "per_delta_weights": true,
+          "thresholds": {
+            "1": 0.49,
+            "2": 0.5,
+            "3": 0.5,
+            "4": 0.48,
+            "5": 0.5
+          }
+        },
+        "21": {
+          "members": [
+            0,
+            18,
+            15,
+            16,
+            13,
+            17,
+            4,
+            2,
+            14,
+            19,
+            3,
+            1
+          ],
+          "weights": {
+            "1": [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "2": [
+              1.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "3": [
+              0.9479,
+              0.0,
+              0.0476,
+              0.0,
+              0.0,
+              0.0,
+              0.0045,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "4": [
+              0.9166,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0834,
+              0.0
+            ],
+            "5": [
+              0.5515,
+              0.0,
+              0.0275,
+              0.0909,
+              0.0,
+              0.1866,
+              0.0007,
+              0.0,
+              0.0605,
+              0.0655,
+              0.0,
+              0.0168
+            ]
+          },
+          "per_delta_weights": true,
+          "thresholds": null
+        },
+        "22": {
+          "mae": 0.113213,
+          "model": "cnn",
+          "meta": {
+            "channels": 64,
+            "depth": 8,
+            "residual": true,
+            "epochs": 14,
+            "batch": 512,
+            "lr": 0.003,
+            "wd": 0.0001,
+            "synth_n": 100000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 42,
+            "per_delta": false
+          }
+        },
+        "23": {
+          "members": [
+            0,
+            22,
+            18,
+            15,
+            16,
+            13,
+            17,
+            4,
+            2,
+            14,
+            19,
+            3,
+            1
+          ],
+          "weights": {
+            "1": [
+              0.2802,
+              0.6994,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0204
+            ],
+            "2": [
+              0.7717,
+              0.2283,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "3": [
+              0.9568,
+              0.0,
+              0.0,
+              0.0432,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "4": [
+              0.8563,
+              0.0767,
+              0.0255,
+              0.0325,
+              0.0,
+              0.0091,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "5": [
+              0.2639,
+              0.2254,
+              0.0,
+              0.2537,
+              0.0086,
+              0.0223,
+              0.1431,
+              0.0455,
+              0.006,
+              0.0057,
+              0.0,
+              0.0259,
+              0.0
+            ]
+          },
+          "per_delta_weights": true,
+          "thresholds": {
+            "1": 0.5,
+            "2": 0.5,
+            "3": 0.5,
+            "4": 0.5,
+            "5": 0.5
+          }
+        },
+        "24": {
+          "mae": 0.116242,
+          "model": "cnn",
+          "meta": {
+            "channels": 96,
+            "depth": 12,
+            "residual": true,
+            "epochs": 10,
+            "batch": 512,
+            "lr": 0.002,
+            "wd": 0.0001,
+            "synth_n": 50000,
+            "d4_aug": true,
+            "tta": true,
+            "seed": 42,
+            "per_delta": true
+          }
+        }
+      },
+      "tried_mutations": {
+        "5": [
+          "blend per-delta weights"
+        ],
+        "6": [
+          "blend thresh sweep"
+        ],
+        "7": [
+          "blend add node4"
+        ],
+        "8": [
+          "blend add node2"
+        ],
+        "11": [
+          "blend add node3"
+        ],
+        "4": [
+          "cnn ch96"
+        ],
+        "13": [
+          "cnn ch96",
+          "cnn depth12",
+          "cnn ch96 depth12",
+          "cnn lr3e-3"
+        ],
+        "2": [
+          "cnn ch96"
+        ],
+        "16": [
+          "cnn ch96",
+          "cnn depth12",
+          "cnn ch96 depth12",
+          "cnn lr3e-3"
+        ],
+        "3": [
+          "cnn ch96"
+        ],
+        "19": [
+          "cnn ch96",
+          "cnn depth12"
+        ]
+      },
+      "noop_counter": 2,
+      "dedup_rejections": 6,
+      "burst_injected": true
+    },
+    "dedup_streak": {
+      "0": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "11": 0,
+      "4": 0,
+      "13": 0,
+      "2": 0,
+      "16": 0,
+      "3": 0,
+      "19": 0
+    },
+    "tie_rate_log": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

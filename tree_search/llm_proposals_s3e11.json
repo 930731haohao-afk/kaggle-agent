@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "comp": "s3e11",
+    "proposer": "claude (mirror-existing-schema variant)",
+    "strategy": "bias-dominated shallow variants of existing pool members for decorrelation"
+  },
+  "proposals": [
+    {
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "depth": 3,
+          "learning_rate": 0.05,
+          "l2_leaf_reg": 12.0,
+          "random_seed": 7
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "expected": "Solo (shallow cat) below the pool's best member but decorrelated; tests whether a bias-dominated external member lifts the reblend.",
+      "prior_tags": [
+        "INT-02",
+        "INT-04"
+      ],
+      "rationale": "Shallow, heavily-regularized cat = bias-dominated member to decorrelate the variance-leaning pool (the s6e1/s4e1 winning archetype). Mirrors an existing pool config's schema; only depth/reg/seed changed."
+    },
+    {
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "n_estimators": 2000,
+          "learning_rate": 0.04,
+          "num_leaves": 4,
+          "min_child_samples": 120,
+          "subsample": 0.8,
+          "subsample_freq": 1,
+          "colsample_bytree": 0.7,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "random_state": 8
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "expected": "Solo (shallow lgb) below the pool's best member but decorrelated; tests whether a bias-dominated external member lifts the reblend.",
+      "prior_tags": [
+        "INT-02",
+        "INT-04"
+      ],
+      "rationale": "Shallow, heavily-regularized lgb = bias-dominated member to decorrelate the variance-leaning pool (the s6e1/s4e1 winning archetype). Mirrors an existing pool config's schema; only depth/reg/seed changed."
+    }
+  ]
+}

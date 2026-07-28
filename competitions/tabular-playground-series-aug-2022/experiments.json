@@ -1,0 +1,222 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T15:07:29",
+    "model": "LogisticRegression C=0.01",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.591248,
+    "features": [
+      "loading",
+      "measurement_17",
+      "measurement_3_na",
+      "measurement_5_na",
+      "measurement_2"
+    ],
+    "n_features": 5,
+    "cv": {
+      "strategy": "leave-one-group-out GroupKFold (product_code, 5 folds)",
+      "seed": 42,
+      "fold_aucs": [
+        0.59165,
+        0.59313,
+        0.5862,
+        0.60031,
+        0.58579
+      ]
+    },
+    "postprocess": [
+      "per-group rank normalization"
+    ],
+    "notes": "baseline; raw OOF 0.59044; prior-run reference 0.59131"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T15:07:29",
+    "model": "LGBM shallow (leaves7 depth3)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.58174,
+    "features": [
+      "loading",
+      "loading_na",
+      "measurement_0",
+      "measurement_1",
+      "measurement_10",
+      "measurement_10_na",
+      "measurement_11",
+      "measurement_11_na",
+      "measurement_12",
+      "measurement_12_na",
+      "measurement_13",
+      "measurement_13_na",
+      "measurement_14",
+      "measurement_14_na",
+      "measurement_15",
+      "measurement_15_na",
+      "measurement_16",
+      "measurement_16_na",
+      "measurement_17",
+      "measurement_17_na",
+      "measurement_2",
+      "measurement_3",
+      "measurement_3_na",
+      "measurement_4",
+      "measurement_4_na",
+      "measurement_5",
+      "measurement_5_na",
+      "measurement_6",
+      "measurement_6_na",
+      "measurement_7",
+      "measurement_7_na",
+      "measurement_8",
+      "measurement_8_na",
+      "measurement_9",
+      "measurement_9_na"
+    ],
+    "n_features": 35,
+    "cv": {
+      "strategy": "leave-one-group-out GroupKFold (product_code, 5 folds)",
+      "seed": 42,
+      "fold_aucs": [
+        0.5859,
+        0.58747,
+        0.57555,
+        0.58419,
+        0.57657
+      ]
+    },
+    "postprocess": [
+      "per-group rank normalization"
+    ],
+    "notes": "baseline; raw OOF 0.58118"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T15:07:29",
+    "model": "blend LR+LGB (rank space)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.591248,
+    "cv": {
+      "strategy": "leave-one-group-out GroupKFold (product_code, 5 folds)",
+      "seed": 42
+    },
+    "ensemble": {
+      "weights": {
+        "lr": 1.0,
+        "lgb": 0.0
+      },
+      "space": "per-group rank"
+    },
+    "postprocess": [
+      "per-group rank normalization"
+    ],
+    "notes": "grid weight search on OOF"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T15:19:50",
+    "model": "tree-search champion candidate: 38-member mega-blend (node #52) [REJECTED by honest LOFO]",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.591955,
+    "cv": {
+      "strategy": "leave-one-group-out GroupKFold (product_code, 5 folds)",
+      "honest_leave_fold_out_score": 0.590944,
+      "optimism": 0.001011
+    },
+    "ensemble": {
+      "members": 38,
+      "nonzero_weights": 16,
+      "weight_search": "dirichlet k=800 + coord ascent (harness_v3 eval_blend)"
+    },
+    "postprocess": [
+      "per-group rank normalization"
+    ],
+    "submission": "submissions/tree_v3_node52_megablend.csv",
+    "notes": "harness_v3 tree search, 60 nodes. Root LR 0.591248 -> best solo (LRC+m9) 0.591447 -> pre-burst blend 0.591648 -> mega-blend 0.591955. OOF-only, not LB-validated."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T15:21:21",
+    "model": "REJECTED: equal-weight LR family (22 members, loose rule)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.59051,
+    "cv": {
+      "strategy": "leave-one-group-out GroupKFold (product_code, 5 folds)",
+      "per_fold_delta_vs_root": [
+        -0.0004,
+        -0.0007,
+        -0.0006,
+        -0.003,
+        0.0009
+      ]
+    },
+    "ensemble": {
+      "members": [
+        0,
+        2,
+        3,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        28,
+        29,
+        40,
+        41,
+        42,
+        54,
+        57,
+        58,
+        59
+      ],
+      "weights": "equal (unfitted)",
+      "rule": "every evaluated LR solo containing the prior-run 5 features"
+    },
+    "postprocess": [
+      "per-group rank normalization"
+    ],
+    "submission": "submissions/lr_family_equalweight.csv",
+    "notes": "Chosen over tree champion #52 (in-sample 0.591955) because its honest leave-fold-out score 0.590944 fell below the root solo 0.591248 -- fitted blend weights were pure optimism. Equal weights are unfitted; membership is rule-based, not score-picked. OOF-only, not LB-validated."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-28T15:22:15",
+    "model": "FINAL: equal-weight LR pair (root prior5 + node#17 prior5+measurement_9)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.591645,
+    "cv": {
+      "strategy": "leave-one-group-out GroupKFold (product_code, 5 folds)",
+      "honest_lofo_selection_score": 0.591204,
+      "note": "node17 picked by 4/5 leave-fold-out selections; all candidate gains within +/-0.0005 noise band"
+    },
+    "ensemble": {
+      "members": [
+        "root(#0)",
+        "#17"
+      ],
+      "weights": "equal (unfitted)"
+    },
+    "postprocess": [
+      "per-group rank normalization"
+    ],
+    "submission": "submissions/final_root_plus_node17_equalweight.csv",
+    "notes": "Chosen after honest checks rejected fitted-weight blends (mega-blend #52 LOFO 0.590944 < root 0.591248) and loose rule-based family (0.590510). Unfitted 2-member average: upside +0.0004 in-sample, downside noise. OOF-only, not LB-validated."
+  }
+]

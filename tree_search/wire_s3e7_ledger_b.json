@@ -1,0 +1,56 @@
+{
+  "comp": "playground-series-s3e7",
+  "off": {
+    "champion_id": 48,
+    "champion_metric": 0.900455
+  },
+  "arm": {
+    "nodes": 67,
+    "champion_id": 48,
+    "champion_metric": 0.900455
+  },
+  "ledger": [
+    {
+      "tag": "PRIOR-LLM-00",
+      "status": "evaluated",
+      "node_id": 63,
+      "metric": 0.895489,
+      "wall_s": 67.0,
+      "prior_tags": [
+        "INT-02",
+        "INT-05"
+      ],
+      "expected": "Solo AUC ~0.895-0.899 (below the mid-depth members) but lowest error-correlation; realistic shot at nonzero blend weight."
+    },
+    {
+      "tag": "PRIOR-LLM-01",
+      "status": "evaluated",
+      "node_id": 64,
+      "metric": 0.893453,
+      "wall_s": 29.9,
+      "prior_tags": [
+        "INT-02"
+      ],
+      "expected": "Solo AUC ~0.895-0.899; shallow ordered-boosting CatBoost, differently-correlated error surface than the shallow XGB."
+    },
+    {
+      "tag": "PRIOR-LLM-02",
+      "status": "evaluated",
+      "node_id": 65,
+      "metric": 0.878087,
+      "wall_s": 34.3,
+      "prior_tags": [
+        "INT-02",
+        "INT-04"
+      ],
+      "expected": "Solo AUC ~0.892-0.897; an extreme-bias depth-2 extra-trees LGB, most decorrelated of the three."
+    },
+    {
+      "tag": "PRIOR-LLM-REBLEND",
+      "status": "evaluated",
+      "node_id": 66,
+      "metric": 0.89991,
+      "wall_s": 11.1
+    }
+  ]
+}

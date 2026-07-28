@@ -1,0 +1,27 @@
+competition:
+  name: tmdb-box-office-prediction
+  title: "TMDB Box Office Prediction"
+  url: https://www.kaggle.com/competitions/tmdb-box-office-prediction
+  metric: RMSLE
+  metric_direction: minimize
+  category: Playground
+  reward: Knowledge
+  teams: 1395
+  deadline: "2019-05-30"
+
+data:
+  train_file: data/train.csv
+  test_file: data/test.csv
+  sample_submission: data/sample_submission.csv
+  train_rows: 3000
+  test_rows: 4398
+
+task:
+  type: regression
+  target: revenue
+  description: "Predict movie box office revenue from TMDB metadata"
+
+validation:
+  strategy: kfold
+  n_splits: 5
+  random_state: 42

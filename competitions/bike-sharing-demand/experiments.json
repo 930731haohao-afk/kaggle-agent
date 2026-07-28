@@ -1,0 +1,143 @@
+[
+  {
+    "experiment_id": 1,
+    "timestamp": "2026-02-22T03:45:19.588595+00:00",
+    "stage": "baseline",
+    "model": "mean-predictor",
+    "features": "none (predicts global mean)",
+    "cv_scores": [
+      1.419388986652408
+    ],
+    "cv_mean": 1.41939,
+    "notes": "Naive baseline: predict mean of log1p(count)"
+  },
+  {
+    "experiment_id": 2,
+    "timestamp": "2026-02-22T03:45:19.597697+00:00",
+    "stage": "baseline",
+    "model": "Ridge",
+    "features": "processed_v1 (13 features)",
+    "cv_strategy": "GroupKFold-5 by year-month",
+    "cv_scores": [
+      0.84235,
+      0.89379,
+      0.89659,
+      0.87233,
+      0.88199
+    ],
+    "cv_mean": 0.87741,
+    "cv_std": 0.01955,
+    "notes": "Ridge regression on log1p(count)"
+  },
+  {
+    "experiment_id": 3,
+    "timestamp": "2026-02-22T03:45:21.629993+00:00",
+    "stage": "baseline",
+    "model": "LightGBM-default",
+    "features": "processed_v1 (13 features)",
+    "cv_strategy": "GroupKFold-5 by year-month",
+    "cv_scores": [
+      0.31523,
+      0.33198,
+      0.35022,
+      0.29991,
+      0.32541
+    ],
+    "cv_mean": 0.32455,
+    "cv_std": 0.01679,
+    "notes": "LightGBM default params, early stopping 50"
+  },
+  {
+    "experiment_id": 4,
+    "timestamp": "2026-02-22T03:45:30.299456+00:00",
+    "stage": "tuned",
+    "model": "LightGBM-tuned",
+    "features": "processed_v1 (13 features)",
+    "params": {
+      "learning_rate": 0.05,
+      "num_leaves": 63,
+      "max_depth": 8,
+      "min_child_samples": 20,
+      "feature_fraction": 0.8,
+      "bagging_fraction": 0.8,
+      "bagging_freq": 5,
+      "reg_alpha": 0.1,
+      "reg_lambda": 0.1,
+      "seed": 42
+    },
+    "cv_strategy": "GroupKFold-5 by year-month",
+    "cv_scores": [
+      0.31099,
+      0.32825,
+      0.36571,
+      0.30297,
+      0.32867
+    ],
+    "cv_mean": 0.32732,
+    "cv_std": 0.02161,
+    "notes": "LightGBM with hand-tuned params"
+  },
+  {
+    "experiment_id": 5,
+    "timestamp": "2026-02-22T03:45:34.783425+00:00",
+    "stage": "tuned",
+    "model": "XGBoost-tuned",
+    "features": "processed_v1 (13 features)",
+    "params": {
+      "learning_rate": 0.05,
+      "max_depth": 7,
+      "min_child_weight": 20,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "reg_alpha": 0.1,
+      "reg_lambda": 1.0,
+      "seed": 42
+    },
+    "cv_strategy": "GroupKFold-5 by year-month",
+    "cv_scores": [
+      0.32613,
+      0.32924,
+      0.34318,
+      0.29004,
+      0.32148
+    ],
+    "cv_mean": 0.32201,
+    "cv_std": 0.01755,
+    "notes": "XGBoost with tuned params"
+  },
+  {
+    "experiment_id": 6,
+    "timestamp": "2026-02-22T03:45:37.231345+00:00",
+    "stage": "tuned",
+    "model": "CatBoost",
+    "features": "processed_v1 (13 features)",
+    "params": {
+      "depth": 7,
+      "l2_leaf_reg": 3.0,
+      "learning_rate": 0.05
+    },
+    "cv_strategy": "GroupKFold-5 by year-month",
+    "cv_scores": [
+      0.31639,
+      0.32203,
+      0.34231,
+      0.28712,
+      0.3158
+    ],
+    "cv_mean": 0.31673,
+    "cv_std": 0.01766,
+    "notes": "CatBoost with tuned params"
+  },
+  {
+    "experiment_id": 7,
+    "timestamp": "2026-02-22T03:46:43.715038+00:00",
+    "stage": "submission",
+    "model": "Ensemble (CatBoost + XGBoost + LightGBM avg)",
+    "features": "processed_v1 (13 features)",
+    "cv_mean": 0.317,
+    "retrained_on_full_data": true,
+    "post_processing": "round to int, clip >= 0",
+    "submission_file": "submission_ensemble3_cv0.317_20260222_114643.csv",
+    "notes": "Simple average of 3 GBMs retrained on full data"
+  }
+]

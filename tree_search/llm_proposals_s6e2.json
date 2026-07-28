@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "comp": "playground-series-s6e2",
+    "metric": "auc",
+    "proposer": "claude (mirrors s6e1/s4e1 protocol: propose-once / freeze / replay)",
+    "strategy": "The 37-member champion pool has NO shallow XGB and NO shallow CatBoost (both only depth 9-10); LGB already covers shallow. Inject bias-dominated shallow members of the under-represented families to maximize error-decorrelation of the variance-heavy deep pool (the archetype that took the largest LLM-member weight on s6e1 R2 and s4e1 AUC). All params are within the evaluator whitelist; AUC is rank-invariant so no is_unbalance weighting (INT-03/04).",
+    "whitelist_checked": true
+  },
+  "proposals": [
+    {
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "params": {
+          "objective": "binary:logistic",
+          "eval_metric": "auc",
+          "tree_method": "hist",
+          "max_depth": 3,
+          "learning_rate": 0.05,
+          "subsample": 0.7,
+          "colsample_bytree": 0.5,
+          "reg_alpha": 2.0,
+          "reg_lambda": 8.0,
+          "random_state": 42
+        },
+        "features": {"drop": []}
+      },
+      "expected": "Solo AUC ~0.953-0.955 (below the deep members) but lowest error-correlation; realistic shot at nonzero blend weight.",
+      "prior_tags": ["INT-02", "INT-05"],
+      "rationale": "Pool's only XGB is depth 9 (variance-dominated). A depth-3, strongly-regularized XGB is bias-dominated -- opposite error structure -> maximal decorrelation. This exact archetype took the largest LLM-member weight on s6e1 and s4e1."
+    },
+    {
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "params": {
+          "loss_function": "Logloss",
+          "eval_metric": "AUC",
+          "depth": 3,
+          "learning_rate": 0.05,
+          "l2_leaf_reg": 10.0,
+          "bagging_temperature": 1.0,
+          "random_seed": 42
+        },
+        "features": {"drop": []}
+      },
+      "expected": "Solo AUC ~0.953-0.955; CatBoost's ordered boosting at shallow depth gives a differently-correlated error surface than the shallow XGB/LGB.",
+      "prior_tags": ["INT-02"],
+      "rationale": "Pool's CatBoost is only depth 9-10. A depth-3, high-l2 CatBoost adds a second bias-dominated family, decorrelating from both the deep CAT and the shallow XGB above."
+    },
+    {
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "objective": "binary",
+          "metric": "auc",
+          "max_depth": 2,
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "feature_fraction": 0.5,
+          "bagging_fraction": 0.7,
+          "bagging_freq": 1,
+          "min_child_samples": 100,
+          "reg_alpha": 2.0,
+          "reg_lambda": 8.0,
+          "seed": 42
+        },
+        "features": {"drop": []}
+      },
+      "expected": "Solo AUC ~0.951-0.954; an extreme-bias depth-2 stump-like learner, most decorrelated of the three.",
+      "prior_tags": ["INT-02", "INT-04"],
+      "rationale": "Even though the pool has depth-3/4 LGB, a depth-2 num_leaves-4 LGB is more extreme-bias; a suboptimal-but-heterogeneous member is an asset for the blend (INT-04)."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+competition_name: home-data-for-ml-course
+competition_url: https://www.kaggle.com/competitions/home-data-for-ml-course
+task_type: regression
+target_column: SalePrice
+id_column: Id
+evaluation_metric: rmsle
+data_dir: data
+submission_format: Id,SalePrice
+n_folds: 5
+random_seed: 42
+notes: >
+  Ames Housing dataset - predict house sale prices.
+  Same domain as house-prices-advanced-regression-techniques.
+  80 features covering lot, building, condition, utilities, sale info.
+  Key: log1p transform target, ordinal encode quality features,
+  interaction features (area * quality), ensemble LGB + XGB.

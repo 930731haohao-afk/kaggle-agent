@@ -1,0 +1,203 @@
+[
+  {
+    "experiment_id": 1,
+    "name": "lgb_xgb_ensemble_v1",
+    "features": "99 features (ordinal encoding, interactions, area aggregates, neighborhood median)",
+    "models": {
+      "lightgbm": {
+        "objective": "regression",
+        "metric": "rmse",
+        "learning_rate": 0.03,
+        "num_leaves": 63,
+        "max_depth": -1,
+        "min_child_samples": 5,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_alpha": 0.1,
+        "reg_lambda": 1.0,
+        "n_estimators": 3000,
+        "random_state": 42,
+        "verbosity": -1
+      },
+      "xgboost": {
+        "objective": "reg:squarederror",
+        "eval_metric": "rmse",
+        "learning_rate": 0.03,
+        "max_depth": 6,
+        "min_child_weight": 3,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_alpha": 0.1,
+        "reg_lambda": 1.0,
+        "n_estimators": 3000,
+        "random_state": 42,
+        "verbosity": 0
+      }
+    },
+    "cv_scores": {
+      "lgb_rmsle": 0.13346,
+      "xgb_rmsle": 0.12911,
+      "ensemble_rmsle": 0.12906,
+      "ensemble_weights": "lgb=0.10, xgb=0.90"
+    },
+    "submission_file": "sub_ensemble_v1.csv"
+  },
+  {
+    "experiment_id": 2,
+    "name": "5model_stack_v2",
+    "features": "107 features (enhanced interactions, squared terms, ratios)",
+    "models": [
+      "LGB",
+      "XGB",
+      "Ridge",
+      "ElasticNet",
+      "GBR"
+    ],
+    "cv_scores": {
+      "ensemble_rmsle": 0.12195,
+      "ensemble_mae": 14200.0,
+      "weights": {
+        "LGB": -0.0219,
+        "XGB": 0.0557,
+        "Ridge": 1.8867,
+        "ElasticNet": -1.4923,
+        "GBR": 0.5719
+      }
+    },
+    "submission_file": "sub_stack_v2.csv"
+  },
+  {
+    "experiment_id": 3,
+    "name": "constrained_4model_stack_v3",
+    "features": "107 features (+ outlier removal, skew correction, log features, huber loss GBR)",
+    "models": [
+      "LGB",
+      "XGB",
+      "Ridge",
+      "GBR"
+    ],
+    "cv_scores": {
+      "ensemble_rmsle": 0.11016,
+      "ensemble_mae": 13293.0,
+      "weights": {
+        "LGB": 0.0,
+        "XGB": 0.0,
+        "Ridge": 0.3403,
+        "GBR": 0.6597
+      }
+    },
+    "submission_file": "sub_stack_v3.csv"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-20T16:09:10",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 15889.1059,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_mae_15889.10590.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.0), 'xgb': np.float64(0.4), 'lgb_v2': np.float64(0.6)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-20T16:09:43",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 15084.976905,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_mae_15084.97690.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.3), 'xgb': np.float64(0.0), 'cat': np.float64(0.7)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-20T16:29:06",
+    "model": "[LADDER s1] 3xGBDT single-family, 0.1 grid",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 15550.944948,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage1_mae_15550.94495.csv",
+    "notes": "ladder stage 1; weights={'lgb': np.float64(0.1), 'xgb': np.float64(0.5), 'lgb_v2': np.float64(0.4)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-20T16:29:47",
+    "model": "[LADDER s2] diverse lgb/xgb/cat, 0.05 grid",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 14873.038262,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage2_mae_14873.03826.csv",
+    "notes": "ladder stage 2; weights={'lgb': np.float64(0.15), 'xgb': np.float64(0.15), 'cat': np.float64(0.7)}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-20T16:31:03",
+    "model": "[LADDER s3] Optuna-tuned cat + seed-bag, dirichlet reblend",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 14386.346954,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage3_mae_14386.34695.csv",
+    "notes": "ladder stage 3; weights={'lgb': 0.012, 'xgb': 0.102, 'cat': 0.086, 'cat_tuned': 0.428, 'cat_tuned_s2024': 0.372}; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-20T16:31:42",
+    "model": "[LADDER s4] tree search 24 nodes; champ #25 blend",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 14321.293122,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage4_mae_14321.29312.csv",
+    "notes": "ladder stage 4; weights=None; priors=None"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-20T16:31:58",
+    "model": "[LADDER s5] idea-injected pool, final blend (20 members)",
+    "metric": "mae",
+    "direction": "minimize",
+    "score": 14321.293122,
+    "cv": {
+      "scheme": "KFold",
+      "n_splits": 5,
+      "seed": 42
+    },
+    "submission": "ladder_stage5_mae_14321.29312.csv",
+    "notes": "ladder stage 5; weights=None; priors=['\u76ee\u6a19\u70ba\u6574\u6578\u6642,\u628a\u9023\u7e8c\u9810\u6e2c\u300c\u56db\u6368\u4e94\u5165\u5230\u6574\u6578\u300d\u76f4\u63a5\u964d\u4f4e MAE,\u4e14 CV \u589e\u76ca\u53ef\u53cd\u6620\u5230 LB\u3002 | \u8b49\u64da:s3e16, exp #1, LGB \u672a\u53d6\u6574 OOF MAE 1.35651 \u2192 \u53d6\u6574 1.33885;blend \u53d6\u6574 1.33812,Kaggle Private LB 1.34075(gap \u50c5 ~0.006)\u3002', '\u76ee\u6a19\u503c\u57df\u662f\u96e2\u6563\u7d44\u5408(\u975e\u6574\u6578\u683c\u9ede)\u6642,\u300csnap \u5230\u6700\u8fd1\u7684\u8a13\u7df4\u96c6\u89c0\u6e2c\u503c\u300d\u5c0f\u5e45\u4f46\u7a69\u5b9a\u512a\u65bc\u4e0d\u8655\u7406/\u50c5 clip\u3002 | \u8b49\u64da:s3e14, exp #2/#3,blend 341.02061 \u2192 snap 340.95856;exp #3 blend 340.75961 \u2192 snap 340.71180(\u5169\u6b21\u8fed\u4ee3\u7686\u52dd\u51fa)\u3002']"
+  }
+]

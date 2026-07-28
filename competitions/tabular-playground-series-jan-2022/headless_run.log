@@ -1,0 +1,12 @@
+Benchmark complete. Full pipeline ran, tree search included.
+
+**Final: structural Ridge solo, honest CV SMAPE 4.415985** (fold-2017 4.646 / fold-2018 4.186, pooled, round-to-int). `submission.csv` written (6,570 rows, validated vs sample).
+
+What happened:
+- **EDA** re-confirmed prior-run structure on data: store ratio constant 1.742 all years, product shares constant across years+countries, dow effect shared, total/gdp_pc near-equal across countries. Structure-dominant comp.
+- **Baseline** (experience-library transfer): Ridge on log(num_sold) with log_gdp (World Bank, fetched live) + year_c + Fourier8×product + per-holiday-name dummies shifted −5..+10 → 4.4160. GDP-LGB 6.33. Blend weight collapsed to pure Ridge. Baseline+blend gate met.
+- **Tree search** (harness_v3, driver `tree_search/run_tpsjan22_v3.py`): 60/60 nodes, 91 s, root digit-verified. 9 structural lineages — none beat root as solo (best child 4.4172). Apparent champion = 37-member mega-blend OOF 4.40502. Burst sanity gate killed 2 seeds; cost-guard 0 fires; 1 dedup rejection; stopped on hard cap.
+- **Honest gate** (leave-year-out weight refit, per aug-2022 lesson): champion honest 4.4374 (+0.032 optimism); every fitted blend loses to root solo. Solo submitted — the search's real value here was vetoing the blend, not finding gains.
+- Logged 7 entries to experiments.json, wrote STATUS.md (with backtrack log, evals-to-match=1, OOF-only caveat), added new validated insight to knowledge/experience.md.
+
+Caveat: OOF-only, not LB-validated (competition closed). With just 2 validation years the honest gate itself is noisy — conservative solo choice is the point.
