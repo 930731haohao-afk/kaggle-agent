@@ -1,0 +1,94 @@
+{
+  "comp": "playground-series-s3e19-v5-gdp_hol",
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "[V5] committed node-0 config + external columns",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 20,
+          "min_child_samples": 38,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 0.0010341384364001556,
+          "reg_lambda": 0.43011494608925666,
+          "n_estimators": 2000,
+          "random_state": 42,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.379028,
+      "status": "evaluated",
+      "wall_s": 3.630687713623047,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 4,
+          "min_child_samples": 60,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "n_estimators": 2000,
+          "random_state": 1000,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.719286,
+      "status": "evaluated",
+      "wall_s": 3.0,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 2 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.31364,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "blend"
+    }
+  ],
+  "root_id": 0,
+  "search_state": {
+    "budget": {
+      "total_budget": 3,
+      "explore_burst_size": 6,
+      "post_burst_patience": 10,
+      "phase": "stopped",
+      "burst_start_eval": 0,
+      "best_at_burst_start": 9.379028,
+      "evals_since_burst_improve": 0,
+      "stop_reason": "hard budget cap reached (3/3 evaluated nodes)"
+    },
+    "dedup_streak": {
+      "0": 0
+    }
+  }
+}
