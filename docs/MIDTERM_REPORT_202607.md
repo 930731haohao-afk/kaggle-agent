@@ -5,6 +5,12 @@ Author: Wei-Hao Huang · Advisor: Tso-Jung Yen · Date: 2026-07-28
 
 ---
 
+## Abstract
+
+LLM-driven coding agents can now solve machine-learning competitions end-to-end, but evaluating them has not kept pace: comparisons typically report one run and one score per competition, ignoring both test-set sampling error and the stochasticity of agent execution. We benchmark three methodologically distinct agents — **my-agent**, our hybrid of LLM reasoning, Auto-ML tools, and a cross-competition experience library; **AIDE**, LLM tree search with no cross-competition memory; and the **NVIDIA Kaggle Agent**, which reproduces the highest-voted public kernel — on 18 Kaggle competitions under a mechanically enforced fairness protocol, scoring every submission on the real leaderboard. We introduce a paired significance test whose error scale comes free from Kaggle's public/private test split: a win counts only if the ordering replicates across the two disjoint subsets and the gap exceeds its own movement. Under this test my-agent wins 59% of decidable duels versus 46% (AIDE) and 45% (NVIDIA), while 26% of duels are statistically undecidable — verdicts that a naive tally would have reported as conclusions. Local cross-validation disagrees with the true leaderboard in 10 of the 13 competitions where both are available, and the three-way ranking fully reverses when the composition of the evaluation set changes. Agent-benchmark claims must therefore be stated jointly with an error model and the composition of the evaluation set.
+
+---
+
 ## 1. Introduction
 
 Machine-learning competitions are *scorable tasks*: a submission receives a single measurable quality score on a hidden test set, and a public leaderboard records how it compares against thousands of human teams. Solving them end-to-end — data understanding, validation design, feature engineering, model selection, ensembling — has traditionally demanded expert labor and extensive trial and error. LLM-driven coding agents have recently begun to automate this loop: AIDE performs LLM-guided tree search over candidate solutions [2]; ERA couples an LLM rewriter with tree search and externally injected research ideas, outperforming strong baselines across 16 Kaggle Playground competitions [1]; and industrial agents skip search altogether by reproducing the strongest public solution to a given competition [3].
