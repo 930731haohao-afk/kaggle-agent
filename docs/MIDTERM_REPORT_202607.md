@@ -5,23 +5,15 @@ Author: Wei-Hao Huang · Advisor: Tso-Jung Yen · Date: 2026-07-28
 
 ---
 
-## 1. Motivation
+## 1. Introduction
 
-### 1.1 Core Problems
+Machine-learning competitions are *scorable tasks*: a submission receives a single measurable quality score on a hidden test set, and a public leaderboard records how it compares against thousands of human teams. Solving them end-to-end — data understanding, validation design, feature engineering, model selection, ensembling — has traditionally demanded expert labor and extensive trial and error. LLM-driven coding agents have recently begun to automate this loop: AIDE performs LLM-guided tree search over candidate solutions [2]; ERA couples an LLM rewriter with tree search and externally injected research ideas, outperforming strong baselines across 16 Kaggle Playground competitions [1]; and industrial agents skip search altogether by reproducing the strongest public solution to a given competition [3].
 
-AI agents that automatically solve machine-learning competitions have advanced rapidly, but **how to tell whether one agent is genuinely better than another** remains methodologically weak. This study addresses two intertwined problems.
+However, *evaluating competition agents is currently far less rigorous than building them*. Comparisons typically report one run and one score per competition and declare the higher number the winner. Two error sources make this fragile. Competition metrics carry test-set sampling error, and top-two gaps often sit at the fourth or fifth decimal place. Agent execution is itself stochastic — the LLM samples different code at every step. When the gap between two agents is smaller than these errors, "A beats B" is reporting noise. Nor does self-evaluation offer an escape: without external, methodologically different reference points, any assessment of one's own agent is circular.
 
-**Problem 1: Where does our own agent actually stand?**
+Here we present a controlled three-way benchmark of methodologically distinct agents: **my-agent**, our hybrid design combining LLM reasoning, Auto-ML tools, and a cross-competition experience library (Figures 1 and 2); **AIDE**, LLM tree search with no cross-competition memory; and the **NVIDIA Kaggle Agent**, which reproduces the highest-voted public kernel. Both reference methods are frozen for the duration of the study. All three agents run on 18 Kaggle competitions under a mechanically enforced fairness protocol (§2.3), and every submission is scored on the real leaderboard via late submission. Critically, each competition scores one submission on two disjoint test subsets — public and private — and we turn this split into a paired significance test: a win counts only if the ordering replicates across both subsets and the gap exceeds its own movement (§3.3).
 
-This project implements a hybrid Kaggle agent (LLM reasoning + Auto-ML tools) as a Claude Code Skill. It produces reasonable scores on individual competitions — but "reasonable" relative to whom? Without external reference points, any self-assessment is circular. Only a comparison against **methodologically different** existing approaches can locate the strengths and blind spots of this design.
-
-**Problem 2: How much of an agent benchmark's conclusion is noise?**
-
-Current agent evaluations typically report "one run, one score, higher wins." But competition metrics carry sampling error, and agent execution is itself stochastic (the LLM samples different code at every step). If the gap between two agents is smaller than these errors, "A beats B" is reporting noise. This study asks: **at a measurable error scale, in how many competitions can the three agents actually be told apart?**
-
-### 1.2 Why It Is Worth Doing
-
-The Kaggle Playground series offers rare evaluation conditions: homogeneous tasks (tabular supervised learning), well-defined metrics, a public leaderboard as an external absolute reference, and — critically — **two mutually exclusive test subsets (public / private) per competition**. The latter is exactly what this study uses to estimate measurement error.
+We find that my-agent wins 59% of decidable duels versus 46% (AIDE) and 45% (NVIDIA), while 26% of duels are statistically undecidable — verdicts that a naive tally would have reported as conclusions. We further find that local cross-validation disagrees with the true leaderboard in 10 of the 13 competitions where both are available, and that the three-way ranking fully reverses when the evaluation set shifts from Playground-only to a broader mix. A ranking is a property of the method *and* the evaluation set; benchmark claims must be stated jointly with both.
 
 ---
 
@@ -525,3 +517,9 @@ Environment: ARM64 Linux (Ubuntu 24.04), NVIDIA GB10 GPU, uv-managed Python 3.13
 ---
 
 *Every number in this report is traceable to the structured records listed above. Experiments are ongoing; this report will be updated as the items in §4.5 complete.*
+
+## References
+
+1. Aygün, E., et al. (2026). An AI system to help scientists write expert-level empirical software. *Nature*. https://doi.org/10.1038/s41586-026-10658-6
+2. Jiang, Z., Schmidt, D., Srikanth, D., Xu, D., Kaplan, I., Jacenko, D., & Wu, Y. (2025). AIDE: AI-Driven Exploration in the Space of Code. arXiv:2502.13138.
+3. NVIDIA (2026). Kaggle Agent: kernel-reproduction agent skill (software).
