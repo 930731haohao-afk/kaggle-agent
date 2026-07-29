@@ -47,3 +47,4 @@ competitions/*/.collided-run/
 competitions/**/*.npz
 competitions/*/submissions/*.csv
 competitions/*/scripts/cache*/
+external_data/cache/
