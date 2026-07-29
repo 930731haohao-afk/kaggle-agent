@@ -51,7 +51,7 @@ Figure 1 summarizes the architecture and how the two mechanisms connect to the s
 
 *Figure 1: Architecture of my-agent, organized around its six-stage pipeline. The LLM (Claude Code) drives every stage; in the modeling–evaluation stages it iterates via tree search (25–80 CV-scored nodes per competition) and invokes Auto-ML tools through the shell. Two cross-cutting mechanisms close the loop: the experience library supplies evidence-backed priors before EDA and modeling, and every run is logged to structured experiment records, from which insights validated by a score delta are written back to the library for future competitions.*
 
-**Tree-search protocol.** The search harness evolved as four strict supersets: v1 introduced the minimal candidate tree (a node is a complete solution; a lineage backtracks after three children without improvement); v2 made ensembles first-class node kinds (solo/blend) with out-of-fold caching and weight search; v3 — the version used for every run in this report — added a budget phase machine, duplicate handling, sandboxed evaluation, and resume safety; v4 adds external idea injection and is not enabled here. Figure 2 shows the v3 loop.
+**Tree-search protocol.** The search harness evolved as four strict supersets: v1 introduced the minimal candidate tree (a node is a complete solution; a lineage backtracks after three children without improvement); v2 made ensembles first-class node kinds (solo/blend) with out-of-fold caching and weight search; v3 — the version used for every run in this report — added a budget phase machine (an exploit phase, then a forced exploration burst once all lineages plateau, then stop), duplicate handling, sandboxed evaluation, and resume safety; v4 adds external idea injection and is not enabled here. Figure 2 shows the v3 loop.
 
 ![Figure 2: The v3 tree-search loop](figures/fig2_tree_search.png)
 
@@ -208,6 +208,8 @@ Kaggle randomly splits each test set into two disjoint subsets, public and priva
 
 In seven competitions the mutual scatter is less than half the common shift, establishing that the drift is a shared phenomenon.
 
+**Statistical properties of the decision rule**: algebraically, condition 2 is equivalent to `d_pub·(2·d_priv − d_pub) > 0` and therefore *implies* condition 1; both are stated because they diagnose different failures. The rule is a conservative screen rather than a calibrated hypothesis test, but its false-verdict rate under a null model is computable. If two agents are truly equivalent, so that `d_pub` and `d_priv` are independent zero-mean Gaussian noise with `σ_pub = k·σ_priv`, the probability of a spurious verdict is `P_FP(k) = 1/2 − arctan(k/2)/π` — 35.2% for equal variances (k = 1) and 25.0% for the 20%/80% public/private splits common in these competitions (k ≈ 2); condition 1 alone caps it at 50% distribution-free. Against this null rate of roughly 25–35%, the observed decidable rate is 40/54 = 74% — far above what noise alone would produce, indicating that most decided duels reflect genuine performance differences.
+
 **Results** (18 competitions × 3 pairings each = 54 duels, 40 decidable):
 
 | Method | Wins | Losses | Win rate (excl. ties) |
@@ -217,7 +219,7 @@ In seven competitions the mutual scatter is less than half the common shift, est
 | **NVIDIA** | 13 | 16 | 45% |
 | Ties | — | — | 14 duels (26%) |
 
-**Interpretation**: my-agent leads; AIDE and NVIDIA are hard to separate within error. **A quarter of all duels cannot be decided under this test** — had we reported raw counts without this layer, that fraction of the "conclusion" would have been noise. Notably, the ranking is sensitive to sample composition: restricted to the Playground subset (13 of the 18) it is NVIDIA 58% / AIDE 47% / my-agent 44%, while the full 18-competition baseline reverses it completely (§4.3).
+**Interpretation**: my-agent leads (16/27 = 59%, 95% Clopper–Pearson CI 39–78%); AIDE and NVIDIA are hard to separate within error. **A quarter of all duels cannot be decided under this test** — had we reported raw counts without this layer, that fraction of the "conclusion" would have been noise. Notably, the ranking is sensitive to sample composition: restricted to the Playground subset (13 of the 18) it is NVIDIA 58% / AIDE 47% / my-agent 44%, while the full 18-competition baseline reverses it completely (§4.3).
 
 **Known limitation of this test**: it covers only **test-set sampling noise**, not **between-run agent variance** (AIDE resamples code from the LLM at every step; that term should be larger). The upcoming repeatability experiment measures exactly this.
 
@@ -238,7 +240,7 @@ The direction is fully reversed. In the same competition, CV says we lead by 3.7
 
 **Why this happens**. CV and LB measure different things: CV asks "how well do we do on resamples of the training data," LB asks "how well do we do on a batch of never-seen data." The two correlate strongly when distributions are stable, and decouple as soon as the test-train relationship changes. s3e19 is the extreme case — all three agents' CVs sit at 10–14 while their LB scores sit at 48–50: **everyone misfires together**, and the magnitude of the misfire is unrelated to the CV ordering. That competition's leaderboard is bimodal (of 1,174 teams, 265 score below 10 and 570 land in 40–60); all three agents fell into the lower mode, which CV had no way to predict.
 
-**Methodological implication**: this is direct evidence for this study's claim that **agent benchmarks must submit to the real leaderboard**. Comparing agents by CV is cheap and convenient, but in 10 of 13 competitions it yields conclusions that differ from real performance. The attached per-competition reports are therefore explicitly labeled **CV-only**, and their conclusions must not be mixed with the leaderboard verdicts of Table 3-2b — the two are not two answers to one question but answers to two different questions.
+**Methodological implication**: this is direct evidence for this study's claim that **agent benchmarks must submit to the real leaderboard**. Comparing agents by CV is cheap and convenient, but in 10 of 13 competitions it yields conclusions that differ from real performance — an agreement rate of only 3/13 = 23% (95% CI 5–54%). The attached per-competition reports are therefore explicitly labeled **CV-only**, and their conclusions must not be mixed with the leaderboard verdicts of Table 3-2b — the two are not two answers to one question but answers to two different questions.
 
 ---
 
@@ -352,7 +354,7 @@ Two observations:
 
 - **The significance test covers only test-set sampling noise**, not between-run agent variance. AIDE's term is expected to be largest (the LLM resamples code at every step); once included, some of the current 40 decisive results may revert to ties.
 - **The asymmetry created by the experience library is disclosed, not eliminated.** my-agent carries cross-competition memory; the other two cold-start — a design difference rather than a flaw, but it colors the interpretation of the conclusions.
-- **The sample is small, and §4.3 shows the ranking is sensitive to set composition.** With 18 competitions and 54 duels, the gap between 59% and 45% remains a rough estimate; adding or removing a single competition can move it by one to two percentage points.
+- **The sample is small, and §4.3 shows the ranking is sensitive to set composition.** With 18 competitions and 54 duels, the gap between 59% and 45% remains a rough estimate; adding or removing a single competition can move it by one to two percentage points. Exact 95% Clopper–Pearson intervals make this concrete: my-agent 59% [39%, 78%], AIDE 46% [26%, 67%], NVIDIA 45% [26%, 64%] — substantially overlapping intervals.
 
 ### 4.5 Work in Progress and Future Directions
 
@@ -367,6 +369,12 @@ Two observations:
 - **Introduce validation gates**: AIDE's two failures (choosing the optimistic node on s3e16; tuning a leaked metric on s3e19) both stem from having no mechanism that lets a diagnosis veto a score. my-agent could add a hard rule — a single-step metric improvement beyond a threshold automatically triggers a split-legality check.
 - **Study the selection signal**: NVIDIA's bottleneck (votes ≠ quality) is a concrete, improvable mechanism. my-agent is not bound by the yardstick freeze and can implement selection by author rank or kernel-claimed score, checking reproduced scores against source claims.
 - **Measure the experience library's actual value**: we currently know only that it creates an asymmetry, not how much it contributes. An ablation with the library disabled would measure it directly.
+
+---
+
+## 5. Conclusion
+
+This study set out to answer two questions — where does our hybrid agent stand, and how much of an agent benchmark is noise — and returned quantitative answers to both. Against two frozen, methodologically distinct yardsticks on a fixed 18-competition baseline, my-agent wins 59% of decidable duels (95% CI 39–78%), with its advantage concentrated where no mature public solutions exist. At the same time, 26% of all duels cannot be decided at the measurable error scale, local cross-validation contradicts the real leaderboard in 10 of 13 comparable competitions, and the three-way ranking reverses outright between two reasonable evaluation sets. The methodological conclusion is therefore stronger than any single ranking: claims about agent superiority are meaningful only when stated together with an error model and the composition of the evaluation set. The paired significance test introduced here supplies that error model at zero experimental cost, and we offer it as a default for future agent benchmarks.
 
 ---
 
