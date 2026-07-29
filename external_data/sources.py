@@ -73,7 +73,7 @@ def fetch_country_map(refresh: bool = False) -> pd.DataFrame:
     rows = [
         {"name": c["name"], "iso2": c["id"] if len(c["id"]) == 2 else c["iso2Code"], "iso3": c["id"] if len(c["id"]) == 3 else ""}
         for c in raw[1]
-        if c.get("region", {}).get("id") != "NA"  # drop aggregates
+        if (c.get("region") or {}).get("id") not in (None, "NA")  # drop aggregates & regionless
     ]
     df = pd.DataFrame(rows)
     return df[df["iso3"] != ""].reset_index(drop=True)
@@ -110,10 +110,13 @@ def fetch_worldbank(indicator_key: str, year_from: int, year_to: int,
     if cp.exists() and not refresh:
         raw = json.loads(cp.read_text())
     else:
-        raw = _http_json(
-            f"{_WB_BASE}/country/all/indicator/{code}"
-            f"?format=json&per_page=20000&date={year_from}:{year_to}"
-        )
+        url = (f"{_WB_BASE}/country/all/indicator/{code}"
+               f"?format=json&per_page=20000&date={year_from}:{year_to}")
+        raw = _http_json(url)
+        pages = raw[0].get("pages", 1)
+        for p in range(2, pages + 1):
+            more = _http_json(url + f"&page={p}")
+            raw[1].extend(more[1])
         cp.write_text(json.dumps(raw))
     meta = {
         "indicator": code,
@@ -124,7 +127,7 @@ def fetch_worldbank(indicator_key: str, year_from: int, year_to: int,
         {"iso3": e["countryiso3code"], "country": e["country"]["value"],
          "year": int(e["date"]), "value": e["value"]}
         for e in raw[1]
-        if e["value"] is not None and e["countryiso3code"]
+        if e["value"] is not None and e["countryiso3code"] and str(e["date"]).isdigit()
     ]
     return pd.DataFrame(rows), meta
 

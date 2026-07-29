@@ -31,11 +31,27 @@ def merge_year_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_country: str,
     Countries missing from `mapping` get NaN and are listed in the report.
     Returns (df_with_out_col, report).
     """
-    d = df.copy()
+    d = df.reset_index(drop=True).copy()
+    d["_orig_order"] = range(len(d))
     d["_iso3"] = d[df_country].map(mapping)
 
     e = ext[[ext_key, ext_year, value_col]].dropna().copy()
-    e = e.sort_values([ext_key, ext_year])
+    e[ext_year] = e[ext_year].astype(int)
+    e[value_col] = pd.to_numeric(e[value_col])  # raise on non-numeric — bad source data must surface
+    n_dup = int(e.duplicated([ext_key, ext_year]).sum())
+    # duplicate (key, year) rows: keep last, count in report (masks nothing silently)
+    e = e.drop_duplicates([ext_key, ext_year], keep="last").sort_values([ext_key, ext_year])
+
+    if e.empty:
+        out = df.copy(); out[out_col] = float("nan")
+        report = {"out_col": out_col, "lag": lag, "rows": int(len(df)), "rows_matched": 0,
+                  "rows_unmatched": int(len(df)), "unmatched_countries": sorted(df[df_country].unique().tolist()),
+                  "ext_year_range": None, "ext_duplicates_dropped": 0, "source_meta": meta or {},
+                  "joined_at": datetime.now().isoformat(timespec="seconds"), "leakage_check": "n/a (empty external table)"}
+        if log_path:
+            Path(log_path).parent.mkdir(parents=True, exist_ok=True)
+            Path(log_path).write_text(json.dumps(report, indent=2, ensure_ascii=False))
+        return out, report
 
     # as-of style: for each (iso3, row_year) take latest ext year <= row_year - lag
     d["_eff_year"] = d[df_year].astype(int) - lag
@@ -46,7 +62,7 @@ def merge_year_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_country: str,
         d.sort_values("_eff_year"),
         e.rename(columns={"_ext_year": "_eff_year"}).sort_values("_eff_year"),
         on="_eff_year", by="_iso3", direction="backward",
-    ).sort_index()
+    ).sort_values("_orig_order").reset_index(drop=True)
 
     # leakage check: the ext year actually used must respect the rule
     got = merged.dropna(subset=["_used_year"])
@@ -62,7 +78,8 @@ def merge_year_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_country: str,
         "rows_matched": int(merged[out_col].notna().sum()),
         "rows_unmatched": int(merged[out_col].isna().sum()),
         "unmatched_countries": unmatched_countries,
-        "ext_year_range": [int(e["_ext_year"].min()), int(e["_ext_year"].max())] if len(e) else None,
+        "ext_year_range": [int(e["_ext_year"].min()), int(e["_ext_year"].max())],
+        "ext_duplicates_dropped": n_dup,
         "source_meta": meta or {},
         "joined_at": datetime.now().isoformat(timespec="seconds"),
         "leakage_check": "passed",
@@ -71,7 +88,7 @@ def merge_year_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_country: str,
         Path(log_path).parent.mkdir(parents=True, exist_ok=True)
         Path(log_path).write_text(json.dumps(report, indent=2, ensure_ascii=False))
 
-    out = merged.drop(columns=["_iso3", "_eff_year", "_used_year", "country_y"], errors="ignore")
+    out = merged.drop(columns=["_iso3", "_eff_year", "_used_year", "_orig_order", "country_y"], errors="ignore")
     return out, report
 
 
@@ -81,7 +98,10 @@ def merge_holiday_flags(df: pd.DataFrame, hol: pd.DataFrame, *, df_country: str,
                         meta: dict | None = None) -> tuple[pd.DataFrame, dict]:
     """Add a holiday indicator column. Holidays are deterministic future — no leakage."""
     d = df.copy()
-    d["_date"] = pd.to_datetime(d[df_date])
+    ser = pd.to_datetime(d[df_date])
+    if ser.dt.tz is not None:
+        ser = ser.dt.tz_localize(None)
+    d["_date"] = ser.dt.normalize()
     key = set(zip(hol["country"], hol["date"]))
     d[out_col] = [int((c, t) in key) for c, t in zip(d[df_country], d["_date"])]
     report = {

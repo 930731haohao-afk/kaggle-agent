@@ -82,8 +82,11 @@ Only these sources may be proposed by the dossier; each join must state a leakag
 | World Bank Open Data | GDP, GDP per capita, population, CPI | country × year | only values dated ≤ the prediction year |
 | Public holiday calendars (e.g., `holidays` pkg) | national holidays | country × date | deterministic future — no leakage |
 | ISO country/region tables | codes, geo groupings | country | static — no leakage |
-| Exchange rates (ECB/FRED public series) | monthly FX | currency × month | only values dated ≤ prediction month |
+| Exchange rates (ECB/FRED public series) | monthly FX | currency × month | only values dated ≤ prediction month — *whitelisted; fetcher not yet implemented, `sources.py` raises* |
 
 **Rules**: (1) join keys must exist in the official data or be derivable from it; (2) no
-future information relative to the prediction row's date; (3) the join script must log the
-source snapshot date; (4) competition rules must permit external data — check before use.
+future information relative to the prediction row's date — implemented as `lag` in
+`external_data/join.py`: `lag=0` allows same-period values (historical-solution convention),
+`lag=1` restricts to strictly earlier periods; state which lag a dossier assumes; (3) the join
+script must log the source snapshot date; (4) competition rules must permit external data —
+check before use.
