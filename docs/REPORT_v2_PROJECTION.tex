@@ -447,7 +447,24 @@ But this is not a capability ceiling: on the same-type task tps-jan-2022, my-age
 
 \paragraph{Design.} The three agents re-run, each under its frozen method, on three competitions outside the tabular Playground family: us-patent-phrase-to-phrase-matching (NLP, text pairing), ventilator-pressure-prediction (physiological time series), and SIIM-ISIC melanoma (medical imaging) --- machine fully dedicated per lane, 4--8h budgets, same isolation protocol. This tests whether the Playground conclusions (ranking reversal, CV--LB decoupling, failure modes) extend beyond the task family they were measured on. Version discipline: my-agent's RUN2 lanes execute the same skill version as the 18-competition baseline; v5 components are excluded from these runs and evaluated separately.
 
-\paragraph{Results.} \TBD{three-way scores, percentile ranks, and paired verdicts for us-patent / ventilator / SIIM; NVIDIA's SIIM lane is mid-run at the time of this draft}
+\paragraph{Scoring.} The mid-complexity competitions use MLE-bench prepared splits and are graded offline against the held-out private split (us-patent is a code competition and ventilator/SIIM live test sets differ from the prepared splits, so Kaggle late submission is structurally unavailable); medal thresholds and the above-median flag come from the frozen leaderboard snapshot.
+
+\paragraph{Results (7 of 9 lanes complete).}
+\begin{table}[H]
+\centering\small
+\caption{Mid-complexity three-way, offline-graded. my-agent's ventilator and SIIM lanes are pending.}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} \\
+\midrule
+us-patent & Pearson $r$ \up & \textbf{0.86658} (silver, $>$median) & 0.86160 (bronze, $>$median) & 0.65821 \\
+ventilator & MAE \dn & \TBD{pending} & 8.55804 & \textbf{0.34591} \\
+SIIM-ISIC & AUC \up & \TBD{pending} & \textbf{0.89822} & 0.88579 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Early readings, consistent with the Playground failure modes: on us-patent my-agent's ensemble takes the three-way best and the only silver-tier score; on ventilator NVIDIA's budget-shrunk kernel reproduction collapses ($8.56$ MAE vs.\ AIDE's $0.35$) --- reproduction under a compute budget can be catastrophically fragile, an extreme instance of the selection-signal weakness; AIDE's search remains serviceable across task families. Paired-test verdicts require my-agent's two remaining lanes. \TBD{complete 9-lane table + verdicts}
 
 \paragraph{v5 applicability preview (design-level, no results claimed).} The dossier layer applies to all three (split policy: GroupKFold by anchor for us-patent, by breath for ventilator); the data layer applies strongly to SIIM (prior-competition image archives --- outside the current whitelist, a planned source-class extension), moderately to us-patent (CPC code-to-title public text join), and deliberately not to ventilator (no join keys --- a natural specificity probe).
 
