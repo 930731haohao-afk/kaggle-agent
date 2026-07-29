@@ -1,0 +1,22 @@
+{
+  "out_col": "is_holiday",
+  "rows": 27375,
+  "holiday_rows": 975,
+  "countries_without_calendar": [],
+  "source_meta": {
+    "source": "holidays==0.101",
+    "snapshot": "holidays==0.101",
+    "years": [
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022
+    ],
+    "unmatched": [],
+    "fetched": "2026-07-29"
+  },
+  "joined_at": "2026-07-29T14:57:24",
+  "leakage_check": "n/a (deterministic calendar)"
+}

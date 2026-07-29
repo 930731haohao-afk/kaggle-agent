@@ -1,0 +1,136 @@
+{
+  "competition": "tabular-playground-series-jan-2022",
+  "stage": "0.5 problem dossier",
+  "task_family": "time-series forecast (daily retail-like panel, 18 series = 3 countries x 2 stores x 3 products)",
+  "test_window": {
+    "relation": "future",
+    "evidence": "train.csv dates 2015-01-01..2018-12-31 (26,298 rows, 1461 days x 18 series, complete panel, no gaps/dups); test.csv dates 2019-01-01..2019-12-31 (6,570 rows = 365 x 18) strictly after train. row_id contiguous across the split (test starts at max(train.row_id)+1), so the split is a clean chronological cut, not a random split. config.yaml problem_type: regression_timeseries."
+  },
+  "split_policy": {
+    "scheme": "time-based holdout / expanding-window: fit on year < y, validate on year == y (e.g. train 2015-2017 -> validate 2018, mirroring the 4y-train / 1y-test test setup); or sklearn TimeSeriesSplit on the date axis. Final model refits on all of 2015-2018.",
+    "forbidden": "shuffled KFold (and any group/stratified KFold that mixes dates across folds) — leaks future days of the same series into training; measured 4.5x optimism bias on s3e19 (4.56 shuffled vs 20.41 time split SMAPE).",
+    "notes": "Validate over a full calendar year, not a partial one — the series have strong monthly seasonality (high Dec/Jan/Apr, low Aug/Sep), so a partial-year holdout scores a different seasonal mix than the 2019 test year."
+  },
+  "metric": {
+    "name": "SMAPE",
+    "direction": "minimize",
+    "formula": "(100/n) * sum(2*|F-A| / (|A|+|F|))",
+    "traps": [
+      "MAE-family (piecewise-linear in the residual): train with an L1 / MAE objective, not L2 — L2 chases the large-volume series and is a poor proxy.",
+      "Scale-free and relative: each of the 18 series contributes equally per row regardless of level, so errors on low-volume series (num_sold min 70) cost as much as on high-volume ones (max 2884). Consider modeling log(num_sold) or a per-series ratio decomposition rather than raw levels.",
+      "Asymmetric near zero and undefined at A=F=0 — not binding here: train num_sold has no zeros (min 70) and all 18 series are dense, but any prediction pipeline must still clip predictions to > 0.",
+      "SMAPE mildly favors under-prediction (denominator grows with F); a small global multiplicative calibration factor tuned on the validation year is a legitimate post-process.",
+      "Target is an integer count — rounding must happen INSIDE the metric function so every blend candidate is scored on its post-processed output."
+    ]
+  },
+  "external_data": {
+    "needed": "likely",
+    "rules_permit": true,
+    "rationale": "Only 4 official feature columns (date, country, store, product) — the entire cross-country level and trend structure has to come from either fitted per-country effects or exogenous covariates. Train shows a growing trend (yearly mean num_sold 364.4 / 364.8 / 396.0 / 425.0 for 2015-2018) that a purely calendar-driven model must extrapolate blind into 2019. The three countries (Finland, Norway, Sweden) are exactly the granularity at which macro indicators vary, so a country x year macro join gives the model a real signal for the between-country level ratio and the year-over-year growth factor instead of an extrapolated constant.",
+    "candidates": [
+      {
+        "source": "World Bank Open Data — GDP per capita (plus GDP level / growth, population as secondary)",
+        "join_key": "country x year (Finland, Norway, Sweden; ISO3 FIN/NOR/SWE)",
+        "leakage_rule": "only values dated <= the prediction year. Assumes lag=0 (same-year GDP is allowed, the historical-solution convention: 2019 rows join 2019 GDP). If a stricter no-contemporaneous-information stance is wanted, use lag=1 (2019 rows join 2018 GDP) — state which lag the feature table was built with in the join audit log.",
+        "priority": "primary",
+        "why": "TASK-TS-FUTURE evidence: on this exact competition a GDP-per-capita join moved CV SMAPE to 4.1793 vs 6.1551 for an official-data-only pipeline."
+      },
+      {
+        "source": "Public holiday calendars (`holidays` package)",
+        "join_key": "country x date (FI / NO / SE national holidays)",
+        "leakage_rule": "deterministic future — no leakage; 2019 holidays are known in advance.",
+        "priority": "primary",
+        "why": "TASK-TS-CALENDAR: daily series with country keys; Nordic holidays (Juhannus/Midsummer, Christmas period, national days) plus Black-Friday-type shopping events explain the sharp daily spikes that day-of-week + month features cannot."
+      },
+      {
+        "source": "ISO country/region tables",
+        "join_key": "country",
+        "leakage_rule": "static — no leakage.",
+        "priority": "supporting",
+        "why": "Only needed as the ISO3 code bridge for the World Bank join; carries no predictive signal of its own at 3 countries."
+      },
+      {
+        "source": "Exchange rates (ECB SDMX) — EUR/NOK, EUR/SEK monthly reference rates",
+        "join_key": "currency x month (Finland=EUR, Norway=NOK, Sweden=SEK)",
+        "leakage_rule": "only values dated <= the prediction month; assumes lag=1 (strictly earlier month) since intra-month rates for a future window are not known at forecast time.",
+        "priority": "speculative — test only if GDP alone leaves country-level residual drift",
+        "why": "Could absorb residual cross-country level drift if sales are denominated in different currencies. No score evidence of ours; do not spend a lane on it before the GDP lane resolves."
+      }
+    ],
+    "excluded_from_whitelist": [
+      "OWID COVID — whitelisted but irrelevant: the whole train+test window ends 2019-12-31, before any COVID signal exists."
+    ],
+    "off_whitelist_ideas_rejected": [
+      "Any competition-specific published feature recipe or public kernel — forbidden input at this stage; the dossier must be derivable from the problem statement plus task-type priors only."
+    ]
+  },
+  "injection_ideas": {
+    "data_level": [
+      "Join World Bank GDP per capita by country x year (lag=0), as both a raw feature and a per-country ratio to the 3-country mean — this is the highest-leverage single idea; give it its own raced lane.",
+      "Join national holiday flags by country x date via the `holidays` package; add is_holiday, days_to/from_nearest_holiday, and an end-of-year (Dec 24 - Jan 06) window flag.",
+      "Add a Black-Friday / late-November shopping-event flag derived from the calendar (4th Thursday of November + following days), per TASK-TS-CALENDAR.",
+      "Calendar features from the date alone: day-of-week, month, day-of-year with Fourier terms (annual + weekly harmonics), week-of-year, year index for the trend.",
+      "Multiplicative decomposition instead of raw-level regression: model num_sold as country_effect x store_effect x product_effect x seasonality x trend, fit the ratios on train, and let GDP drive the country x year effect. Fits SMAPE's scale-free nature far better than an additive model.",
+      "Target transform: fit on log(num_sold) so an L1 objective on the log scale approximates the relative error SMAPE actually measures."
+    ],
+    "model_level": [
+      "L1 / MAE objective (LightGBM objective='mae', or Huber with small delta) — TASK-MAE-METRIC; L2 is the wrong proxy for SMAPE.",
+      "Round predictions to integers and clip to a positive floor INSIDE the metric function so every blend candidate is scored post-processed.",
+      "Tune a single global multiplicative calibration factor on the validation year (SMAPE's asymmetry makes a slight shrink toward under-prediction optimal).",
+      "GBDT with native categorical handling for country/store/product (cardinality 3/2/3 — trivial, but native handling avoids one-hot dilution).",
+      "Include a shallow, heavily regularized, diverse-library member (e.g. a Ridge / linear model on the decomposition features, or a plain seasonal-naive-x-trend baseline) as a blend decorrelator — TASK-BLEND-DECOR; for the final weights prefer a closed-form / NNLS solve over Dirichlet random search.",
+      "Extrapolation guard: tree models cannot extrapolate a trend beyond the training range. Either de-trend before the GBDT (predict the ratio to a fitted trend and multiply back) or pair the GBDT with a model that can extrapolate. This is the main structural failure mode of a naive GBDT on this comp."
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-TS-FUTURE",
+    "TASK-TS-CALENDAR",
+    "TASK-MAE-METRIC",
+    "TASK-BLEND-DECOR"
+  ],
+  "considered_not_matched": [
+    {
+      "prior": "TASK-CAT-ONLY",
+      "reason": "All three non-date feature columns are categorical, but cardinality is 3/2/3 — encoding is not the game here; there is nothing for target encoding to compress and no high-cardinality risk. Native GBDT categorical handling suffices."
+    },
+    {
+      "prior": "TASK-IMBALANCED",
+      "reason": "Regression target, not a binary classification task."
+    },
+    {
+      "prior": "TASK-SPECTRAL",
+      "reason": "4 feature columns, 26,298 rows — the opposite of columns >> rows."
+    },
+    {
+      "prior": "TASK-STRUCT-OUT",
+      "reason": "Single scalar target per row; no rule-governed grid/sequence output."
+    }
+  ],
+  "data_facts_verified": {
+    "train_rows": 26298,
+    "test_rows": 6570,
+    "train_date_range": ["2015-01-01", "2018-12-31"],
+    "test_date_range": ["2019-01-01", "2019-12-31"],
+    "series": 18,
+    "rows_per_series_train": 1461,
+    "countries": ["Finland", "Norway", "Sweden"],
+    "stores": ["KaggleMart", "KaggleRama"],
+    "products": ["Kaggle Hat", "Kaggle Mug", "Kaggle Sticker"],
+    "test_key_coverage": "test contains exactly the same 18 country x store x product combinations as train — no cold-start series",
+    "target": {"name": "num_sold", "dtype": "integer count", "min": 70, "max": 2884, "mean": 387.5, "zeros": 0},
+    "nulls": 0,
+    "duplicate_keys": 0,
+    "train_yearly_mean_num_sold": {"2015": 364.4, "2016": 364.8, "2017": 396.0, "2018": 425.0}
+  },
+  "not_recorded": [
+    "Public/private leaderboard split of the 2019 test year (temporal vs random) — not stated in config.yaml and no competition page was read.",
+    "Whether the data is synthetic/CTGAN-generated (typical of the Tabular Playground family) and how faithfully it reproduces real macro dependence — the GDP hypothesis's strength is therefore a prior, not a confirmed property of this file.",
+    "Absolute leaderboard scale for SMAPE on this competition (percent vs fraction convention) — resolve from sample_submission scoring conventions or a first submission before comparing to any external number."
+  ],
+  "eda_verdict": null,
+  "provenance": {
+    "inputs_used": ["config.yaml", "head/tail + schema summary of train.csv, test.csv, sample_submission.csv", "knowledge/task_priors.md"],
+    "forbidden_inputs_avoided": ["competition discussion threads", "public kernels", "competition write-ups"],
+    "training_run": false
+  }
+}

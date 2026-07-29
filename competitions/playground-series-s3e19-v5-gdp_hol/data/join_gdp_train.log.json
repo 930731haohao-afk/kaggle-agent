@@ -1,0 +1,22 @@
+{
+  "out_col": "gdp_pc",
+  "lag": 0,
+  "rows": 136950,
+  "rows_matched": 136950,
+  "rows_unmatched": 0,
+  "unmatched_countries": [],
+  "keys_not_in_ext": [],
+  "mapping_collisions": {},
+  "ext_year_range": [
+    2016,
+    2022
+  ],
+  "ext_duplicates_dropped": 0,
+  "source_meta": {
+    "indicator": "NY.GDP.PCAP.CD",
+    "snapshot": "2026-07-13",
+    "fetched": "2026-07-29"
+  },
+  "joined_at": "2026-07-29T14:57:23",
+  "leakage_check": "passed"
+}
