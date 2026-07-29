@@ -1,0 +1,16 @@
+name: tabular-playground-series-sep-2022
+url: https://www.kaggle.com/competitions/tabular-playground-series-sep-2022
+description: Forecast daily book sales for 6 EU countries x 2 stores x 4 products during 2021, trained on 2017-2020.
+problem_type: regression (time-series forecast)
+evaluation_metric: SMAPE
+optimization_direction: minimize
+target_column: num_sold
+id_column: row_id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
+special_rules:
+  external_data_allowed: true  # rules 7.C standard clause; accepted 2026-07-29 on huang account
+  pretrained_models_allowed: true
+  internet_access_allowed: false
+notes: v5 extension comp (firing-class n=2). NOT part of the frozen 18-comp baseline; reported separately. Train window includes COVID year 2020; test is the full future year 2021 — OWID COVID metrics plausibly relevant alongside GDP and holidays.

@@ -1,0 +1,122 @@
+{
+  "competition": "tabular-playground-series-sep-2022",
+  "stage": "0.5 problem dossier",
+  "written_utc_date": "2026-07-29",
+  "task_family": "time-series forecast (multi-key daily panel, complete balanced grid)",
+  "data_shape": {
+    "train_rows": 70128,
+    "test_rows": 17520,
+    "series": 48,
+    "keys": "country(6) x store(2) x product(4)",
+    "resolution": "daily",
+    "rows_per_series_train": 1461,
+    "rows_per_series_test": 365,
+    "target": "num_sold (positive integer, min 19, max 986, mean 194.3, no nulls, no zeros)",
+    "key_levels_identical_train_test": true,
+    "missing_dates_or_duplicates": "none (48 x 1461 = 70128 exactly; 48 x 365 = 17520 exactly)"
+  },
+  "test_window": {
+    "relation": "future",
+    "evidence": "train dates 2017-01-01..2020-12-31, test dates 2021-01-01..2021-12-31, strictly disjoint and strictly later; same 48 key combinations in both; description says 'during 2021, trained on 2017-2020'"
+  },
+  "split_policy": {
+    "scheme": "time-based holdout mirroring the real gap: train 2017-2019 -> validate 2020 (one full year, matches the 365-day horizon). Optional second fold train 2017-2018 -> validate 2019 for stability; expanding-window TimeSeriesSplit at year granularity.",
+    "forbidden": "shuffled KFold and any row-level random split (leaks same-day / adjacent-day information across the 48 series; measured 4.5x optimism bias on s3e19, 4.56 vs 20.41 SMAPE)",
+    "caveat": "the only available validation year 2020 is the COVID year, so it is not distributionally representative of test-year 2021 — expect validation SMAPE to be pessimistic/misleading unless COVID effects are modeled or 2020 is explicitly handled. Report both 2019-fold and 2020-fold scores; do not select solely on the 2020 fold.",
+    "group_note": "no grouping needed beyond time; all 48 series appear in both train and test, so per-series parameters are learnable."
+  },
+  "metric": {
+    "name": "SMAPE",
+    "direction": "minimize",
+    "traps": [
+      "asymmetric: penalizes over-prediction more than under-prediction at equal absolute error, so the SMAPE-optimal point forecast sits below the conditional mean — a small global multiplicative shrink factor should be tuned on the validation year",
+      "scale-free / relative: errors on low-volume series (Poland, Kaggle Recipe Book-type low sellers) weigh as much as high-volume ones; a plain RMSE/L2 objective on raw counts under-serves them",
+      "MAE-family: use L1 / MAE objective, or train on log(num_sold) which converts relative error into approximately absolute error",
+      "no near-zero blow-up here (min target 19), so the usual SMAPE division-by-zero pathology does not apply",
+      "target is integer-valued; rounding is a legal post-process and must be applied INSIDE the metric function so every blend candidate is scored on its final rounded form"
+    ]
+  },
+  "external_data": {
+    "needed": "likely",
+    "rules_check": "config.yaml special_rules.external_data_allowed = true (standard 7.C clause, accepted 2026-07-29). internet_access_allowed = false, so any source must resolve from the local external_data/cache or from an offline package.",
+    "candidates": [
+      {
+        "source": "World Bank Open Data — GDP per capita (NY.GDP.PCAP.CD)",
+        "join_key": "country x year",
+        "leakage_rule": "lag=0 (values dated <= the prediction year; the 2021 test rows use the 2021 figure, the historical-solution convention). Use lag=1 instead if a strict no-same-period policy is wanted, at the cost of missing the 2021 rebound.",
+        "availability": "OFFLINE — external_data/cache/wb_NY.GDP.PCAP.CD_2016_2022.json already covers 2017-2021 for all six countries, non-null. No download needed.",
+        "rationale": "the six countries span a ~3x GDP-per-capita spread (Poland 13.9k vs Germany 45.6k in 2017) and each country's level moves year to year (2020 COVID dip, 2021 rebound of +9 to +15% across all six); a per-country-per-year scale covariate is exactly the shape of the country factor a multi-key sales panel needs, and it is the only supplied handle on the 2021 level that train data cannot see",
+        "prior_evidence": "tps-jan-2022 (same competition family and key structure): CV SMAPE 4.1793 with GDP-per-capita join vs 6.1551 official-data-only"
+      },
+      {
+        "source": "Public holiday calendars (`holidays` package via external_data.sources.fetch_holidays)",
+        "join_key": "country x date",
+        "leakage_rule": "deterministic future — no leakage; 2021 holidays are known in advance",
+        "availability": "OFFLINE — pure-python package, no network",
+        "rationale": "daily retail-like series with a country key; national holidays and their neighborhoods (day-before/day-after) are standard demand shifters and differ per country, which a shared day-of-year term cannot express"
+      },
+      {
+        "source": "OWID COVID (compact) — cases/deaths per million",
+        "join_key": "country x date",
+        "leakage_rule": "lag>=0, values dated <= the row date only",
+        "availability": "NOT CACHED and requires an explicit download allowance (~178 MB, allow_download flag in fetch_owid_covid); internet_access_allowed is currently false, so this candidate is BLOCKED unless the user explicitly permits the one-time download",
+        "rationale": "train contains the 2020 COVID year (2020 mean num_sold 219.4 vs 184.5 in 2019 — a distinct level shift) and test is the 2021 recovery year; covid intensity is a plausible confounder for the 2020 anomaly. Second-order compared to GDP and holidays — treat as an optional lane, not a default.",
+        "caveat": "using 2021 covid values as a test-time feature assumes covariate availability at prediction time; under a strict forecasting reading that is future information. Prefer using it only to explain/discount 2020 in training, not as a 2021 predictor."
+      },
+      {
+        "source": "ISO country/region tables",
+        "join_key": "country",
+        "leakage_rule": "static — no leakage",
+        "availability": "OFFLINE — external_data/cache/wb_countries.json",
+        "rationale": "only needed as the ISO3/ISO2 bridge for the GDP and holiday joins; carries no independent signal at n=6 countries"
+      }
+    ],
+    "rejected_non_whitelist": "none proposed — whitelist-only, per Stage 0.5 rules"
+  },
+  "injection_ideas": {
+    "data_level": [
+      "join World Bank GDP per capita on country x year (lag=0) via external_data.join.merge_year_safe; also derive ratio-to-country-mean and year-over-year growth so the model sees the 2021 rebound as a relative move, not an unseen absolute level",
+      "join national holiday flags on country x date via merge_holiday_flags, plus day-offset-to-nearest-holiday and an is-holiday-week flag",
+      "calendar features: day-of-week, day-of-year, week-of-year, month, is-weekend, is-month-end, is-year-end; year-end/new-year window explicitly flagged (2017-01-01 is a Sunday holiday and the series start)",
+      "Fourier terms for annual seasonality (a handful of harmonics on day-of-year) and weekly seasonality — a complete 4-year daily history per series makes these well-identified and they extrapolate to 2021 cleanly, unlike lag features which have no in-test history",
+      "exploit the complete balanced 48-series grid: decompose num_sold into a multiplicative structure (country level x store level x product mix x weekly seasonality x annual seasonality x trend) and check whether the product-mix and store ratios are stable across countries/years. If they are near-constant, model the aggregate series and redistribute by ratio — far fewer parameters than 48 independent models. This is a structural read of the panel, derivable from the schema alone.",
+      "COVID-year handling lane (independent of any OWID download): a 2020 indicator / sample-weight down-weighting of 2020, or fitting the trend on 2017-2019 and treating 2020 as a level anomaly — necessary because 2020 is both the closest year to test and the least representative",
+      "NO autoregressive lag features on the target: test is a 365-day contiguous horizon with no ground truth inside it, so any lag shorter than 365 days is unavailable at inference and will silently degrade (or force recursive forecasting with compounding error). Use only exogenous/deterministic features, or lags >= 365d."
+    ],
+    "model_level": [
+      "train on log(num_sold) (or fit relative/ratio targets) so the loss matches SMAPE's relative-error geometry; back-transform with a bias correction tuned on the validation year",
+      "L1 / MAE objective for GBDT members (TASK-MAE-METRIC), not L2",
+      "tune a single global multiplicative shrink factor on the validation year to exploit SMAPE's asymmetry; round predictions to integers inside the metric function",
+      "member diversity for the blend: (a) a deterministic-seasonality linear/GAM-style model on Fourier + holiday + GDP terms — strong extrapolator over a 1-year horizon, (b) a GBDT on the full feature table — GBDTs cannot extrapolate trend, so give them detrended or ratio targets rather than raw counts, (c) the multiplicative-decomposition estimator as a structurally different member",
+      "TASK-BLEND-DECOR: if the pool ends up variance-dominated (several deep GBDTs), add one shallow heavily-regularized diverse-library member as a decorrelator before re-optimizing weights",
+      "blend weights fit on the held-out year only, never in-sample; for a SMAPE objective use a direct search over the simplex on the validation-year predictions (no NNLS closed form for SMAPE)"
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-TS-FUTURE",
+    "TASK-TS-CALENDAR",
+    "TASK-MAE-METRIC",
+    "TASK-BLEND-DECOR"
+  ],
+  "unmatched_priors_checked": [
+    "TASK-CAT-ONLY — partially applicable: the three key columns are categorical, but cardinality is tiny (6/2/4) and there are strong numeric/temporal features, so encoding is not 'the whole game'; plain one-hot or native categorical handling suffices",
+    "TASK-SPECTRAL — no (5 columns, not thousands)",
+    "TASK-STRUCT-OUT — no explicit generative rule given, though the balanced-grid multiplicative structure is a soft analogue (captured in data_level idea 5)",
+    "TASK-IMBALANCED — no (regression)"
+  ],
+  "eda_must_verify": [
+    "is the product mix (4 products' share) stable across countries, stores and years? if yes, the multiplicative decomposition collapses the problem",
+    "is the store ratio (KaggleMart vs KaggleRama) constant across all countries and dates?",
+    "does the per-country level track GDP per capita by year (correlate country-year total sales vs GDP-per-capita) — this is the direct test of external_data.needed",
+    "how large and how shaped is the 2020 COVID distortion per country — a level shift, a shape change, or both?",
+    "is weekly seasonality present and stable, and does it differ per country/store?",
+    "confirm no missing dates and that 2020 leap day (2020-02-29) is present, since 2021 has none"
+  ],
+  "not_recorded": [
+    "official competition rules text (only config.yaml's summarized special_rules was read; external-data permission taken from there)",
+    "public/private leaderboard scores and any target benchmark",
+    "sample_submission placeholder semantics beyond the constant 100 filler",
+    "whether the competition's private split is a further time slice of 2021 or a random split of the test rows"
+  ],
+  "forbidden_inputs_respected": "no competition discussions, kernels, or write-ups were read; dossier derived from config.yaml, file schemas/head/describe, and knowledge/task_priors.md only"
+}
