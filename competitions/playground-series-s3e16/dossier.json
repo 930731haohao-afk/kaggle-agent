@@ -1,0 +1,68 @@
+{
+  "competition": "playground-series-s3e16",
+  "task_family": "iid tabular regression (integer-valued count target, MAE metric)",
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No date/time column in any file (train columns: id, Sex, Length, Diameter, Height, Weight, Shucked Weight, Viscera Weight, Shell Weight, Age). No group/entity key — rows are independent crab measurements. id is a plain contiguous row counter: train 0..74050 (74,051 rows), test resumes at 74051..123418 (49,368 rows), i.e. a single indexed table split into two blocks, not a temporal or grouped holdout. Kaggle Playground synthetic tabular episode: train and test are generated from the same model, so the split is iid. Stage 1 EDA must confirm by comparing per-feature train/test marginals (adversarial-validation AUC should be ~0.5)."
+  },
+  "split_policy": {
+    "scheme": "shuffled KFold (5-fold), stratified on binned Age — the target is a skewed positive integer count, so StratifiedKFold on Age (rare high ages merged into a top bin) keeps fold target distributions comparable and stabilizes the MAE estimate",
+    "forbidden": "time-based or group-based splits (no time or group key exists — they would only add variance); leave-one-out (49k/74k rows make it needlessly expensive); any split that fits target-encoding of Sex outside the fold",
+    "notes": "Single-table iid data: plain KFold is unbiased here. Keep one fixed fold assignment across all experiments so CV deltas are comparable, and reuse the same OOF index for blend-weight fitting."
+  },
+  "metric": {
+    "name": "MAE (mean absolute error)",
+    "direction": "minimize",
+    "traps": [
+      "MAE is minimized by the conditional MEDIAN, not the mean — train with an L1/MAE objective (LightGBM objective='mae'/'regression_l1', XGBoost 'reg:absoluteerror', CatBoost 'MAE'), not the default L2. An L2-trained model is systematically miscalibrated for this metric on a right-skewed target.",
+      "Target is a positive integer count but the metric is continuous MAE — rounding predictions to integers is NOT automatically better and must be tested inside the metric function (a rounded prediction can only help when the residual distribution is concentrated within +/-0.5).",
+      "Any post-processing (rounding, clipping to the observed Age range, per-Sex offsets) must live INSIDE the scoring function so every CV score and every blend candidate is evaluated with it applied — otherwise blend weights are optimized on a different objective than the leaderboard.",
+      "MAE gives no extra weight to large errors, so the blend weights that minimize RMSE are not the ones that minimize MAE — optimize blend weights directly on MAE (coordinate/scipy search on OOF), do NOT reuse the NNLS closed form (that is the RMSE-family shortcut).",
+      "MAE is unnormalized and in target units (years); score differences on this task are small in absolute terms — use a fixed fold split and report enough decimals to distinguish members."
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "rationale": "config.yaml records special_rules.external_data_allowed = false and internet_access_allowed = false for this competition, so no external join is permitted regardless of usefulness. Substantively it is also not needed: the target (crab Age) is a biological property fully determined by the provided morphometric covariates (size and weight measures) plus Sex — there is no country, date, currency, or geography key in the data, so nothing on the whitelist (World Bank macro indicators, holiday calendars, ISO country tables, ECB exchange rates, OWID COVID) has a joinable key here.",
+    "candidates": [],
+    "note_on_upstream_dataset": "The Playground series is generated from an original public dataset (Crab Age Dataset). Using it as extra training data is a common Playground pattern, but it is NOT on the Stage 0.5 whitelist and the recorded competition rules forbid external data — so it is excluded here rather than proposed. Do not fetch it."
+  },
+  "injection_ideas": {
+    "data_level": [
+      "Weight decomposition ratios: config notes Weight ~= Shucked + Viscera + Shell. Build residual = Weight - (Shucked + Viscera + Shell) and the three component shares (Shucked/Weight, Viscera/Weight, Shell/Weight). Shell-weight share is the classic maturity signal in abalone/crab-type morphometrics; a nearly-collinear raw triple is far more informative as shares plus a residual.",
+      "Size/shape ratios that remove overall scale: Height/Length, Diameter/Length, Length*Diameter*Height (volume proxy), and density = Weight / volume_proxy. Age relates to how growth has slowed relative to size, so scale-free shape features carry signal the raw sizes do not.",
+      "Log/cube-root transforms of the weight columns: weight ~ length^3, so cbrt(Weight) puts weights on the same linear scale as the length measures and linearizes the size-age relation for non-tree members.",
+      "Sex handling: 3 levels (I = infant, M, F). Use native GBDT categorical handling plus an explicit is_infant binary — the infant class is a maturity indicator, not just a nominal level, and it likely dominates the low-Age regime.",
+      "Sex-conditional standardization: z-score each morphometric feature within Sex, so a model sees 'large for an infant' vs 'large for a female' rather than raw magnitude.",
+      "Zero/impossible-value flags: Height == 0 (or near-0) rows are a known artifact in this measurement family — flag rather than drop, and verify prevalence in Stage 1 EDA."
+    ],
+    "model_level": [
+      "L1 objective on every tree member (LightGBM regression_l1, XGBoost reg:absoluteerror, CatBoost MAE) — direct consequence of TASK-MAE-METRIC.",
+      "Also race one Huber/quantile(alpha=0.5) member: quantile regression at the median is the exact MAE-optimal target and sometimes beats the L1 leaf approximation.",
+      "Wrap rounding/clipping post-processing inside the metric function and race {none, round-to-int, clip-to-[Age_min, Age_max]} as an explicit lane rather than assuming rounding helps.",
+      "Blend weights optimized directly on OOF MAE (coordinate descent / scipy minimize on the simplex), NOT NNLS — NNLS is the RMSE-family closed form and is the wrong objective here.",
+      "TASK-BLEND-DECOR is conditional, not yet matched: if the final pool turns out to be dominated by deep low-regularization GBDTs, add one shallow heavily-regularized member from a different library (or a monotone-constrained / linear-on-ratio-features model) as a decorrelator before re-optimizing weights.",
+      "Ordinal/classification reframe as a diversity member: Age is a bounded positive integer, so a multiclass or ordinal model whose expected value (or median class) is decoded to a scalar gives a genuinely decorrelated member for the blend.",
+      "Monotonic constraints (Age increasing in Shell Weight and the size measures) as a regularized member — cheap bias-dominated diversity that is also robust to the train/test shift if EDA finds any."
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-MAE-METRIC"
+  ],
+  "considered_but_not_matched": [
+    {"prior": "TASK-TS-FUTURE", "reason": "no date column and no forecasting language; test is an iid block of the same table"},
+    {"prior": "TASK-TS-CALENDAR", "reason": "no date, country, store, or product keys"},
+    {"prior": "TASK-CAT-ONLY", "reason": "only 1 of 8 features (Sex, 3 levels) is categorical; the other 7 are continuous morphometrics"},
+    {"prior": "TASK-SPECTRAL", "reason": "8 features x 74k rows — rows greatly exceed columns, the opposite of the p>>n trigger"},
+    {"prior": "TASK-STRUCT-OUT", "reason": "single scalar target, no grid/sequence structure"},
+    {"prior": "TASK-IMBALANCED", "reason": "regression task, not binary classification"},
+    {"prior": "TASK-BLEND-DECOR", "reason": "trigger depends on the composition of the blend pool, which does not exist yet — re-evaluate at the blend stage; carried in injection_ideas.model_level"}
+  ],
+  "not_recorded": [
+    "Official competition description, rules page, and metric definition text — internet_access_allowed is false in config.yaml and the Kaggle page was not fetched; all metric/rule facts above come from config.yaml only.",
+    "Whether the competition rules actually permit the original upstream Crab Age Dataset as supplementary training data — config.yaml records external_data_allowed: false, and the official rules text was not read to confirm or refute that record.",
+    "Leaderboard score scale and distribution (bimodal vs unimodal) — not derivable without the public leaderboard.",
+    "Actual train/test marginal agreement (adversarial-validation AUC) — asserted as iid from schema and id structure, not yet measured; Stage 1 EDA must verify.",
+    "Target Age distribution shape, range, and prevalence of degenerate rows (Height == 0, duplicate feature rows) — requires the full-column scan of Stage 1 EDA, beyond the head/describe scope of this stage."
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "task_family": "iid tabular regression",
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No date/time column in any file. Train id 0..629999, test id 630000..899999 form one contiguous block, i.e. a single row-ordered split of one generated table (630K/270K = 70/30). No group/entity key exists that could induce a disjoint-group split (no student/school/cohort id; every column is a demographic or habit attribute). 0 duplicate rows ignoring id, 0 nulls in train and test, identical column sets apart from the target."
+  },
+  "split_policy": {
+    "scheme": "shuffled KFold (5-fold) on rows; no stratification needed for a continuous target, optional binned-target stratification for fold-variance stability given n=630K",
+    "forbidden": "none mandated by structure; do NOT introduce time-based or group-based splits (no time or group key exists). Any fold scheme must stay fixed across all members so OOF blending is honest."
+  },
+  "metric": {
+    "name": "R2",
+    "direction": "maximize",
+    "traps": [
+      "R2 = 1 - MSE/Var(y); monotone in MSE, so train with plain L2/RMSE objective — no metric-specific objective needed.",
+      "Denominator is the evaluated set's own variance, so R2 is not comparable across folds with differing target variance: aggregate as pooled-OOF R2 over the concatenated out-of-fold vector, not as a mean of per-fold R2.",
+      "Playground regressions of this shape sit at high R2 where real differences are 1e-4..1e-5; Dirichlet/random blend-weight search has approximation error of that same magnitude and can eat the gain. Use the NNLS closed form for weights (RMSE-family metric).",
+      "Target is censored: exam_score in [19.599, 100.0] with a hard mass at the 100.0 ceiling. Unclipped predictions above 100 or below the train min are strictly wasted MSE — clip inside the metric function so every blend candidate is scored post-clip.",
+      "n_test = 270K makes leaderboard noise small relative to CV noise; trust pooled OOF over single-submission deltas."
+    ]
+  },
+  "external_data": {
+    "needed": "unlikely",
+    "allowed_by_rules": true,
+    "candidates": [],
+    "rationale": "config.yaml special_rules permit external data, but no whitelist source is joinable: the whitelist keys are country, country x year, country x date, currency x month. The official data has no country, region, currency, date, or any other geographic/temporal key, and none is derivable from the 11 feature columns (age, gender, course, study_hours, class_attendance, internet_access, sleep_hours, sleep_quality, study_method, facility_rating, exam_difficulty). Whitelist rule (1) — join keys must exist in or be derivable from the official data — therefore fails for every source. The target is an individual-level exam score driven by the provided habit/demographic covariates, not by macro indicators."
+  },
+  "injection_ideas": {
+    "data_level": [
+      "Ordinal-encode the three genuinely ordered categoricals rather than one-hot: sleep_quality (poor<average<good), facility_rating (low<medium<high), exam_difficulty (easy<moderate<hard). Ordering is semantic, derivable without EDA.",
+      "Keep internet_access as a 0/1 binary; gender (3), course (7), study_method (5) are nominal and low-cardinality — feed GBDT native categorical handling and/or one-hot for linear members.",
+      "Pairwise crosses on the plausible effect-modifier pairs: study_hours x exam_difficulty, study_hours x study_method, class_attendance x study_method, sleep_hours x sleep_quality, course x exam_difficulty. Cheap at this cardinality (<=35 levels each).",
+      "Continuous interactions/ratios: study_hours * class_attendance (effective study exposure), study_hours / sleep_hours, and a deviation-from-group-mean of study_hours within course x exam_difficulty.",
+      "CV-safe target encoding for the nominal categoricals (fit inside the fold), as an alternative encoding lane to native-categorical — cardinality is low so the expected gain is small, race it rather than assume it.",
+      "age has only 8 distinct integer values (17..24): treat both as numeric and as categorical in separate lanes."
+    ],
+    "model_level": [
+      "L2 / squared-error objective throughout (R2 is affine in MSE).",
+      "Clip predictions to the train target support [19.599, 100.0] as post-processing implemented INSIDE the metric function, so every tree-search node and blend candidate is evaluated post-clip.",
+      "GBDT trio with native categorical support (LightGBM / CatBoost / XGBoost) as the backbone; CatBoost is the natural favourite given 7 categorical columns.",
+      "TASK-BLEND-DECOR: the blend pool will be variance-dominated (deep GBDTs). Add one shallow, heavily regularized, different-library member (ridge/ElasticNet on one-hot + splines, or a shallow depth-3 GBDT) purely as a decorrelator before optimizing weights.",
+      "Optimize blend weights with the NNLS closed form on the OOF matrix, not Dirichlet random search — approximation error is the same order as the real gain at this R2 level.",
+      "Given a synthetic generative process over few, mostly low-cardinality features, a well-tuned single GBDT will be close to the ceiling; budget should go to encoding lanes and blend hygiene rather than exotic architectures.",
+      "A small MLP / TabM-style member on one-hot+standardized numerics is a cheap diversity source for the blend if budget allows."
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-BLEND-DECOR"
+  ],
+  "partial_task_priors": [
+    {
+      "prior": "TASK-CAT-ONLY",
+      "match": "partial",
+      "reason": "7 of 11 features are categorical (gender, course, internet_access, sleep_quality, study_method, facility_rating, exam_difficulty) and age is discrete over 8 values, so encoding matters — but all are low-cardinality (<=7 levels), and 3 continuous features remain, with study_hours the dominant predictor per config notes (r=0.76). Trigger says 'all or nearly all categorical, incl. high-cardinality'; neither the exclusivity nor the high-cardinality condition holds, so the prior's claim that 'encoding is the whole game' is downgraded to 'encoding is one raced lane'."
+    }
+  ],
+  "not_recorded": [
+    "Official competition description, rules page, and metric definition were not fetched — this dossier is derived from config.yaml plus the data schema only. config.yaml asserts external_data_allowed: true; verify against the official rules page before any external join is actually used (whitelist rule 4).",
+    "Provenance of the synthetic generator and whether an original real-world source dataset is published alongside the competition — not determinable from the local files, and looking it up would require competition-specific discussion/kernel material forbidden at this stage.",
+    "Public/private leaderboard split ratio and whether any temporal or grouped holdout underlies it.",
+    "Whether the 100.0 target ceiling is a hard cap of the generative process or an artifact of the underlying source data (affects whether censored-regression treatment is worth a lane) — Stage 1 EDA should report the mass at 100.0 and near 19.599."
+  ],
+  "eda_verdict": null
+}

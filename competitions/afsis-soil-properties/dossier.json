@@ -1,0 +1,94 @@
+{
+  "competition": "afsis-soil-properties",
+  "stage": "0.5 problem dossier",
+  "task_family": "spectral multi-target tabular regression (p >> n)",
+  "shape": {
+    "train_rows": 1157,
+    "test_rows": 727,
+    "spectral_columns": 3578,
+    "spatial_columns": 15,
+    "categorical_columns": 1,
+    "targets": ["Ca", "P", "pH", "SOC", "Sand"],
+    "id_column": "PIDN",
+    "nulls": "none observed in inspected columns"
+  },
+  "test_window": {
+    "relation": "disjoint group (held-out locations / sentinel landscapes), not a time window and not an iid split",
+    "evidence": [
+      "no date/time column exists in training.csv or sorted_test.csv, so a future-window relation is ruled out",
+      "the 15 spatial covariates (BSAN..TMFI) act as a location fingerprint: 580 unique tuples over 1157 train rows and 368 over 727 test rows, with the modal tuple appearing exactly twice (565 train / 353 test) matching a Topsoil+Subsoil pair sampled at one location; Depth counts (train 581/576, test 368/359) agree",
+      "zero exact spatial-tuple overlap and zero PIDN overlap between train and test",
+      "test locations sit systematically far from train locations in the 15-d spatial covariate space: train->train nearest-neighbour distance median 0.306 (95th pct 0.974) vs test->train median 0.956, and 46.7% of test locations exceed the train 95th percentile — consistent with test locations drawn from geographic clusters absent from train, not from the same clusters"
+    ]
+  },
+  "split_policy": {
+    "scheme": "GroupKFold with the group key = the 15-covariate spatial tuple (location); prefer a coarser landscape group (cluster the spatial tuples) so that same-neighbourhood locations cannot straddle folds, which better mimics the observed train/test location gap",
+    "forbidden": "plain shuffled KFold on rows — it puts the Topsoil and Subsoil sample of the same location in different folds (near-duplicate spectra, same site covariates) and gives an optimistic CV that will not transfer to held-out landscapes",
+    "notes": "5 folds is adequate at n=1157; evaluate with leave-fold-out honest MCRMSE (blend weights fit on out-of-fold data only, never in-sample)"
+  },
+  "metric": {
+    "name": "MCRMSE",
+    "definition": "mean over the 5 target columns of the columnwise RMSE",
+    "direction": "minimize",
+    "traps": [
+      "equal weight per target regardless of difficulty: a single hard target (P) can dominate the achievable headroom, so per-target modelling and per-target blend weights matter more than a single global model",
+      "RMSE family, not MAE family — use L2 objectives; TASK-MAE-METRIC does not apply",
+      "targets are pre-standardized but heavily right-skewed (skew Ca 4.71, P 7.45, SOC 2.45, pH 0.87, Sand 0.39) so squared error is driven by a handful of extreme rows; a fold that happens to hold the extremes swings the fold score",
+      "targets contain negative values, so any log-type transform needs a shift and an exact inverse inside the metric evaluation",
+      "blend weights for an RMSE-family metric have an NNLS closed form — random/Dirichlet weight search leaves ~1e-5 on the table"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "rationale": "no whitelist source has a usable join key in this data: there is no country, no date, no currency, and no raw geographic coordinate — the spatial covariates are anonymized derived rasters (BSAN/BSAS/BSAV/CTI/ELEV/EVI/LSTD/LSTN/REF*/RELI/TMAP/TMFI) with no published lookup back to lat/lon. Whitelist rule (1) — join keys must exist in the official data or be derivable from it — fails for all five sources.",
+    "candidates": [],
+    "rejected_from_whitelist": [
+      {"source": "World Bank Open Data", "reason": "join key is country x year; neither column exists nor is derivable"},
+      {"source": "Public holiday calendars", "reason": "join key is country x date; no date column"},
+      {"source": "ISO country/region tables", "reason": "no country identifier in the data"},
+      {"source": "Exchange rates (ECB SDMX)", "reason": "join key is currency x month; not applicable"},
+      {"source": "OWID COVID", "reason": "2020+ daily country series; this is a 2014 soil-sampling dataset with no date or country"}
+    ]
+  },
+  "injection_ideas": {
+    "data_level": [
+      "treat the 3578 m*-columns as an ordered signal, not as independent features: Savitzky-Golay smoothing and 1st/2nd derivatives (window ~21-31) plus SNV / row-wise standard-normal-variate normalization",
+      "fit dimensionality reduction (PCA / PLS components) on the spectra strictly inside each training fold, never on the full matrix, since n is small enough that fold leakage is measurable",
+      "derive an explicit location group key from the 15-covariate tuple and carry it through every split as the GroupKFold key; it is also the pairing key for the Topsoil/Subsoil pair",
+      "trim spectral regions found in EDA to be near-constant or saturated across all rows — they add p without signal in a p >> n regime (identify empirically, do not hardcode)",
+      "encode Depth as a binary and consider a Depth x spectral-component interaction; the two depths of the same location carry different chemistry from the same landscape covariates",
+      "the 15 spatial covariates are the only true site-level features and are heavily reused (2 rows per tuple) — keep them but do not let a model memorize them, since test sites are outside the train covariate neighbourhood"
+    ],
+    "model_level": [
+      "per-target models (5 independent fits) rather than one multi-output fit, because MCRMSE weights each column equally and the targets have very different difficulty and skew",
+      "regularized linear/kernel families over GBDT for p >> n: Kernel Ridge with RBF kernel, SVR, PLS regression, plus Ridge as a floor",
+      "add one shallow, heavily-regularized, structurally-different member as a decorrelator before optimizing blend weights (TASK-BLEND-DECOR)",
+      "solve blend weights per target with NNLS (closed form for RMSE family) on out-of-fold predictions only",
+      "avoid learned stacking meta-models: with n=1157 and grouped folds the meta-learner has very few effective independent samples"
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-SPECTRAL",
+    "TASK-BLEND-DECOR"
+  ],
+  "unmatched_task_priors_checked": [
+    "TASK-TS-FUTURE (no date column, test is not a future window)",
+    "TASK-TS-CALENDAR (no daily series, no store/product keys)",
+    "TASK-CAT-ONLY (only 1 categorical column out of 3594)",
+    "TASK-STRUCT-OUT (5 independent scalar targets, no generative grid/sequence rule)",
+    "TASK-MAE-METRIC (metric is RMSE family)",
+    "TASK-IMBALANCED (regression, not binary)"
+  ],
+  "eda_must_verify": [
+    "confirm the location-group hypothesis: cluster the 15 spatial covariates and check that the resulting clusters are disjoint between train and test at the cluster level, not only at the exact-tuple level",
+    "confirm no nulls across all 3594 feature columns (only a subset was inspected at this stage)",
+    "quantify the honest CV penalty of GroupKFold vs shuffled KFold on one cheap baseline to size the optimism bias",
+    "identify empirically which spectral regions are constant/saturated before trimming"
+  ],
+  "not_recorded": [
+    "official competition rules text on whether external data is permitted — not present in config.yaml and not resolvable without fetching the rules page; moot here because external_data.needed is 'no'",
+    "true geographic coordinates or sentinel-landscape identifiers — not provided in the data; the location grouping is inferred from spatial-covariate tuples only",
+    "the exact sampling design (how many landscapes, how sites were assigned to train vs test) — stated only in the competition description, not derivable from the files inspected",
+    "physical units and the standardization constants of the targets — the values are pre-standardized with no de-standardization key provided"
+  ]
+}

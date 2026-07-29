@@ -1,0 +1,65 @@
+{
+  "competition": "playground-series-s3e9",
+  "task_family": "iid tabular regression",
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No date/time column in any file. Features are 8 physical mix-design quantities (Cement, BlastFurnaceSlag, FlyAsh, Water, Superplasticizer, CoarseAggregate, FineAggregate) plus AgeInDays (curing age of the specimen, a covariate, not a calendar timestamp). id is a contiguous row counter: train 0..5406 (5407 rows), test 5407..9012 (3606 rows) — a single index space split by row, i.e. a random split of one synthetic generator's output, not a temporal or group boundary. Description ('Predict concrete compressive strength') implies no grouping key; no specimen/batch/mix id is provided to group on."
+  },
+  "split_policy": {
+    "scheme": "shuffled KFold, k=5 or 10, fixed seed; optionally bin Strength into quantiles for stratified regression folds to stabilize fold-to-fold RMSE on 5407 rows",
+    "forbidden": "time-based or TimeSeriesSplit (no time axis exists); any split that leaks a repeated mix row across folds if Stage 1 EDA finds exact duplicate feature rows (playground synthetics oversample the source table) — if duplicates on the 8 feature columns are found, group folds on the feature-tuple hash"
+  },
+  "metric": {
+    "name": "RMSE",
+    "optimization_direction": "minimize",
+    "traps": [
+      "L2 objective is the metric-aligned training loss — do NOT use L1/Huber as the default (TASK-MAE-METRIC does not apply here)",
+      "Squared error is dominated by the high-Strength tail; a few large-residual rows drive the score, so outlier clipping/winsorizing the target usually HURTS RMSE",
+      "Strength is a positive, right-skewed physical quantity; log-target training optimizes RMSLE, not RMSE — if a log-target member is used, its predictions must be back-transformed and the blend weights fit on the raw RMSE scale",
+      "Blend weights for an RMSE-family metric have an NNLS closed form — use it rather than Dirichlet random search (approximation error ~1e-5 can eat the real gain)",
+      "Predictions should be clipped to a physically valid non-negative range; no other post-processing is metric-justified"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "candidates": [],
+    "rationale": "config.yaml special_rules set external_data_allowed=false, so no join is permissible regardless of value. Independently, no whitelist source applies: the target is a laboratory material property determined by the mix proportions and curing age already present in the file — there is no country, date, currency, or geography join key anywhere in the schema, so World Bank / holidays / ISO / ECB / OWID all lack a join key. The one external table that would be substantively relevant (the UCI Concrete Compressive Strength source dataset that this synthetic episode was generated from) is neither on the whitelist nor permitted by the rules, so it is not proposed."
+  },
+  "injection_ideas": {
+    "data_level": [
+      "Domain ratio features from concrete mix design: water/cement, water/binder where binder = Cement + BlastFurnaceSlag + FlyAsh, superplasticizer/binder, aggregate/binder, fine/coarse aggregate ratio — the water-to-binder ratio is the classical first-order determinant of compressive strength (Abrams' law), and tree models cannot form ratios from raw columns",
+      "Total binder and total mass = sum of all seven component columns; each component as a fraction of total mass (composition simplex), which removes the batch-size scale nuisance",
+      "log1p(AgeInDays) and sqrt(AgeInDays): strength gain with curing follows a concave, roughly logarithmic hydration curve, so a monotone transform gives linear/kernel members a usable form (trees are invariant, but the transform matters for the non-tree blend members)",
+      "Age x water/binder and age x binder interaction terms — the rate of strength gain depends on mix composition, not just its asymptote",
+      "Binary indicators for the structural zeros (BlastFurnaceSlag==0, FlyAsh==0, Superplasticizer==0): these mark distinct mix families rather than small values, and the zero-inflation is a mode boundary a split cannot cleanly express",
+      "AgeInDays is likely a small discrete set of standard test ages (3/7/14/28/56/91/365) — treat it as both numeric and categorical, and if Stage 1 EDA confirms, add per-age target statistics computed CV-safely"
+    ],
+    "model_level": [
+      "GBDT trio (LightGBM + XGBoost + CatBoost) with L2 objective as the core pool; 8 dense numeric features on 5.4k rows is the regime where GBDTs dominate",
+      "Add a non-tree, bias-dominated decorrelator to the blend per TASK-BLEND-DECOR: kernel ridge / SVR-RBF or a small MLP on standardized features + ratio features — smooth physical response surfaces are exactly where a kernel member earns weight even when its solo RMSE is worse",
+      "Fit final blend weights by NNLS on out-of-fold predictions (RMSE closed form), not by grid or Dirichlet search",
+      "Small row count (5407) means fold noise is non-trivial: use repeated CV or a fixed multi-seed average before accepting a delta smaller than the fold standard error",
+      "Consider concatenating train + any duplicated-row structure carefully; with only 8 features, heavy-depth trees overfit — favor shallower trees with more estimators and strong min_child_weight"
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-BLEND-DECOR"
+  ],
+  "unmatched_considered": [
+    "TASK-TS-FUTURE — no date column, test is an iid row split, not a future window",
+    "TASK-TS-CALENDAR — no daily series, no store/product/country keys",
+    "TASK-CAT-ONLY — all 8 features are numeric (AgeInDays is discrete-numeric, not a categorical library)",
+    "TASK-SPECTRAL — 8 columns vs 5407 rows, the opposite regime",
+    "TASK-STRUCT-OUT — single scalar target, no generative grid/sequence structure",
+    "TASK-MAE-METRIC — metric is RMSE (L2 family), so L1 objective is contraindicated",
+    "TASK-IMBALANCED — regression target, not a binary class"
+  ],
+  "not_recorded": [
+    "target distribution shape, skew, and range of Strength (needs describe(), deferred to Stage 1 EDA)",
+    "presence and count of exact-duplicate feature rows between and within train/test — decides whether the split policy needs feature-tuple grouping",
+    "whether AgeInDays takes a small discrete set of standard test ages or is continuous",
+    "missing-value counts per column (head of 3 rows is insufficient evidence)",
+    "public/private leaderboard split ratio and score scale (not stated in config.yaml)",
+    "whether the synthetic generator introduced feature-target relationships that differ from the physical source distribution (only measurable post-EDA)"
+  ]
+}

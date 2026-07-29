@@ -1,0 +1,79 @@
+{
+  "competition": "playground-series-s3e1",
+  "stage": "0.5 problem dossier",
+  "task_family": "iid tabular regression",
+  "target": {
+    "column": "MedHouseVal",
+    "range": [0.14999, 5.00001],
+    "censoring": "1873/37137 rows (5.04%) sit exactly at the upper bound 5.00001 — target is right-censored, not merely skewed"
+  },
+  "data_shape": {
+    "train_rows": 37137,
+    "test_rows": 24759,
+    "feature_columns": 8,
+    "all_features_numeric": true,
+    "nulls": 0
+  },
+  "test_window": {
+    "relation": "iid",
+    "evidence": "no date/time column in any file; id is a single contiguous integer range split at 37137 (train 0..37136, test 37137..61895), which encodes row order not time; test Latitude/Longitude span (32.55..41.95) is identical to train, and all 8 feature columns are static geo/demographic attributes of a census block. Nothing in the schema or config.yaml description ('Predict median house value (California Housing)') indicates a temporal or grouped holdout."
+  },
+  "split_policy": {
+    "scheme": "shuffled KFold (5-fold), stratified on binned MedHouseVal (bins must isolate the 5.00001 censored mass, which is 5% of rows and would otherwise vary across folds)",
+    "forbidden": "none by time; but do NOT use plain unstratified KFold given the censored point mass, and do not group by lat/lon cell (test shares the same geography as train, so a spatial group split would understate the achievable score)",
+    "rationale": "TASK-TS-FUTURE does not trigger — no date column and no forecasting framing — so the time-split mandate does not apply here."
+  },
+  "metric": {
+    "name": "RMSE",
+    "direction": "minimize",
+    "traps": [
+      "censored target: unclipped predictions above 5.00001 or below 0.14999 are pure loss — clip predictions to the observed train range as a free post-processing step, and put the clip INSIDE the metric function so every blend candidate is scored on the clipped value",
+      "L2 metric means heavy-tail feature outliers (AveOccup max 502.99, Population max 35682, AveRooms max 28.84, AveBedrms max 5.87) drive squared error disproportionately — these are ratio features with tiny denominators, not data errors",
+      "RMSE-family blend weights have a closed form: use NNLS on OOF predictions, not a Dirichlet/random-search approximation (TASK-BLEND-DECOR evidence: search approximation error ~1e-5 can eat the real gain)"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "candidates": [],
+    "evidence": "config.yaml special_rules sets external_data_allowed: false, pretrained_models_allowed: false, internet_access_allowed: false. Independently, no whitelist source joins: there is no country, no date, and no currency column, so World Bank (country x year), holiday calendars (country x date), ISO tables (country), ECB rates (currency x month) and OWID COVID (country x date) all lack a derivable join key. The only covariate the target plausibly depends on that is absent — finer-grained location context — has no whitelisted source."
+  },
+  "injection_ideas": {
+    "data_level": [
+      "geo interaction features from Latitude/Longitude: rotated coordinate pairs (45deg/30deg), lat+lon and lat-lon sums, distance to the California coastline proxy and to major-metro anchor points derivable from the data itself (e.g. k-means cluster centroids over lat/lon, then distance-to-each-centroid)",
+      "k-nearest-neighbour target encoding over (Latitude, Longitude) computed strictly out-of-fold — the strongest signal in California-Housing-shaped data is spatial, and the 8 raw columns expose it only as two bare coordinates",
+      "ratio/consistency features implied by the aggregate construction of the columns: AveRooms/AveBedrms, Population/AveOccup (implied household count), AveBedrms/AveRooms, MedInc x AveRooms (income per room), Population x AveOccup",
+      "outlier-robustness transforms for the long-tailed ratio columns (log1p on Population, AveOccup, AveRooms) as an alternative feature view for a decorrelated blend member"
+    ],
+    "model_level": [
+      "L2 objective throughout — metric is RMSE, so TASK-MAE-METRIC's L1 rule explicitly does NOT apply here",
+      "clip predictions to [0.14999, 5.00001] as an in-metric post-processing step for every candidate",
+      "GBDT trio (LightGBM / XGBoost / CatBoost) as the core pool — all-numeric low-dimensional tabular is their home turf",
+      "TASK-BLEND-DECOR: the GBDT pool will be variance-dominated; add one shallow heavily-regularized bias-dominated member from a different library family (regularized linear on engineered geo features, or a small MLP over standardized inputs) as a decorrelator before optimizing weights",
+      "blend weights via NNLS closed form on OOF, not Dirichlet search (RMSE-family)",
+      "optionally a two-part treatment of the censored mass (classifier for at-cap vs regressor below cap) as a diverse member — but only if the plain clipped regressor's OOF shows systematic bias near 5.0"
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-BLEND-DECOR"
+  ],
+  "rejected_task_priors": [
+    {"prior": "TASK-TS-FUTURE", "reason": "no date column, no forecasting framing, contiguous id split with identical train/test geo support"},
+    {"prior": "TASK-TS-CALENDAR", "reason": "no daily-resolution series and no store/product/country keys"},
+    {"prior": "TASK-CAT-ONLY", "reason": "all 8 feature columns are float64 numeric; zero categorical columns"},
+    {"prior": "TASK-SPECTRAL", "reason": "8 columns x 37137 rows — rows greatly exceed columns, the opposite regime"},
+    {"prior": "TASK-STRUCT-OUT", "reason": "single scalar target, no grid/sequence output"},
+    {"prior": "TASK-MAE-METRIC", "reason": "metric is RMSE (L2), not an MAE/SMAPE/quantile family metric"},
+    {"prior": "TASK-IMBALANCED", "reason": "regression task, not binary classification"}
+  ],
+  "downstream_checks_for_stage_1": [
+    "verify the iid hypothesis: compare train vs test marginal distributions per feature (adversarial validation AUC should sit near 0.5; anything above ~0.6 refutes the iid prior and forces a re-derived split policy)",
+    "confirm the censored mass at 5.00001 and check whether any near-duplicate rows exist across train/test (synthetic-generation artefacts would change the CV design)",
+    "quantify how much of the target variance the bare Latitude/Longitude pair explains, to size the payoff of the spatial feature ideas above"
+  ],
+  "not_recorded": [
+    "public/private leaderboard split ratio — not stated in config.yaml and no leaderboard page was consulted",
+    "official competition rules text — only config.yaml's special_rules block was available; the external-data verdict rests on that block, not on the rules page",
+    "whether the data is synthetically generated from a source dataset and, if so, whether the source is permitted — the description says 'California Housing' but no rules text confirms the generation process or its permissibility, and no whitelist source covers it",
+    "number of submissions already used against the daily limit of 5"
+  ]
+}

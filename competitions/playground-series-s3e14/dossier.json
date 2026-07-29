@@ -1,0 +1,96 @@
+{
+  "competition": "playground-series-s3e14",
+  "stage": "0.5 problem dossier",
+  "task_family": "iid tabular regression",
+  "target": {
+    "column": "yield",
+    "range": [1945.53061, 8969.40184],
+    "mean": 6025.193999,
+    "std": 1337.05685,
+    "discreteness": "only 776 distinct values across 15289 train rows (most frequent value repeats 33 times) — the target has a small finite support, the fingerprint of a synthetic dataset resampled from a much smaller original table. Under an MAE metric a discrete support is exploitable post-processing, not a curiosity.",
+    "sample_submission_constant": "6025.194 = the train mean, so the sample submission is the mean baseline; MAE prefers the median (6117.4759), which is already a free improvement over it"
+  },
+  "data_shape": {
+    "train_rows": 15289,
+    "test_rows": 10194,
+    "feature_columns": 16,
+    "all_features_numeric": true,
+    "nulls": 0,
+    "duplicate_feature_rows_in_train": 14,
+    "test_rows_with_exact_feature_match_in_train": 18
+  },
+  "test_window": {
+    "relation": "iid",
+    "evidence": "no date/time column in any file; id is a single contiguous integer range split at 15289 (train 0..15288, test 15289..25482), which encodes row order not time. All 16 feature columns are static agronomic/weather-profile attributes of a simulated blueberry field plot. config.yaml description is 'Predict wild blueberry yield' with problem_type: regression — no forecasting or grouped-holdout framing anywhere in the available inputs. Train and test share the same low-cardinality feature levels (spot-checked on clonesize, the TRange block and RainingDays)."
+  },
+  "split_policy": {
+    "scheme": "shuffled KFold (5-fold or 10-fold), stratified on binned yield (bins over the continuous range; the discrete 776-value support means plain KFold can shift fold target distributions more than usual at this row count)",
+    "forbidden": "no time-based constraint applies (no date column); do NOT group by the low-cardinality weather profile — test shares the identical profile levels as train, so a grouped split would understate the achievable score",
+    "rationale": "TASK-TS-FUTURE does not trigger — no date column, no forecasting framing, contiguous id split. The 4.5x optimism bias that motivates the time-split mandate is not in play here.",
+    "caveat": "14 exact duplicate feature-rows inside train and 18 test rows with an exact feature match in train — small enough to ignore for CV design, but note that duplicates spanning folds mildly inflate CV; verify magnitude in Stage 1."
+  },
+  "metric": {
+    "name": "MAE",
+    "direction": "minimize",
+    "traps": [
+      "L1 objective is mandatory for training (objective='mae'/'l1'/MAE loss), not L2 — TASK-MAE-METRIC. An RMSE-trained model is fitting the conditional mean while the metric scores the conditional median; on a target this skewed (median 6117 vs mean 6025) that gap is real.",
+      "the target's support is 776 discrete values — snapping/rounding predictions onto the observed train target support (or onto a coarser quantile grid) is a candidate free gain under MAE. It MUST be applied inside the metric function so every blend candidate and every tree-search node is scored on the post-processed value, never bolted on at the end.",
+      "clip predictions to the observed train target range [1945.53, 8969.40] inside the same post-processing step",
+      "blend weights for an MAE metric have NO closed form — the NNLS shortcut that applies to RMSE-family metrics (TASK-BLEND-DECOR) is invalid here. Optimize weights directly against the MAE objective (coordinate/simplex search or an L1 linear program on OOF), and score every candidate weight vector through the same post-processing.",
+      "MAE is scale-sensitive and unnormalized: absolute score magnitudes are in yield units (~300-400 for a good model), so relative deltas look tiny — compare with enough OOF precision to distinguish members."
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "candidates": [],
+    "evidence": "config.yaml special_rules sets external_data_allowed: false, pretrained_models_allowed: false, internet_access_allowed: false — external data is prohibited outright, so no candidate may be proposed. Independently, no whitelist source has a derivable join key: there is no country, no date, no currency and no geographic column anywhere in the schema, so World Bank (country x year), holiday calendars (country x date), ISO tables (country), ECB rates (currency x month) and OWID COVID (country x date) are all unjoinable. The features are simulated agronomic inputs from a spatially-explicit pollination model, not observations tied to a real place or time.",
+    "note": "The original Wild Blueberry Yield dataset (Aygun et al.) that this playground data was generated from is a commonly-used augmentation source for this competition family, but it is NOT on the Stage 0.5 whitelist and external_data_allowed is false — it is therefore excluded, not merely deprioritized."
+  },
+  "injection_ideas": {
+    "data_level": [
+      "collapse the six TRange columns — MaxOfUpperTRange, MinOfUpperTRange, AverageOfUpperTRange, MaxOfLowerTRange, MinOfLowerTRange, AverageOfLowerTRange are pairwise correlated at >= 0.998 and take only 5-6 distinct joint levels. They encode ONE ordinal weather-severity factor. Replace them with a single ordinal index (rank of AverageOfUpperTRange) plus, optionally, the derived spreads (Upper-Lower average gap, Max-Min range) which are the only non-redundant information in the block.",
+      "same collapse for the rain block: RainingDays and AverageRainingDays are near-duplicates (corr -0.477 and -0.484 with the target); keep one plus their ratio/product as a rain-intensity proxy",
+      "pollinator aggregate features: honeybee + bumbles + andrena + osmia total density, per-species shares of that total, and a wild-vs-managed split (bumbles+andrena+osmia vs honeybee) — the underlying model is a pollination simulation, so total and composition of pollinators are the physically meaningful quantities, not the four raw densities",
+      "fruitset, fruitmass and seeds are by far the strongest signals (corr 0.886 / 0.826 / 0.869 with yield) and are themselves near-outputs of the same simulation: build their ratios and products (seeds*fruitmass = implied mass per fruit-set unit, fruitset*seeds, fruitmass/seeds) — these compose multiplicatively into yield in the generative model",
+      "treat the 13 of 16 low-cardinality columns (nunique <= 20) as categorical for the GBDTs' native categorical handling as a distinct feature view — TASK-CAT-ONLY does not fully trigger (columns are numeric and three are continuous) but the encoding lever it points at is partially live here",
+      "honeybee is heavy-tailed (max 18.43 against a typical 0.25-0.75) — a log1p / winsorized view of it as an alternative feature representation for a decorrelated member",
+      "interaction of the collapsed weather ordinal with clonesize and with pollinator totals — the simulation couples temperature, clone size and pollination"
+    ],
+    "model_level": [
+      "L1 / MAE objective throughout (LightGBM objective='mae' or 'regression_l1', XGBoost 'reg:absoluteerror', CatBoost loss_function='MAE') — TASK-MAE-METRIC, this is the single highest-leverage model-level choice",
+      "post-processing INSIDE the metric function for every candidate: clip to the train target range, then evaluate snapping to the observed 776-value target support (and a coarser rounding grid) as a scored variant, not as an unvalidated finish",
+      "GBDT trio (LightGBM / XGBoost / CatBoost) as the core pool — 15k rows x 16 all-numeric low-cardinality columns is exactly their regime; expect the pool to be variance-dominated",
+      "TASK-BLEND-DECOR: add one shallow, heavily regularized, different-library bias-dominated member as a decorrelator — here a quantile/L1 regularized linear model (or a small MLP with L1 loss) over the engineered ratio features. Its solo score will look poor; that is not a reason to drop it before weight optimization.",
+      "because fruitset/fruitmass/seeds dominate, an explicitly low-feature model (those three plus the weather ordinal) is a natural high-bias blend member and a useful sanity check against overfitting the 13 weak columns",
+      "blend weight search must optimize MAE directly (not NNLS) — see metric.traps"
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-MAE-METRIC",
+    "TASK-BLEND-DECOR"
+  ],
+  "partial_task_priors": [
+    {"prior": "TASK-CAT-ONLY", "match": "partial", "reason": "13 of 16 feature columns have nunique <= 20 (clonesize 6, the TRange block 5-6 each, RainingDays 6, pollinators 7-16), so the encoding lever the prior points at is live — but the columns are float64 numeric with meaningful ordinal magnitude, and the three strongest features (fruitset, fruitmass, seeds) are genuinely continuous. Use it as a feature-view idea (native categorical handling as one member), not as the governing strategy."}
+  ],
+  "rejected_task_priors": [
+    {"prior": "TASK-TS-FUTURE", "reason": "no date column, no forecasting framing, contiguous id split with identical train/test feature-level support"},
+    {"prior": "TASK-TS-CALENDAR", "reason": "no daily-resolution series and no country/store/product keys"},
+    {"prior": "TASK-SPECTRAL", "reason": "16 columns x 15289 rows — rows greatly exceed columns, the opposite regime"},
+    {"prior": "TASK-STRUCT-OUT", "reason": "single scalar target, no grid/sequence output and no explicit generative rule exposed in the data"},
+    {"prior": "TASK-IMBALANCED", "reason": "regression task, not binary classification"}
+  ],
+  "downstream_checks_for_stage_1": [
+    "verify the iid hypothesis with adversarial validation (train-vs-test AUC near 0.5 confirms; above ~0.6 refutes it and forces a re-derived split policy)",
+    "confirm the 776-value discrete target support and measure the OOF MAE delta from snapping predictions onto it — this is the dossier's main exploitable hypothesis and must be scored, not assumed",
+    "quantify the redundancy of the TRange block explicitly (rank / joint-level count of the six columns) before committing to the collapse to one ordinal",
+    "measure how much target variance fruitset/fruitmass/seeds alone explain, to size the payoff of engineering the other 13 columns at all",
+    "check whether the 14 in-train duplicate feature-rows carry conflicting targets (they would cap achievable MAE) and whether the 18 exact train-test feature matches are worth a direct lookup"
+  ],
+  "not_recorded": [
+    "public/private leaderboard split ratio — not stated in config.yaml and no leaderboard page was consulted",
+    "official competition rules text — only config.yaml's special_rules block was available; the external-data verdict rests on that block, not on the rules page",
+    "whether the synthetic generation used the original Aygun et al. Wild Blueberry Yield table and, if so, whether the competition rules would have permitted joining it — config.yaml's external_data_allowed: false settles the action regardless, but the underlying rules text was not read",
+    "number of submissions already used against the daily limit of 5",
+    "units and physical meaning of the TRange columns (degrees F is likely from the value ranges 39-94.6, but no data dictionary was available)"
+  ]
+}

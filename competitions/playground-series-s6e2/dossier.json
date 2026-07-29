@@ -1,0 +1,116 @@
+{
+  "competition": "playground-series-s6e2",
+  "stage": "0.5 problem dossier",
+  "task_family": "iid tabular binary classification",
+  "data_shape": {
+    "train_rows": 630000,
+    "test_rows": 270000,
+    "feature_columns": 13,
+    "id_column": "id",
+    "target_column": "Heart Disease",
+    "target_encoding": "Absence/Presence string in train; submission expects 0/1 per config.yaml submission_format",
+    "target_balance": {"Absence": 0.55166, "Presence": 0.44834},
+    "missing_values": 0,
+    "duplicate_feature_rows_train": 0
+  },
+  "feature_inventory": {
+    "continuous_or_high_cardinality": [
+      {"name": "Age", "nunique": 42, "range": [29, 77]},
+      {"name": "BP", "nunique": 66, "range": [94, 200]},
+      {"name": "Cholesterol", "nunique": 150, "range": [126, 564]},
+      {"name": "Max HR", "nunique": 93, "range": [71, 202]},
+      {"name": "ST depression", "nunique": 66, "range": [0.0, 6.2]}
+    ],
+    "categorical_coded_as_integer": [
+      {"name": "Sex", "nunique": 2},
+      {"name": "Chest pain type", "nunique": 4},
+      {"name": "FBS over 120", "nunique": 2},
+      {"name": "EKG results", "nunique": 3},
+      {"name": "Exercise angina", "nunique": 2},
+      {"name": "Slope of ST", "nunique": 3, "note": "ordered — ordinal mapping already natural"},
+      {"name": "Number of vessels fluro", "nunique": 4, "note": "ordered count 0-3"},
+      {"name": "Thallium", "nunique": 3, "values_seen": [3, 6, 7], "note": "nominal despite integer coding"}
+    ],
+    "note": "8 of 13 features are low-cardinality integer-coded categoricals; 5 are continuous/near-continuous. Mixed, not purely categorical."
+  },
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No date, time, or sequence column exists in any file. Test ids 630000-899999 continue train ids 0-629999 as a plain row index, not a temporal key. config.yaml describes a synthetic Playground Series dataset generated from UCI Heart Disease, i.e. train and test are draws from one generator with no group or period key present. No candidate grouping column (no patient/site/study id).",
+    "confidence": "high, but Stage 1 EDA must still verify train/test feature distributions match (adversarial validation AUC ~0.5) before committing to shuffled folds"
+  },
+  "split_policy": {
+    "scheme": "StratifiedKFold(n_splits=5, shuffle=True, random_state=42) on the binary target",
+    "rationale": "iid rows, no time and no group key; target is near-balanced (44.8% positive) so stratification is a variance reducer rather than a necessity",
+    "forbidden": [
+      "any split that fits a target encoder or any target-derived statistic outside the fold (the only real leakage channel in this dataset)",
+      "reusing OOF predictions produced under different fold assignments when blending — one fixed fold map for every member"
+    ],
+    "not_applicable": "time-based / TimeSeriesSplit and GroupKFold have no key to split on here"
+  },
+  "metric": {
+    "name": "AUC-ROC",
+    "traps": [
+      "rank-only metric: probability calibration is irrelevant to the score — do not spend effort on Platt/isotonic calibration for the metric itself",
+      "no decision threshold exists in the metric; threshold tuning on CV is wasted effort and has burned prior competitions (Titanic, Spaceship Titanic notes in experience library)",
+      "submission must carry a continuous score, not hard 0/1 labels — sample_submission.csv shows integer 0 which would destroy AUC if copied literally; verify what the leaderboard accepts and submit probabilities",
+      "blending should average ranks (or logits), not raw probabilities, since only ordering counts",
+      "with 270K test rows AUC noise is small; CV-to-LB gaps of ~1e-3 are real signal, ~1e-5 differences are not"
+    ]
+  },
+  "external_data": {
+    "needed": "unlikely",
+    "candidates": [],
+    "reasoning": "The whitelist covers country/year macro indicators, holiday calendars, ISO country tables, exchange rates, and COVID series. This dataset has no country, region, date, or currency column, so no whitelisted source has a derivable join key. Whitelist rule (1) fails for every entry. The obvious non-whitelisted candidate for a Playground Series competition (the original UCI Heart Disease dataset the synthetic data was generated from) is deliberately NOT proposed here because it is outside the Stage 0.5 whitelist; raising it would also require checking competition rules, which were not read at this stage."
+  },
+  "injection_ideas": {
+    "data_level": [
+      "declare the 8 integer-coded categoricals as native categorical dtype so LightGBM/CatBoost use categorical splits rather than treating codes as ordered numerics — this exact accident was AIDE's only outright win on s3e11 (TASK-CAT-ONLY evidence)",
+      "keep Slope of ST and Number of vessels fluro as ordinal integers (they are genuinely ordered) while treating Thallium, Chest pain type, and EKG results as nominal",
+      "CV-safe target (mean) encoding of the categoricals and of pairwise crosses, fit inside each training fold only",
+      "pairwise crosses among the high-signal clinical categoricals (Chest pain type x Thallium, Exercise angina x Slope of ST, Sex x Chest pain type) — cheap and the standard lever when categoricals dominate",
+      "frequency/count encoding of each categorical and of the crosses: on synthetic Playground data the generator's sampling frequencies are often themselves informative",
+      "domain-motivated continuous interactions: Max HR relative to age-predicted max (220 - Age), BP x Age, Cholesterol/Age, ST depression x Slope of ST",
+      "binned versions of the 5 continuous columns as extra low-cardinality categoricals for crossing"
+    ],
+    "model_level": [
+      "GBDT trio (LightGBM + XGBoost + CatBoost) with binary logloss objective as the baseline pool; CatBoost's ordered target statistics are a natural fit for the categorical-heavy schema",
+      "630K rows x 13 features is small enough that a well-regularized MLP or a TabNet-style member is affordable and adds blend diversity against tree members",
+      "TASK-BLEND-DECOR: once the pool is dominated by deep GBDT members, add one shallow heavily-regularized diverse-library member (regularized logistic regression on encoded/crossed features, or a very shallow forest) as a decorrelator before re-optimizing weights",
+      "optimize blend weights on rank-transformed OOF predictions against AUC directly; verify any Dirichlet/random search result against a deterministic optimizer since approximation error ~1e-5 can exceed the real gain",
+      "do not calibrate and do not threshold — see metric traps"
+    ]
+  },
+  "matched_task_priors": [
+    {
+      "id": "TASK-CAT-ONLY",
+      "match": "partial",
+      "why": "8 of 13 features are low-cardinality integer-coded categoricals, but 5 are continuous — the trigger 'all or nearly all categorical' is only half met. Encoding is a major lever here, not the whole game."
+    },
+    {
+      "id": "TASK-BLEND-DECOR",
+      "match": "conditional",
+      "why": "Trigger depends on the blend pool composition, which does not exist yet. Applies at the blend stage if the pool ends up dominated by deep/low-regularization GBDT members, which is the likely outcome."
+    }
+  ],
+  "unmatched_task_priors_checked": [
+    {"id": "TASK-TS-FUTURE", "verdict": "no — no date column, no forecasting framing"},
+    {"id": "TASK-TS-CALENDAR", "verdict": "no — no daily series, no store/product/country keys"},
+    {"id": "TASK-SPECTRAL", "verdict": "no — 13 columns vs 630K rows, the opposite regime"},
+    {"id": "TASK-STRUCT-OUT", "verdict": "no — single scalar binary output"},
+    {"id": "TASK-MAE-METRIC", "verdict": "no — metric is AUC-ROC, a ranking metric"},
+    {"id": "TASK-IMBALANCED", "verdict": "no — positive rate 44.8%, far above the ~2% trigger; no resampling or class weighting warranted"}
+  ],
+  "stage1_verification_todo": [
+    "adversarial validation train vs test — confirm AUC ~0.5, which would confirm test_window.relation = iid",
+    "per-column train vs test distribution comparison, especially Cholesterol and BP tails",
+    "check for near-duplicate rows differing only in target (synthetic generators produce these; they cap achievable AUC and can mislead feature evaluation)",
+    "confirm Thallium takes only {3,6,7} in test as well, and that no test category is unseen in train",
+    "confirm the leaderboard accepts continuous probabilities in the 'Heart Disease' submission column despite the 0/1 sample_submission"
+  ],
+  "not_recorded": [
+    "competition rules text on external data / pretrained models — not read at this stage (moot: no whitelisted source is joinable anyway)",
+    "official metric page wording and the public/private leaderboard split fraction",
+    "confirmation that the synthetic generator used the UCI Heart Disease dataset — stated in config.yaml notes, not verified against the official description",
+    "whether an 'original dataset' supplement is officially permitted or provided, as is common in Playground Series competitions"
+  ]
+}

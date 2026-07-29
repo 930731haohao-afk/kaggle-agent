@@ -1,0 +1,82 @@
+{
+  "competition": "playground-series-s3e7",
+  "stage": "0.5 problem dossier",
+  "task_family": "iid tabular binary classification",
+  "problem_statement": "Predict hotel reservation cancellation (booking_status in {0,1}) from 17 booking attributes; synthetic Kaggle Playground tabular data (Season 3 Episode 7).",
+  "data_shape": {
+    "train": [42100, 19],
+    "test": [28068, 18],
+    "feature_columns": 17,
+    "nulls": 0,
+    "duplicate_feature_rows_train": 0,
+    "target_positive_rate": 0.39202
+  },
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No true timestamp column; arrival_year/month/date cover the identical support in train and test (2017-2018, months 1-12, days 1-31) with matching year proportions (train 6050/36050 = 14.4% in 2017, test 4022/24046 = 14.3%). id is a contiguous non-overlapping index (train 0-42099, test 42100-70167), the standard Playground random row split, not a chronological cut. No forecasting wording in the description."
+  },
+  "split_policy": {
+    "scheme": "StratifiedKFold (5 or 10 fold), shuffled, fixed seed; target rate 0.392 so stratification is a mild but free safeguard",
+    "forbidden": "GroupKFold or time-based split on arrival_* columns — there is no future test window and no group key, so a time split would only shrink the training set and bias CV",
+    "notes": "arrival_* is an ordinary feature here, not a split axis. Guard against the TASK-TS-FUTURE trap firing spuriously: the presence of date-like columns does NOT imply a temporal split when train/test share the same date support."
+  },
+  "metric": {
+    "name": "ROC AUC",
+    "direction": "maximize",
+    "traps": [
+      "rank-only metric: probability calibration is irrelevant, do not spend effort on Platt/isotonic",
+      "no threshold selection — submit continuous scores, never hard 0/1 labels",
+      "blending must be rank-safe: average ranks (or logits) rather than raw probabilities when members have different score scales",
+      "AUC differences on 28k test rows are noisy at the ~1e-3 level — do not chase CV deltas below that without repeated-seed confirmation"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "rationale": "Competition rules in config.yaml set external_data_allowed: false and internet_access_allowed: false, so no external join is permitted regardless of usefulness. On the merits it would also be weak: the target is a per-booking behavioural outcome, all covariates that drive it (lead_time, price, market segment, request/cancellation history) are already present, and no country/currency/region key exists to join any whitelist source on. The only whitelist source with a derivable key would be a public holiday calendar via arrival_year/month/date, but the country of the property is not given, so the key is unresolvable.",
+    "candidates": []
+  },
+  "injection_ideas": {
+    "data_level": [
+      "reconstruct arrival date: combine arrival_year/arrival_month/arrival_date into a datetime; derive day-of-week, is_weekend_arrival, week-of-year, day-of-year, and a cyclical (sin/cos) month/day-of-year encoding",
+      "flag invalid calendar dates (e.g. Feb 29/30/31, Apr 31) produced by the synthetic generator — an is_valid_date indicator is often predictive in Playground data and is required before any datetime parsing",
+      "derive booking date = arrival date minus lead_time; adds a second seasonality axis (when the booking was made) independent of arrival seasonality",
+      "stay aggregates: total_nights = no_of_weekend_nights + no_of_week_nights; weekend_ratio; total_guests = no_of_adults + no_of_children; has_children",
+      "price normalizations: price_per_guest = avg_price_per_room / total_guests; total_revenue = avg_price_per_room * total_nights; price z-score within (room_type_reserved, arrival_month) and within market_segment_type — relative price is more informative than absolute",
+      "guest history: prev_total = no_of_previous_cancellations + no_of_previous_bookings_not_canceled; prev_cancel_ratio = no_of_previous_cancellations / max(prev_total, 1); interacted with repeated_guest",
+      "lead_time transforms: log1p(lead_time), lead_time bucketed, lead_time relative to the segment median — lead time is the classic dominant cancellation driver",
+      "CV-safe target encoding and pairwise crosses of the low-cardinality categoricals (market_segment_type x room_type_reserved, market_segment_type x type_of_meal_plan) — encoders fit inside the fold only",
+      "duplicate/near-duplicate row grouping across train+test on the feature vector: synthetic Playground data repeats rows; a group-size and group-mean-target (out-of-fold) feature is a cheap standard gain"
+    ],
+    "model_level": [
+      "GBDT trio as the backbone (LightGBM / XGBoost / CatBoost) with native categorical handling for type_of_meal_plan, room_type_reserved, market_segment_type — per TASK-CAT-ONLY evidence, native handling is where the accidental wins come from even when only part of the feature set is categorical",
+      "binary logloss / AUC-consistent objective; no class weighting or resampling needed at a 0.392 positive rate, and resampling would only distort the score scale",
+      "hyperparameter emphasis on regularization + moderate depth: 42k rows with 17 low-cardinality features overfits fast with deep trees",
+      "TASK-BLEND-DECOR: after the GBDT pool is built, add one shallow, heavily regularized, different-library member (regularized logistic regression on engineered features, or a small MLP) as a decorrelator before re-optimizing blend weights",
+      "blend on out-of-fold rank-transformed predictions and optimize AUC directly; hill-climb or NNLS-on-ranks, verified against a simple equal-weight rank average"
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-BLEND-DECOR"
+  ],
+  "considered_and_rejected_priors": [
+    {"prior": "TASK-TS-FUTURE", "verdict": "rejected", "reason": "date-like columns are present but test shares the identical date support with train and the split is by contiguous id — not a future window; forcing a time split here would be the mirror-image of the s3e19 trap"},
+    {"prior": "TASK-TS-CALENDAR", "verdict": "partially applicable", "reason": "no daily series with store/product keys and no country key for a holiday join, but calendar features derived from arrival_year/month/date are still legitimate row-level features (kept in injection_ideas.data_level)"},
+    {"prior": "TASK-CAT-ONLY", "verdict": "rejected as a family match", "reason": "only 3 of 17 features are genuine unordered categoricals (all cardinality <= 7); the rest are counts and continuous. Its action item (native GBDT categorical handling) is still carried into model_level"},
+    {"prior": "TASK-IMBALANCED", "verdict": "rejected", "reason": "positive rate 0.392, far above the ~2% trigger"},
+    {"prior": "TASK-MAE-METRIC", "verdict": "rejected", "reason": "metric is ROC AUC, not an MAE-family metric"},
+    {"prior": "TASK-SPECTRAL", "verdict": "rejected", "reason": "17 columns x 42k rows — rows greatly exceed columns"},
+    {"prior": "TASK-STRUCT-OUT", "verdict": "rejected", "reason": "single scalar binary output, no generative grid/sequence structure"}
+  ],
+  "risks": [
+    "date-column illusion: the strongest failure mode here is over-applying time-series machinery (time split, lag features) to what is an iid split — Stage 1 must confirm the iid verdict before any feature work",
+    "synthetic-data artifacts: Playground generators produce impossible calendar dates and repeated rows; treat both as signal-bearing flags rather than cleaning them away silently",
+    "AUC noise floor on 28k test rows makes public-LB chasing unreliable; trust repeated-seed CV"
+  ],
+  "not_recorded": [
+    "official competition rules text — only config.yaml special_rules was available offline (external_data_allowed: false, pretrained_models_allowed: false, internet_access_allowed: false); the live rules page was not fetched",
+    "public/private leaderboard split fraction of test.csv",
+    "whether the synthetic data was generated from an underlying real hotel-reservations dataset, and if so its identity — not determinable from the provided files, and moot since external data is disallowed",
+    "country/region of the property (blocks any holiday-calendar or macro join key)"
+  ],
+  "eda_verdict": null
+}

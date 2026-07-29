@@ -1,0 +1,142 @@
+{
+  "competition": "tabular-playground-series-aug-2022",
+  "stage": "0.5 problem dossier",
+  "task_family": "tabular binary classification under disjoint-group covariate shift (test set is four product codes never seen in train; rank metric)",
+  "test_window": {
+    "relation": "disjoint group",
+    "evidence": "No date/time column anywhere. product_code partitions the data completely: train holds A,B,C,D,E (5100/5250/5765/5112/5343 rows) and test holds F,G,H,I (5422/5107/5018/5228 rows) with ZERO overlap. attribute_0..attribute_3 are constant within each product_code (A=material_7,material_8,9,5 / B=material_5,material_5,8,8 / C=material_7,material_8,5,8 / D=material_7,material_5,6,6 / E=material_7,material_6,6,9 in train; F=material_5,material_6,6,4 / G=material_5,material_6,9,7 / H=material_7,material_7,7,9 / I=material_7,material_5,9,5 in test), so those four columns are aliases of the group key, not independent features — and every test group presents an attribute combination absent from train. id is a contiguous continuation (train 0..26569, test 26570..47344), i.e. the table was split by product block, not shuffled. Per-column null rates match closely across train/test (loading 0.94% vs 1.07%, measurement_17 8.60% vs 8.38%), so the generating process is shared even though the groups are not.",
+    "confidence": "high",
+    "consequence": "The evaluated quantity is generalization to UNSEEN product codes. Any signal that is group-specific is worthless at test time; any validation that lets a model see the held-out group is optimistic."
+  },
+  "split_policy": {
+    "scheme": "GroupKFold / leave-one-product-code-out on product_code — exactly 5 groups in train, so 5-fold LOGO is the natural and complete scheme. Each fold trains on 4 codes and scores on the 1 held-out code, mirroring the train->test regime. Report the pooled out-of-fold AUC AND the 5 per-fold AUCs; fold spread is the shift-robustness diagnostic.",
+    "forbidden": [
+      "shuffled KFold or StratifiedKFold that ignores product_code — it leaks group identity into the fold and measures within-group ranking, which is NOT what the leaderboard evaluates",
+      "using product_code, attribute_0, attribute_1, attribute_2, attribute_3 as raw model features — they are constant per group, take only 5 values in train, and take 4 UNSEEN values in test; a model that splits on them cannot transfer and will memorize the training groups",
+      "target encoding of product_code or of any attribute_* column, for the same reason",
+      "fitting any imputer, scaler, or encoder on train+test jointly across groups without re-fitting per group (see data_level ideas — per-group fitting is the intended design, cross-group fitting is the leak)"
+    ],
+    "group_key": "product_code (5 levels in train, 4 disjoint levels in test)",
+    "notes": "26,570 train rows over 5 groups: LOGO is cheap. Fold sizes are near-equal (5100-5765) and per-group failure rates are tight (0.2004-0.2273), so folds are naturally balanced without stratification; stratifying inside a group fold is unnecessary and would break the group structure."
+  },
+  "metric": {
+    "name": "AUC-ROC",
+    "direction": "maximize",
+    "traps": [
+      "rank-only: absolute calibration and any decision threshold are irrelevant to the score. Do NOT tune a threshold (this repo has confirmed twice — titanic, spaceship-titanic — that CV-tuned thresholds do not transfer), and do not spend effort on probability calibration for its own sake.",
+      "the leaderboard AUC is POOLED over all four unseen product codes at once. A model can rank perfectly inside each group and still lose score if its score distribution SHIFTS between groups (group A's non-failures scoring above group B's failures). Per-group score standardization / rank-normalization at inference is therefore a first-class candidate, not a cosmetic step — and it must be validated under LOGO, where the same pathology is visible across the 5 train groups.",
+      "21.26% positive rate is mild imbalance and AUC is a rank metric, so resampling / SMOTE / scale_pos_weight buy nothing on the metric and mainly add variance. Class weighting only changes the score monotonically-per-model, which AUC is invariant to.",
+      "expected AUC ceiling on this data is low (weak signal, heavy shift): fold-to-fold and seed-to-seed noise will be comparable to real gains. Compare candidates on identical folds and identical seeds, and prefer repeated-seed LOGO before accepting any small win.",
+      "compute CV as a single AUC over the pooled out-of-fold prediction vector, and separately as the mean of per-group AUCs — the two disagree exactly when the cross-group scale problem above is present, which makes the gap a useful diagnostic rather than a bookkeeping detail."
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "reason": "config.yaml special_rules permits external data (external_data_allowed: true, internet_access_allowed: true, pretrained_models_allowed: true), so this is a joinability verdict, not a rules verdict. No whitelisted source has a constructible join key: there is no country, region, currency, date, or entity-name column anywhere in the 26-column schema. product_code (A-I) and attribute_0/1 (material_5..material_8) are opaque synthetic labels with no external referent, so World Bank (country x year), holiday calendars (country x date), ISO tables (country), ECB rates (currency x month) and OWID COVID (country x date) are all unjoinable. The provided measurements are the full covariate set.",
+    "candidates": []
+  },
+  "injection_ideas": {
+    "data_level": [
+      "PER-PRODUCT-CODE imputation, fit within each group independently (including each test group on its own). Missingness is substantial and rises monotonically along the measurement index: measurement_3 1.43% -> measurement_17 8.60% in train (1.58% -> 8.38% in test), plus loading ~1%. Because each test group is a fresh population, an imputer fit on train groups and applied to F-I is itself a shift vector; fitting per group is the shift-safe design and is legitimate (test features are fully observable, only the label is not).",
+      "Model-based recovery of the high-missing measurements rather than mean/median fill: measurement_17 (8.6% missing) and its high-index neighbours are the most-missing and, given the monotone missingness ladder, likely the most informative. Fit a within-group regression of each high-missing measurement on the low-missing ones (measurement_3..measurement_9, loading) and impute from it; compare against plain per-group median under LOGO before adopting.",
+      "Missingness-as-signal features: per-row count of NaNs, and a binary null indicator per measurement column. Missingness rate is near-identical across train and test, so these features are shift-stable — unlike the raw group identity.",
+      "Per-group standardization / rank-transform of every continuous feature (loading, measurement_3..17) so that feature scales are comparable across the four unseen codes. This is the direct data-level answer to the pooled-AUC scale trap above.",
+      "log or rank transform of `loading` — right-skewed (min 33.16, median 122.39, mean 127.83, max 385.86, std 39.03) and the single named non-measurement continuous column, which makes it the most likely dominant predictor.",
+      "DROP product_code and attribute_0..attribute_3 from the feature matrix (they are group aliases with unseen test levels). If any attribute-derived signal is wanted, derive it as a within-group STATISTIC (e.g. group mean/std of loading) rather than as the categorical level itself — but validate under LOGO, since a 5-group sample makes group-level statistics extremely easy to overfit.",
+      "Treat measurement_0, measurement_1, measurement_2 as low-cardinality discrete (29/30/25 distinct integer values) rather than continuous — worth a raced lane, but they are stored as int and may simply be coarse counts.",
+      "Interaction / aggregate candidates grounded in the schema rather than search: sum and std of measurement_3..17 per row, loading x (row missing-count), and measurement ratios within the correlated high-index block."
+    ],
+    "model_level": [
+      "Under disjoint-group shift with a weak-signal rank metric, the bias-dominated end of the model space is the favoured regime: a small, heavily-regularized logistic regression on a handful of transformed features is a serious contender, not a baseline to discard. Race it against GBDT from the start rather than after.",
+      "Constrain GBDT capacity hard (shallow depth, high min_child_samples, strong L1/L2, low feature fraction) — deep unregularized trees carve group-specific structure that cannot exist in F-I. Validate every capacity setting under LOGO, never under shuffled CV.",
+      "Rank-average rather than probability-average when blending: the metric is rank-based, so averaging per-model ranks is scale-safe across members whose score distributions differ (and it composes with the per-group rank-normalization above).",
+      "Feature-count ablation is a first-class experiment here, not tuning trim: with 4-group training and unseen test groups, fewer features often generalizes strictly better. Race an explicit small-feature-set lane.",
+      "TASK-BLEND-DECOR is not matched yet — its trigger is observed at blend time. If the pool ends up dominated by deep low-regularization GBDTs, add one shallow heavily-regularized diverse-library member as a decorrelator before re-optimizing weights. Note the prior's NNLS clause is stated for RMSE-family metrics; AUC is not RMSE-family, so use a rank-space weight search (or logit-space NNLS as an approximation) and verify the chosen weights under LOGO rather than assuming the closed form applies.",
+      "Adversarial validation (train vs test, features only) is the cheap direct measurement of how large the group shift is and which columns carry it; features that are near-perfect train/test discriminators are shift vectors and are demotion candidates. This is a Stage 1 action seeded here."
+    ]
+  },
+  "matched_task_priors": [],
+  "prior_match_notes": {
+    "summary": "No [TASK-*] entry in knowledge/task_priors.md fires on this competition. The dominant structural fact here — the test set is a set of DISJOINT GROUPS with unseen categorical levels, which mandates GroupKFold and penalizes capacity — has no corresponding prior. That is a genuine gap in the prior library, not an absence of structure in the problem, and is the strongest write-back candidate for this competition (proposed name: TASK-GROUP-SHIFT, trigger: a categorical key whose train and test level sets are disjoint)."
+  },
+  "considered_and_rejected_priors": [
+    {
+      "prior": "TASK-TS-FUTURE",
+      "reason": "no date/time column and no forecasting language; the split is by product block, not by time"
+    },
+    {
+      "prior": "TASK-TS-CALENDAR",
+      "reason": "no daily series, no date key, no store/product time axis"
+    },
+    {
+      "prior": "TASK-CAT-ONLY",
+      "reason": "only 3 string columns (product_code, attribute_0, attribute_1) against 1 continuous + 3 integer-attribute + 18 numeric measurement columns; and all three categoricals are group-key aliases that must be DROPPED rather than encoded. Encoding is not the lever here — the opposite is true."
+    },
+    {
+      "prior": "TASK-SPECTRAL",
+      "reason": "24 features over 26,570 rows — rows greatly exceed columns; the measurement_* block is not an ordered spectrum"
+    },
+    {
+      "prior": "TASK-STRUCT-OUT",
+      "reason": "single scalar binary output, no grid/sequence generative structure"
+    },
+    {
+      "prior": "TASK-MAE-METRIC",
+      "reason": "metric is AUC-ROC, a rank metric, not MAE/SMAPE/quantile"
+    },
+    {
+      "prior": "TASK-IMBALANCED",
+      "reason": "trigger is positive rate <= ~2%; actual rate is 21.26% (5648/26570). The prior's 'rank-based metrics need no resampling' caution is carried into metric.traps, but the entry is not claimed as a match."
+    },
+    {
+      "prior": "TASK-BLEND-DECOR",
+      "reason": "trigger is a property of the blend pool, which does not exist yet at Stage 0.5; carried forward as a conditional instruction in injection_ideas.model_level"
+    }
+  ],
+  "schema_snapshot": {
+    "train_rows": 26570,
+    "test_rows": 20775,
+    "n_features_excl_id_target": 24,
+    "target": "failure",
+    "positive_rate": 0.212608,
+    "positive_count": 5648,
+    "id_column": "id",
+    "id_ranges": {"train": [0, 26569], "test": [26570, 47344]},
+    "group_column": "product_code",
+    "groups": {
+      "train": {"A": 5100, "B": 5250, "C": 5765, "D": 5112, "E": 5343},
+      "test": {"F": 5422, "G": 5107, "H": 5018, "I": 5228}
+    },
+    "per_group_failure_rate_train": {"A": 0.2273, "B": 0.2004, "C": 0.2116, "D": 0.2175, "E": 0.2070},
+    "group_constant_columns": ["attribute_0", "attribute_1", "attribute_2", "attribute_3"],
+    "group_attribute_map": {
+      "A": ["material_7", "material_8", 9, 5],
+      "B": ["material_5", "material_5", 8, 8],
+      "C": ["material_7", "material_8", 5, 8],
+      "D": ["material_7", "material_5", 6, 6],
+      "E": ["material_7", "material_6", 6, 9],
+      "F": ["material_5", "material_6", 6, 4],
+      "G": ["material_5", "material_6", 9, 7],
+      "H": ["material_7", "material_7", 7, 9],
+      "I": ["material_7", "material_5", 9, 5]
+    },
+    "dtypes": {"float64": 16, "int64": 7, "str": 3},
+    "continuous_cols": ["loading", "measurement_3", "measurement_4", "measurement_5", "measurement_6", "measurement_7", "measurement_8", "measurement_9", "measurement_10", "measurement_11", "measurement_12", "measurement_13", "measurement_14", "measurement_15", "measurement_16", "measurement_17"],
+    "integer_cols": ["measurement_0", "measurement_1", "measurement_2"],
+    "low_cardinality_integer": {"measurement_0": 29, "measurement_1": 30, "measurement_2": 25},
+    "loading_stats": {"count": 26320, "mean": 127.826, "std": 39.030, "min": 33.16, "p25": 99.988, "median": 122.39, "p75": 149.152, "max": 385.86},
+    "null_rate_train_pct": {"loading": 0.94, "measurement_3": 1.43, "measurement_4": 2.02, "measurement_5": 2.54, "measurement_6": 3.00, "measurement_7": 3.53, "measurement_8": 3.94, "measurement_9": 4.62, "measurement_10": 4.89, "measurement_11": 5.53, "measurement_12": 6.03, "measurement_13": 6.68, "measurement_14": 7.05, "measurement_15": 7.56, "measurement_16": 7.94, "measurement_17": 8.60},
+    "null_rate_test_pct": {"loading": 1.07, "measurement_3": 1.58, "measurement_4": 1.97, "measurement_5": 2.45, "measurement_6": 3.00, "measurement_7": 3.47, "measurement_8": 4.07, "measurement_9": 4.35, "measurement_10": 5.14, "measurement_11": 5.47, "measurement_12": 5.97, "measurement_13": 6.27, "measurement_14": 6.93, "measurement_15": 7.42, "measurement_16": 8.08, "measurement_17": 8.38},
+    "sample_submission_baseline": "sample_submission.csv predicts the constant 0.0 for every row — a degenerate all-ties submission (AUC 0.5). It confirms the expected format: id,failure with a continuous probability/score column."
+  },
+  "eda_verdict": null,
+  "not_recorded": [
+    "Official competition description, rules page and metric definition text — not fetched. Kaggle pages are JS-rendered and unreadable by WebFetch, and Stage 0.5 forbids discussions/kernels. All rules, metric and target fields here are taken from config.yaml, which is the only rules artifact in the workspace.",
+    "Whether external data is genuinely permitted by the official rules — config.yaml asserts external_data_allowed: true and is treated as authoritative, but this was not verified against the rules page. The point is moot for this dossier: no whitelisted source is joinable regardless (see external_data.reason).",
+    "Provenance of the real dataset this Playground episode's synthetic data was generated from, and whether the original is an allowed extra training table. Not resolvable without the rules page; not a whitelisted source, so not proposed as a candidate.",
+    "Public/private leaderboard split ratio and which product codes fall in the private portion — unknown, and it matters here: if the public/private split is BY product code rather than random, public LB feedback measures only a subset of the unseen groups and will be a poor guide. Treat public LB with extra suspicion on this competition.",
+    "Whether the four test product codes are drawn from the same generative population as the five train codes, or shifted. Only null-rate agreement was checked at this stage; the marginal-distribution comparison and an adversarial-validation AUC are deferred to Stage 1 EDA (seeded in injection_ideas.model_level).",
+    "Semantic meaning of loading, the measurement_* columns and the material_* levels — the competition provides no data dictionary and none is inferable from the schema. Domain-informed feature construction is therefore unavailable; feature ideas above are structural, not physical."
+  ],
+  "generated_by": "kaggle-agent Stage 0.5 (problem dossier). Inputs: config.yaml + data heads/schema/nulls/cardinalities only. No discussions, no kernels, no write-ups, no training."
+}

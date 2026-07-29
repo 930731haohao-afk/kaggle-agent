@@ -1,0 +1,98 @@
+{
+  "competition": "playground-series-s3e11",
+  "task_family": "iid tabular regression (low-cardinality discrete features; synthetic Playground resample)",
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No date/time column in any file. Train id 0..360335, test id 360336..600559 — a contiguous continuation, i.e. a single shuffled table split by row index, not a temporal boundary. All 15 feature columns show the same discrete support in train and test (unit_sales 6/6, total_children 6/6, num_children_at_home 6/6, avg_cars 5/5, units_per_case 36/36, store_sqft 20/20, all five binary store-amenity flags 2/2; store_sales 1044/1035 and gross_weight 384/380 differ only by the count expected from the smaller test n). Stage 1 must still confirm marginal-distribution match per column.",
+    "confidence": "high"
+  },
+  "split_policy": {
+    "scheme": "plain KFold (5-fold) on shuffled rows; optionally StratifiedKFold on binned log1p(cost) or on store_sqft (20 levels, a store-identity proxy) to stabilise fold-to-fold variance",
+    "forbidden": "time-based / TimeSeriesSplit (no time axis exists — would be arbitrary); GroupKFold on store_sqft (test shares all 20 store_sqft values with train, so held-out-store generalisation is NOT the evaluated regime and grouping would understate score)",
+    "notes": "360,336 train rows: 5-fold is cheap and low-variance; no leakage vector identified (no ids repeated across train/test, 0 exactly duplicated feature rows in train)."
+  },
+  "metric": {
+    "name": "RMSLE",
+    "direction": "minimize",
+    "traps": [
+      "RMSLE is RMSE in log1p space — train on log1p(cost) and predict expm1(pred); do NOT apply an RMSE-style smearing/bias correction on back-transform, the log-space conditional mean is exactly what RMSLE optimises",
+      "asymmetric in raw space: under-prediction is penalised more than over-prediction of equal absolute size",
+      "target is strictly positive and narrowly bounded (min 50.79, max 149.75, mean 99.61, std 29.94), so the log transform compresses the range only ~3x — gains from log-training are real but modest, and must be verified against raw-space training rather than assumed",
+      "target takes only 328 distinct values over 360k rows — heavily discretised; clipping predictions to the observed [50.79, 149.75] range is safe, and rounding-to-observed-grid post-processing is a candidate but must be evaluated INSIDE the metric function so every blend member and blend candidate sees the same post-processing",
+      "compute CV as RMSLE on out-of-fold raw-scale predictions, never as mean-of-fold-RMSLEs of log residuals from differently-scaled folds"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "rationale": "config.yaml special_rules sets external_data_allowed: false, pretrained_models_allowed: false, internet_access_allowed: false. Independently, no whitelist source is joinable: there is no country, region, currency, date, or entity-name column anywhere in the schema, so none of the whitelisted join keys (country x year, country x date, currency x month, country) can be constructed from the official data. The features are already the full covariate set for the household/product/store cost model.",
+    "candidates": []
+  },
+  "injection_ideas": {
+    "data_level": [
+      "Treat the 13 low-cardinality columns as CATEGORICAL, not continuous — this is the dossier's primary hypothesis (see matched_task_priors TASK-CAT-ONLY). Cast unit_sales, total_children, num_children_at_home, avg_cars_at_home, units_per_case, store_sqft and the 5 binary amenity flags to a categorical dtype and enable native GBDT categorical handling (LightGBM categorical_feature / CatBoost cat_features).",
+      "store_sqft (20 distinct values) is a store-identity key, not a size measurement — the 5 amenity flags (coffee_bar, video_store, salad_bar, prepared_food, florist) are almost certainly store attributes determined by it. Build an explicit store key = tuple(store_sqft, coffee_bar, video_store, salad_bar, prepared_food, florist) and check its cardinality; if it collapses to ~20 groups, use it as a single high-signal categorical rather than 6 columns.",
+      "CV-safe target encoding (out-of-fold means/medians of log1p(cost)) for the store key and for units_per_case; smoothing tuned as a hyperparameter.",
+      "Pairwise categorical crosses among the household columns (total_children x num_children_at_home, avg_cars x total_children) and store_key x units_per_case — with 360k rows the crosses stay well populated.",
+      "Ratio/interaction features on the two genuinely continuous columns: store_sales / unit_sales (implied unit price), gross_weight / units_per_case, store_sales per store_sqft.",
+      "Verify whether cost is a near-deterministic function of a feature subset (target has only 328 distinct values) — group by the store key and inspect within-group cost spread before committing to a generic regressor."
+    ],
+    "model_level": [
+      "Train on log1p(cost) with L2 objective, so the training loss IS the competition metric; back-transform with expm1.",
+      "LightGBM and CatBoost with native categorical handling as the primary lineage; CatBoost's ordered target statistics are a strong fit for the low-cardinality categorical regime.",
+      "An XGBoost one-hot / ordinal member for library diversity in the blend (all-categorical data one-hots to a small, dense matrix here).",
+      "Blend with NNLS closed-form weights on out-of-fold predictions in log1p space (RMSLE is an RMSE-family metric in that space, so NNLS is exact; Dirichlet weight search carries ~1e-5 approximation error that can exceed the real gain).",
+      "TASK-BLEND-DECOR is not matched yet — its trigger is observed at blend time. If the pool ends up dominated by deep low-regularization GBDTs, add one shallow heavily-regularized diverse-library member (e.g. regularized linear model on target-encoded categoricals) as a decorrelator before re-optimizing weights."
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-CAT-ONLY"
+  ],
+  "prior_match_notes": {
+    "TASK-CAT-ONLY": "Trigger fits with one caveat on presentation: all 15 feature columns are stored as float64, but 13 of 15 are low-cardinality discrete (2 to 36 distinct values; store_sqft 20, units_per_case 36, the rest 2-6). Only store_sales (1044 distinct) and gross_weight (384 distinct) behave as continuous. The float dtype disguises a near-all-categorical problem, which is exactly the failure mode this prior guards against: the prior's own evidence line records that on this competition AIDE's only outright win came from a node that accidentally enabled native categorical handling. Encoding is therefore the central lever here, and enabling it must be a deliberate, early, explicitly-raced lane rather than an accident.",
+    "TASK-TS-FUTURE": "not matched — no date column, no forecasting language, test is a row-index continuation of a shuffled table",
+    "TASK-TS-CALENDAR": "not matched — no daily series, no date key",
+    "TASK-SPECTRAL": "not matched — 15 columns x 360k rows is the opposite aspect ratio",
+    "TASK-STRUCT-OUT": "not matched — single scalar target",
+    "TASK-MAE-METRIC": "not matched — RMSLE is an L2 (RMSE-family) loss in log1p space, not MAE/SMAPE/quantile; do NOT switch to an L1 objective on the strength of the log transform",
+    "TASK-IMBALANCED": "not matched — regression target, not binary"
+  },
+  "data_facts": {
+    "train_rows": 360336,
+    "test_rows": 240224,
+    "n_features": 15,
+    "id_column": "id",
+    "target_column": "cost",
+    "nulls_train": 0,
+    "nulls_test": 0,
+    "duplicate_feature_rows_train": 0,
+    "target_stats": {"min": 50.79, "max": 149.75, "mean": 99.614729, "std": 29.939435, "median": 98.81, "n_distinct": 328},
+    "feature_cardinality": {
+      "store_sales(in millions)": 1044,
+      "unit_sales(in millions)": 6,
+      "total_children": 6,
+      "num_children_at_home": 6,
+      "avg_cars_at home(approx).1": 5,
+      "gross_weight": 384,
+      "recyclable_package": 2,
+      "low_fat": 2,
+      "units_per_case": 36,
+      "store_sqft": 20,
+      "coffee_bar": 2,
+      "video_store": 2,
+      "salad_bar": 2,
+      "prepared_food": 2,
+      "florist": 2
+    },
+    "column_name_hazard": "Column names contain parentheses, spaces and a trailing '.1' ('avg_cars_at home(approx).1', 'store_sales(in millions)'). LightGBM rejects these characters in feature names — sanitize the column names before training, and keep a mapping back to the originals.",
+    "sample_submission_baseline": "sample_submission.csv predicts the constant 99.615 for every row — the train-mean baseline; use its RMSLE as the floor any model must beat."
+  },
+  "not_recorded": [
+    "Official competition description, rules page and metric definition text — internet_access_allowed is false and Kaggle pages are JS-rendered, so the dossier is derived from config.yaml plus the data schema only. The RMSLE metric, the regression task type and the external-data prohibition are taken from config.yaml as authoritative.",
+    "Provenance of the underlying real dataset that this Playground episode's synthetic data was generated from (Playground Series episodes are usually a deep-learning resample of an original public dataset, and that original is customarily allowed as an extra training table). Whether such an original exists and whether the rules permit it cannot be resolved without the rules page; it is not a whitelisted external source, so it is NOT proposed as a candidate here. Stage 1 should not act on this without rule confirmation.",
+    "Public/private leaderboard split ratio and the size of the private portion.",
+    "Whether train and test marginals match column-by-column (only distinct-value support was compared here; distribution comparison is deferred to Stage 1 EDA)."
+  ],
+  "eda_verdict": null,
+  "stage": "0.5",
+  "generated_by": "kaggle-agent Stage 0.5 (problem dossier), inputs limited to config.yaml + data heads/schema; no discussions, no kernels, no training"
+}

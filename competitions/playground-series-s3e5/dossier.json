@@ -1,0 +1,107 @@
+{
+  "competition": "playground-series-s3e5",
+  "stage": "0.5 problem dossier",
+  "inputs_used": [
+    "config.yaml",
+    "head/describe of data/train.csv, data/test.csv, data/sample_submission.csv",
+    "knowledge/task_priors.md"
+  ],
+  "forbidden_inputs_avoided": [
+    "competition discussion threads",
+    "public kernels / write-ups"
+  ],
+
+  "task_family": "ordinal classification (tabular, small-n, all-numeric features)",
+  "task_family_detail": {
+    "target": "quality, integer 3..8, ordered",
+    "n_train": 2056,
+    "n_test": 1372,
+    "n_features": 11,
+    "feature_dtypes": "all float64, no categoricals, no missing values",
+    "target_distribution": {"3": 12, "4": 55, "5": 839, "6": 778, "7": 333, "8": 39},
+    "note": "classes 3 (0.58%) and 8 (1.90%) are rare; 5 and 6 hold 78.7% of mass"
+  },
+
+  "test_window": {
+    "relation": "iid",
+    "evidence": "no date/time column in any file; no group/entity key; Id is a single contiguous integer sequence split at the boundary (train 0..2055, test 2056..3427) with identical feature schema and comparable ranges; Playground Series episodes are single-table synthetic tabular tasks with a random train/test partition. No evidence of a temporal or grouped partition.",
+    "confidence": "high",
+    "eda_must_verify": "Stage 1 must confirm no covariate shift between train and test feature distributions (adversarial validation AUC ~0.5) and check for exact duplicate feature rows across train/test (synthetic generators can emit them)."
+  },
+
+  "split_policy": {
+    "scheme": "StratifiedKFold on quality, k=5 or 10, repeated (3-5 repeats) — n=2056 makes single-shot CV noisy",
+    "rationale": "iid partition permits shuffled folds; stratification is mandatory because quality=3 has only 12 rows (a plain KFold can leave folds with zero instances of it, which breaks QWK's confusion matrix and per-fold thresholding)",
+    "forbidden": "unstratified KFold; any single 80/20 holdout for model selection at this sample size; per-fold threshold fitting evaluated on the same fold",
+    "notes": "no time-based or group-based constraint applies — no date and no entity key exists"
+  },
+
+  "metric": {
+    "name": "quadratic_weighted_kappa",
+    "direction": "maximize",
+    "traps": [
+      "Not row-decomposable: QWK depends on the full predicted-label marginal distribution via the expected-agreement term, so it cannot be averaged meaningfully per row and small shifts in the predicted class histogram move the score.",
+      "Quadratic weights penalize squared label distance — an L2 regression head plus learned cutpoints is metric-aligned; plain multiclass cross-entropy (argmax decoding) is not.",
+      "Blending must happen on the continuous pre-rounding scale; averaging rounded integer labels is not a valid blend under QWK.",
+      "Rounding/cutpoint search must live INSIDE the scoring function so every CV fold and every blend candidate is evaluated post-rounding (tree-search v2 postprocessing-in-metric rule).",
+      "Cutpoints fitted per fold and scored on the same fold are optimistically biased; fit them once on the pooled OOF vector, or nested.",
+      "Rare classes 3 and 8 make the metric high-variance: whether a handful of extreme rows land in the tail class can swing QWK by a nontrivial margin. Report CV mean and spread, not a single number.",
+      "Public LB is a small slice of 1372 test rows — treat LB-vs-CV gaps as noise unless large."
+    ]
+  },
+
+  "external_data": {
+    "needed": "no",
+    "reason": "config.yaml special_rules.external_data_allowed = false, and pretrained_models_allowed = false / internet_access_allowed = false. Independently, the target is a physicochemical wine sensory score with no country/date/entity join key present in the data, so no whitelist source (World Bank, holiday calendars, ISO tables, ECB FX, OWID COVID) has a joinable key here.",
+    "candidates": []
+  },
+
+  "injection_ideas": {
+    "data_level": [
+      "Derived chemistry ratios from official columns only: bound SO2 = total - free sulfur dioxide; free/total SO2 ratio; fixed/volatile acidity ratio; total acidity = fixed + volatile + citric; sulphates/chlorides.",
+      "Alcohol-density interaction (alcohol and density are physically coupled through sugar/ethanol content): alcohol*density, alcohol/density, and density residual after regressing on alcohol.",
+      "Log1p transforms for right-skewed columns (residual sugar max 14.0 vs median 2.2; chlorides max 0.414 vs median 0.079; sulphates max 1.95 vs median 0.61) for the linear/kernel members; leave raw for GBDT.",
+      "Rank/quantile-transform copies of all 11 features as an alternate view for a decorrelating member.",
+      "Duplicate-row grouping: synthetic Playground data often repeats near-identical feature vectors; a within-train nearest-neighbour target-agreement feature (CV-safe, computed out-of-fold) is a candidate — verify duplicate structure in Stage 1 first (train had 0 exact feature-duplicates, so this may not fire)."
+    ],
+    "model_level": [
+      "Primary head: GBDT regression with L2 objective (LightGBM / XGBoost / CatBoost) on the integer target, decoded via searched cutpoints — quadratic weighting makes squared error the aligned surrogate.",
+      "Optimized cutpoint search (Nelder-Mead / coordinate scan over 5 boundaries) fitted on pooled OOF predictions, applied unchanged to test.",
+      "Diverse second head: multiclass GBDT decoded by expected value sum_k k*p_k (continuous, QWK-aligned) rather than argmax — gives blend diversity without leaving the ordinal scale.",
+      "Ordinal-specific head: cumulative-link / OrdinalClassifier (chain of binary 'quality > k' models), decoded to an expected label.",
+      "TASK-BLEND-DECOR: once the pool is built, if it is dominated by deep GBDTs, add one shallow heavily-regularized member from a different library (regularized linear / kernel ridge / small ExtraTrees on rank-transformed features) as a decorrelator, then re-optimize weights; verify weights with NNLS on the continuous scale before rounding.",
+      "Small-n discipline: heavy regularization, low learning rate with many rounds, and repeated CV for every selection decision — 2056 rows will happily support an overfit ranking.",
+      "Do NOT apply the TASK-MAE-METRIC L1-objective action here; that entry's rounding-inside-metric sub-rule transfers, its L1 objective does not (QWK is quadratic, not absolute, in label distance)."
+    ]
+  },
+
+  "matched_task_priors": [],
+  "partial_task_prior_matches": [
+    {
+      "id": "TASK-MAE-METRIC",
+      "match": "partial",
+      "why": "Trigger is MAE/SMAPE/quantile-like; QWK is none of those. Its action 'rounding/threshold post-processing inside the metric function so every blend candidate sees it' transfers exactly to QWK cutpoint decoding. Its 'L1 objective not L2' action does NOT transfer — quadratic weights make L2 the aligned surrogate."
+    },
+    {
+      "id": "TASK-BLEND-DECOR",
+      "match": "conditional",
+      "why": "Trigger is a property of the blend pool, unknowable at Stage 0.5. Flagged for Stage 5: if the pool ends up variance-dominated (deep GBDTs), add the shallow regularized decorrelator and re-fit weights with NNLS on the continuous scale."
+    },
+    {
+      "id": "TASK-IMBALANCED",
+      "match": "partial",
+      "why": "Trigger is a binary target with positive rate <= 2%. Target here is 6-class ordinal, but classes 3 (0.58%) and 8 (1.90%) sit in that regime. Adopt: stratified folds (already mandated by split_policy). Do not adopt resampling — QWK is an agreement metric on integer labels, and resampling distorts the predicted-marginal that QWK's expected-agreement term depends on. Entry is [GEN]/unvalidated anyway."
+    }
+  ],
+  "unmatched_priors_checked": ["TASK-TS-FUTURE", "TASK-TS-CALENDAR", "TASK-CAT-ONLY", "TASK-SPECTRAL", "TASK-STRUCT-OUT"],
+
+  "not_recorded": [
+    "public/private leaderboard split ratio and which rows fall in each",
+    "whether the synthetic data was generated from a real source dataset and whether that source is permitted (config forbids external data, so this is moot for use, but the generator's provenance is unknown from the problem statement alone)",
+    "leaderboard score distribution / whether it is bimodal",
+    "exact ordinal semantics of the sensory score (whether adjacent grades are equally spaced in the original rating protocol)",
+    "presence of train/test exact-duplicate feature rows (requires Stage 1 EDA; only within-train duplicates were checked here: 0)"
+  ],
+
+  "eda_verdict": null
+}

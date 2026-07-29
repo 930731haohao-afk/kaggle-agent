@@ -1,0 +1,89 @@
+{
+  "competition": "conway-s-reverse-game-of-life",
+  "stage": "0.5 problem dossier",
+  "task_family": "structured output (inverse problem on a 20x20 binary grid governed by a known deterministic cellular-automaton rule); operationally 400 correlated per-cell binary predictions per row",
+  "problem_statement": "Given delta in {1..5} and the 20x20 board state AFTER delta Conway Game-of-Life steps ('stop'), predict the board state BEFORE those steps ('start'). 50,000 train rows carry both start and stop; 50,000 test rows carry only delta + stop. Submission is 400 binary start.* columns per id.",
+  "data_shape": {
+    "train": {"rows": 50000, "cols": 802, "layout": "id, delta, start.1..start.400, stop.1..stop.400"},
+    "test": {"rows": 50000, "cols": 402, "layout": "id, delta, stop.1..stop.400"},
+    "sample_submission": {"rows": 50000, "cols": 401, "layout": "id, start.1..start.400", "all_values": 0},
+    "cell_values": [0, 1],
+    "grid": "20x20, columns are row-major index 1..400 (verified by forward-simulation match)",
+    "delta_counts_train": {"1": 9880, "2": 10068, "3": 9964, "4": 10110, "5": 9978},
+    "delta_counts_test": {"1": 9977, "2": 10059, "3": 9995, "4": 9823, "5": 10146},
+    "live_cell_rate": {"start_overall": 0.1434, "stop_by_delta": {"1": 0.1377, "2": 0.1304, "3": 0.1263, "4": 0.1227, "5": 0.1187}}
+  },
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No date/time column anywhere. train ids 1..50000 and test ids 1..50000 are separate namespaces (100% id overlap, zero duplicates within each file), so id carries no ordering or grouping information. delta is near-uniform over 1..5 in BOTH files (within ~1.5% of 10,000 each), and stop-density-by-delta matches; test rows are independent draws from the same board generator. No group key, no series key, no entity that could repeat across rows."
+  },
+  "split_policy": {
+    "scheme": "random KFold (5-fold) stratified by delta; delta is the only structural covariate and difficulty rises steeply with it, so every fold must carry the same delta mix. Report MAE both overall and per-delta.",
+    "forbidden": "none required by data structure (no time, no groups). Do NOT stratify on start-cell values (target leakage into fold assignment). Do not pool per-delta metrics without weighting by delta counts.",
+    "extra": "If synthetic boards are generated for training (see injection_ideas), keep the 50k official train rows as the ONLY validation source — synthetic rows may go in train folds but never in a validation fold, otherwise CV measures the simulator, not the competition distribution."
+  },
+  "metric": {
+    "name": "MAE",
+    "direction": "minimize",
+    "definition": "mean absolute error over all 400 x 50,000 predicted start cells; with 0/1 targets and 0/1 predictions this equals the per-cell error rate (1 - accuracy)",
+    "traps": [
+      "Predictions must be hard 0/1 — sample submission is all zeros. Submitting calibrated probabilities is strictly worse under MAE than thresholding at 0.5; the 0.5 threshold is the MAE-optimal decision rule for a per-cell probability, so tune the threshold only inside the metric function, never post-hoc on the LB.",
+      "Baselines measured on 8,000 train rows: all-zeros MAE 0.14421 (equals start density); copy-stop identity MAE 0.15392 overall but 0.11610 at delta=1 and 0.17220 at delta=5. Identity beats all-zeros ONLY at delta=1 — any model must clear the per-delta max(0.1443, identity) floor, not the overall floor.",
+      "Metric is cell-averaged, not board-averaged, so all 400 cells and all deltas weigh equally; delta=5 rows contribute as much as delta=1 rows despite being far harder. Optimizing overall MAE will silently let delta=4/5 collapse to the all-dead prediction — that is often locally optimal and must be an explicit modeling decision, not an accident.",
+      "Class balance is ~14% live: accuracy-style metric on an imbalanced target means the trivial predictor is strong; report lift over the all-zeros floor, not raw MAE, when comparing candidates."
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "candidates": [],
+    "rationale": "No entity in the data joins to any whitelist source (no country, date, currency, or geography — only a delta integer and 800 binary cells). The generative process is fully known and self-contained. Note: the forward Game-of-Life rule is *rule knowledge derivable from the problem statement*, not external data, and synthetic boards produced with it are self-generated, so neither is subject to the whitelist or to an external-data rules check."
+  },
+  "verified_facts": {
+    "forward_rule": "B3/S23 with DEAD (zero-padded) boundary — cells outside the 20x20 grid count as dead. Verified: simulating start forward by delta steps reproduces stop EXACTLY for 4000/4000 sampled train rows. Toroidal (wrap) boundary reproduces only 1201/4000, so the board is finite, not a torus.",
+      "consequence": "The forward operator F_delta is known exactly and is cheap. This turns the task into an exactly-specified inverse problem: (a) unlimited labelled training data can be synthesized, (b) any candidate start can be verified by forward simulation, (c) the only irreducible error is genuine non-invertibility (many starts map to the same stop — Garden-of-Eden / merging orbits), not model ignorance of the rule.",
+    "fixed_points": "422/4000 sampled train rows (~10.6%) have start == stop (still-life or period-1 configuration under the finite board).",
+    "no_missing_values": "All cells are 0/1 across sampled rows; no nulls observed in id/delta for either file."
+  },
+  "matched_task_priors": [
+    "TASK-STRUCT-OUT — output is a grid governed by explicit rules (cellular automaton is the entry's own example); action: exploit structure directly (per-cell models, local neighborhoods, rule-informed features) rather than flat 400-way multi-output regression",
+    "TASK-MAE-METRIC — metric is MAE; action: L1-style objective and put the hard-0/1 rounding INSIDE the metric function so every blend candidate is scored after thresholding"
+  ],
+  "rejected_task_priors": [
+    "TASK-TS-FUTURE / TASK-TS-CALENDAR — no time column, test is iid not a future window",
+    "TASK-CAT-ONLY — features are binary cells with spatial meaning, not nominal categories; encoding is irrelevant",
+    "TASK-SPECTRAL — 400 ordered columns but they are a 2D grid, not a 1D spectrum; rows (50k) far exceed columns",
+    "TASK-IMBALANCED — positive rate 14.3%, well above the ~2% trigger",
+    "TASK-BLEND-DECOR — not applicable yet; revisit at blend time if the pool turns out variance-dominated"
+  ],
+  "injection_ideas": {
+    "data_level": [
+      "Synthesize unlimited training pairs with the verified B3/S23 dead-boundary simulator, mimicking the competition generator (random init, warm-up steps discarded, drop boards that die out). Training data is NOT the bottleneck here — this is the single largest lever the problem structure offers.",
+      "D4 symmetry augmentation: the rule commutes with the 8 dihedral transforms (4 rotations x mirror) of a square board with dead boundary, so each (start, stop) pair yields 8 exact pairs, and the same 8 can be averaged at inference as free TTA.",
+      "Per-cell local-patch featurization: the light cone of one reverse step is 3x3, of delta steps is (2*delta+1)x(2*delta+1). Extract a (2*delta+1)^2 window of stop around each target cell (plus distance-to-edge, since the boundary is dead and edges behave differently) — 50k rows x 400 cells = 20M per-cell training examples from the official data alone.",
+      "Delta decomposition: train ONE reverse-one-step model and apply it delta times, instead of five independent delta-specific models. Each application can be re-verified with the forward simulator; this also reuses all 50k rows for every delta.",
+      "Forward-consistency features/decoding: simulate any candidate start forward delta steps and feed the mismatch against the given stop back as a feature or as a local-search objective (flip the cells whose flip most reduces forward mismatch). Cheap because the simulator is exact and vectorizable.",
+      "Neighbour-count channels: precompute the live-neighbour count of every stop cell (the quantity the rule actually depends on) as an extra input plane rather than making the model rediscover the 3x3 sum."
+    ],
+    "model_level": [
+      "Fully-convolutional CNN over the 20x20 grid with ZERO padding (matching the verified dead boundary) and 400 per-cell sigmoid outputs — locality of the rule matches convolution exactly; receptive field must reach at least 2*delta+1.",
+      "Condition on delta as an input plane (broadcast constant or embedding) so one network handles all five deltas, with per-delta metric reporting to catch collapse.",
+      "L1/BCE with the hard 0.5 threshold applied inside the scorer; select checkpoints on thresholded MAE, not on loss.",
+      "Iterative refinement decoding: predict start, forward-simulate, feed the residual back for a second pass; or beam/greedy local search seeded by the model's probabilities and scored by exact forward mismatch.",
+      "Explicit per-delta floor guard: for high delta compare every candidate against the all-dead prediction per cell — accepting the trivial prediction where the model is uncertain is a legitimate MAE-optimal move, but should be a measured decision.",
+      "Shallow, heavily-regularized decorrelating member (TASK-BLEND-DECOR archetype) only if a later blend pool becomes variance-dominated."
+    ]
+  },
+  "eda_hypotheses_for_stage1": [
+    "Confirm the forward-rule/boundary verification on the FULL 50k train set, not just the 4,000-row sample (expected: 100% exact match).",
+    "Quantify irreducible error: for a sample of stop boards, count how many distinct starts map to the same stop under F_delta — this bounds the achievable MAE from below and tells us when to stop.",
+    "Check whether the board generator warmed boards up before recording start (start density ~0.1434 is near the Life equilibrium density, not a uniform-random 0.5 draw) — this determines whether synthetic data must include a warm-up phase to match the competition distribution. If synthetic and official start-density/pattern statistics diverge, synthetic augmentation will hurt.",
+    "Check whether any test stop board also appears in train (exact 400-bit match) — if the generator repeats boards, direct lookup is a legitimate free win; expected rare but cheap to test.",
+    "Confirm train/test distribution match beyond delta: compare stop-density histograms, live-component counts, and edge-cell occupancy between the two files."
+  ],
+  "not_recorded": [
+    "Official competition rules text on external data / pretrained models — no rules file in the workspace and no page was fetched at this stage. Moot in practice: external_data.needed is 'no' and no whitelist source applies, so nothing is gated on it. Must still be checked before using any downloaded artifact.",
+    "Public/private leaderboard split ratio and whether the public LB is a subset of the 50,000 test rows.",
+    "The exact board-generation procedure used by the organizers (initial density, number of warm-up steps, dead-board rejection criterion) — inferred as a hypothesis from the observed 0.1434 start density but not stated in config.yaml or derivable from the data files alone.",
+    "Submission format tolerance: whether the scorer accepts non-integer values in start.* columns (sample submission is all-integer 0; hard 0/1 is assumed)."
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "competition": "playground-series-s3e3",
+  "task_family": "iid tabular binary classification (employee attrition, small-n synthetic Playground data)",
+  "data_shape": {
+    "train": [1677, 35],
+    "test": [1119, 34],
+    "target": "Attrition (0/1)",
+    "positive_rate": 0.11926058437686345,
+    "positives": 200,
+    "nulls": 0,
+    "duplicate_feature_rows": 0,
+    "constant_columns": ["EmployeeCount", "Over18", "StandardHours"],
+    "nominal_string_columns": ["BusinessTravel", "Department", "EducationField", "Gender", "JobRole", "MaritalStatus", "OverTime"],
+    "max_categorical_cardinality": 9,
+    "ordinal_likert_columns": ["Education", "EnvironmentSatisfaction", "JobInvolvement", "JobLevel", "JobSatisfaction", "PerformanceRating", "RelationshipSatisfaction", "StockOptionLevel", "WorkLifeBalance", "TrainingTimesLastYear"],
+    "continuous_columns": ["Age", "DailyRate", "DistanceFromHome", "HourlyRate", "MonthlyIncome", "MonthlyRate", "NumCompaniesWorked", "PercentSalaryHike", "TotalWorkingYears", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager"]
+  },
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No date, time, period or group column exists in the 34 feature columns. `id` is a contiguous row index: train 0..1676, test 1677..2795, zero overlap — a single shuffled table split into two blocks, the standard Playground-Series generator convention. No entity key that could form a disjoint group (no employee/company/department identifier beyond low-cardinality descriptive fields present in both splits)."
+  },
+  "split_policy": {
+    "scheme": "StratifiedKFold on Attrition, 5 or 10 folds; prefer RepeatedStratifiedKFold (e.g. 10x3) or multi-seed averaging — with n=1677 and only 200 positives, single-split fold noise on AUC is large relative to plausible model deltas",
+    "forbidden": "time-based / TimeSeriesSplit (no time axis exists), unstratified KFold (a fold can drift far from the 11.9% base rate), and any grouping on JobRole/Department (these are features, not entities — grouping would discard signal)"
+  },
+  "metric": {
+    "name": "ROC AUC",
+    "traps": [
+      "rank-only metric: probability calibration and threshold tuning are irrelevant — submit continuous scores, never hard 0/1 labels",
+      "class imbalance (11.9%) needs no resampling/class weighting for a rank metric; SMOTE-style oversampling typically hurts AUC and inflates CV",
+      "small evaluation set: 1119 test rows with ~133 expected positives, further split public/private — LB movement of ~0.01 AUC is noise; trust repeated-CV deltas over LB",
+      "blending must be done on ranks or on well-behaved score scales; averaging raw probabilities from differently-scaled members is weaker than rank-averaging for AUC",
+      "CV mean AUC alone is misleading at this n — always report fold std alongside"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "rationale": "config.yaml special_rules set external_data_allowed: false, pretrained_models_allowed: false, internet_access_allowed: false. Independently, the target is an intra-firm HR outcome with all plausible drivers (compensation, tenure, travel, overtime, satisfaction scores) already present in the 34 provided columns — none of the whitelist sources (World Bank macro, holiday calendars, ISO tables, ECB FX, OWID COVID) has a join key in this schema (no country, no date, no currency).",
+    "candidates": []
+  },
+  "injection_ideas": {
+    "data_level": [
+      "drop the three zero-variance columns (EmployeeCount=1, Over18='Y', StandardHours=80) — they cost splits and encoding slots, contribute nothing",
+      "encode the 7 nominal string columns two ways as separate lanes: (a) GBDT native categorical handling, (b) one-hot for the linear/decorrelator member. All cardinalities are ≤9, so target encoding is optional — if used, it must be CV-safe (fit inside the fold, out-of-fold transform)",
+      "treat the Likert 1-4 columns as ordinal integers (already coded that way) — do not one-hot them for tree models; consider both raw-ordinal and one-hot variants for the linear member",
+      "tenure ratio features: YearsAtCompany/TotalWorkingYears (loyalty share), YearsInCurrentRole/YearsAtCompany (role stagnation), YearsSinceLastPromotion/YearsAtCompany, YearsWithCurrManager/YearsAtCompany, (TotalWorkingYears - YearsAtCompany) = prior-experience years. Guard divide-by-zero (TotalWorkingYears and YearsAtCompany both reach 0)",
+      "compensation-normalized features: MonthlyIncome per JobLevel, MonthlyIncome per TotalWorkingYears, MonthlyIncome relative to the JobRole median, log(MonthlyIncome). Income skew plus role-relative pay is the classic attrition axis",
+      "interaction crosses on the strongest known attrition drivers: OverTime x MaritalStatus, OverTime x JobRole, OverTime x StockOptionLevel, BusinessTravel x DistanceFromHome, JobLevel x Age",
+      "aggregate satisfaction index: mean/min of (EnvironmentSatisfaction, JobSatisfaction, RelationshipSatisfaction, JobInvolvement, WorkLifeBalance) — a single low score may matter more than the average, so include both mean and min",
+      "age-vs-tenure gap features: Age - TotalWorkingYears (entry age proxy), NumCompaniesWorked / TotalWorkingYears (job-hopping rate)",
+      "keep a strict raw-columns-only lane as the baseline: at n=1677, heavy feature engineering can lose to the plain schema, and the comparison must be measured, not assumed"
+    ],
+    "model_level": [
+      "GBDT family (LightGBM / XGBoost / CatBoost) with strongly shrunk capacity for the sample size: small num_leaves (7-31), min_child_samples in the tens, low learning rate with early stopping inside each fold, subsample+colsample <1. CatBoost's ordered target statistics is a natural fit for the 7 nominal columns",
+      "binary logloss / cross-entropy objective (AUC-consistent); no scale_pos_weight tuning needed for a rank metric — test it as an ablation rather than assuming it helps",
+      "TASK-BLEND-DECOR: the GBDT pool will be variance-dominated at this n. Add one shallow, heavily regularized, different-library member — regularized logistic regression on one-hot + standardized numerics (and/or a small ExtraTrees / regularized linear-SVM with Platt-free ranking) — as a bias-dominated decorrelator before optimizing blend weights",
+      "blend by rank-averaging or weight search directly on OOF AUC; because AUC is not an RMSE-family metric, the NNLS closed form does not apply — use a constrained weight search on OOF ranks and validate the weights leave-fold-out, not in-sample",
+      "no threshold optimization and no post-hoc calibration (isotonic/Platt) — both are AUC-invariant at best, noise-fitting at worst; recorded as a hard rule, not a hyperparameter",
+      "seed-average every candidate (3-5 seeds) before comparing — at 200 positives, single-seed AUC differences under ~0.005 are not decisions"
+    ]
+  },
+  "matched_task_priors": ["TASK-BLEND-DECOR"],
+  "partially_matched_task_priors": [
+    "TASK-CAT-ONLY — partial: 7 nominal + 10 ordinal columns out of 34, all low-cardinality (max 9), alongside 13 continuous columns. Encoding matters but is not 'the whole game'; the prior's high-cardinality target-encoding emphasis does not apply.",
+    "TASK-IMBALANCED [GEN] — partial: positive rate 11.9%, well above the prior's ≲2% trigger. Its rank-metric guidance (no resampling, no accuracy-style thresholds) still holds; stratified folds are warranted because of the small absolute positive count (200), not the ratio."
+  ],
+  "not_recorded": [
+    "public/private leaderboard split fraction and the exact number of scored test rows — not stated in config.yaml; competition page and discussions deliberately not consulted at this stage",
+    "whether the synthetic data was generated from a public source dataset and whether such an original is permitted as an additional training table — config.yaml states external_data_allowed: false, and no provenance is verifiable from the provided files alone",
+    "presence of near-duplicate rows between train and test (exact feature-duplicate count within train is 0) — a train/test near-duplicate check is Stage 1 EDA work",
+    "per-feature association with the target — deliberately not computed here; Stage 1 EDA must supply it"
+  ],
+  "eda_verdict": null
+}

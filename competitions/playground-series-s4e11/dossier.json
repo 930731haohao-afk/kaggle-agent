@@ -1,0 +1,125 @@
+{
+  "competition": "playground-series-s4e11",
+  "stage": "0.5 problem dossier",
+  "task_family": "iid tabular binary classification (mixed categorical/ordinal survey features, hard-label metric)",
+  "test_window": {
+    "relation": "iid",
+    "evidence": "No date/time column in any file (20 train cols / 19 test cols, all demographic-lifestyle survey fields). id is a contiguous row counter: train 0..140699, test 140700..234499 — a sequential split of one generated table, not a temporal boundary. Per-column null rates match almost exactly across train/test (Academic Pressure 0.8017 vs 0.7999, Work Pressure 0.1984 vs 0.2002, Profession 0.2603 vs 0.2626), and categorical vocabularies coincide — consistent with a random iid split of a single synthetic population."
+  },
+  "split_policy": {
+    "scheme": "StratifiedKFold on Depression (5-fold), shuffled, fixed seed",
+    "forbidden": [
+      "unstratified plain KFold — 18.17% positive rate plus an accuracy metric makes per-fold prevalence drift directly move the tuned threshold",
+      "time-based / TimeSeriesSplit — no time axis exists; would only shrink the training set",
+      "any target/frequency encoding fit outside the fold (City 98, Degree 115, Profession 64, Name 422 levels are the tempting targets)"
+    ],
+    "group_key": "none — no repeated-entity column. Name (422 distinct first names over 140,700 rows) is a synthetic attribute, not a person identifier, so it is a categorical feature and not a grouping key."
+  },
+  "metric": {
+    "name": "accuracy",
+    "direction": "maximize",
+    "traps": [
+      "hard 0/1 submission (sample_submission has integer labels) — every model must emit a decision, so the threshold is part of the model and must be picked on OOF, never on train predictions",
+      "majority-class floor is 0.8183 (all-zeros); real headroom sits in a narrow band above it, so CV deltas are small and fold noise can dominate — compare candidates on identical folds and prefer repeated-seed CV before accepting a small win",
+      "accuracy is threshold-sensitive but calibration-insensitive: probability calibration is worthless on its own, whereas any reweighting (is_unbalance / scale_pos_weight) shifts the optimal threshold away from 0.50 and must be re-tuned jointly",
+      "threshold optimization is known in this repo to transfer poorly from CV to LB on binary tasks — tune it, but bound the search and prefer a flat-optimum plateau over a spiky argmax"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "reason": "config.yaml special_rules sets external_data_allowed: false, internet_access_allowed: false, pretrained_models_allowed: false. Independently of rules, the target has no country/date/geography axis on which a whitelisted macro or calendar source could join — City is an unkeyed Indian-city string with no time dimension, so no whitelist row (World Bank, holidays, ISO, ECB, OWID) has a usable join key here.",
+    "candidates": []
+  },
+  "injection_ideas": {
+    "data_level": [
+      "Canonicalize dirty free-text ordinals before encoding: Sleep Duration has 36 raw levels but 4 carry 99.98% of rows ('Less than 5 hours', '5-6 hours', '7-8 hours', 'More than 8 hours'); map those to an ordered numeric scale and bucket the long tail as 'other'. Dietary Habits has 23 levels over a real 3-level ordinal (Healthy/Moderate/Unhealthy) plus junk ('Yes', 'No', 'More Healthy', 2 rows each).",
+      "Treat missingness as structural role signal, not noise: Academic Pressure / CGPA / Study Satisfaction are null for ~80% of rows (the Working Professionals) and Work Pressure / Job Satisfaction for ~20% (the Students). Emit explicit is_student / is_professional flags and keep NaN as an informative value (GBDT native NaN handling) rather than imputing.",
+      "Collapse the two disjoint blocks into shared axes: pressure = coalesce(Academic Pressure, Work Pressure) and satisfaction = coalesce(Study Satisfaction, Job Satisfaction), each paired with its source-block flag. Both sub-columns are 1-5 ordinals with near-identical marginals (means 3.14/3.00 and 2.95/2.97), so a merged column doubles the per-level sample count while the flag preserves separability.",
+      "High-cardinality categoricals (City 98, Degree 115, Profession 64, Name 422) — pass as native GBDT categoricals first. If target encoding is tried, fit strictly inside the fold; the prior-season feature set here used label encoding only and is therefore fold-safe as a comparison baseline.",
+      "Ordinal-aware numeric treatment for the 1-5 Likert fields (Financial Stress, pressure, satisfaction) and for Work/Study Hours (0-12, 13 levels) — keep raw ordinal plus a few crosses with the role flag rather than one-hot.",
+      "Interaction candidates grounded in the domain rather than search: suicidal-thoughts flag x age band, pressure x satisfaction, Work/Study Hours x role, Financial Stress x role. 'Have you ever had suicidal thoughts ?' is near-balanced (50.6% No) and is the single most likely dominant predictor."
+    ],
+    "model_level": [
+      "GBDT with native categorical handling as the primary family (LightGBM/CatBoost) — matches TASK-CAT-ONLY, where encoding choice is the dominant lever.",
+      "Optimize the decision threshold on out-of-fold probabilities inside the metric function, so every blend candidate is scored post-threshold rather than on rank.",
+      "Class weighting (is_unbalance / scale_pos_weight) is optional at 18% positives; if used, re-tune the threshold jointly — the prior-season run needed 0.75 after enabling is_unbalance, which is a symptom of reweighting, not of the data.",
+      "Blend on hard-label accuracy via majority vote or threshold-after-averaging probabilities; averaging probabilities then thresholding once is the better default because voting discards margin.",
+      "TASK-BLEND-DECOR: once the pool is deep GBDT-dominated, add one shallow heavily-regularized member from a different library as a decorrelator before re-optimizing weights."
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-CAT-ONLY",
+    "TASK-BLEND-DECOR"
+  ],
+  "considered_and_rejected_priors": [
+    {
+      "prior": "TASK-TS-FUTURE",
+      "reason": "no date column and no forecasting language; test is an iid row split"
+    },
+    {
+      "prior": "TASK-TS-CALENDAR",
+      "reason": "no daily series, no store/product keys"
+    },
+    {
+      "prior": "TASK-SPECTRAL",
+      "reason": "18 features over 140,700 rows — rows greatly exceed columns"
+    },
+    {
+      "prior": "TASK-STRUCT-OUT",
+      "reason": "single scalar binary output, no generative grid/sequence structure"
+    },
+    {
+      "prior": "TASK-MAE-METRIC",
+      "reason": "metric is accuracy, not an MAE/SMAPE/quantile family member"
+    },
+    {
+      "prior": "TASK-IMBALANCED",
+      "reason": "trigger is positive rate <= ~2%; actual rate is 18.17%. The prior's 'beware accuracy-style thresholds' caution is still carried into metric.traps, but the resampling/stratification prescription is not invoked as a match."
+    }
+  ],
+  "schema_snapshot": {
+    "train_rows": 140700,
+    "test_rows": 93800,
+    "n_features_excl_id_target": 18,
+    "target": "Depression",
+    "positive_rate": 0.1817,
+    "majority_baseline_accuracy": 0.8183,
+    "numeric_cols": [
+      "Age",
+      "Academic Pressure",
+      "Work Pressure",
+      "CGPA",
+      "Study Satisfaction",
+      "Job Satisfaction",
+      "Work/Study Hours",
+      "Financial Stress"
+    ],
+    "categorical_cols": [
+      "Name",
+      "Gender",
+      "City",
+      "Working Professional or Student",
+      "Profession",
+      "Sleep Duration",
+      "Dietary Habits",
+      "Degree",
+      "Have you ever had suicidal thoughts ?",
+      "Family History of Mental Illness"
+    ],
+    "high_null_cols": {
+      "Academic Pressure": 0.8017,
+      "CGPA": 0.8017,
+      "Study Satisfaction": 0.8017,
+      "Profession": 0.2603,
+      "Work Pressure": 0.1984,
+      "Job Satisfaction": 0.1984
+    }
+  },
+  "eda_verdict": null,
+  "not_recorded": [
+    "official competition rules text and metric definition — not fetched; internet_access_allowed is false and the rules page was not read. All rules/metric fields here are taken from config.yaml, which is the only rules artifact in the workspace.",
+    "whether the Playground-standard 'original dataset may be added' allowance applies to this episode — cannot be confirmed without the rules page; config.yaml's external_data_allowed: false is treated as binding.",
+    "exact tie-breaking / rounding convention the leaderboard uses for accuracy — not stated in config.yaml.",
+    "whether train and test were generated from the same synthetic model run (iid) or from separate draws — inferred from matching null rates and id contiguity only; Stage 1 EDA should confirm with an adversarial-validation AUC (expect ~0.50)."
+  ]
+}
