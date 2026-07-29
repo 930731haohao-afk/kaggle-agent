@@ -65,6 +65,8 @@ read only when its stage begins.
 Before Stage 1 (EDA) and Stage 3 (Modeling), consult `knowledge/experience.md` at the project root
 for validated cross-competition insights (indexed by metric/data-type, each entry evidence-backed).
 Apply what transfers; log new validated insights back into it after major score changes.
+Task-LEVEL priors (problem identification: split policy, external-data need) live separately in
+`knowledge/task_priors.md` and are consumed by Stage 0.5.
 
 ### Stage 0: Competition Setup
 **Goal**: Establish workspace and understand the competition.
@@ -72,6 +74,18 @@ Apply what transfers; log new validated insights back into it after major score 
 See [references/01_setup.md](references/01_setup.md) for detailed instructions.
 
 Key actions: Create workspace, config.yaml, inspect data files.
+
+### Stage 0.5: Problem Dossier (upstream knowledge injection)
+**Goal**: Identify what kind of problem this is before deep EDA — task family, train–test
+window relation, split policy, external-data need.
+
+See [references/00_problem_dossier.md](references/00_problem_dossier.md) for detailed instructions.
+
+Key actions: Match the competition against `knowledge/task_priors.md` ([TASK-*] entries),
+write `competitions/<comp>/dossier.json` (task family, split policy, external-data candidates
+from the whitelist only, data-level and model-level injection ideas). The dossier is a prior,
+not a conclusion — Stage 1 EDA must verify its hypotheses and record an `eda_verdict`.
+Never read competition-specific discussions or kernels for this step.
 
 ### Stage 1: Exploratory Data Analysis (EDA)
 **Goal**: Understand the data deeply before modeling.
@@ -173,6 +187,7 @@ Key actions: Retrain on full data, generate predictions, format submission, vali
 - `kaggle_auth.sh` — Kaggle API authentication helper
 
 ### Reference Files (references/)
+- `00_problem_dossier.md` — Stage 0.5 problem dossier (upstream knowledge injection; consumes `knowledge/task_priors.md`)
 - `01_setup.md` — Competition setup instructions
 - `02_eda.md` — EDA instructions
 - `03_features.md` — Feature engineering instructions
