@@ -10,7 +10,7 @@ train_file: train.csv
 test_file: test.csv
 sample_submission_file: sample_submission.csv
 special_rules:
-  external_data_allowed: false
+  external_data_allowed: true  # verified 2026-07-29 against official rules 7.C: "You may use data other than the Competition Data... publicly available... at no cost"; previous false was a setup-time conservative default
   pretrained_models_allowed: false
   internet_access_allowed: false
   daily_submission_limit: 5
