@@ -72,7 +72,7 @@ Fields that cannot be determined are listed in `not_recorded` — never guessed.
 - **Stage 2 (features)** reads `injection_ideas.data_level` (external joins become candidate
   feature tables, leakage rules enforced) and `model_level` feature ideas. Implementation:
   `external_data/` module — `sources.py` (whitelisted fetchers, cached with snapshot dates)
-  and `join.py` (`merge_year_safe` / `merge_holiday_flags`, LeakageError on violation,
+  and `join.py` (`merge_year_safe` / `merge_period_safe` / `merge_holiday_flags`, LeakageError on violation,
   JSON audit logs). See `external_data/README.md`.
 - **Tree search (v5 seeding)**: `data_level` ideas become raced lanes (small-budget successive
   halving — an idea that changes the data gets its own lane); `model_level` ideas become seed

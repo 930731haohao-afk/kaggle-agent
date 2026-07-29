@@ -1,13 +1,18 @@
 """Whitelisted external-data sources (v5 Plan C).
 
-Only sources listed in knowledge/task_priors.md may be fetched. Every fetch is
-cached with a snapshot date so joins are replayable; the World Bank `lastupdated`
-field is recorded as the source snapshot.
+Only sources listed in knowledge/task_priors.md may be fetched. Every network
+fetch is cached under cache/ with a recorded upstream snapshot (WB lastupdated,
+ECB latest period, OWID Last-Modified) so joins are replayable; holiday
+calendars are offline-deterministic and pinned by package version instead.
+Cache writes are atomic (tmp + rename) and responses are validated BEFORE
+caching — a bad 200 must never poison the cache.
 """
 from __future__ import annotations
 
 import json
 import logging
+import os
+import shutil
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -23,9 +28,27 @@ CACHE_DIR = Path(__file__).parent / "cache"
 WB_INDICATORS = {
     "gdp_per_capita": "NY.GDP.PCAP.CD",
     "gdp": "NY.GDP.MKTP.CD",
+    "gdp_growth_pct": "NY.GDP.MKTP.KD.ZG",
     "population": "SP.POP.TOTL",
     "cpi_inflation": "FP.CPI.TOTL.ZG",
+    "unemployment_pct": "SL.UEM.TOTL.ZS",
+    "urban_pop_pct": "SP.URB.TOTL.IN.ZS",
+    "internet_users_pct": "IT.NET.USER.ZS",
 }
+
+# ECB reference rates: currency vs EUR, monthly averages — currency whitelist
+ECB_FX_CURRENCIES = {"USD", "GBP", "JPY", "SEK", "NOK", "DKK", "CHF", "CAD", "AUD", "PLN", "CZK", "HUF"}
+
+# OWID COVID compact dataset — metric whitelist (columns of compact.csv)
+OWID_COVID_METRICS = {
+    "new_cases_per_million",
+    "new_deaths_per_million",
+    "new_cases_smoothed_per_million",
+    "new_deaths_smoothed_per_million",
+    "total_cases_per_million",
+    "total_deaths_per_million",
+}
+OWID_COVID_URL = "https://catalog.ourworldindata.org/garden/covid/latest/compact/compact.csv"
 
 # Common competition-name -> World Bank-name variants.
 WB_NAME_ALIASES = {
@@ -44,16 +67,29 @@ WB_NAME_ALIASES = {
 _WB_BASE = "https://api.worldbank.org/v2"
 
 
-def _http_json(url: str, timeout: int = 120, retries: int = 2) -> object:
+def _retrying(fn, retries: int = 2):
     last = None
     for attempt in range(retries + 1):
         try:
-            with urllib.request.urlopen(url, timeout=timeout) as r:
-                return json.loads(r.read().decode())
-        except Exception as e:  # noqa: BLE001 — retry once, then surface
+            return fn()
+        except Exception as e:  # noqa: BLE001 — retry, then surface
             last = e
             logger.warning("fetch attempt %d failed: %s", attempt + 1, e)
     raise last
+
+
+def _http_json(url: str, timeout: int = 120, retries: int = 2) -> object:
+    def go():
+        with urllib.request.urlopen(url, timeout=timeout) as r:
+            return json.loads(r.read().decode())
+    return _retrying(go, retries)
+
+
+def _http_text(url: str, timeout: int = 120, retries: int = 2) -> str:
+    def go():
+        with urllib.request.urlopen(url, timeout=timeout) as r:
+            return r.read().decode()
+    return _retrying(go, retries)
 
 
 def _cache_path(name: str) -> Path:
@@ -61,17 +97,49 @@ def _cache_path(name: str) -> Path:
     return CACHE_DIR / name
 
 
+def _atomic_write_text(path: Path, text: str) -> None:
+    tmp = path.with_suffix(path.suffix + f".tmp{os.getpid()}")
+    tmp.write_text(text)
+    os.replace(tmp, path)
+
+
+def _download_file(url: str, dest: Path, timeout: int = 300, retries: int = 2) -> str | None:
+    """Stream url to dest atomically; verify Content-Length when the server
+    sends one. Returns the Last-Modified header if present."""
+    def go():
+        tmp = dest.with_suffix(dest.suffix + f".part{os.getpid()}")
+        try:
+            with urllib.request.urlopen(url, timeout=timeout) as r:
+                last_modified = r.headers.get("Last-Modified")
+                expected = r.headers.get("Content-Length")
+                with open(tmp, "wb") as f:
+                    shutil.copyfileobj(r, f)
+                got = tmp.stat().st_size
+                if expected is not None and got != int(expected):
+                    raise IOError(f"partial download: got {got} of {expected} bytes")
+            os.replace(tmp, dest)
+            return last_modified
+        finally:
+            tmp.unlink(missing_ok=True)
+    return _retrying(go, retries)
+
+
 def fetch_country_map(refresh: bool = False) -> pd.DataFrame:
-    """World Bank country table: columns [name, iso2, iso3]. Cached."""
+    """World Bank country table: columns [name, iso2, iso3, region]. Cached."""
     cp = _cache_path("wb_countries.json")
     if cp.exists() and not refresh:
         raw = json.loads(cp.read_text())
     else:
         raw = _http_json(f"{_WB_BASE}/country/all?format=json&per_page=400")
-        cp.write_text(json.dumps(raw))
+        if not (isinstance(raw, list) and len(raw) > 1 and raw[1]):
+            raise IOError("WB country table response malformed; not caching")
+        _atomic_write_text(cp, json.dumps(raw))
         logger.info("fetched WB country table (%d entries)", len(raw[1]))
     rows = [
-        {"name": c["name"], "iso2": c["id"] if len(c["id"]) == 2 else c["iso2Code"], "iso3": c["id"] if len(c["id"]) == 3 else ""}
+        {"name": c["name"],
+         "iso2": c["id"] if len(c["id"]) == 2 else c["iso2Code"],
+         "iso3": c["id"] if len(c["id"]) == 3 else "",
+         "region": (c.get("region") or {}).get("value", "")}
         for c in raw[1]
         if (c.get("region") or {}).get("id") not in (None, "NA")  # drop aggregates & regionless
     ]
@@ -99,25 +167,29 @@ def resolve_iso3(names: list[str]) -> tuple[dict[str, str], list[str]]:
 
 def fetch_worldbank(indicator_key: str, year_from: int, year_to: int,
                     refresh: bool = False) -> tuple[pd.DataFrame, dict]:
-    """Fetch one whitelisted WB indicator for all countries.
+    """Fetch one whitelisted WB indicator for all countries (all pages).
 
     Returns (df[iso3, country, year, value], meta{indicator, snapshot, fetched}).
+    Cache is keyed by the WB indicator CODE, so remapping a whitelist key can
+    never serve stale data for the old code.
     """
     if indicator_key not in WB_INDICATORS:
         raise ValueError(f"indicator '{indicator_key}' is not whitelisted: {list(WB_INDICATORS)}")
     code = WB_INDICATORS[indicator_key]
-    cp = _cache_path(f"wb_{indicator_key}_{year_from}_{year_to}.json")
+    cp = _cache_path(f"wb_{code}_{year_from}_{year_to}.json")
     if cp.exists() and not refresh:
         raw = json.loads(cp.read_text())
     else:
         url = (f"{_WB_BASE}/country/all/indicator/{code}"
                f"?format=json&per_page=20000&date={year_from}:{year_to}")
         raw = _http_json(url)
+        if not (isinstance(raw, list) and len(raw) > 1 and isinstance(raw[1], list)):
+            raise IOError(f"WB indicator response malformed for {code}; not caching")
         pages = raw[0].get("pages", 1)
         for p in range(2, pages + 1):
             more = _http_json(url + f"&page={p}")
             raw[1].extend(more[1])
-        cp.write_text(json.dumps(raw))
+        _atomic_write_text(cp, json.dumps(raw))
     meta = {
         "indicator": code,
         "snapshot": raw[0].get("lastupdated", "unknown"),
@@ -133,7 +205,8 @@ def fetch_worldbank(indicator_key: str, year_from: int, year_to: int,
 
 
 def fetch_holidays(country_names: list[str], years: list[int]) -> tuple[pd.DataFrame, dict]:
-    """Holiday calendar via the `holidays` package (offline, deterministic).
+    """Holiday calendar via the `holidays` package (offline, deterministic —
+    no cache needed; the package version pins the snapshot).
 
     Returns (df[country, date, holiday], meta). Unmapped countries are reported
     in meta['unmatched'], never guessed.
@@ -141,11 +214,9 @@ def fetch_holidays(country_names: list[str], years: list[int]) -> tuple[pd.DataF
     import holidays as _hol
 
     mapping, unmatched = resolve_iso3(country_names)
-    iso2_by_name = {}
     table = fetch_country_map()
     iso2_of_iso3 = {r["iso3"]: r["iso2"] for _, r in table.iterrows()}
-    for name, iso3 in mapping.items():
-        iso2_by_name[name] = iso2_of_iso3.get(iso3, "")
+    iso2_by_name = {name: iso2_of_iso3.get(iso3, "") for name, iso3 in mapping.items()}
 
     rows = []
     for name, iso2 in iso2_by_name.items():
@@ -158,8 +229,86 @@ def fetch_holidays(country_names: list[str], years: list[int]) -> tuple[pd.DataF
             rows.append({"country": name, "date": pd.Timestamp(d), "holiday": label})
     meta = {
         "source": f"holidays=={_hol.__version__}",
+        "snapshot": f"holidays=={_hol.__version__}",
         "years": years,
         "unmatched": unmatched,
         "fetched": date.today().isoformat(),
     }
     return pd.DataFrame(rows), meta
+
+
+def fetch_ecb_fx(currencies: list[str], start: str, end: str,
+                 refresh: bool = False) -> tuple[pd.DataFrame, dict]:
+    """Monthly ECB reference rates (currency per EUR).
+
+    start/end: "YYYY-MM". Returns (df[currency, month, value], meta) where
+    `month` is an integer year*12+month ordinal — join it with
+    merge_period_safe(freq="M", ext_time_unit="month_ordinal").
+    Responses are validated before caching; empty result sets raise.
+    """
+    import csv as _csv
+    import io
+
+    frames, latest = [], None
+    for cur in currencies:
+        if cur not in ECB_FX_CURRENCIES:
+            raise ValueError(f"currency '{cur}' is not whitelisted: {sorted(ECB_FX_CURRENCIES)}")
+        cp = _cache_path(f"ecb_fx_{cur}_{start}_{end}.csv")
+        if cp.exists() and not refresh:
+            text = cp.read_text()
+        else:
+            url = (f"https://data-api.ecb.europa.eu/service/data/EXR/M.{cur}.EUR.SP00.A"
+                   f"?format=csvdata&startPeriod={start}&endPeriod={end}")
+            text = _http_text(url, timeout=60)
+            # validate BEFORE caching — ECB returns 200 with empty body for empty sets
+            probe = list(_csv.DictReader(io.StringIO(text)))
+            if not probe or "OBS_VALUE" not in probe[0] or "TIME_PERIOD" not in probe[0]:
+                raise IOError(f"ECB response for {cur} {start}..{end} empty/malformed; not caching")
+            _atomic_write_text(cp, text)
+        for row in _csv.DictReader(io.StringIO(text)):
+            y, m = row["TIME_PERIOD"].split("-")
+            frames.append({"currency": cur, "month": int(y) * 12 + int(m),
+                           "value": float(row["OBS_VALUE"])})
+            latest = max(latest or row["TIME_PERIOD"], row["TIME_PERIOD"])
+    meta = {"source": "ECB SDMX EXR (reference rate vs EUR, monthly)",
+            "snapshot": f"data through {latest}",
+            "range": [start, end], "fetched": date.today().isoformat()}
+    return pd.DataFrame(frames), meta
+
+
+def fetch_owid_covid(metrics: list[str], allow_download: bool = False,
+                     refresh: bool = False) -> tuple[pd.DataFrame, dict]:
+    """OWID COVID compact dataset (country x date).
+
+    The upstream file is ~178 MB and is cached once under cache/. To avoid
+    surprise downloads (tests, CI), the first fetch requires allow_download=True.
+    Download is atomic and size-verified — a partial file can never be cached.
+    Returns (df[iso3, country, date, <metrics...>], meta).
+    """
+    for m in metrics:
+        if m not in OWID_COVID_METRICS:
+            raise ValueError(f"metric '{m}' is not whitelisted: {sorted(OWID_COVID_METRICS)}")
+    cp = _cache_path("owid_covid_compact.csv")
+    meta_p = _cache_path("owid_covid_compact.meta.json")
+    if not cp.exists() or refresh:
+        if not allow_download:
+            raise FileNotFoundError(
+                "OWID COVID cache missing; call with allow_download=True to fetch (~178 MB, one-time)")
+        logger.warning("downloading OWID COVID compact (~178 MB, one-time)…")
+        last_modified = _download_file(OWID_COVID_URL, cp)
+        _atomic_write_text(meta_p, json.dumps({"last_modified": last_modified}))
+    upstream = json.loads(meta_p.read_text()).get("last_modified") if meta_p.exists() else None
+    usecols = ["country", "date", "code"] + list(metrics)
+    df = pd.read_csv(cp, usecols=lambda c: c in set(usecols))
+    missing = [m for m in metrics if m not in df.columns]
+    if missing:
+        raise IOError(f"OWID schema drift: requested metrics missing from file: {missing} "
+                      f"(found: {sorted(df.columns)})")
+    if "code" in df.columns:
+        df = df.rename(columns={"code": "iso3"})
+    df["date"] = pd.to_datetime(df["date"])
+    df = df[df["iso3"].notna() & (df["iso3"].str.len() == 3)]  # drop aggregates (OWID_*)
+    meta = {"source": OWID_COVID_URL, "metrics": metrics,
+            "snapshot": upstream or f"data through {df['date'].max().date().isoformat()}",
+            "cache_bytes": cp.stat().st_size, "fetched": date.today().isoformat()}
+    return df.reset_index(drop=True), meta

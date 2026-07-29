@@ -79,10 +79,11 @@ Only these sources may be proposed by the dossier; each join must state a leakag
 
 | Source | Content | Join key | Leakage rule |
 |---|---|---|---|
-| World Bank Open Data | GDP, GDP per capita, population, CPI | country × year | only values dated ≤ the prediction year |
+| World Bank Open Data | 8 macro indicators: GDP family (level/per-capita/growth), population, CPI, unemployment, urbanization, internet penetration | country × year | only values dated ≤ the prediction year |
 | Public holiday calendars (e.g., `holidays` pkg) | national holidays | country × date | deterministic future — no leakage |
 | ISO country/region tables | codes, geo groupings | country | static — no leakage |
-| Exchange rates (ECB/FRED public series) | monthly FX | currency × month | only values dated ≤ prediction month — *whitelisted; fetcher not yet implemented, `sources.py` raises* |
+| Exchange rates (ECB SDMX) | monthly reference rates vs EUR, 12 currencies | currency × month | only values dated ≤ prediction month |
+| OWID COVID (compact) | cases/deaths per million (raw + smoothed) | country × date | only values dated ≤ row date; relevant to 2020+ windows; ~178 MB one-time cache, download must be explicitly allowed |
 
 **Rules**: (1) join keys must exist in the official data or be derivable from it; (2) no
 future information relative to the prediction row's date — implemented as `lag` in
