@@ -229,24 +229,32 @@ machine-checked on both sides (Appendix~\ref{app:coverage}).
 \subsection{Fairness Protocol}
 \label{sec:fairness}
 
-The three agents share one machine, so the rules in Table~\ref{tab:fairness} are defined and mechanically enforced.
+The three agents share one machine, so four isolation conditions are defined and mechanically
+enforced rather than left to convention (Table~\ref{tab:fairness}). They are stated here
+because the comparison has no meaning without them: if the agents could read each other's
+files, or run concurrently on a contended machine, the win rates below would not be
+attributable to method. How each mechanism is implemented, and every occasion on which one of
+them failed and what it cost, are in the companion engineering log.
 
 \begin{table}[htbp]
 \centering\small
-\caption{Fairness protocol: rules and their enforcement.}
+\caption{The four isolation conditions and what enforces each.}
 \label{tab:fairness}
-\begin{tabular}{@{}L{2.4cm}L{6.6cm}L{5.6cm}@{}}
+\begin{tabular}{@{}L{2.6cm}L{6.4cm}L{5.6cm}@{}}
 \toprule
-\textbf{Aspect} & \textbf{Rule} & \textbf{Enforcement} \\
+\textbf{Condition} & \textbf{Rule} & \textbf{Enforcement} \\
 \midrule
-Data isolation & Each side reads only \path{bench-comps/<comp>/}, containing files validated against the official Kaggle manifest & \path{build_isolated_roots.py}; officialness judged by the Kaggle API manifest, incl.\ members extracted from official archives \\
-Workspace isolation & The three output directories are fully separated; each side is scored independently & Directory structure \\
-Instruction isolation & Prompts may contain only environment facts and metric thresholds; no modeling recipes, no other side's scores, no environment workarounds discovered by another side & Manual protocol + incident log \\
-Resource isolation & Only one lane executes at any moment & \path{lane_lock.sh} mutex (atomic directory creation, reclamation on holder death, bounded waiting) \\
-Environment defects & Always fix the environment rather than give hints (fixing removes the confound; hinting compensates only one side) & --- \\
+Data & Each side reads only its own root, containing files validated against the official Kaggle manifest & \path{build_isolated_roots.py} \\
+Workspace & The three output directories are fully separated; each side is scored independently & Directory structure \\
+Instruction & Prompts may carry environment facts and metric thresholds only --- no modelling recipes, no other side's scores, no workaround discovered by another side & Manual protocol + incident log \\
+Resource & Only one lane executes at any moment & \path{lane_lock.sh} mutex \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+A fifth rule governs the experimenter rather than the agents: when the environment is
+defective, fix the environment rather than hint to the affected side. Fixing removes the
+confound; hinting compensates one side and silently changes what is being compared.
 
 \section{Experiments}
 
@@ -825,106 +833,29 @@ Output isolation & my-agent \path{kaggle/competitions/}; AIDE \path{aideml-runs/
 \end{tabular}
 \end{table}
 
-\subsection{Judgment-Layer Coverage: Per-Regime Detail}
+\subsection{Companion Engineering Log}
 \label{app:coverage}
-
-Supporting detail for the coverage finding in Section~\ref{sec:exp6v5}. Across the 20 dossiers
-the judgment layer proposes 241 ideas. Most are free text, so the auditor classifies them into
-operator families by keyword; 39 are too vague to place at all and are counted against coverage
-rather than excused.
-
-\begin{table}[H]
-\centering\small
-\caption{Share of the judgment layer's own proposals whose operator family exists, by vocabulary. ``Expressible'' is not ``applied'' --- Table~\ref{tab:regime} splits these 176 by what consumes them.}
-\label{tab:coverage}
-\begin{tabular}{@{}lrrl@{}}
-\toprule
-\textbf{Vocabulary} & \textbf{Expressible / 241} & \textbf{Share} & \textbf{Largest remaining gap} \\
-\midrule
-data joins, \texttt{split\_policy}, \texttt{postprocess} & 45 & 19\% & blend (55), encoding (54), objective (22) \\
-$+$ \texttt{objective}, \texttt{blend\_member} & 122 & 51\% & encoding (54), feature-eng (10) \\
-$+$ \texttt{encoding} (6 schemes) & \textbf{176} & \textbf{73\%} & feature-eng (10), transform (8), structure (7) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Counting vocabulary is not the same as counting execution. Splitting the same 241 proposals by
-what actually consumes them separates three regimes that a single percentage conceals: those the
-dispatcher writes itself, those emitted as node configurations for the search driver, and those
-handed to the evaluator --- which the dispatcher, running on dataframes with no handle on the
-evaluator, books unconditionally and cannot confirm.
-
-\begin{table}[H]
-\centering\small
-\caption{The same 241 proposals, split by what consumes them. Measured by \texttt{external\_data/coverage\_audit.py}; percentages are of all 241.}
-\label{tab:regime}
-\begin{tabular}{@{}lrrl@{}}
-\toprule
-\textbf{Regime} & \textbf{Before} & \textbf{After} & \textbf{Who executes it} \\
-\midrule
-applied by the dispatcher & 12 (5\%) & \textbf{66 (27\%)} & this module writes the columns \\
-seeded into the search & 77 (32\%) & 77 (32\%) & \emph{nobody, before 07-30}; now the arm driver \\
-advisory & 33 (14\%) & 33 (14\%) & the evaluator --- assumed, not checked \\
-\midrule
-no operator exists & 26 (11\%) & 26 (11\%) & --- \\
-too vague to classify & 39 (16\%) & 39 (16\%) & --- \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The middle regime had no reader at all until 2026-07-30: \texttt{objective}, \texttt{blend\_member}
-and \texttt{encoding} were written into a key no search driver read, while the ledger recorded
-them realized. Two fixes moved the applied share from 5\% to 27\%: a translator
-(\path{tree_search/seed_from_ledger.py}) that turns those emissions into real seed nodes and
-writes back which node ids carried which operator, and moving the three target-free encoding
-schemes (\texttt{count}, \texttt{ordinal}, \texttt{crosses}) into the data layer where no fold
-boundary needs to protect them. What still cannot be executed is now stated rather than booked:
-\texttt{target} encoding needs per-fold computation inside the evaluator, and computing it
-anywhere else is the s4e1 leakage path; \texttt{onehot\_sparse} needs a linear model family the
-evaluators do not have.
-
-For the advisory regime, \path{external_data/verify_advisory.py} checks statically whether an
-evaluator implements the exact parameters a dossier requested. Of the 5 advisory requests the
-typed dossiers make, 4 verify and 1 --- s5e10's \texttt{postprocess} --- has no mechanism in its
-evaluator at all. \texttt{split\_policy} is reported as structural rather than verified: folds
-are frozen at evaluator import time and asserted against the pipeline's own splitter, which a
-static check cannot confirm.
-
-Audit scripts: \path{external_data/coverage_audit.py} (regime split),
-\path{external_data/validate_dossier.py} (emission conformance),
-\path{external_data/verify_advisory.py} (advisory verification).
-
-\subsection{Reconstruction of the Voided Ventilator Attempt}
 \label{app:ventilator}
 
-The driver log and the lane's own artifacts reconstruct the failure precisely --- and it is an \emph{execution-discipline} failure, not a time-budget one. The harness granted the full 4h budget; the session lasted \textbf{5 minutes} and exited cleanly. The frozen vote rule selected the highest-voted kernel (a literal \emph{starter} tutorial, \path{theoviel/deep-learning-starter-simple-lstm}, 1{,}166 votes), the agent ported it quickly, then launched the $200\times5$-epoch training \emph{in the background} --- violating its explicit foreground-only instruction --- logged ``training running\ldots\ waiting on monitor events,'' stopped calling tools, and thereby ended its own session; the orphaned training process died after \textbf{2 of 1{,}000} fold-epochs (37.6s of training; fold-0 validation MAE 1.28 $\to$ private 8.56), and the salvage submission shipped with no sanity gate. Under the fairness protocol the result stands: the environment delivered its budget, and the failure belongs to the frozen method's execution. The re-run, with the prompt hardened against the backgrounding pattern, used 109 minutes and scored 0.40093 --- so the method itself is competitive on this task, and the 8.56 measured only the lapse. The episode extends the ``self-assessment cannot veto output'' family (Section~\ref{sec:exp4}) with a new member: \emph{process discipline} (foreground execution, session-lifetime awareness) is itself part of agent capability, and one-shot reproduction is all-or-nothing when it lapses, while iterative search always holds a submittable solution.
+Three bodies of material that were previously appendices here now live in a separate document,
+\emph{Building the Injection Layer: An Engineering Log}, because they answer a different
+question than this report does. This one asks what we learned about agents; that one asks what
+broke while building the machinery, and is written for someone rebuilding a similar system
+rather than for someone assessing these conclusions.
 
+It contains: the per-regime coverage tables behind the consumer-trace finding of
+Section~\ref{sec:exp6v5}, with the audit scripts that reproduce them; the isolation mechanisms
+summarised in Table~\ref{tab:fairness}, together with the record of every occasion one of them
+failed, what it cost, and how it was caught --- including two failures found after this report's
+runs were complete; the minute-by-minute reconstruction of the voided ventilator attempt; and
+the nine defects found in a single day's audit of the injection layer, six from the audit itself
+and three from verifying the fixes for the first six.
 
-
-\subsection{Silent Failures Encountered and Fixed}
-\label{sec:exp5}
-
-During the study we found five classes of failure that raise no errors; all were fixed and mechanized before the reported runs (Table~\ref{tab:failures}).
-
-\begin{table}[H]
-\centering\footnotesize
-\setlength{\tabcolsep}{4pt}
-\caption{Five silent failures of the experimental design, their detection, and fixes.}
-\label{tab:failures}
-\begin{tabular}{@{}rL{4.4cm}L{2.6cm}L{3.4cm}L{3.4cm}@{}}
-\toprule
-\# & \textbf{Failure} & \textbf{Impact} & \textbf{Detection} & \textbf{Fix} \\
-\midrule
-1 & Harness copied my-agent's entire working directory to AIDE, exposing processed features and tuned hyperparameters & 4 AIDE results voided & Inspecting which files the champion code actually opened & Manifest-validated isolated roots; 4 competitions re-run \\
-2 & Runs under resource contention (one lane at load 17, another with the machine to itself) & Unequal conditions & Comparing lane execution windows & \path{lane_lock.sh} mutex \\
-3 & Watchdog judged health by ``machine busy overall''; a dead lane went unnoticed all night & One night of capacity lost & Per-driver check (no completion marker, no process) & Watchdog extended with per-driver checks \\
-4 & Aggregation took ``best score across all experiments,'' counting leakage experiments tagged as diagnostic & 3 competitions' numbers wrong & Scanning logs for exclusion tags & Fixed and disclosed \\
-5 & Headless-agent instructions enumerated six stages but omitted tree search; the agent followed the prompt, not the skill & 5 competitions ran a truncated method & Checking for \path{experiments_tree*.json} & Prompt changed to ``follow the skill; this prompt is not a pipeline definition'' \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\paragraph{Measured contrast for failure 5} (afsis-soil-properties): the truncated run produced 0 tree-search nodes, CV MCRMSE 0.44817, in 32 minutes; the fixed run produced 80 nodes, CV MCRMSE 0.444076, in 17 minutes. After the fix, the score improved \emph{and} the run got faster --- consistent with the skill's internal evidence that tree search wins 9 / ties 1 / loses 0.
+The reason they share a document is that they share a failure shape. A produced artifact with no
+consumer is indistinguishable from a working one in every log, score table and coverage metric:
+nothing errors, the number that should have moved does not, and no mechanism notices. That is
+the transferable claim, and it is stated in Section~\ref{sec:exp6v5}; the log is the evidence
+behind it.
 
 \subsection{Tree-Search Size per Competition (my-agent)}
 \label{app:treesize}
@@ -1026,7 +957,7 @@ Per-competition experiment logs & \href{https://github.com/930731haohao-afk/kagg
 \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/join.py}{\path{external_data/join.py}} & Leakage-guarded year/month/day joins; declared time units; row-order preservation; audit logs \\
 \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/apply.py}{\path{external_data/apply.py}} & Operator dispatcher: realizes data-level operators, emits config for config-only ones, writes the coverage ledger, runs the proportionality and covariate-volatility preconditions \\
 \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/validate_dossier.py}{\path{external_data/validate_dossier.py}} & Emission-side conformance check (schema, whitelist, provenance); non-zero exit gates a run \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/coverage_audit.py}{\path{external_data/coverage_audit.py}} & Computes Table~\ref{tab:coverage}: executable share of the judgment layer's own proposals \\
+\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/coverage_audit.py}{\path{external_data/coverage_audit.py}} & Computes the coverage split behind Section~\ref{sec:exp6v5} (tables in the engineering log) \\
 \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/selftest.py}{\path{external_data/selftest.py}} & 14-section execution-side test suite incl.\ direct unit test of the leakage invariant \\
 \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/make_v5_arm.py}{\path{tree_search/make_v5_arm.py}} & Competition-agnostic arm builder: digit-exact variant workspaces + generated evaluators \\
 \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/run_arm_search.py}{\path{tree_search/run_arm_search.py}} & Variant-lane race driver (harness\_v3 budget machine) \\
