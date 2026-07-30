@@ -38,6 +38,7 @@ _TREE = _ROOT / "tree_search"
 # guess here would report a competition as verified against someone else's evaluator.
 EVALUATOR_FOR = {
     "playground-series-s3e19": "eval_s3e19",
+    "playground-series-s5e1": "eval_s5e1",
     "playground-series-s5e10": "eval_s5e10",
     "cat-in-the-dat": "eval_citd",
     "tabular-playground-series-sep-2022": "eval_sep22",

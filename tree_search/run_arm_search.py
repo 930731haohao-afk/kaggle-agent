@@ -35,6 +35,7 @@ SEED_TREE = {
 WHITELIST = {
     "playground-series-s3e19": "llm_proposer_input_s3e19.json",
     "tabular-playground-series-sep-2022": "llm_proposer_input_s3e19.json",  # same model families
+    "playground-series-s5e1": "llm_proposer_input_s3e19.json",              # same model families
 }
 DEFAULT_SEED_CFG = {"kind": "solo", "model": "lgb",
                     "params": {"num_leaves": 31, "learning_rate": 0.05,

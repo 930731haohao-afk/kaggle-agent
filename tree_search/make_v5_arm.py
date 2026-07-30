@@ -41,6 +41,7 @@ def _slug(comp: str) -> str:
 BASE = {
     "playground-series-s3e19": ("eval_s3e19", "id"),
     "tabular-playground-series-sep-2022": ("eval_sep22", "row_id"),
+    "playground-series-s5e1": ("eval_s5e1", "id"),
 }
 
 

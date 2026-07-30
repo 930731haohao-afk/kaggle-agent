@@ -413,7 +413,7 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                 if op in ("ratio_target", "log_offset"):
                     diag = proportionality_check(tr, frame, mapping, country_col=country_col,
                                                  date_col=date_col, target_col=target_col)
-                    vol = covariate_volatility_check(frame, mapping, years)
+                    vol = covariate_volatility_check(frame, mapping, panel_keys()[0])
                     diag["covariate_volatility"] = vol
                     plan.setdefault("diagnostics", {})[op] = diag
                     if meta.get("indicator") in CURRENT_PRICE_SUFFIX:
