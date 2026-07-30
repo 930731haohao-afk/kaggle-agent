@@ -1,7 +1,7 @@
 {
   "competition": "playground-series-s5e10",
   "stage": "0.5 problem dossier",
-  "task_family": "iid tabular regression (bounded continuous target on a 0.01 grid; features are low-cardinality categorical/boolean plus 4 discrete-numeric columns)",
+  "task_family": "iid tabular regression (bounded continuous target on a 0.01 grid; 8 categorical/boolean features, 3 low-cardinality discrete integers, 1 near-continuous feature)",
   "data_shape": {
     "train_rows": 517754,
     "test_rows": 172585,
@@ -34,62 +34,75 @@
       "mean": 0.35238,
       "std": 0.16642,
       "n_unique": 98,
-      "grid": "all values lie exactly on a 0.01 grid"
+      "grid": "every value lies exactly on a 0.01 grid (verified)"
     },
-    "note": "excluding curvature, the full feature space is a discrete grid of 3*3*3*3*2*2*2*2*4*5*8 = 51840 cells; 2.08% of train rows are exact duplicates on the 12-feature tuple"
+    "note": "excluding curvature the feature space is a discrete grid of 3*3*3*3*2*2*2*2*4*5*8 = 51840 cells; 2.081% of train rows are exact duplicates on the 12-feature tuple and 4.14% of test rows carry a feature tuple that also occurs in train"
   },
   "test_window": {
     "relation": "iid",
-    "evidence": "No date, timestamp, or sequence column exists (time_of_day is a 3-level categorical, not a time index). Train and test id blocks are contiguous and disjoint (train 0-517753, test 517754-690338), which is a Playground synthetic-generation artifact rather than a temporal ordering. Column sets are identical apart from the target, and sample_submission.csv is filled with the train-target mean (0.352), the convention for an iid split. Confidence: high but not proven from the description alone.",
-    "must_verify_in_stage1": "compare train vs test marginal distributions per feature and run a quick adversarial-validation AUC; if AUC is materially above 0.5 the iid assumption is refuted"
+    "evidence": "No date, timestamp or sequence column exists (time_of_day is a 3-level categorical, not a time index). Train and test id blocks are contiguous and disjoint (train 0-517753, test 517754-690338), a Playground synthetic-generation artifact rather than a temporal ordering. Column sets are identical apart from the target and sample_submission.csv is filled with the train-target mean (0.352), the iid-split convention. Confidence high, not proven from the description alone.",
+    "must_verify_in_stage1": "per-feature train-vs-test marginals plus an adversarial-validation AUC; an AUC materially above 0.5 refutes the iid assumption"
   },
   "split_policy": {
-    "scheme": "KFold(n_splits=5, shuffle=True, random_state=42); optionally StratifiedKFold on binned accident_risk to stabilise fold means",
-    "forbidden": "no time-based or group-based split is required or justified — there is no date column and no entity/group key",
-    "caveat": "2.08% of train rows are exact duplicates on the feature tuple, so identical feature rows can straddle folds. With 517K rows over a ~51840-cell discrete grid this is a property of the data-generating process, not row-level leakage, and shuffled KFold remains the right scheme. Reuse the Feb-2026 folds (KFold split depends only on n_samples + seed) so scores stay comparable across runs.",
-    "reuse_note": "config.yaml records an earlier Feb 2026 run at CV RMSE 0.056074 / Public LB 0.05558 / Private 0.05583 under exactly this scheme"
+    "scheme": "KFold(n_splits=5, shuffle=True, random_state=42)",
+    "forbidden": "nothing is forbidden on temporal or group grounds — there is no date column and no entity/group key, so the TASK-TS-FUTURE time-split mandate does not fire",
+    "caveat": "2.081% of train rows are feature-tuple duplicates, so identical feature rows can straddle folds. Over 517K rows on a ~51840-cell discrete grid that is a property of the generating process, not row-level leakage; shuffled KFold stays correct.",
+    "reuse_note": "config.yaml records a Feb-2026 run at CV RMSE 0.056074 / Public LB 0.05558 / Private 0.05583 under exactly this scheme. KFold depends only on n_samples + seed, so reusing the seed keeps July scores directly comparable."
   },
   "metric": {
     "name": "RMSE",
     "direction": "minimize",
     "traps": [
-      "L2 objective, conditional mean — do NOT snap predictions to the 0.01 target grid; squared error is minimised by the conditional mean, not by a grid point (this prior was already tested and REJECTED on this competition per config.yaml notes)",
-      "target is bounded [0, 1] — clipping predictions to [0, 1] is free and safe; unbounded regressors can emit out-of-range values",
-      "RMSE is scale-sensitive, target std is only 0.166, so score differences live in the 4th-5th decimal — use the NNLS closed form for blend weights, not a Dirichlet/random weight search whose ~1e-5 approximation error can exceed the real gain",
-      "with 517K rows the CV standard error is small, but fold-to-fold spread should still be reported alongside the mean before accepting a sub-1e-4 improvement"
+      "L2 wants the conditional mean — do NOT snap predictions onto the 0.01 target grid even though the target sits on one; the s3e14 snap-to-grid prior was tested and REJECTED on this competition (config.yaml)",
+      "target is bounded [0, 1]; unbounded regressors emit out-of-range values, so clipping is free and safe",
+      "target std is only 0.166, so score differences live in the 4th-5th decimal — take blend weights from the NNLS closed form, not a Dirichlet/random search whose ~1e-5 approximation error can exceed the real gain",
+      "517K rows make the CV standard error small, but report fold-to-fold spread alongside the mean before accepting a sub-1e-4 improvement"
     ]
   },
   "external_data": {
     "needed": "no",
-    "reasoning": "The target is a synthetic road-accident risk score with no country, region, date, currency, or geography column. None of the whitelisted sources (World Bank, holiday calendars, ISO country tables, ECB exchange rates, OWID COVID) has a join key that exists in or is derivable from the official data. The `holiday` and `school_season` columns are already-resolved booleans, not dates, so a holiday-calendar join is impossible as well as redundant.",
+    "reasoning": "Synthetic road-accident risk score with no country, region, date, currency or geography column. No whitelisted source (World Bank, holiday calendars, ISO country tables, ECB FX, OWID COVID) has a join key present in or derivable from the official data. `holiday` and `school_season` are already-resolved booleans, not dates, so a holiday-calendar join is impossible as well as redundant.",
     "candidates": [],
-    "rules_status": "config.yaml records external_data_allowed: true, but no whitelisted source is joinable, so the permission is moot"
+    "rules_status": "config.yaml sets external_data_allowed: true, but no whitelisted source is joinable, so the permission is moot"
   },
-  "injection_ideas": {
-    "data_level": [
-      "CV-safe target/mean encoding over the discrete categorical tuple and over selected 2-3 way category groups — the feature space is small (~51840 cells) and heavily populated (~10 rows/cell), so group means are well-estimated and are close to the Bayes-optimal predictor for the discrete part",
-      "binned curvature (the only near-continuous feature, r=0.54 with target) crossed with speed_limit and road_type as an encoding key",
-      "count/frequency encoding of the feature tuple as a confidence weight for the encoded means",
-      "DE-PRIORITISED: explicit hand-written product/ratio interaction columns — the s3e9 prior 'explicit product interactions add nothing for GBDT' was CONFIRMED on this competition (12 base features beat the 27-feature engineered set on solo LGB, per config.yaml)"
-    ],
-    "model_level": [
-      "GBDT native categorical handling (LightGBM categorical_feature / CatBoost) rather than one-hot — TASK-CAT-ONLY action; on s3e11 a node that accidentally enabled native categorical handling produced AIDE's only outright win",
-      "L2 / RMSE objective throughout; clip to [0, 1] as a post-processing step applied inside the metric function so every blend candidate is scored on the same post-processed output",
-      "add one shallow, heavily-regularized, different-library member (TASK-BLEND-DECOR) as a decorrelator to the LGB/XGB/CatBoost pool before re-optimizing weights",
-      "an MLP or an explicit per-cell group-mean lookup model is a genuinely different inductive bias on a small discrete grid and is a good blend decorrelator here",
-      "blend weights by NNLS closed form on OOF predictions (RMSE-family metric), not a random weight search"
-    ]
-  },
-  "matched_task_priors": [
+  "injection_ideas": [
+    {
+      "operator": "split_policy",
+      "params": {
+        "scheme": "kfold_shuffled",
+        "n_splits": 5,
+        "forbid": []
+      },
+      "rationale": "No date column and no group key, so the time-split mandate does not apply and shuffled KFold is admissible. Binding on the evaluator with seed 42 so July scores stay comparable to the Feb-2026 record (CV RMSE 0.056074).",
+      "source_prior": "TASK-TS-FUTURE (negative match — trigger absent, so its shuffled-KFold prohibition does not fire here); config.yaml Feb-2026 fold-reuse protocol"
+    },
+    {
+      "operator": "postprocess",
+      "params": {
+        "round_to_int": false,
+        "clip_min": 0,
+        "clip_max": 1
+      },
+      "rationale": "Target is bounded [0, 1]; clipping inside the metric function means every CV fold and every blend candidate is scored on the same post-processed vector. round_to_int stays false deliberately: the target sits on a 0.01 grid but squared error is minimised by the conditional mean, and the snap-to-grid prior was already REJECTED on this competition.",
+      "source_prior": "TASK-MAE-METRIC (its postprocessing-inside-the-metric rule transfers; its L1-objective action does NOT — metric is RMSE); s3e14 snap-to-grid prior, rejected here per config.yaml"
+    }
+  ],
+  "matched_task_priors": ["TASK-CAT-ONLY", "TASK-BLEND-DECOR", "TASK-MAE-METRIC"],
+  "matched_task_priors_detail": [
     {
       "id": "TASK-CAT-ONLY",
       "match": "partial",
-      "why": "8 of 12 feature columns are categorical/boolean and 3 more are low-cardinality discrete integers, so encoding choice dominates; but all cardinalities are tiny (2-8) — there is no high-cardinality column, which is the part of the prior that motivates CV-safe target encoding most strongly. Native GBDT categorical handling is the action that transfers cleanly."
+      "why": "8 of 12 feature columns are categorical/boolean and 3 more are low-cardinality discrete integers, so encoding choice dominates. But all cardinalities are tiny (2-8) — there is no high-cardinality column, which is the part of the prior that most motivates CV-safe target encoding. The action that transfers cleanly is native GBDT categorical handling."
     },
     {
       "id": "TASK-BLEND-DECOR",
       "match": "anticipated",
-      "why": "Trigger is a property of the blend pool, not of the data, so it fires at the blend stage rather than now. Flagged here because the prior's own evidence cites this competition's NNLS diagnostic, and because the planned pool (LGB/XGB/LGBM_v2 from the Feb run) is variance-dominated and library-homogeneous — exactly the configuration the decorrelator addresses."
+      "why": "Trigger is a property of the blend pool, not of the data, so it fires at the blend stage. Flagged now because the prior's own evidence cites this competition's NNLS diagnostic and because the planned pool (LGB/XGB/LGBM_v2 from the Feb run) is variance-dominated and library-homogeneous — exactly the configuration the decorrelator addresses."
+    },
+    {
+      "id": "TASK-MAE-METRIC",
+      "match": "partial",
+      "why": "Metric is RMSE, an L2-family metric, so the prior's L1-objective action does NOT transfer. Only its second half — put post-processing inside the metric function so every blend candidate sees it — applies, and that is what the postprocess operator encodes."
     }
   ],
   "unmatched_task_priors_checked": [
@@ -97,14 +110,21 @@
     "TASK-TS-CALENDAR — no daily series, no store/product keys",
     "TASK-SPECTRAL — 12 columns over 517K rows, the opposite regime",
     "TASK-STRUCT-OUT — single scalar output, no generative grid/sequence structure",
-    "TASK-MAE-METRIC — metric is RMSE, an L2 family metric",
     "TASK-IMBALANCED — regression, not binary classification"
   ],
   "not_recorded": [
-    "official competition rules text — only the special_rules flags in config.yaml were read; the rules page itself was not fetched (moot here since no whitelisted external source is joinable)",
+    "CV-safe target/mean encoding over the discrete categorical tuple and over 2-3 way category groups (~51840 cells, ~10 rows/cell, so group means are well-estimated and near-Bayes for the discrete part) — no operator in knowledge/injection_operators.md expresses an internal-data encoding; join_feature and flag_feature both require a whitelisted external source",
+    "binned curvature crossed with speed_limit and road_type as an encoding key — same reason: the vocabulary has no internal feature-construction operator",
+    "count/frequency encoding of the feature tuple as a confidence weight for encoded means — same reason",
+    "native GBDT categorical handling (LightGBM categorical_feature / CatBoost) instead of one-hot, the TASK-CAT-ONLY action — a model hyperparameter, and the vocabulary has no model-config operator",
+    "add one shallow heavily-regularized different-library member as a blend decorrelator, then re-optimize weights (TASK-BLEND-DECOR) — blend-pool composition is outside the operator set",
+    "take blend weights from the NNLS closed form rather than a random/Dirichlet weight search — blend-solver choice is outside the operator set",
+    "an MLP or an explicit per-cell group-mean lookup model as a genuinely different inductive bias on a small discrete grid — model-family choice is outside the operator set",
+    "explicit hand-written product/ratio interaction columns are DE-PRIORITISED (the s3e9 'explicit product interactions add nothing for GBDT' prior was CONFIRMED here: 12 base features beat the 27-feature set on solo LGB) — a negative finding, and no operator expresses it either way",
+    "official competition rules text — only the special_rules flags in config.yaml were read, the rules page was not fetched (moot: no whitelisted external source is joinable)",
     "public/private leaderboard split ratio",
-    "whether the train/test split is truly iid — asserted from schema evidence only; Stage 1 EDA must confirm via train-vs-test distribution comparison and adversarial validation",
-    "whether an original (non-synthetic) source dataset exists for this Playground episode — determining this would require reading competition discussions, which Stage 0.5 forbids",
+    "whether the train/test split is truly iid — asserted from schema evidence only; Stage 1 EDA must confirm via train-vs-test marginals and adversarial validation",
+    "whether an original (non-synthetic) source dataset exists for this Playground episode — determining it would require competition discussions, which Stage 0.5 forbids",
     "exact generative relationship between curvature and the target beyond the r=0.54 correlation recorded in config.yaml"
   ]
 }

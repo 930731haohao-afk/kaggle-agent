@@ -1,46 +1,30 @@
 {
   "competition": "playground-series-s3e19",
   "stage": "0.5 problem dossier",
-  "written": "2026-07-29",
+  "written": "2026-07-30",
+  "schema_version": "typed-operators-v1",
   "inputs_used": [
     "competitions/playground-series-s3e19/config.yaml",
-    "head/tail + key-cardinality scan of data/train.csv, data/test.csv, data/sample_submission.csv",
-    "knowledge/task_priors.md"
+    "head/tail + key-cardinality/target scan of data/train.csv, data/test.csv, data/sample_submission.csv",
+    "knowledge/task_priors.md",
+    "knowledge/injection_operators.md"
   ],
   "forbidden_inputs_avoided": [
     "competition discussion threads",
     "public kernels / write-ups",
-    "prior local run artifacts (STATUS.md, experiments*.json) were NOT read — dossier is a fresh prior"
+    "no training or model fitting was performed at this stage"
   ],
-  "task_family": "time-series forecast (daily panel regression; 75 country x store x product series)",
+  "task_family": "time-series forecast (daily balanced panel regression; 75 country x store x product series)",
   "data_shape": {
     "train_rows": 136950,
     "test_rows": 27375,
     "series": 75,
-    "train_dates": {
-      "min": "2017-01-01",
-      "max": "2021-12-31",
-      "n_distinct": 1826
-    },
-    "test_dates": {
-      "min": "2022-01-01",
-      "max": "2022-12-31",
-      "n_distinct": 365
-    },
-    "panel_completeness": "complete and balanced: 75 x 1826 = 136950 train rows, 75 x 365 = 27375 test rows; no missing cells",
+    "train_dates": {"min": "2017-01-01", "max": "2021-12-31", "n_distinct": 1826},
+    "test_dates": {"min": "2022-01-01", "max": "2022-12-31", "n_distinct": 365},
+    "panel_completeness": "complete and balanced: 75 x 1826 = 136950 train rows, 75 x 365 = 27375 test rows; zero nulls",
     "keys": {
-      "country": [
-        "Argentina",
-        "Canada",
-        "Estonia",
-        "Japan",
-        "Spain"
-      ],
-      "store": [
-        "Kagglazon",
-        "Kaggle Learn",
-        "Kaggle Store"
-      ],
+      "country": ["Argentina", "Canada", "Estonia", "Japan", "Spain"],
+      "store": ["Kagglazon", "Kaggle Learn", "Kaggle Store"],
       "product": [
         "Using LLMs to Improve Your Coding",
         "Using LLMs to Train More LLMs",
@@ -49,98 +33,137 @@
         "Using LLMs to Write Better"
       ]
     },
-    "key_overlap": "train and test share identical country/store/product level sets — no unseen categories",
+    "key_overlap": "identical country/store/product level sets in train and test — no unseen categories",
     "target": {
       "name": "num_sold",
-      "min": 2.0,
-      "max": 1380.0,
+      "dtype": "int64",
+      "min": 2,
+      "max": 1380,
       "mean": 165.52,
       "zeros": 0,
-      "note": "strictly positive integer counts; no zero rows, so SMAPE's near-zero blowup is not triggered by the target itself"
+      "note": "strictly positive integer counts; SMAPE's zero singularity is not triggered by the target itself"
     },
-    "id": "monotone integer, disjoint between train (0..136949) and test (136950..164324); id encodes the same ordering as (date, country, store, product)"
+    "id": "monotone integer, disjoint: train 0..136949, test 136950..164324; encodes (date, country, store, product) ordering"
   },
   "test_window": {
     "relation": "future",
-    "evidence": "test dates span 2022-01-01..2022-12-31, strictly after the train span 2017-01-01..2021-12-31; zero date overlap; id ranges disjoint and contiguous after train; every (country, store, product) combination in test also appears in train, so the split is a pure forward time cut, not a group holdout"
+    "evidence": "test dates span 2022-01-01..2022-12-31, strictly after train 2017-01-01..2021-12-31 with zero date overlap; id ranges disjoint and contiguous after train; every (country, store, product) series present in test also appears in train, so the split is a pure forward time cut, not a group holdout"
   },
   "split_policy": {
-    "scheme": "time-based holdout / expanding-window CV on whole years: fold k trains on years < y_k and validates on year y_k (e.g. validate 2019, 2020, 2021); equivalently TimeSeriesSplit over sorted dates with whole-year folds. Final model refits on 2017-2021 to predict 2022.",
-    "forbidden": "shuffled KFold and any row-level random split — leaks same-day/adjacent-day information across the 75 parallel series and produces measured ~4.5x optimism on this exact competition (4.56 shuffled vs 20.41 time-split SMAPE, per TASK-TS-FUTURE)",
+    "scheme": "time-based expanding-window CV on whole years: fold k trains on years < y_k and validates on year y_k (2019, 2020, 2021); final refit on 2017-2021 to predict 2022",
+    "forbidden": "shuffled KFold and any row-level random split — the 75 parallel series make same-day information leak across rows; measured ~4.5x optimism on this exact competition (4.56 shuffled vs 20.41 time-split SMAPE, TASK-TS-FUTURE)",
     "extra_cautions": [
-      "GroupKFold on series id is also wrong here: test contains the SAME series, only later in time — the generalization axis is time, not group",
-      "2020 contains a COVID-shaped regime break; a single 2021-only validation year may be optimistic/pessimistic relative to 2022 — report per-year fold scores, not just the mean",
-      "any lag/rolling feature must be computed within-series and shifted so that no value from date >= the validation fold's start leaks backward"
+      "GroupKFold on series id is also wrong: test holds the SAME series, only later in time — the generalization axis is time, not group",
+      "all CV folds lie inside the training range and therefore cannot score the extrapolation advantage that ratio_target exists for; read fold scores as a lower bound on that operator's value (open caveat in injection_operators.md)",
+      "2020 carries a COVID-shaped regime break; report per-year fold scores, never only the mean",
+      "any lag/rolling feature must be computed within-series and shifted so no value at/after a fold's start leaks backward",
+      "blend weights must be fit on the same forward folds, else they inherit the same optimism as the base models"
     ]
   },
   "metric": {
     "name": "SMAPE",
     "direction": "minimize",
     "traps": [
-      "asymmetric: under-prediction is penalized harder than over-prediction of the same absolute size, so the SMAPE-optimal point forecast sits below the conditional mean — fitting plain L2 on the raw target is misaligned",
-      "scale-free / relative: small-volume series (e.g. Kaggle Learn in low-volume countries) contribute as much per row as high-volume ones, so per-series normalization matters and a global RMSE-driven model will over-serve the large series",
-      "target is strictly positive (min 2), so the classic SMAPE-at-zero singularity does not bite, but predictions must still be clamped to a positive floor",
-      "L1-in-log space is a good tractable surrogate: minimizing MAE on log(num_sold) approximates relative error; do the SMAPE computation itself (including any rounding/clamping post-processing) inside the metric function so every CV and blend candidate is scored on the real objective",
-      "integer target: test whether rounding predictions to integers helps or hurts under SMAPE — decide on CV, inside the metric"
+      "asymmetric: under-prediction is penalized harder than over-prediction of equal absolute size, so the SMAPE-optimal point forecast sits below the conditional mean and plain L2 on the raw target is misaligned",
+      "scale-free / relative: a low-volume series row weighs as much as a high-volume one, so an RMSE-driven model over-serves the large series; per-series normalization matters",
+      "target min is 2, so the zero singularity does not bite, but predictions must still be clamped to a positive floor",
+      "L1 on log(num_sold) is a tractable surrogate for the relative-error geometry",
+      "integer target: rounding may help or hurt — decide on CV, and compute rounding/clamping inside the metric function so every fold and every blend candidate is scored on the post-processed vector"
     ]
   },
   "external_data": {
-    "needed": "likely — and permitted (rules 7.C verified)",
-    "rules_status": "RESOLVED: external data permitted per official rules 7.C (verified 2026-07-29); config.yaml corrected.",
-    "reasoning": "The country dimension carries level information that no in-file covariate explains: five countries with very different economies (Argentina, Canada, Estonia, Japan, Spain) share identical store/product/date structure, so cross-country differences in num_sold are a pure country-level multiplier. Task prior TASK-TS-FUTURE records that accepted solutions on this exact task family join per-country GDP, and that the analogous tps-jan-2022 join moved CV SMAPE 6.1551 -> 4.1793. The train window additionally straddles 2020-2021 (COVID), while the test year 2022 does not — a regime the official files cannot describe.",
+    "needed": "likely",
+    "rules_status": "permitted — config.yaml special_rules.external_data_allowed: true, verified 2026-07-29 against official rules 7.C (publicly available at no cost)",
+    "reasoning": "The country dimension carries level information no in-file covariate explains: five economically very different countries share identical store/product/date structure, so cross-country differences in num_sold act as a country-level multiplier. Per-country share of yearly total is near-constant (std across 2017-2021: Spain 0.0055, Canada 0.0088, Japan 0.0129, Estonia 0.0135, Argentina 0.0159), the signature of a proportional level covariate. The test year 2022 lies entirely outside the training range, so the level must be supplied by a covariate rather than learned as a feature.",
     "candidates": [
       {
-        "source": "World Bank Open Data",
-        "indicator": "GDP per capita (and GDP level / growth as alternates)",
+        "source": "World Bank Open Data — GDP per capita, constant prices (NY.GDP.PCAP.KD) or PPP-constant",
         "join_key": "country x year",
-        "leakage_rule": "only values dated <= the prediction year; lag=0 (same-year value allowed, the historical-solution convention). 2022 values may be unpublished at snapshot time — carry-forward the last available year and log the snapshot date",
-        "whitelisted": true
+        "leakage_rule": "only values dated <= the prediction year; lag=0 (same-year allowed, historical-solution convention). 2022 may be unpublished at snapshot time — carry_forward the last available year and log the snapshot date",
+        "whitelisted": true,
+        "note": "constant-price/PPP mandatory: current-USD moved Japan -14.5% vs Argentina +30.0% for 2021->2022 (14.6 pp spread) versus 3.0 pp for the constant series; a nominal covariate would inject FX and inflation into the prediction"
       },
       {
         "source": "Public holiday calendars (holidays pkg)",
-        "indicator": "national holidays per country",
         "join_key": "country x date",
         "leakage_rule": "deterministic future — no leakage; safe to generate for 2022",
         "whitelisted": true
       },
       {
         "source": "ISO country/region tables",
-        "indicator": "country codes / geo groupings (for hemisphere, i.e. seasonality sign: Argentina is southern hemisphere, the other four northern)",
         "join_key": "country",
         "leakage_rule": "static — no leakage",
-        "whitelisted": true
-      },
-      {
-        "source": "OWID COVID (compact)",
-        "indicator": "cases/deaths per million, smoothed",
-        "join_key": "country x date",
-        "leakage_rule": "only values dated <= the row date, lag=0; relevant to the 2020-2021 portion of train. NOT usable as a test-time feature (2022 values would have to be forecast) — use it only to model/deweight the 2020-2021 anomaly, never as a predictor for 2022. ~178 MB one-time cache, download must be explicitly allowed",
-        "whitelisted": true
+        "whitelisted": true,
+        "note": "region/hemisphere grouping so seasonal harmonics can flip sign for Argentina (southern) against the four northern countries"
       }
     ],
-    "whitelist_check": "all four candidates are drawn from the External-data whitelist table in knowledge/task_priors.md; the two whitelisted sources not proposed are Exchange rates (ECB SDMX) — no currency column in the data — which was considered and rejected, leaving no off-whitelist candidate in this dossier",
-    "in_data_fallback_if_blocked": "the country multiplier is estimable from the official data alone: per-country share of total num_sold is near-constant across years and can be used directly as a learned ratio, which is what the GDP join is a smooth proxy for. This fallback needs no external fetch and is legal under external_data_allowed: false."
+    "whitelist_check": "all candidates come from the External-data whitelist in knowledge/task_priors.md. Considered and rejected: Exchange rates (ECB SDMX) — no currency column and a constant-price GDP series deliberately excludes FX. OWID COVID — see not_recorded, it can only be a train-side diagnostic here.",
+    "in_data_fallback_if_blocked": "the country multiplier is estimable from official data alone: per-country share of daily total is near-constant across years and can serve as a learned ratio, which the GDP join is a smooth, extrapolable proxy for"
   },
-  "injection_ideas": {
-    "data_level": [
-      "join World Bank GDP per capita by country x year (lag=0, carry-forward for 2022) as a country-level scale covariate — gated on the external-data rule check",
-      "join national holiday flags by country x date (plus day-before / day-after and a year-end / new-year window flag) — deterministic, safe for 2022",
-      "hemisphere flag from ISO region table so seasonal harmonics can flip sign for Argentina",
-      "ratio decomposition without external data: model total daily volume, then multiply by per-country / per-store / per-product share ratios estimated from train (the classic multiplicative panel decomposition this data's balanced structure invites)",
-      "Fourier / calendar features from the date alone: day-of-week, week-of-year sin/cos harmonics, month, day-of-year, is-month-start/end, and a year index for trend",
-      "explicit COVID-regime handling for 2020-2021: an indicator or per-country sample weight so the anomaly does not distort the 2022 forecast; optionally quantified with OWID COVID (train-side only)",
-      "within-series lag / rolling-mean features are available only for the first test horizon unless recursively forecast — prefer calendar+ratio features over lags for a 365-day-ahead horizon, or use a per-series seasonal-naive baseline (same day-of-year last year) as an explicit feature"
-    ],
-    "model_level": [
-      "L1 objective (MAE) rather than L2 for this SMAPE metric, per TASK-MAE-METRIC",
-      "train on log1p(num_sold) with L1 loss and invert with expm1 — approximates the relative-error geometry SMAPE scores",
-      "put clamping to a positive floor and any integer rounding INSIDE the metric function so every CV fold and every blend candidate is scored on the post-processed prediction",
-      "native categorical handling in the GBDT for country/store/product (all features are categorical + date-derived) rather than one-hot, per TASK-CAT-ONLY",
-      "strong non-GBDT baseline is likely competitive here: pure multiplicative decomposition / seasonal-naive-with-ratios, because the panel is complete, balanced and synthetic-looking — include one as a blend member for decorrelation",
-      "add one shallow, heavily regularized, diverse-library member to the blend before optimizing weights (TASK-BLEND-DECOR); for the blend weights prefer a closed-form/convex solve over random Dirichlet search",
-      "evaluate blends on the same forward-in-time folds — blend weights fit on a shuffled split inherit the same 4.5x optimism as the base models"
-    ]
-  },
+  "injection_ideas": [
+    {
+      "operator": "split_policy",
+      "params": {
+        "scheme": "time_expanding",
+        "time_col": "date",
+        "n_splits": 3,
+        "forbid": ["shuffled_kfold"]
+      },
+      "rationale": "test window is a strictly future year; a shuffled split measured 4.56 vs 20.41 SMAPE on this competition (~4.5x optimism). The split decision is binding on the evaluator, which must fail loudly if it cannot honor it. Three expanding whole-year folds validate 2019, 2020, 2021.",
+      "source_prior": "TASK-TS-FUTURE"
+    },
+    {
+      "operator": "ratio_target",
+      "params": {
+        "source": "worldbank:gdp_per_capita_const",
+        "join": {"keys": ["country", "year"], "lag": 0},
+        "space": "log",
+        "carry_forward": true
+      },
+      "rationale": "The 2022 test year lies outside the training range and the country level is what differs across series, so the covariate must carry the level: a GBDT is piecewise-constant and cannot extrapolate a joined feature (the weak join_feature form predicted 2022 at 0.96x the 2021 level while the data implied +5..+33% growth, 48.24 SMAPE). Constant-price indicator chosen because a ratio target multiplies the covariate into the prediction and a current-price series would propagate FX/inflation as demand. The operator's proportionality precondition is satisfied here — measured dispersion 0.014/0.011/0.010/0.006/0.017 by year, proportional throughout — and carry_forward is needed because 2022 postdates the source's coverage.",
+      "source_prior": "TASK-TS-FUTURE (tpsjan22 exp #2/#3, target = log(num_sold/gdp_pc), -2.6 SMAPE 8.43 -> 5.80; s3e19 identical config CV 10.148 -> 7.793)"
+    },
+    {
+      "operator": "trend_term",
+      "params": {"unit": "year", "degree": 1, "centered": true},
+      "rationale": "Pairs with ratio_target: the covariate carries the cross-sectional level, this term carries the year drift common to all 75 series, which is otherwise inextrapolable past 2021. Ablating the equivalent year_c term on tpsjan22 cost 4.83 -> 6.02 on the 2017 fold.",
+      "source_prior": "TASK-TS-FUTURE"
+    },
+    {
+      "operator": "flag_feature",
+      "params": {
+        "source": "holidays",
+        "join": {"keys": ["country", "date"]},
+        "as": ["is_holiday"],
+        "window": {"before": 5, "after": 10},
+        "per_name": true
+      },
+      "rationale": "Daily retail-like panel keyed by country x store x product — the calendar trigger. Holidays are a deterministic future so 2022 flags are generable without leakage; the per_name + displacement-window form is the stronger one (tpsjan22 pooled flag -> per-name window, 5.46 -> 4.19) and captures year-end/new-year displacement, which matters because the test year starts on 2022-01-01.",
+      "source_prior": "TASK-TS-CALENDAR"
+    },
+    {
+      "operator": "join_feature",
+      "params": {
+        "source": "iso_country_table",
+        "join": {"keys": ["country"], "lag": 0},
+        "as": ["region", "hemisphere"]
+      },
+      "rationale": "Static, in-training-range covariate, so the join_feature form is correct here (no extrapolation involved). Argentina is southern-hemisphere and the other four northern, so a shared seasonal harmonic must be allowed to flip sign rather than be averaged across countries.",
+      "source_prior": "TASK-TS-CALENDAR"
+    },
+    {
+      "operator": "sample_weight",
+      "params": {"predicate": "year == 2020", "weight": 0.5, "also_flag": true},
+      "rationale": "2020 is a COVID-shaped regime the official files cannot describe and the 2022 test year does not share; down-weight rather than delete, and flag so the model can separate the regime from the trend. On sep-2022 the same remedy for a broken year was only partial (11.807 -> 11.515), so the weight must be tuned on CV, not assumed.",
+      "source_prior": "TASK-TS-FUTURE (sep-2022 down-weighting evidence)"
+    },
+    {
+      "operator": "postprocess",
+      "params": {"round_to_int": true, "clip_min": 1, "global_scale": "auto"},
+      "rationale": "SMAPE is MAE-family and the target is a strictly positive integer, so rounding and a positive floor belong inside the metric function where every CV fold and blend candidate sees them; global_scale absorbs the level offset SMAPE's asymmetry rewards (the optimal point forecast sits below the conditional mean).",
+      "source_prior": "TASK-MAE-METRIC"
+    }
+  ],
   "matched_task_priors": [
     "TASK-TS-FUTURE",
     "TASK-TS-CALENDAR",
@@ -149,33 +172,67 @@
     "TASK-BLEND-DECOR"
   ],
   "task_prior_match_notes": {
-    "TASK-TS-FUTURE": "date column present and test period (2022) strictly after train (2017-2021); triggers the mandatory time-based split and the macro-external-data assessment",
-    "TASK-TS-CALENDAR": "daily-resolution series keyed by country x store x product — exactly the trigger; calendar + holiday features indicated",
-    "TASK-MAE-METRIC": "metric is SMAPE, an MAE-family relative metric; L1 objective and post-processing-inside-the-metric apply",
-    "TASK-CAT-ONLY": "partial match — every non-date feature (country, store, product) is categorical, all low-cardinality; encoding is less decisive than in the full trigger case (no high-cardinality column), so treat native-categorical GBDT handling as a baseline rather than 'the whole game'",
-    "TASK-BLEND-DECOR": "forward-looking: applies at the blend stage once a member pool exists; recorded now so the shallow-regularized decorrelator is not forgotten",
-    "not_matched": [
-      "TASK-SPECTRAL",
-      "TASK-STRUCT-OUT",
-      "TASK-IMBALANCED"
-    ]
-  },
-  "eda_verdict": {
-    "external_data_rules": "RESOLVED 2026-07-29: official rules page section 7.C permits external data that is publicly available at no cost; config.yaml flag updated true with provenance. World Bank + holiday calendar joins are compliant.",
-    "verified_by": "live rules page read via authenticated browser session"
+    "TASK-TS-FUTURE": "date column present, test year 2022 strictly after train 2017-2021 — mandatory time split plus the level-covariate-carries-the-level rule",
+    "TASK-TS-CALENDAR": "daily series keyed by country x store x product — exact trigger; calendar + holiday joins indicated",
+    "TASK-MAE-METRIC": "SMAPE is an MAE-family relative metric — L1 objective and postprocessing-inside-the-metric apply",
+    "TASK-CAT-ONLY": "partial: every non-date feature is categorical but all are low-cardinality (5/3/5), so native-categorical GBDT handling is a baseline, not 'the whole game'; no operator in the vocabulary expresses it (see not_recorded)",
+    "TASK-BLEND-DECOR": "forward-looking, applies once a member pool exists; no operator expresses it (see not_recorded)",
+    "not_matched": ["TASK-SPECTRAL", "TASK-STRUCT-OUT", "TASK-IMBALANCED"]
   },
   "eda_must_verify": [
     "confirm the forward time split and that no (country, store, product) series is truncated or padded",
-    "quantify the 2020-2021 COVID regime break per country — magnitude, duration, and whether 2021 has returned to the 2017-2019 trend (decides whether 2020 should be down-weighted or dropped)",
-    "test whether per-country / per-store / per-product shares of daily total are constant over time (validates the multiplicative ratio decomposition and the GDP-proxy hypothesis)",
-    "check day-of-week and day-of-year seasonality per country, specifically whether Argentina's seasonal phase is inverted (hemisphere hypothesis)",
-    "run the controlled split experiment (shuffled KFold vs forward time split) on one baseline model and record both numbers, to confirm the ~4.5x optimism prior on this data",
-    "resolve the external_data_allowed flag against the official rules page before any external join"
+    "run the proportionality diagnostic per year on total(group)/gdp_pc_const before ratio_target fires — the prior says 0.006-0.017 (proportional), but the operator is conditional and the check is the gate",
+    "run covariate_volatility_check on the chosen GDP indicator (flag if cross-country moves exceed 8 pp) to confirm the constant-price series was fetched, not the current-price one",
+    "quantify the 2020 regime break per country: magnitude, duration, and whether 2021 returned to the 2017-2019 trend (decides the sample_weight value, or whether 2021 also needs one)",
+    "test whether per-country / per-store / per-product shares of the daily total are constant over time (validates both the multiplicative structure and the GDP-proxy hypothesis)",
+    "check day-of-week and day-of-year seasonality per country, specifically whether Argentina's seasonal phase is inverted",
+    "run the controlled split experiment (shuffled KFold vs forward time split) on one baseline and record both numbers to confirm the ~4.5x optimism prior on this data",
+    "confirm the World Bank snapshot's last covered year for each of the five countries so carry_forward's extent for 2022 is logged, not implicit"
   ],
   "not_recorded": [
-    "official competition description text beyond config.yaml's one-line 'Forecast mini-course sales' — the live rules page was not fetched (internet_access_allowed: false in config)",
-    "authoritative confirmation of whether external data is permitted; config says false, task prior evidence implies accepted solutions used external GDP — unresolved conflict, flagged for Stage 1",
-    "exact public/private leaderboard split of the 2022 test year (unknown whether it is a random or temporal partition of the test rows)",
-    "whether num_sold was synthetically generated from a deterministic ratio structure (strongly suggested by the perfectly balanced panel, but not established without EDA)"
+    {
+      "item": "log_offset as a parallel lane for linear/GAM members",
+      "reason": "algebraically identical to the emitted ratio_target (space: log); emitting both would double-count one idea in the coverage ledger. Recorded here so a linear member added later implements it by dropping the column from the design matrix rather than transforming y."
+    },
+    {
+      "item": "multiplicative panel decomposition on official data only — model total daily volume, then multiply by per-country / per-store / per-product shares estimated from train",
+      "reason": "no operator expresses a structural decomposition of the target by in-data group shares; ratio_target only divides by an external covariate. This is the fallback if the external fetch is blocked, and belongs to the model/variant layer."
+    },
+    {
+      "item": "date-derived calendar and Fourier features (day-of-week, day-of-year and week-of-year harmonics, month, month start/end, year index)",
+      "reason": "produced by the base feature generator from official columns; the operator vocabulary covers only injected external or target-transforming steps, not in-data feature construction. trend_term covers the year index specifically."
+    },
+    {
+      "item": "per-series seasonal-naive feature (same day-of-year last year) and within-series lag/rolling means",
+      "reason": "no in-data lag operator exists; also constrained here because the horizon is 365 days, so lags would need recursive forecasting"
+    },
+    {
+      "item": "L1 objective on log1p(num_sold) with expm1 inversion",
+      "reason": "training-objective and target-space choice, not an injection operator (postprocess covers only in-metric transforms)"
+    },
+    {
+      "item": "GBDT native categorical handling for country/store/product",
+      "reason": "model configuration; TASK-CAT-ONLY has no operator representation in the vocabulary"
+    },
+    {
+      "item": "shallow heavily-regularized decorrelator member plus closed-form/convex blend weights (TASK-BLEND-DECOR)",
+      "reason": "blend-stage action; the operator set covers data/target/split/metric, not blend composition"
+    },
+    {
+      "item": "OWID COVID cases/deaths per million as a covariate",
+      "reason": "whitelisted, but usable only train-side: 2022 values would have to be forecast, so it cannot be a test-time feature, and the vocabulary has no train-only-covariate operator. The 2020 regime is handled by sample_weight instead."
+    },
+    {
+      "item": "official competition description text beyond config.yaml's 'Forecast mini-course sales'",
+      "reason": "config.yaml has internet_access_allowed: false; the live page was not fetched at this stage. The external-data rule question it would answer is already resolved in config.yaml (rules 7.C, verified 2026-07-29)."
+    },
+    {
+      "item": "public/private leaderboard partition of the 2022 test rows",
+      "reason": "not determinable from config.yaml or the data files — unknown whether it is a random or temporal partition of the test year"
+    },
+    {
+      "item": "whether num_sold was synthetically generated from a deterministic ratio structure",
+      "reason": "strongly suggested by the perfectly balanced 75 x 1826 panel and the near-constant country shares, but not establishable without EDA"
+    }
   ]
 }

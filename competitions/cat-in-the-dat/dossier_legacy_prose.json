@@ -1,0 +1,112 @@
+{
+  "competition": "cat-in-the-dat",
+  "stage": "0.5 problem dossier",
+  "task_family": "iid tabular binary classification (all-categorical features)",
+  "data_shape": {
+    "train_rows": 300000,
+    "test_rows": 200000,
+    "feature_columns": 23,
+    "target_column": "target",
+    "id_column": "id",
+    "positive_rate": 0.30588,
+    "missing_values": 0
+  },
+  "feature_inventory": {
+    "binary": {
+      "columns": ["bin_0", "bin_1", "bin_2", "bin_3", "bin_4"],
+      "note": "bin_0-2 int 0/1; bin_3 T/F, bin_4 Y/N — map to 0/1"
+    },
+    "nominal_low_card": {
+      "columns": ["nom_0", "nom_1", "nom_2", "nom_3", "nom_4"],
+      "cardinalities": [3, 6, 6, 6, 4],
+      "note": "human-readable labels (colors, shapes, animals, countries, instruments); no intrinsic order"
+    },
+    "nominal_high_card": {
+      "columns": ["nom_5", "nom_6", "nom_7", "nom_8", "nom_9"],
+      "cardinalities": [222, 522, 1220, 2215, 11981],
+      "note": "opaque 9-char hex hashes; carry no external semantics"
+    },
+    "ordinal": {
+      "columns": ["ord_0", "ord_1", "ord_2", "ord_3", "ord_4", "ord_5"],
+      "cardinalities": [3, 5, 6, 15, 26, 192],
+      "known_orders": {
+        "ord_0": "1 < 2 < 3 (already numeric)",
+        "ord_1": "Novice < Contributor < Expert < Master < Grandmaster",
+        "ord_2": "Freezing < Cold < Warm < Hot < Boiling Hot < Lava Hot",
+        "ord_3": "a..o alphabetical",
+        "ord_4": "A..Z alphabetical",
+        "ord_5": "2-character strings — order by (char1, char2) ASCII; also decomposable into two separate ordinal sub-features"
+      }
+    },
+    "cyclical": {
+      "columns": ["day", "month"],
+      "note": "day 1-7, month 1-12; integer-coded cycles with no year column — no absolute timeline"
+    }
+  },
+  "test_window": {
+    "relation": "iid",
+    "evidence": "no date/timestamp column; day/month are anonymized cyclical integers with no year anchor. id is a contiguous row counter (train 0-299999, test 300000-499999) with no semantic content. Category level sets are near-identical between train and test (all low-card columns identical; nom_8 4 unseen levels, nom_9 87 unseen out of ~12k) — consistent with a random split of one synthetic population, not a temporal or group split."
+  },
+  "split_policy": {
+    "scheme": "StratifiedKFold (shuffled, 5-fold) on target",
+    "forbidden": "any target/likelihood encoding fit on the full training set before splitting — encoders must be fit inside each training fold only (out-of-fold target encoding). This is the dominant leakage risk for this task, not the split scheme itself.",
+    "rationale": "iid split, no time or group structure to preserve; 30.6% positive rate makes stratification cheap insurance rather than a necessity"
+  },
+  "metric": {
+    "name": "AUC-ROC",
+    "optimization_direction": "maximize",
+    "traps": [
+      "rank-based: absolute calibration is irrelevant, and no decision threshold should be tuned",
+      "invariant to any monotone transform of scores — blend on the rank scale (or logit scale) rather than raw probabilities when members are differently calibrated",
+      "class balance 30.6% is not imbalanced enough to justify resampling; resampling would only distort probabilities without helping the ranking",
+      "submission must contain probabilities/scores, not hard 0/1 labels"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "candidates": [],
+    "rationale": "competition rules permit external data (config.yaml special_rules.external_data_allowed: true), but no whitelist source can be joined usefully. The high-cardinality nominals are opaque hashes; the only real-world-named column, nom_3 (Finland/Russia/Canada/...), has no year, date, or currency column to join a World Bank / holiday / exchange-rate table against, and day/month carry no year anchor. ISO country tables would add only a static regrouping of a 6-level column already fully observed in both splits. The data is a synthetic all-categorical benchmark: signal lives entirely in the encoding of the provided columns."
+  },
+  "injection_ideas": {
+    "data_level": [
+      "explicit ordinal integer mappings for ord_0-ord_5 using the known orders above (do NOT let label-encoding assign arbitrary alphabetical codes to ord_1/ord_2)",
+      "split ord_5 into its two constituent characters as separate ordinal features, plus keep the joined 192-level category",
+      "cyclical sin/cos encoding of day and month, kept alongside the raw categorical version",
+      "out-of-fold (CV-safe) target encoding with smoothing for nom_5-nom_9; unseen test levels (4 in nom_8, 87 in nom_9) must fall back to the global prior — verify the fallback path explicitly",
+      "frequency / count encoding for the high-cardinality nominals as a leakage-free complement to target encoding",
+      "sparse one-hot expansion of every column (~16k columns) as the feature space for a regularized linear member",
+      "pairwise crosses among the low-cardinality columns (bin_*, nom_0-4, ord_0-2, day, month) as new categorical levels, then target/count encode them"
+    ],
+    "model_level": [
+      "regularized logistic regression on the full sparse one-hot matrix as a first-class member, not just a baseline — an all-categorical target with no continuous interactions is the archetype where a linear model on one-hot competes with or beats GBDT",
+      "GBDT with native categorical handling (LightGBM categorical_feature / CatBoost ordered target statistics) as the strong tree baseline — per TASK-CAT-ONLY, native handling is where the measurable gain sat on s3e11",
+      "CatBoost is the natural fit here (ordered boosting is exactly a leakage-safe target encoder) — include for encoding diversity, not merely for model diversity",
+      "TASK-BLEND-DECOR: add one shallow, heavily regularized, different-library member (e.g. the linear one-hot model) as a decorrelator before optimizing blend weights",
+      "blend by rank-averaging or logit-averaging OOF predictions since the metric is rank-based",
+      "no threshold tuning, no probability calibration step — both are no-ops under AUC"
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-CAT-ONLY",
+    "TASK-BLEND-DECOR"
+  ],
+  "rejected_task_priors": [
+    {"prior": "TASK-TS-FUTURE", "reason": "no date column and no train/test time ordering — test is an iid split"},
+    {"prior": "TASK-TS-CALENDAR", "reason": "day/month are anonymized cyclical categoricals, not a daily series; no store/product/country-date keys"},
+    {"prior": "TASK-IMBALANCED", "reason": "positive rate 30.6%, far above the ~2% trigger"},
+    {"prior": "TASK-MAE-METRIC", "reason": "metric is AUC, not an MAE-family metric"},
+    {"prior": "TASK-SPECTRAL", "reason": "23 categorical columns, 300k rows — rows greatly exceed columns"},
+    {"prior": "TASK-STRUCT-OUT", "reason": "single scalar binary output"}
+  ],
+  "eda_must_resolve": [
+    "confirm the iid hypothesis: compare per-column level distributions train vs test (a chi-square / adversarial-validation AUC near 0.5 confirms it)",
+    "measure univariate target rates per level for ord_1/ord_2/ord_3/ord_4 to confirm the assumed orderings are monotone in the target; if not monotone, treat them as nominal",
+    "quantify how much of nom_9's 11,981 levels are singletons — this sets the smoothing prior for target encoding",
+    "check whether day/month show a monotone or cyclical target-rate pattern to decide whether the sin/cos encoding earns its place"
+  ],
+  "not_recorded": [
+    "official competition rules page text — external-data permission taken from config.yaml special_rules, not re-verified against the live rules page (no discussions/kernels read per Stage 0.5 constraints)",
+    "real-world calendar semantics of day/month — no year column, so whether day=1 means Monday or Sunday and whether month indexes a real calendar is undeterminable from the provided files",
+    "generative process / true feature-target relationship of the synthetic data — undeterminable without modeling"
+  ]
+}

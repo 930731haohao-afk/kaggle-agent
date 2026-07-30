@@ -8,6 +8,8 @@
     "feature_columns": 23,
     "target_column": "target",
     "id_column": "id",
+    "id_range_train": [0, 299999],
+    "id_range_test": [300000, 499999],
     "positive_rate": 0.30588,
     "missing_values": 0
   },
@@ -24,7 +26,8 @@
     "nominal_high_card": {
       "columns": ["nom_5", "nom_6", "nom_7", "nom_8", "nom_9"],
       "cardinalities": [222, 522, 1220, 2215, 11981],
-      "note": "opaque 9-char hex hashes; carry no external semantics"
+      "note": "opaque 9-char hex hashes; carry no external semantics",
+      "test_unseen_levels": {"nom_5": 0, "nom_6": 0, "nom_7": 0, "nom_8": 4, "nom_9": 87}
     },
     "ordinal": {
       "columns": ["ord_0", "ord_1", "ord_2", "ord_3", "ord_4", "ord_5"],
@@ -45,7 +48,8 @@
   },
   "test_window": {
     "relation": "iid",
-    "evidence": "no date/timestamp column; day/month are anonymized cyclical integers with no year anchor. id is a contiguous row counter (train 0-299999, test 300000-499999) with no semantic content. Category level sets are near-identical between train and test (all low-card columns identical; nom_8 4 unseen levels, nom_9 87 unseen out of ~12k) — consistent with a random split of one synthetic population, not a temporal or group split."
+    "evidence": "no date/timestamp column; day/month are anonymized cyclical integers with no year anchor. id is a contiguous row counter (train 0-299999, test 300000-499999) with no semantic content. Category level sets are near-identical between train and test (all low-card columns identical; nom_8 4 unseen levels, nom_9 87 unseen out of ~12k) — consistent with a random split of one synthetic population, not a temporal or group split.",
+    "must_verify_in_stage1": "adversarial validation train-vs-test AUC; a value materially above 0.5 refutes the iid assumption"
   },
   "split_policy": {
     "scheme": "StratifiedKFold (shuffled, 5-fold) on target",
@@ -67,28 +71,25 @@
     "candidates": [],
     "rationale": "competition rules permit external data (config.yaml special_rules.external_data_allowed: true), but no whitelist source can be joined usefully. The high-cardinality nominals are opaque hashes; the only real-world-named column, nom_3 (Finland/Russia/Canada/...), has no year, date, or currency column to join a World Bank / holiday / exchange-rate table against, and day/month carry no year anchor. ISO country tables would add only a static regrouping of a 6-level column already fully observed in both splits. The data is a synthetic all-categorical benchmark: signal lives entirely in the encoding of the provided columns."
   },
-  "injection_ideas": {
-    "data_level": [
-      "explicit ordinal integer mappings for ord_0-ord_5 using the known orders above (do NOT let label-encoding assign arbitrary alphabetical codes to ord_1/ord_2)",
-      "split ord_5 into its two constituent characters as separate ordinal features, plus keep the joined 192-level category",
-      "cyclical sin/cos encoding of day and month, kept alongside the raw categorical version",
-      "out-of-fold (CV-safe) target encoding with smoothing for nom_5-nom_9; unseen test levels (4 in nom_8, 87 in nom_9) must fall back to the global prior — verify the fallback path explicitly",
-      "frequency / count encoding for the high-cardinality nominals as a leakage-free complement to target encoding",
-      "sparse one-hot expansion of every column (~16k columns) as the feature space for a regularized linear member",
-      "pairwise crosses among the low-cardinality columns (bin_*, nom_0-4, ord_0-2, day, month) as new categorical levels, then target/count encode them"
-    ],
-    "model_level": [
-      "regularized logistic regression on the full sparse one-hot matrix as a first-class member, not just a baseline — an all-categorical target with no continuous interactions is the archetype where a linear model on one-hot competes with or beats GBDT",
-      "GBDT with native categorical handling (LightGBM categorical_feature / CatBoost ordered target statistics) as the strong tree baseline — per TASK-CAT-ONLY, native handling is where the measurable gain sat on s3e11",
-      "CatBoost is the natural fit here (ordered boosting is exactly a leakage-safe target encoder) — include for encoding diversity, not merely for model diversity",
-      "TASK-BLEND-DECOR: add one shallow, heavily regularized, different-library member (e.g. the linear one-hot model) as a decorrelator before optimizing blend weights",
-      "blend by rank-averaging or logit-averaging OOF predictions since the metric is rank-based",
-      "no threshold tuning, no probability calibration step — both are no-ops under AUC"
-    ]
-  },
-  "matched_task_priors": [
-    "TASK-CAT-ONLY",
-    "TASK-BLEND-DECOR"
+  "injection_ideas": [
+    {
+      "operator": "split_policy",
+      "params": {
+        "scheme": "stratified_kfold",
+        "n_splits": 5,
+        "forbid": ["time_based_split", "group_kfold", "unstratified_kfold"]
+      },
+      "rationale": "test is an iid random split of one synthetic population (contiguous id blocks, near-identical level sets, no date column), so a shuffled stratified split is the honest estimator; a time-based or group-based scheme would be unmotivated here and would only shrink the effective training set. Stratifying on a 30.6% positive rate stabilises fold-level AUC at zero cost. The binding half of the split decision that this operator CANNOT carry — that every target/likelihood encoder must be fit inside the training fold only — is recorded in not_recorded.",
+      "source_prior": "TASK-CAT-ONLY (encoding is the whole game, so the split exists mainly to police encoder leakage); the s3e19 controlled split experiment (4.56 shuffled vs 20.41 time split) is the counter-case establishing that the scheme must follow the train-test relation rather than a default"
+    }
+  ],
+  "matched_task_priors": ["TASK-CAT-ONLY"],
+  "conditionally_matched_task_priors": [
+    {
+      "prior": "TASK-BLEND-DECOR",
+      "status": "trigger not yet observable at Stage 0.5",
+      "note": "applies only once a blend pool exists and turns out variance-dominated; re-check at the blend stage. Not expressible as a typed operator — see not_recorded."
+    }
   ],
   "rejected_task_priors": [
     {"prior": "TASK-TS-FUTURE", "reason": "no date column and no train/test time ordering — test is an iid split"},
@@ -101,12 +102,57 @@
   "eda_must_resolve": [
     "confirm the iid hypothesis: compare per-column level distributions train vs test (a chi-square / adversarial-validation AUC near 0.5 confirms it)",
     "measure univariate target rates per level for ord_1/ord_2/ord_3/ord_4 to confirm the assumed orderings are monotone in the target; if not monotone, treat them as nominal",
-    "quantify how much of nom_9's 11,981 levels are singletons — this sets the smoothing prior for target encoding",
+    "quantify how many of nom_9's 11,981 levels are singletons — this sets the smoothing prior for target encoding",
     "check whether day/month show a monotone or cyclical target-rate pattern to decide whether the sin/cos encoding earns its place"
   ],
   "not_recorded": [
-    "official competition rules page text — external-data permission taken from config.yaml special_rules, not re-verified against the live rules page (no discussions/kernels read per Stage 0.5 constraints)",
-    "real-world calendar semantics of day/month — no year column, so whether day=1 means Monday or Sunday and whether month indexes a real calendar is undeterminable from the provided files",
-    "generative process / true feature-target relationship of the synthetic data — undeterminable without modeling"
+    {
+      "item": "Vocabulary gap (structural): knowledge/injection_operators.md contains no encoding, feature-construction, or model/blend operators. Seven of its eight operators (join_feature, ratio_target, log_offset, trend_term, flag_feature, sample_weight, postprocess) are shaped for time-series-with-external-covariate tasks and are inapplicable to an all-categorical iid task scored by a rank metric, leaving split_policy as the only expressible idea. Every substantive lever for this competition therefore appears in this list rather than in injection_ideas.",
+      "reason": "Recording these as prose inside injection_ideas is exactly what the operator contract forbids. This entry is the audit trail for the gap and a concrete extension request for the vocabulary (an encode_categorical / feature_cross / model_member family)."
+    },
+    {
+      "item": "Out-of-fold (CV-safe) target encoding with smoothing for nom_5-nom_9, with an explicitly verified fallback to the global prior for the 4 unseen nom_8 and 87 unseen nom_9 test levels.",
+      "reason": "No encoding operator exists in the vocabulary; the leakage constraint is stated in split_policy.forbidden but is carried by no typed param."
+    },
+    {
+      "item": "Explicit ordinal integer mappings for ord_0-ord_5 using the documented orders (never arbitrary alphabetical label-encoding for ord_1/ord_2), plus splitting ord_5 into its two constituent characters as separate ordinal sub-features alongside the joined 192-level category.",
+      "reason": "No encoding / feature-construction operator in the vocabulary."
+    },
+    {
+      "item": "Frequency / count encoding of the high-cardinality nominals as a leakage-free complement to target encoding.",
+      "reason": "No encoding operator in the vocabulary."
+    },
+    {
+      "item": "Cyclical sin/cos encoding of day and month, kept alongside the raw categorical version.",
+      "reason": "No encoding operator in the vocabulary; trend_term is not a substitute because it needs an absolute time axis and day/month have no year anchor."
+    },
+    {
+      "item": "Sparse one-hot expansion of all 23 columns (~16k columns) as the design matrix for a regularized logistic-regression member, treated as a first-class blend member rather than a baseline — an all-categorical target with no continuous interactions is the archetype where a linear model on one-hot competes with GBDT.",
+      "reason": "Model-level choice; the vocabulary has no model operator."
+    },
+    {
+      "item": "Pairwise crosses among the low-cardinality columns (bin_*, nom_0-4, ord_0-2, day, month) as new categorical levels, then target/count encoded.",
+      "reason": "No feature_cross operator in the vocabulary."
+    },
+    {
+      "item": "GBDT with native categorical handling (LightGBM categorical_feature, CatBoost ordered target statistics) as the strong tree baseline; CatBoost specifically because ordered boosting IS a leakage-safe target encoder, so it is included for encoding diversity rather than merely model diversity.",
+      "reason": "Model-level choice; per TASK-CAT-ONLY this is where the measurable gain sat on s3e11, but no typed operator can express it."
+    },
+    {
+      "item": "TASK-BLEND-DECOR: add one shallow, heavily regularized, different-library member (the linear one-hot model) as a decorrelator before optimizing blend weights; blend on the rank or logit scale since the metric is rank-based; no threshold tuning and no calibration step (both are no-ops under AUC).",
+      "reason": "Blend-level choice; postprocess exposes only round_to_int / clip / global_scale, all no-ops under a rank metric."
+    },
+    {
+      "item": "Official competition rules page text — external-data permission was taken from config.yaml special_rules, not re-verified against the live rules page.",
+      "reason": "Stage 0.5 forbids reading competition discussions/kernels; the rules page was not fetched."
+    },
+    {
+      "item": "Real-world calendar semantics of day/month (whether day=1 is Monday, whether month indexes a real calendar).",
+      "reason": "No year column — undeterminable from the provided files."
+    },
+    {
+      "item": "Generative process / true feature-target relationship of the synthetic data.",
+      "reason": "Undeterminable without modeling, which Stage 0.5 forbids."
+    }
   ]
 }
