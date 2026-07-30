@@ -1,0 +1,113 @@
+# Injection Operators — the shared vocabulary of the judgment and execution layers
+
+Stage 0.5 (the dossier) decides *what* to inject; the variant builders and evaluators
+decide *how*. Between 07-29 and 07-30 those two layers spoke different languages and the
+cost was measurable: on s3e19 the dossier correctly proposed World Bank GDP "as a
+country-level scale covariate", the experience library already held the operational recipe
+(`target = log(num_sold / gdp_pc)`, −2.6 SMAPE, evidence tpsjan22 exp #2/#3, an entry that
+even names s3e19 as the case it dissolves) — and the execution layer could only append a
+column to `FEATURE_COLS`. A GBDT cannot extrapolate a feature outside its training range,
+so the 2022 test year was predicted at 0.96× the 2021 level while the data implied
++5..+33% growth, and the submission scored 48.24 SMAPE where the recipe targets single
+digits. The judgment was right and the plumbing silently truncated it.
+
+This file is the contract that prevents a repeat. **A dossier may only propose operators
+listed here. Anything it wants that is not here goes in `not_recorded` — never in prose
+that the execution layer will quietly ignore.** Every run reports a coverage ledger:
+ideas proposed, ideas realized, ideas unrealized with a reason.
+
+---
+
+## Operator set
+
+### `join_feature`
+Add whitelisted external column(s) as model features.
+```json
+{"operator": "join_feature", "params": {"source": "worldbank:gdp_per_capita",
+ "join": {"keys": ["country", "year"], "lag": 0}, "as": ["gdp_pc"]}}
+```
+Use when the covariate's *training-range values* carry signal. **Do not use alone for a
+level covariate when the test window lies outside the training range** — trees are
+piecewise-constant and cannot extrapolate; use `ratio_target` or `log_offset` instead.
+
+### `ratio_target`
+Divide the target by an external level covariate, fit on the ratio, multiply back at
+predict time. This is the operator that extrapolates: the test-period level comes from the
+covariate, not from the model.
+```json
+{"operator": "ratio_target", "params": {"source": "worldbank:gdp_per_capita",
+ "join": {"keys": ["country", "year"], "lag": 0}, "space": "log",
+ "carry_forward": true}}
+```
+`space: "log"` fits `log(y / c)` and inverts with `exp(pred) * c` (the jan-2022 recipe);
+`space: "linear"` fits `y / c`. `carry_forward` reuses the last available covariate value
+when the test period has none published yet — required whenever the test year post-dates
+the source's coverage, and it must be logged.
+
+### `log_offset`
+Keep the target in log space and subtract `log(covariate)` as a fixed-elasticity offset —
+algebraically `ratio_target` with `space: "log"`, exposed separately because linear models
+implement it by dropping the column from the design matrix rather than by transforming `y`.
+```json
+{"operator": "log_offset", "params": {"source": "worldbank:gdp_per_capita",
+ "join": {"keys": ["country", "year"], "lag": 0}}}
+```
+
+### `trend_term`
+Add an explicit linear (or polynomial) time term so a common drift shared by all series can
+be extrapolated. Pairs with `ratio_target`: the covariate carries the cross-sectional level,
+the trend term carries the common year drift.
+```json
+{"operator": "trend_term", "params": {"unit": "year", "degree": 1, "centered": true}}
+```
+Evidence that this matters: ablating `year_c` on tpsjan22 cost 4.83 → 6.02 on the 2017 fold.
+
+### `flag_feature`
+Join deterministic indicator columns (holiday calendars, regime flags). No leakage concept
+applies to a deterministic future calendar.
+```json
+{"operator": "flag_feature", "params": {"source": "holidays",
+ "join": {"keys": ["country", "date"]}, "as": ["is_holiday"],
+ "window": {"before": 5, "after": 10}, "per_name": true}}
+```
+`per_name` + a displacement window is the stronger form (tpsjan22: pooled flag → per-name
+window, 5.46 → 4.19).
+
+### `sample_weight`
+Re-weight or flag an anomalous regime instead of deleting it.
+```json
+{"operator": "sample_weight", "params": {"predicate": "year in [2020, 2021]",
+ "weight": 0.5, "also_flag": true}}
+```
+
+### `split_policy`
+Set the cross-validation split. Not optional: the dossier's split decision is binding on
+the evaluator, and an evaluator that cannot honor it must fail loudly.
+```json
+{"operator": "split_policy", "params": {"scheme": "time_expanding",
+ "time_col": "date", "n_splits": 5, "forbid": ["shuffled_kfold"]}}
+```
+
+### `postprocess`
+Transforms applied **inside the metric function**, so every CV fold and every blend
+candidate is scored on the post-processed vector.
+```json
+{"operator": "postprocess", "params": {"round_to_int": true, "clip_min": 0,
+ "global_scale": "auto"}}
+```
+
+---
+
+## Coverage ledger (required output)
+
+Every v5 run writes `injection_ledger.json` next to its tree:
+
+```json
+{"proposed": 7, "realized": 5, "unrealized": [
+   {"operator": "sample_weight", "reason": "evaluator has no per-row weight hook"},
+   {"operator": "flag_feature", "params_subset": "per_name windows",
+    "reason": "generator supports boolean flags only"}]}
+```
+
+A run whose ledger has `unrealized` entries is still valid, but the report must state what
+was not executed. Silence is the failure mode this file exists to prevent.

@@ -1,0 +1,48 @@
+{
+  "comp": "playground-series-s3e19",
+  "arm": "ratio",
+  "workspace": "/home/tjyen/ai_agents/kaggle/competitions/playground-series-s3e19-v5-ratio/data",
+  "evaluator": "/home/tjyen/ai_agents/kaggle/tree_search/eval_ratio_-s3e19.py",
+  "feature_columns_added": [
+    "year_c",
+    "is_holiday"
+  ],
+  "target_transform": {
+    "kind": "ratio_log",
+    "covariate_col": "cov_level"
+  },
+  "ledger": {
+    "proposed": 3,
+    "realized": [
+      {
+        "operator": "ratio_target",
+        "column": "cov_level"
+      },
+      {
+        "operator": "trend_term",
+        "columns": [
+          "year_c"
+        ],
+        "centre": 2019.000547645126
+      },
+      {
+        "operator": "flag_feature",
+        "column": "is_holiday"
+      }
+    ],
+    "unrealized": [],
+    "target_transform": {
+      "kind": "ratio_log",
+      "covariate_col": "cov_level"
+    },
+    "added_columns": [
+      "year_c",
+      "is_holiday"
+    ],
+    "sources": {
+      "worldbank:gdp_per_capita": "2026-07-13",
+      "holidays": "holidays==0.101"
+    },
+    "realized_count": 3
+  }
+}

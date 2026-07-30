@@ -13,11 +13,20 @@ a competition confirms them.
   description says forecasting).
 - **Action**: time-based split mandatory (`year < y` vs `year == y`, or TimeSeriesSplit);
   shuffled KFold forbidden. Assess macro external data (see whitelist) — target series that
-  depend on country/region economics usually need them.
+  depend on country/region economics usually need them. **Critically, when the test window
+  lies outside the training range the covariate must carry the level, not decorate the
+  features: use the `ratio_target` / `log_offset` operators, never `join_feature` alone.**
+  A GBDT is piecewise-constant and cannot extrapolate; pair the ratio target with a
+  `trend_term` for the drift that is common to all series.
 - **Evidence**: s3e19 controlled split experiment 4.56 (shuffled) vs 20.41 (time split) —
   4.5× optimism bias; s3e19 outcome: all three agents 48.3–50.5 in the bimodal lower mode,
   top 4.67, accepted solutions join per-country GDP. tps-jan-2022: GDP-per-capita join,
-  CV SMAPE 4.1793 vs 6.1551 (AIDE, official data only).
+  CV SMAPE 4.1793 vs 6.1551 (AIDE, official data only); the GBDT form of that recipe
+  (`target = log(num_sold / gdp_pc)`) measured −2.6 SMAPE (8.43 → 5.80) and ablating the
+  linear `year_c` drift term cost 4.83 → 6.02 on the 2017 fold (tpsjan22 exp #2/#3).
+  Counter-evidence for the weak form: s3e19 v5 joined `gdp_pc` as a plain feature and the
+  model predicted the 2022 level at 0.96× 2021 while the data implied +5..+33% growth —
+  48.24 SMAPE, because a feature outside the training range cannot be extrapolated.
 
 ## TASK-TS-CALENDAR — daily/weekly retail-like series
 - **Trigger**: daily-resolution series with country/store/product keys.

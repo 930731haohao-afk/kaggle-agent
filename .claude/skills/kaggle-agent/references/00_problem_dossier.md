@@ -37,7 +37,16 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
 5. Assess external-data need: does the target plausibly depend on covariates absent from the
    provided files (macro indicators, calendars, geography)? Pick candidates ONLY from the
    whitelist in `task_priors.md`, each with a join key and a leakage rule.
-6. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.
+6. Express every injection idea as a **typed operator** from
+   `knowledge/injection_operators.md` — that file is the shared vocabulary of this stage and
+   the execution layer. Free-text ideas are not executable and get silently dropped (this
+   cost s3e19 its whole point: a correct "GDP as a level covariate" judgment reached an
+   execution layer that could only append feature columns, and a GBDT cannot extrapolate a
+   feature outside its training range). **Decision rule: if the test window lies outside the
+   training range and the covariate carries the level, the operator is `ratio_target` or
+   `log_offset`, never `join_feature` alone.** Anything you want that the operator set cannot
+   express goes in `not_recorded`.
+7. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.
 
 ## Output schema — `dossier.json`
 
@@ -53,10 +62,19 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
       {"source": "World Bank GDP per capita", "join_key": "country x year", "leakage_rule": "only values dated <= prediction year"}
     ]
   },
-  "injection_ideas": {
-    "data_level": ["join GDP per capita by country-year"],
-    "model_level": ["L1 objective for MAE-family metric", "shallow heavily-regularized member for blend decorrelation"]
-  },
+  "injection_ideas": [
+    {"operator": "ratio_target",
+     "params": {"source": "worldbank:gdp_per_capita",
+                "join": {"keys": ["country", "year"], "lag": 0},
+                "space": "log", "carry_forward": true},
+     "rationale": "test year is outside the training range; the covariate must carry the level because a GBDT cannot extrapolate it as a feature",
+     "source_prior": "experience.md GDP recipe (evidence: tpsjan22 exp #2/#3, -2.6 SMAPE)"},
+    {"operator": "trend_term", "params": {"unit": "year", "degree": 1, "centered": true},
+     "rationale": "common year drift shared by all series", "source_prior": "TASK-TS-FUTURE"},
+    {"operator": "flag_feature",
+     "params": {"source": "holidays", "join": {"keys": ["country", "date"]}, "as": ["is_holiday"]},
+     "rationale": "daily retail-like panel", "source_prior": "TASK-TS-CALENDAR"}
+  ],
   "matched_task_priors": ["TASK-TS-FUTURE", "TASK-TS-CALENDAR"],
   "not_recorded": []
 }
@@ -69,14 +87,16 @@ Fields that cannot be determined are listed in `not_recorded` — never guessed.
 - **Stage 1 (EDA)** must *verify* the dossier's `test_window` and `external_data.needed`
   hypotheses against the actual data — the dossier is a prior, not a conclusion. Record
   confirmations/refutations back into `dossier.json` under `"eda_verdict"`.
-- **Stage 2 (features)** reads `injection_ideas.data_level` (external joins become candidate
-  feature tables, leakage rules enforced) and `model_level` feature ideas. Implementation:
+- **Stage 2 (features)** reads `injection_ideas` and dispatches each typed operator; every
+  idea is either realized or recorded in `injection_ledger.json` with a reason — a run that
+  drops an idea silently is the failure this contract exists to prevent. Implementation:
   `external_data/` module — `sources.py` (whitelisted fetchers, cached with snapshot dates)
   and `join.py` (`merge_year_safe` / `merge_period_safe` / `merge_holiday_flags`, LeakageError on violation,
   JSON audit logs). See `external_data/README.md`.
-- **Tree search (v5 seeding)**: `data_level` ideas become raced lanes (small-budget successive
-  halving — an idea that changes the data gets its own lane); `model_level` ideas become seed
-  lineages inside the main tree. See `references/07_tree_search.md`.
+- **Tree search (v5 seeding)**: operators that change the data or the target (`ratio_target`,
+  `log_offset`, `join_feature`) become raced lanes at small budget — an idea that changes the
+  data gets its own lane; operators that only change the model (`postprocess`, `sample_weight`)
+  become seed lineages inside the main tree. See `references/07_tree_search.md`.
 - **Experience library write-back**: after the competition, any dossier hypothesis that was
   confirmed with a score delta becomes a new evidence-backed entry in `knowledge/experience.md`
   or a trigger refinement in `knowledge/task_priors.md`.
