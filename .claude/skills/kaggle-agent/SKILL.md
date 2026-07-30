@@ -68,6 +68,16 @@ Apply what transfers; log new validated insights back into it after major score 
 Task-LEVEL priors (problem identification: split policy, external-data need) live separately in
 `knowledge/task_priors.md` and are consumed by Stage 0.5.
 
+**HARD RULE — never read the answers this competition already produced.** Every bullet ends in a
+`證據: <competition>, exp #N, scoreA -> scoreB` citation. **Skip every bullet whose 證據 names the
+competition you are currently solving**, even when the metric and tags match perfectly. By July 2026
+the library held the recorded benchmark runs' own final feature sets and ensemble choices, so a
+re-run that reads them unfiltered improves its score by recalling its own answer, and the
+improvement is credited to whatever else changed. `harness_v2.suggest_priors` now enforces this
+automatically — it requires a `comp` key in `comp_meta` and drops self-citing bullets, printing how
+many it dropped — but the rule binds you too when you read the file directly. State in the STATUS
+log which bullets you excluded for this reason.
+
 ### Stage 0: Competition Setup
 **Goal**: Establish workspace and understand the competition.
 

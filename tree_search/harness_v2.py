@@ -330,7 +330,54 @@ def _split_sections(text: str):
     return sections
 
 
-def suggest_priors(comp_meta: dict, experience_path: str = None, max_items: int = 20) -> list:
+# ---------------------------------------------------------------------------
+# self-evidence filter (2026-07-30)
+#
+# Every library bullet carries its own `證據: <comp>, exp #N, scoreA -> scoreB` citation, and
+# by July the library held the recorded benchmark runs' OWN answers -- aug-2022's final feature
+# set and ensemble choice sit under a header its own metric matches. Re-running a competition
+# with the library unfiltered therefore hands the agent the answer that competition already
+# produced, and the score improves for reasons that have nothing to do with the method under
+# test. Nothing filtered on the source competition before this: matching was on metric and tag
+# headers only, and every bullet under a matching header was returned.
+#
+# The citation makes the fix cheap. Drop any bullet whose evidence field names the competition
+# being solved, and report how many were dropped so the exclusion is visible rather than silent.
+# ---------------------------------------------------------------------------
+_EVIDENCE_RE = re.compile(r"證據[:：]\s*(.*)$")
+
+# competition slug -> the short forms the library actually cites it by (collected from the file)
+COMP_CITATION_ALIASES = {
+    "tabular-playground-series-jan-2022": ["tpsjan22", "jan-2022", "jan2022"],
+    "tabular-playground-series-aug-2022": ["tpsaug22", "aug-2022", "aug2022"],
+    "tabular-playground-series-sep-2022": ["tpssep22", "sep-2022", "sep2022"],
+    "afsis-soil-properties": ["afsis"],
+    "conway-s-reverse-game-of-life": ["conway"],
+    "cat-in-the-dat": ["citd"],
+}
+
+
+def comp_aliases(comp: str) -> list:
+    """Every token the experience library might cite `comp` by, longest first."""
+    if not comp:
+        return []
+    al = {comp}
+    al.update(COMP_CITATION_ALIASES.get(comp, []))
+    short = comp.replace("playground-series-", "").replace("tabular-", "")
+    al.add(short)
+    return sorted(al, key=len, reverse=True)
+
+
+def _cites_own_competition(line: str, aliases: list) -> bool:
+    m = _EVIDENCE_RE.search(line)
+    if not m or not aliases:
+        return False
+    ev = m.group(1).lower()
+    return any(a.lower() in ev for a in aliases)
+
+
+def suggest_priors(comp_meta: dict, experience_path: str = None, max_items: int = 20,
+                   exclude_self: bool = True) -> list:
     """Simplified ERA idea-injection hook (recommendation #4) — NO LLM calls inside the
     harness, just keyword-to-section-header matching against knowledge/experience.md.
 
@@ -363,14 +410,33 @@ def suggest_priors(comp_meta: dict, experience_path: str = None, max_items: int 
     if not keywords_l:
         return []
 
-    out, seen = [], set()
+    # comp_meta must name the competition for the filter to work; if it does not, say so loudly
+    # rather than quietly returning contaminated priors.
+    comp = (comp_meta.get("comp") or comp_meta.get("competition")
+            or comp_meta.get("name") or "")
+    aliases = comp_aliases(comp) if exclude_self else []
+    if exclude_self and not comp:
+        raise ValueError("suggest_priors: comp_meta needs a 'comp' key so bullets whose evidence "
+                         "comes from that same competition can be excluded; pass "
+                         "exclude_self=False only for a deliberately unfiltered read")
+
+    out, seen, dropped = [], set(), []
     for sec in sections:
         title_l = sec["title"].lower()
         if any(kw in title_l for kw in keywords_l):
             for line in sec["lines"]:
-                if line not in seen:
-                    seen.add(line)
-                    out.append(line)
-                    if len(out) >= max_items:
-                        return out
+                if line in seen:
+                    continue
+                seen.add(line)
+                if _cites_own_competition(line, aliases):
+                    dropped.append(line)
+                    continue
+                out.append(line)
+                if len(out) >= max_items:
+                    break
+        if len(out) >= max_items:
+            break
+    if dropped:
+        print(f"[suggest_priors] excluded {len(dropped)} bullet(s) whose evidence comes from "
+              f"{comp!r} itself (self-evidence filter); {len(out)} returned")
     return out

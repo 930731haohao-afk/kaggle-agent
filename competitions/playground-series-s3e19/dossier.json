@@ -19,12 +19,30 @@
     "train_rows": 136950,
     "test_rows": 27375,
     "series": 75,
-    "train_dates": {"min": "2017-01-01", "max": "2021-12-31", "n_distinct": 1826},
-    "test_dates": {"min": "2022-01-01", "max": "2022-12-31", "n_distinct": 365},
+    "train_dates": {
+      "min": "2017-01-01",
+      "max": "2021-12-31",
+      "n_distinct": 1826
+    },
+    "test_dates": {
+      "min": "2022-01-01",
+      "max": "2022-12-31",
+      "n_distinct": 365
+    },
     "panel_completeness": "complete and balanced: 75 x 1826 = 136950 train rows, 75 x 365 = 27375 test rows; zero nulls",
     "keys": {
-      "country": ["Argentina", "Canada", "Estonia", "Japan", "Spain"],
-      "store": ["Kagglazon", "Kaggle Learn", "Kaggle Store"],
+      "country": [
+        "Argentina",
+        "Canada",
+        "Estonia",
+        "Japan",
+        "Spain"
+      ],
+      "store": [
+        "Kagglazon",
+        "Kaggle Learn",
+        "Kaggle Store"
+      ],
       "product": [
         "Using LLMs to Improve Your Coding",
         "Using LLMs to Train More LLMs",
@@ -107,7 +125,9 @@
         "scheme": "time_expanding",
         "time_col": "date",
         "n_splits": 3,
-        "forbid": ["shuffled_kfold"]
+        "forbid": [
+          "shuffled_kfold"
+        ]
       },
       "rationale": "test window is a strictly future year; a shuffled split measured 4.56 vs 20.41 SMAPE on this competition (~4.5x optimism). The split decision is binding on the evaluator, which must fail loudly if it cannot honor it. Three expanding whole-year folds validate 2019, 2020, 2021.",
       "source_prior": "TASK-TS-FUTURE"
@@ -116,16 +136,44 @@
       "operator": "ratio_target",
       "params": {
         "source": "worldbank:gdp_per_capita_const",
-        "join": {"keys": ["country", "year"], "lag": 0},
+        "join": {
+          "keys": [
+            "country",
+            "year"
+          ],
+          "lag": 0
+        },
         "space": "log",
         "carry_forward": true
       },
-      "rationale": "The 2022 test year lies outside the training range and the country level is what differs across series, so the covariate must carry the level: a GBDT is piecewise-constant and cannot extrapolate a joined feature (the weak join_feature form predicted 2022 at 0.96x the 2021 level while the data implied +5..+33% growth, 48.24 SMAPE). Constant-price indicator chosen because a ratio target multiplies the covariate into the prediction and a current-price series would propagate FX/inflation as demand. The operator's proportionality precondition is satisfied here — measured dispersion 0.014/0.011/0.010/0.006/0.017 by year, proportional throughout — and carry_forward is needed because 2022 postdates the source's coverage.",
-      "source_prior": "TASK-TS-FUTURE (tpsjan22 exp #2/#3, target = log(num_sold/gdp_pc), -2.6 SMAPE 8.43 -> 5.80; s3e19 identical config CV 10.148 -> 7.793)"
+      "rationale": "The 2022 test year lies outside the training range and the country level is what differs across series, so the extrapolation argument says the covariate must carry the level. RACE THIS AGAINST THE join_feature ARM: measured on the real private leaderboard at matched single configuration this form scored 52.073 against join_feature's 48.497, so the argument is sound and the measurement disagrees with it. CV ranks this form first (7.793 vs 9.379) and is wrong; a held-out-year protocol also ranks it first and is also wrong.",
+      "source_prior": "TASK-TS-FUTURE (form verdict, knowledge/task_priors.md)"
+    },
+    {
+      "operator": "join_feature",
+      "params": {
+        "source": "worldbank:gdp_per_capita_const",
+        "join": {
+          "keys": [
+            "country",
+            "year"
+          ],
+          "lag": 0
+        },
+        "as": [
+          "gdp_pc"
+        ]
+      },
+      "rationale": "The second required arm for the same judgment. A GBDT cannot extrapolate a feature past its training range, which predicts this form should fail on a future test year -- and on both competitions measured so far it won anyway (s3e19 private 48.497 vs 52.073; tps-sep-2022 23.390 vs 24.091, both paired-test significant). Emitted because no local signal we have tested can choose between the forms.",
+      "source_prior": "TASK-TS-FUTURE (form verdict, knowledge/task_priors.md)"
     },
     {
       "operator": "trend_term",
-      "params": {"unit": "year", "degree": 1, "centered": true},
+      "params": {
+        "unit": "year",
+        "degree": 1,
+        "centered": true
+      },
       "rationale": "Pairs with ratio_target: the covariate carries the cross-sectional level, this term carries the year drift common to all 75 series, which is otherwise inextrapolable past 2021. Ablating the equivalent year_c term on tpsjan22 cost 4.83 -> 6.02 on the 2017 fold.",
       "source_prior": "TASK-TS-FUTURE"
     },
@@ -133,9 +181,19 @@
       "operator": "flag_feature",
       "params": {
         "source": "holidays",
-        "join": {"keys": ["country", "date"]},
-        "as": ["is_holiday"],
-        "window": {"before": 5, "after": 10},
+        "join": {
+          "keys": [
+            "country",
+            "date"
+          ]
+        },
+        "as": [
+          "is_holiday"
+        ],
+        "window": {
+          "before": 5,
+          "after": 10
+        },
         "per_name": true
       },
       "rationale": "Daily retail-like panel keyed by country x store x product — the calendar trigger. Holidays are a deterministic future so 2022 flags are generable without leakage; the per_name + displacement-window form is the stronger one (tpsjan22 pooled flag -> per-name window, 5.46 -> 4.19) and captures year-end/new-year displacement, which matters because the test year starts on 2022-01-01.",
@@ -145,21 +203,37 @@
       "operator": "join_feature",
       "params": {
         "source": "iso_country_table",
-        "join": {"keys": ["country"], "lag": 0},
-        "as": ["region", "hemisphere"]
+        "join": {
+          "keys": [
+            "country"
+          ],
+          "lag": 0
+        },
+        "as": [
+          "region",
+          "hemisphere"
+        ]
       },
       "rationale": "Static, in-training-range covariate, so the join_feature form is correct here (no extrapolation involved). Argentina is southern-hemisphere and the other four northern, so a shared seasonal harmonic must be allowed to flip sign rather than be averaged across countries.",
       "source_prior": "TASK-TS-CALENDAR"
     },
     {
       "operator": "sample_weight",
-      "params": {"predicate": "year == 2020", "weight": 0.5, "also_flag": true},
+      "params": {
+        "predicate": "year == 2020",
+        "weight": 0.5,
+        "also_flag": true
+      },
       "rationale": "2020 is a COVID-shaped regime the official files cannot describe and the 2022 test year does not share; down-weight rather than delete, and flag so the model can separate the regime from the trend. On sep-2022 the same remedy for a broken year was only partial (11.807 -> 11.515), so the weight must be tuned on CV, not assumed.",
       "source_prior": "TASK-TS-FUTURE (sep-2022 down-weighting evidence)"
     },
     {
       "operator": "postprocess",
-      "params": {"round_to_int": true, "clip_min": 1, "global_scale": "auto"},
+      "params": {
+        "round_to_int": true,
+        "clip_min": 1,
+        "global_scale": "auto"
+      },
       "rationale": "SMAPE is MAE-family and the target is a strictly positive integer, so rounding and a positive floor belong inside the metric function where every CV fold and blend candidate sees them; global_scale absorbs the level offset SMAPE's asymmetry rewards (the optimal point forecast sits below the conditional mean).",
       "source_prior": "TASK-MAE-METRIC"
     }
@@ -177,7 +251,11 @@
     "TASK-MAE-METRIC": "SMAPE is an MAE-family relative metric — L1 objective and postprocessing-inside-the-metric apply",
     "TASK-CAT-ONLY": "partial: every non-date feature is categorical but all are low-cardinality (5/3/5), so native-categorical GBDT handling is a baseline, not 'the whole game'; no operator in the vocabulary expresses it (see not_recorded)",
     "TASK-BLEND-DECOR": "forward-looking, applies once a member pool exists; no operator expresses it (see not_recorded)",
-    "not_matched": ["TASK-SPECTRAL", "TASK-STRUCT-OUT", "TASK-IMBALANCED"]
+    "not_matched": [
+      "TASK-SPECTRAL",
+      "TASK-STRUCT-OUT",
+      "TASK-IMBALANCED"
+    ]
   },
   "eda_must_verify": [
     "confirm the forward time split and that no (country, store, product) series is truncated or padded",
@@ -233,6 +311,15 @@
     {
       "item": "whether num_sold was synthetically generated from a deterministic ratio structure",
       "reason": "strongly suggested by the perfectly balanced 75 x 1826 panel and the near-constant country shares, but not establishable without EDA"
+    }
+  ],
+  "amended": [
+    {
+      "date": "2026-07-30",
+      "by": "hand, not by a Stage 0.5 rerun",
+      "what": "added the join_feature GDP arm and rewrote both rationales to carry the leaderboard form verdict",
+      "why": "the committed dossier mandated ratio_target alone, the form that loses on the real leaderboard on both competitions measured; a rerun consuming this file would have executed the losing arm and inverted the reported s3e19 result",
+      "note": "a fresh Stage 0.5 run should regenerate this file from the corrected prior; this edit is recorded so the provenance of the change is not silent"
     }
   ]
 }

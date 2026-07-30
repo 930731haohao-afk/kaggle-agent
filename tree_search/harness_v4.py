@@ -297,7 +297,8 @@ def suggest_ext_priors(comp_meta, idea_bank_path: str = None, max_items: int = D
 # v4 feature 4: the pooled, mode-switched entry point
 # ---------------------------------------------------------------------------
 def suggest_priors_v4(comp_meta, mode: str = "off", experience_path: str = None,
-                      idea_bank_path: str = None, max_items: int = DEFAULT_MAX_ITEMS) -> list:
+                      idea_bank_path: str = None, max_items: int = DEFAULT_MAX_ITEMS,
+                      exclude_self: bool = True) -> list:
     """Pooled `[INT]`+`[EXT]` prior suggestion with provenance tags and dedup — the single
     hook the J-4 attribution run toggles between stage 4 and stage 5.
 
@@ -321,7 +322,10 @@ def suggest_priors_v4(comp_meta, mode: str = "off", experience_path: str = None,
                          f"('off' = stage-4 [INT]-only baseline, 'ext' = stage-5 [INT]+[EXT])")
     comp_meta = _as_comp_meta(comp_meta)
 
-    int_lines = v3.suggest_priors(comp_meta, experience_path=experience_path, max_items=max_items)
+    # exclude_self is forwarded so the v4 pool inherits the self-evidence filter (2026-07-30):
+    # a comp_meta that names its competition gets its own recorded answers dropped here too.
+    int_lines = v3.suggest_priors(comp_meta, experience_path=experience_path,
+                                  max_items=max_items, exclude_self=exclude_self)
     priors = [dict(text=s, provenance="INT", source="experience.md") for s in int_lines]
 
     if mode == "ext":

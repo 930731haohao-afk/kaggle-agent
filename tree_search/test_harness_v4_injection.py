@@ -58,7 +58,7 @@ def test_a_ext_entries_parse():
 def test_b_ext_only_idea_surfaces():
     """(b) EXT-14 (adversarial validation — [EXT]-unique, nothing in experience.md) surfaces as
     an EXT-tagged prior under an adversarial/shift comp_meta, and NO [INT] prior mentions it."""
-    priors = hv4.suggest_priors_v4(CM_ADVERSARIAL, mode="ext")
+    priors = hv4.suggest_priors_v4(CM_ADVERSARIAL, mode="ext", exclude_self=False)
     ext = hv4.priors_by_provenance(priors, "EXT")
     ext_ids = {p["source"] for p in ext}
     assert "EXT-14" in ext_ids, f"EXT-14 did not surface under {CM_ADVERSARIAL}; got {sorted(ext_ids)}"
@@ -82,7 +82,7 @@ def test_c_int_proven_ext_is_deduped():
     raw = {p["source"] for p in hv4.suggest_ext_priors(CM_QWK, respect_dedup=False)}
     assert "EXT-21" in raw, f"EXT-21 should match metric=qwk with dedup off; got {sorted(raw)}"
     # with dedup ON (mode='ext'), EXT-21 must NOT re-fire
-    priors = hv4.suggest_priors_v4(CM_QWK, mode="ext")
+    priors = hv4.suggest_priors_v4(CM_QWK, mode="ext", exclude_self=False)
     ext_ids = {p["source"] for p in hv4.priors_by_provenance(priors, "EXT")}
     assert "EXT-21" not in ext_ids, f"EXT-21 re-fired despite being [INT]-proven; ext={sorted(ext_ids)}"
     # the idea is not lost — [INT] carries the QWK/ordinal knowledge
@@ -92,14 +92,16 @@ def test_c_int_proven_ext_is_deduped():
 
 def test_d_off_mode_injects_no_ext():
     """(d) mode='off' injects zero [EXT] and reproduces harness_v3.suggest_priors exactly."""
-    off = hv4.suggest_priors_v4(CM_ADVERSARIAL, mode="off")
+    off = hv4.suggest_priors_v4(CM_ADVERSARIAL, mode="off", exclude_self=False)
     assert not hv4.priors_by_provenance(off, "EXT"), "mode='off' leaked [EXT] priors"
     assert all(p["provenance"] == "INT" for p in off), "mode='off' produced non-[INT] priors"
-    baseline = hv3.suggest_priors(CM_ADVERSARIAL)
+    # exclude_self=False: this test is about v4-vs-v3 channel equality, not about the
+    # self-evidence filter added 2026-07-30 (these synthetic comp_meta dicts name no competition).
+    baseline = hv3.suggest_priors(CM_ADVERSARIAL, exclude_self=False)
     assert hv4.prior_texts(off) == baseline, \
         "mode='off' flattened texts diverge from harness_v3.suggest_priors (stage-4 baseline perturbed)"
     # and mode='ext' is a strict superset here (adds EXT on top of the same INT)
-    ext = hv4.suggest_priors_v4(CM_ADVERSARIAL, mode="ext")
+    ext = hv4.suggest_priors_v4(CM_ADVERSARIAL, mode="ext", exclude_self=False)
     assert hv4.prior_texts(hv4.priors_by_provenance(ext, "INT")) == baseline, \
         "mode='ext' altered the [INT] channel"
     return f"mode='off' == harness_v3.suggest_priors ({len(baseline)} [INT] lines), 0 [EXT]"
@@ -111,7 +113,7 @@ def test_e_guardrails():
         f"suppress set mismatch: {sorted(hv4.parse_dedup_suppress_ids())}"
     raised = False
     try:
-        hv4.suggest_priors_v4(CM_QWK, mode="bogus")
+        hv4.suggest_priors_v4(CM_QWK, mode="bogus", exclude_self=False)
     except ValueError:
         raised = True
     assert raised, "invalid mode did not raise ValueError"
