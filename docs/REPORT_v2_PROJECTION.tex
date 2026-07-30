@@ -36,7 +36,7 @@ A Fair Three-Way Comparison with Paired Significance Testing}\\
 \large Report v2 --- PROJECTION DRAFT (August 2026)\\
 \normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-07-30; pending results are marked [TBD].}}
 \author{Wei-Hao Huang\\\small Advisor: Tso-Jung Yen}
-\date{Draft compiled July 29, 2026}
+\date{Draft compiled July 30, 2026}
 
 \begin{document}
 \maketitle
@@ -500,7 +500,7 @@ $+$ \texttt{encoding} (6 schemes) & \textbf{176} & \textbf{73\%} & feature-eng (
 \end{tabular}
 \end{table}
 
-\paragraph{But ``has an operator'' is not ``gets applied'', and the difference was hiding a defect.} Auditing the \emph{consumers} of the 176, rather than their vocabulary, splits them into three regimes that one percentage conceals (Table~\ref{tab:regime}). Some are written by the dispatcher itself. Some are handed to the evaluator, which owns folds and post-processing and asserts them digit-for-digit against the pipeline's --- genuinely executed, but not by the layer that books them. And three operators (\texttt{objective}, \texttt{blend\_member}, \texttt{encoding}) were emitted as node configurations into a key that \emph{no search driver read}, while the dispatcher recorded them ``realized''. When we first measured the split, only 5\% of all proposals were actually applied by the code that reported 73\%.
+\paragraph{But ``has an operator'' is not ``gets applied'', and the difference was hiding a defect.} Auditing the \emph{consumers} of the 176, rather than their vocabulary, splits them into three regimes that one percentage conceals (Table~\ref{tab:regime}). Some are written by the dispatcher itself. Some are handed to the evaluator, which owns folds and post-processing --- but the dispatcher runs on dataframes and has no handle on the evaluator, so it books these unconditionally and cannot confirm any of them. A static checker written after this section (\path{external_data/verify_advisory.py}) puts a number on what that assumption was worth: of the 5 advisory requests the typed dossiers make, 4 check out and 1 has no mechanism in its evaluator at all. And three operators (\texttt{objective}, \texttt{blend\_member}, \texttt{encoding}) were emitted as node configurations into a key that \emph{no search driver read}, while the dispatcher recorded them ``realized''. When we first measured the split, only 5\% of all proposals were actually applied by the code that reported 73\%.
 
 \begin{table}[H]
 \centering\small
@@ -512,7 +512,7 @@ $+$ \texttt{encoding} (6 schemes) & \textbf{176} & \textbf{73\%} & feature-eng (
 \midrule
 applied by the dispatcher & 12 (5\%) & \textbf{66 (27\%)} & this module writes the columns \\
 seeded into the search & 77 (32\%) & 77 (32\%) & \emph{nobody, before 07-30}; now the arm driver \\
-advisory & 33 (14\%) & 33 (14\%) & the evaluator, verified there \\
+advisory & 33 (14\%) & 33 (14\%) & the evaluator --- assumed, not checked \\
 \midrule
 no operator exists & 26 (11\%) & 26 (11\%) & --- \\
 too vague to classify & 39 (16\%) & 39 (16\%) & --- \\
@@ -644,6 +644,7 @@ Two observations:
 \paragraph{Methodological implication.} An agent benchmark's conclusion must be stated together with the composition of its evaluation set, and should report both an absolute metric (PR) and a relative one (paired win rate) --- the contrast between this study's two evaluation sets is direct evidence for that claim.
 
 \subsection{Limitations of the Experimental Design}
+\label{sec:limitations}
 
 \begin{itemize}[leftmargin=*]
   \item \textbf{The significance test covers only test-set sampling noise}, not between-run agent variance. AIDE's term is expected to be largest (the LLM resamples code at every step); once included, some of the current 40 decisive results may revert to ties.
@@ -657,9 +658,9 @@ Two observations:
 
 \paragraph{In progress.}
 \begin{enumerate}[leftmargin=*]
-  \item \textbf{Phase 2, now unlocked}: the s3e19 gate passed (Experiment~\ref{sec:exp6v5}), so promoting v5 to the my-agent baseline and re-running all 18 competitions is warranted; the re-run doubles as a between-run variance measurement for my-agent on the 16 competitions where the dossier does not fire. \TBD{Phase 2 execution}
-  \item \textbf{Repeatability experiment}: re-run AIDE twice on the 5 closest-fought competitions to measure between-run variance --- the direct remedy for the first limitation in Section~4.4.
-  \item \textbf{Firing-class extension, done}: tps-sep-2022 raises the external-data firing class from $n{=}1$ to $n{=}2$ clean test points. Both its matched single configurations (Table~\ref{tab:v5-2x2}) and its 46-node searched arms (Result~1b) beat the corresponding no-external baseline on the real private leaderboard, and all four comparisons pass the paired test. What remains open on this competition is the searched \texttt{join\_feature} arm, the form the leaderboard prefers.
+  \item \textbf{Phase 2, reconsidered and not recommended.} When the s3e19 gate passed we judged a full 18-competition re-run with v5 promoted to baseline to be warranted. The measurements since then reverse that judgment, and we record the reversal rather than the original plan. The dossier fires on 2 of 18 competitions, so on the other 16 a re-run changes nothing v5 does and instead re-rolls my-agent's side of 36 of the 54 duels using between-run agent variance --- a term this study has never measured and one the paired test explicitly does not model (Section~\ref{sec:exp2}). Three duels currently sit at score gaps of $0.00000$ and $0.00033$; those would flip on run-to-run luck alone and any flip would be indistinguishable from a v5 effect. The cheaper and more informative sequence is the reverse: measure my-agent's own between-run variance first, and extend the firing class, so that a full re-run --- if it is ever run --- is interpretable. Both are listed below.
+  \item \textbf{Repeatability experiment, running.} AIDE is being re-run under pinned benchmark conditions (20 steps, \texttt{exec.timeout=1800}, isolated root) on the closest-fought competitions, each new run paired against its existing baseline; 3 of 4 lanes are complete at the time of writing (s4e11 $0.94063$, s3e16 $1.3348$, s5e10 in flight, s6e2 queued). This is the direct remedy for the first limitation in Section~\ref{sec:limitations}, but it covers only one of the three agents. The symmetric measurement for my-agent --- the same design, its own frozen v3 configuration, on the same competitions --- is the more consequential of the two, because my-agent's variance is the term that would move \emph{this report's own headline win rate}, and it is queued next. Reporting AIDE's variance without my-agent's would apply a stricter standard to the reference method than to our own, the precise asymmetry Section~\ref{sec:exp4} criticises elsewhere.
+  \item \textbf{Firing-class extension, done}: tps-sep-2022 raises the external-data firing class from $n{=}1$ to $n{=}2$ clean test points. Both its matched single configurations (Table~\ref{tab:v5-2x2}) and its 46-node searched arms (Result~1b) beat the corresponding no-external baseline on the real private leaderboard, and all four comparisons pass the paired test. Its three 46-node searched arms are also complete and submitted (Result~1b), so nothing remains open on this competition; the firing class is extended by one fully-measured test point, and tps-jan-2022 --- the third competition of this type, and the one where my-agent already joined GDP data unprompted during the original benchmark --- is queued to take it to $n{=}3$.
   \item \textbf{Form selection}: the open problem above needs a validation protocol that scores an extrapolation operator on periods resembling the test window rather than on all training periods. The three failed probes bound what will not work.
   \item \textbf{Retrieval, not content}: while decomposing the s3e19 residual we re-derived a result the experience library already held, because nothing forced a query before the experiment; a neighbouring entry meanwhile over-claimed and has been corrected against leaderboard evidence. The library's weak link is retrieval --- the same class of gap v5 addresses one layer up.
 \end{enumerate}

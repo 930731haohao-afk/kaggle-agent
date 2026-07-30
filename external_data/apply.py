@@ -6,9 +6,16 @@ records the rest in a coverage ledger. An idea is never dropped in silence: that
 silence is precisely how a correct "GDP as a level covariate" judgment turned into a
 plain feature join on s3e19 and cost the run its point.
 
-Realized here: join_feature, ratio_target, log_offset, trend_term, flag_feature.
-Recorded-unrealized: sample_weight (no per-row weight hook in the evaluators),
-split_policy and postprocess (honored by the evaluator, not by this module).
+Realized here: join_feature, ratio_target, log_offset, trend_term, flag_feature,
+sample_weight, and the target-free encoding schemes (count / ordinal / crosses).
+Emitted as node configs for the search driver to seed: objective, blend_member
+(consumed by tree_search/seed_from_ledger.py, which writes back what it seeded).
+Recorded as advisory, NOT as done: split_policy and postprocess. This module runs on
+dataframes and has no handle on the evaluator, so it cannot check whether the evaluator
+implements what was asked -- and for months this branch nevertheless read as "honored by
+the evaluator", which is how a pure vocabulary mismatch on s3e19's postprocess survived
+unnoticed. `external_data/verify_advisory.py` is the checker that closes that hole; the
+ledger entry now points at it instead of asserting a verification that never happened.
 """
 from __future__ import annotations
 
@@ -45,7 +52,10 @@ ENCODING_SCHEMES = {
     "crosses":    "pairwise feature crosses — WARNING: on an already-saturated sparse linear "
                   "model these HURT (cat-in-the-dat); useful mainly for tree members",
 }
-EVALUATOR_OWNED = {"split_policy", "postprocess"}      # honored elsewhere, not a gap
+# Advisory: requested here, executed (or not) by the evaluator. NOT verified by this module --
+# see verify_advisory.py. Measured 2026-07-30: of 5 advisory requests across the typed dossiers,
+# 4 check out and 1 (s5e10's postprocess) has no mechanism in its evaluator at all.
+EVALUATOR_OWNED = {"split_policy", "postprocess"}
 
 # metric family -> (lgb objective, cat loss_function) and the evidence for the choice
 OBJECTIVE_MAP = {
@@ -298,10 +308,19 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
         op = idea.get("operator")
         params = idea.get("params") or {}
         if op in EVALUATOR_OWNED:
+            # NOT a claim that anything executed this. The dispatcher runs on dataframes and
+            # has no handle on the evaluator, so it cannot check -- and for months this branch
+            # nevertheless read as "honored by the evaluator", which is how a pure vocabulary
+            # mismatch on s3e19's postprocess survived unnoticed until 2026-07-30. The entry
+            # now says what it actually knows (a request was made, unverified) and names the
+            # tool that can check it: external_data/verify_advisory.py.
             plan["advisory"].append({"operator": op, "params": params,
-                                     "note": "the evaluator owns this; its folds/postprocess "
-                                             "are asserted against the pipeline's, so verify "
-                                             "there rather than trusting this line"})
+                                     "verified": False,
+                                     "note": "REQUEST RECORDED, NOT VERIFIED. This module cannot "
+                                             "see the evaluator. Run external_data/"
+                                             "verify_advisory.py <comp> to check that the "
+                                             "evaluator implements these exact parameters; do "
+                                             "not treat this entry as evidence it ran."})
             continue
         if op == "encoding":
             scheme = str(params.get("scheme", "native"))
