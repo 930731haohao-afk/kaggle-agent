@@ -55,6 +55,32 @@ def proportionality_check(df: pd.DataFrame, cov: pd.DataFrame, mapping: dict,
             "verdict": "proportional" if not bad else "broken_in_" + ",".join(map(str, bad))}
 
 
+CURRENT_PRICE_SUFFIX = ("NY.GDP.PCAP.CD", "NY.GDP.MKTP.CD")   # nominal, FX-exposed series
+
+
+def covariate_volatility_check(cov: pd.DataFrame, mapping: dict, years: list[int],
+                               *, threshold_pp: float = 8.0) -> dict:
+    """Is the covariate itself a stable proxy for the level, or does it carry FX/inflation shocks?
+
+    A ratio target multiplies the covariate straight into the prediction, so a nominal series
+    propagates currency moves as if they were demand moves. Measured on s3e19: current-USD GDP
+    per capita moved 2021->2022 by -14.5% (Japan, yen collapse) to +30% (Argentina, inflation),
+    a 14.6pp cross-country spread, while the constant-price series moved within 3.0pp. The
+    ratio arm lost on the leaderboard to the plain feature join for exactly this reason.
+    """
+    iso = sorted(set(mapping.values()))
+    c = cov[cov["iso3"].isin(iso)].pivot_table(index="year", columns="iso3", values="value")
+    c = c.loc[[y for y in c.index if y in years or y - 1 in years]].sort_index()
+    if len(c) < 2:
+        return {"verdict": "insufficient_history", "spread_pp_by_year": {}}
+    pct = (c.pct_change() * 100).dropna(how="all")
+    spread = pct.std(axis=1).round(2)
+    worst = float(spread.max()) if len(spread) else 0.0
+    return {"spread_pp_by_year": {int(y): float(v) for y, v in spread.items()},
+            "worst_spread_pp": worst, "threshold_pp": threshold_pp,
+            "verdict": "stable" if worst <= threshold_pp else "volatile"}
+
+
 def _fetch_covariate(source: str, years: list[int], countries: list[str]):
     """Return (frame, mapping, meta) for a whitelisted yearly country covariate."""
     if not source.startswith(_WB_PREFIX):
@@ -124,7 +150,23 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                 if op in ("ratio_target", "log_offset"):
                     diag = proportionality_check(tr, frame, mapping, country_col=country_col,
                                                  date_col=date_col, target_col=target_col)
+                    vol = covariate_volatility_check(frame, mapping, years)
+                    diag["covariate_volatility"] = vol
                     plan.setdefault("diagnostics", {})[op] = diag
+                    if meta.get("indicator") in CURRENT_PRICE_SUFFIX:
+                        plan["unrealized"].append({
+                            "operator": op, "params_subset": "nominal covariate series",
+                            "reason": (f"{meta['indicator']} is a current-price series; a ratio "
+                                       "target multiplies FX/inflation shocks into predictions. "
+                                       "Use gdp_per_capita_const or gdp_per_capita_ppp instead "
+                                       "(measured: 14.6pp vs 3.0pp cross-country spread)")})
+                    if vol.get("verdict") == "volatile":
+                        plan["unrealized"].append({
+                            "operator": op, "params_subset": "covariate stability",
+                            "reason": (f"covariate moves up to {vol['worst_spread_pp']}pp "
+                                       f"differently across groups (threshold "
+                                       f"{vol['threshold_pp']}pp) — the level it carries is "
+                                       "contaminated")})
                     if diag["violating_years"]:
                         plan["unrealized"].append({
                             "operator": op, "params_subset": "unconditional application",

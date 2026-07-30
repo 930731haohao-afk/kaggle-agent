@@ -1,0 +1,71 @@
+{
+  "proposed": 3,
+  "realized": [
+    {
+      "operator": "ratio_target",
+      "column": "cov_level"
+    },
+    {
+      "operator": "trend_term",
+      "columns": [
+        "year_c"
+      ],
+      "centre": 2019.000547645126
+    },
+    {
+      "operator": "flag_feature",
+      "column": "is_holiday"
+    }
+  ],
+  "unrealized": [
+    {
+      "operator": "ratio_target",
+      "params_subset": "unconditional application",
+      "reason": "precondition failed: target is not covariate-proportional in [2018, 2019, 2020, 2021] (dispersion {2018: 0.0903, 2019: 0.1365, 2020: 0.1663, 2021: 0.1484}); the ratio target inherits the broken relationship unless those periods are down-weighted or excluded (see sample_weight)"
+    }
+  ],
+  "target_transform": {
+    "kind": "ratio_log",
+    "covariate_col": "cov_level"
+  },
+  "added_columns": [
+    "year_c",
+    "is_holiday"
+  ],
+  "sources": {
+    "worldbank:gdp_per_capita_const": "2026-07-13",
+    "holidays": "holidays==0.101"
+  },
+  "diagnostics": {
+    "ratio_target": {
+      "dispersion_by_year": {
+        "2017": 0.0281,
+        "2018": 0.0903,
+        "2019": 0.1365,
+        "2020": 0.1663,
+        "2021": 0.1484
+      },
+      "threshold": 0.05,
+      "violating_years": {
+        "2018": 0.0903,
+        "2019": 0.1365,
+        "2020": 0.1663,
+        "2021": 0.1484
+      },
+      "verdict": "broken_in_2018,2019,2020,2021",
+      "covariate_volatility": {
+        "spread_pp_by_year": {
+          "2018": 2.54,
+          "2019": 2.19,
+          "2020": 3.73,
+          "2021": 2.39,
+          "2022": 3.4
+        },
+        "worst_spread_pp": 3.73,
+        "threshold_pp": 8.0,
+        "verdict": "stable"
+      }
+    }
+  },
+  "realized_count": 3
+}

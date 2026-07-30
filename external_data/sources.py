@@ -26,8 +26,15 @@ CACHE_DIR = Path(__file__).parent / "cache"
 # Whitelist — mirrors knowledge/task_priors.md. Do not add sources here without
 # adding them to the whitelist table with a leakage rule first.
 WB_INDICATORS = {
-    "gdp_per_capita": "NY.GDP.PCAP.CD",
+    # Level covariates. PREFER the constant-price / PPP series for ratio_target and
+    # log_offset: current-USD series carry exchange-rate and inflation shocks straight into
+    # a multiplicative prediction. Measured 2021->2022 cross-country spread on the s3e19
+    # countries: current USD 14.6pp (Japan -14.5%, Argentina +30%) vs constant price 3.0pp.
+    "gdp_per_capita": "NY.GDP.PCAP.CD",             # current USD — features only
+    "gdp_per_capita_const": "NY.GDP.PCAP.KD",       # constant 2015 USD — level covariate
+    "gdp_per_capita_ppp": "NY.GDP.PCAP.PP.KD",      # PPP, constant intl$ — level covariate
     "gdp": "NY.GDP.MKTP.CD",
+    "gdp_const": "NY.GDP.MKTP.KD",
     "gdp_growth_pct": "NY.GDP.MKTP.KD.ZG",
     "population": "SP.POP.TOTL",
     "cpi_inflation": "FP.CPI.TOTL.ZG",

@@ -44,6 +44,21 @@ covariate, not from the model.
 when the test period has none published yet — required whenever the test year post-dates
 the source's coverage, and it must be logged.
 
+**Covariate must be a constant-price / PPP series — never a current-price one.** A ratio
+target multiplies the covariate into the prediction, so a nominal series propagates exchange
+rate and inflation moves as though they were demand moves. Measured on the s3e19 countries,
+2021 → 2022:
+
+| series | Japan | Argentina | cross-country spread |
+|---|---|---|---|
+| `NY.GDP.PCAP.CD` (current USD) | −14.5% | +30.0% | **14.6 pp** |
+| `NY.GDP.PCAP.KD` (constant 2015 USD) | +1.8% | +5.8% | 3.0 pp |
+| `NY.GDP.PCAP.PP.KD` (PPP, constant) | +1.8% | +5.8% | 3.0 pp |
+
+Use `gdp_per_capita_const` or `gdp_per_capita_ppp`. `apply.py` files a ledger entry if a
+current-price indicator reaches this operator, and `covariate_volatility_check` flags any
+covariate whose cross-group moves exceed 8 pp.
+
 **Precondition (checked automatically, `apply.proportionality_check`).** The operator is
 conditional, not universal: `total(group, period) / c` must be near-equal *across groups*,
 leaving only a common period drift. Measured dispersion decides it:
