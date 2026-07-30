@@ -116,8 +116,11 @@ Re-weight or flag an anomalous regime instead of deleting it.
 ```
 
 ### `encoding`
-How categorical columns enter the model. Config-only: it selects members and per-fold
-transforms, not precomputed columns.
+How categorical columns enter the model. **Routed by scheme (07-30)**: `count`, `ordinal` and
+`crosses` involve no target, so `apply.py` computes them as added columns in the data layer —
+there is no fold boundary for a target-free transform to protect. `native` is the evaluators'
+default and is recorded as advisory. `target` and `onehot_sparse` are refused with a reason:
+the first needs per-fold computation inside the evaluator, the second a sparse linear family.
 ```json
 {"operator": "encoding", "params": {"scheme": "target", "columns": ["surname"],
  "smoothing": 20.0}}
@@ -143,7 +146,9 @@ file a ledger entry rather than approximate.
 
 ### `objective`
 Match the training loss to what the metric actually charges. Config-only: it changes what the
-search proposes, not the data, so it is emitted as a seed node config.
+search proposes, not the data, so it is emitted as a seed node config — and since 07-30
+`tree_search/seed_from_ledger.py` translates that emission into one seed node per model family
+with `forbid_params` removed. Before that the emission had no reader (see the ledger note below).
 ```json
 {"operator": "objective", "params": {"metric_family": "mae",
  "drop_imbalance_weighting": true}}
@@ -199,3 +204,13 @@ Every v5 run writes `injection_ledger.json` next to its tree:
 
 A run whose ledger has `unrealized` entries is still valid, but the report must state what
 was not executed. Silence is the failure mode this file exists to prevent.
+
+**The ledger reproduced that failure itself, and the fix is why it now has four buckets
+(2026-07-30).** `realized` used to mix three different things: columns `apply.py` wrote,
+configs emitted for a driver to seed, and decisions the evaluator owns. The middle group had no
+reader at all — `plan["node_configs"]` was written and never consumed — so `objective`,
+`blend_member` and `encoding` were booked realized while changing nothing about a run. A
+consumer trace (not a vocabulary count) found it. The buckets are now `realized` (data-layer
+only, and `realized_count` counts only these), `emitted_config` (a driver must confirm
+consumption in `injection_consumed.json`), `advisory` (another layer owns it; verify there), and
+`unrealized`. **Rule: never quote a coverage number without saying which bucket it is.**

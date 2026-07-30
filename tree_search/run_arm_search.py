@@ -24,6 +24,7 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
 import harness_v3 as hv3  # noqa: E402
+import seed_from_ledger as sfl  # noqa: E402
 from make_v5_arm import BASE, _slug  # noqa: E402
 from run_v3_generic import core, solo_pool, variant as mk_variant  # noqa: E402
 
@@ -85,6 +86,33 @@ def search(comp: str, arm: str, ev, n_nodes: int, wl: dict):
                      time.time() - t0)
         json.dump(tree, open(tpath, "w"), indent=2)
         print(f"[{arm}] root: {r['status']} score={r['score']}")
+
+        # Seed the ledger's config-only operators as real nodes. Before 07-30 these were
+        # written to plan["node_configs"] and read by nobody, so the judgment layer's
+        # model-level decisions changed nothing while the ledger reported them realized.
+        specs = sfl.load_emitted(ws)
+        if specs:
+            seed_nodes, unconsumable = sfl.materialize(specs, cfg, wl)
+            seeded = []
+            for sn in seed_nodes:
+                nid = hv3.next_id(tree)
+                label = f"[V5:{arm}] injected {sn.get('seed_role')} " \
+                        f"({sn.get('metric_family') or sn.get('archetype')})"
+                try:
+                    r = ev.evaluate(core(sn), node_id=nid, timeout_s=600)
+                except Exception as e:  # noqa: BLE001
+                    r = {"score": None, "status": "failed", "wall_s": 0.0, "error": str(e)}
+                hv3.add_node(tree, tree["root_id"], label, core(sn), r["score"],
+                             r["status"], r.get("wall_s", 0.0))
+                seeded.append({"node_id": nid, "seed_role": sn.get("seed_role"),
+                               "model": sn.get("model"), "status": r["status"],
+                               "score": r["score"]})
+                print(f"[{arm}] injected node {nid} ({sn.get('seed_role')}): "
+                      f"{r['status']} score={r['score']}")
+            json.dump(tree, open(tpath, "w"), indent=2)
+            p = sfl.write_consumption_report(ws, seeded, unconsumable)
+            print(f"[{arm}] consumption report: {p} "
+                  f"({len(seeded)} seeded, {len(unconsumable)} unconsumable)")
 
     c0 = champ(tree)["score"]
     n_start = len([n for n in tree["nodes"] if n["status"] == "evaluated"])

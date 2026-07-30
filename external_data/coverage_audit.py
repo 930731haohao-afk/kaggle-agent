@@ -26,6 +26,18 @@ import re
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 
+# What each family's operator can actually do, as of 2026-07-30. "applied" means this repo
+# writes the change itself; "seeded" means it is emitted as a node config that
+# tree_search/seed_from_ledger.py turns into search nodes; "advisory" means another layer owns
+# it and this ledger cannot verify it. Reporting one blended percentage over these three hid a
+# real defect for a day: the seeded group had no consumer at all until seed_from_ledger existed.
+REGIME = {
+    "join_feature": "applied", "ratio_target": "applied", "trend_term": "applied",
+    "flag_feature": "applied", "sample_weight": "applied", "encoding": "applied",
+    "objective": "seeded", "blend_member": "seeded",
+    "split_policy": "advisory", "postprocess": "advisory",
+}
+
 # families with a working operator today (keep in sync with apply.REALIZED/CONFIG_ONLY)
 IMPLEMENTED = {
     "join_feature":  r"join .*(gdp|world bank|holiday|iso|covid|exchange|macro)|external (data|covariate)",
@@ -88,7 +100,19 @@ def main() -> None:
         ti += n; te += i; tg += m; tu += u
     if ti:
         print(f"{'TOTAL':36s} {ti:>5d} {te:>5d} {tg:>5d} {tu:>3d}"
-              f"        -> {te/ti*100:.0f}% executable, {tg/ti*100:.0f}% invisible gap")
+              f"        -> {te/ti*100:.0f}% expressible, {tg/ti*100:.0f}% invisible gap")
+        by_reg = collections.Counter()
+        for (s, f), n in fam.items():
+            if s == "IMPLEMENTED":
+                by_reg[REGIME.get(f, "unknown")] += n
+        print("\n  of the expressible, split by what actually consumes it:")
+        for reg in ("applied", "seeded", "advisory", "unknown"):
+            if by_reg[reg]:
+                print(f"    {reg:9s} {by_reg[reg]:4d}  ({by_reg[reg]/ti*100:.0f}% of all proposals)")
+        print("    NOTE: 'expressible' is the sum; only 'applied' is written by this repo, and "
+              "'seeded' requires\n          the search driver to consume node_configs "
+              "(tree_search/seed_from_ledger.py) -- check\n          injection_consumed.json "
+              "per arm before quoting it as executed.")
     print("\n  gap by family (no operator exists):")
     for (s, f), n in sorted(fam.items(), key=lambda x: -x[1]):
         if s == "MISSING":

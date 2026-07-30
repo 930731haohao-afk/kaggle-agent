@@ -23,7 +23,10 @@ from .sources import fetch_holidays, fetch_worldbank, resolve_iso3
 
 # operators this module can realize; everything else lands in the ledger
 REALIZED = {"join_feature", "ratio_target", "log_offset", "trend_term",
-            "flag_feature", "sample_weight"}
+            "flag_feature", "sample_weight", "encoding"}
+# encoding schemes this module can actually compute (target-free, so no leakage path);
+# the rest are reported unrealized with the reason, never booked as done
+ENCODING_DATA_SCHEMES = {"count", "ordinal", "crosses"}
 # Config-only operators: they change what the search proposes, not the data, so they are
 # realized as node configs by the search driver rather than as columns here. Recorded as
 # realized with the config they imply, so the ledger stays a complete account.
@@ -194,6 +197,65 @@ def _config_only(op: str, params: dict) -> dict:
     raise ValueError(f"{op} is not a config-only operator")
 
 
+def _encode_columns(tr: pd.DataFrame, te: pd.DataFrame, scheme: str,
+                    params: dict) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """Target-free categorical encodings, computed on train+test jointly.
+
+    Joint computation is safe here precisely because no target is involved: a category's
+    frequency or its ordinal position carries no label information, so there is nothing for a
+    fold boundary to protect. The one scheme that DOES involve the target (`target`) is refused
+    by the caller and routed to `unrealized` with the reason, because computing it anywhere but
+    inside the model's own folds is the s4e1 leakage path (AUC inflated to 0.89653, fold-aligned
+    ~0.8937).
+
+    Columns are ADDED, never replaced, so a config that drops them reproduces the baseline.
+    """
+    cols = params.get("columns")
+    if not cols:
+        cols = [c for c in tr.columns
+                if (tr[c].dtype == object or str(tr[c].dtype) == "category")
+                and c in te.columns]
+    cols = [c for c in cols if c in tr.columns and c in te.columns]
+    if not cols:
+        raise ValueError("no categorical columns available to encode "
+                         f"(requested {params.get('columns')!r})")
+    tr, te = tr.copy(), te.copy()
+    added: list[str] = []
+    if scheme == "count":
+        for c in cols:
+            counts = pd.concat([tr[c], te[c]]).value_counts()
+            name = f"{c}_count"
+            tr[name] = tr[c].map(counts).astype("float64")
+            te[name] = te[c].map(counts).astype("float64")
+            added.append(name)
+    elif scheme == "ordinal":
+        for c in cols:
+            levels = sorted(set(tr[c].dropna().unique()) | set(te[c].dropna().unique()),
+                            key=lambda v: str(v))
+            code = {v: i for i, v in enumerate(levels)}
+            name = f"{c}_ord"
+            tr[name] = tr[c].map(code).astype("float64")
+            te[name] = te[c].map(code).astype("float64")
+            added.append(name)
+    elif scheme == "crosses":
+        max_pairs = int(params.get("max_pairs", 6))
+        pairs = [(a, b) for i, a in enumerate(cols) for b in cols[i + 1:]][:max_pairs]
+        if not pairs:
+            raise ValueError("crosses needs at least two categorical columns")
+        for a, b in pairs:
+            name = f"{a}_x_{b}"
+            joint = (tr[a].astype(str) + "|" + tr[b].astype(str))
+            joint_te = (te[a].astype(str) + "|" + te[b].astype(str))
+            levels = sorted(set(joint.unique()) | set(joint_te.unique()))
+            code = {v: i for i, v in enumerate(levels)}
+            tr[name] = joint.map(code).astype("float64")
+            te[name] = joint_te.map(code).astype("float64")
+            added.append(name)
+    else:                                        # unreachable: caller filters the scheme
+        raise ValueError(f"scheme {scheme!r} is not a data-layer encoding")
+    return tr, te, added
+
+
 def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], *,
                     country_col: str = "country", date_col: str = "date",
                     target_col: str = "num_sold",
@@ -206,22 +268,67 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
     means fit on log(target / covariate) and invert with exp(pred) * covariate.
     """
     tr, te = train.copy(), test.copy()
-    years = sorted(set(pd.to_datetime(tr[date_col]).dt.year) |
-                   set(pd.to_datetime(te[date_col]).dt.year))
-    countries = sorted(set(tr[country_col]) | set(te[country_col]))
+
+    # Panel keys are resolved LAZILY (07-30). They used to be computed unconditionally here,
+    # which raised KeyError('date') on any competition without a date and a country column --
+    # including for operators that need neither (encoding, objective, split_policy). That made
+    # the dispatcher country-panel-only by accident rather than by declaration.
+    _panel: dict = {}
+
+    def panel_keys():
+        if not _panel:
+            for col, what in ((date_col, "date"), (country_col, "country")):
+                if col not in tr.columns or col not in te.columns:
+                    raise KeyError(f"operator needs a {what} column ({col!r}); this competition "
+                                   f"has {sorted(tr.columns)[:8]}...")
+            _panel["years"] = sorted(set(pd.to_datetime(tr[date_col]).dt.year) |
+                                     set(pd.to_datetime(te[date_col]).dt.year))
+            _panel["countries"] = sorted(set(tr[country_col]) | set(te[country_col]))
+        return _panel["years"], _panel["countries"]
+    # Ledger buckets, kept separate on purpose (07-30). "realized" used to mix three very
+    # different things: columns this module wrote, configs emitted for a driver to seed, and
+    # decisions the evaluator owns. Only the first is applied here, so realized_count now
+    # counts only that; the rest are reported under their own names and the consumer that
+    # picks them up writes its own confirmation (tree_search/seed_from_ledger.py).
     plan: dict = {"proposed": len(ideas), "realized": [], "unrealized": [],
+                  "emitted_config": [], "advisory": [],
                   "target_transform": None, "added_columns": [], "sources": {}}
 
     for idea in ideas:
         op = idea.get("operator")
         params = idea.get("params") or {}
         if op in EVALUATOR_OWNED:
-            plan["realized"].append({"operator": op, "note": "honored by the evaluator"})
+            plan["advisory"].append({"operator": op, "params": params,
+                                     "note": "the evaluator owns this; its folds/postprocess "
+                                             "are asserted against the pipeline's, so verify "
+                                             "there rather than trusting this line"})
+            continue
+        if op == "encoding":
+            scheme = str(params.get("scheme", "native"))
+            if scheme == "native":
+                plan["advisory"].append({"operator": op, "scheme": scheme, "note":
+                    "native categorical handling is the evaluators' default; nothing to apply"})
+                continue
+            if scheme not in ENCODING_DATA_SCHEMES:
+                plan["unrealized"].append({"operator": op, "scheme": scheme, "reason":
+                    "requires per-fold computation inside the evaluator (target) or a sparse "
+                    "linear model family (onehot_sparse); neither exists, and approximating "
+                    "target encoding out of fold is the s4e1 leakage path"})
+                continue
+            try:
+                tr, te, cols = _encode_columns(tr, te, scheme, params)
+                plan["added_columns"].extend(cols)
+                plan["realized"].append({"operator": op, "scheme": scheme, "columns": cols})
+            except Exception as e:  # noqa: BLE001
+                plan["unrealized"].append({"operator": op, "scheme": scheme,
+                                           "reason": f"{type(e).__name__}: {e}"})
             continue
         if op in CONFIG_ONLY:
             try:
                 plan.setdefault("node_configs", []).append(_config_only(op, params))
-                plan["realized"].append({"operator": op, "note": "emitted as a node config"})
+                plan["emitted_config"].append({"operator": op, "note":
+                    "emitted as a node config; NOT applied here — the search driver confirms "
+                    "consumption in injection_consumed.json"})
             except Exception as e:  # noqa: BLE001
                 plan["unrealized"].append({"operator": op, "reason": f"{type(e).__name__}: {e}"})
             continue
@@ -233,7 +340,7 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
             if op in ("join_feature", "ratio_target", "log_offset"):
                 src = params["source"]
                 out_col = (params.get("as") or ["cov"])[0] if op == "join_feature" else "cov_level"
-                frame, mapping, meta = _fetch_covariate(src, years, countries)
+                frame, mapping, meta = _fetch_covariate(src, *panel_keys())
                 lag = (params.get("join") or {}).get("lag", 0)
                 for name, df in (("train", tr), ("test", te)):
                     df["_year"] = pd.to_datetime(df[date_col]).dt.year
@@ -332,7 +439,8 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
 
             elif op == "flag_feature":
                 as_cols = params.get("as") or ["is_holiday"]
-                hol, meta = fetch_holidays(countries, years)
+                _yrs, _ctys = panel_keys()
+                hol, meta = fetch_holidays(_ctys, _yrs)
                 for name in ("train", "test"):
                     df = tr if name == "train" else te
                     out, _ = merge_holiday_flags(df, hol, df_country=country_col,
@@ -351,7 +459,9 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
         except Exception as e:  # noqa: BLE001 — a failed operator is recorded, never hidden
             plan["unrealized"].append({"operator": op, "reason": f"{type(e).__name__}: {e}"})
 
-    plan["realized_count"] = len(plan["realized"])
+    plan["realized_count"] = len(plan["realized"])          # data-layer only, by construction
+    plan["emitted_config_count"] = len(plan["emitted_config"])
+    plan["advisory_count"] = len(plan["advisory"])
     if ledger_path:
         Path(ledger_path).parent.mkdir(parents=True, exist_ok=True)
         Path(ledger_path).write_text(json.dumps(plan, indent=2, ensure_ascii=False))
