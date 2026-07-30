@@ -13,14 +13,20 @@ a competition confirms them.
   description says forecasting).
 - **Action**: time-based split mandatory (`year < y` vs `year == y`, or TimeSeriesSplit);
   shuffled KFold forbidden. Assess macro external data (see whitelist) — target series that
-  depend on country/region economics usually need them. **Critically, when the test window
-  lies outside the training range the covariate must carry the level, not decorate the
-  features: use the `ratio_target` / `log_offset` operators, never `join_feature` alone.**
-  A GBDT is piecewise-constant and cannot extrapolate; pair the ratio target with a
-  `trend_term` for the drift that is common to all series.
+  depend on country/region economics usually need them. **When the test window lies outside
+  the training range, emit BOTH forms as separate arms — `join_feature` (covariate as a plain
+  feature) and `ratio_target` / `log_offset` (covariate carries the level) — and select between
+  them by a rule fixed before any score is seen. Do not assume either form wins.** The
+  reasoning that a piecewise-constant GBDT cannot extrapolate a feature is sound and predicts
+  `ratio_target`; the leaderboard has twice said otherwise (below). Pair whichever form is used
+  with a `trend_term` for the drift common to all series.
 - **Evidence**: s3e19 controlled split experiment 4.56 (shuffled) vs 20.41 (time split) —
-  4.5× optimism bias; s3e19 outcome: all three agents 48.3–50.5 in the bimodal lower mode,
-  top 4.67, accepted solutions join per-country GDP. tps-jan-2022: GDP-per-capita join,
+  4.5× optimism bias; s3e19 outcome: all three agents scored 48.3–50.5 in the lower mode of a
+  bimodal leaderboard. (The clause naming that competition's accepted solutions was struck on
+  2026-07-30: Stage 0.5 forbids competition-specific solution knowledge as an input, and a prior
+  library that carries it launders exactly the input class the isolation protocol excludes. The
+  split experiment and the tps-jan-2022 self-experiment below carry this prior on their own.)
+  tps-jan-2022: GDP-per-capita join,
   CV SMAPE 4.1793 vs 6.1551 (AIDE, official data only); the GBDT form of that recipe
   (`target = log(num_sold / gdp_pc)`) measured −2.6 SMAPE (8.43 → 5.80) and ablating the
   linear `year_c` drift term cost 4.83 → 6.02 on the 2017 fold (tpsjan22 exp #2/#3).
@@ -31,9 +37,20 @@ a competition confirms them.
   **Bound on the recipe (held-out evidence):** on tps-sep-2022 the same operator *hurt*
   (11.348 → 11.807; 11.515 with the 2020 COVID year down-weighted), and the proportionality
   diagnostic predicted it — cross-country dispersion is ~0.01 in 2017–2019 but 0.466 in 2020.
-  Always run the diagnostic before the operator fires; leaderboard adjudication of sep-2022 is
-  pending because its CV folds all sit inside the training range and its last folds land on the
-  broken year.
+  Always run the diagnostic before the operator fires.
+- **Leaderboard verdict on the form, and it is the opposite of the CV verdict (2026-07-30).**
+  Matched single configurations, real private scores: on s3e19 `join_feature` 48.497 vs
+  `ratio_target` 52.073 vs no-external 54.506; on tps-sep-2022 `join_feature` 23.390 vs
+  `ratio_target` 24.091 vs no-external 25.476. Both external forms beat baseline on both
+  competitions and all four pass the paired test — but `join_feature` wins the form comparison
+  on **both**, while CV ranks the forms in the opposite order on s3e19 (ratio 7.793 vs
+  featurejoin 9.379) and ranks both behind baseline on sep-2022. A held-out-year protocol also
+  picks `ratio_target` on all three probes and is therefore also wrong. Consequence for this
+  prior: **the form cannot be selected from any local signal we have tested.** Race both arms,
+  and if only one may be submitted, prefer `join_feature` on the evidence to date and record
+  that the choice is unresolved. On sep-2022 the ordering survives a 46-node search per arm
+  (searched ratio 23.774 still loses to an unsearched featurejoin 23.390), so search does not
+  substitute for choosing the form.
 
 ## TASK-TS-CALENDAR — daily/weekly retail-like series
 - **Trigger**: daily-resolution series with country/store/product keys.

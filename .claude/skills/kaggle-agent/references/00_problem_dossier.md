@@ -43,8 +43,11 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    cost s3e19 its whole point: a correct "GDP as a level covariate" judgment reached an
    execution layer that could only append feature columns, and a GBDT cannot extrapolate a
    feature outside its training range). **Decision rule: if the test window lies outside the
-   training range and the covariate carries the level, the operator is `ratio_target` or
-   `log_offset`, never `join_feature` alone.** Anything you want that the operator set cannot
+   training range and the covariate carries the level, emit BOTH `join_feature` and
+   `ratio_target` (or `log_offset`) as separate arms and race them; state in the rationale which
+   one you would pick and why, but do not drop either. Reason: the extrapolation argument favours
+   `ratio_target`, and on both competitions measured so far the leaderboard favoured
+   `join_feature` — see the form verdict in `knowledge/task_priors.md` TASK-TS-FUTURE.** Anything you want that the operator set cannot
    express goes in `not_recorded`.
 7. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.
 
