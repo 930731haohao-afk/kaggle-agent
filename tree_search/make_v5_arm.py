@@ -85,6 +85,25 @@ def _invert_test(p):
     return src
 
 
+def _patch_sample_weight(src: str, wcol: str) -> str:
+    """Pass per-row weights into every fold fit, so a down-weighted regime actually
+    influences training instead of being recorded in the plan and then ignored."""
+    anchor = "_y = _train[TARGET].to_numpy(np.float64)"
+    assert src.count(anchor) == 1
+    src = src.replace(anchor, anchor +
+                      f'\n_ROW_W = _train["{wcol}"].to_numpy(np.float64)   # v5 sample_weight operator')
+    lgb_from = "        m.fit(X_tr, y_tr, eval_set=[(X_va, y_va)],"
+    lgb_to = "        m.fit(X_tr, y_tr, sample_weight=_ROW_W[tr_mask], eval_set=[(X_va, y_va)],"
+    cat_from = "        m.fit(X_tr, y_tr, eval_set=(X_va, y_va), early_stopping_rounds=esr)"
+    cat_to = ("        m.fit(X_tr, y_tr, sample_weight=_ROW_W[tr_mask], "
+              "eval_set=(X_va, y_va), early_stopping_rounds=esr)")
+    n_lgb, n_cat = src.count(lgb_from), src.count(cat_from)
+    assert n_lgb + n_cat >= 1, "no fit sites found for sample_weight"
+    src = src.replace(lgb_from, lgb_to).replace(cat_from, cat_to)
+    print(f"   sample_weight patched into {n_lgb} lgb + {n_cat} cat fit sites")
+    return src
+
+
 def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     base_mod, id_col = BASE[comp]
     base_dir = os.path.join(_ROOT, "competitions", comp)
@@ -101,6 +120,8 @@ def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     tt = plan.get("target_transform")
     if tt:
         new_cols.append(tt["covariate_col"])
+    if plan.get("weight_column"):
+        new_cols.append(plan["weight_column"])
 
     # augmented processed CSVs: baseline columns first (byte-identical), then the new ones
     for split, aug in (("train", aug_tr), ("test", aug_te)):
@@ -122,7 +143,9 @@ def build(comp: str, arm: str, ideas: list[dict]) -> dict:
                       f'"competitions", "{vcomp}"', src)
     src, n2 = re.subn(r'CACHE_DIR = os\.path\.join\(_HERE, "[^"]+"\)',
                       f'CACHE_DIR = os.path.join(_HERE, "cache_{arm}_{_slug(comp)}")', src)
-    feat_cols = [c for c in new_cols if not (tt and c == tt["covariate_col"])]
+    feat_cols = [c for c in new_cols
+                 if c != plan.get("weight_column")
+                 and not (tt and c == tt["covariate_col"])]
     if feat_cols:
         lst = ", ".join(f'"{c}"' for c in feat_cols)
         src, n3 = re.subn(r'(FEATURE_COLS = \[[^\]]+\])',
@@ -132,6 +155,8 @@ def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     assert n1 >= 1 and n2 == 1, (n1, n2)
     if tt:
         src = _patch_target_transform(src, tt["covariate_col"], tt["kind"])
+    if plan.get("weight_column"):
+        src = _patch_sample_weight(src, plan["weight_column"])
     ev_path = os.path.join(_HERE, f"eval_{arm}_{_slug(comp)}.py")
     open(ev_path, "w").write(src)
 

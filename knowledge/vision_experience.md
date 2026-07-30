@@ -1,6 +1,6 @@
 # Vision experience library ([INT], score-cited)
 
-Last updated: 2026-07-17 (run #1 digit-recognizer complete). House rules identical to
+Last updated: 2026-07-30 (run #5 siim-isic-melanoma complete). House rules identical to
 `experience.md`: every entry carries evidence (`experiment, metric A -> B`); negative results are
 first-class; `[EXT]` never mixes in here. Consumed by keyword-header matching (same mechanism as
 the tabular library).
@@ -101,3 +101,35 @@ the tabular library).
   -> `kaggle competitions submit -c <comp> -k <owner/notebook> -f submission.csv -v <version>`
   (needs kaggle CLI >= 2.2.2). Confirm submission TYPE before promising an LB. | Evidence:
   tpu-getting-started: CSV 400 then notebook route -> Public LB 0.93303 (2026-07-20).
+
+## dermoscopy / medical imaging, heavy imbalance (run #5: siim-isic-melanoma, 1.77% positive)
+
+- **ViT beat every CNN by a wide margin on dermoscopy, and the discovery-scale gap WIDENED at
+  full scale — a direct counterexample to the digit-recognizer prior "gaps shrink at full scale,
+  don't over-prune on discovery scores".** At 2ep/fold-0 vit_small(1e-4) 0.8853 vs
+  efficientnet_b0(1e-3) 0.8782 — a 0.007 gap that looks like noise. At 10ep/5-fold the same pair
+  is 0.92309 vs 0.88447, a 0.039 gap (5.5x wider). The prior is therefore domain-dependent: on
+  this domain discovery UNDERSTATED the winner's advantage, so promoting only on discovery rank
+  would have been right, and promoting extra CNNs "for family diversity" bought nothing (both
+  CNNs took 0 blend weight). Keep running the sweep; just don't assume the direction of the
+  discovery-vs-full-scale distortion. | Evidence: siim-isic run2, discovery.json vs
+  res_vit_small_256.json / res_effb0_256.json.
+- **Per-backbone LR pattern reconfirmed on a 5th domain**: CNNs peak at 1e-3 (resnet50 0.8694,
+  efficientnet_b0 0.8782, efficientnet_b3 0.8716), ViT and ConvNeXt at 1e-4 (vit_small 0.8853,
+  convnext_tiny 0.8643); both collapse at the other end (convnext_tiny 0.7775 at 1e-3, vit_small
+  0.8173 at 1e-3). Now holds across digits, cifar, cats/dogs, flowers and dermoscopy. | Evidence:
+  siim-isic run2 discovery sweep (18 configs, 52 min).
+- **Input resolution is a better diversity axis than architecture here.** The same vit_small at
+  256px and 384px took 0.80 of the convex blend weight between them (0.33 / 0.47); resnet50 and
+  efficientnet_b0 took 0.00. Higher resolution also won solo (384px 0.92596 > 256px 0.92309),
+  consistent with dermoscopic structures being fine-grained. | Evidence: siim-isic run2
+  blend_results.json.
+- **Dihedral augmentation is safe and appropriate for dermoscopy** (h-flip + v-flip + transpose =
+  all 8 orientations), unlike digits where h-flip is forbidden. 4x flip TTA at inference was used
+  throughout. Reason augmentation from the domain, every time. | Evidence: siim-isic run2 vision.py.
+- **Cost calibration (GB10, 28,984 train images)**: JPEG decode + centre-crop + resize of 33k
+  images (25 GB of JPEG, up to 6000x4000) = **44 s** at 256px with PIL `draft()` DCT downscaling
+  and an 18-process pool — the single highest-leverage engineering trick in the run; without
+  `draft()` the 6000x4000 photos dominate everything. 5-fold x 10ep fine-tune: resnet18 ~28 min,
+  vit_small/efficientnet_b0 ~49 min at 256px, resnet50 ~70 min, vit_small ~89 min at 384px. |
+  Evidence: siim-isic run2 logs.

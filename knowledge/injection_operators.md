@@ -44,6 +44,26 @@ covariate, not from the model.
 when the test period has none published yet — required whenever the test year post-dates
 the source's coverage, and it must be logged.
 
+**Precondition (checked automatically, `apply.proportionality_check`).** The operator is
+conditional, not universal: `total(group, period) / c` must be near-equal *across groups*,
+leaving only a common period drift. Measured dispersion decides it:
+
+| Competition | dispersion by year | verdict | measured effect |
+|---|---|---|---|
+| s3e19 | 0.014 / 0.011 / 0.010 / 0.006 / 0.017 | proportional throughout | CV 10.148 → **7.793** |
+| sep-2022 | 0.011 / 0.011 / 0.009 / **0.466** (2020) | breaks in the COVID year | CV 11.348 → 11.807 (**worse**); with 2020 down-weighted to 0.3, 11.515 |
+
+A violation does not force abandonment — pair the operator with `sample_weight` on the
+offending period — but it must be recorded in the ledger, and the residual gap on
+sep-2022 shows the remedy is partial.
+
+**Open caveat, and the reason the leaderboard adjudicates sep-2022.** A CV whose folds all
+sit inside the training range cannot see this operator's actual advantage, which is
+extrapolation to an unseen period; worse, sep-2022's last folds land on the broken 2020 while
+the real test year is 2021, so CV scores the operator twice on its worst case. The
+precondition should therefore be evaluated over *the periods the score depends on*, not
+merely over all training periods — a refinement pending the sep-2022 leaderboard verdict.
+
 ### `log_offset`
 Keep the target in log space and subtract `log(covariate)` as a fixed-elasticity offset —
 algebraically `ratio_target` with `space: "log"`, exposed separately because linear models

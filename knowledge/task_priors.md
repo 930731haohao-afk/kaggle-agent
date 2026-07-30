@@ -26,7 +26,14 @@ a competition confirms them.
   linear `year_c` drift term cost 4.83 → 6.02 on the 2017 fold (tpsjan22 exp #2/#3).
   Counter-evidence for the weak form: s3e19 v5 joined `gdp_pc` as a plain feature and the
   model predicted the 2022 level at 0.96× 2021 while the data implied +5..+33% growth —
-  48.24 SMAPE, because a feature outside the training range cannot be extrapolated.
+  48.24 SMAPE, because a feature outside the training range cannot be extrapolated. Using the
+  `ratio_target` operator instead, on the identical configuration, gave CV 10.148 → 7.793.
+  **Bound on the recipe (held-out evidence):** on tps-sep-2022 the same operator *hurt*
+  (11.348 → 11.807; 11.515 with the 2020 COVID year down-weighted), and the proportionality
+  diagnostic predicted it — cross-country dispersion is ~0.01 in 2017–2019 but 0.466 in 2020.
+  Always run the diagnostic before the operator fires; leaderboard adjudication of sep-2022 is
+  pending because its CV folds all sit inside the training range and its last folds land on the
+  broken year.
 
 ## TASK-TS-CALENDAR — daily/weekly retail-like series
 - **Trigger**: daily-resolution series with country/store/product keys.

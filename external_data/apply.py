@@ -13,6 +13,7 @@ split_policy and postprocess (honored by the evaluator, not by this module).
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -21,9 +22,37 @@ from .join import merge_holiday_flags, merge_year_safe
 from .sources import fetch_holidays, fetch_worldbank, resolve_iso3
 
 # operators this module can realize; everything else lands in the ledger
-REALIZED = {"join_feature", "ratio_target", "log_offset", "trend_term", "flag_feature"}
+REALIZED = {"join_feature", "ratio_target", "log_offset", "trend_term",
+            "flag_feature", "sample_weight"}
 EVALUATOR_OWNED = {"split_policy", "postprocess"}      # honored elsewhere, not a gap
 _WB_PREFIX = "worldbank:"
+
+
+def proportionality_check(df: pd.DataFrame, cov: pd.DataFrame, mapping: dict,
+                          *, country_col: str, date_col: str, target_col: str,
+                          threshold: float = 0.05) -> dict:
+    """The experience library's precondition for a ratio target (tpsjan22 exp #2/#3):
+    total(country, year) / covariate must be near-equal ACROSS countries, leaving only a
+    common year drift. Returns per-year cross-country dispersion and the years that break it.
+
+    Evidence for why this gate exists: s3e19 satisfies it in every year (dispersion
+    0.006-0.017) and the ratio target is worth -2.36 SMAPE there; sep-2022 satisfies it in
+    2017-2019 (~0.01) but 2020 breaks it 40x (0.466), and applying the ratio target blindly
+    there COST +0.46 SMAPE. The operator is conditional, not universal.
+    """
+    d = df.copy()
+    d["_year"] = pd.to_datetime(d[date_col]).dt.year
+    g = cov.set_index(["iso3", "year"])["value"]
+    tot = d.groupby([country_col, "_year"])[target_col].sum().reset_index()
+    tot["_cov"] = [g.get((mapping.get(c), y), float("nan"))
+                   for c, y in zip(tot[country_col], tot["_year"])]
+    tot["_ratio"] = tot[target_col] / tot["_cov"]
+    piv = tot.pivot(index="_year", columns=country_col, values="_ratio")
+    disp = (piv.std(axis=1) / piv.mean(axis=1)).round(4)
+    bad = {int(y): float(v) for y, v in disp.items() if v > threshold}
+    return {"dispersion_by_year": {int(y): float(v) for y, v in disp.items()},
+            "threshold": threshold, "violating_years": bad,
+            "verdict": "proportional" if not bad else "broken_in_" + ",".join(map(str, bad))}
 
 
 def _fetch_covariate(source: str, years: list[int], countries: list[str]):
@@ -92,6 +121,18 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                     joined[name] = out.drop(columns=["_year"], errors="ignore")
                 tr, te = joined["train"], joined["test"]
                 plan["sources"][src] = meta.get("snapshot")
+                if op in ("ratio_target", "log_offset"):
+                    diag = proportionality_check(tr, frame, mapping, country_col=country_col,
+                                                 date_col=date_col, target_col=target_col)
+                    plan.setdefault("diagnostics", {})[op] = diag
+                    if diag["violating_years"]:
+                        plan["unrealized"].append({
+                            "operator": op, "params_subset": "unconditional application",
+                            "reason": ("precondition failed: target is not covariate-proportional in "
+                                       f"{sorted(diag['violating_years'])} (dispersion "
+                                       f"{diag['violating_years']}); the ratio target inherits the "
+                                       "broken relationship unless those periods are down-weighted "
+                                       "or excluded (see sample_weight)")})
                 if op == "join_feature":
                     plan["added_columns"].append(out_col)
                 else:
@@ -114,6 +155,30 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                 cols = ["year_c"] + [f"year_c{d}" for d in range(2, deg + 1)]
                 plan["added_columns"] += cols
                 plan["realized"].append({"operator": op, "columns": cols, "centre": centre})
+
+            elif op == "sample_weight":
+                # predicate is restricted to "year in [...]" so it stays declarative and safe
+                pred = str(params.get("predicate", ""))
+                m = re.match(r"\s*year\s+in\s*\[([0-9,\s]+)\]\s*$", pred)
+                if not m:
+                    raise ValueError(f"only 'year in [..]' predicates are supported, got {pred!r}")
+                years_sel = {int(x) for x in m.group(1).split(",") if x.strip()}
+                w = float(params.get("weight", 0.5))
+                col = "row_weight"
+                for name in ("train", "test"):
+                    df = tr if name == "train" else te
+                    yr = pd.to_datetime(df[date_col]).dt.year
+                    if col in df.columns:
+                        df[col] = df[col] * yr.isin(years_sel).map({True: w, False: 1.0})
+                    else:
+                        df[col] = yr.isin(years_sel).map({True: w, False: 1.0}).astype(float)
+                    if params.get("also_flag"):
+                        df["regime_flag"] = yr.isin(years_sel).astype(int)
+                if params.get("also_flag") and "regime_flag" not in plan["added_columns"]:
+                    plan["added_columns"].append("regime_flag")
+                plan["weight_column"] = col
+                plan["realized"].append({"operator": op, "weight_column": col,
+                                         "years": sorted(years_sel), "weight": w})
 
             elif op == "flag_feature":
                 as_cols = params.get("as") or ["is_holiday"]

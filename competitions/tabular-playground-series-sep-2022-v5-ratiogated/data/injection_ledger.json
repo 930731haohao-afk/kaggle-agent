@@ -1,0 +1,65 @@
+{
+  "proposed": 4,
+  "realized": [
+    {
+      "operator": "ratio_target",
+      "column": "cov_level"
+    },
+    {
+      "operator": "sample_weight",
+      "weight_column": "row_weight",
+      "years": [
+        2020
+      ],
+      "weight": 0.3
+    },
+    {
+      "operator": "trend_term",
+      "columns": [
+        "year_c"
+      ],
+      "centre": 2018.501026694045
+    },
+    {
+      "operator": "flag_feature",
+      "column": "is_holiday"
+    }
+  ],
+  "unrealized": [
+    {
+      "operator": "ratio_target",
+      "params_subset": "unconditional application",
+      "reason": "precondition failed: target is not covariate-proportional in [2020] (dispersion {2020: 0.4664}); the ratio target inherits the broken relationship unless those periods are down-weighted or excluded (see sample_weight)"
+    }
+  ],
+  "target_transform": {
+    "kind": "ratio_log",
+    "covariate_col": "cov_level"
+  },
+  "added_columns": [
+    "regime_flag",
+    "year_c",
+    "is_holiday"
+  ],
+  "sources": {
+    "worldbank:gdp_per_capita": "2026-07-13",
+    "holidays": "holidays==0.101"
+  },
+  "diagnostics": {
+    "ratio_target": {
+      "dispersion_by_year": {
+        "2017": 0.0107,
+        "2018": 0.0108,
+        "2019": 0.0086,
+        "2020": 0.4664
+      },
+      "threshold": 0.05,
+      "violating_years": {
+        "2020": 0.4664
+      },
+      "verdict": "broken_in_2020"
+    }
+  },
+  "weight_column": "row_weight",
+  "realized_count": 4
+}
