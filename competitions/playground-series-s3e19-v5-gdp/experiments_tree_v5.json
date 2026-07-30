@@ -73,19 +73,272 @@
       "status": "evaluated",
       "wall_s": 1.3,
       "kind": "blend"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #2) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1002,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.673297,
+      "status": "evaluated",
+      "wall_s": 1.7,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 3 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.353369,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 7,
+          "min_child_samples": 120,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "n_estimators": 2000,
+          "random_state": 1004,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.679408,
+      "status": "evaluated",
+      "wall_s": 1.7,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 4 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.352445,
+      "status": "evaluated",
+      "wall_s": 0.7,
+      "kind": "blend"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 4,
+          "min_child_samples": 60,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "n_estimators": 2000,
+          "random_state": 1006,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.774842,
+      "status": "evaluated",
+      "wall_s": 2.3,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 5 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.350486,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1008,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.722729,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 6 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.354615,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "blend"
+    },
+    {
+      "id": 12,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 7,
+          "min_child_samples": 120,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "n_estimators": 2000,
+          "random_state": 1010,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.555039,
+      "status": "evaluated",
+      "wall_s": 2.2,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 7 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.346513,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
     }
   ],
   "root_id": 0,
   "search_state": {
     "budget": {
-      "total_budget": 3,
+      "total_budget": 15,
       "explore_burst_size": 6,
       "post_burst_patience": 10,
-      "phase": "stopped",
+      "phase": "exploit",
       "burst_start_eval": 0,
-      "best_at_burst_start": 9.401257,
-      "evals_since_burst_improve": 0,
-      "stop_reason": "hard budget cap reached (3/3 evaluated nodes)"
+      "best_at_burst_start": 9.353313,
+      "evals_since_burst_improve": 0
     },
     "dedup_streak": {
       "0": 0

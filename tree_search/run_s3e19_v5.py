@@ -128,12 +128,27 @@ def finalize(v: str, ev, tree) -> str:
     c = champ(tree)
     cfg = c["config"]
     if cfg["kind"] == "solo":
-        rec = hv2.load_oof(ev.CACHE_DIR, c["id"])
-        pred = np.asarray(rec["pred"])
+        pred = np.asarray(np.load(os.path.join(ev.CACHE_DIR, f"solo_{c['id']}.npz"),
+                                  allow_pickle=True)["pred"])
     else:
-        # re-run the champion blend evaluation to recover weights + blended test pred
-        r = ev.evaluate(cfg, node_id=c["id"], timeout_s=600)
-        pred = np.asarray(r.get("pred") if r.get("pred") is not None else r["result"]["pred"])
+        # Blend: the tree stores no weights, so recover them from the evaluator (its result
+        # dict carries `weights`), then blend the members' CACHED test predictions — no
+        # retraining, and the weights are exactly the champion's searched ones.
+        r = ev.evaluate(cfg, node_id=c["id"], timeout_s=900)
+        res = r.get("result") or {}
+        w = np.asarray(res["weights"], dtype=float)
+        # load_oof returns only the OOF vector; the test predictions live in the same
+        # npz under "pred", so read the cache files directly.
+        preds = np.stack([
+            np.asarray(np.load(os.path.join(ev.CACHE_DIR, f"solo_{m}.npz"),
+                               allow_pickle=True)["pred"])
+            for m in cfg["members"]])
+        pred = (w[:, None] * preds).sum(axis=0) / w.sum()
+        scale = res.get("scale_used")
+        if scale:
+            pred = pred * float(scale)
+        print(f"[{v}] blend champion weights={list(np.round(w, 4))} scale={scale} "
+              f"(reported SMAPE {res.get('smape')})")
     sub = pd.read_csv(os.path.join(_ROOT, "competitions", COMP, "data", "sample_submission.csv"))
     sub[sub.columns[-1]] = pred
     out = os.path.join(_ROOT, "competitions", f"{COMP}-v5-{v}", "submission.csv")

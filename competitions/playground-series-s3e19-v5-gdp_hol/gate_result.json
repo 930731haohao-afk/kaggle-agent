@@ -1,0 +1,18 @@
+{
+  "comp": "playground-series-s3e19",
+  "submitted": "2026-07-30",
+  "v5_public": 46.83556,
+  "v5_private": 48.24323,
+  "v3_public": 50.22497,
+  "v3_private": 50.45537,
+  "v5_cv_champion": 9.304197,
+  "v3_cv_champion": 9.75707,
+  "race": {
+    "gdp": 9.346513,
+    "gdp_hol": 9.304197
+  },
+  "winner_variant": "gdp_hol",
+  "gate": "PASSED \u2014 v5 beats v3 under the paired test (both conditions satisfied)",
+  "vs_rivals": "v5 private 48.243 now below NVIDIA 48.266 and AIDE 48.341, but both gaps fail condition 2 => statistical ties",
+  "interpretation": "upstream injection moved my-agent on s3e19 from clearly last (PR 28.5) to tied with both rivals; CV and LB agree in direction here"
+}

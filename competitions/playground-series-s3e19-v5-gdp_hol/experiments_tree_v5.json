@@ -73,19 +73,1161 @@
       "status": "evaluated",
       "wall_s": 1.8,
       "kind": "blend"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #2) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1002,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.67348,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 3 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.313672,
+      "status": "evaluated",
+      "wall_s": 0.8,
+      "kind": "blend"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 7,
+          "min_child_samples": 120,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "n_estimators": 2000,
+          "random_state": 1004,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.584483,
+      "status": "evaluated",
+      "wall_s": 2.1,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 4 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.313118,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 4,
+          "min_child_samples": 60,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "n_estimators": 2000,
+          "random_state": 1006,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.689833,
+      "status": "evaluated",
+      "wall_s": 2.2,
+      "kind": "solo"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 5 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.304197,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 10,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1008,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.644682,
+      "status": "evaluated",
+      "wall_s": 2.0,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 6 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.307171,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 12,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 7,
+          "min_child_samples": 120,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "n_estimators": 2000,
+          "random_state": 1010,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.640168,
+      "status": "evaluated",
+      "wall_s": 2.3,
+      "kind": "solo"
+    },
+    {
+      "id": 13,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 7 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.311313,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 14,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #13) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 15,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #13) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 16,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #13) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 17,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #13) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 18,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #13) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 19,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #13) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 20,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 4,
+          "min_child_samples": 60,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "n_estimators": 2000,
+          "random_state": 1012,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.816576,
+      "status": "evaluated",
+      "wall_s": 2.0,
+      "kind": "solo"
+    },
+    {
+      "id": 21,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 8 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.310106,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 22,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1014,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.720386,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 23,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 9 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.326738,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 24,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 7,
+          "min_child_samples": 120,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "n_estimators": 2000,
+          "random_state": 1016,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.51895,
+      "status": "evaluated",
+      "wall_s": 2.2,
+      "kind": "solo"
+    },
+    {
+      "id": 25,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 10 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.324786,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 26,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 4,
+          "min_child_samples": 60,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "n_estimators": 2000,
+          "random_state": 1018,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.789839,
+      "status": "evaluated",
+      "wall_s": 2.1,
+      "kind": "solo"
+    },
+    {
+      "id": 27,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 11 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.319449,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 28,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1020,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.762453,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 29,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 12 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.333938,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 30,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 7,
+          "min_child_samples": 120,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "n_estimators": 2000,
+          "random_state": 1022,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.647765,
+      "status": "evaluated",
+      "wall_s": 2.1,
+      "kind": "solo"
+    },
+    {
+      "id": 31,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 13 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.330246,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 32,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 4,
+          "min_child_samples": 60,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "n_estimators": 2000,
+          "random_state": 1024,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.91997,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 33,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 14 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30,
+          32
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.326185,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 34,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1026,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.650461,
+      "status": "evaluated",
+      "wall_s": 1.9,
+      "kind": "solo"
+    },
+    {
+      "id": 35,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 15 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30,
+          32,
+          34
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.341275,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 36,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 7,
+          "min_child_samples": 120,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "n_estimators": 2000,
+          "random_state": 1028,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.556938,
+      "status": "evaluated",
+      "wall_s": 2.3,
+      "kind": "solo"
+    },
+    {
+      "id": 37,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 16 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30,
+          32,
+          34,
+          36
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.349253,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 38,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 4,
+          "min_child_samples": 60,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "n_estimators": 2000,
+          "random_state": 1030,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.779331,
+      "status": "evaluated",
+      "wall_s": 2.2,
+      "kind": "solo"
+    },
+    {
+      "id": 39,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 17 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30,
+          32,
+          34,
+          36,
+          38
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.338428,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 40,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1032,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.704806,
+      "status": "evaluated",
+      "wall_s": 1.9,
+      "kind": "solo"
+    },
+    {
+      "id": 41,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 18 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30,
+          32,
+          34,
+          36,
+          38,
+          40
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.348602,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 42,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 7,
+          "min_child_samples": 120,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "n_estimators": 2000,
+          "random_state": 1034,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.523293,
+      "status": "evaluated",
+      "wall_s": 2.2,
+      "kind": "solo"
+    },
+    {
+      "id": 43,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 19 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30,
+          32,
+          34,
+          36,
+          38,
+          40,
+          42
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.336828,
+      "status": "evaluated",
+      "wall_s": 0.9,
+      "kind": "blend"
+    },
+    {
+      "id": 44,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 4,
+          "min_child_samples": 60,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "n_estimators": 2000,
+          "random_state": 1036,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.938281,
+      "status": "evaluated",
+      "wall_s": 2.1,
+      "kind": "solo"
+    },
+    {
+      "id": 45,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 20 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30,
+          32,
+          34,
+          36,
+          38,
+          40,
+          42,
+          44
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.363717,
+      "status": "evaluated",
+      "wall_s": 1.0,
+      "kind": "blend"
+    },
+    {
+      "id": 46,
+      "parent_id": 0,
+      "mutation": "[V5] shallow-reg lgb variant",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "learning_rate": 0.037125798221945665,
+          "num_leaves": 15,
+          "min_child_samples": 200,
+          "subsample": 0.6105071416341405,
+          "colsample_bytree": 0.9049138633231821,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "n_estimators": 2000,
+          "random_state": 1038,
+          "verbosity": -1
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 9.701411,
+      "status": "evaluated",
+      "wall_s": 1.8,
+      "kind": "solo"
+    },
+    {
+      "id": 47,
+      "parent_id": 0,
+      "mutation": "[V5] pool reblend over 21 members (dirichlet)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          4,
+          6,
+          8,
+          10,
+          12,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30,
+          32,
+          34,
+          36,
+          38,
+          40,
+          42,
+          44,
+          46
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 9.360817,
+      "status": "evaluated",
+      "wall_s": 1.1,
+      "kind": "blend"
     }
   ],
   "root_id": 0,
   "search_state": {
     "budget": {
-      "total_budget": 3,
+      "total_budget": 53,
       "explore_burst_size": 6,
       "post_burst_patience": 10,
-      "phase": "stopped",
+      "phase": "exploit",
       "burst_start_eval": 0,
-      "best_at_burst_start": 9.379028,
-      "evals_since_burst_improve": 0,
-      "stop_reason": "hard budget cap reached (3/3 evaluated nodes)"
+      "best_at_burst_start": 9.304197,
+      "evals_since_burst_improve": 0
     },
     "dedup_streak": {
       "0": 0
