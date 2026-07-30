@@ -1,0 +1,8 @@
+{
+  "comp": "tabular-playground-series-sep-2022",
+  "arm": "ratiogated",
+  "champion_cv": 10.921602,
+  "nodes_evaluated": 46,
+  "tree": "/home/tjyen/ai_agents/kaggle/competitions/tabular-playground-series-sep-2022-v5-ratiogated/experiments_tree_v5_ratiogated.json",
+  "submission": "/home/tjyen/ai_agents/kaggle/competitions/tabular-playground-series-sep-2022-v5-ratiogated/submission.csv"
+}

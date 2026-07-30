@@ -1,0 +1,8 @@
+{
+  "comp": "playground-series-s3e19",
+  "arm": "ratio",
+  "champion_cv": 7.715339,
+  "nodes_evaluated": 46,
+  "tree": "/home/tjyen/ai_agents/kaggle/competitions/playground-series-s3e19-v5-ratio/experiments_tree_v5_ratio.json",
+  "submission": "/home/tjyen/ai_agents/kaggle/competitions/playground-series-s3e19-v5-ratio/submission.csv"
+}

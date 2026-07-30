@@ -1,60 +1,67 @@
 {
+  "run": "run2 (fresh, 2026-07-29). run1 outputs archived under run1_archive/ and not consulted for modelling decisions.",
   "task_family": "image binary classification (dermoscopy) + patient-level tabular metadata",
   "test_window": {
-    "relation": "iid image-level split WITH group overlap",
-    "evidence": "no date column; mle-bench prepared split. All 1457 test patient_ids also occur in train.csv (overlap=1457/1457). image_name overlap = 0. Metadata marginals train vs test match to <1.5% on sex/age/anatom_site. So the split is random at the IMAGE level, and patients straddle train/test by construction."
+    "relation": "iid-by-patient (hypothesis: disjoint patient groups, no temporal ordering)",
+    "evidence": "no date column in train.csv/test.csv; patient_id present in both; mle-bench prepared split. Stage 1 EDA must check patient_id intersection train vs test."
   },
   "split_policy": {
-    "scheme": "StratifiedKFold(n_splits=5, shuffle=True, random_state=42) on target at image level",
-    "rationale": "The CV must mirror the graded split. Because test patients are present in train, an image-level stratified split reproduces the test condition exactly; a patient-grouped split would be systematically pessimistic and would mis-rank any patient-context feature.",
-    "forbidden": "using `diagnosis` or `benign_malignant` as features (train-only columns; diagnosis=='melanoma' is exactly target==1)",
-    "diagnostic": "StratifiedGroupKFold on patient_id kept as an optional honesty probe for the image model only"
+    "scheme": "StratifiedGroupKFold(n_splits=5, groups=patient_id, stratify=target)",
+    "forbidden": "plain StratifiedKFold \u2014 the same patient contributes many images (dermoscopy series), so a random split leaks patient-specific appearance into validation and inflates AUC",
+    "rationale": "grouping is the single most consequential CV decision here; AUC on a leaky split is optimistic without bound"
   },
   "metric": {
     "name": "ROC-AUC",
     "traps": [
-      "ranking metric: class-imbalance weighting (pos_weight / scale_pos_weight) perturbs the loss without improving ranking - see experience.md ROC-AUC section, validated 3x on tabular",
-      "no calibration needed; only monotone ranking matters, so rank-averaging is a valid blend space",
-      "513 positives only -> per-fold AUC variance is large; compare models on full pooled OOF, not fold means"
+      "pure ranking metric: class-imbalance reweighting (scale_pos_weight / is_unbalance) perturbs the loss surface without improving ranking \u2014 experience.md ROC-AUC section, validated on s3e3 / s4e1 / s6e2",
+      "no threshold/calibration needed; submit raw scores",
+      "1.76% positive rate means per-fold AUC variance is large \u2014 judge on pooled OOF, not per-fold"
     ]
   },
   "external_data": {
     "needed": "no",
-    "reason": "config.yaml special_rules.external_data_allowed = false, and internet_access_allowed = false. Whitelisted macro/calendar sources are irrelevant to dermoscopy images anyway.",
+    "reason": "config.yaml special_rules.external_data_allowed = false. Pretrained ImageNet backbones ARE allowed (pretrained_models_allowed = true) and are the main source of injected prior knowledge.",
     "candidates": []
   },
+  "matched_task_priors": [
+    "TASK-IMBALANCED [GEN] \u2014 positive rate ~1.8%: stratified folds, rank metric needs no resampling",
+    "TASK-BLEND-DECOR \u2014 plan a diverse-library decorrelating member (metadata GBDT) alongside the variance-heavy CNN members"
+  ],
+  "matched_vision_experience": [
+    "Per-backbone LR mini-sweep is mandatory before judging a backbone (a single fixed LR measures LR tolerance, not backbone quality)",
+    "Backbone ranking is DOMAIN-SPECIFIC \u2014 rediscover on dermoscopy, do not assume the digits/cifar/flowers winners",
+    "No multi-worker DataLoader (CUDA-fork deadlock hazard) \u2014 preload uint8 arrays, do resize/aug/normalise on GPU in batch",
+    "3-family convex blend on real OOFs beats best solo and equal weights in all 4 prior vision runs"
+  ],
   "injection_ideas": {
     "data_level": [
-      "fold-safe patient-level target encoding: for each image, malignant count/rate over the SAME patient's OTHER images in the training fold. EDA: 392/2056 patients hold all 513 positives; within-positive-patient rate 9.2% vs 1.77% global (5.2x lift). This is exactly the 'ugly duckling' patient context the host asks for, and it is legitimate here because test patients appear in train.",
-      "patient-level image-count feature (train mean 14.1 img/patient, max 104) - lesion burden proxy",
-      "patient-relative image statistics ('ugly duckling'): per-image colour/size stats minus that patient's mean, computable without labels so no leakage",
-      "anatom_site and age are genuine risk factors: head/neck 4.19% vs lower-extremity 1.45%; age 70+ 7.35% vs 30-40 0.70%",
-      "resize the wildly heterogeneous JPEGs (640x480 .. 6000x4000) to a fixed square cache once; store uint8 and keep it GPU-resident (vision_experience: DataLoader+CUDA fork deadlock hazard)"
+      "dermoscopy lesions are orientation-free: h-flip + v-flip + 90-degree rotation are label-preserving (contrast: digits, where h-flip is forbidden). Expect a real gain, unlike cifar.",
+      "colour/contrast jitter: dermoscope hardware differs across contributing sites; jitter should reduce site-specific overfitting",
+      "raw image resolution (width x height) is a site/scanner fingerprint. It IS predictive but is a dataset artefact \u2014 treat as a candidate feature and ablate it explicitly rather than trusting it",
+      "patient-level context: a lesion is judged relative to the patient's other moles ('ugly duckling' sign) \u2014 per-patient normalised image statistics and patient image count are principled features"
     ],
     "model_level": [
-      "pretrained ImageNet backbone fine-tune (pretrained_models_allowed = true); per-backbone LR mini-sweep is mandatory before ranking backbones (vision_experience, 4 domains)",
-      "plain BCE without pos_weight (ROC-AUC prior)",
-      "cross-family convex blend over real OOFs - beat best solo in all 4 prior vision runs",
-      "metadata GBDT as an extra, strongly decorrelated blend member (TASK-BLEND-DECOR archetype)"
+      "no class weighting (AUC is a ranking metric)",
+      "rank-average before blending (members have very different score scales)",
+      "TTA (flips) at inference \u2014 free variance reduction for a flip-invariant domain",
+      "convex weight search on OOF with a leave-fold-out honest estimate of the blend score"
     ]
   },
-  "matched_task_priors": [
-    "TASK-IMBALANCED [GEN] - positive rate 1.77% (<=2%): stratified folds, rank metric needs no resampling/calibration",
-    "TASK-CAT-ONLY (partial) - the tabular side is 3 low-cardinality categoricals + patient_id; encoding of the group key is the whole tabular game",
-    "TASK-BLEND-DECOR - add a bias-dominated, different-library member (metadata GBDT) as decorrelator before re-optimising weights"
-  ],
   "not_recorded": [
-    "whether mle-bench's private grading split is drawn the same way as the public split we see (assumed yes)",
-    "no [TASK-*] prior exists yet for dermoscopy / medical imaging - this run should create one"
+    "whether mle-bench's private split shares patients with the public test split \u2014 unobservable from here"
   ],
   "eda_verdict": {
-    "test_window": "CONFIRMED image-level iid with full patient overlap (1457/1457)",
-    "external_data": "CONFIRMED not needed / not allowed",
-    "new_findings": [
-      "diagnosis + benign_malignant are train-only leakage columns and must be dropped",
-      "sample_submission image_name order == test.csv order exactly",
-      "missing metadata is tiny: sex 56, age 59, anatom_site 466 in train (proportional in test) - impute with 'unknown' category / median",
-      "male target rate 2.15% vs female 1.37%"
-    ]
+    "test_window.relation": "REFUTED. The dossier hypothesised patient-disjoint groups (as in the real competition). EDA found the opposite: mle-bench re-split the original 33,126-image train set randomly BY IMAGE. All 1457 test patients also occur in train (overlap 1457/1457, 599 patients train-only); per-patient test share mean 0.124 / median 0.111 vs overall 0.125.",
+    "split_policy": "REVISED. Primary CV switched from StratifiedGroupKFold(patient_id) to StratifiedKFold(5) on images, which is regime-matched to the graded split. The grouped scheme is retained as a secondary honesty/leakage check and is reported for every model.",
+    "split_policy_consequence": "NULL in score terms: image-level and patient-grouped AUC agreed to within 0.0004 for all 10 members (blend 0.93214 vs 0.93278), i.e. no member exploits patient identity. The check is still mandatory \u2014 it was cheap and the failure mode is real.",
+    "external_data.needed": "CONFIRMED no. Pretrained ImageNet backbones (permitted) supplied all the injected prior knowledge; they are worth +0.037 AUC over the best tabular model.",
+    "metric.traps": "CONFIRMED. No class weighting was used anywhere; per-fold AUC spread is wide (e.g. effb0 0.873-0.910 across folds at ~103 positives per fold), so all decisions were taken on pooled OOF, never per-fold.",
+    "injection_ideas.data_level": {
+      "dihedral augmentation": "ADOPTED (h-flip + v-flip + transpose + 4x flip TTA); not ablated against no-aug, so the size of its contribution is not measured \u2014 an honest gap.",
+      "resolution as scanner fingerprint": "CONFIRMED predictive and it transfers: dropping the resolution block costs -0.014 AUC, and the train/test resolution distributions match closely (6000x4000 = 44.5% of train vs 43.9% of test).",
+      "ugly duckling / patient-relative stats": "CONFIRMED, the strongest single idea in the dossier: -0.013 AUC when removed, and 8 of the top-20 LightGBM importances are ud_* columns.",
+      "image colour/texture statistics": "CONFIRMED and understated in the dossier: the largest tabular block at -0.065 AUC when removed."
+    },
+    "injection_ideas.model_level": "All adopted (no class weighting, rank-average before blending, flip TTA, convex weights with a leave-fold-out honest estimate)."
   }
 }

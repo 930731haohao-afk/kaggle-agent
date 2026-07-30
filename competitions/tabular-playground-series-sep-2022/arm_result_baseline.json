@@ -1,0 +1,8 @@
+{
+  "comp": "tabular-playground-series-sep-2022",
+  "arm": "baseline",
+  "champion_cv": 11.347306,
+  "nodes_evaluated": 46,
+  "tree": "/home/tjyen/ai_agents/kaggle/competitions/tabular-playground-series-sep-2022/experiments_tree_v5_baseline.json",
+  "submission": "/home/tjyen/ai_agents/kaggle/competitions/tabular-playground-series-sep-2022/submission.csv"
+}
