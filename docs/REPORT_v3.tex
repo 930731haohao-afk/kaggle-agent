@@ -89,14 +89,15 @@ Figure~\ref{fig:arch} summarizes the architecture and how the two mechanisms con
   arr/.style={-{Stealth[length=2.5mm]}, semithick},
   darr/.style={arr, dashed}
 ]
-% six-stage pipeline
+% pipeline: Stage 0.5 sits before EDA
 \node[stage] (s1) {Data\\ingestion};
-\node[stage, right=4mm of s1] (s2) {EDA};
+\node[stage, right=4mm of s1, fill=blue!8] (s05) {\textbf{0.5} Problem\\dossier};
+\node[stage, right=4mm of s05] (s2) {EDA};
 \node[stage, right=4mm of s2] (s3) {Feature\\eng.};
 \node[stage, right=4mm of s3] (s4) {Modeling};
 \node[stage, right=4mm of s4] (s5) {Evaluation};
 \node[stage, right=4mm of s5] (s6) {Submission};
-\foreach \a/\b in {s1/s2, s2/s3, s3/s4, s4/s5, s5/s6}{\draw[arr] (\a) -- (\b);}
+\foreach \a/\b in {s1/s05, s05/s2, s2/s3, s3/s4, s4/s5, s5/s6}{\draw[arr] (\a) -- (\b);}
 % LLM annotation above
 \draw[decorate, decoration={brace, amplitude=2mm}]
   ([yshift=12mm]s1.north west) -- ([yshift=12mm]s6.north east)
@@ -105,22 +106,35 @@ Figure~\ref{fig:arch} summarizes the architecture and how the two mechanisms con
 \draw[arr] (s5.north) to[out=130, in=50]
   node[pos=0.5, above=0.5mm, inner sep=1pt]{\scriptsize tree search: expand best / backtrack (25--80 nodes)} (s4.north);
 % auto-ml tools under modeling
-\node[tool, below=10mm of s4, text width=34mm] (tools)
+\node[tool, below=10mm of s4, text width=32mm] (tools)
   {LightGBM / XGBoost /\\CatBoost / Optuna\\(invoked via shell)};
 \draw[arr, {Stealth[length=2.5mm]}-{Stealth[length=2.5mm]}] (s4.south) -- (tools.north);
-% experience library, bottom left
-\node[mech, below=10mm of s1.south east, text width=30mm, anchor=north] (lib)
+% --- row 2: v5 execution layer (under the dossier) and Auto-ML tools (under modeling) ---
+\node[tool, below=9mm of s05, text width=32mm, fill=blue!6, draw=blue!45] (ext)
+  {\textbf{v5 external-data layer}\\whitelisted sources,\\leakage-guarded joins,\\coverage ledger};
+\draw[arr, blue!55] (s05.south) -- node[right=1mm, inner sep=1pt, pos=0.5]{\scriptsize typed ops} (ext.north);
+\draw[arr, blue!55] (ext.east) -- node[above, inner sep=1.5pt, pos=0.5]{\scriptsize data-level arms} (tools.west);
+% --- row 3: the two cross-cutting mechanisms, clear of row 2 ---
+\node[mech, below=9mm of ext.south west, text width=30mm, anchor=north west] (lib)
   {\textbf{Experience library}\\cross-competition priors,\\every entry evidence-backed};
-\draw[arr] (lib.north) -- node[right, inner sep=2pt, pos=0.35]{priors} (s2.south);
-\draw[arr] (lib.north east) to[out=25, in=245] ([xshift=-6mm]s4.south);
-% experiment records, bottom right
-\node[mech, below=10mm of s6.south west, text width=26mm, anchor=north] (rec)
+\node[mech, below=9mm of tools.south east, text width=27mm, anchor=north east] (rec)
   {\textbf{Experiment records}\\every run logged\\(params, split, scores)};
-\draw[arr] (s5.south) -- node[right, inner sep=2pt, pos=0.35]{log} (rec.north);
+\draw[arr, blue!55] (lib.north) -- node[left, inner sep=1.5pt, pos=0.45]{\scriptsize task priors} (ext.south);
+\draw[arr] (lib.west) -- ++(-5mm,0) |- node[left, inner sep=2pt, pos=0.25]{priors} (s1.west);
+\draw[arr] (s5.south) to[out=270, in=90] node[right, inner sep=2pt, pos=0.3]{log} (rec.north);
 % write-back loop
 \draw[darr] (rec.south) -- ++(0,-4mm) -| node[near start, below, inner sep=2pt]{validated insights (score-delta evidence) written back} (lib.south);
 \end{tikzpicture}
-\caption{Architecture of my-agent, organized around its six-stage pipeline. The LLM (Claude Code) drives every stage; in the modeling--evaluation stages it iterates via tree search (25--80 CV-scored nodes per competition) and invokes Auto-ML tools through the shell. Two cross-cutting mechanisms close the loop: the experience library supplies evidence-backed priors before EDA and modeling, and every run is logged to structured experiment records, from which insights validated by a score delta are written back to the library for future competitions.}
+\caption{Architecture of my-agent. The LLM drives every stage; modeling and evaluation iterate
+via tree search and invoke Auto-ML tools through the shell, while two cross-cutting mechanisms
+close the loop --- the experience library supplies evidence-backed priors, and every run is
+logged, with score-delta-validated insights written back. Shown in blue is v5, the upstream
+layer this report adds: \textbf{Stage 0.5} runs \emph{before} EDA and decides what kind of
+problem this is --- task family, train--test window relation, split policy, external-data need
+--- emitting typed operators from a closed vocabulary. Those drive a whitelisted,
+leakage-guarded external-data layer whose data-level arms are raced against the no-external
+baseline. The placement is the claim: the same knowledge injected downstream at the blend stage
+measured ${\sim}10^{-5}$ (Section~\ref{sec:v5}).}
 \label{fig:arch}
 \end{figure}
 
@@ -154,11 +168,26 @@ the existing pool never displaced the champion blend (8/8), and expanding the po
 % priors in
 \node[side, left=9mm of propose] (prior) {priors from\\experience library};
 \draw[arr, dashed] (prior) -- (propose);
+% v5 entry points: seeded nodes and a whole raced lane
+\node[side, left=9mm of phase, text width=38mm, align=center] (v5cfg)
+  {\textcolor{blue!60!black}{\textbf{v5 model-level operators}}\\seeded as starting nodes\\(objective, blend member)};
+\draw[arr, blue!55] (v5cfg) -- (phase);
+\node[side, left=9mm of eval, text width=38mm, align=center] (v5data)
+  {\textcolor{blue!60!black}{\textbf{v5 data-level operators}}\\each gets its own arm; arms\\race, the winner takes the\\full budget};
+\draw[arr, blue!55] (v5data) -- (eval);
 % exit
 \node[side, right=8mm of phase, yshift=4mm, text width=30mm] (out) {on stop:\\best node $\to$ submission};
 \draw[arr] ([yshift=4mm]phase.east) -- (out.west);
 \end{tikzpicture}
-\caption{The v3 tree-search loop used in all my-agent runs of this report (25--80 nodes per competition). Each node is a complete, executable solution scored by local cross-validation; lineages are abandoned on plateau and the budget phase machine forces an exploration burst before stopping.}
+\caption{The v3 tree-search loop used in all my-agent runs of this report (25--80 nodes per
+competition). Each node is a complete, executable solution scored by local cross-validation;
+lineages are abandoned on plateau and the budget phase machine forces an exploration burst
+before stopping. In blue, where v5's typed operators enter: model-level ones
+(\texttt{objective}, \texttt{blend\_member}) are translated into seed nodes the search starts
+from, while data-level ones (the external joins) each build their own arm --- a separate
+workspace with its own feature table --- and the arms race at small budget before the winner
+receives the full one. The distinction matters because it is what makes the arm comparison
+controlled: arms differ only by the operator's added columns, everything else digit-identical.}
 \label{fig:tree}
 \end{figure}
 
