@@ -1,0 +1,235 @@
+{
+  "competition": "playground-series-s5e1",
+  "stage": "0.5 problem dossier",
+  "written": "2026-07-30",
+  "schema_version": "typed-operators-v1",
+  "inputs_used": [
+    "competitions/playground-series-s5e1/config.yaml",
+    "head/tail + key-cardinality/target/null scan of data/train.csv, data/test.csv, data/sample_submission.csv",
+    "official Kaggle rules section 2.6 (external data) and the API-reported evaluation metric",
+    "knowledge/task_priors.md",
+    "knowledge/injection_operators.md"
+  ],
+  "forbidden_inputs_avoided": [
+    "competition discussion threads",
+    "public kernels / write-ups / winning solutions",
+    "no training or model fitting was performed at this stage"
+  ],
+  "task_family": "time-series forecast (daily balanced panel regression; 90 country x store x product series)",
+  "data_shape": {
+    "train_rows": 230130,
+    "test_rows": 98550,
+    "series": 90,
+    "train_dates": {
+      "min": "2010-01-01",
+      "max": "2016-12-31",
+      "n_distinct": 2557
+    },
+    "test_dates": {
+      "min": "2017-01-01",
+      "max": "2019-12-31",
+      "n_distinct": 1095
+    },
+    "panel_completeness": "complete and balanced in ROWS (90 x 2557 = 230130 train, 90 x 1095 = 98550 test), but the TARGET is not complete: 8871 of 230130 train targets (3.85%) are null. Test features have zero nulls.",
+    "keys": {
+      "country": [
+        "Canada",
+        "Finland",
+        "Italy",
+        "Kenya",
+        "Norway",
+        "Singapore"
+      ],
+      "store": [
+        "Discount Stickers",
+        "Premium Sticker Mart",
+        "Stickers for Less"
+      ],
+      "product": [
+        "Holographic Goose",
+        "Kaggle",
+        "Kaggle Tiers",
+        "Kerneler",
+        "Kerneler Dark Mode"
+      ]
+    }
+  },
+  "test_window": {
+    "relation": "future",
+    "evidence": "test dates 2017-01-01..2019-12-31 are strictly after train 2010-01-01..2016-12-31 with zero overlap; ids are disjoint and contiguous (train 0-230129, test 230130-328679); every (country, store, product) series in test also appears in train, so this is a pure forward extrapolation of existing series, not a cold-start problem.",
+    "extrapolation_horizon": "THREE years, versus one year on s3e19 and sep-2022. This is the longest horizon in the firing class and is the reason this competition is a sharper test of the operator-form question than either predecessor."
+  },
+  "split_policy": {
+    "scheme": "time-based expanding-window CV on whole years: fold k trains on years < y_k and validates on year y_k (2014, 2015, 2016); final refit on 2010-2016 to predict 2017-2019",
+    "forbidden": "shuffled KFold and any row-level random split -- 90 parallel series share each date, so same-day information leaks across rows; TASK-TS-FUTURE records ~4.5x optimism from exactly this error on s3e19 (4.56 shuffled vs 20.41 time-split)",
+    "extra_cautions": [
+      "GroupKFold on series id is also wrong: test holds the SAME 90 series, only later in time -- the generalization axis is time, not group",
+      "every CV fold lies inside the training range, so CV cannot measure an operator whose purpose is extrapolation beyond it. This is a KNOWN, MEASURED limitation on this exact task family (Experiment 6 Result 2), not a hypothesis; the leaderboard adjudicates the operator form, CV does not.",
+      "a single-year validation fold measures a 1-year horizon while the real task is 3 years; consider also a 2014-2016 held-out block to approximate the real horizon, reported alongside rather than instead of the yearly folds"
+    ]
+  },
+  "metric": {
+    "name": "MAPE",
+    "direction": "minimize",
+    "traps": [
+      "MAPE divides by the ACTUAL, so it is asymmetric in the direction opposite to most intuitions: over-prediction is penalized more than under-prediction of equal absolute size. The MAPE-optimal point forecast therefore sits BELOW the conditional mean, and plain L2 on the raw target is misaligned with it.",
+      "MAPE weights low-volume rows enormously: an error of 2 units on Kenya's Holographic Goose (typical value 5-11) costs 20-40% while the same 2 units on Norway (typical value ~180) costs ~1%. The 90 series span roughly two orders of magnitude in level, so the loss is dominated by the smallest series -- exactly the ones with truncated targets (see truncation note).",
+      "division by zero is not a risk here: the observed minimum of any non-null target is 5.0, and no zeros appear."
+    ],
+    "matched_prior": "TASK-MAE-METRIC applies in spirit (relative-L1 family: L1 objective on a log-space target is the closest tractable surrogate), but MAPE's low-value weighting is stronger than SMAPE's and is the dominant modelling consideration here."
+  },
+  "target_truncation": {
+    "finding": "The 8871 null targets are NOT missing at random. They are a LOW-VALUE TRUNCATION FLOOR: the dataset records no value below 5, and the nulls are exactly the (series, day) cells whose value would have fallen under it.",
+    "evidence": [
+      "the global minimum of every non-null target in train is exactly 5.0 -- a hard floor, not a distributional tail",
+      "nulls are confined to Canada (11.1%) and Kenya (12.1%); the other four countries have zero, and within those two they are concentrated in one product, Holographic Goose (Canada 55.3%, Kenya 59.5%)",
+      "two cells are 100% null for all seven years (Canada and Kenya x Holographic Goose x Discount Stickers), i.e. demand never once reached 5",
+      "in a partially-null cell (Kenya x Holographic Goose x Premium Sticker Mart) the null rate falls monotonically 75.9% (2010) -> 0% (2016) while that cell's mean non-null value rises 5.3 -> 6.7: as the series grows it stops crossing under the floor",
+      "same cell, null rate by weekday: Mon-Thu 32-35% (mean 5.7) vs Sunday 7.1% (mean 6.6) -- the lowest-demand days are the ones truncated"
+    ],
+    "modelling_consequence": "Dropping null rows would systematically delete the lowest-demand days and bias the level upward, and the model must still emit a number for those series in 2017-2019. Whatever treatment is chosen (floor-fill at 5, censored-regression treatment, or explicit low-volume handling) MUST be identical across the baseline and every arm, or the arms stop being a controlled comparison. This decision is a property of the competition, not of the injection experiment.",
+    "interaction_with_the_metric": "These truncated cells are also the highest-MAPE-weight rows, so their treatment has outsized influence on the score -- more than its 3.85% row share suggests."
+  },
+  "external_data": {
+    "needed": "yes",
+    "rules_status": "permitted -- config.yaml special_rules.external_data_allowed: true, from official rules 2.6 ('You may use data other than the Competition Data... publicly available and equally accessible to all Participants'); no competition-specific override forbids it. Verified 2026-07-30.",
+    "reasoning": "Six economically very different real countries share an identical store/product/date structure, so cross-country level differences are a country multiplier that no in-file covariate explains. The spread is extreme: Norway's yearly total is ~7.3M against Kenya's ~74k, roughly 100x, while the two differ by ~40x in GDP per capita. Per-country share of the yearly total is stable across years (std 0.001-0.023), which is the structural signature TASK-TS-FUTURE keys on.",
+    "candidates": [
+      "worldbank:gdp_per_capita_const",
+      "worldbank:gdp_per_capita_ppp",
+      "holidays"
+    ]
+  },
+  "PRE-REGISTERED PREDICTION": {
+    "registered": "2026-07-30, BEFORE any model was fitted or any submission was made to this competition",
+    "why_this_is_registered": "The proportionality diagnostic exists to decide whether ratio_target is licensed. It has now produced a clean verdict on three competitions, and this is the first time the verdict is recorded in advance of the leaderboard rather than reconciled with it afterwards. Registering it is what makes the diagnostic falsifiable rather than a post-hoc rationalisation.",
+    "the_diagnostic_output": {
+      "measured": "cross-country dispersion of total(country, year) / gdp_per_capita_const, by year",
+      "s5e1": {
+        "2010": 0.1853,
+        "2011": 0.2126,
+        "2012": 0.1703,
+        "2013": 0.1577,
+        "2014": 0.1225,
+        "2015": 0.052,
+        "2016": 0.0495
+      },
+      "threshold": 0.05,
+      "verdict": "BROKEN in 6 of 7 years (only 2016 clears the threshold, and only barely)",
+      "covariate_itself_is_fine": "covariate volatility check passes: worst cross-country spread 2.24pp against an 8pp threshold, so the problem is the proportionality ASSUMPTION, not the GDP series"
+    },
+    "comparison_across_the_firing_class": {
+      "s3e19": "dispersion 0.006-0.017, proportional throughout -> ratio_target was licensed; it won on CV (10.148 -> 7.793) but LOST on the leaderboard to join_feature (52.073 vs 48.497)",
+      "sep-2022": "dispersion ~0.01 except 2020 at 0.466 -> broken in one year; ratio_target LOST to join_feature on the leaderboard (24.091 vs 23.390)",
+      "s5e1": "broken in six of seven years -- the most severe violation in the class"
+    },
+    "the_prediction": "ratio_target will underperform join_feature on the real s5e1 private leaderboard, and by a LARGER relative margin than on either s3e19 (3.58 SMAPE: 52.073 vs 48.497) or sep-2022 (0.70 SMAPE: 24.091 vs 23.390), because the proportionality assumption the operator depends on is violated more severely here (6 of 7 years vs 0 and 1 respectively) and over a 3-year rather than 1-year horizon. Margins are compared in relative terms because s5e1's metric is MAPE while the other two are SMAPE.",
+    "what_would_falsify_it": "ratio_target beating join_feature on the s5e1 private leaderboard, or losing by a smaller relative margin than sep-2022's. Either outcome means the dispersion diagnostic does not predict operator ranking, and the operator contract's precondition should be demoted from a gate to a note.",
+    "what_confirmation_would_buy": "A diagnostic that ranks two operator forms correctly, in advance, on three of three competitions -- which is precisely the local-signal selection rule Experiment 6 Result 2 currently reports as an OPEN PROBLEM (CV fails, held-out-year fails). Confirmation would partially close that open problem; it must be reported as such, not quietly folded into a win.",
+    "honesty_constraint": "This prediction is recorded here and must be reported whichever way it resolves. A wrong pre-registered prediction is a result, not an embarrassment to be dropped."
+  },
+  "injection_ideas": [
+    {
+      "operator": "split_policy",
+      "params": {
+        "scheme": "time_expanding",
+        "time_col": "date",
+        "n_splits": 3,
+        "forbid": [
+          "shuffled_kfold",
+          "group_kfold"
+        ]
+      },
+      "rationale": "Test is a strictly future 3-year window over the same 90 series; the generalization axis is time. Shuffled KFold leaks same-day information across the 90 parallel series and is measured at ~4.5x optimism on this task family.",
+      "source_prior": "TASK-TS-FUTURE (split policy)"
+    },
+    {
+      "operator": "join_feature",
+      "params": {
+        "source": "worldbank:gdp_per_capita_const",
+        "join": {
+          "keys": [
+            "country",
+            "year"
+          ],
+          "lag": 0
+        },
+        "as": [
+          "gdp_pc"
+        ]
+      },
+      "rationale": "First of the two REQUIRED arms for a level covariate on a future window. The extrapolation argument predicts this form should fail (a GBDT cannot extrapolate a feature past its training range, and the horizon here is 3 years), yet it has won on the real leaderboard on both competitions measured so far. Emitted because no local signal we have tested can choose between the forms.",
+      "source_prior": "TASK-TS-FUTURE (form verdict: race both, decide by a pre-registered rule)"
+    },
+    {
+      "operator": "ratio_target",
+      "params": {
+        "source": "worldbank:gdp_per_capita_const",
+        "join": {
+          "keys": [
+            "country",
+            "year"
+          ],
+          "lag": 0
+        },
+        "space": "log",
+        "carry_forward": true
+      },
+      "rationale": "Second REQUIRED arm. Carries the level through the covariate rather than as a feature, which is what the extrapolation argument favours over a 3-year horizon. NOTE: its precondition is violated here in 6 of 7 years (dispersion 0.05-0.21 against a 0.05 threshold) -- see PRE-REGISTERED PREDICTION. It is emitted anyway, because racing both forms is what the corrected prior requires and because the violation is the substance of the prediction being tested. carry_forward is required: the test window (2017-2019) may post-date the covariate's published coverage.",
+      "source_prior": "TASK-TS-FUTURE (form verdict + proportionality precondition)"
+    },
+    {
+      "operator": "trend_term",
+      "params": {
+        "unit": "year",
+        "degree": 1,
+        "centered": true
+      },
+      "rationale": "Pairs with either level form: the covariate carries the cross-sectional level, the trend term carries the drift common to all series. Ablating the equivalent term cost 4.83 -> 6.02 on the 2017 fold of tps-jan-2022.",
+      "source_prior": "TASK-TS-FUTURE (trend term evidence, tpsjan22 exp #2/#3)"
+    },
+    {
+      "operator": "flag_feature",
+      "params": {
+        "source": "holidays",
+        "join": {
+          "keys": [
+            "country",
+            "date"
+          ]
+        },
+        "as": [
+          "is_holiday"
+        ]
+      },
+      "rationale": "Six real countries with different holiday calendars over a daily retail-like series; a deterministic future calendar carries no leakage risk. On tps-jan-2022 the per-name windowed form moved 5.46 -> 4.19.",
+      "source_prior": "TASK-TS-CALENDAR"
+    },
+    {
+      "operator": "objective",
+      "params": {
+        "metric_family": "mae",
+        "drop_imbalance_weighting": false
+      },
+      "rationale": "MAPE is a relative-L1 metric; an L1 objective on a log-space target is the closest tractable surrogate, matching what the metric charges rather than squared error.",
+      "source_prior": "TASK-MAE-METRIC"
+    }
+  ],
+  "matched_task_priors": [
+    "TASK-TS-FUTURE -- daily panel, strictly future test window, target plausibly driven by country-level economics. Primary match; drives split policy AND the two-arm form requirement.",
+    "TASK-TS-CALENDAR -- daily retail-like series with country/store/product keys; holiday calendar join.",
+    "TASK-MAE-METRIC -- MAPE is in the relative-L1 family; L1 objective, and post-processing applied inside the metric."
+  ],
+  "task_prior_match_notes": "This is the fourth competition in the TASK-TS-FUTURE firing class and the third with a real public/private leaderboard available for adjudication. It differs from its three predecessors in two ways that make it the most informative of them: a 3-year rather than 1-year extrapolation horizon, and a proportionality precondition that is violated systematically rather than in a single anomalous year.",
+  "eda_must_verify": [
+    "the truncation finding above -- confirm the floor of 5 holds and that no null appears in a cell whose neighbouring values are far above the floor",
+    "whether the 2 fully-null cells (Canada/Kenya x Holographic Goose x Discount Stickers) require an explicit strategy, since they have no in-cell training signal at all yet must be predicted for 2017-2019",
+    "whether per-country share of the yearly total stays as stable across the 2014-2016 held-out block as it is over the full period (std 0.001-0.023)",
+    "the MAPE weighting: confirm that the low-volume Kenya series dominate the loss, and quantify by how much, before choosing the target transform"
+  ],
+  "not_recorded": [
+    "Censored-regression treatment of the truncated targets (modelling the floor explicitly as a lower bound rather than filling it) has no operator in the vocabulary -- the closest available is sample_weight, which is not the same thing. Recorded rather than approximated.",
+    "A per-country economic covariate other than GDP (e.g. household consumption, retail-trade index) might fit a sticker-sales target better than GDP per capita, but only the World Bank indicators in the current whitelist are available, so this is not proposed.",
+    "The 3-year horizon suggests a per-year covariate path rather than a single carried-forward value; the operator vocabulary expresses only a static join with carry_forward, so the finer form is not expressible."
+  ]
+}
