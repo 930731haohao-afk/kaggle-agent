@@ -115,6 +115,33 @@ Re-weight or flag an anomalous regime instead of deleting it.
  "weight": 0.5, "also_flag": true}}
 ```
 
+### `objective`
+Match the training loss to what the metric actually charges. Config-only: it changes what the
+search proposes, not the data, so it is emitted as a seed node config.
+```json
+{"operator": "objective", "params": {"metric_family": "mae",
+ "drop_imbalance_weighting": true}}
+```
+`metric_family` ∈ {mae, smape, rmse, rmsle, auc, accuracy, qwk}. The mapping carries its own
+evidence: AUC is a ranking metric, so imbalance weighting perturbs the loss surface without
+improving the ranking (s3e3 exp #3: 0.81901 → 0.83292 on removal; s4e1 confirms the sign at
+165k rows, 0.893235 → 0.893650); ordinal targets take a regression head plus an
+OptimizedRounder rather than a multiclass head (s3e5 exp #2→#3: QWK 0.47191 → 0.52687);
+RMSLE means RMSE on log1p targets, so transform the target and keep L2.
+
+### `blend_member`
+Add one bias-dominated member to a variance-heavy pool as a decorrelator — added to the pool,
+never replacing an existing member. Config-only.
+```json
+{"operator": "blend_member", "params": {"archetype": "shallow_regularized", "depth": 3,
+ "weight_search": "nnls_then_dirichlet"}}
+```
+This is the transferable prototype from the prior-wiring experiments: the shallow,
+heavily-regularized diverse-library member took the largest LLM-member weight in both s6e1
+(+3e-5 R²) and s4e1 (+7e-5 AUC), and s5e10's NNLS diagnostic reused the same shape. For
+RMSE-family metrics verify the weights with the NNLS closed form — the Dirichlet search's
+~1e-5 approximation error is large enough to eat the gain.
+
 ### `split_policy`
 Set the cross-validation split. Not optional: the dossier's split decision is binding on
 the evaluator, and an evaluator that cannot honor it must fail loudly.

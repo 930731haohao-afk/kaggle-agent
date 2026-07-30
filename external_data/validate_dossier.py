@@ -24,6 +24,8 @@ SPEC: dict[str, tuple[set[str], set[str]]] = {
     "trend_term":    (set(), {"unit", "degree", "centered"}),
     "flag_feature":  ({"source", "join"}, {"as", "window", "per_name"}),
     "sample_weight": ({"predicate"}, {"weight", "also_flag"}),
+    "objective":     ({"metric_family"}, {"drop_imbalance_weighting"}),
+    "blend_member":  (set(), {"archetype", "depth", "weight_search"}),
     "split_policy":  ({"scheme"}, {"time_col", "n_splits", "forbid", "group_col"}),
     "postprocess":   (set(), {"round_to_int", "clip_min", "clip_max", "global_scale"}),
 }

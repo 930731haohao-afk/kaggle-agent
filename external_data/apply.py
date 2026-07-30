@@ -24,7 +24,28 @@ from .sources import fetch_holidays, fetch_worldbank, resolve_iso3
 # operators this module can realize; everything else lands in the ledger
 REALIZED = {"join_feature", "ratio_target", "log_offset", "trend_term",
             "flag_feature", "sample_weight"}
+# Config-only operators: they change what the search proposes, not the data, so they are
+# realized as node configs by the search driver rather than as columns here. Recorded as
+# realized with the config they imply, so the ledger stays a complete account.
+CONFIG_ONLY = {"objective", "blend_member"}
 EVALUATOR_OWNED = {"split_policy", "postprocess"}      # honored elsewhere, not a gap
+
+# metric family -> (lgb objective, cat loss_function) and the evidence for the choice
+OBJECTIVE_MAP = {
+    "mae":      ("l1", "MAE", "MAE-family metric: L1 matches the loss the metric charges"),
+    "smape":    ("l1", "MAE", "SMAPE is a relative L1 metric; L1 on log-space targets is the "
+                              "closest tractable surrogate"),
+    "rmse":     ("rmse", "RMSE", "squared-error metric"),
+    "rmsle":    ("rmse", "RMSE", "RMSLE = RMSE on log1p targets; transform the target, keep L2"),
+    "auc":      ("binary", "Logloss", "AUC is a ranking metric: keep the plain likelihood loss "
+                                      "and drop imbalance weighting (s3e3 exp #3: 0.81901 -> "
+                                      "0.83292 after removing it; s4e1 confirms the sign at "
+                                      "scale, 0.893235 -> 0.893650)"),
+    "accuracy": ("binary", "Logloss", "threshold metric: tune the threshold in postprocess, "
+                                      "not the loss"),
+    "qwk":      ("rmse", "RMSE", "ordinal target: regression head plus an OptimizedRounder beats "
+                                 "a multiclass head (s3e5 exp #2->#3: QWK 0.47191 -> 0.52687)"),
+}
 _WB_PREFIX = "worldbank:"
 
 
@@ -93,6 +114,48 @@ def _fetch_covariate(source: str, years: list[int], countries: list[str]):
     return frame, mapping, meta
 
 
+def _config_only(op: str, params: dict) -> dict:
+    """Turn a config-only operator into the node config the search driver should seed.
+
+    These operators change what the search *proposes*, not the data, so they land in
+    plan["node_configs"] and the driver seeds them as lineages. Keeping them in the ledger
+    matters: an objective mismatch is invisible in a score table but decides the metric.
+    """
+    if op == "objective":
+        fam = str(params.get("metric_family", "")).lower()
+        if fam not in OBJECTIVE_MAP:
+            raise ValueError(f"metric_family {fam!r} unknown (known: {sorted(OBJECTIVE_MAP)})")
+        lgb_obj, cat_loss, why = OBJECTIVE_MAP[fam]
+        cfg = {"kind": "solo", "seed_role": "objective",
+               "params_by_model": {"lgb": {"objective": lgb_obj},
+                                   "cat": {"loss_function": cat_loss}},
+               "metric_family": fam, "rationale": why}
+        if fam in ("auc", "accuracy") and params.get("drop_imbalance_weighting", True):
+            cfg["forbid_params"] = ["is_unbalance", "scale_pos_weight", "class_weight"]
+        return cfg
+    if op == "blend_member":
+        archetype = str(params.get("archetype", "shallow_regularized"))
+        if archetype != "shallow_regularized":
+            raise ValueError(f"archetype {archetype!r} not implemented "
+                             "(known: shallow_regularized)")
+        # the transferable prototype: a bias-dominated member decorrelates a variance-heavy
+        # pool (prior-wiring: largest LLM-member weight in s6e1 +3e-5 R2 and s4e1 +7e-5 AUC,
+        # and s5e10's NNLS diagnostic reused the same shape)
+        depth = int(params.get("depth", 3))
+        return {"kind": "solo", "seed_role": "blend_member",
+                "params_by_model": {
+                    "lgb": {"num_leaves": 2 ** depth - 1, "min_child_samples": 120,
+                            "reg_alpha": 3.0, "reg_lambda": 10.0, "learning_rate": 0.03},
+                    "cat": {"depth": depth, "l2_leaf_reg": 12.0, "learning_rate": 0.03}},
+                "add_to_pool_not_replace": True,
+                "weight_search": params.get("weight_search", "nnls_then_dirichlet"),
+                "rationale": ("bias-dominated decorrelator added to the pool rather than "
+                              "replacing a member; for RMSE-family metrics verify weights with "
+                              "the NNLS closed form (Dirichlet approximation error ~1e-5 can eat "
+                              "the real gain)")}
+    raise ValueError(f"{op} is not a config-only operator")
+
+
 def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], *,
                     country_col: str = "country", date_col: str = "date",
                     target_col: str = "num_sold",
@@ -116,6 +179,13 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
         params = idea.get("params") or {}
         if op in EVALUATOR_OWNED:
             plan["realized"].append({"operator": op, "note": "honored by the evaluator"})
+            continue
+        if op in CONFIG_ONLY:
+            try:
+                plan.setdefault("node_configs", []).append(_config_only(op, params))
+                plan["realized"].append({"operator": op, "note": "emitted as a node config"})
+            except Exception as e:  # noqa: BLE001
+                plan["unrealized"].append({"operator": op, "reason": f"{type(e).__name__}: {e}"})
             continue
         if op not in REALIZED:
             plan["unrealized"].append({"operator": op,
