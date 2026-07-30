@@ -85,6 +85,13 @@ DATA = os.path.join(_COMP_DIR, "data")
 CACHE_DIR = os.path.join(_HERE, "cache_s3e19_v5_gdp_hol")
 TARGET, ID = "num_sold", "id"
 N_SPLITS, SEED = 5, 42
+N_THREADS = 4      # matches CatBoost's existing thread_count=4; env-pinned below to avoid
+                   # BLAS oversubscription now that LightGBM also pins its thread count
+
+import os as _os  # noqa: E402
+_os.environ.setdefault("OMP_NUM_THREADS", str(N_THREADS))
+_os.environ.setdefault("OPENBLAS_NUM_THREADS", str(N_THREADS))
+_os.environ.setdefault("MKL_NUM_THREADS", str(N_THREADS))
 
 FEATURE_COLS = [
     "year", "month", "day", "dow", "day_of_year", "weekofyear", "quarter",
@@ -234,9 +241,12 @@ def get_feature_frame(drop=None):
 # ---------------------------------------------------------------------------
 def _run_lgb(params, Xdf, Xtestdf):
     import lightgbm as lgb
-    # NOTE: deliberately no n_jobs override -- see eval_s3e1.py's identical note, the
-    # same n_jobs=-1 oversubscription slowdown risk applies here.
-    p = dict(objective="rmse", verbosity=-1, random_state=SEED)
+    # Determinism pinned 2026-07-30 (readiness-audit finding): LGBM's multi-threaded
+    # histogram build is not reproducible across processes by default, which can flip
+    # champion selection on a 2e-5 difference (scores are stored to 6 dp). N_THREADS
+    # matches the env pinning at module load so no oversubscription risk is reintroduced.
+    p = dict(objective="rmse", verbosity=-1, random_state=SEED,
+             deterministic=True, force_row_wise=True, num_threads=N_THREADS)
     p.update(params)
     n_est = p.pop("n_estimators", 2000)
     esr = p.pop("early_stopping_rounds", 100)

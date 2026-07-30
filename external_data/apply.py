@@ -355,10 +355,39 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                             raise ValueError(
                                 f"{name}: {rep['rows_unmatched']} rows unmatched and "
                                 f"carry_forward is not set")
-                        latest = frame.sort_values("year").groupby("iso3")["value"].last()
+                        # 07-30 (readiness-audit finding): this used to fill every unmatched row
+                        # with the panel's single globally-last year, applied to train and test
+                        # alike. merge_year_safe's own backward asof already leakage-checks every
+                        # MATCHED row (used year <= row's effective year); a row is unmatched only
+                        # when NO ext year <= its own effective year exists for that country, which
+                        # means the covariate's coverage starts after that row's need. Filling such
+                        # a row with the panel's latest year is therefore filling an EARLIER row
+                        # with LATER data — a training-set leak, not a benign forward-carry. A row
+                        # whose effective year is AT OR AFTER the country's last covered year (the
+                        # legitimate "test post-dates coverage" case) fills safely because the
+                        # source year used is still <= the row's own year.
+                        eff_year = out["_year"].astype("int64") - lag
                         iso = out[country_col].map(mapping)
-                        out[out_col] = out[out_col].fillna(iso.map(latest))
-                        plan.setdefault("carry_forward_applied", []).append(name)
+                        last_year_by_iso = frame.groupby("iso3")["year"].max()
+                        last_val_by_iso = frame.sort_values("year").groupby("iso3")["value"].last()
+                        fill_source_year = iso.map(last_year_by_iso)
+                        needs_fill = out[out_col].isna()
+                        safe = needs_fill & fill_source_year.notna() & (fill_source_year <= eff_year)
+                        unsafe = needs_fill & ~safe
+                        out.loc[safe, out_col] = iso[safe].map(last_val_by_iso)
+                        plan.setdefault("carry_forward_applied", []).append(
+                            {"name": name, "rows_filled": int(safe.sum()),
+                             "rows_refused_future_data": int(unsafe.sum()),
+                             "note": "refused rows would have been filled with a source year "
+                                     "later than the row's own effective year; left as NaN "
+                                     "instead of leaking future information into that row"})
+                        if int(unsafe.sum()):
+                            plan["unrealized"].append({
+                                "operator": op, "params_subset": "carry_forward",
+                                "reason": f"{name}: {int(unsafe.sum())} row(s) would need a "
+                                         f"source year later than their own effective year to "
+                                         f"fill — refused rather than leaking future data; "
+                                         f"left as NaN"})
                     joined[name] = out.drop(columns=["_year"], errors="ignore")
                 tr, te = joined["train"], joined["test"]
                 plan["sources"][src] = meta.get("snapshot")

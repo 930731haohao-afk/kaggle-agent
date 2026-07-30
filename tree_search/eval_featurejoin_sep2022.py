@@ -84,12 +84,12 @@ from sklearn.model_selection import TimeSeriesSplit
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.dirname(_HERE)
-_COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "tabular-playground-series-sep-2022")
+_COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "tabular-playground-series-sep-2022-v5-featurejoin")
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
 
 DATA = os.path.join(_COMP_DIR, "data")
-CACHE_DIR = os.path.join(_HERE, "cache_sep22")
+CACHE_DIR = os.path.join(_HERE, "cache_featurejoin_sep2022")
 TARGET, ID = "num_sold", "row_id"
 N_SPLITS, SEED = 5, 42
 N_THREADS = 4      # matches CatBoost's existing thread_count=4; env-pinned below to avoid
@@ -106,6 +106,7 @@ FEATURE_COLS = [
     "month_sin", "month_cos", "dow_sin", "dow_cos", "doy_sin", "doy_cos",
     "country_cat", "store_cat", "product_cat",
 ]
+FEATURE_COLS = FEATURE_COLS + ["gdp_pc", "year_c", "is_holiday"]  # v5 operator columns
 CAT_FEATURES_ALL = ["country_cat", "store_cat", "product_cat"]
 
 SCALE_GRID = np.round(np.arange(0.85, 1.201, 0.01), 3)  # auto_scale search grid

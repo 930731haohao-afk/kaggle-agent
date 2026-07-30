@@ -1,0 +1,14 @@
+{
+  "worldbank:NY.GDP.PCAP.CD:2014:2019": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.CD:2015:2021": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.CD:2016:2020": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.CD:2016:2021": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.CD:2016:2022": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.KD:2016:2021": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.KD:2016:2022": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.PP.KD:2016:2021": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.PP.KD:2016:2022": "2026-07-13",
+  "worldbank:gdp_per_capita:2014:2019": "2026-07-13",
+  "worldbank:gdp_per_capita:2015:2021": "2026-07-13",
+  "worldbank:gdp_per_capita:2016:2022": "2026-07-13"
+}

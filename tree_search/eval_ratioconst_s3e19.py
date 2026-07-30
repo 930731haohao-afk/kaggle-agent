@@ -1,12 +1,5 @@
-"""tree_search/eval_sep22.py — evaluator for tabular-playground-series-sep-2022
-(6 EU countries x 2 stores x 4 products daily book sales, SMAPE, minimize).
-
-ADAPTED VERBATIM from eval_s3e19.py (same schema and metric) so the two comps are
-searched by identical machinery; only paths, the id column (row_id) and the cache
-dir differ. This module is the v5 experiment's BASELINE arm: calendar + encoded
-categoricals only, no external data. The v5 arm is generated from this file by
-make_sep22_v5_variant.py, which appends the whitelisted external columns to
-FEATURE_COLS — so the only difference between arms is the external data itself.
+"""tree_search/eval_s3e19.py — per-competition evaluator for playground-series-s3e19
+(Forecast Mini-course Sales, regression, SMAPE metric, minimize-better).
 
 Phase D-5 (the TIME-SERIES sweep comp). Two node kinds, same schema convention as
 eval_s3e1.py/eval_s3e3.py/eval_s3e7.py:
@@ -84,13 +77,13 @@ from sklearn.model_selection import TimeSeriesSplit
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.dirname(_HERE)
-_COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "tabular-playground-series-sep-2022")
+_COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "playground-series-s3e19-v5-ratioconst")
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
 
 DATA = os.path.join(_COMP_DIR, "data")
-CACHE_DIR = os.path.join(_HERE, "cache_sep22")
-TARGET, ID = "num_sold", "row_id"
+CACHE_DIR = os.path.join(_HERE, "cache_ratioconst_s3e19")
+TARGET, ID = "num_sold", "id"
 N_SPLITS, SEED = 5, 42
 N_THREADS = 4      # matches CatBoost's existing thread_count=4; env-pinned below to avoid
                    # BLAS oversubscription now that LightGBM also pins its thread count
@@ -106,6 +99,7 @@ FEATURE_COLS = [
     "month_sin", "month_cos", "dow_sin", "dow_cos", "doy_sin", "doy_cos",
     "country_cat", "store_cat", "product_cat",
 ]
+FEATURE_COLS = FEATURE_COLS + ["year_c", "is_holiday"]  # v5 operator columns
 CAT_FEATURES_ALL = ["country_cat", "store_cat", "product_cat"]
 
 SCALE_GRID = np.round(np.arange(0.85, 1.201, 0.01), 3)  # auto_scale search grid
@@ -123,10 +117,10 @@ def _load_processed():
     if os.path.exists(tr_path) and os.path.exists(te_path):
         tr = pd.read_csv(tr_path, parse_dates=["date"])
         te = pd.read_csv(te_path, parse_dates=["date"])
-        print(f"eval_sep22: loaded processed CSVs from disk (exact linear-run artifact), "
+        print(f"eval_s3e19: loaded processed CSVs from disk (exact linear-run artifact), "
               f"train={tr.shape} test={te.shape}")
         return tr, te
-    print("eval_sep22: train_processed.csv/test_processed.csv not found -- recomputing "
+    print("eval_s3e19: train_processed.csv/test_processed.csv not found -- recomputing "
           "features fresh via scripts/features.py's pure functions (digit-for-digit "
           "reproduction of LINEAR_BEST not guaranteed, only same logic)")
     sys.path.insert(0, os.path.join(_COMP_DIR, "scripts"))
@@ -146,6 +140,23 @@ for _c in CAT_FEATURES_ALL:
     _test[_c] = _test[_c].astype("category")
 
 _y = _train[TARGET].to_numpy(np.float64)
+
+# ---- v5 target transform (ratio_log) -------------------------------------------------
+# Fit on the covariate-normalized target so the test-period LEVEL comes from the
+# covariate instead of from a piecewise-constant model that cannot extrapolate.
+_COV_TR = _train["cov_level"].to_numpy(np.float64)
+_COV_TE = _test["cov_level"].to_numpy(np.float64)
+assert np.all(_COV_TR > 0) and np.all(_COV_TE > 0), "covariate must be strictly positive"
+_Y_RATIO = np.log(_train[TARGET].to_numpy(np.float64) / _COV_TR)
+
+
+def _invert_va(p, va_mask):
+    return np.exp(p) * _COV_TR[va_mask]
+
+
+def _invert_test(p):
+    return np.exp(p) * _COV_TE
+# -----------------------------------------------------------------------------------
 _y_log = _train["log_num_sold"].to_numpy(np.float64) if "log_num_sold" in _train.columns \
     else np.log1p(_y)
 assert np.allclose(_y_log, np.log1p(_y), atol=1e-9), "log_num_sold != log1p(num_sold)"
@@ -177,14 +188,7 @@ _FOLDS = _build_folds()
 IDX = np.zeros(len(_train), dtype=bool)
 for _tr_mask, _va_mask in _FOLDS:
     IDX |= _va_mask
-# Generic coverage check (s3e19 hardcoded 114000 = 1520 dates x 75 series). Here it is
-# derived: TimeSeriesSplit(n_splits) on U unique dates covers the last n_splits*(U//(n+1))
-# dates, times the number of series (rows per date).
-_U = _train["date"].nunique()
-_ROWS_PER_DATE = len(_train) // _U
-_EXPECTED = N_SPLITS * (_U // (N_SPLITS + 1)) * _ROWS_PER_DATE
-assert len(_train) % _U == 0, f"panel not balanced: {len(_train)} rows over {_U} dates"
-assert IDX.sum() == _EXPECTED, f"expected {_EXPECTED} OOF-covered rows, got {IDX.sum()}"
+assert IDX.sum() == 114000, f"expected 114000 OOF-covered rows, got {IDX.sum()}"
 N_OOF = int(IDX.sum())
 
 
@@ -267,12 +271,12 @@ def _run_lgb(params, Xdf, Xtestdf):
     pred = np.zeros(len(Xtestdf))
     for tr_mask, va_mask in _FOLDS:
         X_tr, X_va = Xdf[tr_mask], Xdf[va_mask]
-        y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]
+        y_tr, y_va = _Y_RATIO[tr_mask], _Y_RATIO[va_mask]
         m = lgb.LGBMRegressor(n_estimators=n_est, **p)
         m.fit(X_tr, y_tr, eval_set=[(X_va, y_va)],
               callbacks=[lgb.early_stopping(esr, verbose=False)])
-        oof[va_mask] = np.expm1(m.predict(X_va))
-        pred += np.expm1(m.predict(Xtestdf)) / N_SPLITS
+        oof[va_mask] = _invert_va(m.predict(X_va), va_mask)
+        pred += _invert_test(m.predict(Xtestdf)) / N_SPLITS
     return oof, pred
 
 
@@ -287,11 +291,11 @@ def _run_cat(params, Xdf, Xtestdf, cat_feats):
     pred = np.zeros(len(Xtestdf))
     for tr_mask, va_mask in _FOLDS:
         X_tr, X_va = Xdf[tr_mask], Xdf[va_mask]
-        y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]
+        y_tr, y_va = _Y_RATIO[tr_mask], _Y_RATIO[va_mask]
         m = CatBoostRegressor(iterations=n_est, cat_features=cat_feats, **p)
         m.fit(X_tr, y_tr, eval_set=(X_va, y_va), early_stopping_rounds=esr)
-        oof[va_mask] = np.expm1(m.predict(X_va))
-        pred += np.expm1(m.predict(Xtestdf)) / N_SPLITS
+        oof[va_mask] = _invert_va(m.predict(X_va), va_mask)
+        pred += _invert_test(m.predict(Xtestdf)) / N_SPLITS
     return oof, pred
 
 

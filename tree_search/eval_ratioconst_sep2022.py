@@ -84,12 +84,12 @@ from sklearn.model_selection import TimeSeriesSplit
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.dirname(_HERE)
-_COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "tabular-playground-series-sep-2022")
+_COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "tabular-playground-series-sep-2022-v5-ratioconst")
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
 
 DATA = os.path.join(_COMP_DIR, "data")
-CACHE_DIR = os.path.join(_HERE, "cache_sep22")
+CACHE_DIR = os.path.join(_HERE, "cache_ratioconst_sep2022")
 TARGET, ID = "num_sold", "row_id"
 N_SPLITS, SEED = 5, 42
 N_THREADS = 4      # matches CatBoost's existing thread_count=4; env-pinned below to avoid
@@ -106,6 +106,7 @@ FEATURE_COLS = [
     "month_sin", "month_cos", "dow_sin", "dow_cos", "doy_sin", "doy_cos",
     "country_cat", "store_cat", "product_cat",
 ]
+FEATURE_COLS = FEATURE_COLS + ["year_c", "is_holiday"]  # v5 operator columns
 CAT_FEATURES_ALL = ["country_cat", "store_cat", "product_cat"]
 
 SCALE_GRID = np.round(np.arange(0.85, 1.201, 0.01), 3)  # auto_scale search grid
@@ -146,6 +147,23 @@ for _c in CAT_FEATURES_ALL:
     _test[_c] = _test[_c].astype("category")
 
 _y = _train[TARGET].to_numpy(np.float64)
+
+# ---- v5 target transform (ratio_log) -------------------------------------------------
+# Fit on the covariate-normalized target so the test-period LEVEL comes from the
+# covariate instead of from a piecewise-constant model that cannot extrapolate.
+_COV_TR = _train["cov_level"].to_numpy(np.float64)
+_COV_TE = _test["cov_level"].to_numpy(np.float64)
+assert np.all(_COV_TR > 0) and np.all(_COV_TE > 0), "covariate must be strictly positive"
+_Y_RATIO = np.log(_train[TARGET].to_numpy(np.float64) / _COV_TR)
+
+
+def _invert_va(p, va_mask):
+    return np.exp(p) * _COV_TR[va_mask]
+
+
+def _invert_test(p):
+    return np.exp(p) * _COV_TE
+# -----------------------------------------------------------------------------------
 _y_log = _train["log_num_sold"].to_numpy(np.float64) if "log_num_sold" in _train.columns \
     else np.log1p(_y)
 assert np.allclose(_y_log, np.log1p(_y), atol=1e-9), "log_num_sold != log1p(num_sold)"
@@ -267,12 +285,12 @@ def _run_lgb(params, Xdf, Xtestdf):
     pred = np.zeros(len(Xtestdf))
     for tr_mask, va_mask in _FOLDS:
         X_tr, X_va = Xdf[tr_mask], Xdf[va_mask]
-        y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]
+        y_tr, y_va = _Y_RATIO[tr_mask], _Y_RATIO[va_mask]
         m = lgb.LGBMRegressor(n_estimators=n_est, **p)
         m.fit(X_tr, y_tr, eval_set=[(X_va, y_va)],
               callbacks=[lgb.early_stopping(esr, verbose=False)])
-        oof[va_mask] = np.expm1(m.predict(X_va))
-        pred += np.expm1(m.predict(Xtestdf)) / N_SPLITS
+        oof[va_mask] = _invert_va(m.predict(X_va), va_mask)
+        pred += _invert_test(m.predict(Xtestdf)) / N_SPLITS
     return oof, pred
 
 
@@ -287,11 +305,11 @@ def _run_cat(params, Xdf, Xtestdf, cat_feats):
     pred = np.zeros(len(Xtestdf))
     for tr_mask, va_mask in _FOLDS:
         X_tr, X_va = Xdf[tr_mask], Xdf[va_mask]
-        y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]
+        y_tr, y_va = _Y_RATIO[tr_mask], _Y_RATIO[va_mask]
         m = CatBoostRegressor(iterations=n_est, cat_features=cat_feats, **p)
         m.fit(X_tr, y_tr, eval_set=(X_va, y_va), early_stopping_rounds=esr)
-        oof[va_mask] = np.expm1(m.predict(X_va))
-        pred += np.expm1(m.predict(Xtestdf)) / N_SPLITS
+        oof[va_mask] = _invert_va(m.predict(X_va), va_mask)
+        pred += _invert_test(m.predict(Xtestdf)) / N_SPLITS
     return oof, pred
 
 

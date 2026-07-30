@@ -110,6 +110,62 @@ def _atomic_write_text(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
+# ---------------------------------------------------------------------------
+# vintage pinning (2026-07-30, readiness-audit finding)
+#
+# The cache is keyed by indicator code and year range only -- not by vintage -- so a cold
+# cache or `refresh=True` could silently hand a rerun a different revision of the same
+# series than the one an experiment's reported numbers came from. This matters specifically
+# for World Bank GDP: the Bank periodically rebases its constant-price series to a new base
+# year, which rewrites EVERY year of history, not just recent ones -- so "the same indicator,
+# refetched" can change what a ratio_target operator multiplies into a 2017 training row as
+# well as a 2022 test row.
+#
+# SOURCES_LOCK_PATH is a tracked file, not a cache artifact: it is committed to git so the
+# expected vintage travels with the code, the same way a dependency lockfile does. The first
+# fetch of a given (source, year range) pins it; every fetch after that must match or the
+# call fails loudly instead of proceeding on a silently different series.
+# ---------------------------------------------------------------------------
+SOURCES_LOCK_PATH = Path(__file__).parent / "sources.lock.json"
+
+
+class VintageMismatchError(RuntimeError):
+    """A whitelisted source returned a different vintage than the pinned one."""
+
+
+def _load_lock() -> dict:
+    if SOURCES_LOCK_PATH.exists():
+        return json.loads(SOURCES_LOCK_PATH.read_text())
+    return {}
+
+
+def pin_or_verify_snapshot(lock_key: str, snapshot: str, *, pin_new: bool = True) -> None:
+    """Pin `snapshot` for `lock_key` on first sight; raise if a later fetch disagrees.
+
+    Called once per fetch, right after a source's `meta["snapshot"]` is known. Writing the
+    pin is atomic and the file is meant to be committed, so an unexpected vintage change
+    shows up as a git diff on `sources.lock.json` the moment it is (re)pinned deliberately,
+    and as a loud `VintageMismatchError` if it is not.
+    """
+    lock = _load_lock()
+    pinned = lock.get(lock_key)
+    if pinned is None:
+        if not pin_new:
+            raise VintageMismatchError(
+                f"{lock_key!r} has no pinned vintage in {SOURCES_LOCK_PATH.name} and "
+                f"pin_new=False refuses to create one silently")
+        lock[lock_key] = snapshot
+        _atomic_write_text(SOURCES_LOCK_PATH, json.dumps(lock, indent=2, sort_keys=True))
+        return
+    if pinned != snapshot:
+        raise VintageMismatchError(
+            f"{lock_key!r} vintage changed: pinned {pinned!r} in {SOURCES_LOCK_PATH.name}, "
+            f"fetch returned {snapshot!r}. If this is a deliberate refresh (e.g. World Bank "
+            f"republished the series), delete this key from sources.lock.json, re-fetch, and "
+            f"commit the new pin along with a note of why every downstream number using it "
+            f"needs re-checking; do not let this pass silently.")
+
+
 def _download_file(url: str, dest: Path, timeout: int = 300, retries: int = 2) -> str | None:
     """Stream url to dest atomically; verify Content-Length when the server
     sends one. Returns the Last-Modified header if present."""
@@ -173,12 +229,17 @@ def resolve_iso3(names: list[str]) -> tuple[dict[str, str], list[str]]:
 
 
 def fetch_worldbank(indicator_key: str, year_from: int, year_to: int,
-                    refresh: bool = False) -> tuple[pd.DataFrame, dict]:
+                    refresh: bool = False, verify_vintage: bool = True) -> tuple[pd.DataFrame, dict]:
     """Fetch one whitelisted WB indicator for all countries (all pages).
 
     Returns (df[iso3, country, year, value], meta{indicator, snapshot, fetched}).
     Cache is keyed by the WB indicator CODE, so remapping a whitelist key can
     never serve stale data for the old code.
+
+    `verify_vintage` (default True) pins/checks the fetched snapshot against
+    `sources.lock.json` (see `pin_or_verify_snapshot`) — the guard against a rebase or a
+    republished series silently changing what a `ratio_target`/`log_offset` operator
+    multiplies into every training and test row alike.
     """
     if indicator_key not in WB_INDICATORS:
         raise ValueError(f"indicator '{indicator_key}' is not whitelisted: {list(WB_INDICATORS)}")
@@ -202,6 +263,8 @@ def fetch_worldbank(indicator_key: str, year_from: int, year_to: int,
         "snapshot": raw[0].get("lastupdated", "unknown"),
         "fetched": date.today().isoformat(),
     }
+    if verify_vintage:
+        pin_or_verify_snapshot(f"worldbank:{code}:{year_from}:{year_to}", meta["snapshot"])
     rows = [
         {"iso3": e["countryiso3code"], "country": e["country"]["value"],
          "year": int(e["date"]), "value": e["value"]}
