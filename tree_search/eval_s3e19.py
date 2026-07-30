@@ -199,15 +199,34 @@ def best_scale(pred_full: np.ndarray):
 
 
 def maybe_postprocess(pred_full: np.ndarray, postprocess: dict):
-    """Applies a FIXED scale (postprocess["scale"], default 1.0) OR, if
-    postprocess.get("auto_scale") is truthy, grid-searches the best scale on the fly.
-    Returns (scored_full_vector_at_IDX_only_is_meaningful, score, scale_used)."""
+    """Applies scale, then clip, then rounding -- all optional, all inside the metric so
+    every fold and every blend candidate is scored on the post-processed vector.
+
+    Two vocabularies are accepted for the same thing (2026-07-30 fix): this function's own
+    original `auto_scale`/`scale` (used by the harness's internal node-config mutations) and
+    the dossier operator contract's `global_scale`/`round_to_int`/`clip_min`/`clip_max`
+    (knowledge/injection_operators.md's `postprocess` operator). Before this fix the dossier's
+    names were silently unrecognized here -- a competition asking for `round_to_int` had
+    nothing rounded, and nothing said so, because `postprocess` is EVALUATOR_OWNED and
+    apply.py's ledger books it "honored by the evaluator" without checking the evaluator
+    actually implements the specific params asked for. No historical run passed these keys
+    through (checked: no experiments_tree/ledger anywhere used them), so this changes no
+    previously-reported number.
+
+    Returns (score, scale_used)."""
     pp = postprocess or {}
-    if pp.get("auto_scale"):
+    gs = pp.get("global_scale")
+    if gs == "auto" or pp.get("auto_scale"):
         sc, _ = best_scale(pred_full)
+    elif gs is not None:
+        sc = float(gs)
     else:
         sc = float(pp.get("scale", 1.0))
     scored = pred_full[IDX] * sc
+    if pp.get("clip_min") is not None or pp.get("clip_max") is not None:
+        scored = np.clip(scored, pp.get("clip_min"), pp.get("clip_max"))
+    if pp.get("round_to_int"):
+        scored = np.round(scored)
     return float(smape(_Y_OOF_TRUE, scored)), sc
 
 

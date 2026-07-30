@@ -188,6 +188,20 @@ candidate is scored on the post-processed vector.
 {"operator": "postprocess", "params": {"round_to_int": true, "clip_min": 0,
  "global_scale": "auto"}}
 ```
+**Evaluator-owned, and that only means something where the evaluator implements this exact
+vocabulary (2026-07-30 finding + fix).** `apply.py` books this operator "advisory: the
+evaluator owns it" unconditionally, because the dispatcher works on dataframes and has no
+evaluator to check against at that point. Until today `eval_s3e19.py`/`eval_sep22.py`'s
+`maybe_postprocess` only recognized its own internal `auto_scale`/`scale` keys -- a name
+mismatch against this operator's `round_to_int`/`clip_min`/`clip_max`/`global_scale`, so a
+competition asking for rounding got nothing rounded, silently. Fixed for the two evaluators
+with a live v5 arm (`global_scale` now aliases `auto_scale`; `round_to_int`/`clip_min`/
+`clip_max` are implemented, applied scale-then-clip-then-round). **Not fixed generally**:
+s5e10's dossier also emits this operator (`clip_min:0, clip_max:1, round_to_int:false`) and
+its evaluator has no `maybe_postprocess` at all -- no live arm consumes it yet, so nothing
+reported is affected, but the same silent-mismatch risk exists for any future arm on a
+competition whose evaluator wasn't specifically checked. Verifying this per-competition, the
+way `make_v5_arm.py` should but does not yet, is outstanding work.
 
 ---
 
