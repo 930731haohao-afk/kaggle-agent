@@ -37,9 +37,9 @@ IMPLEMENTED = {
     "blend_member":  r"blend|ensemble|stack|shallow.*regulari|decorrelat|diverse",
     "split_policy":  r"kfold|groupkfold|stratified|timeseriessplit|split|fold",
     "postprocess":   r"round|clip|inside the metric|post-?process|threshold",
+    "encoding":      r"target encoding|ordinal|one-?hot|categor|encod|cross(es)? |interaction",
 }
 MISSING = {
-    "encoding":   r"target encoding|ordinal|one-?hot|categor|encod|cross(es)? |interaction",
     "transform":  r"derivative|savitzky|smooth|pca|dimension|scal(e|ing)|log1p|spectral",
     "structure":  r"per-cell|neighborhood|decompos|multiplicative|seasonal-naive|per-country|per-product|hierarch",
     "feature_eng": r"fourier|lag |rolling|aggregat|group statistic|frequency|count feature",

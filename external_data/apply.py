@@ -27,7 +27,21 @@ REALIZED = {"join_feature", "ratio_target", "log_offset", "trend_term",
 # Config-only operators: they change what the search proposes, not the data, so they are
 # realized as node configs by the search driver rather than as columns here. Recorded as
 # realized with the config they imply, so the ledger stays a complete account.
-CONFIG_ONLY = {"objective", "blend_member"}
+CONFIG_ONLY = {"objective", "blend_member", "encoding"}
+
+# encoding schemes and the evidence behind each
+ENCODING_SCHEMES = {
+    "native":     "GBDT native categorical handling — the strong default (s3e11: AIDE's only "
+                  "outright win came from a node that accidentally enabled it)",
+    "ordinal":    "ordered categories keep their order; only for genuinely ordinal levels",
+    "count":      "frequency/count encoding — cheap, no target involved, no leakage path",
+    "onehot_sparse": "sparse one-hot with a linear member: on all-categorical data this beat "
+                     "GBDT outright (cat-in-the-dat), so it belongs in the pool as a member "
+                     "rather than as a preprocessing step",
+    "target":     "target encoding — REQUIRES fold-aligned computation (see below)",
+    "crosses":    "pairwise feature crosses — WARNING: on an already-saturated sparse linear "
+                  "model these HURT (cat-in-the-dat); useful mainly for tree members",
+}
 EVALUATOR_OWNED = {"split_policy", "postprocess"}      # honored elsewhere, not a gap
 
 # metric family -> (lgb objective, cat loss_function) and the evidence for the choice
@@ -132,6 +146,30 @@ def _config_only(op: str, params: dict) -> dict:
                "metric_family": fam, "rationale": why}
         if fam in ("auc", "accuracy") and params.get("drop_imbalance_weighting", True):
             cfg["forbid_params"] = ["is_unbalance", "scale_pos_weight", "class_weight"]
+        return cfg
+    if op == "encoding":
+        scheme = str(params.get("scheme", "native"))
+        if scheme not in ENCODING_SCHEMES:
+            raise ValueError(f"scheme {scheme!r} unknown (known: {sorted(ENCODING_SCHEMES)})")
+        cols = params.get("columns")
+        cfg = {"kind": "solo", "seed_role": "encoding", "scheme": scheme,
+               "columns": cols, "rationale": ENCODING_SCHEMES[scheme]}
+        if scheme == "target":
+            # The one non-negotiable: s4e1 measured that computing the encoding on folds that
+            # differ from the model's evaluation folds is itself a leakage path, even though it
+            # looks safer than in-fold encoding. An apparent 0.89653 collapsed to ~0.8937 once
+            # the folds were aligned. So the operator carries the requirement, and an evaluator
+            # that cannot honour it must refuse rather than approximate.
+            cfg["fold_aligned"] = True
+            cfg["requires_evaluator_support"] = "per_fold_target_encoding"
+            cfg["smoothing"] = float(params.get("smoothing", 20.0))
+            cfg["rationale"] += (" — computed inside each fold from that fold's TRAINING rows "
+                                 "only, using the model's own folds (s4e1: independent folds "
+                                 "with a different seed inflated AUC to 0.89653 vs ~0.8937 "
+                                 "fold-aligned; 'looks safer' was another leakage path)")
+        if scheme == "crosses":
+            cfg["max_pairs"] = int(params.get("max_pairs", 10))
+            cfg["restrict_to"] = params.get("restrict_to", "tree_members")
         return cfg
     if op == "blend_member":
         archetype = str(params.get("archetype", "shallow_regularized"))

@@ -115,6 +115,32 @@ Re-weight or flag an anomalous regime instead of deleting it.
  "weight": 0.5, "also_flag": true}}
 ```
 
+### `encoding`
+How categorical columns enter the model. Config-only: it selects members and per-fold
+transforms, not precomputed columns.
+```json
+{"operator": "encoding", "params": {"scheme": "target", "columns": ["surname"],
+ "smoothing": 20.0}}
+```
+`scheme` ∈ {native, ordinal, count, onehot_sparse, target, crosses}, each with its own evidence:
+
+| scheme | when | evidence |
+|---|---|---|
+| `native` | the strong default for GBDTs | s3e11: AIDE's only outright first place came from a bug-fix node that accidentally enabled it |
+| `onehot_sparse` | all-categorical data, as a linear **member** in the pool | cat-in-the-dat: sparse OHE + logistic regression beat the GBDT outright |
+| `count` | high cardinality, no target involved | no leakage path |
+| `ordinal` | genuinely ordered levels only | |
+| `target` | high-cardinality with signal, **fold-aligned only** | s4e1 (below) |
+| `crosses` | tree members only | cat-in-the-dat: explicit crosses **hurt** an already-saturated sparse linear model |
+
+**`target` carries a hard requirement.** The encoding must be computed inside each fold from
+that fold's training rows, using *the model's own folds*. Computing it on an independent fold
+split with a different seed looks safer and is in fact another leakage path: on s4e1 that
+inflated AUC to 0.89653, and aligning the folds brought the same recipe back to ~0.8937. The
+operator therefore sets `fold_aligned: true` and
+`requires_evaluator_support: per_fold_target_encoding`; an evaluator that cannot honour it must
+file a ledger entry rather than approximate.
+
 ### `objective`
 Match the training loss to what the metric actually charges. Config-only: it changes what the
 search proposes, not the data, so it is emitted as a seed node config.
