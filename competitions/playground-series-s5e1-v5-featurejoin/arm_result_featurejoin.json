@@ -1,0 +1,8 @@
+{
+  "comp": "playground-series-s5e1",
+  "arm": "featurejoin",
+  "champion_cv": 7.595918,
+  "nodes_evaluated": 46,
+  "tree": "/home/tjyen/ai_agents/kaggle/competitions/playground-series-s5e1-v5-featurejoin/experiments_tree_v5_featurejoin.json",
+  "submission": "/home/tjyen/ai_agents/kaggle/competitions/playground-series-s5e1-v5-featurejoin/submission.csv"
+}

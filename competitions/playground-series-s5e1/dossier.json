@@ -126,7 +126,28 @@
     "the_prediction": "ratio_target will underperform join_feature on the real s5e1 private leaderboard, and by a LARGER relative margin than on either s3e19 (3.58 SMAPE: 52.073 vs 48.497) or sep-2022 (0.70 SMAPE: 24.091 vs 23.390), because the proportionality assumption the operator depends on is violated more severely here (6 of 7 years vs 0 and 1 respectively) and over a 3-year rather than 1-year horizon. Margins are compared in relative terms because s5e1's metric is MAPE while the other two are SMAPE.",
     "what_would_falsify_it": "ratio_target beating join_feature on the s5e1 private leaderboard, or losing by a smaller relative margin than sep-2022's. Either outcome means the dispersion diagnostic does not predict operator ranking, and the operator contract's precondition should be demoted from a gate to a note.",
     "what_confirmation_would_buy": "A diagnostic that ranks two operator forms correctly, in advance, on three of three competitions -- which is precisely the local-signal selection rule Experiment 6 Result 2 currently reports as an OPEN PROBLEM (CV fails, held-out-year fails). Confirmation would partially close that open problem; it must be reported as such, not quietly folded into a win.",
-    "honesty_constraint": "This prediction is recorded here and must be reported whichever way it resolves. A wrong pre-registered prediction is a result, not an embarrassment to be dropped."
+    "honesty_constraint": "This prediction is recorded here and must be reported whichever way it resolves. A wrong pre-registered prediction is a result, not an embarrassment to be dropped.",
+    "RESOLUTION": {
+      "resolved": "2026-07-31, three 45-node searched arms submitted 09:20, scored on the real leaderboard",
+      "scores_private_MAPE": {
+        "baseline": 0.15751,
+        "join_feature": 0.15626,
+        "ratio_target": 0.12417
+      },
+      "scores_public_MAPE": {
+        "baseline": 0.1428,
+        "join_feature": 0.14193,
+        "ratio_target": 0.12057
+      },
+      "verdict": "PREDICTION FALSIFIED. ratio_target did not lose to join_feature -- it beat it, decisively (private 0.12417 vs 0.15626, a 20% relative improvement), and the win passes the paired test (d_pub +0.02136, d_priv +0.03209, movement 0.01073). The falsifier written above ('ratio_target beating join_feature on the s5e1 private leaderboard') fired exactly.",
+      "pre_committed_consequence_now_due": "The dispersion diagnostic does not predict operator ranking. Per the falsifier's own terms, the proportionality precondition is demoted from a gate to a note in knowledge/injection_operators.md and knowledge/task_priors.md.",
+      "what_else_the_result_shows": [
+        "CV misranked the forms AGAIN, now 0 for 3: s3e19 CV said ratio/LB said featurejoin; sep-2022 CV said baseline/LB said featurejoin; s5e1 CV said featurejoin (7.596 vs 7.702)/LB said ratio. The form-selection open problem stands and has hardened.",
+        "Both external arms again beat the no-external baseline significantly -- the injection result itself replicates for a third competition (n=3 clean test points).",
+        "POST-HOC hypothesis, explicitly not pre-registered: the two 1-year-horizon competitions were won by join_feature and the one 3-year-horizon competition by ratio_target, so horizon length -- not proportionality -- may be what selects the form. This is pattern-matching after the fact and has exactly the epistemic status the pre-registered prediction was created to avoid; it becomes testable the same way, by pre-registering it before the next firing competition."
+      ],
+      "honesty_note": "Recorded per the constraint written before the runs: a wrong pre-registered prediction is a result, not an embarrassment to be dropped."
+    }
   },
   "injection_ideas": [
     {

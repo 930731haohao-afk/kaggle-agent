@@ -1,0 +1,1223 @@
+{
+  "comp": "playground-series-s5e1:baseline",
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "[V5:baseline] seed config",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 31,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 42
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 3.9418184757232666,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1000,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "min_child_samples": 60
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.467001,
+      "status": "evaluated",
+      "wall_s": 2.16,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 2",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 1.29,
+      "kind": "blend"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1002,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "min_child_samples": 200
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.164896,
+      "status": "evaluated",
+      "wall_s": 3.62,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 3",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900371,
+      "status": "evaluated",
+      "wall_s": 2.64,
+      "kind": "blend"
+    },
+    {
+      "id": 5,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 7,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1004,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "min_child_samples": 120
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.664051,
+      "status": "evaluated",
+      "wall_s": 2.73,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 4",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900371,
+      "status": "evaluated",
+      "wall_s": 1.48,
+      "kind": "blend"
+    },
+    {
+      "id": 7,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1006,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "min_child_samples": 60
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.467001,
+      "status": "evaluated",
+      "wall_s": 2.19,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 5",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900409,
+      "status": "evaluated",
+      "wall_s": 3.01,
+      "kind": "blend"
+    },
+    {
+      "id": 9,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1008,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "min_child_samples": 200
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.164896,
+      "status": "evaluated",
+      "wall_s": 3.64,
+      "kind": "solo"
+    },
+    {
+      "id": 10,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 6",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900375,
+      "status": "evaluated",
+      "wall_s": 1.49,
+      "kind": "blend"
+    },
+    {
+      "id": 11,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 7,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1010,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "min_child_samples": 120
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.664051,
+      "status": "evaluated",
+      "wall_s": 2.69,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 7",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900375,
+      "status": "evaluated",
+      "wall_s": 1.51,
+      "kind": "blend"
+    },
+    {
+      "id": 13,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1012,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "min_child_samples": 60
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.467001,
+      "status": "evaluated",
+      "wall_s": 2.17,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 8",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900432,
+      "status": "evaluated",
+      "wall_s": 1.75,
+      "kind": "blend"
+    },
+    {
+      "id": 15,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1014,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "min_child_samples": 200
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.164896,
+      "status": "evaluated",
+      "wall_s": 3.63,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 9",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900402,
+      "status": "evaluated",
+      "wall_s": 1.87,
+      "kind": "blend"
+    },
+    {
+      "id": 17,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 7,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1016,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "min_child_samples": 120
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.664051,
+      "status": "evaluated",
+      "wall_s": 2.67,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 10",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900403,
+      "status": "evaluated",
+      "wall_s": 1.38,
+      "kind": "blend"
+    },
+    {
+      "id": 19,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1018,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "min_child_samples": 60
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.467001,
+      "status": "evaluated",
+      "wall_s": 2.2,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 11",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900424,
+      "status": "evaluated",
+      "wall_s": 1.38,
+      "kind": "blend"
+    },
+    {
+      "id": 21,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1020,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "min_child_samples": 200
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.164896,
+      "status": "evaluated",
+      "wall_s": 3.72,
+      "kind": "solo"
+    },
+    {
+      "id": 22,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 12",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900407,
+      "status": "evaluated",
+      "wall_s": 1.54,
+      "kind": "blend"
+    },
+    {
+      "id": 23,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 7,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1022,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "min_child_samples": 120
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.664051,
+      "status": "evaluated",
+      "wall_s": 2.67,
+      "kind": "solo"
+    },
+    {
+      "id": 24,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 13",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900439,
+      "status": "evaluated",
+      "wall_s": 2.21,
+      "kind": "blend"
+    },
+    {
+      "id": 25,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1024,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "min_child_samples": 60
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.467001,
+      "status": "evaluated",
+      "wall_s": 2.21,
+      "kind": "solo"
+    },
+    {
+      "id": 26,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 14",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900417,
+      "status": "evaluated",
+      "wall_s": 1.92,
+      "kind": "blend"
+    },
+    {
+      "id": 27,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1026,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "min_child_samples": 200
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.164896,
+      "status": "evaluated",
+      "wall_s": 4.04,
+      "kind": "solo"
+    },
+    {
+      "id": 28,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 15",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900442,
+      "status": "evaluated",
+      "wall_s": 4.27,
+      "kind": "blend"
+    },
+    {
+      "id": 29,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 7,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1028,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "min_child_samples": 120
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.664051,
+      "status": "evaluated",
+      "wall_s": 2.69,
+      "kind": "solo"
+    },
+    {
+      "id": 30,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 16",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27,
+          29
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900442,
+      "status": "evaluated",
+      "wall_s": 2.48,
+      "kind": "blend"
+    },
+    {
+      "id": 31,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1030,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "min_child_samples": 60
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.467001,
+      "status": "evaluated",
+      "wall_s": 2.19,
+      "kind": "solo"
+    },
+    {
+      "id": 32,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 17",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27,
+          29,
+          31
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 2.5,
+      "kind": "blend"
+    },
+    {
+      "id": 33,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1032,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "min_child_samples": 200
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.164896,
+      "status": "evaluated",
+      "wall_s": 3.67,
+      "kind": "solo"
+    },
+    {
+      "id": 34,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 18",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27,
+          29,
+          31,
+          33
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 4.63,
+      "kind": "blend"
+    },
+    {
+      "id": 35,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 7,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1034,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "min_child_samples": 120
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.664051,
+      "status": "evaluated",
+      "wall_s": 2.66,
+      "kind": "solo"
+    },
+    {
+      "id": 36,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 19",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27,
+          29,
+          31,
+          33,
+          35
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 2.21,
+      "kind": "blend"
+    },
+    {
+      "id": 37,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1036,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "min_child_samples": 60
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.467001,
+      "status": "evaluated",
+      "wall_s": 2.16,
+      "kind": "solo"
+    },
+    {
+      "id": 38,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 20",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27,
+          29,
+          31,
+          33,
+          35,
+          37
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 2.35,
+      "kind": "blend"
+    },
+    {
+      "id": 39,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1038,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "min_child_samples": 200
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.164896,
+      "status": "evaluated",
+      "wall_s": 3.64,
+      "kind": "solo"
+    },
+    {
+      "id": 40,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 21",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27,
+          29,
+          31,
+          33,
+          35,
+          37,
+          39
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 1.86,
+      "kind": "blend"
+    },
+    {
+      "id": 41,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 7,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1040,
+          "reg_alpha": 3.0,
+          "reg_lambda": 10.0,
+          "min_child_samples": 120
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.664051,
+      "status": "evaluated",
+      "wall_s": 2.68,
+      "kind": "solo"
+    },
+    {
+      "id": 42,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 22",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27,
+          29,
+          31,
+          33,
+          35,
+          37,
+          39,
+          41
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 1.92,
+      "kind": "blend"
+    },
+    {
+      "id": 43,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 4,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1042,
+          "reg_alpha": 1.0,
+          "reg_lambda": 4.0,
+          "min_child_samples": 60
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 10.467001,
+      "status": "evaluated",
+      "wall_s": 2.21,
+      "kind": "solo"
+    },
+    {
+      "id": 44,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] reblend over 23",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15,
+          17,
+          19,
+          21,
+          23,
+          25,
+          27,
+          29,
+          31,
+          33,
+          35,
+          37,
+          39,
+          41,
+          43
+        ],
+        "weight_search": "dirichlet"
+      },
+      "score": 7.900446,
+      "status": "evaluated",
+      "wall_s": 1.93,
+      "kind": "blend"
+    },
+    {
+      "id": 45,
+      "parent_id": 0,
+      "mutation": "[V5:baseline] shallow-reg lgb",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "params": {
+          "num_leaves": 15,
+          "learning_rate": 0.05,
+          "n_estimators": 400,
+          "random_state": 1044,
+          "reg_alpha": 8.0,
+          "reg_lambda": 20.0,
+          "min_child_samples": 200
+        },
+        "features": {
+          "drop": []
+        }
+      },
+      "score": 8.164896,
+      "status": "evaluated",
+      "wall_s": 3.64,
+      "kind": "solo"
+    }
+  ],
+  "root_id": 0,
+  "search_state": {
+    "budget": {
+      "total_budget": 46,
+      "explore_burst_size": 6,
+      "post_burst_patience": 10,
+      "phase": "stopped",
+      "burst_start_eval": 0,
+      "best_at_burst_start": 7.900446,
+      "evals_since_burst_improve": 0,
+      "stop_reason": "hard budget cap reached (46/46 evaluated nodes)"
+    },
+    "dedup_streak": {
+      "0": 0
+    }
+  }
+}

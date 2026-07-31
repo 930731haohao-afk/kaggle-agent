@@ -37,20 +37,28 @@ a competition confirms them.
   **Bound on the recipe (held-out evidence):** on tps-sep-2022 the same operator *hurt*
   (11.348 → 11.807; 11.515 with the 2020 COVID year down-weighted), and the proportionality
   diagnostic predicted it — cross-country dispersion is ~0.01 in 2017–2019 but 0.466 in 2020.
-  Always run the diagnostic before the operator fires.
-- **Leaderboard verdict on the form, and it is the opposite of the CV verdict (2026-07-30).**
-  Matched single configurations, real private scores: on s3e19 `join_feature` 48.497 vs
-  `ratio_target` 52.073 vs no-external 54.506; on tps-sep-2022 `join_feature` 23.390 vs
-  `ratio_target` 24.091 vs no-external 25.476. Both external forms beat baseline on both
-  competitions and all four pass the paired test — but `join_feature` wins the form comparison
-  on **both**, while CV ranks the forms in the opposite order on s3e19 (ratio 7.793 vs
-  featurejoin 9.379) and ranks both behind baseline on sep-2022. A held-out-year protocol also
-  picks `ratio_target` on all three probes and is therefore also wrong. Consequence for this
-  prior: **the form cannot be selected from any local signal we have tested.** Race both arms,
-  and if only one may be submitted, prefer `join_feature` on the evidence to date and record
-  that the choice is unresolved. On sep-2022 the ordering survives a 46-node search per arm
-  (searched ratio 23.774 still loses to an unsearched featurejoin 23.390), so search does not
-  substitute for choosing the form.
+  Run the diagnostic and RECORD its verdict — but do not gate on it: see below.
+- **The proportionality diagnostic was falsified as a form predictor (2026-07-31, pre-registered
+  test on s5e1).** The diagnostic said s5e1 was the worst violation in the class (dispersion
+  0.05–0.21, broken 6 of 7 years) and a prediction was committed IN ADVANCE that `ratio_target`
+  would therefore lose to `join_feature` by more than on s3e19/sep-2022. The opposite happened:
+  ratio_target won decisively (private MAPE 0.12417 vs 0.15626, paired-test significant). Per the
+  falsifier's own pre-committed terms, **this diagnostic is demoted from a gate to a recorded
+  note** — it measures something real about the data but does not predict which operator form
+  wins.
+- **Leaderboard verdict on the form, across three competitions (updated 2026-07-31).**
+  s3e19: `join_feature` 48.497 beats `ratio_target` 52.073 (1-year horizon). tps-sep-2022:
+  `join_feature` 23.390 beats `ratio_target` 24.091 (1-year horizon). s5e1: `ratio_target`
+  0.12417 beats `join_feature` 0.15626 (**3-year horizon**). All six external arms beat their
+  no-external baselines significantly — the injection result itself replicates at n=3. But the
+  form verdict SPLIT, and every local signal tested is now 0-for-3 at predicting it: CV picked
+  ratio/baseline/featurejoin on the three comps while the LB said featurejoin/featurejoin/ratio,
+  and the held-out-year protocol was wrong on all three probes. Consequence: **race both arms,
+  always; no local signal or diagnostic currently earns the right to choose for you.**
+  Post-hoc observation, NOT validated: the two 1-year comps went to `join_feature`, the one
+  3-year comp to `ratio_target` — horizon length may be the real selector. Treat this exactly
+  as sceptically as the proportionality story that just died: pre-register it on the next
+  firing competition before believing it.
 
 ## TASK-TS-CALENDAR — daily/weekly retail-like series
 - **Trigger**: daily-resolution series with country/store/product keys.

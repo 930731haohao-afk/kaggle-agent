@@ -1,0 +1,8 @@
+{
+  "comp": "playground-series-s5e1",
+  "arm": "baseline",
+  "champion_cv": 7.900371,
+  "nodes_evaluated": 46,
+  "tree": "/home/tjyen/ai_agents/kaggle/competitions/playground-series-s5e1/experiments_tree_v5_baseline.json",
+  "submission": "/home/tjyen/ai_agents/kaggle/competitions/playground-series-s5e1/submission.csv"
+}

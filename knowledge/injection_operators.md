@@ -59,18 +59,23 @@ Use `gdp_per_capita_const` or `gdp_per_capita_ppp`. `apply.py` files a ledger en
 current-price indicator reaches this operator, and `covariate_volatility_check` flags any
 covariate whose cross-group moves exceed 8 pp.
 
-**Precondition (checked automatically, `apply.proportionality_check`).** The operator is
-conditional, not universal: `total(group, period) / c` must be near-equal *across groups*,
-leaving only a common period drift. Measured dispersion decides it:
+**Diagnostic (checked automatically, `apply.proportionality_check`) — RECORDED, NOT A GATE
+(demoted 2026-07-31).** It was originally a precondition: dispersion of `total(group, period)/c`
+across groups had to be small for the operator to be licensed. A pre-registered test killed
+that: s5e1 violated it in 6 of 7 years (dispersion 0.05–0.21) and `ratio_target` still WON the
+form race decisively (private MAPE 0.12417 vs join_feature's 0.15626, paired-significant), the
+exact outcome the prediction's falsifier named. The check still runs and its verdict is still
+written to the ledger — it describes the data honestly — but it must not block or select the
+operator. Historical readings:
 
 | Competition | dispersion by year | verdict | measured effect |
 |---|---|---|---|
 | s3e19 | 0.014 / 0.011 / 0.010 / 0.006 / 0.017 | proportional throughout | CV 10.148 → **7.793** |
 | sep-2022 | 0.011 / 0.011 / 0.009 / **0.466** (2020) | breaks in the COVID year | CV 11.348 → 11.807 (**worse**); with 2020 down-weighted to 0.3, 11.515 |
 
-A violation does not force abandonment — pair the operator with `sample_weight` on the
-offending period — but it must be recorded in the ledger, and the residual gap on
-sep-2022 shows the remedy is partial.
+A violation is recorded in the ledger, nothing more. (Historical note: on sep-2022 the
+2020 down-weighting remedy improved CV and worsened the private LB — one more local signal
+that misranked. And s5e1's win came with NO remedy applied despite six violated years.)
 
 **Open caveat, and the reason the leaderboard adjudicates sep-2022.** A CV whose folds all
 sit inside the training range cannot see this operator's actual advantage, which is

@@ -4,6 +4,8 @@
   "worldbank:NY.GDP.PCAP.CD:2016:2020": "2026-07-13",
   "worldbank:NY.GDP.PCAP.CD:2016:2021": "2026-07-13",
   "worldbank:NY.GDP.PCAP.CD:2016:2022": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.KD:2009:2016": "2026-07-13",
+  "worldbank:NY.GDP.PCAP.KD:2009:2019": "2026-07-13",
   "worldbank:NY.GDP.PCAP.KD:2016:2021": "2026-07-13",
   "worldbank:NY.GDP.PCAP.KD:2016:2022": "2026-07-13",
   "worldbank:NY.GDP.PCAP.PP.KD:2016:2021": "2026-07-13",
