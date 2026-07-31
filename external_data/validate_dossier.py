@@ -27,8 +27,8 @@ SPEC: dict[str, tuple[set[str], set[str]]] = {
     "encoding":      ({"scheme"}, {"columns", "smoothing", "max_pairs", "restrict_to"}),
     "objective":     ({"metric_family"}, {"drop_imbalance_weighting"}),
     "blend_member":  (set(), {"archetype", "depth", "weight_search"}),
-    "split_policy":  ({"scheme"}, {"time_col", "n_splits", "forbid", "group_col"}),
-    "postprocess":   (set(), {"round_to_int", "clip_min", "clip_max", "global_scale"}),
+    "split_policy":  ({"scheme"}, {"time_col", "n_splits", "forbid", "group_col", "shuffle", "random_state"}),
+    "postprocess":   (set(), {"round_to_int", "clip_min", "clip_max", "global_scale", "threshold"}),
 }
 SOURCES = {"worldbank:gdp_per_capita", "worldbank:gdp_per_capita_const",
            "worldbank:gdp_per_capita_ppp", "worldbank:gdp", "worldbank:gdp_const",
@@ -73,7 +73,9 @@ def validate(path: Path) -> dict:
         missing = req - set(params)
         if missing:
             out["errors"].append(f"{tag} [{op}]: missing required params {sorted(missing)}")
-        unknown = set(params) - req - opt
+        # 'note' is a universal documentation param: it explains a choice to a human reader
+        # and no executor may dispatch on it (2026-07-31, first used by the s5e1 dossier)
+        unknown = set(params) - req - opt - {"note"}
         if unknown:
             out["errors"].append(f"{tag} [{op}]: unknown params {sorted(unknown)}")
         src = params.get("source")

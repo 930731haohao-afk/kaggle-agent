@@ -41,6 +41,7 @@ sys.path.insert(0, _SCRIPTS_DIR)
 sys.path.insert(0, _HERE)
 from features import make_folds, build_all, best_threshold_accuracy, TARGET, ID  # noqa: E402
 import harness_v2 as hv2  # noqa: E402
+import eval_support as esup  # noqa: E402
 
 DATA = os.path.join(_COMP_DIR, "data")
 CACHE_DIR = os.path.join(_HERE, "cache_s4e11")
@@ -141,6 +142,28 @@ def _run_cat(params, X, Xtest):
     return oof, pred
 
 
+def maybe_postprocess(prob_full, postprocess):
+    """Threshold-inside-the-metric, dossier vocabulary (threshold / round_to_int /
+    clip_min / clip_max). Defaults reproduce acc()'s historical path digit-for-digit:
+    threshold="auto" runs the same best_threshold_accuracy sweep, and with no clip
+    requested the probability vector is untouched. round_to_int is acknowledged but a
+    no-op here: the threshold sweep already emits hard 0/1 for submission, which is the
+    behavior the dossier asks that key to guarantee. Until 2026-07-31 this evaluator had
+    no mechanism reading the dossier's postprocess request (the audit's NOT_IMPLEMENTED
+    case for s4e11)."""
+    pp = postprocess or {}
+    v = np.asarray(prob_full, dtype=np.float64)
+    if pp.get("clip_min") is not None or pp.get("clip_max") is not None:
+        v = np.clip(v, pp.get("clip_min"), pp.get("clip_max"))
+    thr = pp.get("threshold", "auto")
+    if thr == "auto":
+        score = acc(_y, v)
+    else:
+        score = float(((v >= float(thr)).astype(np.float64) == _y).mean())
+    _ = pp.get("round_to_int")  # guaranteed by the sweep's hard 0/1 submission output
+    return score
+
+
 def evaluate_solo(config):
     feat_cfg = config.get("features") or {}
     drop = feat_cfg.get("drop", [])
@@ -158,7 +181,11 @@ def evaluate_solo(config):
     else:
         raise ValueError(f"unknown model type {model!r}")
 
-    score = acc(_y, oof)
+    postprocess = config.get("postprocess") or {}
+    score = maybe_postprocess(oof, postprocess)
+    if postprocess:
+        esup.write_attestation(_COMP_DIR, "postprocess", {
+            "honored_params": sorted(postprocess)})
     return oof, pred, score, feats
 
 

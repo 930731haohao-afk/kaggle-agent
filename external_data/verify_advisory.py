@@ -167,7 +167,9 @@ def main(argv: list[str]) -> int:
         # from arm drivers) carry verbatim copies of their parent competition's dossier;
         # auditing the copy double-counts the parent and always reports "no evaluator
         # mapping". The parent's own dossier stays in the audit.
-        paths = [(c, p) for c, p in paths if "-v5-" not in c and ".v5arms-" not in c]
+        # any dot-suffixed directory is a derived workspace copy (".v5arms-", ".repeat-r1-",
+        # ".pre-repeat-", ...); real competition slugs never contain a dot
+        paths = [(c, p) for c, p in paths if "-v5-" not in c and "." not in c]
 
     rows = [verify_competition(c, p) for c, p in paths if p.exists()]
     rows = [r for r in rows if r["requests"] or r["errors"]]
