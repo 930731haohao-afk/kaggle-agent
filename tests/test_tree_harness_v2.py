@@ -214,15 +214,20 @@ def test_node_kind_is_first_class_field(hv2):
 # ---------------------------------------------------------------------------
 # Recommendation 4: experience-library mutation prior
 # ---------------------------------------------------------------------------
+# suggest_priors requires a 'comp' key since the 2026-07-13 self-exclusion wiring;
+# a fixture comp that cites no evidence in the library keeps the filter inert.
+FIXTURE_COMP = {"comp": "zz-test-fixture-comp"}
+
+
 def test_suggest_priors_nonempty_for_mae(hv2):
-    priors = hv2.suggest_priors({"metric": "mae"})
+    priors = hv2.suggest_priors({"metric": "mae", **FIXTURE_COMP})
     assert isinstance(priors, list)
     assert len(priors) > 0
     assert all(isinstance(p, str) and p for p in priors)
 
 
 def test_suggest_priors_nonempty_for_qwk(hv2):
-    priors = hv2.suggest_priors({"metric": "qwk"})
+    priors = hv2.suggest_priors({"metric": "qwk", **FIXTURE_COMP})
     assert len(priors) > 0
 
 
@@ -231,14 +236,19 @@ def test_suggest_priors_empty_for_no_keywords(hv2):
 
 
 def test_suggest_priors_empty_for_unmatched_keyword(hv2):
-    assert hv2.suggest_priors({"metric": "zzz_no_such_metric_zzz"}) == []
+    assert hv2.suggest_priors({"metric": "zzz_no_such_metric_zzz", **FIXTURE_COMP}) == []
+
+
+def test_suggest_priors_missing_comp_raises(hv2):
+    with pytest.raises(ValueError, match="comp"):
+        hv2.suggest_priors({"metric": "mae"})
 
 
 def test_suggest_priors_respects_max_items(hv2):
-    priors = hv2.suggest_priors({"metric": "mae"}, max_items=1)
+    priors = hv2.suggest_priors({"metric": "mae", **FIXTURE_COMP}, max_items=1)
     assert len(priors) == 1
 
 
 def test_suggest_priors_tags_match_data_type_sections(hv2):
-    priors = hv2.suggest_priors({"tags": ["duplicate_rows", "小樣本"]})
+    priors = hv2.suggest_priors({"tags": ["duplicate_rows", "小樣本"], **FIXTURE_COMP})
     assert len(priors) > 0
