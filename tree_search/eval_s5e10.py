@@ -43,6 +43,7 @@ sys.path.insert(0, _SCRIPTS_DIR)
 sys.path.insert(0, _HERE)
 from features import make_folds, build_all, rmse_clip, TARGET, ID  # noqa: E402
 import harness_v2 as hv2  # noqa: E402
+import eval_support as esup  # noqa: E402
 
 DATA = os.path.join(_COMP_DIR, "data")
 CACHE_DIR = os.path.join(_HERE, "cache_s5e10")
@@ -60,6 +61,31 @@ def rmse(y_true, pred) -> float:
     """Clipped RMSE -- the ONLY decision metric in this comp (see features.py's
     rmse_clip)."""
     return rmse_clip(y_true, pred)
+
+
+def maybe_postprocess(pred_full, postprocess):
+    """Scale, then clip, then round -- all inside the metric, dossier vocabulary
+    (`global_scale`/`round_to_int`/`clip_min`/`clip_max`).
+
+    Defaults (no scale, clip to [0,1], no rounding) reproduce the historical
+    `rmse_clip` path digit-for-digit -- cache_s5e10 scores and Feb-2026 comparability
+    depend on that. This competition's dossier explicitly forbids rounding
+    (snap-to-grid was rejected on evidence), so `round_to_int` is honoured but never
+    defaulted on. Until 2026-07-31 this evaluator had no postprocess mechanism at all
+    -- the one NOT_IMPLEMENTED case in external_data/verify_advisory.py's audit.
+    """
+    pp = postprocess or {}
+    gs = pp.get("global_scale")
+    if gs == "auto" or pp.get("auto_scale"):
+        raise ValueError("global_scale='auto' is not implemented in eval_s5e10; "
+                         "request a numeric scale")
+    sc = float(gs) if gs is not None else float(pp.get("scale", 1.0))
+    lo = float(pp.get("clip_min", 0.0))
+    hi = float(pp.get("clip_max", 1.0))
+    v = np.clip(np.asarray(pred_full, dtype=np.float64) * sc, lo, hi)
+    if pp.get("round_to_int"):
+        v = np.round(v)
+    return rmse_clip(_y, v, lo=lo, hi=hi), sc
 
 
 class EvalTimeout(Exception):
@@ -162,7 +188,11 @@ def evaluate_solo(config):
     else:
         raise ValueError(f"unknown model type {model!r}")
 
-    score = rmse(_y, oof)
+    postprocess = config.get("postprocess") or {}
+    score, _scale_used = maybe_postprocess(oof, postprocess)
+    if postprocess:
+        esup.write_attestation(_COMP_DIR, "postprocess", {
+            "honored_params": sorted(postprocess), "scale_used": round(_scale_used, 3)})
     return oof, pred, score, feats
 
 

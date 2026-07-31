@@ -1,0 +1,14 @@
+{
+  "target_encoding": {
+    "columns": [
+      "country_cat",
+      "store_cat",
+      "product_cat"
+    ],
+    "smoothing": 20.0,
+    "fold_aligned": true
+  },
+  "linear_family": {
+    "model": "ridge"
+  }
+}

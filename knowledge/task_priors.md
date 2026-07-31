@@ -57,8 +57,10 @@ a competition confirms them.
   always; no local signal or diagnostic currently earns the right to choose for you.**
   Post-hoc observation, NOT validated: the two 1-year comps went to `join_feature`, the one
   3-year comp to `ratio_target` — horizon length may be the real selector. Treat this exactly
-  as sceptically as the proportionality story that just died: pre-register it on the next
-  firing competition before believing it.
+  as sceptically as the proportionality story that just died: it is now formally registered as
+  H-HORIZON in `docs/preregistrations/horizon_length_form_selector.md`, whose protocol is
+  BINDING on the next firing-class competition — copy the prediction into that competition's
+  dossier and commit it before any model is fitted or any leaderboard consulted.
 
 ## TASK-TS-CALENDAR — daily/weekly retail-like series
 - **Trigger**: daily-resolution series with country/store/product keys.

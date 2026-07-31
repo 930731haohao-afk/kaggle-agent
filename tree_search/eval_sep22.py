@@ -87,11 +87,14 @@ _REPO_ROOT = os.path.dirname(_HERE)
 _COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "tabular-playground-series-sep-2022")
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
+import eval_support as esup  # noqa: E402
 
 DATA = os.path.join(_COMP_DIR, "data")
 CACHE_DIR = os.path.join(_HERE, "cache_sep22")
 TARGET, ID = "num_sold", "row_id"
 N_SPLITS, SEED = 5, 42
+# Capabilities the seed driver may rely on (tree_search/seed_from_ledger.py):
+SUPPORTS = {"per_fold_target_encoding": True, "linear_family": True}
 N_THREADS = 4      # matches CatBoost's existing thread_count=4; env-pinned below to avoid
                    # BLAS oversubscription now that LightGBM also pins its thread count
 
@@ -271,7 +274,7 @@ def get_feature_frame(drop=None):
 # solo-model runners (mirrors scripts/train.py / scripts/train_seedbag2.py exactly,
 # generalized over an arbitrary params dict and feature subset)
 # ---------------------------------------------------------------------------
-def _run_lgb(params, Xdf, Xtestdf):
+def _run_lgb(params, Xdf, Xtestdf, te_cfg=None, cat_feats=None):
     import lightgbm as lgb
     # Determinism pinned 2026-07-30 (readiness-audit finding): LGBM's multi-threaded
     # histogram build is not reproducible across processes by default, which can flip
@@ -286,16 +289,22 @@ def _run_lgb(params, Xdf, Xtestdf):
     pred = np.zeros(len(Xtestdf))
     for tr_mask, va_mask in _FOLDS:
         X_tr, X_va = Xdf[tr_mask], Xdf[va_mask]
+        Xte_fold = Xtestdf
+        if te_cfg:
+            X_tr, X_va, Xte_fold = esup.per_fold_target_encode(
+                X_tr, X_va, Xtestdf, _y_log[tr_mask],
+                te_cfg.get("columns"), te_cfg.get("smoothing", esup.DEFAULT_SMOOTHING),
+                cat_fallback=cat_feats)
         y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]
         m = lgb.LGBMRegressor(n_estimators=n_est, **p)
         m.fit(X_tr, y_tr, eval_set=[(X_va, y_va)],
               callbacks=[lgb.early_stopping(esr, verbose=False)])
         oof[va_mask] = np.expm1(m.predict(X_va))
-        pred += np.expm1(m.predict(Xtestdf)) / N_SPLITS
+        pred += np.expm1(m.predict(Xte_fold)) / N_SPLITS
     return oof, pred
 
 
-def _run_cat(params, Xdf, Xtestdf, cat_feats):
+def _run_cat(params, Xdf, Xtestdf, cat_feats, te_cfg=None):
     from catboost import CatBoostRegressor
     p = dict(loss_function="RMSE", random_seed=SEED, thread_count=4, verbose=False,
              allow_writing_files=False)
@@ -306,12 +315,25 @@ def _run_cat(params, Xdf, Xtestdf, cat_feats):
     pred = np.zeros(len(Xtestdf))
     for tr_mask, va_mask in _FOLDS:
         X_tr, X_va = Xdf[tr_mask], Xdf[va_mask]
+        Xte_fold = Xtestdf
+        if te_cfg:
+            X_tr, X_va, Xte_fold = esup.per_fold_target_encode(
+                X_tr, X_va, Xtestdf, _y_log[tr_mask],
+                te_cfg.get("columns"), te_cfg.get("smoothing", esup.DEFAULT_SMOOTHING),
+                cat_fallback=cat_feats)
         y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]
         m = CatBoostRegressor(iterations=n_est, cat_features=cat_feats, **p)
         m.fit(X_tr, y_tr, eval_set=(X_va, y_va), early_stopping_rounds=esr)
         oof[va_mask] = np.expm1(m.predict(X_va))
-        pred += np.expm1(m.predict(Xtestdf)) / N_SPLITS
+        pred += np.expm1(m.predict(Xte_fold)) / N_SPLITS
     return oof, pred
+
+
+def _run_lin(params, Xdf, Xtestdf, cat_feats):
+    """Sparse-linear family (Ridge on one-hot design) — unlocks encoding scheme
+    onehot_sparse. Same OOF/pred contract and log-space semantics as the GBDT runners."""
+    return esup.run_linear(params, Xdf, Xtestdf, cat_feats, _FOLDS, _y_log,
+                           len(_train), invert=np.expm1)
 
 
 def evaluate_solo(config):
@@ -320,17 +342,31 @@ def evaluate_solo(config):
     model = config["model"]
     params = dict(config.get("params") or {})
     postprocess = config.get("postprocess") or {}
+    te_cfg = config.get("target_encoding") or None
 
     Xdf, Xtestdf, feats, cat_feats = get_feature_frame(drop)
     if model == "lgb":
-        oof, pred = _run_lgb(params, Xdf, Xtestdf)
+        oof, pred = _run_lgb(params, Xdf, Xtestdf, te_cfg=te_cfg, cat_feats=cat_feats)
     elif model == "cat":
-        oof, pred = _run_cat(params, Xdf, Xtestdf, cat_feats)
+        oof, pred = _run_cat(params, Xdf, Xtestdf, cat_feats, te_cfg=te_cfg)
+    elif model == "lin":
+        oof, pred = _run_lin(params, Xdf, Xtestdf, cat_feats)
     else:
         raise ValueError(f"unknown model type {model!r}")
 
     score, scale_used = maybe_postprocess(oof, postprocess)
     extra = dict(n_feats=len(feats), scale_used=round(scale_used, 3))
+    if te_cfg:
+        extra["target_encoding"] = te_cfg.get("columns") or cat_feats
+        esup.write_attestation(_COMP_DIR, "target_encoding", {
+            "columns": te_cfg.get("columns") or cat_feats,
+            "smoothing": te_cfg.get("smoothing", esup.DEFAULT_SMOOTHING),
+            "fold_aligned": True})
+    if postprocess:
+        esup.write_attestation(_COMP_DIR, "postprocess", {
+            "honored_params": sorted(postprocess), "scale_used": round(scale_used, 3)})
+    if model == "lin":
+        esup.write_attestation(_COMP_DIR, "linear_family", {"model": "ridge"})
     return oof, pred, score, feats, extra
 
 

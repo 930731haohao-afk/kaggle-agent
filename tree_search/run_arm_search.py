@@ -93,7 +93,8 @@ def search(comp: str, arm: str, ev, n_nodes: int, wl: dict):
         # model-level decisions changed nothing while the ledger reported them realized.
         specs = sfl.load_emitted(ws)
         if specs:
-            seed_nodes, unconsumable = sfl.materialize(specs, cfg, wl)
+            seed_nodes, unconsumable = sfl.materialize(
+                specs, cfg, wl, capabilities=getattr(ev, "SUPPORTS", {}))
             seeded = []
             for sn in seed_nodes:
                 nid = hv3.next_id(tree)

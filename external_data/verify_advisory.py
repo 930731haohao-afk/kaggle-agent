@@ -134,6 +134,26 @@ def verify_competition(comp: str, dossier_path: Path) -> dict:
         else:
             out["requests"].append({"operator": op, "params": params, "status": "verified",
                                     "detail": f"{mod}.{mech}() reads every requested parameter"})
+
+    # Runtime attestation beats the static grep: if the evaluator has actually executed the
+    # mechanism (tree_search/eval_support.write_attestation, written from evaluate_solo), the
+    # attestation records which parameters were honoured in a real evaluation. A static
+    # "verified" is a claim about source text; "verified (runtime)" is a consumer trace.
+    att_path = dossier_path.parent / "evaluator_attestation.json"
+    if att_path.exists():
+        try:
+            att = json.loads(att_path.read_text())
+        except Exception:  # noqa: BLE001
+            att = {}
+        for q in out["requests"]:
+            entry = att.get(q["operator"])
+            if not isinstance(entry, dict):
+                continue
+            honored = set(entry.get("honored_params") or entry.keys())
+            if q["status"] in ("verified", "PARTIAL") and set(q["params"]) <= honored:
+                q["status"] = "verified (runtime)"
+                q["detail"] = ("evaluator_attestation.json records these exact parameters "
+                               "honoured in a real evaluation")
     return out
 
 
@@ -143,6 +163,11 @@ def main(argv: list[str]) -> int:
     else:
         paths = [(Path(p).parent.name, Path(p))
                  for p in sorted(glob.glob(str(_ROOT / "competitions" / "*" / "dossier.json")))]
+        # Generated arm workspaces ("<comp>-v5-<arm>" from make_v5_arm.py, "<comp>.v5arms-*"
+        # from arm drivers) carry verbatim copies of their parent competition's dossier;
+        # auditing the copy double-counts the parent and always reports "no evaluator
+        # mapping". The parent's own dossier stays in the audit.
+        paths = [(c, p) for c, p in paths if "-v5-" not in c and ".v5arms-" not in c]
 
     rows = [verify_competition(c, p) for c, p in paths if p.exists()]
     rows = [r for r in rows if r["requests"] or r["errors"]]

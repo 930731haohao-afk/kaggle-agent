@@ -104,7 +104,7 @@ def _seed_blend_member(spec: dict, base: dict, whitelist: dict) -> tuple[list[di
               "seed_role": "blend_member", "archetype": arch}], [])
 
 
-# encoding schemes and why each one is or is not a node config
+# encoding schemes that never become node configs, and why
 _ENCODING_REASON = {
     "native": "already the evaluators' default: categorical dtype is passed to the model, "
               "so no node is needed (advisory, not a gap)",
@@ -112,16 +112,52 @@ _ENCODING_REASON = {
              "not in a node config",
     "ordinal": "data-layer transform: belongs in external_data/apply.py as an added column",
     "crosses": "data-layer transform: belongs in external_data/apply.py as added columns",
-    "target": "requires per-fold target encoding computed on the model's own folds "
-              "(requires_evaluator_support: per_fold_target_encoding); no evaluator "
-              "implements it, and approximating it out-of-fold is the s4e1 leakage path",
-    "onehot_sparse": "requires a sparse linear model family, which the evaluators do not have",
 }
+# evaluator capability each remaining scheme depends on (declared via the evaluator
+# module's SUPPORTS dict; tree_search/eval_support.py implements both)
+_ENCODING_CAPABILITY = {"target": "per_fold_target_encoding",
+                        "onehot_sparse": "linear_family"}
 
 
-def materialize(specs: list[dict], base_cfg: dict,
-                whitelist: dict | None = None) -> tuple[list[dict], list[dict]]:
-    """Translate emitted configs into node configs. Returns (nodes, unconsumable)."""
+def _seed_encoding(spec: dict, base: dict,
+                   capabilities: dict) -> tuple[list[dict], list[dict]]:
+    scheme = spec.get("scheme", "native")
+    if scheme in _ENCODING_REASON:
+        return [], [{"operator": "encoding", "scheme": scheme,
+                     "reason": _ENCODING_REASON[scheme]}]
+    cap = _ENCODING_CAPABILITY.get(scheme)
+    if cap is None:
+        return [], [{"operator": "encoding", "scheme": scheme, "reason": "unknown scheme"}]
+    if not (capabilities or {}).get(cap):
+        # honest gap, not a silent drop: the vocabulary can express it, this evaluator
+        # cannot run it, and the ledger's consumer report must say so
+        return [], [{"operator": "encoding", "scheme": scheme,
+                     "reason": f"evaluator does not declare capability {cap!r} in SUPPORTS; "
+                               "implemented for the firing-class evaluators via "
+                               "tree_search/eval_support.py"}]
+    feats = copy.deepcopy(base.get("features") or {"drop": []})
+    if scheme == "target":
+        fam = base.get("model") or "lgb"
+        node = {"kind": "solo", "model": fam,
+                "params": dict(base.get("params") or {}) if base.get("model") == fam else {},
+                "features": feats, "seed_role": "encoding",
+                "target_encoding": {"columns": spec.get("columns"),
+                                    "smoothing": float(spec.get("smoothing", 20.0))}}
+        return [node], []
+    # onehot_sparse -> sparse linear member; decorrelates the GBDT pool by construction
+    node = {"kind": "solo", "model": "lin", "params": {"alpha": 1.0},
+            "features": feats, "seed_role": "encoding", "scheme": "onehot_sparse"}
+    return [node], []
+
+
+def materialize(specs: list[dict], base_cfg: dict, whitelist: dict | None = None,
+                capabilities: dict | None = None) -> tuple[list[dict], list[dict]]:
+    """Translate emitted configs into node configs. Returns (nodes, unconsumable).
+
+    `capabilities` is the evaluator module's SUPPORTS dict; encoding schemes that need
+    evaluator support are seeded only when the capability is declared, and otherwise
+    recorded as unconsumable with the missing capability named.
+    """
     nodes, skipped = [], []
     for spec in specs or []:
         role = spec.get("seed_role")
@@ -130,9 +166,7 @@ def materialize(specs: list[dict], base_cfg: dict,
         elif role == "blend_member":
             n, s = _seed_blend_member(spec, base_cfg, whitelist or {})
         elif role == "encoding":
-            scheme = spec.get("scheme", "native")
-            n, s = [], [{"operator": "encoding", "scheme": scheme,
-                         "reason": _ENCODING_REASON.get(scheme, "unknown scheme")}]
+            n, s = _seed_encoding(spec, base_cfg, capabilities or {})
         else:
             n, s = [], [{"operator": spec.get("seed_role") or "unknown",
                          "reason": "no translation rule for this seed_role"}]

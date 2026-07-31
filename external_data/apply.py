@@ -180,6 +180,11 @@ def _config_only(op: str, params: dict) -> dict:
                                  "only, using the model's own folds (s4e1: independent folds "
                                  "with a different seed inflated AUC to 0.89653 vs ~0.8937 "
                                  "fold-aligned; 'looks safer' was another leakage path)")
+        if scheme == "onehot_sparse":
+            # Needs a linear model family: one-hot into a GBDT is strictly worse than its
+            # native categorical handling, so the scheme only pays inside a sparse linear
+            # member. Evaluators advertise the capability via their SUPPORTS attribute.
+            cfg["requires_evaluator_support"] = "linear_family"
         if scheme == "crosses":
             cfg["max_pairs"] = int(params.get("max_pairs", 10))
             cfg["restrict_to"] = params.get("restrict_to", "tree_members")
@@ -329,10 +334,21 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                     "native categorical handling is the evaluators' default; nothing to apply"})
                 continue
             if scheme not in ENCODING_DATA_SCHEMES:
-                plan["unrealized"].append({"operator": op, "scheme": scheme, "reason":
-                    "requires per-fold computation inside the evaluator (target) or a sparse "
-                    "linear model family (onehot_sparse); neither exists, and approximating "
-                    "target encoding out of fold is the s4e1 leakage path"})
+                # target / onehot_sparse cannot run on dataframes (per-fold computation and a
+                # linear family live inside the evaluator), so they are emitted as node
+                # configs; the seed driver checks the evaluator's SUPPORTS declaration and
+                # books an honest unconsumable entry when the capability is missing.
+                # (Until 2026-07-31 this branch refused both schemes outright.)
+                try:
+                    plan.setdefault("node_configs", []).append(_config_only(op, params))
+                    plan["emitted_config"].append({"operator": op, "scheme": scheme, "note":
+                        "emitted as a node config; NOT applied here — requires evaluator "
+                        "support, which tree_search/seed_from_ledger.py verifies against the "
+                        "evaluator's SUPPORTS declaration and records in "
+                        "injection_consumed.json"})
+                except Exception as e:  # noqa: BLE001
+                    plan["unrealized"].append({"operator": op, "scheme": scheme,
+                                               "reason": f"{type(e).__name__}: {e}"})
                 continue
             try:
                 tr, te, cols = _encode_columns(tr, te, scheme, params)

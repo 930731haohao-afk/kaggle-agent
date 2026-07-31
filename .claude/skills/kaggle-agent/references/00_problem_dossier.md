@@ -49,7 +49,13 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    `ratio_target`, and on both competitions measured so far the leaderboard favoured
    `join_feature` — see the form verdict in `knowledge/task_priors.md` TASK-TS-FUTURE.** Anything you want that the operator set cannot
    express goes in `not_recorded`.
-7. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.
+7. **Open pre-registrations are binding.** If the dossier fires external-data need on a
+   country-panel time-series task (TASK-TS-FUTURE class), check `docs/preregistrations/` for
+   REGISTERED hypotheses: copy each one's prediction into this dossier's `preregistration`
+   field and commit it BEFORE any model is fitted or any leaderboard is consulted. The
+   prediction never changes what runs — both forms still race; see
+   `docs/preregistrations/horizon_length_form_selector.md`.
+8. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.
 
 ## Output schema — `dossier.json`
 
