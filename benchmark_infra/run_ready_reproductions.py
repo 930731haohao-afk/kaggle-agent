@@ -44,7 +44,7 @@ def log(msg: str) -> None:
 
 def aide_running() -> bool:
     """A real AIDE interpreter, not the wrapper shell that launched it."""
-    out = subprocess.run(["pgrep", "-af", "run_comp.py"], capture_output=True, text=True)
+    out = subprocess.run(["pgrep", "-af", "run_comp.py"], capture_output=True, text=True, check=False)
     for line in out.stdout.splitlines():
         pid, _, _ = line.partition(" ")
         try:

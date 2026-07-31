@@ -222,7 +222,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
             DEDUP_REJECTIONS.append(dict(mutation=mutation, dup_id=dup_id))
             if lineage_id is not None:
                 _dedup_offset[lineage_id] = _dedup_offset.get(lineage_id, 0) + 1
-            nid_null, dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
+            nid_null, _dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
                                                stored, None, "failed", 0.0)
             assert nid_null is None
             hv3.save(tree, TREE_PATH)
@@ -634,7 +634,7 @@ def inject_explore_burst(tree, root_id):
     seeds = _burst_seeds()
     injected_ids = []
     for name, cfg, desc in seeds:
-        nid, dup, r = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
+        nid, _dup, r = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = name
             SOLO_QUEUES[name] = []
@@ -644,7 +644,7 @@ def inject_explore_burst(tree, root_id):
     if len(pool) >= 2:
         cfg = {"kind": "blend", "members": sorted(pool), "weight_search": "dirichlet",
                "postprocess": {"snap": True}}
-        nid, dup, r = eval_and_add(tree, root_id, "[EXPL_MEGABLEND] long-shot: kitchen-sink "
+        nid, _dup, r = eval_and_add(tree, root_id, "[EXPL_MEGABLEND] long-shot: kitchen-sink "
                                     f"blend of the entire {len(pool)}-member solo pool via v3's "
                                     "k=800+coordinate-ascent search + cost guard "
                                     "[feature 5/6 -- direct test at scale]", cfg)

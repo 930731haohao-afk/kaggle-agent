@@ -212,7 +212,7 @@ def main():
         if parent_id is None:
             # fallback: reblend the growing pool
             pool = [n["id"] for n in tree["nodes"] if n["status"] == "evaluated" and n["config"].get("kind") == "solo"]
-            eid, _ = eval_and_add(tree, tree["root_id"], "[BLEND] pool reblend", {"kind": "blend", "members": sorted(pool)})
+            _eid, _ = eval_and_add(tree, tree["root_id"], "[BLEND] pool reblend", {"kind": "blend", "members": sorted(pool)})
             if hv3.n_evaluated(tree) >= hv3.init_budget(tree)["total_budget"]: break
             continue
         name = LINEAGE_NAMES.get(parent_id, "ROOT")

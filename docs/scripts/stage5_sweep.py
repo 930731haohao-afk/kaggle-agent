@@ -160,7 +160,7 @@ def better(a, b, direction):
 
 def run_comp(comp, info, tier4_map):
     y = load_y(comp)
-    nid, members, M = load_members(comp)
+    _nid, members, M = load_members(comp)
     if M is None:
         return dict(comp=comp, error="成員 OOF 不足")
     d = info["direction"]

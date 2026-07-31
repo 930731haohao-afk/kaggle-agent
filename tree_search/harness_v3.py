@@ -217,7 +217,7 @@ def update_phase(tree: dict) -> str:
                                     regardless of the above (E-5 verdict #3, the
                                     "numeric backstop").
     """
-    st = tree["search_state"]
+    _st = tree["search_state"]
     budget = init_budget(tree)
     n_eval = n_evaluated(tree)
 

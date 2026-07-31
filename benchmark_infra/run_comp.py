@@ -118,7 +118,7 @@ def main() -> None:
     ]
     print("run dir:", run_dir)
     print("cmd:", " ".join(cmd[:1] + [f'"{a}"' for a in cmd[1:]]))
-    sys.exit(subprocess.run(cmd, cwd=run_dir).returncode)
+    sys.exit(subprocess.run(cmd, cwd=run_dir, check=False).returncode)
 
 
 if __name__ == "__main__":

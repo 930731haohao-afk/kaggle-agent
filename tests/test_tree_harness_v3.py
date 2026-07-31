@@ -66,7 +66,7 @@ def _plateau_a_lineage(hv3, tree, root_id, seed_score, streak_scores, active=Tru
 def test_phase_machine_exploit_to_burst_to_stop(hv3):
     tree = hv3.new_tree("c")
     hv3.init_budget(tree, total_budget=60, explore_burst_size=3, post_burst_patience=4)
-    root_id, _ = 0, None
+    _root_id, _ = 0, None
     hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 100.0, "evaluated", 1.0)
 
     # Drive the single lineage to plateau (3 non-improving children against global best).
@@ -80,7 +80,7 @@ def test_phase_machine_exploit_to_burst_to_stop(hv3):
     lid2, _ = hv3.add_node(tree, tree["root_id"], "burst-seed", {"kind": "solo", "v": "b0"},
                             90.0, "evaluated", 1.0)  # 1 eval into the burst, no improvement
     for i in range(6):  # plenty of further non-improving evals
-        nid, dup = hv3.add_node(tree, lid2, f"burst{i}", {"kind": "solo", "v": f"b{i+1}"},
+        _nid, dup = hv3.add_node(tree, lid2, f"burst{i}", {"kind": "solo", "v": f"b{i+1}"},
                                  90.0 + i, "evaluated", 1.0)
         assert dup is None
         if hv3.should_stop(tree):
@@ -104,7 +104,7 @@ def test_phase_machine_burst_resets_patience_on_improvement(hv3):
     # 2 evals in (== explore_burst_size), no improvement yet -- not stopped
     assert not hv3.should_stop(tree)
     # a genuine improvement (breaks the 50.0-vs-90/91 losing streak) resets the patience clock
-    nid, dup = hv3.add_node(tree, lid2, "burst-win", {"kind": "solo", "v": "bwin"},
+    _nid, _dup = hv3.add_node(tree, lid2, "burst-win", {"kind": "solo", "v": "bwin"},
                              10.0, "evaluated", 1.0)
     assert tree["search_state"]["budget"]["evals_since_burst_improve"] == 0
     assert not hv3.should_stop(tree)
@@ -193,14 +193,14 @@ def test_solo_breakthrough_reopens_plateaued_blend_lineage(hv3):
     tree["search_state"]["active_lineage"] = blend_lid
     parent = blend_lid
     for i in range(3):
-        nid, dup = hv3.add_node(tree, parent, f"blend-child{i}",
+        nid, _dup = hv3.add_node(tree, parent, f"blend-child{i}",
                                  {"kind": "blend", "members": [0, 1, 10 + i]},
                                  8.1 + i * 0.1, "evaluated", 1.0)  # never beats 8.0
         parent = nid
     assert blend_lid in tree["search_state"]["plateaued"]
 
     # A fresh solo lineage later finds a new global best -> should auto-reopen the blend lineage
-    solo_lid, _ = hv3.add_node(tree, tree["root_id"], "solo-seed",
+    _solo_lid, _ = hv3.add_node(tree, tree["root_id"], "solo-seed",
                                 {"kind": "solo", "v": "s0"}, 5.0, "evaluated", 1.0)
     assert blend_lid not in tree["search_state"]["plateaued"]
     assert tree["search_state"]["streak"].get(str(blend_lid)) == 0
@@ -304,9 +304,9 @@ def test_eval_blend_coordinate_ascent_no_worse_than_raw_search(hv3, tmp_path):
     def mae(v):
         return float(np.mean(np.abs(v - y)))
 
-    w_no_ascent, s_no_ascent, _ = hv3.eval_blend(str(tmp_path), [0, 1], mae, k=100,
+    _w_no_ascent, s_no_ascent, _ = hv3.eval_blend(str(tmp_path), [0, 1], mae, k=100,
                                                   coordinate_ascent=False)
-    w_ascent, s_ascent, _ = hv3.eval_blend(str(tmp_path), [0, 1], mae, k=100,
+    _w_ascent, s_ascent, _ = hv3.eval_blend(str(tmp_path), [0, 1], mae, k=100,
                                             coordinate_ascent=True)
     assert s_ascent <= s_no_ascent + 1e-9  # ascent only ever refines, never regresses
 
@@ -336,7 +336,7 @@ def test_cost_guard_no_warning_when_fast(hv3, tmp_path):
     hv3.cache_oof(str(tmp_path), 0, y)
     hv3.cache_oof(str(tmp_path), 1, rng.normal(size=50))
 
-    w, s, oofs, warning = hv3.eval_blend_with_cost_guard(
+    _w, _s, _oofs, warning = hv3.eval_blend_with_cost_guard(
         str(tmp_path), [0, 1], lambda v: float(np.mean(np.abs(v - y))),
         k=50, wall_time_threshold_s=45.0)
     assert warning is None
@@ -357,7 +357,7 @@ def test_cost_guard_warns_and_coarsens_when_slow(hv3, tmp_path):
         return float(np.mean(np.abs(v - y)))
 
     tree = hv3.new_tree("c")
-    w, s, oofs, warning = hv3.eval_blend_with_cost_guard(
+    _w, _s, _oofs, warning = hv3.eval_blend_with_cost_guard(
         str(tmp_path), [0, 1], slow_metric, tree=tree, k=10,
         wall_time_threshold_s=0.05, coarsen_k=3, coordinate_ascent=False)
     assert warning is not None
@@ -380,7 +380,7 @@ def test_cost_guard_logs_visibility_only_when_already_coarse(hv3, tmp_path):
         return float(np.mean(np.abs(v - y)))
 
     tree = hv3.new_tree("c")
-    w, s, oofs, warning = hv3.eval_blend_with_cost_guard(
+    _w, _s, _oofs, warning = hv3.eval_blend_with_cost_guard(
         str(tmp_path), [0, 1], slow_metric, tree=tree, k=3,
         wall_time_threshold_s=0.001, coarsen_k=3, coordinate_ascent=False)  # k already == coarsen_k -> nothing to coarsen
     assert warning is not None
@@ -433,7 +433,7 @@ def test_validate_state_true_for_fresh_and_populated_tree(hv3):
     tree = hv3.new_tree("c")
     assert hv3.validate_state(tree) is True
     hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 10.0, "evaluated", 1.0)
-    lid, _ = hv3.add_node(tree, tree["root_id"], "seed", {"kind": "solo", "v": 1}, 9.0,
+    _lid, _ = hv3.add_node(tree, tree["root_id"], "seed", {"kind": "solo", "v": 1}, 9.0,
                            "evaluated", 1.0)
     hv3.init_budget(tree)
     hv3.update_phase(tree)
@@ -599,13 +599,13 @@ def test_apply_burst_seed_sanity_gate_burns_only_the_seed_lineage(hv3):
     # a second, healthy lineage must remain selectable after the garbage one is burned --
     # otherwise select_next_parent's own "everything plateaued -> reopen once" fallback
     # (a DIFFERENT, pre-existing harness behavior) would mask what this test checks.
-    healthy_id, _ = hv3.add_node(tree, tree["root_id"], "EXPL_XT healthy seed",
+    _healthy_id, _ = hv3.add_node(tree, tree["root_id"], "EXPL_XT healthy seed",
                                   {"kind": "solo", "v": "xt"}, 345.0, "evaluated", 40.0)
     garbage_id, dup = hv3.add_node(tree, tree["root_id"], "EXPL_DART garbage seed",
                                     {"kind": "solo", "v": "dart"}, 6300.0, "evaluated", 130.0)
     assert dup is None
 
-    passed, bound = hv3.apply_burst_seed_sanity_gate(tree, garbage_id)
+    passed, _bound = hv3.apply_burst_seed_sanity_gate(tree, garbage_id)
     assert passed is False
     # the seed's own lineage (itself, as a direct root child) is now excluded from
     # further selection -- "burn 1 node, not a lineage"
@@ -615,7 +615,7 @@ def test_apply_burst_seed_sanity_gate_burns_only_the_seed_lineage(hv3):
     assert "sanity gate FAILED" in log["reason"]
 
     # select_next_parent must never offer this lineage's node for further expansion
-    parent_id, lineage_id = hv3.select_next_parent(tree)
+    _parent_id, lineage_id = hv3.select_next_parent(tree)
     assert lineage_id != garbage_id
 
 
@@ -624,7 +624,7 @@ def test_apply_burst_seed_sanity_gate_noop_for_healthy_seed(hv3):
     hv3.add_root(tree, "root", {"kind": "solo", "v": 0}, 340.0, "evaluated", 1.0)
     healthy_id, _ = hv3.add_node(tree, tree["root_id"], "EXPL_XT healthy seed",
                                   {"kind": "solo", "v": "xt"}, 345.0, "evaluated", 40.0)
-    passed, bound = hv3.apply_burst_seed_sanity_gate(tree, healthy_id)
+    passed, _bound = hv3.apply_burst_seed_sanity_gate(tree, healthy_id)
     assert passed is True
     assert healthy_id not in tree["search_state"]["plateaued"]
     assert tree["search_state"]["backtrack_log"] == []

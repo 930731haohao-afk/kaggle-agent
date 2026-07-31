@@ -1,0 +1,73 @@
+[
+  {
+    "comp": "playground-series-s3e19",
+    "lb_ranking": [
+      "featurejoin",
+      "ratio",
+      "baseline"
+    ],
+    "probes": {
+      "2021": {
+        "train_years": "<2021",
+        "n_train": 109575,
+        "n_val": 27375,
+        "smape": {
+          "baseline": 20.4175,
+          "featurejoin": 11.5673,
+          "ratio": 8.8546
+        },
+        "ranking": [
+          "ratio",
+          "featurejoin",
+          "baseline"
+        ],
+        "matches_lb": false,
+        "top_matches_lb": false
+      }
+    }
+  },
+  {
+    "comp": "tabular-playground-series-sep-2022",
+    "lb_ranking": [
+      "featurejoin",
+      "ratio",
+      "baseline"
+    ],
+    "probes": {
+      "2019": {
+        "train_years": "<2019",
+        "n_train": 35040,
+        "n_val": 17520,
+        "smape": {
+          "baseline": 6.7545,
+          "featurejoin": 6.4924,
+          "ratio": 5.7055
+        },
+        "ranking": [
+          "ratio",
+          "featurejoin",
+          "baseline"
+        ],
+        "matches_lb": false,
+        "top_matches_lb": false
+      },
+      "2020": {
+        "train_years": "<2020",
+        "n_train": 52560,
+        "n_val": 17568,
+        "smape": {
+          "baseline": 29.9594,
+          "featurejoin": 30.9307,
+          "ratio": 31.995
+        },
+        "ranking": [
+          "baseline",
+          "featurejoin",
+          "ratio"
+        ],
+        "matches_lb": false,
+        "top_matches_lb": false
+      }
+    }
+  }
+]

@@ -178,7 +178,7 @@ def evaluate_blend(config):
     if len(members) < 2:
         raise ValueError(f"blend node needs >=2 members, got {members!r}")
     method = config.get("weight_search", "dirichlet")
-    best_w, best_s, oofs = hv2.eval_blend(CACHE_DIR, members, _metric_rmse,
+    best_w, best_s, _oofs = hv2.eval_blend(CACHE_DIR, members, _metric_rmse,
                                           weight_search=method)
     return dict(members=members, weights=[round(float(w), 4) for w in best_w],
                 method=method, rmse=round(best_s, 6)), best_s

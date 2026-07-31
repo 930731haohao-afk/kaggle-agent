@@ -217,7 +217,7 @@ def run_arm_a(comp):
 
 
 def make_proposer_input(comp):
-    spec, ev, off = load_comp(comp)
+    spec, _ev, off = load_comp(comp)
     disp = spec["display"]
     a_path = os.path.join(_HERE, f"wire_{comp}_A.json")
     tree = json.load(open(a_path)) if os.path.exists(a_path) else off

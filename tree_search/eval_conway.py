@@ -74,7 +74,7 @@ def _metric_fn(vec):
 def _eval_cnn(params):
     import cnn_lib
     cfg = {**cnn_lib.DEFAULT_CFG, **params}
-    oof_mae, scores, oof = cnn_lib.run_cv(cfg, name="_tsnode", folds_to_run=[0], save=False)
+    oof_mae, _scores, oof = cnn_lib.run_cv(cfg, name="_tsnode", folds_to_run=[0], save=False)
     return oof[F0].reshape(-1).astype(np.float32), oof_mae, cfg
 
 

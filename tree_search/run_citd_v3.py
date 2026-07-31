@@ -113,7 +113,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False):
         dup_id = hv3.find_duplicate_config(tree, stored)
         if dup_id is not None:
             _dedup_rejections(tree).append(dict(mutation=mutation, dup_id=dup_id))
-            nid_null, dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
+            nid_null, _dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
                                               stored, None, "failed", 0.0)
             assert nid_null is None
             hv3.save_search_state(tree, TREE_PATH)
@@ -130,7 +130,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False):
     elif kind == "blend":
         try:
             t0 = time.time()
-            best_w, best_neg, oofs, warning = hv3.eval_blend_with_cost_guard(
+            best_w, best_neg, _oofs, warning = hv3.eval_blend_with_cost_guard(
                 ev.CACHE_DIR, stored["members"], lambda vec: -ev.auc(ev._y, vec), tree=tree)
             best_score = -best_neg
             wall_s = time.time() - t0
@@ -409,7 +409,7 @@ def dry_run():
     print("[dry-run] root cfg:", ROOT_CFG, "known AUC", ROOT_KNOWN_AUC)
     for name, fn in [("LRC", seed_lrc), ("LRPAIRS", seed_lrpairs),
                      ("LGBTE", seed_lgbte), ("SEEDBAG", seed_seedbag)]:
-        cfg, desc = fn()
+        _cfg, desc = fn()
         print(f"  {name}: {desc}")
     print("[dry-run] pool:", {k: v[0] for k, v in LINEAR_POOL.items()})
     priors = hv2.suggest_priors({"metric": "auc", "tags": ["categorical", "binary", "encoding"],
@@ -464,13 +464,13 @@ def main():
         if name in existing:
             continue
         cfg, desc = fn()
-        nid, dup, info = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
+        nid, _dup, info = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = name
             print(f"[seed {name}] node #{nid} AUC={auc_of(info)}")
     if "BLEND" not in existing:
         cfg, desc = seed_blend(tree)
-        nid, dup, info = eval_and_add(tree, root_id, f"[BLEND] {desc}", cfg)
+        nid, _dup, info = eval_and_add(tree, root_id, f"[BLEND] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = "BLEND"
             print(f"[seed BLEND] node #{nid} AUC={auc_of(info)}")
@@ -484,7 +484,7 @@ def main():
             print(f"\n>>> PHASE -> explore_burst (n_eval={hv3.n_evaluated(tree)})")
             for cfg, desc in inject_explore_burst(tree):
                 name = desc.split("]")[0][1:]
-                nid, dup, info = eval_and_add(tree, root_id, desc, cfg)
+                nid, _dup, info = eval_and_add(tree, root_id, desc, cfg)
                 if nid is not None:
                     LINEAGE_NAMES[nid] = name
                     print(f"[burst {name}] node #{nid} AUC={auc_of(info)}")
@@ -520,7 +520,7 @@ def main():
                 st["active_lineage"] = None
             hv3.save_search_state(tree, TREE_PATH)
             continue
-        nid, dup, info = eval_and_add(tree, parent_id, desc, child_cfg)
+        nid, _dup, info = eval_and_add(tree, parent_id, desc, child_cfg)
         if nid is None:
             continue
         gb = hv3.global_best(tree)

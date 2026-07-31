@@ -49,7 +49,7 @@ def official_files(comp: str) -> set[str] | None:
     try:
         out = subprocess.run(
             [str(KAGGLE), "competitions", "files", "-c", comp, "--csv"],
-            capture_output=True, text=True, timeout=120, env=env,
+            capture_output=True, text=True, timeout=120, env=env, check=False,
         )
     except (subprocess.TimeoutExpired, OSError) as e:
         print(f"  ! {comp}: manifest fetch failed ({e.__class__.__name__})")

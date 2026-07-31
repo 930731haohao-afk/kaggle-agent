@@ -71,7 +71,7 @@ def _cross_matrix(pairs):
     """Sparse indicator matrix for a list of column pairs, over train+test rows."""
     gtr = pd.read_parquet(os.path.join(PROC, "gbdt_train.parquet"))
     gte = pd.read_parquet(os.path.join(PROC, "gbdt_test.parquet"))
-    n_tr, n_te = len(gtr), len(gte)
+    n_tr, _n_te = len(gtr), len(gte)
     blocks_tr, blocks_te = [], []
     for a, b in pairs:
         ca = np.concatenate([gtr[a].values, gte[a].values]).astype(np.int64)

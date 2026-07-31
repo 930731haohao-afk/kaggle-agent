@@ -281,7 +281,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
             # route through hv3.add_node anyway so its own dedup-consumes-budget
             # bookkeeping (feature 2) sees every rejection, even ones this driver's own
             # find_dup already caught -- defense in depth, matches the harness contract.
-            nid_null, dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
+            nid_null, _dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
                                                stored, None, "failed", 0.0)
             assert nid_null is None
             hv3.save_search_state(tree, TREE_PATH)  # Phase H-1 feature 7
@@ -718,7 +718,7 @@ def inject_explore_burst(tree, root_id):
     seeds = _burst_seeds()
     injected_ids = []
     for name, cfg, desc in seeds:
-        nid, dup, r = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
+        nid, _dup, r = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = name
             SOLO_QUEUES[name] = []
@@ -730,7 +730,7 @@ def inject_explore_burst(tree, root_id):
     pool = solo_pool(tree)
     if len(pool) >= 2:
         cfg = {"kind": "blend", "members": sorted(pool), "weight_search": "dirichlet", "space": "prob"}
-        nid, dup, r = eval_and_add(tree, root_id, "[EXPL_MEGABLEND] long-shot: kitchen-sink "
+        nid, _dup, r = eval_and_add(tree, root_id, "[EXPL_MEGABLEND] long-shot: kitchen-sink "
                                     f"blend of the entire {len(pool)}-member solo pool via v3's "
                                     "k=800+coordinate-ascent search + cost guard "
                                     "[feature 5/6 -- direct test at scale]", cfg)
@@ -803,7 +803,7 @@ def main():
         BOUNDARY_LOG.extend(hv3.boundary_candidates({"params": LGB_TUNED_PARAMS}, LGB_SEARCH_SPACE))
     print(f"boundary_candidates(root LGB_TUNED vs its Optuna box) -> {BOUNDARY_LOG}")
 
-    root_node = tree["nodes"][tree["root_id"]]
+    _root_node = tree["nodes"][tree["root_id"]]
     importance = (result_of(tree, tree["root_id"]) or {}).get("importance") or {}
     eng_importance = {k: v for k, v in importance.items() if k in ev.ENGINEERED_FEATURES}
     ranked_weak = sorted(eng_importance, key=lambda k: eng_importance[k]) if eng_importance else []

@@ -253,7 +253,7 @@ def evaluate_blend(config):
     def metric_fn(vec_log):
         return rmsle_from_log(_y_log, vec_log)
 
-    best_w, best_score, oofs = hv2.eval_blend(CACHE_DIR, members, metric_fn, weight_search=method)
+    best_w, best_score, _oofs = hv2.eval_blend(CACHE_DIR, members, metric_fn, weight_search=method)
     return dict(members=members, weights=[round(float(w), 4) for w in best_w],
                 method=method, rmsle=round(best_score, 6)), best_score
 
@@ -275,7 +275,7 @@ def evaluate(config: dict, node_id: int = None, timeout_s: int = 300) -> dict:
     try:
         kind = config.get("kind", "solo")
         if kind == "solo":
-            oof, pred, score, feats, extra = evaluate_solo(config)
+            oof, pred, score, _feats, extra = evaluate_solo(config)
             if node_id is not None:
                 hv2.cache_oof(CACHE_DIR, node_id, oof, pred=pred, rmsle=score)
             wall = time.time() - t0

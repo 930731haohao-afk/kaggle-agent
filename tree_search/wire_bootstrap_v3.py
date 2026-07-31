@@ -99,7 +99,7 @@ def main():
     nB = reblend[0]
     res_b = nB["config"]["result"]
 
-    v_off, w_off = blend_vec(res_off, ev.CACHE_DIR)
+    v_off, _w_off = blend_vec(res_off, ev.CACHE_DIR)
     v_b, w_b = blend_vec(res_b, ev.CACHE_DIR)
 
     # per-comp metric machinery + bit-check vs tree scores

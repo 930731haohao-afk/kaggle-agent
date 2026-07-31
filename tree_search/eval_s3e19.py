@@ -363,7 +363,7 @@ def evaluate(config: dict, node_id: int = None, timeout_s: int = 200) -> dict:
     try:
         kind = config.get("kind", "solo")
         if kind == "solo":
-            oof, pred, score, feats, extra = evaluate_solo(config)
+            oof, pred, score, _feats, extra = evaluate_solo(config)
             if node_id is not None:
                 hv2.cache_oof(CACHE_DIR, node_id, oof, pred=pred, smape=score)
             wall = time.time() - t0

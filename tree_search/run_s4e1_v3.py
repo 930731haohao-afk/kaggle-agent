@@ -143,7 +143,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False):
         dup_id = hv3.find_duplicate_config(tree, stored)
         if dup_id is not None:
             _dedup_rejections(tree).append(dict(mutation=mutation, dup_id=dup_id))
-            nid_null, dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
+            nid_null, _dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
                                                stored, None, "failed", 0.0)
             assert nid_null is None
             hv3.save_search_state(tree, TREE_PATH)
@@ -158,7 +158,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False):
     elif kind == "blend":
         try:
             t0 = time.time()
-            best_w, best_neg, oofs = hv3.eval_blend(ev.CACHE_DIR, stored["members"],
+            best_w, best_neg, _oofs = hv3.eval_blend(ev.CACHE_DIR, stored["members"],
                                                      lambda vec: -ev.auc(ev._y, vec))
             best_score = -best_neg
             wall_s = time.time() - t0
@@ -419,7 +419,7 @@ def dry_run():
     print("[dry-run] seeds:")
     for name, fn in [("XGBHAND", seed_xgbhand), ("CATHAND", seed_cathand),
                      ("FEATPRUNE", seed_featprune)]:
-        cfg, desc = fn()
+        _cfg, desc = fn()
         print(f"  {name}: {desc}")
     print("[dry-run] OK -- no training performed.")
 
@@ -471,25 +471,25 @@ def main():
 
     if "LGBHAND" not in existing:
         cfg, desc = seed_lgbhand(root_cfg)
-        nid, dup, info = eval_and_add(tree, root_id, f"[LGBHAND] {desc}", cfg)
+        nid, _dup, info = eval_and_add(tree, root_id, f"[LGBHAND] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = "LGBHAND"
             print(f"[seed LGBHAND] node #{nid} AUC={auc_of(info)}")
     if "XGBHAND" not in existing:
         cfg, desc = seed_xgbhand()
-        nid, dup, info = eval_and_add(tree, root_id, f"[XGBHAND] {desc}", cfg)
+        nid, _dup, info = eval_and_add(tree, root_id, f"[XGBHAND] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = "XGBHAND"
             print(f"[seed XGBHAND] node #{nid} AUC={auc_of(info)}")
     if "CATHAND" not in existing:
         cfg, desc = seed_cathand()
-        nid, dup, info = eval_and_add(tree, root_id, f"[CATHAND] {desc}", cfg)
+        nid, _dup, info = eval_and_add(tree, root_id, f"[CATHAND] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = "CATHAND"
             print(f"[seed CATHAND] node #{nid} AUC={auc_of(info)}")
     if "SEEDBAG" not in existing:
         cfg, desc = seed_seedbag(root_cfg)
-        nid, dup, info = eval_and_add(tree, root_id, f"[SEEDBAG] {desc}", cfg)
+        nid, _dup, info = eval_and_add(tree, root_id, f"[SEEDBAG] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = "SEEDBAG"
             print(f"[seed SEEDBAG] node #{nid} AUC={auc_of(info)}")
@@ -497,19 +497,19 @@ def main():
         bp = seed_boundarypush(root_cfg)
         if bp:
             cfg, desc = bp
-            nid, dup, info = eval_and_add(tree, root_id, f"[BOUNDARYPUSH] {desc}", cfg)
+            nid, _dup, info = eval_and_add(tree, root_id, f"[BOUNDARYPUSH] {desc}", cfg)
             if nid is not None:
                 LINEAGE_NAMES[nid] = "BOUNDARYPUSH"
                 print(f"[seed BOUNDARYPUSH] node #{nid} AUC={auc_of(info)}")
     if "FEATPRUNE" not in existing:
         cfg, desc = seed_featprune()
-        nid, dup, info = eval_and_add(tree, root_id, f"[FEATPRUNE] {desc}", cfg)
+        nid, _dup, info = eval_and_add(tree, root_id, f"[FEATPRUNE] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = "FEATPRUNE"
             print(f"[seed FEATPRUNE] node #{nid} AUC={auc_of(info)}")
     if "BLEND" not in existing:
         cfg, desc = seed_blend(tree)
-        nid, dup, info = eval_and_add(tree, root_id, f"[BLEND] {desc}", cfg)
+        nid, _dup, info = eval_and_add(tree, root_id, f"[BLEND] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = "BLEND"
             print(f"[seed BLEND] node #{nid} AUC={auc_of(info)}")
@@ -525,7 +525,7 @@ def main():
             root_id = tree["root_id"]
             for cfg, desc in inject_explore_burst(tree, root_id):
                 name = desc.split("]")[0][1:]
-                nid, dup, info = eval_and_add(tree, root_id, desc, cfg)
+                nid, _dup, info = eval_and_add(tree, root_id, desc, cfg)
                 if nid is not None:
                     LINEAGE_NAMES[nid] = name
                     score_auc = auc_of(info)
@@ -582,7 +582,7 @@ def main():
                 st["active_lineage"] = None
             hv3.save_search_state(tree, TREE_PATH)
             continue
-        nid, dup, info = eval_and_add(tree, parent_id, desc, child_cfg)
+        nid, _dup, info = eval_and_add(tree, parent_id, desc, child_cfg)
         if nid is None:
             continue
         gb = hv3.global_best(tree)

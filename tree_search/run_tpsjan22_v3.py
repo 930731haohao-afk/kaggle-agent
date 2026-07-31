@@ -85,7 +85,7 @@ def metric_fn(vec):
 
 def evaluate_blend_v3(tree, stored_cfg):
     members = stored_cfg["members"]
-    best_w, best_s, oofs = hv3.eval_blend_with_cost_guard(
+    best_w, best_s, _oofs = hv3.eval_blend_with_cost_guard(
         ev.CACHE_DIR, members, metric_fn, tree=tree)[:3]
     # (warning captured below via the 4-tuple; re-call cheaply avoided by unpacking)
     return best_w, best_s
@@ -100,7 +100,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
             if lineage_id is not None:
                 off = _dedup_offset(tree)
                 off[str(lineage_id)] = off.get(str(lineage_id), 0) + 1
-            nid_null, dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
+            nid_null, _dup_echo = hv3.add_node(tree, parent_id, mutation + " [dedup pre-check]",
                                               stored, None, "failed", 0.0)
             assert nid_null is None
             hv3.save_search_state(tree, TREE_PATH)
@@ -115,7 +115,7 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
     elif kind == "blend":
         try:
             t0 = time.time()
-            best_w, best_s, oofs, warning = hv3.eval_blend_with_cost_guard(
+            best_w, best_s, _oofs, warning = hv3.eval_blend_with_cost_guard(
                 ev.CACHE_DIR, stored["members"], metric_fn, tree=tree)
             wall_s = round(time.time() - t0, 1)
             score, status = round(best_s, 6), "evaluated"
@@ -354,7 +354,7 @@ ALL_LINEAGE_NAMES.extend(BURST_NAMES)
 
 def inject_explore_burst(tree, root_id):
     for name, cfg, desc in _burst_seeds():
-        nid, dup, r = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
+        nid, _dup, r = eval_and_add(tree, root_id, f"[{name}] {desc}", cfg)
         if nid is not None:
             LINEAGE_NAMES[nid] = name
             SOLO_QUEUES.setdefault(name, [])
@@ -365,7 +365,7 @@ def inject_explore_burst(tree, root_id):
     pool = solo_pool(tree)
     if len(pool) >= 2:
         cfg = {"kind": "blend", "members": sorted(pool), "weight_search": "dirichlet"}
-        nid, dup, r = eval_and_add(tree, root_id, "[EXPL_MEGABLEND] long-shot: "
+        nid, _dup, r = eval_and_add(tree, root_id, "[EXPL_MEGABLEND] long-shot: "
                                    f"kitchen-sink blend of the entire {len(pool)}-member "
                                    "solo pool (k=800+coord-ascent)", cfg)
         if nid is not None:

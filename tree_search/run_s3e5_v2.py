@@ -582,7 +582,7 @@ def verify_digit_for_digit():
     print("=== digit-for-digit v1-cache verification (BEFORE searching) ===")
     checks = [("ROOT(LGB_tuned)", 0, 0.56244)] + [(name, v1id, exp) for name, (v1id, exp, _) in LEGACY_SPECS.items()]
     for name, v1id, expected in checks:
-        oof, pred, score, coef = ev.load_v1_solo(v1id, expected)
+        _oof, _pred, score, _coef = ev.load_v1_solo(v1id, expected)
         print(f"  {name} (v1 #{v1id}): recomputed QWK={score:.6f} vs historical {expected} "
               f"-> OK (|diff|={abs(score - expected):.2e})")
     print("=== verification passed ===\n")

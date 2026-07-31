@@ -547,7 +547,7 @@ def main():
     print(f"Engineered-feature importance (ascending, root LGB): "
           f"{[(k, eng_importance[k]) for k in ranked_weak]}")
     weak2 = ranked_weak[:2] if len(ranked_weak) >= 2 else ranked_weak
-    weak3 = ranked_weak[:3] if len(ranked_weak) >= 3 else ranked_weak
+    _weak3 = ranked_weak[:3] if len(ranked_weak) >= 3 else ranked_weak
 
     def seed_featprune_fn():
         return seed_featprune(weak2)

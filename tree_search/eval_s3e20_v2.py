@@ -314,7 +314,7 @@ def evaluate_blend(config):
     def metric_fn(vec):
         return rmse(_y, vec)  # RMSE already lower-is-better, no sign flip, no rounding
 
-    best_w, best_score, oofs = hv2.eval_blend(CACHE_DIR, members, metric_fn,
+    best_w, best_score, _oofs = hv2.eval_blend(CACHE_DIR, members, metric_fn,
                                                weight_search=method, k=800)
     weights = {str(m): round(float(w), 4) for m, w in zip(members, best_w)}
     return dict(members=members, weights=weights, method=method), best_score

@@ -570,7 +570,7 @@ def verify_digit_for_digit():
     cache_name_map = {"LGB (root)": "LGB", **{n: n for n in LEGACY_SPECS}}
     for name, raw, rounded in checks:
         cache_name = cache_name_map[name]
-        oof, pred, r, rd = ev.load_legacy_solo(cache_name, raw, rounded)
+        _oof, _pred, r, rd = ev.load_legacy_solo(cache_name, raw, rounded)
         print(f"  {name} (scripts/cache/{cache_name}.npz): recomputed raw={r:.6f} "
               f"rounded={rd:.6f} vs historical raw={raw} rounded={rounded} -> OK "
               f"(|diff raw|={abs(r - raw):.2e}, |diff rounded|={abs(rd - rounded):.2e})")

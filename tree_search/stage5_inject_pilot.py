@@ -65,7 +65,7 @@ def _weight_search_auc(mat, y, k=800, seed=42):
 
 def run(comp, subsample=None, k=800):
     comp_dir = os.path.join(_ROOT, "competitions", f"playground-series-{comp}")
-    y, tgt = _load_y(comp_dir)
+    y, _tgt = _load_y(comp_dir)
     tree = json.load(open(os.path.join(comp_dir, "experiments_tree_v3.json")))
     scored = [n for n in tree["nodes"] if isinstance(n.get("score"), (int, float))]
     best = min(scored, key=lambda n: n["score"])  # AUC 存為 -AUC(minimize)

@@ -370,7 +370,7 @@ NVIDIA   & 13 & 16 & 45\% \\
 
 \paragraph{Interpretation.} my-agent leads (16/27 = 59\%, 95\% Clopper--Pearson CI 39--78\%); AIDE and NVIDIA are hard to separate within error. A quarter of all duels cannot be decided under this test --- had we reported raw counts without this layer, that fraction of the ``conclusion'' would have been noise. Notably, the ranking is sensitive to sample composition: restricted to the Playground subset (13 of the 18) it is NVIDIA 58\% / AIDE 47\% / my-agent 44\%, while the full 18-competition baseline reverses it completely (Section~\ref{sec:reversal}).
 
-\paragraph{Known limitation.} The test covers only test-set sampling noise, not between-run agent variance (AIDE resamples code from the LLM at every step; that term should be larger). The upcoming repeatability experiment (Section~\ref{sec:future}) measures exactly this.
+\paragraph{Known limitation.} The test covers only test-set sampling noise, not between-run agent variance (AIDE resamples code from the LLM at every step). Experiment~\ref{sec:exp8repeat} measures that term for AIDE on both the CV and the leaderboard scale: on the scale the verdicts actually use, one decisive result (my-agent $>$ AIDE on s5e10) sits exactly at the run-to-run noise level and should be read as fragile; the rest stand. The equivalent measurement for my-agent has not been made.
 
 \subsection{Experiment 3: Local CV and the Leaderboard Disagree}
 \label{sec:exp3}
@@ -556,6 +556,54 @@ my-agent takes the three-way best on all three competitions and the only above-m
 
 \paragraph{v5 applicability preview (design-level, no results claimed).} The dossier layer applies to all three (split policy: GroupKFold by anchor for us-patent, by breath for ventilator); the data layer applies strongly to SIIM (prior-competition image archives --- outside the current whitelist, a planned source-class extension), moderately to us-patent (CPC code-to-title public text join), and deliberately not to ventilator (no join keys --- a natural specificity probe).
 
+\subsection{Experiment 8: AIDE Between-Run Variance}
+\label{sec:exp8repeat}
+
+\paragraph{Design.} The paired test of Section~\ref{sec:exp2} models test-set sampling noise but not the variance of the agent itself: AIDE resamples its code from an LLM at every step, so two runs of one competition can follow different search paths. This measures that term on the six most closely-fought competitions, at conditions pinned to the benchmark exactly (20 steps, \texttt{exec.timeout=1800}, isolated root \texttt{bench-comps/}). Because the 07-23/24 batch runs already satisfy those conditions, each counts as a first replicate and only one fresh run per competition was needed; s3e11 and s3e14 already carried two conforming runs each and needed none. Total cost was 8h04m of machine time rather than the ${\sim}16$h a full $5\times2$ restart would have taken.
+
+\paragraph{Results.}
+\begin{table}[H]
+\centering\small
+\caption{AIDE run-to-run spread on its own best-node CV metric, $n=2$ per competition.}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Competition} & \textbf{Metric} & \textbf{Run A} & \textbf{Run B} & \textbf{Spread} \\
+\midrule
+s3e11 & RMSLE \dn & 0.2941 & 0.2941 & \textbf{0} \\
+s3e14 & MAE \dn & 339.8059 & 339.8059 & \textbf{0} \\
+s5e10 & RMSE \dn & 0.055994 & 0.055986 & $8\times10^{-6}$ \\
+s6e2 & AUC \up & 0.95551 & 0.95544 & $7\times10^{-5}$ \\
+s4e11 & Accuracy \up & 0.94055 & 0.94063 & $8\times10^{-5}$ \\
+s3e16 & MAE \dn & 1.3369 & 1.3348 & $2.1\times10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Variance is small in absolute terms --- five of six competitions sit at or below $8\times10^{-5}$, under $0.02\%$ of the metric --- but absolute smallness is the wrong test. What matters is the spread relative to the margin of each verdict it could overturn. Of the five decisive verdicts involving AIDE in these competitions, four survive comfortably (spread/margin $0\%$, $0\%$, $8.9\%$, $26.7\%$). One does not: \textbf{s3e16 NVIDIA $>$ AIDE} has a margin of $0.00223$ against a spread of $0.0021$ --- \textbf{94\% of the margin}. That single verdict should be read as fragile. Were it to revert to a tie, the standings move from my-agent 59\% / AIDE 46\% / NVIDIA 45\% to my-agent 59\% / AIDE 48\% / NVIDIA 43\%; the ordering of the two reference methods swaps, my-agent's lead does not.
+
+\paragraph{An observation the spread numbers understate.} On s3e11 and s3e14 the two runs agree \emph{exactly} --- not approximately. Their journals are demonstrably different runs (distinct file hashes, distinct generated code, 20 versus 17 nodes on s3e11), so AIDE explored differently and still landed on a solution scoring identically to seven significant figures. The natural reading is that its search converges on the same standard recipe from different directions, which makes its final score far more stable than the step-by-step stochasticity of the method would suggest.
+
+\paragraph{From CV scale to leaderboard scale.} The spread above is measured on AIDE's own cross-validation metric, whereas every verdict in Section~\ref{sec:exp2} is computed on leaderboard scores --- and Section~\ref{sec:exp3} is precisely the finding that the two disagree. So the four repeat runs were submitted to Kaggle (four submissions, no extra compute), giving the between-run spread on the same private scores the verdicts use:
+
+\begin{table}[H]
+\centering\small
+\caption{Between-run spread on the \emph{private leaderboard}, replicate A (07-24 baseline submission) vs.\ replicate B (repeat run).}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Competition} & \textbf{A (private)} & \textbf{B (private)} & \textbf{LB spread} & \textbf{CV spread, for contrast} \\
+\midrule
+s5e10 & 0.05579 & 0.05582 & $3\times10^{-5}$ & $8\times10^{-6}$ \\
+s6e2 & 0.95516 & 0.95496 & $2.0\times10^{-4}$ & $7\times10^{-5}$ \\
+s4e11 & 0.94056 & 0.94029 & $2.7\times10^{-4}$ & $8\times10^{-5}$ \\
+s3e16 & 1.34224 & 1.34168 & $5.6\times10^{-4}$ & $2.1\times10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The move to the correct scale \emph{reverses the fragility conclusion drawn from CV}. The verdict CV had flagged as fragile survives: on s3e16 the LB spread is $0.00056$ against the $0.00223$ margin (25\%), so \textbf{NVIDIA $>$ AIDE stands}. The verdict CV had passed becomes the fragile one: on s5e10 the LB spread equals the margin exactly ($3\times10^{-5}$ vs.\ $3\times10^{-5}$, 100\%), so \textbf{my-agent $>$ AIDE on s5e10 should be read as within run-to-run noise}. Were it a tie, the standings move to my-agent 15/26 = 58\% / AIDE 48\% / NVIDIA 45\% --- my-agent's lead persists, trimmed by one point. That CV-scale and LB-scale fragility disagree about \emph{which} verdict is at risk is itself a compact restatement of Experiment~\ref{sec:exp3}: conclusions must be drawn on the scale they will be used on.
+
+\paragraph{Remaining limits.} $n=2$ per competition gives a range, not a variance estimate. s3e11's pair was not re-submitted (its two runs score identically on CV, but their LB spread is unmeasured, so the two s3e11 verdicts carry an unquantified caveat). And this covers only AIDE: the symmetric measurement for my-agent is the more consequential one, because my-agent's variance is the term that would move this report's own headline, and reporting AIDE's alone holds the reference method to a stricter standard than our own.
+
 \section{Discussion}
 
 \subsection{What This Study Has Achieved}
@@ -647,7 +695,7 @@ Two observations:
 \label{sec:limitations}
 
 \begin{itemize}[leftmargin=*]
-  \item \textbf{The significance test covers only test-set sampling noise}, not between-run agent variance. AIDE's term is expected to be largest (the LLM resamples code at every step); once included, some of the current 40 decisive results may revert to ties.
+  \item \textbf{The significance test covers only test-set sampling noise}, not between-run agent variance --- now measured for AIDE but not for the other two. Experiment~\ref{sec:exp8repeat} measures AIDE's spread on both scales; on the leaderboard scale the verdicts use, it is $3\times10^{-5}$--$5.6\times10^{-4}$, leaving every decisive AIDE verdict intact except my-agent $>$ AIDE on s5e10, whose margin equals the spread exactly. my-agent's own variance --- the term that would move this report's headline win rate --- remains unmeasured.
   \item \textbf{The asymmetry created by the experience library is disclosed, not eliminated.} my-agent carries cross-competition memory; the other two cold-start --- a design difference rather than a flaw, but it colors the interpretation of the conclusions.
   \item \textbf{The sample is small, and Section~\ref{sec:reversal} shows the ranking is sensitive to set composition.} With 18 competitions and 54 duels, the gap between 59\% and 45\% remains a rough estimate; adding or removing a single competition can move it by one to two percentage points. Exact 95\% Clopper--Pearson intervals make this concrete: my-agent 59\% [39\%, 78\%], AIDE 46\% [26\%, 67\%], NVIDIA 45\% [26\%, 64\%] --- substantially overlapping intervals.
   \item \textbf{RUN2's three my-agent cells did not all run the identical skill version, and this was found late.} Stage 0.5 was added between the two lanes: us-patent and ventilator ran before it existed and match the 18-competition baseline's version exactly; SIIM ran after and executed it. Its dossier declined external data, so no operator fired and the modeling code path is identical to the other two as far as we can trace it --- but that is a traced argument, not a rerun-and-confirm, and the discrepancy was only caught by checking file timestamps after the fact rather than being controlled for in advance. It does not touch the three-way comparison (my-agent vs.\ two frozen, differently-staged methods, per competition), only the claim that my-agent's own methodology was identical across all 21 competitions in this report.
@@ -659,7 +707,7 @@ Two observations:
 \paragraph{In progress.}
 \begin{enumerate}[leftmargin=*]
   \item \textbf{Phase 2, reconsidered and not recommended.} When the s3e19 gate passed we judged a full 18-competition re-run with v5 promoted to baseline to be warranted. The measurements since then reverse that judgment, and we record the reversal rather than the original plan. The dossier fires on 2 of 18 competitions, so on the other 16 a re-run changes nothing v5 does and instead re-rolls my-agent's side of 36 of the 54 duels using between-run agent variance --- a term this study has never measured and one the paired test explicitly does not model (Section~\ref{sec:exp2}). Three duels currently sit at score gaps of $0.00000$ and $0.00033$; those would flip on run-to-run luck alone and any flip would be indistinguishable from a v5 effect. The cheaper and more informative sequence is the reverse: measure my-agent's own between-run variance first, and extend the firing class, so that a full re-run --- if it is ever run --- is interpretable. Both are listed below.
-  \item \textbf{Repeatability experiment, running.} AIDE is being re-run under pinned benchmark conditions (20 steps, \texttt{exec.timeout=1800}, isolated root) on the closest-fought competitions, each new run paired against its existing baseline; 3 of 4 lanes are complete at the time of writing (s4e11 $0.94063$, s3e16 $1.3348$, s5e10 in flight, s6e2 queued). This is the direct remedy for the first limitation in Section~\ref{sec:limitations}, but it covers only one of the three agents. The symmetric measurement for my-agent --- the same design, its own frozen v3 configuration, on the same competitions --- is the more consequential of the two, because my-agent's variance is the term that would move \emph{this report's own headline win rate}, and it is queued next. Reporting AIDE's variance without my-agent's would apply a stricter standard to the reference method than to our own, the precise asymmetry Section~\ref{sec:exp4} criticises elsewhere.
+  \item \textbf{my-agent's own between-run variance.} AIDE's is now measured on both scales (Experiment~\ref{sec:exp8repeat}); the symmetric measurement for my-agent --- same design, its frozen v3 configuration, same competitions --- has not been made and is the more consequential of the two, because my-agent's variance is the term that would move \emph{this report's own headline win rate}. Reporting AIDE's alone applies a stricter standard to the reference method than to our own, the precise asymmetry Section~\ref{sec:exp4} criticises elsewhere.
   \item \textbf{Firing-class extension, done}: tps-sep-2022 raises the external-data firing class from $n{=}1$ to $n{=}2$ clean test points. Both its matched single configurations (Table~\ref{tab:v5-2x2}) and its 46-node searched arms (Result~1b) beat the corresponding no-external baseline on the real private leaderboard, and all four comparisons pass the paired test. Its three 46-node searched arms are also complete and submitted (Result~1b), so nothing remains open on this competition; the firing class is extended by one fully-measured test point, and tps-jan-2022 --- the third competition of this type, and the one where my-agent already joined GDP data unprompted during the original benchmark --- is queued to take it to $n{=}3$.
   \item \textbf{Form selection}: the open problem above needs a validation protocol that scores an extrapolation operator on periods resembling the test window rather than on all training periods. The three failed probes bound what will not work.
   \item \textbf{Retrieval, not content}: while decomposing the s3e19 residual we re-derived a result the experience library already held, because nothing forced a query before the experiment; a neighbouring entry meanwhile over-claimed and has been corrected against leaderboard evidence. The library's weak link is retrieval --- the same class of gap v5 addresses one layer up.

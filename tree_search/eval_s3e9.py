@@ -147,7 +147,7 @@ def evaluate(config: dict, timeout_s: int = 90) -> dict:
         if model not in RUNNERS:
             raise ValueError(f"unknown model type {model!r}")
         params = dict(config.get("params") or {})
-        oof, pred = RUNNERS[model](params, X, Xtest)
+        oof, _pred = RUNNERS[model](params, X, Xtest)
 
         pp = config.get("postprocess") or {}
         clip_min = pp.get("clip_min", 0)

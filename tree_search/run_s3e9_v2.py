@@ -690,7 +690,7 @@ def verify_digit_for_digit():
     checks = [("CAT", 12.07459), ("LGB", 12.11061), ("XGB", 12.12086),
               ("LGB_tuned", 12.12074), ("LGB_tuned_seed2", 12.10843)]
     for name, expected in checks:
-        oof, pred, score = ev.load_legacy_solo(name, expected)
+        _oof, _pred, score = ev.load_legacy_solo(name, expected)
         print(f"  {name}: recomputed RMSE={score:.6f} vs historical {expected} -> OK "
               f"(|diff|={abs(score - expected):.2e})")
     print("=== verification passed ===\n")
