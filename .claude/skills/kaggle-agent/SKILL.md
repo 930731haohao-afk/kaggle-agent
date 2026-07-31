@@ -51,6 +51,22 @@ export KAGGLE_API_TOKEN=$(python3 -c "import json; print(json.load(open('/home/t
 
 Environment variables don't persist across separate Bash tool invocations in Claude Code.
 
+### Pre-run lint gate (new scripts only)
+
+Before executing any NEWLY WRITTEN competition script for the first time, lint it and fix
+every finding — these rules flag code that produces wrong numbers silently:
+
+```bash
+uvx ruff@0.16.1 check <script> --select F821,F841,B023,B006,E722,PLW1510,RUF059 --isolated
+```
+
+Timing matters: a script is free to fix BEFORE its first logged run; after a run's score is
+logged the script is FROZEN as the as-run record — never lint or edit it again (this is why
+`competitions/` is excluded from the repo-level ruff config; the 2026-07-31 audit of 22
+historical B023 hits found all benign, so frozen stays frozen). B023 in particular: a
+closure defined in a loop is safe only if called in the same iteration; if it escapes
+(stored callback, delayed execution), it silently uses the last iteration's values.
+
 ## Core Workflow
 
 Follow these stages sequentially. The user may start at any stage or repeat stages as needed.

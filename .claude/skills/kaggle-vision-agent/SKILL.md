@@ -95,6 +95,10 @@ run; Layer 2 (bit-level determinism gate: retrain → byte-identical OOF) certif
 The torch determinism preamble is bundled at `assets/torch_determinism.py`; its bit-exactness is
 **measured** on this machine (GATE: PASS, `vision/derisk_determinism_gate.py`, 2026-07-17).
 
+Pre-run lint gate: same rule as the tabular agent — before a NEW script's first logged run,
+`uvx ruff@0.16.1 check <script> --select F821,F841,B023,B006,E722,PLW1510,RUF059 --isolated`
+and fix all findings; after the run is logged the script is frozen as-run, never re-linted.
+
 ## Non-negotiables (inherited from the tabular agent)
 
 - **Experiment logging is MANDATORY** via `experiment_log.log_experiment_v2()`
