@@ -81,6 +81,15 @@ read only when its stage begins.
 Before Stage 1 (EDA) and Stage 3 (Modeling), consult `knowledge/experience.md` at the project root
 for validated cross-competition insights (indexed by metric/data-type, each entry evidence-backed).
 Apply what transfers; log new validated insights back into it after major score changes.
+
+**RETRIEVAL GATE (binding, 2026-07-31).** Before creating any NEW experiment, run
+`knowledge/query_library.py --query <metric/data-type/idea terms>` and record the query terms in
+the experiment's `library_query` field (and top hits, or the literal string `none`, in
+`library_hits`). An experiment record without a `library_query` trace is invalid;
+`query_library.py --audit <experiments.json>` checks this. Why binding: on s3e19 we re-derived a
+result the library already held because nothing forced a query, and separately retrieved an
+over-claiming entry when a correct one sat beside it — evidence-delta-ranked retrieval plus a
+mandatory trace is the fix for both (main report, Open Problems).
 Task-LEVEL priors (problem identification: split policy, external-data need) live separately in
 `knowledge/task_priors.md` and are consumed by Stage 0.5.
 
