@@ -34,8 +34,23 @@ def load_data(
 
     data_dir = os.path.join(competition_dir, "data")
 
-    train = pd.read_csv(os.path.join(data_dir, config["train_file"]))
-    test = pd.read_csv(os.path.join(data_dir, config["test_file"]))
+    # Read train and test with ONE dtype decision, not two. Independent pd.read_csv calls
+    # infer per file, so a shared key whose train values are all digits comes back int64
+    # while its test values ('A0456') come back str: the same entity becomes two distinct
+    # keys, and every merge/groupby/encoding built on train misses those test rows silently.
+    # Zero-padded ids ('0001') are also destroyed. Columns whose inferred dtypes disagree
+    # are re-read as strings, which is lossless and joinable (2026-08-03 audit).
+    train_path = os.path.join(data_dir, config["train_file"])
+    test_path = os.path.join(data_dir, config["test_file"])
+    train = pd.read_csv(train_path)
+    test = pd.read_csv(test_path)
+    shared = [c for c in train.columns if c in test.columns]
+    clashing = [c for c in shared if train[c].dtype != test[c].dtype]
+    if clashing:
+        train = pd.read_csv(train_path, dtype=dict.fromkeys(clashing, str))
+        test = pd.read_csv(test_path, dtype=dict.fromkeys(clashing, str))
+        print(f"[data_loader] dtype disagreed across train/test for {clashing}; "
+              f"re-read as string so the key space stays shared")
 
     sample_sub = None
     if config.get("sample_submission_file"):

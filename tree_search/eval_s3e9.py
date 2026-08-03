@@ -131,9 +131,14 @@ def _run_cat(params, X, Xtest):
 RUNNERS = {"lgb": _run_lgb, "xgb": _run_xgb, "cat": _run_cat}
 
 
-def evaluate(config: dict, timeout_s: int = 90) -> dict:
+def evaluate(config: dict, node_id: int = None, timeout_s: int = 90) -> dict:
     """config -> {status, score, wall_s, n_feats, error}. Never raises: a timeout or
-    any exception is captured as status="failed" so the tree-search loop can keep going."""
+    any exception is captured as status="failed" so the tree-search loop can keep going.
+
+    `node_id` is accepted (and unused here beyond cache keying by the caller) because
+    harness_v3's subprocess runner always passes it: this was the only evaluator in the
+    repo still on the pre-v3 signature, so any generic driver pointed at s3e9 got
+    status="failed" with a TypeError on every node (2026-08-03 audit)."""
     t0 = time.time()
     have_alarm = hasattr(signal, "SIGALRM")
     old_handler = None

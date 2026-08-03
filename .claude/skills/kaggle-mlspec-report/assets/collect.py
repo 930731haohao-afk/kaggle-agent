@@ -145,6 +145,21 @@ def parse_status(comp_dir: str):
     return {"present": True, "sections": {k: v for k, v in sections.items() if v}}
 
 
+_DIAGNOSTIC_MARKERS = ("diagnostic", "not used for submission", "not for submission",
+                       "leakage check", "leak check", "sanity probe")
+
+
+def _is_diagnostic(entry: dict) -> bool:
+    """Was this experiment explicitly labelled a diagnostic rather than a candidate?
+
+    Deliberately generous: wrongly excluding one experiment costs a slightly worse reported
+    best, while including a leakage diagnostic reports a headline number no submission can
+    reproduce -- the study's own silent failure #4 (2026-08-03 audit).
+    """
+    hay = " ".join(str(entry.get(k, "")) for k in ("model", "notes", "tag", "label")).lower()
+    return any(m in hay for m in _DIAGNOSTIC_MARKERS)
+
+
 def build_facts(comp_dir: str) -> dict:
     cfg_path = os.path.join(comp_dir, "config.yaml")
     exp_path = os.path.join(comp_dir, "experiments.json")
@@ -165,8 +180,16 @@ def build_facts(comp_dir: str) -> dict:
             experiments.append(n)
 
     scored = [e for e in experiments if e.get("score") is not None]
-    minimize = bool(scored) and scored[0]["direction"] == "minimize"
-    best = (min if minimize else max)(scored, key=lambda e: e["score"]) if scored else None
+    diagnostics = [e for e in scored if _is_diagnostic(e)]
+    eligible = [e for e in scored if not _is_diagnostic(e)]
+    # Direction is a property of the competition's metric, not of whichever entry was logged
+    # first; disagreement means an inconsistent log and must not be papered over.
+    dirs = {e["direction"] for e in scored if e.get("direction")}
+    if len(dirs) > 1:
+        raise ValueError(f"{comp_dir}: experiments disagree on optimization direction "
+                         f"{sorted(dirs)}; fix the log rather than letting entry 0 decide")
+    minimize = bool(dirs) and dirs.pop() == "minimize"
+    best = (min if minimize else max)(eligible, key=lambda e: e["score"]) if eligible else None
     trajectory = [{"experiment_id": e["experiment_id"], "timestamp": e.get("timestamp"),
                    "score": e.get("score"), "source_format": e["source_format"]}
                   for e in experiments]
@@ -198,6 +221,8 @@ def build_facts(comp_dir: str) -> dict:
         "eda": eda,
         "experiments": experiments,
         "best": best,
+        "excluded_diagnostics": [{"experiment_id": e["experiment_id"], "score": e.get("score")}
+                                 for e in diagnostics],
         "trajectory": trajectory,
         "leaderboard": leaderboard,
         "missing": missing,
