@@ -223,10 +223,23 @@ def load_solo_cache(node_id):
     return d
 
 
-def weight_search(oof_dict, n_random=800, seed=0):
+def weight_search(oof_dict, method="dirichlet", n_random=800, seed=0):
     """Dirichlet random search + coordinate-ascent refinement over the member simplex,
     scored on post-rounder QWK. Ported verbatim from scripts/iterate.py's weight_search
-    (generalizes the exp#3 grid search to arbitrary pool sizes)."""
+    (generalizes the exp#3 grid search to arbitrary pool sizes).
+
+    `method` is the node's own `weight_search` field. "dirichlet" is the only search this
+    function implements (it is also the only value this comp's node schema documents, see
+    the module docstring) -- anything else raises, because evaluate_blend used to drop the
+    field on the floor and then echo it back in `result["method"]`, so a node asking for
+    grid_simplex/nnls got the dirichlet search and a result that claimed otherwise
+    (2026-08-03 audit)."""
+    if method != "dirichlet":
+        raise ValueError(
+            f"eval_s3e5.weight_search implements 'dirichlet' only, got {method!r} -- this "
+            f"evaluator scores every candidate through post_rounder_qwk (a cutpoint fit per "
+            f"weight vector), so another search must be implemented here deliberately, not "
+            f"silently substituted")
     names = list(oof_dict)
     oofs = np.stack([oof_dict[n] for n in names], axis=1)
     rng = np.random.default_rng(seed)
@@ -272,9 +285,10 @@ def evaluate_blend(config):
         name = f"node{mid}"
         oof_dict[name] = d["oof"]
         names.append(name)
-    w, score, coef = weight_search(oof_dict)
+    method = config.get("weight_search", "dirichlet")
+    w, score, coef = weight_search(oof_dict, method=method)
     return dict(members=members, names=names, weights=dict(zip(members, [w[n] for n in names])),
-                method=config.get("weight_search", "dirichlet"),
+                method=method,
                 cutpoints=[round(float(c), 4) for c in coef]), score, coef
 
 

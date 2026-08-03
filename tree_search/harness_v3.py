@@ -107,6 +107,7 @@ from v2 — see harness_v2.py's own docstring for those.
    ~340 root/global-best (~18x the gap), and the driver spent ~12 minutes (6 evals)
    training further DART children off that single garbage seed before giving up.
 """
+import atexit
 import json
 import os
 import signal
@@ -130,7 +131,9 @@ next_id = v2.next_id
 lineage_of = v2.lineage_of
 global_best = v2.global_best
 lineage_size = v2.lineage_size
-select_next_parent = v2.select_next_parent
+# select_next_parent is NOT a plain re-export any more -- v3 wraps it to keep the phase
+# machine in sync with the plateau flags harness.py writes inside the call (2026-08-03
+# audit); see its definition below.
 config_hash = v2.config_hash
 find_duplicate_config = v2.find_duplicate_config
 cache_oof = v2.cache_oof
@@ -156,22 +159,120 @@ DEFAULT_POST_BURST_PATIENCE = 20      # E-5 verdict #2: "stop ~15-20 evals after
 
 def init_budget(tree: dict, total_budget: int = DEFAULT_TOTAL_BUDGET,
                  explore_burst_size: int = DEFAULT_EXPLORE_BURST_SIZE,
-                 post_burst_patience: int = DEFAULT_POST_BURST_PATIENCE) -> dict:
+                 post_burst_patience: int = DEFAULT_POST_BURST_PATIENCE,
+                 *, reset: bool = False) -> dict:
     """Idempotently create/return `tree["search_state"]["budget"]`, the v3 phase-machine
     state: `{total_budget, explore_burst_size, post_burst_patience, phase, burst_start_eval,
     best_at_burst_start, evals_since_burst_improve, stop_reason}`. `phase` starts at
     "exploit" and only ever advances forward (exploit -> explore_burst -> stopped, see
     `update_phase`). Safe to call multiple times (e.g. once per driver resume) — a
-    pre-existing budget dict is returned unmodified."""
+    pre-existing budget dict is returned unmodified, which is what stops a driver that
+    calls `init_budget()` on every resume from rewinding its own counters.
+
+    That protection used to be the ONLY behavior, so a caller had no supported way to
+    change a budget once one existed: new `total_budget`/`patience` arguments were silently
+    discarded, and "stopped" is absorbing in `update_phase`, so a run that stopped early
+    could only be continued by hand-editing the tree JSON (which is exactly what
+    run_v3_generic.py does). Two supported ways out now (2026-08-03 audit):
+      - `reset=True` — deliberately REPLACE the budget with these arguments. The previous
+        dict is appended to `search_state["budget_log"]`, so the overwrite is visible in
+        the tree instead of silent.
+      - `extend_budget(...)` (below) — the resume case: keep the counters, raise the cap,
+        and un-stop a stopped phase machine, recording what changed."""
     st = tree.setdefault("search_state", {})
-    if "budget" not in st:
+    if "budget" not in st or reset:
+        previous = st.get("budget")
         st["budget"] = dict(
             total_budget=total_budget, explore_burst_size=explore_burst_size,
             post_burst_patience=post_burst_patience, phase="exploit",
             burst_start_eval=None, best_at_burst_start=None,
             evals_since_burst_improve=0, stop_reason=None,
         )
+        if previous is not None:
+            st.setdefault("budget_log", []).append(dict(
+                action="init_budget(reset=True)", at_n_evaluated=n_evaluated(tree),
+                before=previous, after=dict(st["budget"]),
+                reason="caller explicitly replaced the budget/phase state"))
     return st["budget"]
+
+
+def extend_budget(tree: dict, *, extra_nodes: int = None, total_budget: int = None,
+                   explore_burst_size: int = None, post_burst_patience: int = None,
+                   reopen_plateaued: bool = True, reason: str = None) -> dict:
+    """Extend (and, if it had already stopped, RESUME) an existing search's budget — the
+    supported alternative to hand-editing `search_state["budget"]` in the tree JSON
+    (2026-08-03 audit). Keeps every counter `init_budget(reset=True)` would throw away and
+    changes only what the caller names:
+
+      - `extra_nodes` — raise `total_budget` by this many nodes on top of whichever is
+        larger, the current cap or the nodes already evaluated (mutually exclusive with
+        `total_budget`, which sets the new cap outright).
+      - `explore_burst_size` / `post_burst_patience` — optional new stopping parameters.
+      - if `phase == "stopped"`, the phase machine is un-stopped back to "exploit" (a fresh
+        explore burst can therefore happen again later) and `stop_reason` is cleared; the
+        reason it had stopped for is preserved in the log entry.
+      - `reopen_plateaued=True` (default) clears plateau flags so `select_next_parent` has
+        something to return — without this an extended budget buys nothing, since every
+        lineage that made the search stop is still marked plateaued. Lineages the
+        burst-seed sanity gate rejected (`search_state["gated_lineages"]`) stay closed:
+        that mark is a verdict, not exhaustion (same rule as harness.py's own fallback).
+
+    Every call appends a `search_state["budget_log"]` entry recording before/after, the
+    stop reason it resumed from, and which lineages it reopened. Returns the budget dict.
+    """
+    if extra_nodes is not None and total_budget is not None:
+        raise ValueError("extend_budget: pass extra_nodes OR total_budget, not both")
+    if all(v is None for v in (extra_nodes, total_budget, explore_burst_size,
+                               post_burst_patience)):
+        raise ValueError("extend_budget: name at least one thing to change "
+                          "(extra_nodes / total_budget / explore_burst_size / "
+                          "post_burst_patience)")
+    st = tree.setdefault("search_state", {})
+    budget = init_budget(tree)
+    before = dict(budget)
+    n_eval = n_evaluated(tree)
+
+    if extra_nodes is not None:
+        budget["total_budget"] = max(budget["total_budget"], n_eval) + int(extra_nodes)
+    elif total_budget is not None:
+        budget["total_budget"] = int(total_budget)
+    if budget["total_budget"] <= n_eval:
+        budget["total_budget"] = before["total_budget"]
+        raise ValueError(f"extend_budget: the requested total_budget is not above the "
+                          f"{n_eval} nodes already evaluated -- the search would hit the "
+                          f"hard cap again on its very next update_phase call")
+    if explore_burst_size is not None:
+        budget["explore_burst_size"] = int(explore_burst_size)
+    if post_burst_patience is not None:
+        budget["post_burst_patience"] = int(post_burst_patience)
+
+    resumed_from = None
+    if budget["phase"] == "stopped":
+        resumed_from = budget.get("stop_reason")
+        budget.update(phase="exploit", stop_reason=None, burst_start_eval=None,
+                      best_at_burst_start=None, evals_since_burst_improve=0)
+        budget.pop("patience_at_eval", None)
+        budget.pop("burst_starved_at_eval", None)
+
+    reopened = []
+    if reopen_plateaued:
+        gated = set(st.get("gated_lineages", []))
+        plateaued = list(st.get("plateaued", []))
+        reopened = [lid for lid in plateaued if lid not in gated]
+        if reopened:
+            st["plateaued"] = sorted(lid for lid in plateaued if lid in gated)
+            for lid in reopened:
+                st.setdefault("streak", {})[str(lid)] = 0
+            st.setdefault("backtrack_log", []).append(dict(
+                at_node_id=None, plateaued_lineage=None, reopened_lineages=reopened,
+                reason=(f"extend_budget reopened {len(reopened)} plateaued lineage(s) so the "
+                        f"extended budget has something to expand; kept {len(gated)} "
+                        f"gate-rejected lineage(s) closed")))
+
+    st.setdefault("budget_log", []).append(dict(
+        action="extend_budget", at_n_evaluated=n_eval, before=before, after=dict(budget),
+        reopened_lineages=reopened, resumed_from_stop_reason=resumed_from, reason=reason))
+    return budget
 
 
 def n_evaluated(tree: dict) -> int:
@@ -201,7 +302,9 @@ def update_phase(tree: dict) -> str:
     """Advance the v3 budget phase machine and return the (possibly just-updated)
     phase string. MUST be called after every node is added (`add_node`/`add_root`
     below call it automatically, so drivers using this module's `add_node` get the
-    phase machine for free).
+    phase machine for free) AND whenever plateau bookkeeping changes without a node
+    being added — `should_stop` and this module's `select_next_parent` now do that
+    refresh themselves, see `_refresh_phase` (2026-08-03 audit).
 
     Transitions (see module docstring, feature 1, for the evidence):
       exploit -> explore_burst   : as soon as `plateau_saturated(tree)` is True. The
@@ -213,6 +316,9 @@ def update_phase(tree: dict) -> str:
                                     elapsed since the burst started AND
                                     `post_burst_patience` consecutive evals (within the
                                     burst window) passed with no new global best.
+      explore_burst -> stopped   : burst starvation — nothing is left to expand and no
+                                    burst seed can arrive any more (see
+                                    `_note_starved_poll`).
       (any phase) -> stopped     : hard cap, `n_evaluated(tree) >= total_budget`,
                                     regardless of the above (E-5 verdict #3, the
                                     "numeric backstop").
@@ -269,10 +375,104 @@ def update_phase(tree: dict) -> str:
     return budget["phase"]
 
 
+def _refresh_phase(tree: dict) -> None:
+    """Run the phase machine over whatever `search_state` says RIGHT NOW, for callers that
+    are not `add_node`.
+
+    `update_phase` used to be reachable only from `add_node`, but `plateaued` has three
+    other writers: `harness.select_next_parent`'s expansion-budget-exhaustion path
+    (harness.py), `apply_burst_seed_sanity_gate` (feature 9), and drivers that mark their
+    own dead-end lineages (run_s4e1_v3.py's "propose_child exhausted" branch). Whenever the
+    LAST lineage was plateaued by one of those, `plateau_saturated(tree)` became true with
+    no node added, so the phase machine never noticed and the mandatory explore burst was
+    skipped entirely (2026-08-03 audit). No-op on a tree that has no budget yet, so this
+    never conjures phase state onto a tree whose driver didn't ask for one."""
+    if "budget" in tree.get("search_state", {}):
+        update_phase(tree)
+
+
 def should_stop(tree: dict) -> bool:
     """True iff the v3 phase machine has reached "stopped" (see `update_phase`). Drivers
-    should check this before every `select_next_parent()` call."""
-    return tree.get("search_state", {}).get("budget", {}).get("phase") == "stopped"
+    should check this before every `select_next_parent()` call.
+
+    Refreshes the phase machine first (`_refresh_phase`) so the answer reflects plateau
+    flags written since the last `add_node`, whoever wrote them. That refresh is also what
+    lets a driver's standard loop shape — `while not should_stop(tree): phase =
+    tree["search_state"]["budget"]["phase"]; if phase == "explore_burst": inject seeds` —
+    actually observe the mandatory burst instead of reading a stale "exploit"
+    (2026-08-03 audit)."""
+    _refresh_phase(tree)
+    budget = tree.get("search_state", {}).get("budget", {})
+    if budget.get("phase") == "explore_burst":
+        # The driver has now been shown the burst phase (this call is what stands right in
+        # front of its `phase = ...budget["phase"]` read), so if it later asks for a parent
+        # and there is none, it demonstrably has no burst to inject -- see
+        # `_note_starved_poll`, which uses this to tell "hasn't had its turn yet" apart
+        # from "had its turn and did nothing".
+        budget["burst_phase_seen"] = True
+    return budget.get("phase") == "stopped"
+
+
+def _note_starved_poll(tree: dict) -> None:
+    """Record (and, on the second look, act on) a `select_next_parent` call that had no
+    parent to return while the phase machine is in "explore_burst".
+
+    Why this is needed: burst seeds are injected by the DRIVER, as fresh children of the
+    ROOT — `select_next_parent` can only ever expand a lineage that already exists
+    (harness.py's docstring), and since 2026-08-03 it also refuses its reopen fallback
+    while the phase is explore_burst. So once every lineage is plateaued the selector
+    returns (None, None) forever while the phase machine sits waiting for burst evals that
+    can only arrive from somewhere else — a terminal trap: drivers that `break` on
+    (None, None) leave the tree parked in "explore_burst" with no stop_reason, and drivers
+    that `continue` spin until their own iteration cap.
+
+    Resolution (2026-08-03 audit): if seeds HAVE already been evaluated inside this burst
+    (`n_evaluated > burst_start_eval`) and there is still nothing to expand, the burst is
+    genuinely over — stop, with a reason. Same if the driver has already been shown the
+    burst phase by `should_stop` (`burst_phase_seen`) and asked for a parent anyway: it has
+    no burst to inject. Only when the phase flipped to explore_burst DURING this very
+    selection call — so the driver has not had its turn yet — is the phase left alone for
+    one poll, and even then a second starved poll at the same eval count stops it."""
+    budget = (tree.get("search_state", {}) or {}).get("budget")
+    if not budget or budget.get("phase") != "explore_burst":
+        return
+    n_eval = n_evaluated(tree)
+    burst_start = budget.get("burst_start_eval")
+    seeded = burst_start is not None and n_eval > burst_start
+    if (not seeded and not budget.get("burst_phase_seen")
+            and budget.get("burst_starved_at_eval") != n_eval):
+        budget["burst_starved_at_eval"] = n_eval  # first poll: give the driver its turn
+        return
+    budget["phase"] = "stopped"
+    budget["stop_reason"] = (
+        f"explore_burst has nothing left to expand at {n_eval} evaluated nodes: every "
+        f"lineage is plateaued and select_next_parent cannot open a new one (burst seeds "
+        f"are injected at the root by the driver). "
+        + (f"{n_eval - burst_start} burst eval(s) ran and are now exhausted too"
+           if seeded else
+           "no burst seed was ever injected after the phase machine asked for one"))
+
+
+def select_next_parent(tree: dict):
+    """v3's `select_next_parent`: harness.py's selection rule (re-exported unchanged
+    through v2) with the phase machine kept in sync around it (2026-08-03 audit).
+
+    Before delegating, `_refresh_phase` applies any plateau flags written since the last
+    `add_node` — so the phase is right when harness.py consults it for its reopen-fallback
+    decision. After delegating, it refreshes again, because harness.py marks lineages
+    plateaued (expansion budget exhausted) DURING the call. A (None, None) answer while the
+    phase machine is in "explore_burst" additionally goes through `_note_starved_poll`, so
+    the burst either runs or the machine stops with a reason instead of the two of them
+    waiting on each other. Return contract is otherwise identical to
+    `harness.select_next_parent`."""
+    _refresh_phase(tree)
+    parent_id, lineage_id = v2.select_next_parent(tree)
+    _refresh_phase(tree)
+    if parent_id is None:
+        _note_starved_poll(tree)
+    elif "budget" in tree.get("search_state", {}):
+        tree["search_state"]["budget"].pop("burst_starved_at_eval", None)
+    return parent_id, lineage_id
 
 
 # ---------------------------------------------------------------------------
@@ -702,6 +902,50 @@ def _kill_process_group(proc: subprocess.Popen) -> None:
         pass
 
 
+# --- orphan protection for the eval children (2026-08-03 audit) -------------------------
+# `start_new_session=True` (needed so one killpg can take out a trainer's own worker
+# threads/processes) also detaches the child from the parent's session, so nothing kills it
+# when the parent goes away: a Ctrl-C, an exception in the driver loop or a `kill -9` on the
+# search process each left a full-throttle training child running. That exact class of
+# orphan cost the study a lane (NVIDIA/ventilator's abandoned trainer). Two layers, because
+# neither covers everything:
+#   - `_LIVE_EVAL_CHILDREN` + `atexit` covers a clean-ish parent exit (normal return,
+#     unhandled exception, SystemExit, KeyboardInterrupt after unwinding),
+#   - `PR_SET_PDEATHSIG` covers what atexit can never run for: `kill -9` on the parent. The
+#     kernel signals the child the moment the parent dies, whatever killed it.
+_LIVE_EVAL_CHILDREN = set()
+_PR_SET_PDEATHSIG = 1  # <linux/prctl.h>
+
+
+def _child_preexec():
+    """Ask the kernel to SIGKILL this child as soon as its parent dies (Linux only; a
+    best-effort no-op anywhere else, and on any libc where prctl isn't reachable)."""
+    try:
+        import ctypes
+        ctypes.CDLL("libc.so.6", use_errno=True).prctl(_PR_SET_PDEATHSIG, signal.SIGKILL,
+                                                        0, 0, 0)
+    except Exception:  # noqa: BLE001 -- never let a hardening step break the eval itself
+        pass
+
+
+def _reap_live_eval_children() -> None:
+    """atexit hook: SIGKILL every eval child this process still has outstanding."""
+    for proc in list(_LIVE_EVAL_CHILDREN):
+        try:
+            if proc.poll() is None:
+                _kill_process_group(proc)
+                try:
+                    proc.wait(timeout=5)
+                except Exception:  # noqa: BLE001
+                    pass
+        except Exception:  # noqa: BLE001
+            pass
+        _LIVE_EVAL_CHILDREN.discard(proc)
+
+
+atexit.register(_reap_live_eval_children)
+
+
 def eval_solo_subprocess(eval_module_path: str, config: dict, timeout_s: float, *,
                           node_id: int = None, cmd_prefix: list = None) -> dict:
     """Run a per-comp evaluator's `evaluate(config, node_id=..., timeout_s=...) -> dict`
@@ -726,6 +970,11 @@ def eval_solo_subprocess(eval_module_path: str, config: dict, timeout_s: float, 
     `uv run` environment resolution; the default reuses the CURRENT interpreter (already
     uv-managed when the parent itself was launched via `uv run ...`), which is cheaper
     and sufficient for the common case.
+
+    The child never outlives this process: it is registered for an `atexit` SIGKILL sweep,
+    killed from a `finally` block if anything (Ctrl-C, a driver bug) unwinds out of the
+    wait, and started with `PR_SET_PDEATHSIG` so even `kill -9` on the parent takes it down
+    -- see `_child_preexec` / `_reap_live_eval_children` (2026-08-03 audit).
 
     On a clean, on-time finish: returns the evaluator's own result dict, verbatim (plus
     `timeout=False`, `error=None` defaults if the evaluator's own dict omitted them).
@@ -772,14 +1021,29 @@ def eval_solo_subprocess(eval_module_path: str, config: dict, timeout_s: float, 
 
         t0 = time.time()
         proc = subprocess.Popen(cmd_prefix + ["-c", runner], stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, start_new_session=True)
+                                 stderr=subprocess.PIPE, start_new_session=True,
+                                 preexec_fn=_child_preexec)
+        _LIVE_EVAL_CHILDREN.add(proc)
         timed_out = False
+        stderr = b""
         try:
-            _, stderr = proc.communicate(timeout=timeout_s)
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            _kill_process_group(proc)
-            _, stderr = proc.communicate()
+            try:
+                _, stderr = proc.communicate(timeout=timeout_s)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                _kill_process_group(proc)
+                _, stderr = proc.communicate()
+        finally:
+            # Anything that unwinds out of here (KeyboardInterrupt, SystemExit, a bug in
+            # this function) must not leave a training child behind (2026-08-03 audit).
+            # On the normal and timeout paths the child is already dead, so this is a no-op.
+            if proc.poll() is None:
+                _kill_process_group(proc)
+                try:
+                    proc.wait(timeout=5)
+                except Exception:  # noqa: BLE001
+                    pass
+            _LIVE_EVAL_CHILDREN.discard(proc)
         wall = time.time() - t0
 
         if timed_out:
@@ -891,4 +1155,8 @@ def apply_burst_seed_sanity_gate(tree: dict, seed_node_id: int, *,
                         f"{min_band_frac:.0%} of |global best|) -- burning this seed's "
                         f"own already-sunk evaluation cost only, NOT opening a mutation "
                         f"lineage on top of it (feature 9; F-2 s3e14 lesson)")))
+        # This gate is one of the plateau writers that is NOT add_node, so the phase
+        # machine has to be told: gating the last live lineage saturates the tree without
+        # any node being added (2026-08-03 audit, see `_refresh_phase`).
+        _refresh_phase(tree)
     return passed, bound

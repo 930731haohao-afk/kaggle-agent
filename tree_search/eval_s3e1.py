@@ -46,6 +46,7 @@ CatBoost: allow_writing_files=False and thread_count explicit per the s3e11 less
 knowledge/experience.md ("反面教訓" — CatBoost's default catboost_info file logging
 stalled a long-running sandboxed process for 33 minutes with zero output).
 """
+import hashlib
 import os
 import signal
 import sys
@@ -163,12 +164,74 @@ def _build_features_fresh():
     return tr, te, all_features
 
 
+_RAW_PASSTHROUGH = ["id", "MedInc", "HouseAge", "AveRooms", "AveBedrms",
+                    "Population", "AveOccup", "Latitude", "Longitude"]
+
+
+def _col_digest(df: pd.DataFrame, cols) -> str:
+    """Order-sensitive blake2b over the float64 bytes of `cols` (one pass over ~37k x 9
+    values -- microseconds)."""
+    h = hashlib.blake2b(digest_size=16)
+    for c in cols:
+        h.update(np.ascontiguousarray(df[c].to_numpy(np.float64)).tobytes())
+    return h.hexdigest()
+
+
+def _check_processed_content(proc: pd.DataFrame, raw: pd.DataFrame, what: str) -> None:
+    """Content check on an on-disk processed CSV before its numbers are trusted verbatim.
+
+    _build_features validated feature NAMES and null counts only -- and both of those
+    pass unchanged on a file whose VALUES are stale: rebuilt from a different raw dump,
+    re-sorted, or written by an older version of the feature code. Since the whole point
+    of preferring the file is that its numbers are then used as-is, a stale one is
+    silently authoritative and every score computed from it is attributed to feature
+    logic that never produced it (2026-08-03 audit). Two cheap checks:
+
+      1. row count, plus an exact digest over the raw pass-through columns (`id` + the 8
+         originals). Those survive the CSV round trip bit-for-bit (verified on the
+         current artifact), so this pins the file to THIS train/test.csv and to this row
+         ORDER -- the two ways a "right columns, wrong values" file usually arises.
+      2. `lat_long` and `dist_LA` recomputed from raw and compared at rtol=1e-6: a
+         two-column sample of the engineered layer, one product and one distance.
+
+    What it does NOT guarantee: the other ~24 engineered columns are not recomputed here
+    (recomputing them all IS _build_features_fresh, i.e. the thing being avoided), so a
+    file agreeing on these two but differing on, say, geo_cluster still passes. And the
+    1e-6 tolerance is deliberate rather than sloppy -- _build_features_fresh's docstring
+    documents a ~1e-13 per-feature float-path difference between a fresh computation and
+    this file, and keeping that difference is precisely why the file is preferred, so the
+    check cannot be tightened to exact equality without rejecting every valid file. It
+    catches staleness, not sub-tolerance drift."""
+    if len(proc) != len(raw):
+        raise AssertionError(f"{what}: {len(proc)} rows, raw CSV has {len(raw)} -- stale file")
+    missing = [c for c in _RAW_PASSTHROUGH if c not in proc.columns]
+    if missing:
+        raise AssertionError(f"{what}: missing raw pass-through column(s) {missing}")
+    if _col_digest(proc, _RAW_PASSTHROUGH) != _col_digest(raw, _RAW_PASSTHROUGH):
+        raise AssertionError(
+            f"{what}: raw pass-through columns {_RAW_PASSTHROUGH} do not match the raw "
+            f"CSV -- this file was built from different data or in a different row order; "
+            f"delete it and let _build_features_fresh() recompute")
+    lat, lon = CITIES["LA"]
+    for name, expect in (
+            ("lat_long", raw["Latitude"].to_numpy(np.float64) * raw["Longitude"].to_numpy(np.float64)),
+            ("dist_LA", np.sqrt((raw["Latitude"].to_numpy(np.float64) - lat) ** 2
+                                + (raw["Longitude"].to_numpy(np.float64) - lon) ** 2))):
+        got = proc[name].to_numpy(np.float64)
+        if not np.allclose(got, expect, rtol=1e-6, atol=1e-9):
+            raise AssertionError(
+                f"{what}: column {name!r} disagrees with a fresh recomputation from raw "
+                f"(max |diff| {float(np.abs(got - expect).max()):.3e} >> the ~1e-13 "
+                f"float-path noise this check tolerates) -- stale feature code")
+
+
 def _build_features():
     """Prefer the linear run's already-on-disk train_processed_v2.csv/
     test_processed_v2.csv (STATUS.md exp #7's exact 26-feature artifact, byte-identical
     to what produced every historical score) for true digit-for-digit reproduction; fall
     back to _build_features_fresh() (same logic, recomputed from raw CSVs) if those
-    files aren't present."""
+    files aren't present -- or if their CONTENT fails _check_processed_content, which
+    is what makes "prefer the file" safe rather than merely convenient."""
     v2_train = os.path.join(DATA, "train_processed_v2.csv")
     v2_test = os.path.join(DATA, "test_processed_v2.csv")
     if os.path.exists(v2_train) and os.path.exists(v2_test):
@@ -179,8 +242,11 @@ def _build_features():
             "train_processed_v2.csv / test_processed_v2.csv feature-column mismatch")
         assert tr[all_features].isnull().sum().sum() == 0
         assert te[all_features].isnull().sum().sum() == 0
+        _check_processed_content(tr, _train, "train_processed_v2.csv")
+        _check_processed_content(te, _test, "test_processed_v2.csv")
         print(f"eval_s3e1: loaded {len(all_features)} features from on-disk "
-              f"train_processed_v2.csv/test_processed_v2.csv (exact linear-run artifact)")
+              f"train_processed_v2.csv/test_processed_v2.csv (exact linear-run artifact, "
+              f"row/digest/sample-column content-checked against raw)")
         return tr, te, all_features
     print("eval_s3e1: train_processed_v2.csv/test_processed_v2.csv not found -- "
           "recomputing features fresh (LINEAR_BEST reproduction not guaranteed "

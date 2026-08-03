@@ -106,11 +106,50 @@ def tie_rate(tree: dict) -> float:
 # ---------------------------------------------------------------------------
 # Recommendation 3: child dedup
 # ---------------------------------------------------------------------------
+def _canonical_for_hash(v):
+    """Value-level canonicalization applied before hashing a config, so the hash compares
+    VALUES rather than their Python spelling: numpy scalars/arrays become their native
+    equivalents (np.int64(31) hashed as the string "31" via `default=str`, while a plain
+    31 hashed as the number 31 -- two different hashes for the same hyperparameter), and
+    an integral float collapses onto the int (`max_depth: 6.0` == `max_depth: 6`).
+    Deliberately conservative: nothing else is normalized, so materially different configs
+    still hash differently (2026-08-03 audit)."""
+    if isinstance(v, bool):
+        return v                       # bool before int: True must not collapse onto 1
+    if isinstance(v, np.generic):      # np.int64 / np.float32 / np.bool_ / ...
+        return _canonical_for_hash(v.item())
+    if isinstance(v, np.ndarray):
+        return [_canonical_for_hash(x) for x in v.tolist()]
+    if isinstance(v, float) and v.is_integer():
+        return int(v)
+    if isinstance(v, dict):
+        return {str(k): _canonical_for_hash(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_canonical_for_hash(x) for x in v]
+    return v
+
+
 def config_hash(config: dict) -> str:
     """Stable (key-order-independent) hash of a JSON-serializable node config, used for
     child-dedup. `default=str` mirrors harness.save()'s tolerance of non-JSON-native
-    values (e.g. numpy scalars in a params dict)."""
-    canon = json.dumps(config, sort_keys=True, default=str)
+    values (e.g. numpy scalars in a params dict).
+
+    What this hash CAN catch (2026-08-03 audit, after reading how the drivers actually
+    build configs -- run_v3_generic.py, run_s4e1_v3.py, run_citd_v3.py, run_conway_v3.py):
+    every driver stores the MERGED config a node was evaluated with (full `params` dict,
+    not the one-line mutation), normalized by its own local `core(cfg)` helper, and passes
+    that same dict to both `find_duplicate_config` and `add_node` -- so an identical
+    re-proposal of an already-evaluated config IS caught, regardless of key order and
+    (since the audit) regardless of whether a value is spelled `31`, `31.0` or
+    `np.int64(31)`.
+
+    What it CANNOT catch: two configs that differ in ANY stored value, even one the
+    evaluator ignores or treats as equivalent -- a bumped `random_state`, a reordered
+    `features.drop` list, a `members` list a driver forgot to sort, a flag the driver's
+    `core()` didn't strip. Semantic equivalence is the DRIVER's job (that is exactly what
+    `core()` exists for: drop `result`/`want_importance`, sort `members`); this harness
+    only guarantees that whatever the driver calls "the same config" is detected as such."""
+    canon = json.dumps(_canonical_for_hash(config), sort_keys=True, default=str)
     return hashlib.sha256(canon.encode("utf-8")).hexdigest()
 
 
@@ -340,12 +379,37 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
     arbitrary metric_fn instead of a hardcoded MAE proxy).
     weight_search="grid_simplex": exhaustive `grid_step`-spaced simplex grid, members<=5.
 
+    Member OOFs may be 1-D `(n_samples,)` (the common single-target case) or 2-D
+    `(n_samples, n_outputs)` (multiclass probabilities, or a multi-target regression like
+    afsis's 5 soil properties). Anything else raises, naming the offending shape.
+
     Returns (best_weights: np.ndarray, best_score: float, oofs: np.ndarray[n_samples,
-    n_members])."""
+    n_members] for 1-D members / np.ndarray[n_samples, n_outputs, n_members] for 2-D
+    ones — in both cases `oofs @ w` is the blended prediction)."""
     if len(members) < 2:
         raise ValueError(f"blend needs >=2 members, got {members!r}")
-    oofs = np.stack([load_oof(cache_dir, m) for m in members], axis=1)
-    n = oofs.shape[1]
+    member_oofs = [np.asarray(load_oof(cache_dir, m)) for m in members]
+    shapes = {m: o.shape for m, o in zip(members, member_oofs)}
+    if len(set(shapes.values())) != 1:
+        raise ValueError(f"blend members must all have the same OOF shape, got {shapes} "
+                          f"-- refusing to blend mismatched members")
+    ndim = member_oofs[0].ndim
+    if ndim == 1:
+        oofs = np.stack(member_oofs, axis=1)      # (n_samples, n_members)
+    elif ndim == 2:
+        # 2-D member OOFs stack on the LAST axis so `oofs @ w` still contracts over
+        # MEMBERS and yields (n_samples, n_outputs). Stacking on axis=1 like the 1-D case
+        # gives (n_samples, n_members, n_outputs), and `@ w` then contracts the OUTPUT axis
+        # against the weight vector: a shape error when n_outputs != n_members and, when
+        # they happen to be equal (afsis: 5 targets, and a 5-member blend is the obvious
+        # thing to try), a silently wrong number that still looks like a score
+        # (2026-08-03 audit).
+        oofs = np.stack(member_oofs, axis=-1)     # (n_samples, n_outputs, n_members)
+    else:
+        raise ValueError(f"blend members must have 1-D (n_samples,) or 2-D "
+                          f"(n_samples, n_outputs) OOFs; member #{members[0]} has shape "
+                          f"{member_oofs[0].shape} ({ndim}-D) -- unsupported")
+    n = len(members)
 
     if weight_search == "dirichlet":
         rng = np.random.default_rng(seed)
@@ -382,8 +446,17 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
                 "eval_blend(..., weight_search='nnls', target=y_true). It is the closed-form "
                 "least-squares solution, so it cannot be derived from metric_fn alone.")
         from scipy.optimize import nnls as _nnls
-        w, _ = _nnls(np.asarray(oofs, dtype=np.float64),
-                     np.asarray(target, dtype=np.float64))
+        # 2-D members: solve the least-squares problem over every (sample, output) row at
+        # once -- (n_samples, n_outputs, n_members) -> (n_samples*n_outputs, n_members),
+        # with the target flattened the same C-order way, so the two stay aligned. A no-op
+        # reshape for 1-D members (2026-08-03 audit).
+        A = np.asarray(oofs, dtype=np.float64).reshape(-1, n)
+        b = np.asarray(target, dtype=np.float64).reshape(-1)
+        if A.shape[0] != b.shape[0]:
+            raise ValueError(f"weight_search='nnls': target has {b.shape[0]} values but the "
+                              f"member OOFs have {A.shape[0]} rows (oofs shape "
+                              f"{np.shape(oofs)}) -- shapes must match")
+        w, _ = _nnls(A, b)
         w = np.ones(len(members)) / len(members) if w.sum() <= 0 else w / w.sum()
         return w, metric_fn(oofs @ w), oofs
     else:

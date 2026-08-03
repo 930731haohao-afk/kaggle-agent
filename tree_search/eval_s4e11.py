@@ -142,7 +142,7 @@ def _run_cat(params, X, Xtest):
     return oof, pred
 
 
-def maybe_postprocess(prob_full, postprocess):
+def maybe_postprocess(prob_full, postprocess, honored=None):
     """Threshold-inside-the-metric, dossier vocabulary (threshold / round_to_int /
     clip_min / clip_max). Defaults reproduce acc()'s historical path digit-for-digit:
     threshold="auto" runs the same best_threshold_accuracy sweep, and with no clip
@@ -150,17 +150,29 @@ def maybe_postprocess(prob_full, postprocess):
     no-op here: the threshold sweep already emits hard 0/1 for submission, which is the
     behavior the dossier asks that key to guarantee. Until 2026-07-31 this evaluator had
     no mechanism reading the dossier's postprocess request (the audit's NOT_IMPLEMENTED
-    case for s4e11)."""
+    case for s4e11).
+
+    Pass a set as `honored` to collect the keys this function ACTUALLY read. The runtime
+    attestation used to report `sorted(postprocess)` -- every key the dossier sent,
+    read or not -- so a key with no mechanism here (or a plain typo) came back attested
+    as honoured, which is the exact failure the attestation exists to catch. Recording
+    the keys at the point of use is the only version that cannot drift from the code
+    (2026-08-03 audit)."""
     pp = postprocess or {}
+    seen = honored if honored is not None else set()
     v = np.asarray(prob_full, dtype=np.float64)
     if pp.get("clip_min") is not None or pp.get("clip_max") is not None:
         v = np.clip(v, pp.get("clip_min"), pp.get("clip_max"))
+        seen.update(k for k in ("clip_min", "clip_max") if pp.get(k) is not None)
     thr = pp.get("threshold", "auto")
+    if "threshold" in pp:
+        seen.add("threshold")
     if thr == "auto":
         score = acc(_y, v)
     else:
         score = float(((v >= float(thr)).astype(np.float64) == _y).mean())
-    _ = pp.get("round_to_int")  # guaranteed by the sweep's hard 0/1 submission output
+    if "round_to_int" in pp:
+        seen.add("round_to_int")  # guaranteed by the sweep's hard 0/1 submission output
     return score
 
 
@@ -182,10 +194,14 @@ def evaluate_solo(config):
         raise ValueError(f"unknown model type {model!r}")
 
     postprocess = config.get("postprocess") or {}
-    score = maybe_postprocess(oof, postprocess)
+    honored = set()
+    score = maybe_postprocess(oof, postprocess, honored)
     if postprocess:
+        # Attest what was READ, and name what was not, so a silently-ignored key shows up
+        # as ignored instead of hiding inside honored_params (2026-08-03 audit).
         esup.write_attestation(_COMP_DIR, "postprocess", {
-            "honored_params": sorted(postprocess)})
+            "honored_params": sorted(honored),
+            "ignored_params": sorted(set(postprocess) - honored)})
     return oof, pred, score, feats
 
 

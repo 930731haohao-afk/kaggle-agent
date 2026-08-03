@@ -34,7 +34,7 @@ Populate with competition metadata:
 ```yaml
 name: <competition-name>
 url: <competition-url>
-description: <one-line summary>
+description: "<one-line summary>"          # ALWAYS quoted — see below
 problem_type: <regression | binary_classification | multiclass_classification | multilabel | ranking>
 evaluation_metric: <e.g., rmse, auc, f1, log_loss, map@k>
 optimization_direction: <minimize | maximize>
@@ -48,7 +48,19 @@ special_rules:
   pretrained_models_allowed: <true/false>
   internet_access_allowed: <true/false>
   daily_submission_limit: <number>
+notes: |                                   # block scalar — free text, no escaping needed
+  <anything: colons, #hashes, quotes, multiple lines>
 ```
+
+**Quote every free-text value** (`description`, `notes`, and any prose field added later).
+An unquoted YAML scalar containing `": "` is parsed as a nested mapping, so the whole file
+fails `yaml.safe_load` with `mapping values are not allowed here` — and a competition
+description very often contains one (`"Predict health_condition (3-class: at-risk/…)"`,
+`"anglez range: -90 to 90"`). This is not hypothetical: it is why two configs already in
+`competitions/` cannot be loaded at all, which breaks every tool that reads config.yaml,
+not just the field that contains the colon. A leading `#`, `{`, `[`, `*`, `&`, `%` or `@`
+in an unquoted value is the same class of failure. Double quotes for one-liners, a `|`
+block scalar for anything multi-line (2026-08-03 audit).
 
 If any fields are unknown, ask the user or mark as `TBD`.
 

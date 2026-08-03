@@ -32,6 +32,23 @@ This document is the **advanced Stage 4 loop** that follows [05_evaluation.md](0
 
 Regardless of type, **every node's `config` field must be the canonical/hashable "stored form"** (so the hash the dedup relies on is meaningful) — see the `core(cfg)` convention in `run_s3e7_v3.py`: drop output fields such as `result`/`want_importance`, and sort a blend's `members` before storing.
 
+### Sign convention: every stored `score` is lower-is-better
+
+The harness has exactly one score convention and it is not configurable: **`node["score"]` is always lower-is-better.** `harness.py`'s node-schema docstring states it ("lower-is-better metrics assumed throughout this harness; flip sign before calling in if the comp metric is maximize-better"), and `global_best` / `select_next_parent` are literally `min(...)` over `score`; `eval_blend`'s `metric_fn` and the `plateaued` / boundary / sanity-gate logic all inherit the same assumption.
+
+So for a **maximize** metric (AUC, accuracy, F1, QWK, R², MAP@k) the driver must **negate before storing**:
+
+```python
+score = round(-auc, 6)                     # stored on the node: lower-is-better
+hv3.add_node(tree, parent_id, mutation, stored_cfg, score, "evaluated", wall_s)
+result["auc"] = round(auc, 6)              # human-readable value lives in result, NOT in score
+metric_fn = lambda vec: -ev.auc(ev._y, vec)   # blend weight search minimizes too
+```
+
+For a **minimize** metric (RMSE, MAE, log_loss, MAPE) store it as-is — no flip. Say which case applies in the evaluator's module docstring, as `eval_s3e7.py` (flip) and `eval_s3e1.py` / `eval_s5e10.py` (no flip) each do.
+
+Getting this wrong does not raise: a maximize metric stored unflipped makes `min()` return the **worst** node, so the search reports its own least-good candidate as the winner and then spends its whole budget mutating that lineage. Check it on the root — the root's stored score must be the negation of the number reported in `result` whenever the comp metric is maximize-better (2026-08-03 audit).
+
 ## 3. Budget and stopping rules
 
 `harness_v3.py` already encodes these rules as default constants; the driver need not reinvent them:
@@ -53,7 +70,9 @@ Using `tree_search/run_s3e7_v3.py` as the template (already wired with the three
 
 ## 5. Priors
 
-Call `harness_v2.suggest_priors(comp_meta)` (inherited unchanged in v3) to keyword-match against `knowledge/experience.md` — `comp_meta = {"metric": ..., "tags": [...], "data_type": ...}`, returning verbatim evidence-cited bullets, with no LLM call. Query it once before proposing each lineage's first mutation.
+Call `harness_v2.suggest_priors(comp_meta)` (inherited unchanged in v3) to keyword-match against `knowledge/experience.md`, returning verbatim evidence-cited bullets, with no LLM call. Query it once before proposing each lineage's first mutation.
+
+**`comp_meta` MUST carry `comp`** — `{"comp": "<competition-slug>", "metric": ..., "tags": [...], "data_type": ...}`. Without it the call raises `ValueError`: the slug drives self-exclusion, which drops every bullet whose 證據 cites the competition being solved. That filter is the whole reason a re-run cannot improve its score by reading its own recorded answer, so it is required rather than optional. (Matching is token-boundary, so `s3e1` no longer swallows `s3e19`/`s3e11` evidence — 2026-08-03.)
 
 **Priors set the floor, comp-local insight sets the ceiling** (a repeated finding across the 9-comp D+E sweep): priors consistently and correctly avoid wasting compute on known dead ends, but the single largest lever that actually opens up a score gap in each comp almost always comes from that comp's own EDA/comp-local insight or a structural change to the search mechanism itself (tenure-prune, top-code clip, auto_scale, depth-boundary-push, LGBBOUND, YEARWEIGHTS/JOINT), not from an experience-library hit itself. So: **use priors to prune dead ends, but don't stop looking for comp-local new mutation directions just because the priors didn't hit**.
 
@@ -78,6 +97,10 @@ import harness_v3 as hv3
 
 tree = hv3.load_search_state(TREE_PATH) if os.path.exists(TREE_PATH) else hv3.new_tree(COMP)
 hv3.init_budget(tree)  # 60 / EXPLORE_BURST 5-8 / PATIENCE 20, unless there is a special reason to override
+
+# SIGN: node scores are lower-is-better (§2). Maximize metric -> store -metric and keep the
+# readable value in result[...]; minimize metric -> store as-is. Wrong sign = min() selects
+# the worst node, silently.
 
 # root + first-generation solo seeds + at least one blend seed; the root must assert digit-for-digit verification
 # main loop:

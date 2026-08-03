@@ -49,6 +49,18 @@ DATA = os.path.join(_COMP_DIR, "data")
 CACHE_DIR = os.path.join(_HERE, "cache_s5e10")
 os.makedirs(CACHE_DIR, exist_ok=True)
 N_SPLITS, SEED = 5, 42
+# Thread count is part of the result, not a performance knob: the histogram build sums in
+# thread-arrival order, so n_jobs=-1 makes the fitted model depend on how many cores
+# happened to be free. Measured on this comp's own train.csv, fold 0, 300 rounds: the old
+# params produced DIFFERENT prediction bits at 2 vs 20 threads (blake2b 81e3893ec42dbce0 vs
+# f82046f501eb82fa); with num_threads pinned + deterministic + force_row_wise both runs give
+# c25161653790e687. Every sibling evaluator for this comp already pins this
+# (eval_s5e10_lane3.py N_THREADS=10, eval_s5e10_july.py NTHREAD) -- this one did not, so its
+# scores were not reproducible across processes (2026-08-03 audit). Matching lane3's 10
+# (shared machine). NOTE: the pinned path is a different bit pattern from the unpinned one,
+# so vectors already in cache_s5e10/ are not digit-for-digit comparable to new ones (in that
+# fold-0 measurement the RMSE itself still agreed to 10 dp, but the vectors did not).
+N_THREADS = 10
 
 _train = pd.read_csv(f"{DATA}/train.csv")
 _test = pd.read_csv(f"{DATA}/test.csv")
@@ -118,7 +130,8 @@ def _run_lgb(params, X, Xtest, feats):
     p = dict(objective="regression", metric="rmse", learning_rate=0.05, num_leaves=63,
              max_depth=-1, min_child_samples=30, feature_fraction=0.8,
              bagging_fraction=0.8, bagging_freq=1, reg_alpha=0.1, reg_lambda=0.1,
-             verbose=-1, n_jobs=-1, seed=SEED)
+             verbose=-1, num_threads=N_THREADS, deterministic=True, force_row_wise=True,
+             seed=SEED)
     p.update(params)
     n_rounds = p.pop("num_boost_round", 3000)
     esr = p.pop("early_stopping_rounds", 100)
@@ -138,7 +151,7 @@ def _run_xgb(params, X, Xtest, feats):
     import xgboost as xgb
     p = dict(objective="reg:squarederror", eval_metric="rmse", learning_rate=0.05,
              max_depth=7, subsample=0.8, colsample_bytree=0.8, reg_alpha=0.1,
-             reg_lambda=1.0, random_state=SEED, n_jobs=-1, tree_method="hist")
+             reg_lambda=1.0, random_state=SEED, n_jobs=N_THREADS, tree_method="hist")
     p.update(params)
     n_est = p.pop("n_estimators", 3000)
     esr = p.pop("early_stopping_rounds", 100)

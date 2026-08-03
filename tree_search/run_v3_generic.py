@@ -8,6 +8,9 @@ reblends, evaluates each with the comp's own eval module (ev.evaluate dispatches
 blend), and adds them through hv3.add_node (so the budget/phase machine runs). The champion
 that emerges is a genuinely v3-searched node (not a v1 reformat) -> removes the adapter confound.
 
+The committed experiments_tree_v3.json is read-only here: this run's nodes go to a separate
+tree file (--output, default experiments_tree_v3_gen.json beside it).
+
 Usage: uv run python3 tree_search/run_v3_generic.py --comp s3e16 --nodes 24
 """
 import argparse
@@ -65,12 +68,26 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--comp", required=True, choices=EVAL_MOD)
     ap.add_argument("--nodes", type=int, default=24)
+    ap.add_argument("--output", default=None,
+                    help="tree file this run writes (default: experiments_tree_v3_gen.json "
+                         "beside the source tree; the source tree is never modified)")
     args = ap.parse_args()
     comp = args.comp
     ev = importlib.import_module(EVAL_MOD[comp])
     wl = json.load(open(os.path.join(_HERE, f"llm_proposer_input_{comp}.json")))["param_whitelist"]
-    tree_path = os.path.join(REPO, "competitions", f"playground-series-{comp}", "experiments_tree_v3.json")
-    tree = json.load(open(tree_path))
+    comp_dir = os.path.join(REPO, "competitions", f"playground-series-{comp}")
+    src_path = os.path.join(comp_dir, "experiments_tree_v3.json")
+    # This driver used to append its [V3GEN] nodes to the COMMITTED experiments_tree_v3.json
+    # and overwrite its search_state.budget in place, so a generic exploratory run corrupted
+    # the record of the lane whose numbers are already reported. It now seeds from that tree
+    # (read-only) and writes everywhere else (2026-08-03 audit).
+    tree_path = args.output or os.path.join(comp_dir, "experiments_tree_v3_gen.json")
+    if os.path.abspath(tree_path) == os.path.abspath(src_path):
+        raise SystemExit(f"--output must not be the committed source tree ({src_path})")
+    # resume this run's own tree if it exists, otherwise seed from the committed one
+    seed_path = tree_path if os.path.exists(tree_path) else src_path
+    tree = json.load(open(seed_path))
+    print(f"{comp}: seeded from {seed_path} -> writing {tree_path}")
 
     def champ(t):
         ev_n = [n for n in t["nodes"] if n["status"] == "evaluated" and isinstance(n["score"], (int, float))]
@@ -112,7 +129,7 @@ def main():
     v3_champ = champ(tree)["score"]
     print(f"{comp}: v1-adapter champion={v1_champ:.6f} -> v3-searched champion={v3_champ:.6f} "
           f"(Δ={v3_champ - v1_champ:+.6f}; added {added} nodes; champion #{champ(tree)['id']} "
-          f"kind={champ(tree)['config'].get('kind')})")
+          f"kind={champ(tree)['config'].get('kind')}; tree={tree_path})")
 
 
 if __name__ == "__main__":

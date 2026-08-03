@@ -28,7 +28,36 @@ import numpy as np
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _HERE)
-sys.path.insert(0, os.path.join(_ROOT, "competitions", "playground-series-s3e16", "scripts"))
+
+
+def _model_lib_dir() -> str:
+    """Locate the s3e16 scripts/ directory that actually holds `model_lib.py`.
+
+    This used to hardcode `competitions/playground-series-s3e16/scripts`. The run that
+    wrote this evaluator worked in that path, but its workspace was afterwards renamed
+    (to `playground-series-s3e16.repeat-r2-20260731`), so the import resolved to nothing
+    and the module died with ModuleNotFoundError before defining a single function -- it
+    could not be run or reproduced at all, even though the helper it needs still exists
+    on disk.  The directory left at the canonical name carries `pool_lib.py`, a DIFFERENT
+    API (train_lgb/train_cat/weight_search; no run_solo/get_data), so it is NOT a
+    substitute and swapping it in would silently change what every cached score means.
+    Search the s3e16 workspaces instead of hardcoding one, canonical name first
+    (2026-08-03 audit)."""
+    comps = os.path.join(_ROOT, "competitions")
+    cands = [os.path.join(comps, d, "scripts") for d in sorted(os.listdir(comps))
+             if d == "playground-series-s3e16" or d.startswith("playground-series-s3e16.")]
+    for c in cands:
+        if os.path.exists(os.path.join(c, "model_lib.py")):
+            return c
+    raise ModuleNotFoundError(
+        "eval_s3e16_bench needs model_lib.py (get_data/run_solo/SEED) from an s3e16 "
+        f"workspace; none of {cands or ['<no s3e16 workspace at all>']} has it. The OOFs "
+        "in cache_s3e16_bench/ were produced against that helper, so without it this "
+        "evaluator cannot be re-run and its cached scores cannot be reproduced.")
+
+
+SCRIPTS_DIR = _model_lib_dir()          # inspectable: which workspace this run resolved to
+sys.path.insert(0, SCRIPTS_DIR)
 
 import harness_v2 as hv2  # noqa: E402
 import harness_v3 as hv3  # noqa: E402

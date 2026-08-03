@@ -185,8 +185,9 @@ for _n in OLD["nodes"]:
 def try_reuse(stored_cfg):
     """If stored_cfg (already core()-normalized, kind=='solo') matches a node in the OLD
     v2 tree, reload its cached OOF and digit-verify (recompute AUC from the OOF, compare
-    to the OLD tree's own stored AUC to 6 decimals). Returns (oof, auc, old_node) on a
-    verified hit, else None -- caller falls back to a real eval."""
+    to the OLD tree's own stored AUC to 6 decimals). Returns (oof, auc, old_node, pred)
+    on a verified hit, else None -- caller falls back to a real eval. `pred` is the source
+    node's cached TEST prediction vector (None if that node never had one)."""
     if stored_cfg.get("kind") != "solo":
         return None
     old = OLD_BY_HASH.get(hv3.config_hash(stored_cfg))
@@ -200,7 +201,17 @@ def try_reuse(stored_cfg):
     old_auc = (old["config"].get("result") or {}).get("auc")
     if old_auc is None or round(recomputed, 6) != round(old_auc, 6):
         return None
-    return oof, recomputed, old
+    # The caller re-caches this OOF under the NEW node id in the SAME shared cache dir
+    # eval_s3e7 writes, so the source node's `pred` has to travel with it. It did not:
+    # the reuse path called cache_oof(..., oof, auc=...) with no pred=, and since the v3
+    # node ids overlap the v2 ones this OVERWROTE the source npz, deleting the test
+    # predictions it was reusing (verified: solo_0..6 and solo_18 in tree_search/cache_s3e7
+    # hold only ['oof', 'auc'] while every freshly-evaluated node holds
+    # ['oof', 'pred', 'auc']). Those eight vectors are already gone and only retraining
+    # brings them back; this stops the next run from doing it again (2026-08-03 audit).
+    src = np.load(os.path.join(ev.CACHE_DIR, f"solo_{old['id']}.npz"), allow_pickle=True)
+    pred = src["pred"] if "pred" in src.files else None
+    return oof, recomputed, old, pred
 
 
 # ---------------------------------------------------------------------------
@@ -212,30 +223,6 @@ def _neg_auc(vec):
     return -ev.auc(ev._y, vec)
 
 
-def _weight_search_generic(oofs, metric_fn, k=hv3.DEFAULT_BLEND_K, seed=42):
-    """Same coarse-Dirichlet + concentrated-refinement search as harness_v2.eval_blend,
-    generalized to operate on an already-materialized oofs matrix (needed for rank-space
-    blends, whose oofs are rank-TRANSFORMED, not the raw cached arrays load_oof returns)
-    -- followed by harness_v3's coordinate-ascent refinement (feature 5)."""
-    n = oofs.shape[1]
-    rng = np.random.default_rng(seed)
-    candidates = [np.eye(n)[i] for i in range(n)]
-    candidates.append(np.full(n, 1.0 / n))
-    candidates += list(rng.dirichlet(np.ones(n), size=k))
-    best_w = best_s = None
-    for w in candidates:
-        s = metric_fn(oofs @ w)
-        if best_s is None or s < best_s:
-            best_s, best_w = s, w
-    conc = np.clip(best_w, 1e-3, None) * 200.0
-    for w in rng.dirichlet(conc, size=max(k // 3, 50)):
-        s = metric_fn(oofs @ w)
-        if s < best_s:
-            best_s, best_w = s, w
-    best_w, best_s = hv3._coordinate_ascent_refine(oofs, metric_fn, best_w, best_s)
-    return best_w, best_s
-
-
 def evaluate_blend_v3(tree, stored_cfg):
     members = stored_cfg["members"]  # already sorted by core()
     if len(members) < 2:
@@ -243,17 +230,29 @@ def evaluate_blend_v3(tree, stored_cfg):
     space = stored_cfg.get("space", "prob")
     t0 = time.time()
     if space == "prob":
-        best_w, best_neg, oofs, warning = hv3.eval_blend_with_cost_guard(
+        best_w, best_neg, _oofs, warning = hv3.eval_blend_with_cost_guard(
             ev.CACHE_DIR, members, _neg_auc, tree=tree)
         best_score = -best_neg
     elif space == "rank":
+        # Rank-space blends used to run their own copy of the weight search directly, so
+        # they never consulted the blend-cost guard and never appended to
+        # search_state["blend_wall_log"] -- prob-space blends got coarsened (k=800 -> 200)
+        # off a wall-time history rank blends both ignored and refused to contribute to,
+        # which let the two spaces compete at different search densities inside one min().
+        # The rank oofs are a deterministic transform of the cached ones, so they are
+        # materialized into a scratch cache dir and handed to the SAME
+        # hv3.eval_blend_with_cost_guard the prob path uses -- one guard, one wall log, no
+        # second copy of the search to drift (2026-08-03 audit).
+        import tempfile
+
         from scipy.stats import rankdata
-        raw = np.stack([hv2.load_oof(ev.CACHE_DIR, m) for m in members], axis=1)
         n = len(ev._y)
-        oofs = np.stack([rankdata(raw[:, i]) / n for i in range(raw.shape[1])], axis=1)
-        best_w, best_neg = _weight_search_generic(oofs, _neg_auc)
+        with tempfile.TemporaryDirectory(prefix="s3e7_rankblend_") as _rank_dir:
+            for m in members:
+                hv2.cache_oof(_rank_dir, m, rankdata(hv2.load_oof(ev.CACHE_DIR, m)) / n)
+            best_w, best_neg, _oofs, warning = hv3.eval_blend_with_cost_guard(
+                _rank_dir, members, _neg_auc, tree=tree)
         best_score = -best_neg
-        warning = None
     else:
         raise ValueError(f"unknown blend space {space!r}")
     wall = time.time() - t0
@@ -293,8 +292,9 @@ def eval_and_add(tree, parent_id, mutation, proposal_cfg, is_root=False, lineage
     if kind == "solo":
         reused = try_reuse(stored)
         if reused is not None:
-            oof, auc_val, old = reused
-            hv2.cache_oof(ev.CACHE_DIR, nid, oof, auc=auc_val)
+            oof, auc_val, old, pred = reused
+            hv2.cache_oof(ev.CACHE_DIR, nid, oof, auc=auc_val,
+                          **({} if pred is None else {"pred": pred}))
             score, status, wall_s = round(-auc_val, 6), "evaluated", 0.05
             result = dict(old["config"].get("result") or {})
             result["auc"] = round(auc_val, 6)

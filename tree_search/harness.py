@@ -222,6 +222,11 @@ def select_next_parent(tree: dict):
                 # has already entered explore_burst -- the whole set, because reopening then
                 # sends the search back into lineages the phase machine just declared spent
                 # while the phase can never move backwards (2026-08-03 audit).
+                # That phase is only ever correct here because harness_v3 wraps this
+                # function (harness_v3.select_next_parent) to refresh its phase machine
+                # around the call, and stops the search itself if the burst it is waiting
+                # for can no longer arrive -- v1 has no phase machine of its own and this
+                # read is a pure courtesy to v3's (2026-08-03 audit).
                 phase = (tree.get("search_state", {}).get("budget", {}) or {}).get("phase")
                 if phase in ("explore_burst", "stopped"):
                     return None, None
