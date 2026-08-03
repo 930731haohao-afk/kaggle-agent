@@ -56,7 +56,15 @@ Validate before you upload. The goal is to never waste a daily submission slot o
 ## Preconditions / 先決條件
 
 1. **競賽工作區存在 / Competition workspace exists** — `competitions/<name>/` 底下要有 `config.yaml`(內含 `evaluation_metric`、`id_column`、`sample_submission_file`、`special_rules.daily_submission_limit`)。
-2. **憑證 / Credentials** — Kaggle 新式 token 需要環境變數 `KAGGLE_API_TOKEN`。它**不會跨 Bash 呼叫保存**,所以每個 kaggle 指令都要在同一行 `export` 它(見下方)。The `KAGGLE_API_TOKEN` env var does not persist across Bash calls — chain the `export` on every kaggle command.
+2. **憑證 / Credentials** — Kaggle 新式 token(`KGAT_` 開頭)**只吃環境變數 `KAGGLE_API_TOKEN`**;舊的 `~/.kaggle/kaggle.json` 路徑對 `KGAT_` token 無效(見專案 CLAUDE.md「Credential Setup」)。本專案的 token 放在 `~/.kaggle/kaggle_api_token.txt`,由 `utils/kaggle_auth.sh` 讀出來:
+   ```bash
+   source utils/kaggle_auth.sh && uv run kaggle <command>
+   ```
+   該腳本在 token 檔缺失/為空時會**回傳非 0 並印出原因**,所以 `&&` 會直接擋下後面的 kaggle 指令;成功時會印出用了哪個檔案,所以之後若拿到 401,就知道是哪一份憑證過期、該去 https://www.kaggle.com/settings 換新的貼回去。等價的一行寫法:`export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')`。
+   環境變數**不會跨 Bash 呼叫保存**,所以每個 kaggle 指令都要在同一行重新 `source`。
+   The `KGAT_` tokens only work through the `KAGGLE_API_TOKEN` env var — the old
+   `kaggle.json` path does not work with them. The var does not persist across Bash
+   calls, so chain the `source` on every kaggle command. (2026-08-03 audit)
 3. **提交檔存在 / Submission file exists** — 使用者指定的 `.csv`,或 `competitions/<name>/submissions/` 中最新的一個。
 
 <!--
@@ -77,11 +85,28 @@ Run the bundled validator (this is deterministic + repetitive work → a script,
 uv run python .claude/skills/kaggle-safe-submit/scripts/validate_submission.py \
   --submission <path/to/submission.csv> \
   --sample competitions/<name>/data/<sample_submission_file> \
-  --id-col <id_column>
+  --id-col <id_column> \
+  --metric <evaluation_metric> \
+  --train competitions/<name>/data/train.csv --target <target_column>
 ```
 
-腳本會檢查:欄位名稱與順序、列數、ID 對齊、NaN/Inf、機率欄位是否落在 [0,1]。**任何一項失敗就停下**,把問題回報給使用者,**先不要提交**。
-The script checks columns/order, row count, ID alignment, NaN/Inf, and probability ranges. **On any failure, STOP and report — do not submit.**
+`--metric`(config.yaml 的 `evaluation_metric`)與 `--train/--target` 是**選填但強烈建議**:沒有它們,範圍檢查與「機率/硬標籤搞反」檢查會印 SKIP 而不是猜測。
+`--metric` and `--train/--target` are optional but strongly recommended — without a
+reference the range and label-kind checks report SKIP instead of guessing.
+
+腳本分兩層判定,用退出碼區分(2026-08-03 audit 前這個腳本並不存在,這一步等於沒被執行過):
+The script reports two tiers, distinguished by exit code:
+
+| Exit | Tier | 動作 / Action |
+|---|---|---|
+| 0 | PASS | 可以繼續 / proceed |
+| 1 | STRUCTURAL — 列數/欄位/ID 對齊/重複 ID/NaN/±inf | **停止**,修檔案,不得放行 / STOP, never waivable |
+| 2 | SUSPICIOUS — 常數預測、全 0、超出範圍、機率↔硬標籤搞反 | **停止並回報使用者**;只有使用者明確確認後,才能加 `--allow-suspicious "<理由>"` 重跑 |
+
+SUSPICIOUS 是「CSV 合法但幾乎確定是 bug」。常數預測在少數競賽是合法的,所以留了放行閘門——但**不准自己放行**:一定要先把問題講給使用者聽並取得同意。
+The SUSPICIOUS tier is legal-but-almost-certainly-wrong. A constant column is a valid
+submission on rare competitions, hence the waiver exists — but never self-waive: report
+to the user and get explicit agreement first.
 
 深入的檢查清單與各競賽型別的規則,見 → `references/submission_checklist.md`(需要時才讀)。
 For the deep checklist and per-problem-type rules, read → `references/submission_checklist.md` (load on demand).
@@ -89,7 +114,7 @@ For the deep checklist and per-problem-type rules, read → `references/submissi
 ### 3. 檢查剩餘額度 / Check remaining quota
 在提交前,先看今天還剩幾次(對照 config 的 `daily_submission_limit`):
 ```bash
-export KAGGLE_API_TOKEN=<token> && uv run kaggle competitions submissions -c <name> | head
+source utils/kaggle_auth.sh && uv run kaggle competitions submissions -c <name> | head
 ```
 數今天(UTC 日期)已用的次數。若已達上限,**告訴使用者並停止**,別讓提交失敗白白浪費。
 
@@ -100,13 +125,13 @@ export KAGGLE_API_TOKEN=<token> && uv run kaggle competitions submissions -c <na
 這一步會消耗一次每日額度,屬於**外向、難以撤回**的動作——先向使用者複述「競賽、檔案、訊息」並取得同意再執行:
 This consumes a daily slot and is outward-facing/hard-to-undo — confirm competition + file + message with the user first:
 ```bash
-export KAGGLE_API_TOKEN=<token> && uv run kaggle competitions submit \
+source utils/kaggle_auth.sh && uv run kaggle competitions submit \
   -c <name> -f <submission.csv> -m "<concise message: model + CV score>"
 ```
 
 ### 6. 確認並回填 / Confirm and back-fill
 ```bash
-export KAGGLE_API_TOKEN=<token> && uv run kaggle competitions submissions -c <name> | head
+source utils/kaggle_auth.sh && uv run kaggle competitions submissions -c <name> | head
 ```
 把回傳的 public LB 分數填回 experiments.json 對應的那筆,並向使用者回報 CV vs LB(注意別過擬合公開 LB)。
 
@@ -117,6 +142,7 @@ export KAGGLE_API_TOKEN=<token> && uv run kaggle competitions submissions -c <na
 ## Guardrails / 安全準則
 - **絕不硬編碼 token** / Never hardcode the token — 只用 `KAGGLE_API_TOKEN` 環境變數;別把它寫進任何檔案或訊息。
 - **驗證未過就不提交** / No submit before validation passes。
+- **SUSPICIOUS 不可自我放行** / Never self-waive the SUSPICIOUS tier — `--allow-suspicious` 只能在向使用者說明並取得同意後使用(2026-08-03 audit)。
 - **提交前一定停下確認** / Always confirm before the irreversible upload。
 - **尊重競賽規則** / Respect `special_rules`(external data / internet / 每日上限)。
 - **別為了追公開 LB 過擬合** / Track public vs private LB; don't overfit to public.

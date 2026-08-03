@@ -64,14 +64,42 @@ Watch for:
 - Features derived from the target
 
 ### 7. Validation Strategy Recommendation
-Based on the data characteristics, recommend:
+
+Start from the dossier, not from a blank page. Stage 0.5 already derived a `split_policy`;
+Stage 1's job is to *verify* it against the data and record the outcome.
+
+**7a. Read the prior.** Open `competitions/<name>/dossier.json` and take `split_policy.scheme`,
+`split_policy.forbidden`, and the `test_window.relation` hypothesis the policy rests on.
+
+**7b. Test the prior against EDA findings.** Does an ordering/date column exist, and does the
+test window really sit after train (id ranges, date ranges)? Are there repeated entities —
+group/user/session ids, or the duplicate feature rows from the duplicate check — that must not
+straddle folds? Is the target imbalanced enough to require stratification? Did any feature show
+a train/test distribution shift?
+
+Candidate schemes:
 - **Standard K-Fold** — Default for i.i.d. tabular data
 - **Stratified K-Fold** — For imbalanced classification
 - **Group K-Fold** — When data has groups that shouldn't leak across folds (e.g., same user in train and validation)
 - **Time-Series Split** — When data has a temporal component
 - **Repeated K-Fold** — For small datasets where variance is high
 
-Justify the recommendation based on EDA findings.
+**7c. Decide, and say which source won.** The dossier is a prior, not a conclusion: if the data
+contradicts it, the EDA finding wins and that contradiction is itself a headline finding. If the
+dossier said `"unknown"`, this step is where it gets resolved. The trap this exists to catch is a
+shuffled KFold on a future-window test set — 4.56 vs 20.41 SMAPE on s3e19, a 4.5× optimism bias
+(see `references/00_problem_dossier.md`).
+
+**7d. Write the verdict back into `dossier.json` under `"eda_verdict"`.** This is the step
+`00_problem_dossier.md` ("Downstream consumption") makes Stage 1 responsible for — without it the
+dossier's hypotheses are never marked tested and Stage 2 inherits an unverified prior. (2026-08-03
+audit: this step previously stopped at "recommend a scheme", so the contract had no writer.)
+Record for each dossier hypothesis — at minimum `test_window` and `external_data.needed` —
+CONFIRMED / REFUTED / UNRESOLVED **with the number that decided it** (KS statistic, id-range
+overlap, duplicate/conflict counts, imbalance ratio), plus a `validation_decision` field naming
+the exact splitter call and seed, e.g.
+`StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`. Every later stage reuses those folds
+byte-identically so scores remain comparable.
 
 ### 8. EDA Report
 Summarize findings in a structured format:
@@ -110,5 +138,7 @@ Summarize findings in a structured format:
 - EDA script has been run successfully
 - Key findings have been summarized and presented to the user
 - Validation strategy has been recommended and approved by the user
+- `dossier.json` carries an `eda_verdict` with every hypothesis marked CONFIRMED / REFUTED /
+  UNRESOLVED and a `validation_decision` (splitter + seed) — see step 7d
 - Feature engineering ideas have been proposed
 - User is ready to proceed to feature engineering

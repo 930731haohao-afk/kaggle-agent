@@ -47,7 +47,13 @@ BASE = {
 
 def _patch_target_transform(src: str, cov_col: str, kind: str) -> str:
     """Make the generated evaluator fit on the ratio and invert with the covariate."""
+    if kind not in ("ratio_log", "ratio_linear"):
+        raise ValueError(f"unknown target-transform kind {kind!r}")
     inv = "np.exp" if kind == "ratio_log" else ""
+    # The FIT space must match the inversion: a ratio_linear arm that fits log(y/c) and then
+    # inverts without exp trains on one target and predicts another (2026-08-03 audit).
+    fit_expr = ("np.log(_train[TARGET].to_numpy(np.float64) / _COV_TR)" if kind == "ratio_log"
+                else "_train[TARGET].to_numpy(np.float64) / _COV_TR")
     anchor = "_y = _train[TARGET].to_numpy(np.float64)"
     assert src.count(anchor) == 1
     src = src.replace(anchor, anchor + f'''
@@ -58,7 +64,7 @@ def _patch_target_transform(src: str, cov_col: str, kind: str) -> str:
 _COV_TR = _train["{cov_col}"].to_numpy(np.float64)
 _COV_TE = _test["{cov_col}"].to_numpy(np.float64)
 assert np.all(_COV_TR > 0) and np.all(_COV_TE > 0), "covariate must be strictly positive"
-_Y_RATIO = np.log(_train[TARGET].to_numpy(np.float64) / _COV_TR)
+_Y_RATIO = {fit_expr}
 
 
 def _invert_va(p, va_mask):
@@ -69,11 +75,28 @@ def _invert_test(p):
     return {inv}(p) * _COV_TE
 # -----------------------------------------------------------------------------------''')
 
-    # train on the ratio instead of log1p(y)
+    # train on the ratio instead of log1p(y), EVERYWHERE _y_log is used as the fit target:
+    # the lgb/cat fold loops, the sparse-linear family, and the per-fold target encoding.
+    # Patching only the first left a mixed-target arm whose linear member and encodings were
+    # fit on log1p(y) while the trees fit the ratio (2026-08-03 audit).
     n_y = src.count("y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]")
     assert n_y >= 1, "no training target lines found"
     src = src.replace("y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]",
                       "y_tr, y_va = _Y_RATIO[tr_mask], _Y_RATIO[va_mask]")
+    n_other = 0
+    for frm, to in (("esup.run_linear(params, Xdf, Xtestdf, cat_feats, _FOLDS, _y_log,",
+                     "esup.run_linear(params, Xdf, Xtestdf, cat_feats, _FOLDS, _Y_RATIO,"),
+                    ("X_tr, X_va, Xtestdf, _y_log[tr_mask],",
+                     "X_tr, X_va, Xtestdf, _Y_RATIO[tr_mask],")):
+        n_other += src.count(frm)
+        src = src.replace(frm, to)
+    # the linear family inverts with expm1 too; align it with the ratio inversion
+    n_lin_inv = src.count("invert=np.expm1)")
+    src = src.replace("invert=np.expm1)", "invert=lambda p: _invert_test(p) / _COV_TE)"
+                      if kind == "ratio_log" else "invert=lambda p: p)")
+    if n_other or n_lin_inv:
+        print(f"   ratio target also applied to {n_other} non-GBDT fit site(s), "
+              f"{n_lin_inv} linear inversion(s)")
     # invert with the covariate instead of expm1. The test-frame operand is whatever the
     # baseline evaluator names it: `Xtestdf` before the per-fold target-encoding refactor,
     # `Xte_fold` after (2026-07-31). Matching on the frame name is what silently broke when
@@ -105,8 +128,23 @@ def _patch_sample_weight(src: str, wcol: str) -> str:
     cat_to = ("        m.fit(X_tr, y_tr, sample_weight=_ROW_W[tr_mask], "
               "eval_set=(X_va, y_va), early_stopping_rounds=esr)")
     n_lgb, n_cat = src.count(lgb_from), src.count(cat_from)
+    # Both families must be patched: `n_lgb + n_cat >= 1` passed while one whole family
+    # trained unweighted, so a down-weighted regime still drove half the pool
+    # (2026-08-03 audit). A family that is absent from this evaluator is fine; a family that
+    # is present but unpatched is not.
+    has_lgb = "lgb.LGBMRegressor(" in src or "LGBMClassifier(" in src
+    has_cat = "CatBoostRegressor(" in src or "CatBoostClassifier(" in src
+    missing = [fam for fam, present, patched in
+               (("lgb", has_lgb, n_lgb), ("cat", has_cat, n_cat)) if present and not patched]
+    assert not missing, (f"sample_weight could not be patched into {missing} -- their fit "
+                         f"call shape changed; update _patch_sample_weight's anchors")
     assert n_lgb + n_cat >= 1, "no fit sites found for sample_weight"
     src = src.replace(lgb_from, lgb_to).replace(cat_from, cat_to)
+    # the sparse-linear family fits through eval_support.run_linear, which takes no weights:
+    # say so rather than silently leaving that member unweighted
+    if "esup.run_linear(" in src:
+        print("   NOTE: the sparse-linear family does not take sample weights; its member "
+              "trains unweighted (recorded, not silent)")
     print(f"   sample_weight patched into {n_lgb} lgb + {n_cat} cat fit sites")
     return src
 

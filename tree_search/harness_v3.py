@@ -756,7 +756,18 @@ def eval_solo_subprocess(eval_module_path: str, config: dict, timeout_s: float, 
             "    config = json.load(f)\n"
             f"result = mod.evaluate(config, node_id={node_id!r}, timeout_s={timeout_s!r})\n"
             f"with open({out_path!r}, 'w') as f:\n"
-            "    json.dump(result, f, default=str)\n"
+            # default=str turns a numpy scalar into a STRING, so a score of np.float32 came
+            # back as '0.9013' and every downstream comparison silently compared text.
+            # Coerce numerics first; fall back to str only for genuinely unserializable
+            # objects (2026-08-03 audit).
+            "    def _enc(o):\n"
+            "        import numpy as _np\n"
+            "        if isinstance(o, _np.generic):\n"
+            "            return o.item()\n"
+            "        if isinstance(o, _np.ndarray):\n"
+            "            return o.tolist()\n"
+            "        return str(o)\n"
+            "    json.dump(result, f, default=_enc)\n"
         )
 
         t0 = time.time()

@@ -19,9 +19,33 @@ Generate a valid, competition-ready submission file from the best model(s).
 
 ### 1. Select Final Model(s)
 Review `experiments.json` and select the model(s) to use for submission:
-- **Single best model** — Simplest approach, use the model with the best CV score
+- **Single best model** — Simplest approach, use the model with the best CV score **among
+  submission candidates only**
 - **Ensemble** — If ensembling was done in Stage 3, use the ensemble
 - **Multiple submissions** — If daily limit allows, submit both single model and ensemble
+
+**Exclude diagnostics before ranking.** Not every logged experiment is a submission
+candidate. Leakage probes, illegal-split runs and sanity checks are logged deliberately
+and they usually score *highest*, because the thing being diagnosed is exactly what
+inflates CV. Picking the top row blind is the study's documented silent failure #4: a
+leakage probe explicitly marked not-for-submission won the selection.
+
+Use the helper rather than sorting the log yourself — it already drops them:
+```python
+from utils.experiment_log import get_best_experiment, _entry_is_diagnostic
+
+best = get_best_experiment('competitions/<name>', minimize=<True if lower is better>)
+assert best is not None and not _entry_is_diagnostic(best), "champion is a diagnostic run"
+```
+`_entry_is_diagnostic` matches these markers, case-insensitively, across an entry's
+`model` / `model_name` / `notes` / `tag` / `label` fields: `diagnostic`,
+`not used for submission`, `not for submission`, `leakage check`, `leak check`,
+`sanity probe`. So a diagnostic run is only excluded if it was *tagged* — when you log
+one, put one of those strings in `notes`.
+
+Verify explicitly before moving on: state which experiment ID was chosen, its score, and
+that it is not diagnostic-tagged. If the only experiments left are diagnostics, stop and
+say so — do not submit one. (2026-08-03 audit)
 
 Present the selection to the user for confirmation.
 
@@ -81,11 +105,26 @@ assert (submission[sample_sub.columns[0]] == sample_sub[sample_sub.columns[0]]).
 ```
 
 ### 6. Validate Submission
-Run validation checks before saving:
+Shape / columns / NaN / IDs are necessary but **not sufficient** — all four pass on inf
+values, constant predictions, all-zero predictions, out-of-range values, and
+probabilities sent to a hard-label metric, every one of which wastes a submission
+(2026-08-03 audit). Run the full gate:
+
+```bash
+uv run python .claude/skills/kaggle-safe-submit/scripts/validate_submission.py \
+  <submission.csv> <sample_submission.csv> --metric <metric> \
+  --train <train.csv> --target <target_col>
+```
+Exit 0 = pass, 1 = structural (never submit), 2 = suspicious (stop, report to the user,
+waive only with their agreement). The same two-tier gate is inlined in
+`assets/templates/submit_template.py`.
+
 - **Shape**: Matches sample submission exactly
 - **Columns**: Same names and order as sample submission
-- **IDs**: All test IDs are present, no extras, correct order
-- **Values**: No NaN, within expected range, correct dtype
+- **IDs**: All test IDs are present, no extras, no duplicates, correct order
+- **Values**: No NaN, no ±inf, within expected range, correct dtype
+- **Not degenerate**: More than one unique value, not all zeros
+- **Right value kind**: Probabilities for AUC/logloss, hard labels for accuracy/F1/QWK
 - **Sanity check**: Prediction distribution is similar to training target distribution (not required to match, but large deviations are suspicious)
 
 ### 7. Save Submission

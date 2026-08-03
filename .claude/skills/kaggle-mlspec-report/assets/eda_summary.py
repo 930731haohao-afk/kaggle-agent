@@ -63,7 +63,16 @@ def summarize(comp_dir: str) -> dict:
             "median": y.median(), "p75": y.quantile(.75), "max": y.max(),
             "skew": y.skew(), "kurtosis": y.kurtosis()}.items()})
         tgt["is_integer_valued"] = bool(np.allclose(y.dropna() % 1, 0))
-        tgt["log_transform_candidate"] = bool(y.min() >= 0 and abs(y.skew()) > 1.0)
+        # 2026-08-03 audit: log1p fixes a heavy right tail on a MAGNITUDE target. An
+        # imbalanced binary label is skewed by construction (skew = (1-2p)/sqrt(p(1-p)),
+        # e.g. 4.0 at p=0.05) and was being flagged here, recommending a meaningless
+        # transform on a classification target. Cardinality gate: <=2 distinct values is
+        # binary; <=10 integer levels are class codes, not magnitudes. A skewed integer
+        # COUNT target (many levels) still qualifies.
+        label_like = int(y.nunique(dropna=True)) <= 2 or (
+            tgt["is_integer_valued"] and int(y.nunique(dropna=True)) <= 10)
+        tgt["log_transform_candidate"] = bool(
+            not label_like and y.min() >= 0 and abs(y.skew()) > 1.0)
     else:
         vc = y.value_counts()
         tgt["class_counts"] = {str(k): int(v) for k, v in vc.items()}
@@ -102,13 +111,26 @@ def summarize(comp_dir: str) -> dict:
         out["target_correlation"] = {c: {"pearson": _num(pear[c]), "spearman": _num(spear[c])}
                                      for c in num_feats}
         # collinear feature pairs (|r|>0.95) — flags redundancy
+        # 2026-08-03 audit: .corr() is pairwise-complete, so two columns with (almost)
+        # mutually exclusive missingness can report |r|=1.0 off a handful of jointly
+        # observed rows — a redundancy claim the data does not support. A pair is only
+        # reportable with at least MIN_OVERLAP jointly non-null rows: 30 (the usual
+        # small-sample floor for a correlation to mean anything) or 1% of train, whichever
+        # is larger. The overlap count travels with each pair so the reader can judge it.
+        min_overlap = max(30, int(0.01 * len(train)))
+        obs = train[num_feats].notna().to_numpy()
+        overlap = obs.T.astype(np.int64) @ obs.astype(np.int64)   # pairwise complete counts
         cmat = train[num_feats].corr().abs()
         pairs = []
         for i in range(len(num_feats)):
             for j in range(i + 1, len(num_feats)):
-                if cmat.iloc[i, j] > 0.95:
-                    pairs.append([num_feats[i], num_feats[j], _num(cmat.iloc[i, j])])
+                n_overlap = int(overlap[i, j])
+                if cmat.iloc[i, j] > 0.95 and n_overlap >= min_overlap:
+                    # [feature_a, feature_b, |r|, n_rows_both_observed]
+                    pairs.append([num_feats[i], num_feats[j], _num(cmat.iloc[i, j]),
+                                  n_overlap])
         out["high_collinearity_pairs"] = pairs
+        out["collinearity_min_overlap"] = min_overlap
 
     # ---- train/test distribution shift (numeric) ----
     if test is not None and num_feats:

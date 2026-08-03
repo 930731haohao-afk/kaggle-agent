@@ -46,7 +46,7 @@ kaggle/                              # Project root
 The Kaggle CLI requires the `KAGGLE_API_TOKEN` environment variable. Always chain the export with kaggle commands:
 
 ```bash
-export KAGGLE_API_TOKEN=$(python3 -c "import json; print(json.load(open('/home/tjyen/.kaggle/kaggle.json'))['key'])") && uv run kaggle <command>
+source utils/kaggle_auth.sh && uv run kaggle <command>
 ```
 
 Environment variables don't persist across separate Bash tool invocations in Claude Code.

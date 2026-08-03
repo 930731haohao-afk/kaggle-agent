@@ -122,8 +122,15 @@ def find_duplicate_config(tree: dict, config: dict):
     tree."""
     h = config_hash(config)
     for n in tree["nodes"]:
-        if config_hash(n["config"]) == h:
-            return n["id"]
+        if config_hash(n["config"]) != h:
+            continue
+        # A node that FAILED is not evidence the config is exhausted: an eval timeout, an
+        # OOM or a subprocess crash is a property of that attempt, and banning the config
+        # forever means a transient failure permanently removes a candidate from the search
+        # (2026-08-03 audit). Only evaluated nodes -- results we actually have -- dedup.
+        if n.get("status") == "failed":
+            continue
+        return n["id"]
     return None
 
 
@@ -214,24 +221,50 @@ def cache_oof(cache_dir: str, node_id: int, oof, **extra) -> str:
     os.makedirs(cache_dir, exist_ok=True)
     path = os.path.join(cache_dir, f"solo_{node_id}.npz")
     tmp = path.replace(".npz", ".tmp.npz")  # np.savez auto-appends .npz otherwise
-    np.savez(tmp, oof=np.asarray(oof), **extra)
+    # Identity stamp. The cache is keyed by node id ALONE, and node ids restart at 0 in every
+    # new tree, so a fresh run in a directory another tree already used silently reads that
+    # tree's vectors and scores a model it never trained. Recording the row count and (when
+    # the caller supplies it) the config hash lets load_oof refuse instead of returning
+    # someone else's predictions (2026-08-03 audit).
+    stamp = {"_n_rows": np.asarray(len(np.asarray(oof)))}
+    if "config" in extra:
+        stamp["_config_hash"] = np.asarray(config_hash(extra.pop("config")))
+    np.savez(tmp, oof=np.asarray(oof), **stamp, **extra)
     os.replace(tmp, path)
     return path
 
 
-def load_oof(cache_dir: str, node_id: int):
+def load_oof(cache_dir: str, node_id: int, expect_rows: int = None,
+             expect_config: dict = None):
     """Load node_id's cached OOF array (see cache_oof). Raises ValueError with a clear
     message if the node was never cached — callers (typically eval_blend) should let
     this propagate so the eval dispatch can catch it and mark the node "failed" instead
     of crashing the search loop, same contract as eval_s3e14.load_solo_cache /
-    eval_s3e5.load_solo_cache."""
+    eval_s3e5.load_solo_cache.
+
+    `expect_rows` / `expect_config`, when given, are checked against the stamp cache_oof
+    wrote. A mismatch means this id belongs to a different tree or a different dataset --
+    the cache is keyed by node id alone, so that is a real and silent failure mode
+    (2026-08-03 audit)."""
     path = os.path.join(cache_dir, f"solo_{node_id}.npz")
     if not os.path.exists(path):
         raise ValueError(f"solo node #{node_id} has no cached OOF at {path} -- it must be "
                           f"evaluated (kind='solo') before being referenced as a blend "
                           f"member")
     d = np.load(path, allow_pickle=True)
-    return d["oof"]
+    oof = d["oof"]
+    if expect_rows is not None and len(oof) != expect_rows:
+        raise ValueError(
+            f"cached OOF for node #{node_id} has {len(oof)} rows, expected {expect_rows} "
+            f"({path}) -- this cache entry belongs to a different dataset or tree")
+    if expect_config is not None and "_config_hash" in d:
+        want = config_hash(expect_config)
+        got = str(d["_config_hash"])
+        if got != want:
+            raise ValueError(
+                f"cached OOF for node #{node_id} was produced by a different config "
+                f"({got[:12]} != {want[:12]}, {path}) -- stale cache from an earlier tree")
+    return oof
 
 
 def _grid_simplex_weights(n_members, step=0.05):

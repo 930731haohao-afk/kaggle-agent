@@ -42,6 +42,12 @@ num_cols = train.select_dtypes(include=[np.number]).columns.tolist()
 cat_cols = train.select_dtypes(include=["object", "category"]).columns.tolist()
 if TARGET_COL in num_cols:
     num_cols.remove(TARGET_COL)
+if TARGET_COL in cat_cols:
+    # 2026-08-03 audit: only num_cols used to be filtered. An object/string target — i.e.
+    # every classification competition with text labels — stayed in cat_cols, and the
+    # categorical loop below indexes test[col]; test has no target column, so the script
+    # died with KeyError before correlation and duplicates were ever printed.
+    cat_cols.remove(TARGET_COL)
 if ID_COL in num_cols:
     num_cols.remove(ID_COL)
 if ID_COL in cat_cols:
@@ -119,16 +125,55 @@ for col in cat_cols:
 
 # --- Correlation with Target ---
 section("CORRELATION WITH TARGET")
-if num_cols and train[TARGET_COL].dtype in [np.float64, np.int64, np.float32, np.int32]:
-    correlations = train[num_cols].corrwith(train[TARGET_COL]).abs().sort_values(ascending=False)
-    print("Top correlations with target:")
+# This section is the ONLY quantitative evidence behind the leak check in
+# references/02_eda.md ("features too perfectly correlated with the target"), so it must
+# never fail silently. 2026-08-03 audit: the guard used to be an exact dtype whitelist
+# [float64, int64, float32, int32], which dropped bool targets, narrow int dtypes and every
+# string-labelled target — printing an empty section that reads exactly like "no leak found".
+target_numeric = None
+if not num_cols:
+    print("NOT COMPUTED: no numerical features to correlate against the target.")
+elif pd.api.types.is_bool_dtype(train[TARGET_COL]) or pd.api.types.is_numeric_dtype(train[TARGET_COL]):
+    target_numeric = train[TARGET_COL].astype(float)
+elif train[TARGET_COL].nunique(dropna=True) == 2:
+    # Binary non-numeric label ("yes"/"no", "Presence"/"Absence"): the point-biserial
+    # correlation on the 0/1 encoding is still the leak signal we need, so encode it.
+    codes, levels = pd.factorize(train[TARGET_COL], use_na_sentinel=True)
+    target_numeric = pd.Series(codes, index=train.index).where(codes >= 0).astype(float)
+    print(f"NOTE: target dtype is {train[TARGET_COL].dtype}; encoded 1='{levels[1]}', "
+          f"0='{levels[0]}' — values below are point-biserial correlations.")
+else:
+    print(f"NOT COMPUTED: target dtype {train[TARGET_COL].dtype} with "
+          f"{train[TARGET_COL].nunique()} classes has no linear order, so Pearson r is "
+          f"undefined. Run the leak check with per-class target rates or mutual information.")
+
+if target_numeric is not None:
+    correlations = train[num_cols].corrwith(target_numeric).abs().sort_values(ascending=False)
+    print("Top correlations with target (|r|, descending):")
     print(correlations.head(20).to_string())
 
 
 # --- Duplicate Check ---
 section("DUPLICATE CHECK")
-train_dupes = train.duplicated().sum()
-print(f"Duplicate rows in train: {train_dupes}")
+# 2026-08-03 audit: this used to be train.duplicated() over the FULL frame, id column
+# included — with a unique id every row is distinct, so the check returned 0 on every
+# competition that has one and could never fire. Duplicates are a property of the features.
+# The two counts below answer different questions and both matter:
+#   feature rows      -> identical features; if their targets differ this is label noise,
+#                        it caps achievable accuracy (Bayes floor) and such rows must not
+#                        straddle CV folds
+#   rows incl. target -> fully identical records, i.e. true duplicates that can be dropped
+#                        or down-weighted
+feature_cols = [c for c in train.columns if c not in (ID_COL, TARGET_COL)]
+dupe_features = int(train.duplicated(subset=feature_cols).sum()) if feature_cols else 0
+dupe_with_target = int(train.duplicated(subset=feature_cols + [TARGET_COL]).sum()) if feature_cols else 0
+print(f"Duplicate feature rows in train (id/target excluded): {dupe_features}")
+print(f"Duplicate rows incl. target: {dupe_with_target}")
+if dupe_features > dupe_with_target:
+    print("  -> identical features carry DIFFERENT targets: label noise / Bayes-error floor; "
+          "keep identical feature rows inside the same fold.")
+elif dupe_features > 0:
+    print("  -> fully identical records: true duplicates; consider dropping or row weights.")
 if ID_COL in train.columns:
     id_dupes = train[ID_COL].duplicated().sum()
     print(f"Duplicate IDs in train: {id_dupes}")
