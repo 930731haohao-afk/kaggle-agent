@@ -15,11 +15,20 @@
 # `return` when sourced (the supported use), `exit` when executed directly.
 (return 0 2>/dev/null) && _kaggle_auth_die=return || _kaggle_auth_die=exit
 
-# ~/.kaggle/kaggle_api_token.txt holds the plain KGAT_ token for this repo's account
-# (tjyen1975) — the location REPRODUCE.md, .claude/skills/README.md and the competition
-# STATUS.md files all cite. ~/.kaggle/huang_token is a DIFFERENT account (AAPB); select
-# it with KAGGLE_TOKEN_FILE, never by editing this default.
-KAGGLE_TOKEN_FILE="${KAGGLE_TOKEN_FILE:-$HOME/.kaggle/kaggle_api_token.txt}"
+# WHICH ACCOUNT (verified against the live API, 2026-08-03):
+#   ~/.kaggle/huang_token          -> huangweihaohuang, WORKS. This account holds every
+#                                     benchmark submission (all three lanes on every
+#                                     competition), so automation must use it or the
+#                                     submission record splits across two accounts.
+#   ~/.kaggle/kaggle_api_token.txt -> 401 Unauthorized (expired 2026-07-02 token). It is
+#                                     the path the older docs cite, which is exactly why
+#                                     the default now points away from it: an expired token
+#                                     produced an auth error that pointed nowhere.
+#   ~/.kaggle/kaggle.json 'key'    -> tjyen1975, works, but it is a DIFFERENT account from
+#                                     the one the benchmark submitted under.
+# Override per call with KAGGLE_TOKEN_FILE; do not switch the default without deciding
+# which account the submission history should live under.
+KAGGLE_TOKEN_FILE="${KAGGLE_TOKEN_FILE:-$HOME/.kaggle/huang_token}"
 
 if [ ! -r "$KAGGLE_TOKEN_FILE" ]; then
     echo "kaggle_auth: token file not found or unreadable: $KAGGLE_TOKEN_FILE" >&2

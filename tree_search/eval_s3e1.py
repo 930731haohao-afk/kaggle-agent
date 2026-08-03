@@ -346,7 +346,14 @@ def evaluate_solo(config):
     drop = feat_cfg.get("drop", [])
     model = config["model"]
     params = dict(config.get("params") or {})
-    clip = bool((config.get("postprocess") or {}).get("clip", False))
+    # METRIC SYMMETRY (v5.3, 2026-08-03 audit): clip defaulted to False, so nodes scored
+    # WITH the top-code clip and nodes scored without it were ranked against each other by
+    # one min(). Clipping into [y_min, Y_MAX] can never increase |error| for a row whose
+    # truth lies inside that range, so an unclipped node is systematically understated --
+    # and the committed tree shows it: node 10 (unclipped) 0.557054 vs node 11 (identical
+    # members, clipped) 0.556931, while all 15 solo nodes carried no postprocess at all.
+    # Both kinds now default to clipping, which is also what the submission does.
+    clip = bool((config.get("postprocess") or {}).get("clip", True))
 
     Xdf, Xtestdf, feats = get_feature_frame(drop)
     Xnp, Xtestnp = Xdf.to_numpy(np.float64), Xtestdf.to_numpy(np.float64)
@@ -376,7 +383,14 @@ def evaluate_blend(config):
     if len(members) < 2:
         raise ValueError(f"blend node needs >=2 members, got {members!r}")
     method = config.get("weight_search", "dirichlet")
-    clip = bool((config.get("postprocess") or {}).get("clip", False))
+    # METRIC SYMMETRY (v5.3, 2026-08-03 audit): clip defaulted to False, so nodes scored
+    # WITH the top-code clip and nodes scored without it were ranked against each other by
+    # one min(). Clipping into [y_min, Y_MAX] can never increase |error| for a row whose
+    # truth lies inside that range, so an unclipped node is systematically understated --
+    # and the committed tree shows it: node 10 (unclipped) 0.557054 vs node 11 (identical
+    # members, clipped) 0.556931, while all 15 solo nodes carried no postprocess at all.
+    # Both kinds now default to clipping, which is also what the submission does.
+    clip = bool((config.get("postprocess") or {}).get("clip", True))
 
     def metric_fn(vec):
         return rmse(_y, maybe_clip(vec, clip))

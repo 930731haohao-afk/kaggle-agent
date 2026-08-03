@@ -281,6 +281,47 @@ def _grid_simplex_weights(n_members, step=0.05):
     return np.array(rows)
 
 
+def blend_optimism(cache_dir: str, members: list, y, metric, *, k: int = 1500,
+                   seed: int = 42, n_folds: int = 5) -> dict:
+    """Measure how much of a blend's score is weight-search optimism rather than skill.
+
+    KNOWN LIMITATION this quantifies (2026-08-03 audit, recorded rather than silently
+    fixed). `eval_blend` searches ~k weight vectors on the members' OOF predictions and
+    returns the BEST score it found -- on the very vectors it searched. A solo node has no
+    such freedom, so blends carry a structural advantage over solos in the same tree, and
+    the two kinds are nonetheless compared with one min(). The experience library already
+    measured the size of this on afsis (greedy weight search optimistic by ~0.0153).
+
+    This does the honest version WITHOUT changing how anything is scored: search weights on
+    each fold's training rows, score the held-out rows with those weights, and return the
+    gap. `metric(y_true, y_pred) -> float` (lower better) is taken explicitly because a
+    node's metric_fn closes over the full target and cannot score a subset.
+
+    Report the gap for a competition; do NOT wire this into node scoring without re-running
+    everything -- changing the scoring rule makes old and new trees incomparable.
+    """
+    import numpy as _np
+    oofs = _np.stack([load_oof(cache_dir, m) for m in members], axis=1)
+    y = _np.asarray(y, dtype=_np.float64)
+    n, n_mem = oofs.shape
+    rng = _np.random.default_rng(seed)
+    idx = rng.permutation(n)
+    folds = [(_np.setdiff1d(idx, idx[i::n_folds]), idx[i::n_folds]) for i in range(n_folds)]
+
+    def _search(rows):
+        W = _np.vstack([_np.random.default_rng(seed).dirichlet(_np.ones(n_mem), size=k),
+                        _np.eye(n_mem)])
+        scores = _np.array([metric(y[rows], oofs[rows] @ w) for w in W])
+        i = int(scores.argmin())
+        return W[i], float(scores[i])
+
+    _, s_in = _search(_np.arange(n))
+    held = [metric(y[va], oofs[va] @ _search(tr)[0]) for tr, va in folds]
+    s_held = float(_np.mean(held))
+    return {"in_sample": s_in, "held_out": s_held, "optimism": s_held - s_in,
+            "n_folds": n_folds, "n_members": n_mem}
+
+
 def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "dirichlet",
                k: int = 1500, seed: int = 42, grid_step: float = 0.05, target=None):
     """Comp-agnostic ensemble node evaluator (recommendation #1): loads each member's

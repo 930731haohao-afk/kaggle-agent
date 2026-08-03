@@ -184,7 +184,13 @@ def evaluate_solo(config):
         raise ValueError(f"unknown model type {model!r}")
 
     pp = config.get("postprocess") or {}
-    score_oof = snap_to_grid(oof) if pp.get("snap", False) else oof
+    # METRIC SYMMETRY (v5.3, 2026-08-03 audit): solo defaulted snap=False while blend
+    # defaulted snap=True, so the two node kinds were ranked on different metrics and then
+    # compared with a single min(). Both now default to SNAP ON -- snapping to the observed
+    # target grid can only help MAE on this competition (run_s3e14's own note: the same
+    # blend is 340.75961 raw vs 340.71180 snapped), so it is what a submission would do.
+    use_snap = pp.get("snap", True)
+    score_oof = snap_to_grid(oof) if use_snap else oof
     score = mae(_y, score_oof)
     return oof, pred, score, feats
 
@@ -232,12 +238,34 @@ def _grid_simplex_weights(n_members, step=0.05):
     return np.array(rows)
 
 
-def weight_search(oofs, y, method="dirichlet", seed=42, k=3000):
-    """oofs: (n_samples, n_members). Returns (best_weights, best_mae)."""
+def weight_search(oofs, y, method="dirichlet", seed=42, k=3000, metric_fn=None):
+    """oofs: (n_samples, n_members). Returns (best_weights, best_score).
+
+    `metric_fn(blended_vector) -> score` scores every candidate on the POST-PROCESSED
+    vector. Without it the search minimizes raw MAE and any post-processing is applied
+    only to the winner, so the reported score is not the one the search optimized
+    (2026-08-03 audit).
+    """
     n = oofs.shape[1]
     if n == 1:
         w = np.array([1.0])
-        return w, mae(y, oofs[:, 0])
+        return w, (metric_fn(oofs[:, 0]) if metric_fn else mae(y, oofs[:, 0]))
+
+    if metric_fn is not None:
+        # Post-processed metrics are discretized, so the fast vectorized paths below do not
+        # apply: score candidates one at a time through the real metric.
+        rng = np.random.default_rng(seed)
+        W = rng.dirichlet(np.ones(n), size=k)
+        W = np.vstack([W, np.eye(n)])              # include the unit vectors
+        scores = np.array([metric_fn(oofs @ w) for w in W])
+        i = int(scores.argmin())
+        best_w = W[i]
+        conc = np.clip(best_w, 1e-3, None) * 200.0
+        W2 = rng.dirichlet(conc, size=k)
+        s2 = np.array([metric_fn(oofs @ w) for w in W2])
+        if s2.min() < scores[i]:
+            best_w = W2[int(s2.argmin())]
+        return best_w, float(metric_fn(oofs @ best_w))
 
     if method == "dirichlet":
         rng = np.random.default_rng(seed)
@@ -281,15 +309,17 @@ def evaluate_blend(config):
         names.append(f"node{mid}")
     oofs = np.stack(mats, axis=1)
     method = config.get("weight_search", "dirichlet")
-    w, raw_score = weight_search(oofs, _y, method=method)
-
     pp = config.get("postprocess") or {}
     use_snap = pp.get("snap", True)
-    if use_snap:
-        blend_oof = oofs @ w
-        snap_score = mae(_y, snap_to_grid(blend_oof))
-    else:
-        snap_score = raw_score
+    # Snap INSIDE the search, not after it: weights chosen on raw MAE are not the weights
+    # that minimize snapped MAE, so the old order left free gain on the table AND reported a
+    # score the search had not optimized (2026-08-03 audit).
+    w, _searched = weight_search(
+        oofs, _y, method=method,
+        metric_fn=(lambda v: mae(_y, snap_to_grid(v))) if use_snap else None)
+    blend_oof = oofs @ w
+    raw_score = mae(_y, blend_oof)
+    snap_score = mae(_y, snap_to_grid(blend_oof)) if use_snap else raw_score
     final_score = snap_score if use_snap else raw_score
     return dict(members=members, names=names, weights=w.tolist(), method=method,
                 raw_score=round(raw_score, 5), snap_score=round(snap_score, 5),

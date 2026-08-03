@@ -201,10 +201,22 @@ def evaluate_blend(config):
     if len(members) < 2:
         raise ValueError(f"blend node needs >=2 members, got {members!r}")
     method = config.get("weight_search", "dirichlet")
-    best_w, best_neg, _oofs = hv2.eval_blend(CACHE_DIR, members, _neg_acc, weight_search=method)
+    # METRIC SYMMETRY (v5.3, 2026-08-03 audit). Solo nodes are scored through
+    # maybe_postprocess, so a dossier-fixed threshold binds them; blends used to ignore
+    # `postprocess` entirely and always take the best of an 81-point threshold sweep. The
+    # search then compared the two kinds with one min(). Measured here: the asymmetry is
+    # worth 5e-5 to 1e-4, while this tree's top-five score gaps are 2.9e-5 to 7.9e-5 -- the
+    # difference between the two rulers exceeded the difference between the candidates, so
+    # a blend could win for reasons unrelated to model quality. The blend metric now reads
+    # the same postprocess block, INSIDE the weight search, so every candidate weight vector
+    # is scored on the vector that would actually be submitted.
+    postprocess = config.get("postprocess") or {}
+    metric_fn = (lambda vec: -maybe_postprocess(vec, postprocess)) if postprocess else _neg_acc
+    best_w, best_neg, _oofs = hv2.eval_blend(CACHE_DIR, members, metric_fn, weight_search=method)
     best_score = -best_neg
     return dict(members=members, weights=[round(float(w), 4) for w in best_w],
-                method=method, accuracy=round(best_score, 6)), best_score
+                method=method, accuracy=round(best_score, 6),
+                postprocess=postprocess or None), best_score
 
 
 # ---------------------------------------------------------------------------

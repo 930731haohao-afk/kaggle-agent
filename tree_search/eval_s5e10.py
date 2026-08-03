@@ -208,7 +208,15 @@ def evaluate_blend(config):
     if len(members) < 2:
         raise ValueError(f"blend node needs >=2 members, got {members!r}")
     method = config.get("weight_search", "dirichlet")
-    best_w, best_s, _oofs = hv2.eval_blend(CACHE_DIR, members, _metric_rmse,
+    # METRIC SYMMETRY (v5.3, 2026-08-03 audit): solo nodes are scored through
+    # maybe_postprocess while blends used the plain clipped RMSE, so a competition-level
+    # postprocess request bound one node kind and not the other, and the search compared
+    # them with a single min(). The blend metric now reads the same block, inside the
+    # weight search, so every candidate is scored on the vector that would be submitted.
+    postprocess = config.get("postprocess") or {}
+    metric_fn = ((lambda vec: maybe_postprocess(vec, postprocess)[0]) if postprocess
+                 else _metric_rmse)
+    best_w, best_s, _oofs = hv2.eval_blend(CACHE_DIR, members, metric_fn,
                                           weight_search=method)
     return dict(members=members, weights=[round(float(w), 4) for w in best_w],
                 method=method, rmse=round(best_s, 6)), best_s
