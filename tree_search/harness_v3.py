@@ -246,8 +246,17 @@ def update_phase(tree: dict) -> str:
         if prior_best is None or (cur_best is not None and cur_best < prior_best):
             budget["best_at_burst_start"] = cur_best
             budget["evals_since_burst_improve"] = 0
+            budget["patience_at_eval"] = n_eval
         else:
-            budget["evals_since_burst_improve"] += 1
+            # Count EVALUATED NODES, not update_phase invocations: failed adds, dedup
+            # placeholder burns and defensive polls used to inflate this counter and stop the
+            # burst early, while the sibling condition (evals_since_burst_start) counted only
+            # evaluated nodes -- two conjuncts in different units (2026-08-03 audit).
+            since = budget.get("patience_at_eval")
+            if since is None:
+                budget["patience_at_eval"] = n_eval
+                since = n_eval
+            budget["evals_since_burst_improve"] = max(0, n_eval - since)
         evals_since_burst_start = n_eval - budget["burst_start_eval"]
         if (evals_since_burst_start >= budget["explore_burst_size"]
                 and budget["evals_since_burst_improve"] >= budget["post_burst_patience"]):
@@ -520,35 +529,48 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
     fast path (nothing coarsened) or the human-readable message describing what was
     coarsened and why.
     """
+    # The guard must decide BEFORE spending, not after. Until 2026-08-03 it ran the full-k
+    # search, noticed the wall time, then re-ran at coarsen_k and returned the COARSER result
+    # -- paying more than the unguarded path and recording a strictly-no-better blend. The
+    # cost signal now comes from what previous blend evals on this tree actually cost.
+    prior = ((tree or {}).get("search_state", {}) or {}).get("blend_wall_log", [])
+    predicted = max(prior[-3:]) if prior else None
+    warning = None
+    k_used = k
+    if predicted is not None and predicted > wall_time_threshold_s and k > coarsen_k:
+        k_used = coarsen_k
+        warning = (f"previous blend evals took up to {predicted:.1f}s > "
+                   f"{wall_time_threshold_s:.0f}s threshold (members={members}) -- "
+                   f"COARSENING this eval to k={coarsen_k} BEFORE running it, "
+                   f"logged explicitly per C-2c/E-2 (never silent)")
+
     t0 = time.time()
     best_w, best_s, oofs = eval_blend(cache_dir, members, metric_fn, weight_search=weight_search,
-                                       k=k, seed=seed, grid_step=grid_step,
+                                       k=k_used, seed=seed, grid_step=grid_step,
                                        coordinate_ascent=coordinate_ascent, ascent_rounds=ascent_rounds)
     wall = time.time() - t0
 
-    warning = None
-    if wall > wall_time_threshold_s and k > coarsen_k:
-        warning = (f"blend eval took {wall:.1f}s > {wall_time_threshold_s:.0f}s threshold "
-                   f"(members={members}, k={k}) -- COARSENING to k={coarsen_k} and re-running, "
-                   f"logged explicitly per C-2c/E-2 (never silent)")
-        t1 = time.time()
-        best_w, best_s, oofs = eval_blend(cache_dir, members, metric_fn, weight_search=weight_search,
-                                           k=coarsen_k, seed=seed, grid_step=grid_step,
-                                           coordinate_ascent=coordinate_ascent, ascent_rounds=ascent_rounds)
-        coarsened_wall = time.time() - t1
-        if tree is not None:
-            tree.setdefault("search_state", {}).setdefault("cost_guard_log", []).append(dict(
+    if tree is not None:
+        st = tree.setdefault("search_state", {})
+        st.setdefault("blend_wall_log", []).append(round(wall, 2))
+        if warning is not None:
+            st.setdefault("cost_guard_log", []).append(dict(
                 members=members, original_k=k, coarsened_k=coarsen_k,
-                original_wall_s=round(wall, 2), coarsened_wall_s=round(coarsened_wall, 2),
+                predicted_wall_s=round(predicted, 2), actual_wall_s=round(wall, 2),
                 warning=warning))
-    elif wall > wall_time_threshold_s and tree is not None:
-        # already at/below coarsen_k -- nothing further to coarsen, but still log loudly
+    if warning is None and wall > wall_time_threshold_s:
+        # over threshold but nothing was coarsened: either the first slow eval on this tree
+        # (the next one will coarsen) or k is already at/below coarsen_k. Log either way --
+        # the contract is that slowness is never silent.
         warning = (f"blend eval took {wall:.1f}s > {wall_time_threshold_s:.0f}s threshold "
-                   f"(members={members}, k={k}) but k is already <= coarsen_k={coarsen_k} -- "
-                   f"no further coarsening applied, logged for visibility only")
-        tree.setdefault("search_state", {}).setdefault("cost_guard_log", []).append(dict(
-            members=members, original_k=k, coarsened_k=None,
-            original_wall_s=round(wall, 2), coarsened_wall_s=None, warning=warning))
+                   f"(members={members}, k={k_used}); "
+                   + ("k is already <= coarsen_k, no further coarsening available"
+                      if k_used <= coarsen_k else
+                      "recorded -- subsequent blend evals on this tree will be coarsened"))
+        if tree is not None:
+            tree["search_state"].setdefault("cost_guard_log", []).append(dict(
+                members=members, original_k=k, coarsened_k=None,
+                predicted_wall_s=None, actual_wall_s=round(wall, 2), warning=warning))
     return best_w, best_s, oofs, warning
 
 
@@ -843,6 +865,11 @@ def apply_burst_seed_sanity_gate(tree: dict, seed_node_id: int, *,
     if not passed:
         st = tree.setdefault("search_state", {})
         plateaued = st.setdefault("plateaued", [])
+        # Also record it as GATE-rejected, so v1's reopen-once fallback (harness.py) cannot
+        # resurrect a lineage this gate refused: that mark is a verdict, not exhaustion.
+        gated = st.setdefault("gated_lineages", [])
+        if seed_node_id not in gated:
+            gated.append(seed_node_id)
         if seed_node_id not in plateaued:
             plateaued.append(seed_node_id)
             st.setdefault("backtrack_log", []).append(dict(

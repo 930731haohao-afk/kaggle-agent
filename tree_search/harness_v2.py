@@ -249,7 +249,7 @@ def _grid_simplex_weights(n_members, step=0.05):
 
 
 def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "dirichlet",
-               k: int = 1500, seed: int = 42, grid_step: float = 0.05):
+               k: int = 1500, seed: int = 42, grid_step: float = 0.05, target=None):
     """Comp-agnostic ensemble node evaluator (recommendation #1): loads each member's
     cached OOF array via `load_oof`, searches blend weights, scores every candidate with
     `metric_fn(blended_oof) -> score` (lower-is-better, same sign convention as
@@ -297,6 +297,21 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
             if best_s is None or s < best_s:
                 best_s, best_w = s, w
         return best_w, best_s, oofs
+    elif weight_search == "nnls":
+        # Advertised as first-class by the firing-class evaluators (and by the s5e10 NNLS
+        # diagnostic) but never implemented here: every such proposal raised
+        # "unknown weight_search method" (2026-08-03 audit). NNLS is a closed form on the
+        # TARGET vector, which metric_fn only closes over -- so the caller must pass it.
+        if target is None:
+            raise ValueError(
+                "weight_search='nnls' needs the target vector: call "
+                "eval_blend(..., weight_search='nnls', target=y_true). It is the closed-form "
+                "least-squares solution, so it cannot be derived from metric_fn alone.")
+        from scipy.optimize import nnls as _nnls
+        w, _ = _nnls(np.asarray(oofs, dtype=np.float64),
+                     np.asarray(target, dtype=np.float64))
+        w = np.ones(len(members)) / len(members) if w.sum() <= 0 else w / w.sum()
+        return w, metric_fn(oofs @ w), oofs
     else:
         raise ValueError(f"unknown weight_search method {weight_search!r}")
 
@@ -373,7 +388,14 @@ def _cites_own_competition(line: str, aliases: list) -> bool:
     if not m or not aliases:
         return False
     ev = m.group(1).lower()
-    return any(a.lower() in ev for a in aliases)
+    # Token-boundary match, not naive substring: 's3e1' is a substring of s3e19/s3e11/s3e14/
+    # s3e16 and 's5e1' of s5e10, so the old test excluded every sibling competition's evidence
+    # from those lanes -- over-exclusion, silently starving them of transferable priors
+    # (2026-08-03 audit). Boundary = anything that is not alphanumeric.
+    for a in aliases:
+        if re.search(rf"(?<![0-9a-z]){re.escape(a.lower())}(?![0-9a-z])", ev):
+            return True
+    return False
 
 
 def suggest_priors(comp_meta: dict, experience_path: str = None, max_items: int = 20,

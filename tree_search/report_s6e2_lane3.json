@@ -1,0 +1,788 @@
+{
+  "n_evaluated": 24,
+  "budget": {
+    "total_budget": 40,
+    "explore_burst_size": 6,
+    "post_burst_patience": 20,
+    "phase": "stopped",
+    "burst_start_eval": 15,
+    "best_at_burst_start": -0.9555921786581498,
+    "evals_since_burst_improve": 20,
+    "stop_reason": "20 evals without improvement post-burst (patience=20)"
+  },
+  "global_best_node": 20,
+  "global_best_auc": 0.955592,
+  "global_best_config": {
+    "kind": "blend",
+    "members": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      10,
+      13,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "space": "rank",
+    "weight_search": "dirichlet"
+  },
+  "linear_best_fitted": 0.955554,
+  "linear_best_honest": 0.955553,
+  "root_auc": 0.95554,
+  "evals_to_beat_linear_best_fitted": 9,
+  "backtrack_log": [
+    {
+      "at_node_id": 16,
+      "plateaued_lineage": 2,
+      "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.9555707904363782 (tie_rate=0.000, discretized=False)"
+    },
+    {
+      "at_node_id": 19,
+      "plateaued_lineage": 3,
+      "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.9555707904363782 (tie_rate=0.000, discretized=False)"
+    },
+    {
+      "at_node_id": 32,
+      "plateaued_lineage": 20,
+      "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.9555921786581498 (tie_rate=0.000, discretized=False)"
+    }
+  ],
+  "plateaued": [
+    1,
+    2,
+    3,
+    20
+  ],
+  "dedup_rejections": 15,
+  "failed_nodes": [
+    {
+      "label": "boundary-push num_leaves low 8->-11",
+      "detail": "{'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\\n'}"
+    },
+    {
+      "label": "boundary-push num_leaves low 4->-15",
+      "detail": "{'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\\n'}"
+    },
+    {
+      "label": "boundary-push num_leaves low 4->-15",
+      "detail": "{'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\\n'}"
+    },
+    {
+      "label": "[burst] LGB dart boosting (contrarian regulariser)",
+      "detail": "{'error': 'eval_solo_subprocess: hard-killed (SIGKILL) after exceeding timeout_s=400.0s -- a native-code fit() in the child ignored its own in-process SIGALRM timeout (see harness_v3 module docstring feature 8 / F-2 s3e7 CatBoost hang)'}"
+    }
+  ],
+  "cost_guard_log": [
+    {
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        10,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "original_k": 800,
+      "coarsened_k": 200,
+      "original_wall_s": 141.55,
+      "coarsened_wall_s": 90.87,
+      "warning": "blend eval took 141.5s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+    },
+    {
+      "members": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        10,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "original_k": 800,
+      "coarsened_k": 200,
+      "original_wall_s": 169.22,
+      "coarsened_wall_s": 94.12,
+      "warning": "blend eval took 169.2s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+    },
+    {
+      "members": [
+        10,
+        16,
+        28
+      ],
+      "original_k": 800,
+      "coarsened_k": 200,
+      "original_wall_s": 104.91,
+      "coarsened_wall_s": 29.84,
+      "warning": "blend eval took 104.9s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+    },
+    {
+      "members": [
+        10,
+        16,
+        28
+      ],
+      "original_k": 800,
+      "coarsened_k": 200,
+      "original_wall_s": 94.44,
+      "coarsened_wall_s": 27.43,
+      "warning": "blend eval took 94.4s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+    },
+    {
+      "members": [
+        10,
+        13,
+        16,
+        28
+      ],
+      "original_k": 800,
+      "coarsened_k": 200,
+      "original_wall_s": 102.09,
+      "coarsened_wall_s": 33.06,
+      "warning": "blend eval took 102.1s > 45s threshold (members=[10, 13, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+    }
+  ],
+  "burst_sanity_log": [
+    {
+      "node": 26,
+      "passed": true,
+      "bound": -0.9078125697252424
+    },
+    {
+      "node": 27,
+      "passed": true,
+      "bound": -0.9078125697252424
+    },
+    {
+      "node": 28,
+      "passed": true,
+      "bound": -0.9078125697252424
+    },
+    {
+      "node": 29,
+      "passed": true,
+      "bound": -0.9078125697252424
+    }
+  ],
+  "cat_evals": 5,
+  "all_results": {
+    "0": {
+      "name": "root_cat_d4",
+      "auc": 0.95554,
+      "reused": "reused cached OOF of linear-iteration arm 'cat_d4' (digit-verified)"
+    },
+    "1": {
+      "name": "cat_lineage",
+      "auc": 0.955509,
+      "wall_s": 488.86,
+      "detail": {
+        "auc": 0.9555086020508191,
+        "fold_aucs": [
+          0.95588,
+          0.954815,
+          0.955619,
+          0.955176,
+          0.956059
+        ],
+        "fold_std": 0.000457,
+        "best_iters": [
+          1724,
+          1538,
+          1689,
+          1420,
+          1987
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "2": {
+      "name": "lgb_lineage",
+      "auc": 0.955434,
+      "wall_s": 0.24,
+      "detail": {
+        "auc": 0.9554337342643483,
+        "fold_aucs": [
+          0.95581,
+          0.954715,
+          0.955528,
+          0.955132,
+          0.955992
+        ],
+        "fold_std": 0.000463,
+        "best_iters": null,
+        "n_features": 13,
+        "reused": "reused cached OOF of linear-iteration arm 'lgb_leaves8' (digit-verified)"
+      }
+    },
+    "3": {
+      "name": "xgb_lineage",
+      "auc": 0.955343,
+      "wall_s": 0.24,
+      "detail": {
+        "auc": 0.9553431669963757,
+        "fold_aucs": [
+          0.955718,
+          0.954654,
+          0.955448,
+          0.955068,
+          0.955836
+        ],
+        "fold_std": 0.000435,
+        "best_iters": null,
+        "n_features": 13,
+        "reused": "reused cached OOF of linear-iteration arm 'xgb_d4' (digit-verified)"
+      }
+    },
+    "4": {
+      "name": "n1+1",
+      "auc": 0.955457,
+      "wall_s": 433.02,
+      "detail": {
+        "auc": 0.9554570423918393,
+        "fold_aucs": [
+          0.95579,
+          0.954783,
+          0.955599,
+          0.955152,
+          0.95597
+        ],
+        "fold_std": 0.000434,
+        "best_iters": [
+          1269,
+          1238,
+          1189,
+          1124,
+          1341
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "5": {
+      "name": "n1+2",
+      "auc": 0.955509,
+      "wall_s": 543.72,
+      "detail": {
+        "auc": 0.9555090184587485,
+        "fold_aucs": [
+          0.955856,
+          0.954816,
+          0.955633,
+          0.955187,
+          0.956059
+        ],
+        "fold_std": 0.000452,
+        "best_iters": [
+          1756,
+          1884,
+          2083,
+          1642,
+          2632
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "6": {
+      "name": "n5+0",
+      "auc": 0.955541,
+      "wall_s": 591.07,
+      "detail": {
+        "auc": 0.9555407302599621,
+        "fold_aucs": [
+          0.955911,
+          0.954832,
+          0.955676,
+          0.955234,
+          0.956057
+        ],
+        "fold_std": 0.000451,
+        "best_iters": [
+          2440,
+          2258,
+          3037,
+          2153,
+          3316
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "7": {
+      "name": "n6+0",
+      "auc": 0.955531,
+      "wall_s": 656.22,
+      "detail": {
+        "auc": 0.9555305022586544,
+        "fold_aucs": [
+          0.95591,
+          0.954847,
+          0.955638,
+          0.95524,
+          0.956026
+        ],
+        "fold_std": 0.000436,
+        "best_iters": [
+          3973,
+          3436,
+          3994,
+          3910,
+          3999
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "10": {
+      "name": "n2+1",
+      "auc": 0.955571,
+      "wall_s": 190.96,
+      "detail": {
+        "auc": 0.9555707904363782,
+        "fold_aucs": [
+          0.955944,
+          0.954863,
+          0.955669,
+          0.955275,
+          0.956107
+        ],
+        "fold_std": 0.000453,
+        "best_iters": [
+          3315,
+          2559,
+          3294,
+          3521,
+          3882
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "13": {
+      "name": "n10+3",
+      "auc": 0.955552,
+      "wall_s": 114.83,
+      "detail": {
+        "auc": 0.9555519464469884,
+        "fold_aucs": [
+          0.955931,
+          0.954855,
+          0.955654,
+          0.955254,
+          0.956074
+        ],
+        "fold_std": 0.000448,
+        "best_iters": [
+          3567,
+          2985,
+          2693,
+          3288,
+          3134
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "15": {
+      "name": "n13+2",
+      "auc": 0.955425,
+      "wall_s": 49.97,
+      "detail": {
+        "auc": 0.9554246994795198,
+        "fold_aucs": [
+          0.955808,
+          0.954703,
+          0.955515,
+          0.955129,
+          0.955978
+        ],
+        "fold_std": 0.000462,
+        "best_iters": [
+          1612,
+          1519,
+          1298,
+          1521,
+          1726
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "16": {
+      "name": "n13+4",
+      "auc": 0.955569,
+      "wall_s": 107.59,
+      "detail": {
+        "auc": 0.9555693581141202,
+        "fold_aucs": [
+          0.955943,
+          0.954852,
+          0.955686,
+          0.955279,
+          0.956092
+        ],
+        "fold_std": 0.000453,
+        "best_iters": [
+          3347,
+          2985,
+          3738,
+          3312,
+          3440
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "17": {
+      "name": "n3+0",
+      "auc": 0.955413,
+      "wall_s": 47.99,
+      "detail": {
+        "auc": 0.9554131962932321,
+        "fold_aucs": [
+          0.955798,
+          0.954714,
+          0.955495,
+          0.955145,
+          0.955923
+        ],
+        "fold_std": 0.000442,
+        "best_iters": [
+          2032,
+          1994,
+          2400,
+          1905,
+          2098
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "18": {
+      "name": "n17+0",
+      "auc": 0.955493,
+      "wall_s": 83.85,
+      "detail": {
+        "auc": 0.955492721742516,
+        "fold_aucs": [
+          0.955896,
+          0.954783,
+          0.955604,
+          0.955197,
+          0.955989
+        ],
+        "fold_std": 0.00045,
+        "best_iters": [
+          4230,
+          4563,
+          4032,
+          4848,
+          4666
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "19": {
+      "name": "n18+0",
+      "auc": 0.954696,
+      "wall_s": 94.69,
+      "detail": {
+        "auc": 0.9546956327046819,
+        "fold_aucs": [
+          0.955106,
+          0.954008,
+          0.954826,
+          0.954377,
+          0.955167
+        ],
+        "fold_std": 0.000443,
+        "best_iters": [
+          5999,
+          5999,
+          5998,
+          5992,
+          5999
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "20": {
+      "name": "burst_ks_rank",
+      "auc": 0.955592,
+      "wall_s": 0.0,
+      "detail": {
+        "auc": 0.9555921786581498,
+        "weights": [
+          0.1454,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2069,
+          0.0,
+          0.3697,
+          0.0,
+          0.0,
+          0.1534,
+          0.0,
+          0.1246,
+          0.0
+        ],
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "space": "rank",
+        "cost_guard_warning": "blend eval took 141.5s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      }
+    },
+    "21": {
+      "name": "burst_ks_prob",
+      "auc": 0.95559,
+      "wall_s": 0.0,
+      "detail": {
+        "auc": 0.9555904344348717,
+        "weights": [
+          0.171,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1922,
+          0.0112,
+          0.4468,
+          0.0,
+          0.0,
+          0.1484,
+          0.0,
+          0.0303,
+          0.0
+        ],
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "space": "prob",
+        "cost_guard_warning": "blend eval took 169.2s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      }
+    },
+    "26": {
+      "name": "[burst] LGB extra_trees + very low lr, heavy smoothing",
+      "auc": 0.946079,
+      "wall_s": 360.52,
+      "detail": {
+        "auc": 0.946079286274601,
+        "fold_aucs": [
+          0.946322,
+          0.945307,
+          0.94675,
+          0.945707,
+          0.946329
+        ],
+        "fold_std": 0.000511,
+        "best_iters": [
+          6000,
+          5995,
+          5993,
+          5982,
+          5989
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "27": {
+      "name": "[burst] XGB deep + very strong shrinkage (opposite capacity corner)",
+      "auc": 0.955158,
+      "wall_s": 69.67,
+      "detail": {
+        "auc": 0.9551578346575627,
+        "fold_aucs": [
+          0.955511,
+          0.954491,
+          0.955276,
+          0.954863,
+          0.955657
+        ],
+        "fold_std": 0.000429,
+        "best_iters": [
+          1554,
+          1578,
+          1556,
+          1603,
+          1437
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "28": {
+      "name": "[burst] LGB num_leaves 4 with the 8 nominal codes declared categorical",
+      "auc": 0.955562,
+      "wall_s": 112.36,
+      "detail": {
+        "auc": 0.9555619025001079,
+        "fold_aucs": [
+          0.955938,
+          0.954848,
+          0.955662,
+          0.955272,
+          0.956097
+        ],
+        "fold_std": 0.000454,
+        "best_iters": [
+          3205,
+          2951,
+          2995,
+          3509,
+          4052
+        ],
+        "n_features": 13,
+        "reused": null
+      }
+    },
+    "29": {
+      "name": "[burst] LGB on the domain feature set at the winning capacity",
+      "auc": 0.955356,
+      "wall_s": 51.18,
+      "detail": {
+        "auc": 0.955356010731576,
+        "fold_aucs": [
+          0.955673,
+          0.954714,
+          0.955436,
+          0.955055,
+          0.95591
+        ],
+        "fold_std": 0.000428,
+        "best_iters": [
+          1656,
+          1616,
+          1410,
+          1654,
+          1654
+        ],
+        "n_features": 21,
+        "reused": null
+      }
+    },
+    "30": {
+      "name": "n20+0",
+      "auc": 0.955574,
+      "wall_s": 0.0,
+      "detail": {
+        "auc": 0.9555739270392695,
+        "weights": [
+          0.4,
+          0.3556,
+          0.2444
+        ],
+        "members": [
+          10,
+          16,
+          28
+        ],
+        "space": "rank",
+        "cost_guard_warning": "blend eval took 104.9s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      }
+    },
+    "31": {
+      "name": "n20+1",
+      "auc": 0.955574,
+      "wall_s": 0.0,
+      "detail": {
+        "auc": 0.955573807246989,
+        "weights": [
+          0.4035,
+          0.355,
+          0.2415
+        ],
+        "members": [
+          10,
+          16,
+          28
+        ],
+        "space": "prob",
+        "cost_guard_warning": "blend eval took 94.4s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      }
+    },
+    "32": {
+      "name": "n20+2",
+      "auc": 0.955574,
+      "wall_s": 0.0,
+      "detail": {
+        "auc": 0.9555739285061762,
+        "weights": [
+          0.3831,
+          0.0202,
+          0.3531,
+          0.2435
+        ],
+        "members": [
+          10,
+          13,
+          16,
+          28
+        ],
+        "space": "rank",
+        "cost_guard_warning": "blend eval took 102.1s > 45s threshold (members=[10, 13, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+03:25:00 resumed tree with 4 evaluated nodes
+03:25:00 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+03:25:02   dedup-rejected (identical to node #0): depth-1
+03:32:16   node #4   depth+1                                              AUC 0.955457  (433s)
+03:41:21   node #5   l2_leaf_reg 10                                       AUC 0.955509  (544s)
+03:51:13   node #6   depth-1                                              AUC 0.955541  (591s)  <-- NEW GLOBAL BEST
+04:02:10   node #7   depth-1                                              AUC 0.955531  (656s)
+04:11:16   dedup-rejected (identical to node #5): depth+1
+04:21:08   dedup-rejected (identical to node #6): l2_leaf_reg 10
+04:24:21 resumed tree with 8 evaluated nodes
+04:24:21 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+04:34:40 resumed tree with 8 evaluated nodes
+04:34:40 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+04:34:40   parent #6 exhausted its proposal list; marking lineage plateaued
+04:34:42   node 9 FAILED (boundary-push num_leaves low 8->-11): {'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\n'}
+04:37:54   node #10  num_leaves x0.5                                      AUC 0.955571  (191s)  <-- NEW GLOBAL BEST
+04:37:55   node 11 FAILED (boundary-push num_leaves low 4->-15): {'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\n'}
+04:37:55   dedup-rejected BEFORE evaluation (identical to node #10): num_leaves x0.5
+04:37:55   dedup-rejected BEFORE evaluation (identical to node #2): num_leaves x2
+04:39:52   node #13  min_child_samples 300                                AUC 0.955552  (115s)
+04:39:53   node 14 FAILED (boundary-push num_leaves low 4->-15): {'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\n'}
+04:39:53   dedup-rejected BEFORE evaluation (identical to node #13): num_leaves x0.5
+04:40:44   node #15  num_leaves x2                                        AUC 0.955425  (50s)
+04:40:44   dedup-rejected BEFORE evaluation (identical to node #13): min_child_samples 300
+04:42:32   node #16  min_child_samples 20                                 AUC 0.955569  (108s)
+04:43:21   node #17  max_depth-1                                          AUC 0.955413  (48s)
+04:44:54 resumed tree with 13 evaluated nodes
+04:44:54 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+04:46:19   node #18  boundary-push max_depth low 3->2                     AUC 0.955493  (84s)
+04:47:55   node #19  boundary-push max_depth low 2->1                     AUC 0.954696  (95s)
+04:47:55 === EXPLORE BURST (mandatory) ===
+04:51:49 cost guard: blend eval took 141.5s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)
+04:51:49   node #20  [burst] kitchen-sink blend of all 15 solos (rank space) AUC 0.955592  (0s)  <-- NEW GLOBAL BEST
+04:51:49     burst sanity gate: passed=True bound=-0.9078125697252424
+04:55:05 resumed tree with 16 evaluated nodes
+04:55:05 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+04:55:05 === EXPLORE BURST (mandatory) ===
+04:55:05   dedup-rejected BEFORE evaluation (identical to node #20): [burst] kitchen-sink blend of all 15 solos (rank space)
+04:59:28 cost guard: blend eval took 169.2s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)
+04:59:28   node #21  [burst] kitchen-sink blend of all 15 solos (prob space) AUC 0.955590  (0s)
+04:59:28     burst sanity gate: passed=True bound=-0.9078125697252424
+05:05:17 resumed tree with 17 evaluated nodes
+05:05:17 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+05:05:17 === EXPLORE BURST (mandatory) ===
+05:05:17   dedup-rejected BEFORE evaluation (identical to node #20): [burst] kitchen-sink blend of all 15 solos (rank space)
+05:05:17   dedup-rejected BEFORE evaluation (identical to node #21): [burst] kitchen-sink blend of all 15 solos (prob space)
+05:15:42 resumed tree with 17 evaluated nodes
+05:15:42 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+05:15:42 === EXPLORE BURST (mandatory) ===
+05:15:42   dedup-rejected BEFORE evaluation (identical to node #20): [burst] kitchen-sink blend of all 15 solos (rank space)
+05:15:42   dedup-rejected BEFORE evaluation (identical to node #21): [burst] kitchen-sink blend of all 15 solos (prob space)
+05:22:22   node 24 FAILED ([burst] LGB dart boosting (contrarian regulariser)): {'error': 'eval_solo_subprocess: hard-killed (SIGKILL) after exceeding timeout_s=400.0s -- a native-code fit() in the child ignored its own in-process SIGALRM timeout (see harness_v3 module docstring feature 8 / F-2 s3e7 CatBoost hang)'}
+05:26:04 resumed tree with 17 evaluated nodes
+05:26:04 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+05:26:04 === EXPLORE BURST (mandatory) ===
+05:26:04   dedup-rejected BEFORE evaluation (identical to node #20): [burst] kitchen-sink blend of all 15 solos (rank space)
+05:26:04   dedup-rejected BEFORE evaluation (identical to node #21): [burst] kitchen-sink blend of all 15 solos (prob space)
+05:26:04   dedup-rejected BEFORE evaluation (identical to node #24): [burst] LGB dart boosting (contrarian regulariser)
+05:32:06   node #26  [burst] LGB extra_trees + very low lr, heavy smoothing AUC 0.946079  (361s)
+05:32:06     burst sanity gate: passed=True bound=-0.9078125697252424
+05:33:16   node #27  [burst] XGB deep + very strong shrinkage (opposite capacity corner) AUC 0.955158  (70s)
+05:33:16     burst sanity gate: passed=True bound=-0.9078125697252424
+05:35:10   node #28  [burst] LGB num_leaves 4 with the 8 nominal codes declared categorical AUC 0.955562  (112s)
+05:35:10     burst sanity gate: passed=True bound=-0.9078125697252424
+05:36:02   node #29  [burst] LGB on the domain feature set at the winning capacity AUC 0.955356  (51s)
+05:36:02     burst sanity gate: passed=True bound=-0.9078125697252424
+05:36:14 resumed tree with 21 evaluated nodes
+05:36:14 suggest_priors returned 20 evidence-cited bullets (self-citing bullets dropped by the harness via comp_meta['comp'])
+05:38:29 cost guard: blend eval took 104.9s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)
+05:38:29   node #30  blend top-3 in rank space                            AUC 0.955574  (0s)
+05:40:31 cost guard: blend eval took 94.4s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)
+05:40:31   node #31  blend top-3 in prob space                            AUC 0.955574  (0s)
+05:42:46 cost guard: blend eval took 102.1s > 45s threshold (members=[10, 13, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)
+05:42:46   node #32  blend top-4 in rank space                            AUC 0.955574  (0s)
+05:42:46 
+=== TREE SEARCH DONE ===
+05:42:46 evaluated 24 nodes; global best = node #20, AUC 0.955592
+05:42:46 linear-iteration best (fitted) 0.955554 -> delta +0.000038
+05:42:46 evals to beat the linear best: 9
+05:42:46 plateaued lineages: [1, 2, 3, 20]
+05:42:46 cost-guard triggers: 5; burst-sanity records: 4

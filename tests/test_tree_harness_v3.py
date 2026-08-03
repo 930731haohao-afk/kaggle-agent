@@ -357,13 +357,26 @@ def test_cost_guard_warns_and_coarsens_when_slow(hv3, tmp_path):
         return float(np.mean(np.abs(v - y)))
 
     tree = hv3.new_tree("c")
-    _w, _s, _oofs, warning = hv3.eval_blend_with_cost_guard(
+    # First slow eval: recorded, NOT coarsened -- the guard must not re-run a completed
+    # search and return the coarser result (that inverted its own purpose; 2026-08-03 audit).
+    calls_before = call_count["n"]
+    _w, s_full, _oofs, warning = hv3.eval_blend_with_cost_guard(
         str(tmp_path), [0, 1], slow_metric, tree=tree, k=10,
         wall_time_threshold_s=0.05, coarsen_k=3, coordinate_ascent=False)
-    assert warning is not None
-    assert "COARSENING" in warning
+    calls_first = call_count["n"] - calls_before
+    assert warning is not None and "COARSENING" not in warning
     assert "cost_guard_log" in tree["search_state"]
-    log = tree["search_state"]["cost_guard_log"][0]
+
+    # Second eval on the same tree: prior cost is known, so it coarsens BEFORE spending.
+    calls_before = call_count["n"]
+    _w, s_coarse, _oofs, warning = hv3.eval_blend_with_cost_guard(
+        str(tmp_path), [0, 1], slow_metric, tree=tree, k=10,
+        wall_time_threshold_s=0.05, coarsen_k=3, coordinate_ascent=False)
+    calls_second = call_count["n"] - calls_before
+    assert warning is not None and "COARSENING" in warning
+    assert calls_second < calls_first, (calls_second, calls_first)
+    assert s_full <= s_coarse + 1e-9, "a completed full-k result must never be replaced"
+    log = tree["search_state"]["cost_guard_log"][-1]
     assert log["original_k"] == 10
     assert log["coarsened_k"] == 3
 

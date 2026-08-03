@@ -48,7 +48,19 @@ def load_evaluator(comp: str, arm: str):
         mod = BASE[comp][0]
     else:
         mod = f"eval_{arm}_{_slug(comp)}"
-    return importlib.import_module(mod)
+    ev = importlib.import_module(mod)
+    if arm == "baseline":
+        # The baseline arm runs the competition's OWN evaluator, whose CACHE_DIR is keyed by
+        # node_id alone and is shared with that competition's pre-existing v1/v3 trees. Node
+        # ids restart at 0 here, so without a private cache dir this arm reads another tree's
+        # cached OOF vectors and scores a model it never trained. Redirect the cache instead
+        # of trusting id disjointness (2026-08-03 audit).
+        priv = os.path.join(os.path.dirname(os.path.abspath(ev.__file__)),
+                            f"cache_v5baseline_{_slug(comp)}")
+        os.makedirs(priv, exist_ok=True)
+        ev.CACHE_DIR = priv
+        print(f"[baseline] private OOF cache: {priv}")
+    return ev
 
 
 def workspace(comp: str, arm: str) -> str:
@@ -87,6 +99,12 @@ def search(comp: str, arm: str, ev, n_nodes: int, wl: dict):
                      time.time() - t0)
         json.dump(tree, open(tpath, "w"), indent=2)
         print(f"[{arm}] root: {r['status']} score={r['score']}")
+        if r["status"] != "evaluated" or r["score"] is None:
+            # evaluate() never raises, so a failed root used to persist and then crash the
+            # budget machine with TypeError on None. Fail loudly at the real cause instead.
+            raise RuntimeError(
+                f"[{arm}] root evaluation failed ({r['status']}): {r.get('error')!r}. "
+                f"Nothing downstream is meaningful; fix the evaluator or the seed config.")
 
         # Seed the ledger's config-only operators as real nodes. Before 07-30 these were
         # written to plan["node_configs"] and read by nobody, so the judgment layer's
@@ -123,6 +141,10 @@ def search(comp: str, arm: str, ev, n_nodes: int, wl: dict):
         "post_burst_patience": 10, "phase": "exploit", "burst_start_eval": 0,
         "best_at_burst_start": c0, "evals_since_burst_improve": 0}
     fams = [m for m in ("xgb", "cat", "lgb") if m in wl]
+    if not fams:
+        raise RuntimeError(
+            f"[{arm}] param whitelist has no supported model family "
+            f"(saw {sorted(wl)}); expected at least one of xgb/cat/lgb")
     for i in range(n_nodes):
         pool = solo_pool(tree)
         ids = [n["id"] for n in pool]

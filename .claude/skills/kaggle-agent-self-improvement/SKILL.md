@@ -1,20 +1,21 @@
 ---
 name: kaggle-agent-self-improvement
 description: |
-  Hybrid AI agent for Kaggle competitions combining Claude Code reasoning with Auto-ML tools (LightGBM, XGBoost, CatBoost, AutoGluon).
-  Guides through full competition pipeline: ingestion, EDA, feature engineering, modeling, evaluation, and submission.
+  DEPRECATED -- DO NOT USE. Superseded by the `kaggle-agent` skill; kept only because a
+  handful of historical run logs cite this path. It carries a stale Stage 3 that instructs
+  reading MEMORY.md and scanning competition directories, which is exactly the
+  cross-competition contamination path the benchmark's isolation protocol forbids, and it
+  predates Stage 0.5 (problem dossier), the typed injection contract, and the binding
+  experience-library retrieval gate.
 
-  Use this skill when the user wants to: work on a Kaggle competition, perform exploratory data analysis on competition data,
-  engineer features for a Kaggle dataset, train and evaluate models for a competition, generate or improve a Kaggle submission,
-  review experiment history and decide next steps, or optimize competition performance.
-
-  Trigger phrases: "kaggle", "competition", "submission", "leaderboard", "kaggle agent", "train model", "feature engineering",
-  "EDA", "cross-validation", "ensemble".
-
-  Supports both tabular (tree models) and NLP (transformers) competitions.
+  If a Kaggle competition task arrives, invoke `kaggle-agent` instead. Never invoke this one.
 ---
 
 # Kaggle Agent
+
+> **DEPRECATED (2026-08-03).** Use `.claude/skills/kaggle-agent/` instead. This copy
+> is retained for historical log references only; its Stage 3 instructions predate the
+> isolation protocol and would read other competitions' records.
 
 A hybrid AI agent that combines Claude Code's reasoning with Auto-ML tools for systematic optimization.
 

@@ -1,19 +1,3 @@
-<!--
-═══════════════════════════════════════════════════════════════════════════
- SKILL.md — 一個 Skill 的核心檔案 / The core file of a Skill
-───────────────────────────────────────────────────────────────────────────
- 教程對照 (Tutorial mapping):
-   技能 (Skills) 放在 .claude/skills/ 中,由「指令 + 腳本 + 資源」組成的資料夾。
-   A Skill lives in .claude/skills/ and bundles instructions + scripts + resources.
-
-   漸進式揭露 (Progressive disclosure) 有三層:
-     1. metadata(下方 frontmatter 的 name + description)—— 對話一開始就載入
-     2. SKILL.md 本文(body)—— 技能被「呼叫」時才載入
-     3. scripts/ 與 references/ —— 需要時才讀取 (on demand)
-   Three loading levels: metadata always loaded; body loaded on invoke;
-   bundled resources read only when needed.
-═══════════════════════════════════════════════════════════════════════════
--->
 ---
 # ── YAML frontmatter ──────────────────────────────────────────────────────
 # 註解: name 是技能的識別碼,必須與資料夾名稱一致,用 kebab-case。
@@ -35,6 +19,23 @@ description: >-
   daily submissions from malformed files (wrong columns, wrong row count,
   misaligned IDs, NaNs) and keeps the experiment log in sync.
 ---
+<!--
+═══════════════════════════════════════════════════════════════════════════
+ SKILL.md — 一個 Skill 的核心檔案 / The core file of a Skill
+───────────────────────────────────────────────────────────────────────────
+ 教程對照 (Tutorial mapping):
+   技能 (Skills) 放在 .claude/skills/ 中,由「指令 + 腳本 + 資源」組成的資料夾。
+   A Skill lives in .claude/skills/ and bundles instructions + scripts + resources.
+
+   漸進式揭露 (Progressive disclosure) 有三層:
+     1. metadata(下方 frontmatter 的 name + description)—— 對話一開始就載入
+     2. SKILL.md 本文(body)—— 技能被「呼叫」時才載入
+     3. scripts/ 與 references/ —— 需要時才讀取 (on demand)
+   Three loading levels: metadata always loaded; body loaded on invoke;
+   bundled resources read only when needed.
+═══════════════════════════════════════════════════════════════════════════
+-->
+
 
 <!--
  註解: 從這裡開始是 SKILL.md 的「本文 (body)」。

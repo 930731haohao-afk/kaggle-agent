@@ -53,7 +53,9 @@ Using `tree_search/run_s3e7_v3.py` as the template (already wired with the three
 
 ## 5. Priors
 
-Call `harness_v2.suggest_priors(comp_meta)` (inherited unchanged in v3) to keyword-match against `knowledge/experience.md` — `comp_meta = {"metric": ..., "tags": [...], "data_type": ...}`, returning verbatim evidence-cited bullets, with no LLM call. Query it once before proposing each lineage's first mutation.
+Call `harness_v2.suggest_priors(comp_meta)` (inherited unchanged in v3) to keyword-match against `knowledge/experience.md`, returning verbatim evidence-cited bullets, with no LLM call. Query it once before proposing each lineage's first mutation.
+
+**`comp_meta` MUST carry `comp`** — `{"comp": "<competition-slug>", "metric": ..., "tags": [...], "data_type": ...}`. Without it the call raises `ValueError`: the slug drives self-exclusion, which drops every bullet whose 證據 cites the competition being solved. That filter is the whole reason a re-run cannot improve its score by reading its own recorded answer, so it is required rather than optional. (Matching is token-boundary, so `s3e1` no longer swallows `s3e19`/`s3e11` evidence — 2026-08-03.)
 
 **Priors set the floor, comp-local insight sets the ceiling** (a repeated finding across the 9-comp D+E sweep): priors consistently and correctly avoid wasting compute on known dead ends, but the single largest lever that actually opens up a score gap in each comp almost always comes from that comp's own EDA/comp-local insight or a structural change to the search mechanism itself (tenure-prune, top-code clip, auto_scale, depth-boundary-push, LGBBOUND, YEARWEIGHTS/JOINT), not from an experience-library hit itself. So: **use priors to prune dead ends, but don't stop looking for comp-local new mutation directions just because the priors didn't hit**.
 

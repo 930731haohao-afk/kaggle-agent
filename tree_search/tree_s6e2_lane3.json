@@ -1,0 +1,1513 @@
+{
+  "comp": "playground-series-s6e2",
+  "root_id": 0,
+  "nodes": [
+    {
+      "id": 0,
+      "parent_id": null,
+      "mutation": "root = linear-iteration best solo (cat_d4)",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "variant": "raw",
+        "cat_declare": true,
+        "params": {
+          "depth": 4,
+          "learning_rate": 0.06
+        }
+      },
+      "score": -0.9555397813954903,
+      "status": "evaluated",
+      "wall_s": 0.24,
+      "kind": "solo"
+    },
+    {
+      "id": 1,
+      "parent_id": 0,
+      "mutation": "seed lineage: cat_lineage",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "variant": "raw",
+        "cat_declare": true,
+        "params": {
+          "depth": 5,
+          "learning_rate": 0.06
+        }
+      },
+      "score": -0.9555086020508191,
+      "status": "evaluated",
+      "wall_s": 488.86,
+      "kind": "solo"
+    },
+    {
+      "id": 2,
+      "parent_id": 0,
+      "mutation": "seed lineage: lgb_lineage",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "num_leaves": 8
+        }
+      },
+      "score": -0.9554337342643483,
+      "status": "evaluated",
+      "wall_s": 0.24,
+      "kind": "solo"
+    },
+    {
+      "id": 3,
+      "parent_id": 0,
+      "mutation": "seed lineage: xgb_lineage",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "learning_rate": 0.04,
+          "max_depth": 4,
+          "min_child_weight": 50
+        }
+      },
+      "score": -0.9553431669963757,
+      "status": "evaluated",
+      "wall_s": 0.24,
+      "kind": "solo"
+    },
+    {
+      "id": 4,
+      "parent_id": 1,
+      "mutation": "depth+1",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "variant": "raw",
+        "cat_declare": true,
+        "params": {
+          "depth": 6,
+          "learning_rate": 0.06
+        }
+      },
+      "score": -0.9554570423918393,
+      "status": "evaluated",
+      "wall_s": 433.02,
+      "kind": "solo"
+    },
+    {
+      "id": 5,
+      "parent_id": 1,
+      "mutation": "l2_leaf_reg 10",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "variant": "raw",
+        "cat_declare": true,
+        "params": {
+          "depth": 5,
+          "l2_leaf_reg": 10.0,
+          "learning_rate": 0.06
+        }
+      },
+      "score": -0.9555090184587485,
+      "status": "evaluated",
+      "wall_s": 543.72,
+      "kind": "solo"
+    },
+    {
+      "id": 6,
+      "parent_id": 5,
+      "mutation": "depth-1",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "variant": "raw",
+        "cat_declare": true,
+        "params": {
+          "depth": 4,
+          "l2_leaf_reg": 10.0,
+          "learning_rate": 0.06
+        }
+      },
+      "score": -0.9555407302599621,
+      "status": "evaluated",
+      "wall_s": 591.07,
+      "kind": "solo"
+    },
+    {
+      "id": 7,
+      "parent_id": 6,
+      "mutation": "depth-1",
+      "config": {
+        "kind": "solo",
+        "model": "cat",
+        "variant": "raw",
+        "cat_declare": true,
+        "params": {
+          "depth": 3,
+          "l2_leaf_reg": 10.0,
+          "learning_rate": 0.06
+        }
+      },
+      "score": -0.9555305022586544,
+      "status": "evaluated",
+      "wall_s": 656.22,
+      "kind": "solo"
+    },
+    {
+      "id": 8,
+      "parent_id": 6,
+      "mutation": "[dead-end placeholder] parent #6's proposal dedup-rejected 2x in a row (config identical to existing node #6) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 6,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 9,
+      "parent_id": 2,
+      "mutation": "boundary-push num_leaves low 8->-11",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "num_leaves": -11
+        }
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.18,
+      "kind": "solo"
+    },
+    {
+      "id": 10,
+      "parent_id": 2,
+      "mutation": "num_leaves x0.5",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "num_leaves": 4
+        }
+      },
+      "score": -0.9555707904363782,
+      "status": "evaluated",
+      "wall_s": 190.96,
+      "kind": "solo"
+    },
+    {
+      "id": 11,
+      "parent_id": 10,
+      "mutation": "boundary-push num_leaves low 4->-15",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "num_leaves": -15
+        }
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.19,
+      "kind": "solo"
+    },
+    {
+      "id": 12,
+      "parent_id": 10,
+      "mutation": "[dead-end placeholder] parent #10's proposal dedup-rejected 2x in a row (config identical to existing node #2) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 10,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 13,
+      "parent_id": 10,
+      "mutation": "min_child_samples 300",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "min_child_samples": 300,
+          "num_leaves": 4
+        }
+      },
+      "score": -0.9555519464469884,
+      "status": "evaluated",
+      "wall_s": 114.83,
+      "kind": "solo"
+    },
+    {
+      "id": 14,
+      "parent_id": 13,
+      "mutation": "boundary-push num_leaves low 4->-15",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "min_child_samples": 300,
+          "num_leaves": -15
+        }
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.17,
+      "kind": "solo"
+    },
+    {
+      "id": 15,
+      "parent_id": 13,
+      "mutation": "num_leaves x2",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "min_child_samples": 300,
+          "num_leaves": 8
+        }
+      },
+      "score": -0.9554246994795198,
+      "status": "evaluated",
+      "wall_s": 49.97,
+      "kind": "solo"
+    },
+    {
+      "id": 16,
+      "parent_id": 13,
+      "mutation": "min_child_samples 20",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "min_child_samples": 20,
+          "num_leaves": 4
+        }
+      },
+      "score": -0.9555693581141202,
+      "status": "evaluated",
+      "wall_s": 107.59,
+      "kind": "solo"
+    },
+    {
+      "id": 17,
+      "parent_id": 3,
+      "mutation": "max_depth-1",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "learning_rate": 0.04,
+          "max_depth": 3,
+          "min_child_weight": 50
+        }
+      },
+      "score": -0.9554131962932321,
+      "status": "evaluated",
+      "wall_s": 47.99,
+      "kind": "solo"
+    },
+    {
+      "id": 18,
+      "parent_id": 17,
+      "mutation": "boundary-push max_depth low 3->2",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "learning_rate": 0.04,
+          "max_depth": 2,
+          "min_child_weight": 50
+        }
+      },
+      "score": -0.955492721742516,
+      "status": "evaluated",
+      "wall_s": 83.85,
+      "kind": "solo"
+    },
+    {
+      "id": 19,
+      "parent_id": 18,
+      "mutation": "boundary-push max_depth low 2->1",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "learning_rate": 0.04,
+          "max_depth": 1,
+          "min_child_weight": 50
+        }
+      },
+      "score": -0.9546956327046819,
+      "status": "evaluated",
+      "wall_s": 94.69,
+      "kind": "solo"
+    },
+    {
+      "id": 20,
+      "parent_id": 0,
+      "mutation": "[burst] kitchen-sink blend of all 15 solos (rank space)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "space": "rank",
+        "weight_search": "dirichlet"
+      },
+      "score": -0.9555921786581498,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 21,
+      "parent_id": 0,
+      "mutation": "[burst] kitchen-sink blend of all 15 solos (prob space)",
+      "config": {
+        "kind": "blend",
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "space": "prob",
+        "weight_search": "dirichlet"
+      },
+      "score": -0.9555904344348717,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 22,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #21) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 23,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #21) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 24,
+      "parent_id": 0,
+      "mutation": "[burst] LGB dart boosting (contrarian regulariser)",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "boosting": "dart",
+          "drop_rate": 0.1,
+          "lambda_l2": 3.0,
+          "learning_rate": 0.05,
+          "num_leaves": 16
+        }
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 400.14,
+      "kind": "solo"
+    },
+    {
+      "id": 25,
+      "parent_id": 0,
+      "mutation": "[dead-end placeholder] parent #0's proposal dedup-rejected 2x in a row (config identical to existing node #21) -- burning this expansion slot per E-5's dedup-budget-burn fix, formalized as a v3 default",
+      "config": {
+        "kind": "placeholder",
+        "dead_end_parent": 0,
+        "streak": 2
+      },
+      "score": null,
+      "status": "failed",
+      "wall_s": 0.0,
+      "kind": "placeholder"
+    },
+    {
+      "id": 26,
+      "parent_id": 0,
+      "mutation": "[burst] LGB extra_trees + very low lr, heavy smoothing",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "extra_trees": true,
+          "lambda_l2": 5.0,
+          "learning_rate": 0.015,
+          "min_child_samples": 200,
+          "num_leaves": 32,
+          "path_smooth": 20.0
+        }
+      },
+      "score": -0.946079286274601,
+      "status": "evaluated",
+      "wall_s": 360.52,
+      "kind": "solo"
+    },
+    {
+      "id": 27,
+      "parent_id": 0,
+      "mutation": "[burst] XGB deep + very strong shrinkage (opposite capacity corner)",
+      "config": {
+        "kind": "solo",
+        "model": "xgb",
+        "variant": "raw",
+        "cat_declare": false,
+        "params": {
+          "colsample_bytree": 0.5,
+          "learning_rate": 0.02,
+          "max_depth": 9,
+          "min_child_weight": 250,
+          "reg_lambda": 15.0
+        }
+      },
+      "score": -0.9551578346575627,
+      "status": "evaluated",
+      "wall_s": 69.67,
+      "kind": "solo"
+    },
+    {
+      "id": 28,
+      "parent_id": 0,
+      "mutation": "[burst] LGB num_leaves 4 with the 8 nominal codes declared categorical",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "raw",
+        "cat_declare": true,
+        "params": {
+          "lambda_l2": 3.0,
+          "num_leaves": 4
+        }
+      },
+      "score": -0.9555619025001079,
+      "status": "evaluated",
+      "wall_s": 112.36,
+      "kind": "solo"
+    },
+    {
+      "id": 29,
+      "parent_id": 0,
+      "mutation": "[burst] LGB on the domain feature set at the winning capacity",
+      "config": {
+        "kind": "solo",
+        "model": "lgb",
+        "variant": "domain",
+        "cat_declare": false,
+        "params": {
+          "lambda_l2": 3.0,
+          "num_leaves": 8
+        }
+      },
+      "score": -0.955356010731576,
+      "status": "evaluated",
+      "wall_s": 51.18,
+      "kind": "solo"
+    },
+    {
+      "id": 30,
+      "parent_id": 20,
+      "mutation": "blend top-3 in rank space",
+      "config": {
+        "kind": "blend",
+        "members": [
+          10,
+          16,
+          28
+        ],
+        "space": "rank",
+        "weight_search": "dirichlet"
+      },
+      "score": -0.9555739270392695,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 31,
+      "parent_id": 20,
+      "mutation": "blend top-3 in prob space",
+      "config": {
+        "kind": "blend",
+        "members": [
+          10,
+          16,
+          28
+        ],
+        "space": "prob",
+        "weight_search": "dirichlet"
+      },
+      "score": -0.955573807246989,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    },
+    {
+      "id": 32,
+      "parent_id": 20,
+      "mutation": "blend top-4 in rank space",
+      "config": {
+        "kind": "blend",
+        "members": [
+          10,
+          13,
+          16,
+          28
+        ],
+        "space": "rank",
+        "weight_search": "dirichlet"
+      },
+      "score": -0.9555739285061762,
+      "status": "evaluated",
+      "wall_s": 0.0,
+      "kind": "blend"
+    }
+  ],
+  "search_state": {
+    "active_lineage": 20,
+    "streak": {
+      "1": 1,
+      "2": 3,
+      "3": 3,
+      "20": 3
+    },
+    "plateaued": [
+      1,
+      2,
+      3,
+      20
+    ],
+    "backtrack_log": [
+      {
+        "at_node_id": 16,
+        "plateaued_lineage": 2,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.9555707904363782 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 19,
+        "plateaued_lineage": 3,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.9555707904363782 (tie_rate=0.000, discretized=False)"
+      },
+      {
+        "at_node_id": 32,
+        "plateaued_lineage": 20,
+        "reason": "3 consecutive non-improving children of the active lineage failed to beat prior global best -0.9555921786581498 (tie_rate=0.000, discretized=False)"
+      }
+    ],
+    "budget": {
+      "total_budget": 40,
+      "explore_burst_size": 6,
+      "post_burst_patience": 20,
+      "phase": "stopped",
+      "burst_start_eval": 15,
+      "best_at_burst_start": -0.9555921786581498,
+      "evals_since_burst_improve": 20,
+      "stop_reason": "20 evals without improvement post-burst (patience=20)"
+    },
+    "driver_state": {
+      "lineage_names": {},
+      "burst_injected": true,
+      "results": {
+        "0": {
+          "name": "root_cat_d4",
+          "auc": 0.95554,
+          "reused": "reused cached OOF of linear-iteration arm 'cat_d4' (digit-verified)"
+        },
+        "1": {
+          "name": "cat_lineage",
+          "auc": 0.955509,
+          "wall_s": 488.86,
+          "detail": {
+            "auc": 0.9555086020508191,
+            "fold_aucs": [
+              0.95588,
+              0.954815,
+              0.955619,
+              0.955176,
+              0.956059
+            ],
+            "fold_std": 0.000457,
+            "best_iters": [
+              1724,
+              1538,
+              1689,
+              1420,
+              1987
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "2": {
+          "name": "lgb_lineage",
+          "auc": 0.955434,
+          "wall_s": 0.24,
+          "detail": {
+            "auc": 0.9554337342643483,
+            "fold_aucs": [
+              0.95581,
+              0.954715,
+              0.955528,
+              0.955132,
+              0.955992
+            ],
+            "fold_std": 0.000463,
+            "best_iters": null,
+            "n_features": 13,
+            "reused": "reused cached OOF of linear-iteration arm 'lgb_leaves8' (digit-verified)"
+          }
+        },
+        "3": {
+          "name": "xgb_lineage",
+          "auc": 0.955343,
+          "wall_s": 0.24,
+          "detail": {
+            "auc": 0.9553431669963757,
+            "fold_aucs": [
+              0.955718,
+              0.954654,
+              0.955448,
+              0.955068,
+              0.955836
+            ],
+            "fold_std": 0.000435,
+            "best_iters": null,
+            "n_features": 13,
+            "reused": "reused cached OOF of linear-iteration arm 'xgb_d4' (digit-verified)"
+          }
+        },
+        "4": {
+          "name": "n1+1",
+          "auc": 0.955457,
+          "wall_s": 433.02,
+          "detail": {
+            "auc": 0.9554570423918393,
+            "fold_aucs": [
+              0.95579,
+              0.954783,
+              0.955599,
+              0.955152,
+              0.95597
+            ],
+            "fold_std": 0.000434,
+            "best_iters": [
+              1269,
+              1238,
+              1189,
+              1124,
+              1341
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "5": {
+          "name": "n1+2",
+          "auc": 0.955509,
+          "wall_s": 543.72,
+          "detail": {
+            "auc": 0.9555090184587485,
+            "fold_aucs": [
+              0.955856,
+              0.954816,
+              0.955633,
+              0.955187,
+              0.956059
+            ],
+            "fold_std": 0.000452,
+            "best_iters": [
+              1756,
+              1884,
+              2083,
+              1642,
+              2632
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "6": {
+          "name": "n5+0",
+          "auc": 0.955541,
+          "wall_s": 591.07,
+          "detail": {
+            "auc": 0.9555407302599621,
+            "fold_aucs": [
+              0.955911,
+              0.954832,
+              0.955676,
+              0.955234,
+              0.956057
+            ],
+            "fold_std": 0.000451,
+            "best_iters": [
+              2440,
+              2258,
+              3037,
+              2153,
+              3316
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "7": {
+          "name": "n6+0",
+          "auc": 0.955531,
+          "wall_s": 656.22,
+          "detail": {
+            "auc": 0.9555305022586544,
+            "fold_aucs": [
+              0.95591,
+              0.954847,
+              0.955638,
+              0.95524,
+              0.956026
+            ],
+            "fold_std": 0.000436,
+            "best_iters": [
+              3973,
+              3436,
+              3994,
+              3910,
+              3999
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "10": {
+          "name": "n2+1",
+          "auc": 0.955571,
+          "wall_s": 190.96,
+          "detail": {
+            "auc": 0.9555707904363782,
+            "fold_aucs": [
+              0.955944,
+              0.954863,
+              0.955669,
+              0.955275,
+              0.956107
+            ],
+            "fold_std": 0.000453,
+            "best_iters": [
+              3315,
+              2559,
+              3294,
+              3521,
+              3882
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "13": {
+          "name": "n10+3",
+          "auc": 0.955552,
+          "wall_s": 114.83,
+          "detail": {
+            "auc": 0.9555519464469884,
+            "fold_aucs": [
+              0.955931,
+              0.954855,
+              0.955654,
+              0.955254,
+              0.956074
+            ],
+            "fold_std": 0.000448,
+            "best_iters": [
+              3567,
+              2985,
+              2693,
+              3288,
+              3134
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "15": {
+          "name": "n13+2",
+          "auc": 0.955425,
+          "wall_s": 49.97,
+          "detail": {
+            "auc": 0.9554246994795198,
+            "fold_aucs": [
+              0.955808,
+              0.954703,
+              0.955515,
+              0.955129,
+              0.955978
+            ],
+            "fold_std": 0.000462,
+            "best_iters": [
+              1612,
+              1519,
+              1298,
+              1521,
+              1726
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "16": {
+          "name": "n13+4",
+          "auc": 0.955569,
+          "wall_s": 107.59,
+          "detail": {
+            "auc": 0.9555693581141202,
+            "fold_aucs": [
+              0.955943,
+              0.954852,
+              0.955686,
+              0.955279,
+              0.956092
+            ],
+            "fold_std": 0.000453,
+            "best_iters": [
+              3347,
+              2985,
+              3738,
+              3312,
+              3440
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "17": {
+          "name": "n3+0",
+          "auc": 0.955413,
+          "wall_s": 47.99,
+          "detail": {
+            "auc": 0.9554131962932321,
+            "fold_aucs": [
+              0.955798,
+              0.954714,
+              0.955495,
+              0.955145,
+              0.955923
+            ],
+            "fold_std": 0.000442,
+            "best_iters": [
+              2032,
+              1994,
+              2400,
+              1905,
+              2098
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "18": {
+          "name": "n17+0",
+          "auc": 0.955493,
+          "wall_s": 83.85,
+          "detail": {
+            "auc": 0.955492721742516,
+            "fold_aucs": [
+              0.955896,
+              0.954783,
+              0.955604,
+              0.955197,
+              0.955989
+            ],
+            "fold_std": 0.00045,
+            "best_iters": [
+              4230,
+              4563,
+              4032,
+              4848,
+              4666
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "19": {
+          "name": "n18+0",
+          "auc": 0.954696,
+          "wall_s": 94.69,
+          "detail": {
+            "auc": 0.9546956327046819,
+            "fold_aucs": [
+              0.955106,
+              0.954008,
+              0.954826,
+              0.954377,
+              0.955167
+            ],
+            "fold_std": 0.000443,
+            "best_iters": [
+              5999,
+              5999,
+              5998,
+              5992,
+              5999
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "20": {
+          "name": "burst_ks_rank",
+          "auc": 0.955592,
+          "wall_s": 0.0,
+          "detail": {
+            "auc": 0.9555921786581498,
+            "weights": [
+              0.1454,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.2069,
+              0.0,
+              0.3697,
+              0.0,
+              0.0,
+              0.1534,
+              0.0,
+              0.1246,
+              0.0
+            ],
+            "members": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              10,
+              13,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "space": "rank",
+            "cost_guard_warning": "blend eval took 141.5s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+          }
+        },
+        "21": {
+          "name": "burst_ks_prob",
+          "auc": 0.95559,
+          "wall_s": 0.0,
+          "detail": {
+            "auc": 0.9555904344348717,
+            "weights": [
+              0.171,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.1922,
+              0.0112,
+              0.4468,
+              0.0,
+              0.0,
+              0.1484,
+              0.0,
+              0.0303,
+              0.0
+            ],
+            "members": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              10,
+              13,
+              15,
+              16,
+              17,
+              18,
+              19
+            ],
+            "space": "prob",
+            "cost_guard_warning": "blend eval took 169.2s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+          }
+        },
+        "26": {
+          "name": "[burst] LGB extra_trees + very low lr, heavy smoothing",
+          "auc": 0.946079,
+          "wall_s": 360.52,
+          "detail": {
+            "auc": 0.946079286274601,
+            "fold_aucs": [
+              0.946322,
+              0.945307,
+              0.94675,
+              0.945707,
+              0.946329
+            ],
+            "fold_std": 0.000511,
+            "best_iters": [
+              6000,
+              5995,
+              5993,
+              5982,
+              5989
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "27": {
+          "name": "[burst] XGB deep + very strong shrinkage (opposite capacity corner)",
+          "auc": 0.955158,
+          "wall_s": 69.67,
+          "detail": {
+            "auc": 0.9551578346575627,
+            "fold_aucs": [
+              0.955511,
+              0.954491,
+              0.955276,
+              0.954863,
+              0.955657
+            ],
+            "fold_std": 0.000429,
+            "best_iters": [
+              1554,
+              1578,
+              1556,
+              1603,
+              1437
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "28": {
+          "name": "[burst] LGB num_leaves 4 with the 8 nominal codes declared categorical",
+          "auc": 0.955562,
+          "wall_s": 112.36,
+          "detail": {
+            "auc": 0.9555619025001079,
+            "fold_aucs": [
+              0.955938,
+              0.954848,
+              0.955662,
+              0.955272,
+              0.956097
+            ],
+            "fold_std": 0.000454,
+            "best_iters": [
+              3205,
+              2951,
+              2995,
+              3509,
+              4052
+            ],
+            "n_features": 13,
+            "reused": null
+          }
+        },
+        "29": {
+          "name": "[burst] LGB on the domain feature set at the winning capacity",
+          "auc": 0.955356,
+          "wall_s": 51.18,
+          "detail": {
+            "auc": 0.955356010731576,
+            "fold_aucs": [
+              0.955673,
+              0.954714,
+              0.955436,
+              0.955055,
+              0.95591
+            ],
+            "fold_std": 0.000428,
+            "best_iters": [
+              1656,
+              1616,
+              1410,
+              1654,
+              1654
+            ],
+            "n_features": 21,
+            "reused": null
+          }
+        },
+        "30": {
+          "name": "n20+0",
+          "auc": 0.955574,
+          "wall_s": 0.0,
+          "detail": {
+            "auc": 0.9555739270392695,
+            "weights": [
+              0.4,
+              0.3556,
+              0.2444
+            ],
+            "members": [
+              10,
+              16,
+              28
+            ],
+            "space": "rank",
+            "cost_guard_warning": "blend eval took 104.9s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+          }
+        },
+        "31": {
+          "name": "n20+1",
+          "auc": 0.955574,
+          "wall_s": 0.0,
+          "detail": {
+            "auc": 0.955573807246989,
+            "weights": [
+              0.4035,
+              0.355,
+              0.2415
+            ],
+            "members": [
+              10,
+              16,
+              28
+            ],
+            "space": "prob",
+            "cost_guard_warning": "blend eval took 94.4s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+          }
+        },
+        "32": {
+          "name": "n20+2",
+          "auc": 0.955574,
+          "wall_s": 0.0,
+          "detail": {
+            "auc": 0.9555739285061762,
+            "weights": [
+              0.3831,
+              0.0202,
+              0.3531,
+              0.2435
+            ],
+            "members": [
+              10,
+              13,
+              16,
+              28
+            ],
+            "space": "rank",
+            "cost_guard_warning": "blend eval took 102.1s > 45s threshold (members=[10, 13, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+          }
+        }
+      },
+      "cat_evals": 5,
+      "attempts": {
+        "1": 3,
+        "5": 1,
+        "6": 4,
+        "2": 2,
+        "10": 4,
+        "13": 5,
+        "3": 1,
+        "17": 1,
+        "18": 1,
+        "20": 3
+      },
+      "eval_order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        10,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "dedup_rejections": 15,
+      "failed_nodes": [
+        {
+          "label": "boundary-push num_leaves low 8->-11",
+          "detail": "{'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\\n'}"
+        },
+        {
+          "label": "boundary-push num_leaves low 4->-15",
+          "detail": "{'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\\n'}"
+        },
+        {
+          "label": "boundary-push num_leaves low 4->-15",
+          "detail": "{'error': 'LightGBMError: Check failed: (num_leaves) > (1) at /LightGBM/lightgbm-python/src/io/config_auto.cpp, line 344 .\\n'}"
+        },
+        {
+          "label": "[burst] LGB dart boosting (contrarian regulariser)",
+          "detail": "{'error': 'eval_solo_subprocess: hard-killed (SIGKILL) after exceeding timeout_s=400.0s -- a native-code fit() in the child ignored its own in-process SIGALRM timeout (see harness_v3 module docstring feature 8 / F-2 s3e7 CatBoost hang)'}"
+        }
+      ],
+      "burst_sanity_log": [
+        {
+          "node": 26,
+          "passed": true,
+          "bound": -0.9078125697252424
+        },
+        {
+          "node": 27,
+          "passed": true,
+          "bound": -0.9078125697252424
+        },
+        {
+          "node": 28,
+          "passed": true,
+          "bound": -0.9078125697252424
+        },
+        {
+          "node": 29,
+          "passed": true,
+          "bound": -0.9078125697252424
+        }
+      ]
+    },
+    "dedup_streak": {
+      "0": 0,
+      "1": 0,
+      "5": 0,
+      "6": 0,
+      "2": 0,
+      "10": 0,
+      "13": 0,
+      "3": 0,
+      "17": 0,
+      "18": 0,
+      "20": 0
+    },
+    "tie_rate_log": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "cost_guard_log": [
+      {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 141.55,
+        "coarsened_wall_s": 90.87,
+        "warning": "blend eval took 141.5s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 169.22,
+        "coarsened_wall_s": 94.12,
+        "warning": "blend eval took 169.2s > 45s threshold (members=[0, 1, 2, 3, 4, 5, 6, 7, 10, 13, 15, 16, 17, 18, 19], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          10,
+          16,
+          28
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 104.91,
+        "coarsened_wall_s": 29.84,
+        "warning": "blend eval took 104.9s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          10,
+          16,
+          28
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 94.44,
+        "coarsened_wall_s": 27.43,
+        "warning": "blend eval took 94.4s > 45s threshold (members=[10, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      },
+      {
+        "members": [
+          10,
+          13,
+          16,
+          28
+        ],
+        "original_k": 800,
+        "coarsened_k": 200,
+        "original_wall_s": 102.09,
+        "coarsened_wall_s": 33.06,
+        "warning": "blend eval took 102.1s > 45s threshold (members=[10, 13, 16, 28], k=800) -- COARSENING to k=200 and re-running, logged explicitly per C-2c/E-2 (never silent)"
+      }
+    ]
+  },
+  "priors_snapshot": [
+    "AUC \u662f\u6392\u540d\u6307\u6a19:\u5c0d\u4e0d\u5e73\u8861\u4e8c\u5206\u985e\u52a0 scale_pos_weight/class_weights \u4e3b\u8981\u662f\u64fe\u52d5\u640d\u5931\u9762\u800c\u975e\u6539\u5584\u6392\u540d,\u5728\u5c0f\u6a23\u672c\u4e0a\u662f\u58de\u4ea4\u6613;\u79fb\u9664\u4e0d\u5e73\u8861\u52a0\u6b0a + \u52a0\u5f37\u6b63\u5247\u5316\u624d\u662f\u89e3\u65b9\u3002 | \u8b49\u64da:s3e3, exp #2(48 \u7279\u5fb5+\u4e0d\u5e73\u8861\u52a0\u6b0a)0.81901 \u2192 exp #3(\u540c\u7279\u5fb5\u3001\u79fb\u9664\u52a0\u6b0a\u3001LGB num_leaves 15\u21927\u3001L1 0.5\u21921.0\u3001L2 1.0\u21922.0)0.83292(+0.017)\u3002",
+    "**s3e5 \u7684\u300cOptuna \u76ee\u6a19\u51fd\u5f0f\u76f4\u63a5\u8a2d\u70ba\u5b8c\u6574 CV \u4e0a\u7684\u6700\u7d42\u6307\u6a19\u300d\u914d\u65b9(\u539f\u672c\u53ea\u5728 QWK/\u96e2\u6563\u5316\u5f8c\u8655\u7406\u5834\u666f\u9a57\u8b49\u904e)\u9077\u79fb\u5230 AUC \u540c\u6a23\u6709\u6548,\u4e14 AUC \u662f\u9023\u7e8c\u6392\u540d\u6307\u6a19,\u5b8c\u5168\u6c92\u6709 QWK \u90a3\u7a2e\u96e2\u6563\u5316\u9677\u9631**:\u5c0f\u8cc7\u6599(1677 \u5217)\u4e0a 50 trials \u5b8c\u6574 5-fold CV \u50c5\u9700 111.3 \u79d2,\u76f4\u63a5\u4ee5 OOF ROC-AUC(\u800c\u975e\u67d0\u4ee3\u7406 loss)\u70ba Optuna \u76ee\u6a19,\u627e\u5230\u7684\u6700\u512a\u89e3\u751a\u81f3\u6bd4\u65e2\u6709\u300c\u6dfa\u800c\u5f37\u6b63\u5247\u300d\u7684 exp #3 LGB \u66f4\u6dfa(num_leaves 7\u21923)\u4f46\u6b63\u5247\u53cd\u800c\u66f4\u8f15(reg_lambda 2.0\u21920.0012,\u9760 min_child_samples=60 \u63a7\u5236\u904e\u64ec\u5408)\u3002 | \u8b49\u64da:s3e3, exp #4,LGB \u55ae\u6a21 0.832925 \u2192 0.837305(+0.00438)\u3002",
+    "\u8abf\u53c3\u5f8c\u300c\u52a0\u5165\u6c60\u800c\u975e\u53d6\u4ee3 + seed bagging\u300d\u914d\u65b9\u5728 AUC \u4e0a\u540c\u6a23\u53ef\u758a\u52a0\u5c0f\u5e45\u589e\u76ca,\u60df\u91cf\u7d1a\u96a8\u8fed\u4ee3\u6b21\u6578\u905e\u6e1b(+0.0044\u2192+0.0005),\u8207 s3e14/s3e11 \u89c0\u5bdf\u4e00\u81f4\u3002 | \u8b49\u64da:s3e3, exp #5,5-way \u6b0a\u91cd\u641c\u5c0b blend 0.837305 \u2192 0.837776,\u6b0a\u91cd\u96c6\u4e2d\u5728 LGB_orig(0.3)+LGB_tuned(0.7),seed-bag \u7248\u672c\u6b0a\u91cd 0\u3002",
+    "**\u300c\u79fb\u9664\u4e0d\u5e73\u8861\u52a0\u6b0a\u5c0d AUC \u6709\u5229\u300d\u7684\u7d50\u8ad6\u539f\u50c5\u5728\u5c0f\u6a23\u672c(1,677 \u5217)\u9a57\u8b49\u904e;\u8de8\u5b63\u6cdb\u5316\u9996\u6e2c(s4e1,165,034 \u5217,\u9280\u884c\u6d41\u5931\u9810\u6e2c)\u9996\u6b21\u5728\u5927\u6a23\u672c\u4e0a\u505a\u9010\u4f4d\u5143\u53ef\u6bd4\u7684\u6d88\u878d,\u7d50\u8ad6\u540c\u5411\u6210\u7acb**:\u540c\u4e00 28 \u7279\u5fb5\u96c6\u3001\u540c\u4e00 5-fold StratifiedKFold(seed=42),LGB \u52a0 `is_unbalance=True` OOF AUC 0.893235 vs \u4e0d\u52a0 0.893650,delta \u22120.000415\u2014\u2014\u65b9\u5411\u8207 s3e3 \u4e00\u81f4\u4f46\u91cf\u7d1a\u5c0f\u5f97\u591a(\u5927\u6a23\u672c\u4e0b\u52a0\u6b0a\u5c0d\u6392\u5e8f\u7684\u64fe\u52d5\u672c\u5c31\u8f03\u5f31)\u3002\u9644\u5e36\u767c\u73fe:2026-02 \u8a72\u8cfd\u7684\u820a\u57fa\u7dda(is_unbalance=True,CV 0.89653)\u4e4b\u6240\u4ee5\u770b\u8d77\u4f86\u5927\u5e45\u512a\u65bc\u672c\u6b21\u4e0d\u52a0\u6b0a\u7248\u672c,\u4e3b\u56e0\u4e26\u975e is_unbalance \u672c\u8eab,\u800c\u662f\u820a\u7248 surname \u76ee\u6a19\u7de8\u78bc\u4f7f\u7528\u8207\u6a21\u578b\u8a13\u7df4\u6298\u300c\u4e0d\u540c\u7684\u300d\u7368\u7acb 5-fold(seed=99)\u8a08\u7b97 OOF\u2014\u2014\u56e0\u7de8\u78bc\u5206\u7d44(\u59d3\u6c0f)\u5728\u5169\u7a2e\u6298\u5283\u5206\u9593\u5171\u4eab,\u53ef\u80fd\u9020\u6210\u6a21\u578b\u8a13\u7df4\u6298\u7684\u7279\u5fb5\u503c\u90e8\u5206\u5e36\u6709\u8a72\u6298\u9a57\u8b49\u6a23\u672c\u76ee\u6a19\u7684\u8cc7\u8a0a,\u662f\u6bd4 is_unbalance \u66f4\u503c\u5f97\u61f7\u7591\u7684\u5206\u6578\u81a8\u8139\u4f86\u6e90;\u6539\u70ba\u8207\u6a21\u578b\u8a13\u7df4\u6298\u5b8c\u5168\u76f8\u540c\u7684 fold-safe \u7de8\u78bc\u5f8c,\u540c\u914d\u65b9 solo LGB \u5206\u6578\u964d\u81f3 0.8937 \u91cf\u7d1a\u3002**\u6559\u8a13:\u76ee\u6a19\u7de8\u78bc\u7684 OOF \u6298\u5fc5\u9808\u8207\u6a21\u578b\u8a55\u4f30\u6298\u5b8c\u5168\u76f8\u540c,\u7528\u4e0d\u540c seed \u7684\u7368\u7acb\u6298\u300c\u770b\u4f3c\u907f\u514d\u6d29\u6f0f\u300d\u5b9e\u4e3a\u53e6\u4e00\u7a2e\u6d29\u6f0f\u8def\u5f91\u3002** | \u8b49\u64da:s4e1, tier3 r1(is_unbalance \u6d88\u878d),0.893650\u21920.893235(\u0394\u22120.000415);\u5c0d\u7167 STATUS.md(Feb 2026)exp#2 \u820a\u57fa\u7dda 0.89653\u3002",
+    "**\u7d55\u4e0d\u8de8 CV \u65b9\u6848\u6bd4\u8f03\u5206\u6578;\u6bcf\u500b\u5be6\u9a57\u5fc5\u9808\u9023\u540c CV \u65b9\u6848\u4e00\u8d77\u8a18\u9304\u3002** \u63db\u65b9\u6848\u5f8c\u5206\u6578\u300c\u770b\u4f3c\u9000\u6b65\u300d\u53ef\u80fd\u7d14\u5c6c\u65b9\u6848\u66f4\u8aa0\u5be6\u3002 | \u8b49\u64da:s3e19, exp #2 (10.18) \u770b\u4f3c\u8f38 baseline (5.32),\u8a3a\u65b7\u6027 exp #3 \u8b49\u660e\u540c\u914d\u7f6e\u5728\u820a\u65b9\u6848\u4e0b\u5176\u5be6\u662f 4.28(\u66f4\u597d)\u3002",
+    "test \u70ba\u7d14\u672a\u4f86\u671f \u2192 TimeSeriesSplit(\u5c0d\u552f\u4e00\u65e5\u671f\u5207);\u4e26\u4ee5\u8a72\u65b9\u6848\u4e0b\u7684\u6b0a\u91cd\u505a\u5be6\u969b\u63d0\u4ea4\u3002 | \u8b49\u64da:s3e19, exp #2\u3002",
+    "\u591a\u5e74\u5ea6\u6642\u7a7a\u8cc7\u6599 \u2192 Leave-One-Year-Out CV,\u53ef\u8aa0\u5be6\u8a55\u4f30\u8de8\u5e74\u5916\u63a8\u4e26\u652f\u6490\u7121\u6d29\u6f0f\u76ee\u6a19\u7de8\u78bc\u3002 | \u8b49\u64da:s3e20, exp #3/#4\u3002",
+    "\u8ff4\u6b78\u76ee\u6a19\u7684\u5206\u7bb1\u5206\u5c64:\u5c0f\u6a23\u672c\u566a\u97f3\u8ff4\u6b78\u7528\u76ee\u6a19\u5341\u5206\u4f4d StratifiedKFold(s3e9, qcut 10);\u6574\u6578\u9577\u5c3e\u76ee\u6a19\u7528\u5206\u7bb1 + \u5c3e\u7aef\u5408\u4f75(s3e16, Age\u226520 \u4f75\u4e00\u7bb1,fold MAE \u7a69\u5b9a\u65bc 1.34\u20131.37)\u3002 | \u8b49\u64da:\u5404\u8a72\u8cfd STATUS.md\u3002",
+    "\u56b4\u91cd\u985e\u5225\u4e0d\u5e73\u8861\u7684\u5e8f\u6578/\u5206\u985e\u76ee\u6a19 \u2192 \u5c0d label \u76f4\u63a5 StratifiedKFold,\u907f\u514d fold \u5167\u6975\u7aef\u985e\u70ba\u96f6\u3002 | \u8b49\u64da:s3e5(69.9x \u4e0d\u5e73\u8861), 5-fold Stratified on quality,per-fold std 0.033\u3002",
+    "\u7121\u6642\u9593/\u7fa4\u7d44\u7d50\u69cb\u3001\u76ee\u6a19\u9023\u7e8c\u3001train/test \u5206\u5e03\u8fd1\u540c \u2192 \u666e\u901a shuffle KFold \u5373\u6b63\u89e3,\u4e0d\u5fc5\u904e\u5ea6\u8a2d\u8a08\u3002 | \u8b49\u64da:s3e1\u3001s3e11\u3001s3e14(s3e14 \u5404\u6b04 train/test \u5747\u503c\u5dee <1%)\u3002",
+    "CV\u2194LB gap \u5be6\u6e2c\u7d00\u9304:s3e16 OOF 1.33812 \u2192 Public 1.34356 / Private 1.34075,gap ~0.006(CV \u8f15\u5fae\u6a02\u89c0\u3001\u53ef\u4fe1\u8cf4)\u3002 | \u8b49\u64da:s3e16, exp #1 Kaggle \u63d0\u4ea4\u3002",
+    "**\u6a39\u641c\u5c0b(tree-search)\u767c\u73fe\u7684 OOF \u589e\u76ca\u53ef\u4ee5\u771f\u7684\u8f49\u79fb\u5230\u771f\u5be6 LB,\u4e0d\u53ea\u662f OOF \u5167\u90e8\u6bd4\u8f03\u7684\u7522\u7269**:s3e16 \u6a39\u641c\u5c0b v2(node #15)\u5728 OOF \u4e0a\u628a\u53d6\u6574\u5f8c MAE \u5f9e 1.33812 \u63a8\u9032\u5230 1.33563,\u7576\u6642\u53ea\u662f CV-only \u7684\u63a8\u8ad6;\u91cd\u5efa test \u9810\u6e2c\u4e26\u5be6\u969b\u63d0\u4ea4\u5f8c,Private LB \u5f9e 1.34075 \u9032\u6b65\u5230 1.33859(Public 1.34356\u21921.34315),\u96d9\u699c\u7686\u6539\u5584,\u662f\u9019\u5957\u6a39\u641c\u5c0b\u914d\u65b9\u7b2c\u4e00\u6b21\u7372\u5f97\u7684\u5916\u90e8(\u771f\u5be6\u6392\u884c\u699c)\u9a57\u8b49\u3002\u540c\u6642 CV\u2194LB gap \u5728\u5169\u6b21\u7368\u7acb\u63d0\u4ea4\u9593\u7dad\u6301\u540c\u4e00\u6578\u91cf\u7d1a\u4e14\u540c\u65b9\u5411(\u7d04 0.003\u20130.0075,LB \u7565\u52a3\u65bc OOF)\u2014\u2014\u4e0d\u50c5\u589e\u76ca\u672c\u8eab\u53ef\u4fe1,gap \u7684\u7a69\u5b9a\u6027\u4e5f\u96a8\u63d0\u4ea4\u6b21\u6578\u589e\u52a0\u800c\u66f4\u53d7\u4fe1\u8cf4\u3002 | \u8b49\u64da:s3e16, exp #5(`experiments.json` leaderboard \u6b04\u4f4d),Public 1.34315/Private 1.33859,\u63d0\u4ea4 2026-07-06,\u5c0d\u7167 exp #1 \u7684 Public 1.34356/Private 1.34075\u3002",
+    "\u56fa\u5b9a seed + \u56fa\u5b9a fold \u624d\u80fd\u8de8\u5be6\u9a57\u6bd4\u8f03;revert \u5f8c\u91cd\u8dd1\u61c9\u53ef byte-identical \u91cd\u73fe\u3002 | \u8b49\u64da:s3e9, exp #4 \u91cd\u73fe exp #2 \u7684 12.07347 \u5206\u6beb\u4e0d\u5dee\u3002",
+    "\u53ea\u8abf\u300c\u6700\u5f37\u55ae\u6a21\u300d\u7684\u8d85\u53c3\u662f blend \u7684\u9ad8\u6027\u50f9\u6bd4\u69d3\u687f:LGB 50 trials(TPE)\u5373 +0.0004 \u55ae\u6a21 / +0.0005 blend;\u6700\u4f73\u89e3\u70ba\u300c\u6dfa\u800c\u5f37\u6b63\u5247\u300d(depth 3\u3001lr 0.068\u3001reg_alpha 2.14),\u518d\u6b21\u5370\u8b49\u5c0f/\u4e2d\u578b\u8cc7\u6599\u734e\u52f5\u6b63\u5247\u5316\u800c\u975e\u5bb9\u91cf\u3002 | \u8b49\u64da:s3e7, exp #3\u2192#4,LGB 0.898824\u21920.899215,blend 0.899395\u21920.899891\u3002",
+    "\u8abf\u53c3\u9810\u7b97\u63a7\u5236:\u6bcf trial \u8dd1\u5b8c\u6574 5-fold \u6703\u7206\u6642\u9593(50 trials \u00d7 5 folds \u2248 25 \u5206\u9418,\u4e00\u6b21\u903e\u6642\u5168\u6b78\u96f6);\u6539\u7528\u300c\u55ae\u4e00 fold(fold-0)\u4ee3\u7406\u76ee\u6a19\u300d\u8abf\u53c3\u3001\u53ea\u5c0d\u512a\u52dd\u914d\u7f6e\u91cd\u8dd1\u5b8c\u6574 5-fold \u9a57\u8b49,50 trials \u50c5 300s,\u4e14\u4ee3\u7406\u6392\u5e8f\u6210\u529f\u9077\u79fb(fold-0 \u6700\u4f73\u914d\u7f6e\u5728\u5168 OOF \u4e5f\u6700\u4f73)\u3002 | \u8b49\u64da:s3e7, exp #4,\u7b2c\u4e00\u6b21\u5168 5-fold \u5617\u8a66 25 \u5206\u9418\u903e\u6642\u7121\u7d50\u679c;fold-0 \u4ee3\u7406 300.2s \u5b8c\u6210\u4e26\u62ff\u5230\u4e0a\u8ff0\u589e\u76ca\u3002",
+    "**\u5c0d\u7b2c\u4e8c\u500b\u57fa\u6a21\u578b\u91cd\u8907\u540c\u4e00\u8abf\u53c3\u914d\u65b9\u6703\u50b7 blend**:XGB \u540c\u6cd5\u8abf\u53c3\u5f8c\u55ae\u6a21\u5fae\u5347(0.898765\u21920.898860)\u4f46 blend \u53cd\u800c\u9000\u6b65(0.899891\u21920.899722)\u2014\u2014\u5169\u500b\u6a21\u578b\u90fd\u6536\u6582\u5230\u76f8\u4f3c\u7684\u6dfa\u6a39\u6700\u512a\u89e3,ensemble \u591a\u6a23\u6027\u4e0b\u964d\u3002\u55ae\u6a21\u5206\u6578\u8207 blend \u8ca2\u737b\u4e0d\u662f\u540c\u4e00\u56de\u4e8b;\u8abf\u5b8c\u6700\u5f37\u55ae\u6a21\u5f8c,\u5176\u9918\u57fa\u6a21\u578b\u7684\u300c\u6b21\u512a\u4f46\u7570\u8cea\u300d\u53c3\u6578\u662f\u8cc7\u7522\u4e0d\u662f\u8ca0\u50b5\u3002 | \u8b49\u64da:s3e7, exp #5(\u68c4\u7528)\u3002",
+    "**\u8abf\u53c3\u5f8c\u7684\u55ae\u6a21\u61c9\u300c\u52a0\u5165\u300dpool \u800c\u975e\u300c\u66ff\u63db\u300d\u539f\u6210\u54e1**:Optuna \u8abf\u53c3\u7248 LGB \u55ae\u6a21\u7531 342.02154 \u9032\u6b65\u5230 341.68775,\u4f46\u82e5\u76f4\u63a5\u66ff\u63db\u6389\u539f LGB,blend \u53cd\u9000\u6b65(340.75961\u2192340.95316,\u591a\u6a23\u6027\u6d41\u5931,\u6b0a\u91cd\u88ab\u8feb\u58d3\u5230 XGB/CAT);\u6539\u70ba\u300c\u4fdd\u7559\u539f LGB \u4e26\u628a\u8abf\u53c3\u7248\u7576\u984d\u5916\u6210\u54e1\u300d\u7684 4-way blend \u5247\u964d\u81f3 340.62702\u3002\u662f s3e7\u300c\u5225\u66ff\u63db\u591a\u6a23\u6210\u54e1\u300d\u6559\u8a13\u5c0d\u6700\u5f37\u6a21\u578b\u81ea\u8eab\u7684\u63a8\u5ee3\u3002 | \u8b49\u64da:s3e14, exp #4(\u66ff\u63db)340.95316 vs exp #5(\u589e\u5217)340.62702\u3002",
+    "**seed bagging(\u540c\u8d85\u53c3\u3001\u63db random_state)\u662f\u8abf\u53c3\u4e4b\u5f8c\u6700\u4fbf\u5b9c\u7684\u6b98\u9918\u589e\u76ca**:\u518d\u52a0\u4e00\u500b seed=2024 \u7684\u539f\u53c3\u6578 LGB \u4f5c\u7b2c 5 \u6210\u54e1,blend 340.62702\u2192340.59891;\u6210\u672c\u50c5\u4e00\u6b21 5-fold \u8a13\u7df4(~52s)\u3002 | \u8b49\u64da:s3e14, exp #7,5-way blend \u6b0a\u91cd 0.2/0.15/0.2/0.25/0.2\u3002",
+    "**\u53cd\u4f8b:seed bagging \u4e26\u975e\u666e\u9069\u589e\u76ca,\u5c0d\u300cOptuna \u5df2\u76f4\u63a5\u512a\u5316\u6700\u7d42\u6307\u6a19\u300d\u8abf\u6821\u51fa\u7684\u6a21\u578b\u53ef\u80fd\u5b8c\u5168\u7121\u6548**\u2014\u2014\u540c\u4e00\u62db\u5c0d Optuna(\u76f4\u63a5\u512a\u5316 post-rounder QWK)\u8abf\u6821\u51fa\u7684 LGB \u8207 CatBoost \u5404\u505a\u4e00\u6b21 seed=2024 bagging,\u5169\u6b21\u6b0a\u91cd\u641c\u5c0b\u7686\u7d66\u65b0\u6210\u54e1 0 \u6b0a\u91cd\u3001blend \u5206\u6578\u4e0d\u8b8a\u6216\u5fae\u964d\u3002\u53ef\u80fd\u539f\u56e0:\u76f4\u63a5\u512a\u5316\u6700\u7d42\u6307\u6a19\u7684 Optuna \u5df2\u6536\u6582\u5230\u300c\u6dfa\u800c\u7a69\u5b9a\u300d\u7684\u89e3(\u8207 s3e7 fold-0 \u4ee3\u7406\u6cd5\u627e\u5230\u7684\u300c\u6dfa\u800c\u5f37\u6b63\u5247\u300d\u89e3\u578b\u614b\u4e00\u81f4),\u6a21\u578b\u672c\u8eab\u8b8a\u7570\u5df2\u4f4e,\u7b2c\u4e8c\u500b seed \u63d0\u4f9b\u7684\u591a\u6a23\u6027\u6709\u9650\u3002 | \u8b49\u64da:s3e5, exp #6(LGB_tuned seed-bag)0.56293\u21920.56293(\u7121\u8b8a\u5316);exp #9(CAT_tuned seed-bag)0.56769\u21920.56716(\u9000\u6b65,\u672a\u63a1\u7528)\u3002",
+    "**\u8cc7\u6599\u6975\u5c0f(~2k \u5217)\u6642,Optuna \u5168 5-fold CV \u672c\u8eab\u5c31\u5f88\u4fbf\u5b9c,\u4e0d\u9700\u8981 fold-0 \u4ee3\u7406**:\u8207 s3e7/s3e11 \u9700\u8981\u4ee3\u7406\u76ee\u6a19\u63a7\u5236\u6642\u9593\u9810\u7b97\u7684\u60c5\u5883\u76f8\u53cd,40 trials \u7684\u5b8c\u6574 5-fold CV(\u6bcf trial \u7686\u91cd\u65b0\u505a 5 \u6298\u8a13\u7df4)\u50c5\u9700 26\u201346 \u79d2,\u76f4\u63a5\u5c0d\u300c\u5f8c\u8655\u7406\u5f8c\u7684\u6700\u7d42\u6307\u6a19\u300d\u505a\u76ee\u6a19\u51fd\u5f0f\u512a\u5316,\u800c\u975e\u5148\u5c0d RMSE \u4ee3\u7406\u6307\u6a19\u8abf\u53c3\u518d\u5957\u7528\u5f8c\u8655\u7406\u3002\u6b64\u6a21\u5f0f\u50c5\u9069\u7528\u65bc\u8cc7\u6599\u91cf\u8207\u6a21\u578b\u8a13\u7df4\u6642\u9593\u90fd\u8db3\u5920\u5c0f\u7684\u60c5\u5883;\u8cc7\u6599\u898f\u6a21\u8f03\u5927\u6216\u8a13\u7df4\u8f03\u6162\u6642\u4ecd\u61c9\u9075\u5faa fold-0 \u4ee3\u7406\u7684\u65e2\u6709\u914d\u65b9\u3002 | \u8b49\u64da:s3e5, exp #5(LGB \u5168 CV 40 trials,26s)\u3001exp #8(CAT \u5168 CV 40 trials,46s)\u3002"
+  ]
+}

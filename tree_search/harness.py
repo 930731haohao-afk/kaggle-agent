@@ -214,13 +214,24 @@ def select_next_parent(tree: dict):
     while True:
         candidates = _lineage_best(tree, exclude=plateaued)
         if not candidates:
-            if not reopened_once and st.get("plateaued"):
-                st["plateaued"] = []
+            gated = set(st.get("gated_lineages", []))
+            if not reopened_once and (set(st.get("plateaued", [])) - gated):
+                # Reopen only lineages that plateaued on their own merits. Two classes must
+                # survive the fallback: lineages the burst-seed sanity gate rejected (their
+                # plateau mark is a verdict, not exhaustion), and -- when the v3 phase machine
+                # has already entered explore_burst -- the whole set, because reopening then
+                # sends the search back into lineages the phase machine just declared spent
+                # while the phase can never move backwards (2026-08-03 audit).
+                phase = (tree.get("search_state", {}).get("budget", {}) or {}).get("phase")
+                if phase in ("explore_burst", "stopped"):
+                    return None, None
+                st["plateaued"] = sorted(gated)
                 st["backtrack_log"].append(dict(
                     at_node_id=None, plateaued_lineage=None,
                     reason="all lineages plateaued -> reopened once (fallback so the "
-                           "search can keep going toward the node budget)"))
-                plateaued = set()
+                           "search can keep going toward the node budget); "
+                           f"kept {len(gated)} gate-rejected lineage(s) closed"))
+                plateaued = set(gated)
                 reopened_once = True
                 continue
             return None, None  # nothing evaluated yet at all

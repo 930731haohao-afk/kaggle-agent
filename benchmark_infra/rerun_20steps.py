@@ -27,6 +27,11 @@ RESULTS_JSON = RUNS_ROOT / "batch20_results.json"
 STEPS = 20
 EXEC_TIMEOUT = 1800
 COMP_TIMEOUT = 4 * 3600
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)
+from lane_lock import lane  # noqa: E402
+
+
 def node_count(journal_path: Path) -> int:
     try:
         return len(json.loads(journal_path.read_text()).get("nodes", []))
@@ -89,6 +94,13 @@ def newest_run_result(comp: str, minimize: bool) -> dict:
 
 
 def main() -> None:
+    # Hold the lane mutex for the batch: without it an AIDE re-run batch could overlap
+    # my-agent's or NVIDIA's lane, which is the contention that voided RUN1 (2026-08-03).
+    with lane("aide-rerun-20steps"):
+        _main_locked()
+
+
+def _main_locked() -> None:
     STATUS_MD.write_text(
         f"# AIDE 20-step re-run — started {time.strftime('%Y-%m-%d %H:%M')}\n\n")
     t0 = time.time()

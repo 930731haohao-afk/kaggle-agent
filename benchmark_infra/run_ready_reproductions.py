@@ -16,9 +16,13 @@ Usage:  setsid nohup python run_ready_reproductions.py > run_ready.log 2>&1 < /d
 
 import os
 import subprocess
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lane_lock import lane  # noqa: E402
 
 NV = Path.home() / "ai_agents/nvidia-kaggle-runs"
 PY = Path.home() / "ai_agents/kaggle/.venv/bin/python"
@@ -57,6 +61,15 @@ def aide_running() -> bool:
 
 
 def main() -> None:
+    # Hold the lane mutex for the whole batch. Without it this driver only WAITED on AIDE
+    # (aide_running() polling) and nothing stopped my-agent's headless lane from starting
+    # concurrently -- resource isolation was a convention here, not a mechanism, which is the
+    # exact defect that voided RUN1 (2026-08-03 audit).
+    with lane("nvidia-reproductions"):
+        _main_locked()
+
+
+def _main_locked() -> None:
     STATUS.write_text("# NVIDIA lanes — executing smoke-tested reproductions\n\n"
                       "Only scripts with a `READY` marker run; the marker means the authoring "
                       "agent smoke-tested that script.\n\n")

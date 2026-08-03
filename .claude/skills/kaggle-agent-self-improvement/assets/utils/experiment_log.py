@@ -138,6 +138,7 @@ def log_experiment_v2(
     submission: Optional[str] = None,
     leaderboard: Optional[dict] = None,
     notes: str = "",
+    **extra: Any,
 ) -> int:
     """
     Log an experiment in the canonical v2 schema (spec:
@@ -168,6 +169,13 @@ def log_experiment_v2(
             entry[key] = val
     if notes:
         entry["notes"] = notes
+    # Free-form extras. This is how the binding retrieval gate
+    # (references/04_modeling.md §0) records `library_query` / `library_hits`, and how a
+    # run records its own bookkeeping (stage, params, cv_strategy, cv_scores) without
+    # hand-rolling an entry dict and re-forking the schema.
+    for key, val in extra.items():
+        if val is not None:
+            entry[key] = val
     experiments.append(entry)
     save_experiments(competition_dir, experiments)
     return entry["experiment_id"]

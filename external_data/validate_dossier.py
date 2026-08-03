@@ -19,12 +19,12 @@ from pathlib import Path
 # operator -> (required params, optional params)
 SPEC: dict[str, tuple[set[str], set[str]]] = {
     "join_feature":  ({"source", "join"}, {"as"}),
-    "ratio_target":  ({"source", "join"}, {"space", "carry_forward"}),
-    "log_offset":    ({"source", "join"}, {"space", "carry_forward"}),
+    "ratio_target":  ({"source", "join"}, {"space", "carry_forward", "force"}),
+    "log_offset":    ({"source", "join"}, {"space", "carry_forward", "force"}),
     "trend_term":    (set(), {"unit", "degree", "centered"}),
     "flag_feature":  ({"source", "join"}, {"as", "window", "per_name"}),
     "sample_weight": ({"predicate"}, {"weight", "also_flag"}),
-    "encoding":      ({"scheme"}, {"columns", "smoothing", "max_pairs", "restrict_to"}),
+    "encoding":      ({"scheme"}, {"columns", "smoothing", "max_pairs", "restrict_to", "order"}),
     "objective":     ({"metric_family"}, {"drop_imbalance_weighting"}),
     "blend_member":  (set(), {"archetype", "depth", "weight_search"}),
     "split_policy":  ({"scheme"}, {"time_col", "n_splits", "forbid", "group_col", "shuffle", "random_state"}),

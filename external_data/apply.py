@@ -98,9 +98,18 @@ def proportionality_check(df: pd.DataFrame, cov: pd.DataFrame, mapping: dict,
     piv = tot.pivot(index="_year", columns=country_col, values="_ratio")
     disp = (piv.std(axis=1) / piv.mean(axis=1)).round(4)
     bad = {int(y): float(v) for y, v in disp.items() if v > threshold}
-    return {"dispersion_by_year": {int(y): float(v) for y, v in disp.items()},
+    # A year whose covariate is missing yields NaN dispersion, and `NaN > threshold` is False:
+    # unhandled, the check silently PASSES exactly the years it cannot see. Report them as
+    # their own verdict class rather than as evidence of proportionality (2026-08-03 audit).
+    unmeasured = sorted(int(y) for y, v in disp.items() if pd.isna(v))
+    verdict = "proportional" if not bad else "broken_in_" + ",".join(map(str, bad))
+    if unmeasured:
+        suffix = "unmeasured_" + ",".join(map(str, unmeasured))
+        verdict = suffix if not bad else verdict + ";" + suffix
+    return {"dispersion_by_year": {int(y): (None if pd.isna(v) else float(v))
+                                   for y, v in disp.items()},
             "threshold": threshold, "violating_years": bad,
-            "verdict": "proportional" if not bad else "broken_in_" + ",".join(map(str, bad))}
+            "unmeasured_years": unmeasured, "verdict": verdict}
 
 
 CURRENT_PRICE_SUFFIX = ("NY.GDP.PCAP.CD", "NY.GDP.MKTP.CD")   # nominal, FX-exposed series
@@ -118,9 +127,15 @@ def covariate_volatility_check(cov: pd.DataFrame, mapping: dict, years: list[int
     """
     iso = sorted(set(mapping.values()))
     c = cov[cov["iso3"].isin(iso)].pivot_table(index="year", columns="iso3", values="value")
-    c = c.loc[[y for y in c.index if y in years or y - 1 in years]].sort_index()
+    # Keep the fetched base year (min(years)-1) so the transition INTO the first panel year
+    # is measured; the old filter (`y in years or y - 1 in years`) dropped it, hiding exactly
+    # the shock the base year is fetched for (2026-08-03 audit).
+    c = c.loc[[y for y in c.index if y in years or y + 1 in years]].sort_index()
     if len(c) < 2:
-        return {"verdict": "insufficient_history", "spread_pp_by_year": {}}
+        # Not a pass: with one year there is no transition to measure, and the caller must
+        # treat that as "cannot certify stable", not as "stable".
+        return {"verdict": "insufficient_history", "spread_pp_by_year": {},
+                "worst_spread_pp": None, "threshold_pp": threshold_pp}
     pct = (c.pct_change() * 100).dropna(how="all")
     spread = pct.std(axis=1).round(2)
     worst = float(spread.max()) if len(spread) else 0.0
@@ -227,8 +242,11 @@ def _encode_columns(tr: pd.DataFrame, te: pd.DataFrame, scheme: str,
     """
     cols = params.get("columns")
     if not cols:
+        # pandas 3 gives string columns a dedicated 'str' dtype, so an `== object` test
+        # matches nothing and the operator silently encodes zero columns (2026-08-03 audit).
         cols = [c for c in tr.columns
-                if (tr[c].dtype == object or str(tr[c].dtype) == "category")
+                if (tr[c].dtype == object or str(tr[c].dtype) == "category"
+                    or pd.api.types.is_string_dtype(tr[c]))
                 and c in te.columns]
     cols = [c for c in cols if c in tr.columns and c in te.columns]
     if not cols:
@@ -244,9 +262,26 @@ def _encode_columns(tr: pd.DataFrame, te: pd.DataFrame, scheme: str,
             te[name] = te[c].map(counts).astype("float64")
             added.append(name)
     elif scheme == "ordinal":
+        # Lexical order is NOT ordinal order (S/M/L/XL sorts to L,M,S,XL; "10" sorts before
+        # "2"). The contract promises "ordered categories keep their order", so the order must
+        # be declared, or be genuinely numeric. Refusing beats fabricating (2026-08-03 audit).
+        declared = params.get("order") or {}
         for c in cols:
-            levels = sorted(set(tr[c].dropna().unique()) | set(te[c].dropna().unique()),
-                            key=lambda v: str(v))
+            observed = set(tr[c].dropna().unique()) | set(te[c].dropna().unique())
+            order = declared.get(c) if isinstance(declared, dict) else declared
+            if order:
+                missing = [v for v in observed if v not in order]
+                if missing:
+                    raise ValueError(f"ordinal encoding of {c!r}: declared order omits "
+                                     f"{sorted(map(str, missing))[:5]}")
+                levels = list(order)
+            elif pd.api.types.is_numeric_dtype(pd.Series(sorted(observed))):
+                levels = sorted(observed)
+            else:
+                raise ValueError(
+                    f"ordinal encoding of {c!r} needs an explicit params['order'] "
+                    f"(observed {sorted(map(str, observed))[:6]}): a lexical sort would "
+                    f"fabricate an order this operator's contract promises is real")
             code = {v: i for i, v in enumerate(levels)}
             name = f"{c}_ord"
             tr[name] = tr[c].map(code).astype("float64")
@@ -432,21 +467,25 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                     vol = covariate_volatility_check(frame, mapping, panel_keys()[0])
                     diag["covariate_volatility"] = vol
                     plan.setdefault("diagnostics", {})[op] = diag
+                    gate_failures = []
                     if meta.get("indicator") in CURRENT_PRICE_SUFFIX:
+                        gate_failures.append("nominal covariate series")
                         plan["unrealized"].append({
                             "operator": op, "params_subset": "nominal covariate series",
                             "reason": (f"{meta['indicator']} is a current-price series; a ratio "
                                        "target multiplies FX/inflation shocks into predictions. "
                                        "Use gdp_per_capita_const or gdp_per_capita_ppp instead "
                                        "(measured: 14.6pp vs 3.0pp cross-country spread)")})
-                    if vol.get("verdict") == "volatile":
+                    if vol.get("verdict") != "stable":
+                        gate_failures.append(f"covariate stability ({vol.get('verdict')})")
                         plan["unrealized"].append({
                             "operator": op, "params_subset": "covariate stability",
                             "reason": (f"covariate moves up to {vol['worst_spread_pp']}pp "
                                        f"differently across groups (threshold "
                                        f"{vol['threshold_pp']}pp) — the level it carries is "
                                        "contaminated")})
-                    if diag["violating_years"]:
+                    if diag["violating_years"] or diag.get("unmeasured_years"):
+                        gate_failures.append("proportionality")
                         plan["unrealized"].append({
                             "operator": op, "params_subset": "unconditional application",
                             "reason": ("precondition failed: target is not covariate-proportional in "
@@ -454,6 +493,23 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                                        f"{diag['violating_years']}); the ratio target inherits the "
                                        "broken relationship unless those periods are down-weighted "
                                        "or excluded (see sample_weight)")})
+                    if gate_failures and not params.get("force"):
+                        # Until 2026-08-03 a failed precondition only added a NOTE: the target
+                        # transform was installed anyway and the operator was simultaneously
+                        # booked realized, so a ledger reader saw both "unrealized: precondition
+                        # failed" and a trained ratio arm. Refuse now; an author who has read the
+                        # diagnostics can still pass params["force"]=true, which is recorded.
+                        plan["unrealized"].append({
+                            "operator": op, "params_subset": "REFUSED",
+                            "reason": f"preconditions failed ({'; '.join(gate_failures)}); "
+                                      "operator not applied. Pass params.force=true to apply "
+                                      "anyway, which records the override in this ledger."})
+                        for df in (tr, te):
+                            df.drop(columns=[out_col], inplace=True, errors="ignore")
+                        continue
+                    if gate_failures:
+                        plan.setdefault("forced_overrides", []).append(
+                            {"operator": op, "failed_gates": gate_failures})
                 if op == "join_feature":
                     plan["added_columns"].append(out_col)
                 else:

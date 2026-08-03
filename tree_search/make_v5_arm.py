@@ -74,14 +74,20 @@ def _invert_test(p):
     assert n_y >= 1, "no training target lines found"
     src = src.replace("y_tr, y_va = _y_log[tr_mask], _y_log[va_mask]",
                       "y_tr, y_va = _Y_RATIO[tr_mask], _Y_RATIO[va_mask]")
-    # invert with the covariate instead of expm1
+    # invert with the covariate instead of expm1. The test-frame operand is whatever the
+    # baseline evaluator names it: `Xtestdf` before the per-fold target-encoding refactor,
+    # `Xte_fold` after (2026-07-31). Matching on the frame name is what silently broke when
+    # the evaluators were refactored, so the operand is now discovered rather than assumed.
     n_va = src.count("oof[va_mask] = np.expm1(m.predict(X_va))")
-    n_te = src.count("pred += np.expm1(m.predict(Xtestdf)) / N_SPLITS")
-    assert n_va >= 1 and n_te >= 1, "no inversion lines found"
+    te_from = re.findall(r"pred \+= np\.expm1\(m\.predict\((\w+)\)\) / N_SPLITS", src)
+    n_te = len(te_from)
+    assert n_va >= 1 and n_te >= 1, (
+        "no inversion lines found -- the baseline evaluator's fold-loop shape changed; "
+        "update _patch_target_transform's anchors before building arms")
     src = src.replace("oof[va_mask] = np.expm1(m.predict(X_va))",
                       "oof[va_mask] = _invert_va(m.predict(X_va), va_mask)")
-    src = src.replace("pred += np.expm1(m.predict(Xtestdf)) / N_SPLITS",
-                      "pred += _invert_test(m.predict(Xtestdf)) / N_SPLITS")
+    src = re.sub(r"pred \+= np\.expm1\(m\.predict\((\w+)\)\) / N_SPLITS",
+                 r"pred += _invert_test(m.predict(\1)) / N_SPLITS", src)
     print(f"   target transform patched: {n_y} fit sites, {n_va} val + {n_te} test inversions")
     return src
 
