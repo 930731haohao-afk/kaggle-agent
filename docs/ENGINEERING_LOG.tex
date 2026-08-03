@@ -33,9 +33,9 @@
 
 \title{\textbf{Building the Injection Layer: An Engineering Log}\\
 \large Companion to \emph{Benchmarking AI Agents for Kaggle Competitions}\\
-\normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-07-30.}}
+\normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-07-31.}}
 \author{Wei-Hao Huang\\\small Advisor: Tso-Jung Yen}
-\date{Draft compiled July 30, 2026}
+\date{Draft compiled July 31, 2026}
 
 \begin{document}
 \maketitle
@@ -65,7 +65,7 @@ to be a diary, ordered by failure class rather than by narrative convenience.
 \section{Judgment-Layer Coverage: Per-Regime Detail}
 \label{app:coverage}
 
-Supporting detail for the coverage finding in Section~\ref{sec:exp6v5}. Across the 20 dossiers
+Supporting detail for the coverage finding in the main report (Experiment 6). Across the 20 dossiers
 the judgment layer proposes 241 ideas. Most are free text, so the auditor classifies them into
 operator families by keyword; 39 are too vague to place at all and are counted against coverage
 rather than excused.
@@ -93,14 +93,14 @@ evaluator, books unconditionally and cannot confirm.
 
 \begin{table}[H]
 \centering\small
-\caption{The same 241 proposals, split by what consumes them. Measured by \texttt{external\_data/coverage\_audit.py}; percentages are of all 241.}
+\caption{The same 241 proposals, split by what consumes them. Measured by \texttt{external\_data/coverage\_audit.py}; percentages are of all 241. The Before column's seeded row includes the 54 encoding proposals that then sat unread; the fix moved the three target-free schemes into the applied regime.}
 \label{tab:regime}
 \begin{tabular}{@{}lrrl@{}}
 \toprule
 \textbf{Regime} & \textbf{Before} & \textbf{After} & \textbf{Who executes it} \\
 \midrule
 applied by the dispatcher & 12 (5\%) & \textbf{66 (27\%)} & this module writes the columns \\
-seeded into the search & 77 (32\%) & 77 (32\%) & \emph{nobody, before 07-30}; now the arm driver \\
+seeded into the search & 131 (54\%) & 77 (32\%) & \emph{nobody, before 07-30}; now the arm driver \\
 advisory & 33 (14\%) & 33 (14\%) & the evaluator --- assumed, not checked \\
 \midrule
 no operator exists & 26 (11\%) & 26 (11\%) & --- \\
@@ -110,7 +110,7 @@ too vague to classify & 39 (16\%) & 39 (16\%) & --- \\
 \end{table}
 
 The middle regime had no reader at all until 2026-07-30: \texttt{objective}, \texttt{blend\_member}
-and \texttt{encoding} were written into a key no search driver read, while the ledger recorded
+and \texttt{encoding} were written into a key that no search driver read, while the ledger recorded
 them realized. Two fixes moved the applied share from 5\% to 27\%: a translator
 (\path{tree_search/seed_from_ledger.py}) that turns those emissions into real seed nodes and
 writes back which node ids carried which operator, and moving the three target-free encoding
@@ -131,11 +131,57 @@ Audit scripts: \path{external_data/coverage_audit.py} (regime split),
 \path{external_data/validate_dossier.py} (emission conformance),
 \path{external_data/verify_advisory.py} (advisory verification).
 
+\textbf{Update, 2026-07-31.} All three stated-not-booked gaps have since been closed
+(commit \texttt{9a30d8a}): per-fold target encoding and a sparse linear family now exist in
+\path{tree_search/eval_support.py} with capability-gated seeding, and \path{eval_s5e10.py}
+gained the missing \texttt{maybe\_postprocess} (its defaults reproduce the historical metric
+digit-for-digit). The advisory audit is 9/9, with runtime attestation
+(\texttt{evaluator\_attestation.json}) now preferred over the static grep. The paragraphs
+above are kept as written because they record the state the audit found.
+
+
+\section{The Two Mid-Complexity Re-Runs, and the Voiding Rule}
+\label{app:reruns}
+
+Two of the nine mid-complexity cells were re-run, and the rule deciding which first attempts
+were voided is asymmetric on purpose: \textbf{a failure caused by the harness is voided; a
+failure caused by the method stands.} Voiding a method failure would quietly optimize the
+yardstick; keeping a harness failure would score the environment instead of the agent.
+
+\paragraph{my-agent/SIIM: killed by our own watchdog.} The lane first scored 0.92944 but was
+killed at 150 of 480 minutes by the stall watchdog, whose 30-minute quiet threshold cannot
+distinguish a vision lane between fine-tunes from a dead one --- a harness defect of exactly
+the same family as Failure 3 below (health judged by the wrong signal). The threshold was
+loosened to 90 minutes of quiet plus three consecutive confirmations, so a kill now requires
+105+ minutes of confirmed silence, and the lane was re-run to completion: 394 minutes,
+0.93529. The first attempt is archived.
+
+\paragraph{Version identity across my-agent's cells (recorded, not disclosed in the main
+report).} The three mid-complexity lanes did not all run the identical skill version: us-patent
+and ventilator predate Stage 0.5; SIIM ran after and executed the dossier, which declined
+external data, so the modeling code path is identical as far as tracing shows --- a traced
+argument caught by file timestamps, not a rerun-and-confirm. The two firing-class lanes are a
+further deliberate variant (full v5, pinned knowledge library). None of this touches any
+per-competition three-way comparison; it bounds only the claim that my-agent's own methodology
+was constant across the whole report.
+
+\paragraph{my-agent/s5e1 (firing class): environment kill, relaunched.} The lane's first
+attempt exited after 6 minutes with no submission (rc=1) when the session hit a usage-limit
+reset --- an environment failure under the voiding rule. It was relaunched unmodified after
+the reset and completed in 41 minutes. Recorded here because the rule requires every
+first-attempt voiding to leave a trace, however boring.
+
+\paragraph{NVIDIA/ventilator: a session accident, voided; the method finding, kept.} The full
+reconstruction is in the next section. The 8.558 first attempt was voided because it measured
+a session accident rather than the reproduction method; the re-run under an identical budget
+scored 0.40093. What is \emph{not} voided is the finding the accident exposed: process
+discipline is part of agent capability, and one-shot reproduction is all-or-nothing when it
+lapses.
 
 \section{Reconstruction of the Voided Ventilator Attempt}
 \label{app:ventilator}
 
-The driver log and the lane's own artifacts reconstruct the failure precisely --- and it is an \emph{execution-discipline} failure, not a time-budget one. The harness granted the full 4h budget; the session lasted \textbf{5 minutes} and exited cleanly. The frozen vote rule selected the highest-voted kernel (a literal \emph{starter} tutorial, \path{theoviel/deep-learning-starter-simple-lstm}, 1{,}166 votes), the agent ported it quickly, then launched the $200\times5$-epoch training \emph{in the background} --- violating its explicit foreground-only instruction --- logged ``training running\ldots\ waiting on monitor events,'' stopped calling tools, and thereby ended its own session; the orphaned training process died after \textbf{2 of 1{,}000} fold-epochs (37.6s of training; fold-0 validation MAE 1.28 $\to$ private 8.56), and the salvage submission shipped with no sanity gate. Under the fairness protocol the result stands: the environment delivered its budget, and the failure belongs to the frozen method's execution. The re-run, with the prompt hardened against the backgrounding pattern, used 109 minutes and scored 0.40093 --- so the method itself is competitive on this task, and the 8.56 measured only the lapse. The episode extends the ``self-assessment cannot veto output'' family (Section~\ref{sec:exp4}) with a new member: \emph{process discipline} (foreground execution, session-lifetime awareness) is itself part of agent capability, and one-shot reproduction is all-or-nothing when it lapses, while iterative search always holds a submittable solution.
+The driver log and the lane's own artifacts reconstruct the failure precisely --- and it is an \emph{execution-discipline} failure, not a time-budget one. The harness granted the full 4h budget; the session lasted \textbf{5 minutes} and exited cleanly. The frozen vote rule selected the highest-voted kernel (a literal \emph{starter} tutorial, \path{theoviel/deep-learning-starter-simple-lstm}, 1{,}166 votes), the agent ported it quickly, then launched the $200\times5$-epoch training \emph{in the background} --- violating its explicit foreground-only instruction --- logged ``training running\ldots\ waiting on monitor events,'' stopped calling tools, and thereby ended its own session; the orphaned training process died after \textbf{2 of 1{,}000} fold-epochs (37.6s of training; fold-0 validation MAE 1.28 $\to$ private 8.56), and the salvage submission shipped with no sanity gate. Under the fairness protocol the result stands: the environment delivered its budget, and the failure belongs to the frozen method's execution. The re-run, with the prompt hardened against the backgrounding pattern, used 109 minutes and scored 0.40093 --- so the method itself is competitive on this task, and the 8.56 measured only the lapse. The episode extends the ``self-assessment cannot veto output'' family (main report, Experiment 4) with a new member: \emph{process discipline} (foreground execution, session-lifetime awareness) is itself part of agent capability, and one-shot reproduction is all-or-nothing when it lapses, while iterative search always holds a submittable solution.
 
 
 
@@ -246,6 +292,68 @@ injection defects in the previous section: the artifact existed, the log looked 
 number was wrong for a reason no mechanism was watching for. In each case the evidence needed to
 catch it was already being written down --- which files were opened, which processes were alive,
 which experiments carried an exclusion tag --- and nothing was reading it.
+
+\section{The Adversarial Execution-Path Sweep, 2026-08-03}
+
+The 07-30 audit covered the v5 injection stack only. Before running any new competition,
+the same treatment was applied to everything a fresh lane actually executes: search
+machinery, arm construction, the external-data layer, three evaluators that had not been
+touched in months, and the lane pipeline including the skill instruction files (the agent
+executes those too, so an instruction bug is a bug). Five hunters, every finding then
+handed to a separate verifier instructed to refute it and to attempt a repro before it
+counted. \textbf{34 findings survived verification}; the 15 on a new lane's execution path
+were fixed the same day (commit \texttt{a245b37}).
+
+\paragraph{One defect was self-inflicted, and is the reason this sweep was worth running.}
+The per-fold target-encoding work of 07-31 renamed a variable inside the evaluators' fold
+loops (\texttt{Xtestdf} to \texttt{Xte\_fold}). \path{make_v5_arm.py} patches the generated
+arm evaluator by matching that exact line to install the ratio inversion. The anchor stopped
+matching. Nothing failed: the assertion counted the \emph{validation} inversions, found
+them, and passed --- so the next ratio arm built would have trained on the ratio and never
+inverted it, producing a confidently wrong submission. The fix discovers the operand instead
+of assuming it, but the lesson is the older one: a regex contract between two files is a
+consumer trace waiting to break, and only a test that builds an arm end-to-end would have
+caught it.
+
+\paragraph{The gates that recorded instead of gating.} The \texttt{ratio\_target} and
+\texttt{log\_offset} preconditions --- proportionality, covariate volatility, nominal-series
+detection --- each appended an ``unrealized: precondition failed'' note to the ledger while
+the target transform was installed anyway and the operator was simultaneously booked
+\emph{realized}. A ledger reader saw both entries and could believe either. Two of the
+checks were also blind in the places that matter: \texttt{proportionality\_check} passed any
+year whose covariate was missing, because \texttt{NaN > threshold} is \texttt{False}; and
+\texttt{covariate\_volatility\_check} filtered out the fetched base year, so the transition
+into the first panel year --- the one that year is fetched for --- was never measured. The
+gates now refuse, with an explicit \texttt{force} override that is itself recorded.
+
+\paragraph{The cost guard that cost more.} \texttt{eval\_blend\_with\_cost\_guard} ran the
+full-budget weight search, measured the wall time, and \emph{then} re-ran at a coarser
+budget and returned the coarser result --- paying more than the unguarded path and recording
+a strictly-no-better blend. It now predicts from previous blend costs on the same tree and
+decides before spending; a completed result is never discarded.
+
+\paragraph{Silent over-exclusion in the self-exclusion filter.} The rule that stops a re-run
+reading its own recorded answer matched competition slugs as substrings. \texttt{s3e1} is a
+substring of \texttt{s3e19}, \texttt{s3e11}, \texttt{s3e14} and \texttt{s3e16}; \texttt{s5e1}
+of \texttt{s5e10}. Those lanes silently discarded every sibling competition's evidence. The
+error direction is conservative --- less knowledge, never leakage --- so no reported score is
+affected, but it means the experience library was quieter in those lanes than the design
+intended, and nothing said so.
+
+\paragraph{Four more, briefly.} A v5 baseline arm reused the competition's own OOF cache
+directory, whose keys are node ids, so its node~7 could read the pre-existing tree's node~7
+vectors. The explore-burst patience counter counted function invocations rather than
+evaluated nodes, so failed evaluations and deduplication burns ended bursts early. The v1
+reopen-once fallback wiped every plateau flag including the burst-seed sanity gate's
+verdicts. And the batch drivers for both reference methods never took the lane mutex --- they
+only polled for each other --- so resource isolation had quietly reverted to a convention,
+which is the defect that voided RUN1.
+
+\paragraph{What the sweep says about the 07-30 finding.} Six of the fifteen fixed defects
+are the same shape as that day's: something was produced, recorded, or asserted, and no
+mechanism checked that anything consumed or honoured it. The count is not the point --- the
+point is that the shape recurs in a codebase whose authors had just spent a day removing it,
+which is the argument for making the trace mechanical rather than remembered.
 
 \section{The Nine Defects of 2026-07-30}
 
