@@ -74,8 +74,17 @@ def log_experiment(
     return exp_id
 
 
-_DIAGNOSTIC_MARKERS = ("diagnostic", "not used for submission", "not for submission",
-                       "leakage check", "leak check", "sanity probe")
+# Markers that ASSERT an entry is not a submission candidate. Split into two tiers because the
+# single list matched free-text notes: an entry whose notes said "passed the leakage check" was
+# classified a diagnostic and silently dropped from champion selection, so a legitimate winner
+# lost to a weaker model for mentioning a check it had passed (2026-08-04 architecture gate).
+#
+# Tier 1 asserts exclusion and is safe anywhere, including prose.
+_EXCLUSION_PHRASES = ("not used for submission", "not for submission", "diagnostic only",
+                      "do not submit", "excluded from selection", "not a candidate")
+# Tier 2 are topic words. A short, deliberate LABEL field of "diagnostic" means it; the same
+# word inside a sentence does not. Never matched against `notes`.
+_DIAGNOSTIC_LABELS = ("diagnostic", "leakage check", "leak check", "sanity probe", "probe")
 
 
 def _entry_score(entry: dict):
@@ -93,9 +102,19 @@ def _entry_is_diagnostic(entry: dict) -> bool:
     Champion selection that ignores the label reproduces the study's silent failure #4:
     a leakage probe explicitly marked not-for-submission won the aggregation.
     """
-    hay = " ".join(str(entry.get(k, "")) for k in
-                   ("model", "model_name", "notes", "tag", "label")).lower()
-    return any(m in hay for m in _DIAGNOSTIC_MARKERS)
+    # 1. An explicit boolean is authoritative. This is what a run SHOULD set.
+    flag = entry.get("diagnostic")
+    if isinstance(flag, bool):
+        return flag
+    # 2. Dedicated label fields are short and deliberate, so a topic word there means it.
+    labels = " ".join(str(entry.get(k, "")) for k in
+                      ("tag", "label", "model", "model_name")).lower()
+    if any(m in labels for m in _DIAGNOSTIC_LABELS):
+        return True
+    # 3. Free-text notes: only a phrase that ASSERTS exclusion counts. "passed the leakage
+    #    check" is evidence the entry is sound, not evidence it is a diagnostic.
+    notes = str(entry.get("notes", "")).lower()
+    return any(p in notes for p in _EXCLUSION_PHRASES)
 
 
 def get_best_experiment(
@@ -173,6 +192,7 @@ def log_experiment_v2(
     metric: str,
     direction: str,
     score: float,
+    params: Optional[dict] = None,
     cv: Optional[dict] = None,
     features: Optional[List[str]] = None,
     base_models: Optional[List[dict]] = None,
@@ -203,8 +223,30 @@ def log_experiment_v2(
         "score": round(float(score), 6),
     }
     if features is not None:
-        entry["features"] = list(features)
-        entry["n_features"] = len(features)
+        # `features` crosses the Stage 2 -> Stage 3 seam as a comma-separated STRING in one
+        # contract and as a list in the other. list("a,b,c") explodes a string into single
+        # CHARACTERS, so the logged feature set became ['a', ',', 'b', ...] and n_features
+        # became the character count -- silently, in the artifact Stage 5 reads back
+        # (2026-08-04 architecture gate). Normalize instead of coercing blindly.
+        if isinstance(features, str):
+            feats = [f.strip() for f in features.split(",") if f.strip()]
+        elif isinstance(features, (list, tuple, set)):
+            feats = [str(f) for f in features]
+        else:
+            raise TypeError(
+                f"features must be a list or a comma-separated string, got "
+                f"{type(features).__name__}; blind list() on anything else silently produces "
+                f"a per-character feature list")
+        entry["features"] = feats
+        entry["n_features"] = len(feats)
+    if params is not None:
+        # The hyperparameters that produced this score. Absent until 2026-08-04: the v2 schema
+        # recorded model name and score but not the configuration, while 06_submission.md told
+        # the agent to read `best_params` "From experiments.json" -- an instruction nothing
+        # could satisfy, so the winning configuration had to be reconstructed by hand or
+        # guessed (architecture gate). Stringified like the v1 schema so the record stays JSON.
+        entry["params"] = {k: (v if isinstance(v, (int, float, bool, str, type(None))) else str(v))
+                           for k, v in params.items()}
     for key, val in (("cv", cv), ("base_models", base_models), ("ensemble", ensemble),
                      ("postprocess", postprocess), ("submission", submission),
                      ("leaderboard", leaderboard)):

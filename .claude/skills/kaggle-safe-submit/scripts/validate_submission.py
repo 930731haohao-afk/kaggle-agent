@@ -42,9 +42,15 @@ EXIT_OK, EXIT_STRUCTURAL, EXIT_SUSPICIOUS = 0, 1, 2
 
 # Metric -> what the prediction column is supposed to contain. Normalised by _norm().
 _PROBABILITY_METRICS = {
-    "auc", "rocauc", "areaunderroccurve", "logloss", "binarylogloss", "multilogloss",
+    "auc", "rocauc", "aucroc", "areaunderroccurve", "areaundertheroccurve",
+    "logloss", "binarylogloss", "multilogloss", "binarycrossentropy",
     "crossentropy", "averageprecision", "map", "prauc", "aucpr", "brier", "brierscore",
+    "gini", "normalizedgini",
 }
+# 'aucroc' is here because config.yaml on at least one competition spells the metric
+# "auc-roc": _norm() flattened that to "aucroc", which was in no set, so the value-kind check
+# resolved to "unknown" and the probability-range gate silently downgraded to PASS. Word order
+# must never decide whether a gate runs (2026-08-04 architecture gate).
 _LABEL_METRICS = {
     "accuracy", "balancedaccuracy", "f1", "f1macro", "f1micro", "f1weighted", "fbeta",
     "precision", "recall", "mcc", "matthewscorrcoef", "kappa", "cohenkappa",
@@ -59,6 +65,20 @@ _CONTINUOUS_METRICS = {
 def _norm(name: str) -> str:
     """Lowercase and strip separators so 'ROC-AUC', 'roc_auc', 'roc auc' all collide."""
     return re.sub(r"[^a-z0-9]", "", str(name).lower())
+
+
+def _norm_variants(name: str) -> set:
+    """Every spelling of a metric name that should be treated as the same metric.
+
+    Stripping separators is not enough: it maps 'roc_auc' to 'rocauc' but 'auc-roc' to
+    'aucroc', which was in no set, so the value-kind check resolved to "unknown" and the
+    probability-range test silently downgraded to PASS on a competition whose config.yaml
+    happened to spell it the other way round (2026-08-04 architecture gate). Also emit the
+    token-sorted form so word order cannot decide whether a gate runs.
+    """
+    flat = _norm(name)
+    tokens = [tok for tok in re.split(r"[^a-z0-9]+", str(name).lower()) if tok]
+    return {flat, "".join(sorted(tokens))} - {""}
 
 
 class Report:
@@ -89,12 +109,12 @@ def _resolve_expectation(metric: Optional[str], expect: str,
     if expect != "auto":
         return expect
     if metric:
-        m = _norm(metric)
-        if m in _PROBABILITY_METRICS:
+        variants = _norm_variants(metric)
+        if variants & _PROBABILITY_METRICS:
             return "probability"
-        if m in _LABEL_METRICS:
+        if variants & _LABEL_METRICS:
             return "label"
-        if m in _CONTINUOUS_METRICS:
+        if variants & _CONTINUOUS_METRICS:
             return "continuous"
     if y_train is not None and pd.api.types.is_numeric_dtype(y_train):
         uniq = np.unique(y_train.dropna().to_numpy())
@@ -136,21 +156,41 @@ def validate(sub: pd.DataFrame, sample: pd.DataFrame, id_col: Optional[str] = No
         rep.check(rep.structural, "Prediction column", False, f"('{pred_col}' missing)")
         return rep
 
-    preds = sub[pred_col]
-    n_nan = int(preds.isnull().sum())
-    rep.check(rep.structural, "NaN", n_nan == 0, f"({n_nan} NaN values)")
+    # EVERY prediction column, not just the last. afsis (13 targets) and conway (400) submit
+    # wide: checking sample.columns[-1] alone let an all-NaN or all-inf column in any other
+    # position pass the structural gate untouched (2026-08-04 architecture gate).
+    pred_cols = [c for c in sample.columns if c != id_col and c in sub.columns]
+    if not pred_cols:
+        pred_cols = [pred_col]
+    n_nan_by_col, n_inf_by_col = {}, {}
+    for c in pred_cols:
+        col = sub[c]
+        n_nan_c = int(col.isnull().sum())
+        n_nan_by_col[c] = n_nan_c
+        if pd.api.types.is_numeric_dtype(col):
+            a = col.to_numpy(dtype=float)
+            # isnull() is False for +/-inf, which is exactly how inf reaches Kaggle through a
+            # NaN-only gate. isfinite() is also False for NaN, so subtract those out.
+            n_inf_by_col[c] = max(int((~np.isfinite(a)).sum()) - n_nan_c, 0)
+    bad_nan = {c: n for c, n in n_nan_by_col.items() if n}
+    bad_inf = {c: n for c, n in n_inf_by_col.items() if n}
+    rep.check(rep.structural, "NaN", not bad_nan,
+              f"({sum(bad_nan.values())} NaN across {len(bad_nan)}/{len(pred_cols)} column(s): "
+              f"{dict(list(bad_nan.items())[:5])})" if bad_nan else "")
+    rep.check(rep.structural, "Finite", not bad_inf,
+              f"({sum(bad_inf.values())} +/-inf across {len(bad_inf)}/{len(pred_cols)} "
+              f"column(s): {dict(list(bad_inf.items())[:5])})" if bad_inf else "")
+    all_null_cols = [c for c in pred_cols if sub[c].isnull().all()]
+    rep.check(rep.structural, "No empty target column", not all_null_cols,
+              f"({len(all_null_cols)} column(s) entirely null: {all_null_cols[:5]})"
+              if all_null_cols else "")
 
+    preds = sub[pred_col]
     numeric = pd.api.types.is_numeric_dtype(preds)
     if numeric:
         arr = preds.to_numpy(dtype=float)
-        finite = np.isfinite(arr)
-        # isnull() is False for +/-inf, which is exactly how inf reaches Kaggle through a
-        # NaN-only gate. isfinite() is also False for NaN, so subtract those out.
-        n_inf = int((~finite).sum()) - n_nan
-        rep.check(rep.structural, "Finite", n_inf <= 0, f"({max(n_inf, 0)} +/-inf values)")
-        vals = arr[finite]
+        vals = arr[np.isfinite(arr)]
     else:
-        rep.skip("Finite", "(non-numeric prediction column)")
         vals = np.array([])
 
     # ---- SUSPICIOUS ----

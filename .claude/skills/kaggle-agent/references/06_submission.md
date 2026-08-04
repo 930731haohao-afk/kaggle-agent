@@ -61,7 +61,7 @@ Present the selection to the user for confirmation.
 # Example: retrain best LightGBM on full data
 import lightgbm as lgb
 
-best_params = {}  # From experiments.json
+best_params = winning_entry["params"]   # experiments.json, v2 schema `params` field
 model = lgb.LGBMClassifier(**best_params)
 model.fit(X_train_full, y_train_full)
 predictions = model.predict(X_test)  # or predict_proba
@@ -72,6 +72,26 @@ predictions = model.predict(X_test)  # or predict_proba
 - Apply the same feature engineering pipeline used during training
 - For classification with probabilities: generate both hard predictions and probabilities (user chooses which to submit)
 - For regression: generate raw predictions
+
+**INVERT THE TARGET TRANSFORM BEFORE WRITING ANYTHING.** This step used to say "generate raw
+predictions" and stop, which is correct only when the model was trained on the raw target. If
+Stage 2's injection ledger carries a `target_transform`, the model was NOT:
+
+| `plan["target_transform"]["kind"]` | trained on | invert with |
+|---|---|---|
+| `ratio_log` | `log(target / covariate)` | `exp(pred) * covariate` |
+| `log_offset` | `log1p(target)` | `expm1(pred)` |
+| (absent)    | the raw target | nothing |
+
+The covariate column must be joined onto the TEST frame for the inversion, with the same
+leakage rule the training join used — an inversion that reaches for a covariate value the
+training side could not see is a leak introduced at the last step.
+
+A submission written without its inversion is not a slightly worse submission; it is in the
+wrong units, and every downstream check that compares it against the training target's range
+is exactly the check that catches it. Read `competitions/<name>/injection_ledger.json`, state
+in your report which transform you inverted (or that there was none), and run the submission
+validator — its Range check exists for this.
 
 ### 4. Apply Post-Processing
 If any post-processing was found helpful during evaluation:
