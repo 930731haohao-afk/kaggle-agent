@@ -128,6 +128,20 @@ Only these sources may be proposed by the dossier; each join must state a leakag
 | Exchange rates (ECB SDMX) | monthly reference rates vs EUR, 12 currencies | currency × month | only values dated ≤ prediction month |
 | OWID COVID (compact) | cases/deaths per million (raw + smoothed) | country × date | only values dated ≤ row date; relevant to 2020+ windows; ~178 MB one-time cache, download must be explicitly allowed |
 
+| CPC classification titles (EPO/USPTO) | official code → title text for patent classification codes | **code (lookup, no time axis)** | static — no temporal leakage path |
+
+**The list can now GROW (2026-08-03).** Until today this table was the whole vocabulary, and
+every entry was keyed by country and time — which is why the dossier fired on country-panel
+competitions and nothing else. The bottleneck was the source list, not the judgment. A new
+source now enters through `external_data/admit_source.py`, which admits only what passes four
+mechanical gates: the host is a listed general-purpose reference publisher (never a
+data-sharing platform, where a file may be a competitor's dataset containing the answer); the
+join key class is known and its leakage rule matches it; two consecutive fetches agree on the
+vintage; and the fetcher reports which requested keys it could not cover. The proposal must
+also carry a falsifiable pre-registration of what the source is expected to be worth and how
+that will be judged. Admitted sources and their evidence live in
+`external_data/admitted_sources.json`; widening the DOMAIN list stays a deliberate review step.
+
 **Rules**: (1) join keys must exist in the official data or be derivable from it; (2) no
 future information relative to the prediction row's date — implemented as `lag` in
 `external_data/join.py`: `lag=0` allows same-period values (historical-solution convention),

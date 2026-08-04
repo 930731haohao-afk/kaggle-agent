@@ -9,6 +9,7 @@ caching — a bad 200 must never poison the cache.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -272,6 +273,75 @@ def fetch_worldbank(indicator_key: str, year_from: int, year_to: int,
         if e["value"] is not None and e["countryiso3code"] and str(e["date"]).isdigit()
     ]
     return pd.DataFrame(rows), meta
+
+
+# ---------------------------------------------------------------------------
+# lookup-class source: CPC classification titles (first non-country, non-temporal source)
+# ---------------------------------------------------------------------------
+CPC_TITLES_URL = "https://www.cooperativepatentclassification.org/cpc/scheme/titles"
+
+
+def fetch_cpc_titles(codes: list[str] | None = None, *, allow_download: bool = False
+                     ) -> tuple[pd.DataFrame, dict]:
+    """Official CPC classification code -> title, the reference table for patent tasks.
+
+    First source of the `lookup` join key class: a static attribute table with NO time axis,
+    so its leakage rule is "static" rather than a lag. It exists to prove the source layer
+    generalizes past country-panel data -- the whitelist's country/time keys, not the
+    judgment layer, are what confined the dossier to panel competitions.
+
+    Contract, identical to every other fetcher: returns (frame, meta) where frame is long-form
+    [code, title], meta carries `snapshot` (the scheme version read) and `unmatched` (codes
+    requested that the scheme does not contain -- reported, never guessed).
+
+    Network is OFF by default. Like fetch_owid_covid, a download must be explicitly allowed,
+    because a source that silently reaches the network on import makes a run's data provenance
+    depend on when it happened to be executed. Without a cache and without permission this
+    raises rather than returning an empty table that would read as "no titles exist".
+    """
+    cache = _cache_path("cpc_titles.csv")
+    if not cache.exists():
+        if not allow_download:
+            raise FileNotFoundError(
+                f"CPC titles are not cached at {cache} and allow_download=False. Fetch once "
+                f"deliberately with allow_download=True (source: {CPC_TITLES_URL}); a source "
+                f"that downloads implicitly ties a run's data to the moment it ran.")
+        raise NotImplementedError(
+            "CPC bulk-title download is not implemented yet: the publisher ships the scheme "
+            "as a zipped XML bundle, and parsing it belongs in its own reviewed change. "
+            "Populate the cache manually (code,title CSV) or extend this function.")
+
+    frame = pd.read_csv(cache, dtype={"code": str, "title": str})
+    missing_cols = [c for c in ("code", "title") if c not in frame.columns]
+    if missing_cols:
+        raise ValueError(f"{cache} lacks {missing_cols}; expected a code,title table")
+    frame["code"] = frame["code"].str.strip().str.upper()
+    snapshot = _cpc_snapshot(cache)
+    unmatched: list[str] = []
+    if codes:
+        want = {str(c).strip().upper() for c in codes}
+        have = set(frame["code"])
+        unmatched = sorted(want - have)
+        frame = frame[frame["code"].isin(want)].reset_index(drop=True)
+    pin_or_verify_snapshot(f"cpc:titles@{snapshot_key(cache)}", snapshot)
+    return frame, {"snapshot": snapshot, "unmatched": unmatched, "source_url": CPC_TITLES_URL}
+
+
+def snapshot_key(cache: Path) -> str:
+    """Stable lock key for a cached file-backed source (name only, not mtime)."""
+    return cache.name
+
+
+def _cpc_snapshot(cache: Path) -> str:
+    """Vintage of the cached scheme: an explicit sidecar if present, else the file digest.
+
+    A digest is a weaker vintage than a publisher version string, but it is honest: it
+    changes exactly when the content changes, which is what pin_or_verify_snapshot needs.
+    """
+    sidecar = cache.with_suffix(".version.txt")
+    if sidecar.exists():
+        return sidecar.read_text().strip()
+    return "sha256:" + hashlib.sha256(cache.read_bytes()).hexdigest()[:16]
 
 
 def fetch_holidays(country_names: list[str], years: list[int]) -> tuple[pd.DataFrame, dict]:

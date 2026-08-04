@@ -156,6 +156,125 @@ def _fetch_covariate(source: str, years: list[int], countries: list[str]):
     return frame, mapping, meta
 
 
+def _key_class_of(source_key: str) -> str:
+    """Join key class of a source, from the admitted registry; panel sources default to
+    country_year so behaviour is unchanged for everything admitted before the registry."""
+    try:
+        from .source_registry import JOIN_KEY_CLASSES  # noqa: F401
+        rec = _admitted_sources().get(source_key)
+        if rec and rec.get("join_key_class"):
+            return rec["join_key_class"]
+    except Exception:  # noqa: BLE001
+        pass
+    return "country_year"
+
+
+def _admitted_sources() -> dict:
+    path = Path(__file__).parent / "admitted_sources.json"
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text())
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _apply_lookup_join(tr, te, params: dict, plan: dict):
+    """Realize a `lookup`-class join_feature: code column -> static attribute columns."""
+    from .join import merge_lookup_safe
+    src = params["source"]
+    rec = _admitted_sources().get(src) or {}
+    join = params.get("join") or {}
+    df_key = join.get("on") or (rec.get("join_columns") or [None])[0]
+    if not df_key:
+        raise ValueError(f"lookup join for {src!r} needs params.join.on (the competition's "
+                         f"key column) or a join_columns entry in the admitted record")
+    fetch = _lookup_fetchers().get(src)
+    if fetch is None:
+        raise ValueError(f"no fetcher registered for lookup source {src!r} "
+                         f"(known: {sorted(_lookup_fetchers())})")
+    keys = sorted(set(tr[df_key].astype(str)) | set(te[df_key].astype(str)))
+    frame, meta = fetch(keys)
+    ext_key = rec.get("ext_key", "code")
+    value_cols = rec.get("value_columns") or [c for c in frame.columns if c != ext_key]
+    prefix = params.get("as_prefix") or f"{src.split(':')[0]}_"
+    outs = []
+    for name in ("train", "test"):
+        df = tr if name == "train" else te
+        joined, report = merge_lookup_safe(df, frame, df_key=df_key, ext_key=ext_key,
+                                           value_cols=value_cols, out_prefix=prefix,
+                                           meta=meta)
+        outs.append(joined)
+        if report["rows_unmatched"]:
+            plan["unrealized"].append({
+                "operator": "join_feature", "params_subset": f"{name}: unresolved keys",
+                "reason": f"{report['unresolved_key_count']} key(s) had no entry in {src!r} "
+                          f"(e.g. {report['unresolved_keys'][:5]}); those rows carry NaN and "
+                          f"are reported rather than filled"})
+        # A column that arrived entirely empty is not a feature. It used to be booked
+        # realized alongside the columns that did arrive, because the realized/unrealized
+        # decision read only rows_unmatched -- which is driven by the FIRST value column
+        # (2026-08-04 adversarial verification).
+        for empty in report.get("all_null_columns", []):
+            plan["unrealized"].append({
+                "operator": "join_feature", "params_subset": f"{name}: {empty}",
+                "reason": f"column {empty!r} is null for every row: {src!r} supplied the key "
+                          f"but no value. Recorded as unrealized rather than counted as a "
+                          f"joined feature."})
+    added = [f"{prefix}{c}" for c in value_cols]
+    plan["added_columns"].extend(added)
+    plan["sources"][src] = meta.get("snapshot")
+    plan["realized"].append({"operator": "join_feature", "columns": added,
+                             "join_key_class": "lookup"})
+    return outs[0], outs[1]
+
+
+def _lookup_fetchers() -> dict:
+    """Registered lookup-class fetchers, keyed by the vocabulary name a dossier emits."""
+    from .sources import fetch_cpc_titles
+    return {"cpc:titles": lambda keys: fetch_cpc_titles(codes=keys)}
+
+
+def dispatch_route(source_key: str, join_key_class: str) -> str:
+    """Which code path would realize this source, or raise if there is none.
+
+    Exists so admission and dispatch cannot disagree. Admitting a source the dispatcher has
+    no route to fetch produces the worst kind of failure: the registry says the source is
+    available, a dossier emits it in good faith, and the run reports it as an unrealized
+    idea with an obscure reason. The admission gate calls this so the disagreement is caught
+    at admission time, where the fix is obvious, instead of mid-competition.
+    """
+    if join_key_class == "lookup":
+        if source_key in _lookup_fetchers():
+            return f"_apply_lookup_join via _lookup_fetchers()[{source_key!r}]"
+        raise ValueError(
+            f"no lookup fetcher registered for {source_key!r}. Add it to "
+            f"external_data/apply.py:_lookup_fetchers() (known: {sorted(_lookup_fetchers())}); "
+            f"admitting a source the dispatcher cannot reach makes the registry lie.")
+    if join_key_class == "country_year":
+        if source_key.startswith(_WB_PREFIX):
+            return f"_fetch_covariate via fetch_worldbank({source_key[len(_WB_PREFIX):]!r})"
+        raise ValueError(
+            f"the country_year path fetches only {_WB_PREFIX}* sources; {source_key!r} has no "
+            f"route. Extending _fetch_covariate to another publisher is a code change, not an "
+            f"admission -- until it exists, this source would be admitted but unreachable.")
+    if join_key_class == "date":
+        # Only the holiday calendar is implemented on this path. Blessing any date-class key
+        # here would let a source pass the reachability gate and then be silently realized as
+        # holiday flags under its own column name (2026-08-04 adversarial verification).
+        if source_key in ("holidays", "calendar"):
+            return "flag_feature / calendar path (merge_holiday_flags)"
+        raise ValueError(
+            f"the date-class path realizes only the holiday calendar; {source_key!r} has no "
+            f"route. Add a fetcher and a branch in the flag_feature dispatch first -- "
+            f"otherwise this source would be admitted and then silently realized as "
+            f"something else.")
+    raise ValueError(
+        f"join key class {join_key_class!r} has no dispatcher route yet. The class is a legal "
+        f"vocabulary entry but nothing in apply.py realizes it, so a dossier emitting "
+        f"{source_key!r} would record an unrealized idea rather than a joined column.")
+
+
 def _config_only(op: str, params: dict) -> dict:
     """Turn a config-only operator into the node config the search driver should seed.
 
@@ -407,6 +526,14 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                                        "reason": f"not implemented in apply.py (known set: {sorted(REALIZED)})"})
             continue
         try:
+            if op == "join_feature" and _key_class_of(params.get("source", "")) == "lookup":
+                # Non-panel join: a static attribute table resolved by a code column. Routing
+                # by the source's DECLARED key class is what lets the source layer grow past
+                # country x time -- the dispatcher used to assume every join was a country-year
+                # as-of merge, which is why the layer only ever fired on panel competitions
+                # (2026-08-03 source-layer extension).
+                tr, te = _apply_lookup_join(tr, te, params, plan)
+                continue
             if op in ("join_feature", "ratio_target", "log_offset"):
                 src = params["source"]
                 out_col = (params.get("as") or ["cov"])[0] if op == "join_feature" else "cov_level"
@@ -559,23 +686,63 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
 
             elif op == "flag_feature":
                 as_cols = params.get("as") or ["is_holiday"]
+                src = params.get("source", "holidays")
+                if src not in ("holidays", "calendar"):
+                    # This branch realizes exactly one thing: a same-day national holiday
+                    # flag. It used to ignore params["source"] entirely, so a dossier naming
+                    # any other date-class source got holiday flags back under the requested
+                    # column name, with the ledger citing 'holidays' as the origin -- a
+                    # feature that is not what was asked for and does not say so
+                    # (2026-08-04 adversarial verification).
+                    raise ValueError(
+                        f"flag_feature realizes only the holiday calendar; source {src!r} has "
+                        f"no implementation. Name it in the dossier's not_recorded field, or "
+                        f"add a fetcher and a branch here -- do not let it silently become "
+                        f"holiday flags.")
                 _yrs, _ctys = panel_keys()
                 hol, meta = fetch_holidays(_ctys, _yrs)
+                # Countries the calendar could not supply. Without this the operator books
+                # itself realized while those rows carry a systematically-zero flag, which is
+                # the exact defect admit_source.check_coverage's docstring cites -- and it was
+                # still live in this path until 2026-08-04.
+                uncovered = sorted(set(meta.get("unmatched") or []))
+                reports = {}
                 for name in ("train", "test"):
                     df = tr if name == "train" else te
-                    out, _ = merge_holiday_flags(df, hol, df_country=country_col,
-                                                 df_date=date_col, out_col=as_cols[0], meta=meta)
+                    out, rep = merge_holiday_flags(df, hol, df_country=country_col,
+                                                   df_date=date_col, out_col=as_cols[0],
+                                                   meta=meta)
+                    reports[name] = rep
+                    uncovered = sorted(set(uncovered) | set(rep.get("countries_without_calendar") or []))
                     if name == "train":
                         tr = out
                     else:
                         te = out
+                if uncovered:
+                    plan["unrealized"].append({
+                        "operator": op, "params_subset": f"{as_cols[0]}: uncovered entities",
+                        "reason": f"no calendar for {uncovered}; those rows carry a "
+                                  f"systematically ZERO flag, which is not the same as 'no "
+                                  f"holidays'. Reported rather than filled."})
+                if not any(r.get("holiday_rows") for r in reports.values()):
+                    # Zero flagged rows across the whole panel is not a plausible calendar
+                    # result; it is the signature of a key mismatch (dtype, timezone, name
+                    # spelling) that would otherwise ship as a constant column.
+                    raise ValueError(
+                        f"the holiday calendar flagged 0 of {len(tr) + len(te)} rows across "
+                        f"every entity. A constant-zero flag is a join failure, not a "
+                        f"feature; check the date dtypes and the country name spellings "
+                        f"(calendar covers {sorted(set(hol['country'])) if 'country' in hol else 'n/a'}).")
                 plan["added_columns"].append(as_cols[0])
                 plan["sources"]["holidays"] = meta.get("snapshot")
                 extra = [k for k in ("window", "per_name") if params.get(k)]
                 if extra:
                     plan["unrealized"].append({"operator": op, "params_subset": extra,
                                                "reason": "only a boolean same-day flag is implemented"})
-                plan["realized"].append({"operator": op, "column": as_cols[0]})
+                plan["realized"].append({"operator": op, "column": as_cols[0],
+                                         "holiday_rows": {k: r.get("holiday_rows")
+                                                          for k, r in reports.items()},
+                                         "entities_without_calendar": uncovered})
         except Exception as e:  # noqa: BLE001 — a failed operator is recorded, never hidden
             plan["unrealized"].append({"operator": op, "reason": f"{type(e).__name__}: {e}"})
 

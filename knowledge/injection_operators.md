@@ -30,6 +30,14 @@ Use when the covariate's *training-range values* carry signal. **Do not use alon
 level covariate when the test window lies outside the training range** — trees are
 piecewise-constant and cannot extrapolate; use `ratio_target` or `log_offset` instead.
 
+**Join key classes (2026-08-03).** `join_feature` routes on the SOURCE's declared key class,
+not on an assumption that every join is country×year: `country_year` / `country_date` /
+`currency_month` / `date` are as-of merges with a declared lag, while `lookup` is a static
+attribute table keyed by a code column (`params.join.on` names the competition's key column)
+with no time axis and therefore no lag. The class is recorded in
+`external_data/admitted_sources.json` when the source is admitted; unresolved keys are
+reported in the ledger rather than filled.
+
 ### `ratio_target`
 Divide the target by an external level covariate, fit on the ratio, multiply back at
 predict time. This is the operator that extrapolates: the test-period level comes from the

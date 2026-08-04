@@ -252,7 +252,109 @@ def merge_period_safe(df: pd.DataFrame, ext: pd.DataFrame, *, freq: str,
     return out, report
 
 
-def merge_holiday_flags(df: pd.DataFrame, hol: pd.DataFrame, *, df_country: str,
+def merge_lookup_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_key: str,
+                      ext_key: str, value_cols: list[str], out_prefix: str = "",
+                      log_path: str | Path | None = None,
+                      meta: dict | None = None) -> tuple[pd.DataFrame, dict]:
+    """Join a STATIC attribute table onto df by an exact code/id match.
+
+    The `lookup` join key class: a code column in the competition data (a CPC classification
+    code, an ISO code, a product id) resolved against a reference table that has no time
+    axis. There is no lag and no LeakageError path, because there is no period to be on the
+    wrong side of -- but the same non-negotiables as every other join apply: row count and
+    row ORDER are preserved, keys that do not resolve are REPORTED rather than silently
+    filled, and duplicate keys in the reference table are counted rather than quietly
+    resolved (2026-08-03 source-layer extension).
+
+    Returns (df_with_new_columns, report).
+    """
+    if not value_cols:
+        raise ValueError("value_cols must name at least one column to bring across")
+    missing = [c for c in (ext_key, *value_cols) if c not in ext.columns]
+    if missing:
+        raise ValueError(f"reference table lacks {missing} (has {list(ext.columns)})")
+    if df_key not in df.columns:
+        raise ValueError(f"competition data has no key column {df_key!r}")
+    if ext.empty:
+        # A reference table with zero rows joins to nothing and yields an all-NaN column.
+        # That is indistinguishable downstream from "the source was useless", when what
+        # actually happened is that the fetcher returned nothing (cache miss, network off,
+        # upstream schema change). Refuse rather than degrade quietly.
+        raise ValueError(
+            f"reference table for key {ext_key!r} is empty; a lookup join against zero rows "
+            f"produces an all-NaN column that reads downstream as a useless source rather "
+            f"than as a fetch failure")
+
+    d = df.reset_index(drop=True).copy()
+    d["_orig_order"] = range(len(d))
+    e = ext[[ext_key, *value_cols]].copy()
+    e[ext_key] = e[ext_key].astype(str)
+    n_dup = int(e.duplicated([ext_key]).sum())
+    # keep last, count it: a reference table with duplicate codes is a source problem the
+    # report must surface, not something the join decides quietly
+    e = e.drop_duplicates([ext_key], keep="last")
+
+    rename = {c: f"{out_prefix}{c}" for c in value_cols}
+    out_cols = list(rename.values())
+    e = e.rename(columns=rename)
+
+    left_keys = d[df_key].astype(str)
+    e = e.rename(columns={ext_key: "_k"})
+    # An explicit match indicator. Using "the first value column is null" as a proxy for "the
+    # key did not resolve" conflates a key that is ABSENT from the reference with a key that
+    # resolved to a row whose first value happens to be null -- it undercounts rows_matched,
+    # names resolved keys as unresolved, and (once the total-miss guard existed) could abort a
+    # join in which every key matched (2026-08-04 adversarial verification).
+    e["_matched"] = True
+    merged = d.assign(_k=left_keys).merge(e, on="_k", how="left")
+    merged = merged.sort_values("_orig_order").reset_index(drop=True)
+    assert len(merged) == len(df), (
+        f"lookup join changed the row count ({len(df)} -> {len(merged)}); duplicate keys "
+        f"survived de-duplication")
+
+    unresolved_mask = merged["_matched"].isna()
+    # str() every key before sorting: under pandas 3 astype(str) preserves NA rather than
+    # producing 'nan', and sorted() on a list mixing str with NA raises TypeError -- which
+    # discarded a join that had already succeeded, from inside the REPORT builder
+    # (2026-08-04 adversarial verification).
+    unresolved_keys = sorted({str(k) for k in left_keys[unresolved_mask.to_numpy()].unique()})
+    if unresolved_mask.all() and len(df):
+        # Same failure as an empty table, reached by a different route: a non-empty reference
+        # whose key space does not overlap the competition's (wrong column, wrong code
+        # vintage, string-vs-int keys). Partial misses are normal and get reported; a total
+        # miss is a wiring error.
+        raise ValueError(
+            f"lookup join on {df_key!r} -> {ext_key!r} resolved 0 of {len(df)} rows. The "
+            f"reference table has {len(ext)} rows but shares no keys with the data "
+            f"(data e.g. {left_keys.unique()[:3].tolist()}, "
+            f"reference e.g. {e['_k'].unique()[:3].tolist() if '_k' in e else ext[ext_key].astype(str).unique()[:3].tolist()}). "
+            f"This is a wiring error, not a weak feature.")
+    out = merged.drop(columns=["_k", "_orig_order", "_matched"])
+
+    report = {
+        "out_cols": out_cols,
+        "join_key_class": "lookup",
+        "leakage_rule": "static (no time axis)",
+        "rows": int(len(df)),
+        "rows_matched": int((~unresolved_mask).sum()),
+        "rows_unmatched": int(unresolved_mask.sum()),
+        "unresolved_keys": unresolved_keys[:50],
+        "unresolved_key_count": len(unresolved_keys),
+        # Per-column nulls, because a key resolving does not mean every value arrived: a
+        # second-or-later value column that is entirely null used to be booked as a realized
+        # feature with nothing anywhere saying it was empty.
+        "null_by_column": {c: int(merged[c].isna().sum()) for c in out_cols},
+        "all_null_columns": [c for c in out_cols if merged[c].isna().all()],
+        "ext_duplicates_dropped": n_dup,
+        "ext_rows": int(len(ext)),
+        "source_meta": meta or {},
+        "joined_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    _write_log(report, log_path)
+    return out, report
+
+
+def merge_holiday_flags(df: pd.DataFrame, hol: pd.DataFrame, *, df_country: str | None,
                         df_date: str, out_col: str = "is_holiday",
                         log_path: str | Path | None = None,
                         meta: dict | None = None) -> tuple[pd.DataFrame, dict]:
@@ -260,15 +362,41 @@ def merge_holiday_flags(df: pd.DataFrame, hol: pd.DataFrame, *, df_country: str,
 
     Holidays are a deterministic calendar — there is no lag parameter and no
     LeakageError path; knowing future holidays is not leakage.
+
+    `df_country=None` is the DATE-ONLY form: any date-indexed competition can take a single
+    calendar without having a country panel. Requiring a country column was an implementation
+    binding, not a property of the data, and it is one reason the injection layer only ever
+    fired on country panels (2026-08-03 source-layer extension). In that form `hol` must
+    carry exactly one country, so the calendar being applied is unambiguous.
     """
+    def _normalize_dates(s: pd.Series) -> pd.Series:
+        out = pd.to_datetime(s)
+        if getattr(out.dt, "tz", None) is not None:
+            out = out.dt.tz_localize(None)
+        return out.dt.normalize()
+
     d = df.copy()
-    ser = pd.to_datetime(d[df_date])
-    if ser.dt.tz is not None:
-        ser = ser.dt.tz_localize(None)
-    d["_date"] = ser.dt.normalize()
-    key = set(zip(hol["country"], hol["date"]))
-    d[out_col] = [int((c, t) in key) for c, t in zip(d[df_country], d["_date"])]
-    countries_without_calendar = sorted(set(d[df_country]) - set(hol["country"]))
+    d["_date"] = _normalize_dates(d[df_date])
+    # The CALENDAR side needs the same normalization. It used to be compared raw, so a
+    # calendar whose dates are strings, datetime.date objects, or tz-aware Timestamps matched
+    # nothing at all and the function returned an all-zero flag with a clean report -- the
+    # feature looked complete and was constant (2026-08-04 adversarial verification).
+    hol = hol.copy()
+    hol["date"] = _normalize_dates(hol["date"])
+    if df_country is None:
+        cals = sorted(set(hol["country"])) if "country" in hol.columns else ["<none>"]
+        if "country" in hol.columns and len(cals) != 1:
+            raise ValueError(
+                f"date-only holiday join needs exactly one calendar in `hol`, got {cals}. "
+                f"With several, which one applies to a row is undefined -- pass df_country "
+                f"and let the country column decide.")
+        key = set(hol["date"])
+        d[out_col] = [int(t in key) for t in d["_date"]]
+        countries_without_calendar = []
+    else:
+        key = set(zip(hol["country"], hol["date"]))
+        d[out_col] = [int((c, t) in key) for c, t in zip(d[df_country], d["_date"])]
+        countries_without_calendar = sorted(set(d[df_country]) - set(hol["country"]))
     report = {
         "out_col": out_col,
         "rows": int(len(d)),

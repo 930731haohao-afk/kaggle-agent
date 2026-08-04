@@ -30,6 +30,25 @@ SPEC: dict[str, tuple[set[str], set[str]]] = {
     "split_policy":  ({"scheme"}, {"time_col", "n_splits", "forbid", "group_col", "shuffle", "random_state"}),
     "postprocess":   (set(), {"round_to_int", "clip_min", "clip_max", "global_scale", "threshold"}),
 }
+def _admitted_source_keys() -> set:
+    """Sources admitted through external_data/admit_source.py's gates.
+
+    The literal set below is the panel-era whitelist; the registry file is how the vocabulary
+    grows without editing this file by hand (2026-08-03 source-layer extension). A key is
+    valid if it is in either -- and the registry only ever contains keys that passed the
+    domain, leakage, snapshot and coverage gates.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+    p = _Path(__file__).parent / "admitted_sources.json"
+    if not p.exists():
+        return set()
+    try:
+        return set(_json.loads(p.read_text()))
+    except Exception:  # noqa: BLE001
+        return set()
+
+
 SOURCES = {"worldbank:gdp_per_capita", "worldbank:gdp_per_capita_const",
            "worldbank:gdp_per_capita_ppp", "worldbank:gdp", "worldbank:gdp_const",
            "worldbank:gdp_growth_pct", "worldbank:population", "worldbank:cpi_inflation",
@@ -79,7 +98,7 @@ def validate(path: Path) -> dict:
         if unknown:
             out["errors"].append(f"{tag} [{op}]: unknown params {sorted(unknown)}")
         src = params.get("source")
-        if src is not None and src not in SOURCES:
+        if src is not None and src not in (SOURCES | _admitted_source_keys()):
             out["errors"].append(f"{tag} [{op}]: source {src!r} is not whitelisted")
         if op in ("ratio_target", "log_offset", "join_feature") and isinstance(params.get("join"), dict):
             if "keys" not in params["join"]:

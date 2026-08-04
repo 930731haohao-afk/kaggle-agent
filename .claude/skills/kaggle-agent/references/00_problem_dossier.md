@@ -34,10 +34,42 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
 3. Match against `knowledge/task_priors.md`: list every [TASK-*] entry whose trigger fits.
 4. Derive the split policy from the match (this pre-empts the shuffled-KFold-on-time-series
    trap: 4.5× optimism bias measured, 4.56 vs. 20.41 SMAPE on s3e19).
-5. Assess external-data need: does the target plausibly depend on covariates absent from the
-   provided files (macro indicators, calendars, geography)? Pick candidates ONLY from the
-   whitelist in `task_priors.md`, each with a join key and a leakage rule.
-6. Express every injection idea as a **typed operator** from
+5. **Rules gate FIRST, before any external-data thinking.** Save the competition's rules text
+   to a file and run
+
+   ```bash
+   python3 external_data/rules_gate.py competitions/<comp>/rules.txt \
+       --config-flag <true|false>  --record-to competitions/<comp>/rules_verdict.json
+   ```
+
+   (omit `--config-flag` if `config.yaml` has no `external_data_allowed`; exit status is the
+   verdict — 0 permitted, 3 forbidden, 4 conflict, 5 unstated). The gate
+   requires a QUOTE and a section reference, treats silence as forbidden (absence of a
+   prohibition is not a permission), and reports a disagreement between `config.yaml` and the
+   rules text as a CONFLICT to verify rather than picking a side — the s3e19 case, where the
+   local flag said no and rules Section 7.C said yes. If the gate does not return
+   `permitted`, external data is off for this competition: say so in the dossier and stop
+   this line of work. A run that ignores the rules is disqualified whatever it scores.
+
+6. Assess external-data need: does the target plausibly depend on covariates absent from the
+   provided files (macro indicators, calendars, geography, reference tables)? Pick candidates
+   from the whitelist in `task_priors.md` (and `external_data/admitted_sources.json`), each
+   with a join key and a leakage rule.
+
+   **If the task needs external data but NO admitted source fits**, you may propose a new one
+   instead of giving up — the vocabulary grows through a procedure, not by improvisation.
+   Write `docs/source_proposals/<key>.json` with the fields
+   `external_data/source_registry.py:SourceSpec` requires (url, publisher, join key class,
+   join/value columns, leakage rule, licence, evidence that the source predates the
+   competition and was not authored by a participant, and a FALSIFIABLE pre-registration of
+   what it is expected to be worth and how that will be judged), implement the fetcher in
+   `external_data/sources.py` following the existing `(frame, meta)` contract, then run
+   `external_data/admit_source.py <proposal>` — it decides, you do not. Refusal is a normal
+   outcome and its reason is printed; do not work around it. Two rules are structural rather
+   than advisory: the host must be a listed general-purpose reference publisher, and a
+   data-sharing platform is excluded outright because a file there may be a competitor's
+   dataset containing the answer, which no leakage test can detect.
+7. Express every injection idea as a **typed operator** from
    `knowledge/injection_operators.md` — that file is the shared vocabulary of this stage and
    the execution layer. Free-text ideas are not executable and get silently dropped (this
    cost s3e19 its whole point: a correct "GDP as a level covariate" judgment reached an
@@ -49,13 +81,13 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    `ratio_target`, and on both competitions measured so far the leaderboard favoured
    `join_feature` — see the form verdict in `knowledge/task_priors.md` TASK-TS-FUTURE.** Anything you want that the operator set cannot
    express goes in `not_recorded`.
-7. **Open pre-registrations are binding.** If the dossier fires external-data need on a
+8. **Open pre-registrations are binding.** If the dossier fires external-data need on a
    country-panel time-series task (TASK-TS-FUTURE class), check `docs/preregistrations/` for
    REGISTERED hypotheses: copy each one's prediction into this dossier's `preregistration`
    field and commit it BEFORE any model is fitted or any leaderboard is consulted. The
    prediction never changes what runs — both forms still race; see
    `docs/preregistrations/horizon_length_form_selector.md`.
-8. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.
+9. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.
 
 ## Output schema — `dossier.json`
 

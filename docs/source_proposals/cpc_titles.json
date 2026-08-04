@@ -1,0 +1,19 @@
+{
+  "key": "cpc:titles",
+  "url": "https://www.cooperativepatentclassification.org/cpc/scheme/titles",
+  "publisher": "Cooperative Patent Classification (EPO/USPTO joint scheme)",
+  "join_key_class": "lookup",
+  "join_columns": ["context"],
+  "value_columns": ["title"],
+  "leakage_rule": "static",
+  "licence": "Public classification scheme, published for free reuse by EPO and USPTO; no redistribution restriction on the code-title table.",
+  "predates_competition": "The CPC scheme has been published since 2013 and the cached vintage is CPC-2024.01; us-patent-phrase-to-phrase-matching opened 2022-03. The scheme predates the competition by ~9 years.",
+  "author_is_not_participant": "Published jointly by the European Patent Office and the USPTO, patent offices rather than competition participants; the table is the classification standard the competition's own context codes refer to.",
+  "expected_value": "Pre-registered: replacing the bare CPC code with its official title text should help a text-pairing model that currently sees the context as an opaque token. Predicted effect on us-patent Pearson r: between +0.000 and +0.010, i.e. small but non-negative, judged against a no-external arm at matched budget. A negative effect would falsify the premise that the code is uninformative as a token.",
+  "notes": "First source of the lookup join key class: no time axis, so the leakage rule is 'static' rather than a lag. Admitted to prove the source layer generalizes past country-panel data.",
+  "fetch": {
+    "module": "external_data.sources",
+    "callable": "fetch_cpc_titles",
+    "kwargs": {}
+  }
+}
