@@ -18,7 +18,8 @@ After Stage 0 (setup) and before Stage 1 (EDA). Cheap: reading + reasoning only,
 
 - Competition description / rules / metric definition (official pages or `config.yaml`)
 - Data schema: column names, dtypes, ranges — a `head`/`describe` of each file is enough here
-- `knowledge/task_priors.md` — the task-level prior library ([TASK-*] entries)
+- The task-level prior library ([TASK-*] entries), read via
+  `python3 knowledge/task_priors_for.py <comp>` — never `knowledge/task_priors.md` raw (step 3)
 
 **Forbidden inputs**: competition-specific discussion threads, public kernels, or write-ups.
 Reproducing competition-specific solutions is the NVIDIA lane's frozen method, not ours; the
@@ -31,7 +32,22 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
 2. Determine the train–test relationship: is the test set a **future time window**? A disjoint
    group? An iid split? State the evidence (date columns, id ranges, description wording). If
    undeterminable from the description, write `"unknown"` — Stage 1 EDA must then resolve it.
-3. Match against `knowledge/task_priors.md`: list every [TASK-*] entry whose trigger fits.
+3. Match against the task-prior library — but read it through the filter, NEVER raw:
+
+   ```bash
+   python3 knowledge/task_priors_for.py <competition-slug>            # the priors you may use
+   python3 knowledge/task_priors_for.py <competition-slug> --report   # what was withheld, and why
+   ```
+
+   List every [TASK-*] entry whose trigger fits, from that output only. **Do not open
+   `knowledge/task_priors.md` directly during a benchmark run.** The raw file is a residue of
+   previous runs: 7 of its 8 entries rest on benchmark competitions, and some cite the other
+   agents' results outright, so reading it hands this competition its own recorded answer and
+   routes around the lane isolation the run is conducted under. The filter drops any prior
+   naming this competition AND drops the whole entry when its evidence set empties — because
+   the Action line *is* the distilled answer, and removing only the citation would leave the
+   recipe with the serial number filed off. If `--report` shows an entry was dropped whole,
+   that is the mechanism working: you had no such prior before you solved that competition.
 4. Derive the split policy from the match (this pre-empts the shuffled-KFold-on-time-series
    trap: 4.5× optimism bias measured, 4.56 vs. 20.41 SMAPE on s3e19).
 5. **Rules gate FIRST, before any external-data thinking.** Save the competition's rules text
@@ -53,7 +69,7 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
 
 6. Assess external-data need: does the target plausibly depend on covariates absent from the
    provided files (macro indicators, calendars, geography, reference tables)? Pick candidates
-   from the whitelist in `task_priors.md` (and `external_data/admitted_sources.json`), each
+   from the whitelist in the filtered library (and `external_data/admitted_sources.json`), each
    with a join key and a leakage rule.
 
    **If the task needs external data but NO admitted source fits**, you may propose a new one
@@ -79,7 +95,7 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    `ratio_target` (or `log_offset`) as separate arms and race them; state in the rationale which
    one you would pick and why, but do not drop either. Reason: the extrapolation argument favours
    `ratio_target`, and on both competitions measured so far the leaderboard favoured
-   `join_feature` — see the form verdict in `knowledge/task_priors.md` TASK-TS-FUTURE.** Anything you want that the operator set cannot
+   `join_feature` — see the form verdict in TASK-TS-FUTURE (via the filtered library).** Anything you want that the operator set cannot
    express goes in `not_recorded`.
 8. **Open pre-registrations are binding.** If the dossier fires external-data need on a
    country-panel time-series task (TASK-TS-FUTURE class), check `docs/preregistrations/` for

@@ -96,7 +96,13 @@ def eval_and_add(tree, parent_id, mutation, cfg):
         import time as _t
         t0 = _t.time()
         try:
-            w, s, _oofs = hv3.eval_blend_with_cost_guard(CACHE_DIR, cfg["members"], metric_fn, tree=tree)
+            # eval_blend_with_cost_guard returns (best_w, best_s, oofs, warning). Unpacking
+            # it into 3 raised ValueError, which the handler below swallowed and booked as an
+            # ordinary failed node -- so EVERY blend node in this competition died before a
+            # single weight was searched, and the tree read as a complete search
+            # (2026-08-04 architecture gate).
+            w, s, _oofs, _warn = hv3.eval_blend_with_cost_guard(
+                CACHE_DIR, cfg["members"], metric_fn, tree=tree)
             nid, _ = hv3.add_node(tree, parent_id, mutation, cfg, round(float(s), 5),
                                   "evaluated", round(_t.time() - t0, 2), kind="blend")
             if nid is not None:

@@ -629,14 +629,24 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                                        f"{vol['threshold_pp']}pp) — the level it carries is "
                                        "contaminated")})
                     if diag["violating_years"] or diag.get("unmeasured_years"):
-                        gate_failures.append("proportionality")
+                        # RECORDED, NOT A GATE. knowledge/injection_operators.md demoted this
+                        # on 2026-07-31 on the strength of a pre-registered falsification:
+                        # s5e1 violated proportionality in 6 of 7 years and ratio_target still
+                        # won the form race decisively (private MAPE 0.12417 vs join_feature's
+                        # 0.15626, paired-significant). The 08-03 sweep (a245b37) reinstated it
+                        # as a blocking gate by mistake, which silently degraded the mandated
+                        # form race to join-vs-baseline-clone on every non-proportional panel --
+                        # make_v5_arm asserts nothing about what it was asked to realize, so the
+                        # arm was still NAMED "ratio". The verdict stays in the ledger; it must
+                        # not decide (2026-08-04).
                         plan["unrealized"].append({
                             "operator": op, "params_subset": "unconditional application",
                             "reason": ("precondition failed: target is not covariate-proportional in "
                                        f"{sorted(diag['violating_years'])} (dispersion "
                                        f"{diag['violating_years']}); the ratio target inherits the "
                                        "broken relationship unless those periods are down-weighted "
-                                       "or excluded (see sample_weight)")})
+                                       "or excluded (see sample_weight). DIAGNOSTIC ONLY -- this "
+                                       "verdict is recorded and does not block the operator.")})
                     if gate_failures and not params.get("force"):
                         # Until 2026-08-03 a failed precondition only added a NOTE: the target
                         # transform was installed anyway and the operator was simultaneously

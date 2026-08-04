@@ -91,7 +91,14 @@ result the library already held because nothing forced a query, and separately r
 over-claiming entry when a correct one sat beside it — evidence-delta-ranked retrieval plus a
 mandatory trace is the fix for both (main report, Open Problems).
 Task-LEVEL priors (problem identification: split policy, external-data need) live separately in
-`knowledge/task_priors.md` and are consumed by Stage 0.5.
+`knowledge/task_priors.md` and are consumed by Stage 0.5 — **and the HARD RULE below applies to
+them too**. It used to say they lived outside it, which made that file the one unfiltered door
+into the library: `run_myagent_headless.sh` forbids reading the other agents' directories, but
+their per-competition results were quoted inside this file, so a lane could read AIDE's winning
+mechanism for s3e11 without touching AIDE's workspace (2026-08-04 architecture gate). Stage 0.5
+now reads the library through `knowledge/task_priors_for.py <comp>`, which enforces the rule at
+ENTRY level: a prior whose evidence rests solely on the competition being solved is dropped
+whole, Action included, because the Action is the answer.
 
 **HARD RULE — never read the answers this competition already produced.** Every bullet ends in a
 `證據: <competition>, exp #N, scoreA -> scoreB` citation. **Skip every bullet whose 證據 names the

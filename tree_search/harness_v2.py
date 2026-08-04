@@ -489,6 +489,12 @@ def _split_sections(text: str):
             stripped = line.strip()
             if stripped.startswith("- "):
                 cur["lines"].append(stripped[2:].strip())
+            elif stripped and cur["lines"] and not stripped.startswith(("#", "|", "```")):
+                # A continuation line belongs to the bullet above it. Dropping it used to
+                # separate a multi-line bullet from its own 證據 tag, so the self-evidence
+                # filter had nothing to match and the bullet was returned unfiltered
+                # (2026-08-04 architecture gate).
+                cur["lines"][-1] += " " + stripped
     return sections
 
 
@@ -530,7 +536,28 @@ def comp_aliases(comp: str) -> list:
     return sorted(al, key=len, reverse=True)
 
 
+def _mentions_own_competition(text: str, aliases: list) -> bool:
+    """Does ANY part of `text` name the competition being solved?
+
+    Scoped to the whole bullet, not just the citation tail. The citation-only version had two
+    holes: a bullet that named the competition in its BODY while citing a different one passed,
+    and `_split_sections` only collects lines starting with '- ', so a multi-line bullet whose
+    證據 sits on an indented continuation line had no citation at all and was never filtered
+    (2026-08-04 architecture gate). Scanning the body is strictly safer: the cost of a false
+    positive is one lost prior, the cost of a miss is an uninterpretable benchmark number.
+    """
+    if not aliases or not text:
+        return False
+    low = text.lower()
+    for a in aliases:
+        if re.search(rf"(?<![0-9a-z]){re.escape(a.lower())}(?![0-9a-z])", low):
+            return True
+    return False
+
+
 def _cites_own_competition(line: str, aliases: list) -> bool:
+    # Kept as the citation-scoped test for callers that need it; the retrieval path now uses
+    # _mentions_own_competition, which also covers the body.
     m = _EVIDENCE_RE.search(line)
     if not m or not aliases:
         return False
@@ -597,7 +624,7 @@ def suggest_priors(comp_meta: dict, experience_path: str = None, max_items: int 
                 if line in seen:
                     continue
                 seen.add(line)
-                if _cites_own_competition(line, aliases):
+                if _mentions_own_competition(line, aliases):
                     dropped.append(line)
                     continue
                 out.append(line)
