@@ -361,8 +361,54 @@ def blend_optimism(cache_dir: str, members: list, y, metric, *, k: int = 1500,
             "n_folds": n_folds, "n_members": n_mem}
 
 
+# BLEND SCORING WAS NOT ONE FUNCTION (fixed 2026-08-04).
+#
+# The search drivers score blend nodes through harness_v3.eval_blend_with_cost_guard, whose
+# defaults are k=800 PLUS a coordinate-ascent refinement pass. The 29 per-competition eval
+# modules score them through this function, whose defaults are k=1500 and NO refinement. So the
+# same blend config received two different scores depending on which path evaluated it, and the
+# search compared them with a single min() -- a node did not have a score, it had a score per
+# route (2026-08-04 architecture gate).
+#
+# Unified here rather than by editing 29 call sites: this is the single place every one of them
+# goes through, and the switch is one constant to flip. Coordinate ascent only accepts strictly
+# improving moves, so unifying UPWARD cannot make any blend worse; it does mean blend scores are
+# not digit-comparable with runs recorded before this date, which is why the constant exists and
+# is stated rather than silently assumed.
+UNIFIED_BLEND_SCORING = True
+UNIFIED_BLEND_K = 1500
+UNIFIED_ASCENT_ROUNDS = 6
+
+
 def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "dirichlet",
-               k: int = 1500, seed: int = 42, grid_step: float = 0.05, target=None):
+               k: int = 1500, seed: int = 42, grid_step: float = 0.05, target=None,
+               unified: bool = None):
+    """Public entry point. Applies the unified scoring contract, then delegates.
+
+    `unified=False` reproduces the pre-2026-08-04 v2 behaviour exactly (k as passed, no
+    refinement) for anyone who needs digit-for-digit comparability with an old run.
+    """
+    use = UNIFIED_BLEND_SCORING if unified is None else unified
+    if not use:
+        return _eval_blend_core(cache_dir, members, metric_fn, weight_search=weight_search,
+                                k=k, seed=seed, grid_step=grid_step, target=target)
+    best_w, best_s, oofs = _eval_blend_core(
+        cache_dir, members, metric_fn, weight_search=weight_search,
+        k=UNIFIED_BLEND_K, seed=seed, grid_step=grid_step, target=target)
+    # Coordinate ascent accepts only strictly improving moves, so this cannot make a blend
+    # worse -- it makes the two routes agree. Imported lazily: harness_v3 imports this module.
+    if best_w is not None and weight_search != "nnls":
+        try:
+            from harness_v3 import _coordinate_ascent_refine
+            best_w, best_s = _coordinate_ascent_refine(
+                oofs, metric_fn, np.asarray(best_w), best_s, rounds=UNIFIED_ASCENT_ROUNDS)
+        except Exception:  # noqa: BLE001 - refinement is an improvement, never a dependency
+            pass
+    return best_w, best_s, oofs
+
+
+def _eval_blend_core(cache_dir: str, members: list, metric_fn, weight_search: str = "dirichlet",
+                     k: int = 1500, seed: int = 42, grid_step: float = 0.05, target=None):
     """Comp-agnostic ensemble node evaluator (recommendation #1): loads each member's
     cached OOF array via `load_oof`, searches blend weights, scores every candidate with
     `metric_fn(blended_oof) -> score` (lower-is-better, same sign convention as

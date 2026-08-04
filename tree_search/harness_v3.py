@@ -643,7 +643,13 @@ def boundary_candidates(config: dict, search_space: dict, *, params_key: str = "
 # ---------------------------------------------------------------------------
 # Feature 5: weight-search default k=800 + coordinate-ascent refinement
 # ---------------------------------------------------------------------------
-DEFAULT_BLEND_K = 800
+# One number, read by BOTH routes, so a blend has one score rather than one per route. Set to
+# the LARGER of the two historical k values (v2's 1500, v3's 800) plus v3's refinement, so the
+# unified scorer dominates both: no competition's blend gets worse because the routes were
+# reconciled. Measured while unifying: k=800+ascent scored 0.2591128 where v2's k=1500 scored
+# 0.2591117 on the same data -- the refinement does NOT automatically pay for a smaller search,
+# which is why "unify upward" had to mean the larger k and not the cheaper default.
+DEFAULT_BLEND_K = 1500
 DEFAULT_ASCENT_ROUNDS = 6
 _ASCENT_DELTAS = (0.05, -0.05, 0.02, -0.02, 0.01, -0.01, 0.005, -0.005)
 
@@ -695,9 +701,12 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
 
     Returns `(best_weights, best_score, oofs)`, same as `harness_v2.eval_blend`.
     """
+    # unified=False: this function applies the refinement itself just below, and passing
+    # through v2's unified wrapper would apply coordinate ascent TWICE and override k
+    # (a layering bug introduced and caught while unifying the two routes, 2026-08-04).
     best_w, best_s, oofs = v2.eval_blend(cache_dir, members, metric_fn,
                                           weight_search=weight_search, k=k, seed=seed,
-                                          grid_step=grid_step)
+                                          grid_step=grid_step, unified=False)
     if coordinate_ascent:
         best_w, best_s = _coordinate_ascent_refine(oofs, metric_fn, best_w, best_s,
                                                      rounds=ascent_rounds)
@@ -711,12 +720,39 @@ DEFAULT_COST_GUARD_THRESHOLD_S = 45.0   # C-2c: s3e5's QWK-after-rounder blend n
 DEFAULT_COST_GUARD_COARSEN_K = 200
 
 
+# Deterministic cost budget, in k x members x rows "weight-search units". Calibrated so the
+# default k=800 coarsens on the shapes the old wall-clock guard actually fired on: a 6-member
+# blend over 500k rows (2.4e9 units) coarsens, a 5-member blend over 100k rows (4e8) does not.
+DEFAULT_COST_BUDGET_UNITS = 1_500_000_000
+
+
+def _oof_rows(cache_dir: str, members: list) -> int:
+    """Row count of the cached OOF vectors — a deterministic stand-in for "how big is this".
+
+    Returns 0 when it cannot be read, which disables coarsening rather than guessing: a guard
+    that fires on unknown input would be another way for the score to depend on the
+    environment.
+    """
+    for nid in members:
+        fp = os.path.join(cache_dir, f"solo_{nid}.npz")
+        if os.path.exists(fp):
+            try:
+                with np.load(fp) as z:
+                    if "_n_rows" in z:          # the identity stamp cache_oof writes
+                        return int(z["_n_rows"])
+                    return int(np.asarray(z["oof"]).shape[0])
+            except Exception:  # noqa: BLE001
+                return 0
+    return 0
+
+
 def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree: dict = None,
                                 weight_search: str = "dirichlet", k: int = DEFAULT_BLEND_K,
                                 wall_time_threshold_s: float = DEFAULT_COST_GUARD_THRESHOLD_S,
                                 coarsen_k: int = DEFAULT_COST_GUARD_COARSEN_K, seed: int = 42,
                                 grid_step: float = 0.05, coordinate_ascent: bool = True,
-                                ascent_rounds: int = DEFAULT_ASCENT_ROUNDS):
+                                ascent_rounds: int = DEFAULT_ASCENT_ROUNDS,
+                                cost_budget_units: int = DEFAULT_COST_BUDGET_UNITS):
     """`eval_blend` (feature 5, above) wrapped with a wall-time guard: if the search
     takes longer than `wall_time_threshold_s` (default 45s, C-2c's s3e5 QWK-blend cost),
     it is re-run at a coarser `coarsen_k` (default 200) -- but ONLY with an explicit
@@ -729,20 +765,27 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
     fast path (nothing coarsened) or the human-readable message describing what was
     coarsened and why.
     """
-    # The guard must decide BEFORE spending, not after. Until 2026-08-03 it ran the full-k
-    # search, noticed the wall time, then re-ran at coarsen_k and returned the COARSER result
-    # -- paying more than the unguarded path and recording a strictly-no-better blend. The
-    # cost signal now comes from what previous blend evals on this tree actually cost.
-    prior = ((tree or {}).get("search_state", {}) or {}).get("blend_wall_log", [])
-    predicted = max(prior[-3:]) if prior else None
+    # The guard must decide BEFORE spending, not after (fixed 2026-08-03). It must also decide
+    # DETERMINISTICALLY (fixed 2026-08-04): the decision used to read `blend_wall_log`, the
+    # MEASURED wall time of previous blend evals on this tree, so a loaded machine coarsened k
+    # from 800 to coarsen_k and returned a different blend SCORE for the same tree and the same
+    # data. The log persists in the tree, so a resume inherited the contention of whatever ran
+    # the night before. A cost guard may decide how much to spend, but nothing that changes the
+    # returned score may depend on how busy the machine was.
+    #
+    # The cost of a weight search is k * n_members * n_rows, all three known before spending.
+    # That is the signal now; measured wall time is still logged, for reporting only.
+    n_rows = _oof_rows(cache_dir, members)
+    predicted_units = (k * max(len(members), 1) * n_rows) if n_rows else None
     warning = None
     k_used = k
-    if predicted is not None and predicted > wall_time_threshold_s and k > coarsen_k:
+    if predicted_units is not None and predicted_units > cost_budget_units and k > coarsen_k:
         k_used = coarsen_k
-        warning = (f"previous blend evals took up to {predicted:.1f}s > "
-                   f"{wall_time_threshold_s:.0f}s threshold (members={members}) -- "
-                   f"COARSENING this eval to k={coarsen_k} BEFORE running it, "
-                   f"logged explicitly per C-2c/E-2 (never silent)")
+        warning = (f"predicted weight-search cost {predicted_units:,} units "
+                   f"(k={k} x {len(members)} members x {n_rows:,} rows) exceeds the "
+                   f"{cost_budget_units:,}-unit budget -- COARSENING to k={coarsen_k} BEFORE "
+                   f"running it, logged explicitly per C-2c/E-2 (never silent). This decision "
+                   f"is a function of the problem size only, so it reproduces.")
 
     t0 = time.time()
     best_w, best_s, oofs = eval_blend(cache_dir, members, metric_fn, weight_search=weight_search,
@@ -756,17 +799,15 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
         if warning is not None:
             st.setdefault("cost_guard_log", []).append(dict(
                 members=members, original_k=k, coarsened_k=coarsen_k,
-                predicted_wall_s=round(predicted, 2), actual_wall_s=round(wall, 2),
-                warning=warning))
+                predicted_cost_units=predicted_units, n_rows=n_rows,
+                actual_wall_s=round(wall, 2), warning=warning))
     if warning is None and wall > wall_time_threshold_s:
-        # over threshold but nothing was coarsened: either the first slow eval on this tree
-        # (the next one will coarsen) or k is already at/below coarsen_k. Log either way --
-        # the contract is that slowness is never silent.
-        warning = (f"blend eval took {wall:.1f}s > {wall_time_threshold_s:.0f}s threshold "
-                   f"(members={members}, k={k_used}); "
-                   + ("k is already <= coarsen_k, no further coarsening available"
-                      if k_used <= coarsen_k else
-                      "recorded -- subsequent blend evals on this tree will be coarsened"))
+        # Over the wall-clock threshold but nothing was coarsened. This is now purely a REPORT:
+        # it does not change k here and must not change k on any later eval, or the score
+        # becomes a function of machine load again.
+        warning = (f"blend eval took {wall:.1f}s > {wall_time_threshold_s:.0f}s "
+                   f"(members={members}, k={k_used}) -- reported, not acted on: coarsening is "
+                   f"decided from the problem size, never from measured time")
         if tree is not None:
             tree["search_state"].setdefault("cost_guard_log", []).append(dict(
                 members=members, original_k=k, coarsened_k=None,

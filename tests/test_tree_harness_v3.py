@@ -273,18 +273,26 @@ def test_boundary_candidates_empty_when_no_params(hv3):
 # ---------------------------------------------------------------------------
 # Feature 5: weight-search default k=800 + coordinate-ascent
 # ---------------------------------------------------------------------------
-def test_eval_blend_default_k_is_800(hv3):
-    assert hv3.DEFAULT_BLEND_K == 800
+def test_eval_blend_default_k_is_the_unified_value(hv3, hv2):
+    """Both routes must read the SAME k, or a blend has one score per route.
+
+    Was 800 (v3) vs 1500 (v2) until 2026-08-04. Unified at the LARGER value plus v3's
+    refinement so the unified scorer dominates both historical routes -- coordinate ascent
+    alone does not pay for a smaller search (measured: k=800+ascent 0.2591128 vs k=1500
+    0.2591117 on the same data)."""
+    assert hv3.DEFAULT_BLEND_K == hv2.UNIFIED_BLEND_K == 1500
 
 
-def test_eval_blend_default_uses_k800(hv3, tmp_path, monkeypatch):
+def test_eval_blend_default_uses_unified_k(hv3, tmp_path, monkeypatch):
     calls = {}
     real_v2_eval_blend = hv3.v2.eval_blend
 
-    def spy(cache_dir, members, metric_fn, weight_search="dirichlet", k=1500, seed=42, grid_step=0.05):
+    def spy(cache_dir, members, metric_fn, weight_search="dirichlet", k=1500, seed=42,
+            grid_step=0.05, target=None, unified=None):
         calls["k"] = k
+        calls["unified"] = unified
         return real_v2_eval_blend(cache_dir, members, metric_fn, weight_search=weight_search,
-                                   k=k, seed=seed, grid_step=grid_step)
+                                   k=k, seed=seed, grid_step=grid_step, unified=unified)
 
     monkeypatch.setattr(hv3.v2, "eval_blend", spy)
     rng = np.random.default_rng(0)
@@ -292,7 +300,10 @@ def test_eval_blend_default_uses_k800(hv3, tmp_path, monkeypatch):
     hv3.cache_oof(str(tmp_path), 0, y)
     hv3.cache_oof(str(tmp_path), 1, rng.normal(size=50))
     hv3.eval_blend(str(tmp_path), [0, 1], lambda v: float(np.mean(np.abs(v - y))))
-    assert calls["k"] == 800
+    assert calls["k"] == 1500
+    # v3 applies the refinement itself, so it must reach the CORE, not v2's unified wrapper --
+    # otherwise coordinate ascent runs twice and the wrapper overrides k (caught 2026-08-04).
+    assert calls["unified"] is False
 
 
 def test_eval_blend_coordinate_ascent_no_worse_than_raw_search(hv3, tmp_path):
@@ -320,7 +331,10 @@ def test_eval_blend_no_coordinate_ascent_matches_v2_exactly(hv3, hv2, tmp_path):
     def mae(v):
         return float(np.mean(np.abs(v - y)))
 
-    w_v2, s_v2, _ = hv2.eval_blend(str(tmp_path), [0, 1], mae, weight_search="dirichlet", k=250, seed=42)
+    # unified=False asks v2 for its pre-2026-08-04 behaviour; v3 with coordinate_ascent=False
+    # and the same k/seed must still reproduce it digit-for-digit.
+    w_v2, s_v2, _ = hv2.eval_blend(str(tmp_path), [0, 1], mae, weight_search="dirichlet", k=250,
+                                    seed=42, unified=False)
     w_v3, s_v3, _ = hv3.eval_blend(str(tmp_path), [0, 1], mae, weight_search="dirichlet", k=250,
                                     seed=42, coordinate_ascent=False)
     assert s_v3 == s_v2
@@ -342,63 +356,80 @@ def test_cost_guard_no_warning_when_fast(hv3, tmp_path):
     assert warning is None
 
 
-def test_cost_guard_warns_and_coarsens_when_slow(hv3, tmp_path):
-    import time as _time
+def test_cost_guard_coarsens_on_predicted_COST_not_measured_time(hv3, tmp_path):
+    """The guard decides from problem size, and the decision must reproduce.
+
+    It used to read `blend_wall_log` -- the MEASURED wall time of previous evals on this tree --
+    so a loaded machine coarsened k and returned a different blend SCORE for the same tree and
+    the same data, and the log persisted so a resume inherited last night's contention
+    (2026-08-04 architecture gate). Cost is now k x members x rows: all three known before
+    spending, none of them a function of the environment.
+    """
     rng = np.random.default_rng(11)
+    y = rng.normal(size=400)
+    for nid in range(3):
+        hv3.cache_oof(str(tmp_path), nid, y + rng.normal(scale=0.3, size=400))
+    mae = lambda v: float(np.mean(np.abs(v - y)))          # noqa: E731
+
+    # budget below the predicted cost -> coarsens, and says so. `tree` is passed because the
+    # coarsening branch also WRITES the cost-guard log, and a test that skips the tree leaves
+    # that branch unexecuted -- which is how a stale variable name survived in it until ruff
+    # caught it (2026-08-04).
+    tree = hv3.new_tree("c")
+    _w, _s, _o, warning = hv3.eval_blend_with_cost_guard(
+        str(tmp_path), [0, 1, 2], mae, tree=tree, k=100, coarsen_k=10,
+        cost_budget_units=1_000)
+    assert warning is not None and "COARSENING" in warning
+    assert "units" in warning, warning
+    log = tree["search_state"]["cost_guard_log"][-1]
+    assert log["coarsened_k"] == 10 and log["predicted_cost_units"] > 1_000
+    assert log["n_rows"] == 400
+
+    # budget above it -> no coarsening, no warning
+    _w, _s, _o, warning = hv3.eval_blend_with_cost_guard(
+        str(tmp_path), [0, 1, 2], mae, k=100, coarsen_k=10,
+        cost_budget_units=10 ** 12)
+    assert warning is None
+
+
+def test_cost_guard_decision_ignores_measured_wall_time(hv3, tmp_path):
+    """Same tree, same data, wildly different timing history -> identical score and weights."""
+    rng = np.random.default_rng(13)
+    y = rng.normal(size=400)
+    for nid in range(3):
+        hv3.cache_oof(str(tmp_path), nid, y + rng.normal(scale=0.4, size=400))
+    mae = lambda v: float(np.mean(np.abs(v - y)))          # noqa: E731
+
+    loaded = {"search_state": {"blend_wall_log": [999.0, 999.0, 999.0]}}
+    idle = {"search_state": {"blend_wall_log": [0.001, 0.001, 0.001]}}
+    w_a, s_a, _o, warn_a = hv3.eval_blend_with_cost_guard(
+        str(tmp_path), [0, 1, 2], mae, tree=loaded, k=60, coarsen_k=5)
+    w_b, s_b, _o, warn_b = hv3.eval_blend_with_cost_guard(
+        str(tmp_path), [0, 1, 2], mae, tree=idle, k=60, coarsen_k=5)
+    assert s_a == s_b, "the blend score depends on how busy the machine was"
+    np.testing.assert_array_equal(w_a, w_b)
+    assert (warn_a is None) == (warn_b is None)
+
+
+def test_cost_guard_reports_slowness_without_acting_on_it(hv3, tmp_path):
+    """A slow eval is still REPORTED -- slowness is never silent -- but it changes nothing."""
+    import time as _time
+    rng = np.random.default_rng(17)
     y = rng.normal(size=30)
     hv3.cache_oof(str(tmp_path), 0, y)
     hv3.cache_oof(str(tmp_path), 1, rng.normal(size=30))
-
-    call_count = {"n": 0}
-
-    def slow_metric(v):
-        call_count["n"] += 1
-        _time.sleep(0.01)  # artificial per-candidate cost to blow the (tiny) threshold
-        return float(np.mean(np.abs(v - y)))
-
-    tree = hv3.new_tree("c")
-    # First slow eval: recorded, NOT coarsened -- the guard must not re-run a completed
-    # search and return the coarser result (that inverted its own purpose; 2026-08-03 audit).
-    calls_before = call_count["n"]
-    _w, s_full, _oofs, warning = hv3.eval_blend_with_cost_guard(
-        str(tmp_path), [0, 1], slow_metric, tree=tree, k=10,
-        wall_time_threshold_s=0.05, coarsen_k=3, coordinate_ascent=False)
-    calls_first = call_count["n"] - calls_before
-    assert warning is not None and "COARSENING" not in warning
-    assert "cost_guard_log" in tree["search_state"]
-
-    # Second eval on the same tree: prior cost is known, so it coarsens BEFORE spending.
-    calls_before = call_count["n"]
-    _w, s_coarse, _oofs, warning = hv3.eval_blend_with_cost_guard(
-        str(tmp_path), [0, 1], slow_metric, tree=tree, k=10,
-        wall_time_threshold_s=0.05, coarsen_k=3, coordinate_ascent=False)
-    calls_second = call_count["n"] - calls_before
-    assert warning is not None and "COARSENING" in warning
-    assert calls_second < calls_first, (calls_second, calls_first)
-    assert s_full <= s_coarse + 1e-9, "a completed full-k result must never be replaced"
-    log = tree["search_state"]["cost_guard_log"][-1]
-    assert log["original_k"] == 10
-    assert log["coarsened_k"] == 3
-
-
-def test_cost_guard_logs_visibility_only_when_already_coarse(hv3, tmp_path):
-    import time as _time
-    rng = np.random.default_rng(13)
-    y = rng.normal(size=20)
-    hv3.cache_oof(str(tmp_path), 0, y)
-    hv3.cache_oof(str(tmp_path), 1, rng.normal(size=20))
 
     def slow_metric(v):
         _time.sleep(0.01)
         return float(np.mean(np.abs(v - y)))
 
     tree = hv3.new_tree("c")
-    _w, _s, _oofs, warning = hv3.eval_blend_with_cost_guard(
-        str(tmp_path), [0, 1], slow_metric, tree=tree, k=3,
-        wall_time_threshold_s=0.001, coarsen_k=3, coordinate_ascent=False)  # k already == coarsen_k -> nothing to coarsen
-    assert warning is not None
-    assert "no further coarsening" in warning
-    assert tree["search_state"]["cost_guard_log"][0]["coarsened_k"] is None
+    _w, _s, _o, warning = hv3.eval_blend_with_cost_guard(
+        str(tmp_path), [0, 1], slow_metric, tree=tree, k=10, coarsen_k=3,
+        wall_time_threshold_s=0.001, cost_budget_units=10 ** 12, coordinate_ascent=False)
+    assert warning is not None and "reported, not acted on" in warning
+    assert "COARSENING" not in warning
+    assert tree["search_state"]["cost_guard_log"][-1]["coarsened_k"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -430,12 +461,20 @@ def test_smoke_s3e3_blend_comparability_v2_vs_v3(hv2, hv3, load_module):
     def neg_auc(vec):
         return -ev.auc(ev._y, vec)
 
-    w_v2, s_v2, _ = hv2.eval_blend(_S3E3_CACHE_DIR, members, neg_auc, weight_search="dirichlet")
+    w_v2, s_v2, _ = hv2.eval_blend(_S3E3_CACHE_DIR, members, neg_auc, weight_search="dirichlet",
+                                    unified=False)
     w_v3, s_v3, _ = hv3.eval_blend(_S3E3_CACHE_DIR, members, neg_auc, weight_search="dirichlet",
                                     k=1500, seed=42, coordinate_ascent=False)
     assert s_v3 == s_v2
     _np.testing.assert_array_equal(w_v3, w_v2)
     assert round(-s_v2, 6) == pytest.approx(0.839448, abs=1e-5)
+
+    # ...and the UNIFIED route must give one score whichever module is asked, and must not be
+    # worse than the historical one it replaces (2026-08-04 architecture gate).
+    _w_u2, s_u2, _ = hv2.eval_blend(_S3E3_CACHE_DIR, members, neg_auc, weight_search="dirichlet")
+    _w_u3, s_u3, _ = hv3.eval_blend(_S3E3_CACHE_DIR, members, neg_auc, weight_search="dirichlet")
+    assert s_u2 == s_u3, "the eval-module route and the driver route disagree on a blend score"
+    assert s_u2 <= s_v2 + 1e-12, "unifying made this blend worse"
 
 
 # ---------------------------------------------------------------------------
