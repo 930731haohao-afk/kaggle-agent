@@ -445,7 +445,9 @@ def _encode_columns(tr: pd.DataFrame, te: pd.DataFrame, scheme: str,
 def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], *,
                     country_col: str = "country", date_col: str = "date",
                     target_col: str = "num_sold",
-                    ledger_path: str | Path | None = None) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+                    ledger_path: str | Path | None = None,
+                    rules_verdict: dict | str | Path | None = None,
+                    allow_unchecked_rules: bool = False) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Realize typed injection operators on (train, test).
 
     Returns (train2, test2, plan) where `plan` carries the coverage ledger plus the
@@ -454,6 +456,34 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
     means fit on log(target / covariate) and invert with exp(pred) * covariate.
     """
     tr, te = train.copy(), test.copy()
+
+    # THE RULES GATE IS BINDING HERE, not merely documented. Stage 0.5 is instructed to run
+    # external_data/rules_gate.py and record a verdict, but nothing checked that verdict before
+    # a fetch -- the gate had never actually been executed on any competition, and an operator
+    # that reaches outside the provided data would have run regardless of what the rules said
+    # (2026-08-04 architecture gate). A run that ignores the rules is disqualified whatever it
+    # scores, so this fails CLOSED: no verdict is not permission.
+    _ext_ops = {"join_feature", "ratio_target", "log_offset", "flag_feature"}
+    _wants_external = any((i.get("operator") in _ext_ops) for i in ideas)
+    if _wants_external and not allow_unchecked_rules:
+        v = rules_verdict
+        if isinstance(v, (str, Path)):
+            vp = Path(v)
+            v = json.loads(vp.read_text()) if vp.exists() else None
+        if v is None:
+            raise ValueError(
+                "this dossier requests external-data operators "
+                f"({sorted(o for o in _ext_ops if any(i.get('operator') == o for i in ideas))}) "
+                "but no rules verdict was supplied. Run "
+                "`python3 external_data/rules_gate.py <rules.txt> --record-to "
+                "competitions/<comp>/rules_verdict.json` and pass rules_verdict=<that path>. "
+                "Absence of a verdict is not permission; pass allow_unchecked_rules=True only "
+                "for offline tests, which is recorded in the ledger.")
+        if (v or {}).get("verdict") != "permitted":
+            raise ValueError(
+                f"external data is not permitted for this competition: rules verdict is "
+                f"{(v or {}).get('verdict')!r} ({(v or {}).get('detail', '')[:160]}). "
+                f"Remove the external-data operators from the dossier and record why.")
 
     # Panel keys are resolved LAZILY (07-30). They used to be computed unconditionally here,
     # which raised KeyError('date') on any competition without a date and a country column --
@@ -798,6 +828,10 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
         except Exception as e:  # noqa: BLE001 — a failed operator is recorded, never hidden
             plan["unrealized"].append({"operator": op, "reason": f"{type(e).__name__}: {e}"})
 
+    if _wants_external:
+        plan["rules_gate"] = ({"verdict": "unchecked (allow_unchecked_rules=True)"}
+                              if allow_unchecked_rules else
+                              {"verdict": "permitted", "checked": True})
     plan["realized_count"] = len(plan["realized"])          # data-layer only, by construction
     plan["emitted_config_count"] = len(plan["emitted_config"])
     plan["advisory_count"] = len(plan["advisory"])

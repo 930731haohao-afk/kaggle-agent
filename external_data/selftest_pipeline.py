@@ -162,7 +162,7 @@ def stage_dispatch_join_ledger() -> None:
                          "as_prefix": "cpc_"},
               "rationale": "the context code is an opaque token to a text model"}]
 
-    tr, te, plan = apply_operators(train, test, ideas, target_col="score")
+    tr, te, plan = apply_operators(train, test, ideas, target_col="score", allow_unchecked_rules=True)
 
     assert plan["added_columns"] == ["cpc_title"], plan["added_columns"]
     ok(f"dispatch reached the lookup path: added {plan['added_columns']}")
@@ -267,7 +267,7 @@ def stage_adversarial() -> None:
     ideas = [{"operator": "join_feature",
               "params": {"source": "cpc:titles", "join": {"on": "no_such_column"}},
               "rationale": "points at a column the competition does not have"}]
-    tr, te, plan = apply_operators(train, test, ideas, target_col="score")
+    tr, te, plan = apply_operators(train, test, ideas, target_col="score", allow_unchecked_rules=True)
     assert plan["added_columns"] == [] and plan["realized"] == [], plan
     assert plan["unrealized"] and "KeyError" in plan["unrealized"][0]["reason"], plan
     ok("a join key absent from the data adds NO column and lands in the ledger with the "
@@ -286,7 +286,7 @@ def stage_adversarial() -> None:
               "params": {"source": "acme:private_feed",
                          "join": {"keys": ["country", "year"], "lag": 0}},
               "rationale": "a source name that was never admitted"}]
-    _, _, plan2 = apply_operators(panel, panel_te, ideas, target_col="num_sold")
+    _, _, plan2 = apply_operators(panel, panel_te, ideas, target_col="num_sold", allow_unchecked_rules=True)
     assert plan2["added_columns"] == [], plan2
     reason = plan2["unrealized"][0]["reason"]
     assert "not a whitelisted yearly covariate" in reason, reason
@@ -544,6 +544,29 @@ def stage_second_revision() -> None:
         raise AssertionError("'calendar' still routes to the holiday path")
     assert dispatch_route("holidays", "date")
     ok("...while the real holiday source still routes")
+
+    # --- the rules gate is BINDING, not merely documented -------------------------------
+    panel = pd.DataFrame({"country": ["Sweden"] * 3, "y": [1.0] * 3,
+                          "date": ["2019-01-01", "2020-01-01", "2021-01-01"]})
+    ext_idea = [{"operator": "join_feature",
+                 "params": {"source": "worldbank:gdp_per_capita",
+                            "join": {"keys": ["country", "year"], "lag": 0}},
+                 "rationale": "x"}]
+    for label, kw in [("no verdict at all", {}),
+                      ("verdict=forbidden", {"rules_verdict": {"verdict": "forbidden"}}),
+                      ("verdict=conflict", {"rules_verdict": {"verdict": "conflict"}}),
+                      ("verdict=unstated", {"rules_verdict": {"verdict": "unstated"}})]:
+        try:
+            apply_operators(panel, panel.drop(columns=["y"]).head(1), ext_idea,
+                            target_col="y", **kw)
+        except ValueError:
+            continue
+        raise AssertionError(f"an external-data operator ran with {label}")
+    ok("external-data operators refuse to run without a 'permitted' verdict (4 cases)")
+    apply_operators(panel, panel.drop(columns=["y"]).head(1),
+                    [{"operator": "trend_term", "params": {"unit": "year", "degree": 1},
+                      "rationale": "x"}], target_col="y")
+    ok("a dossier with no external-data operator still runs unimpeded (no false gate)")
 
 
 def main() -> int:
