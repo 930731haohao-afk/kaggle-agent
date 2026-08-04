@@ -236,6 +236,66 @@ gate. The pattern in what *survived* is the same one this project keeps rediscov
 "someone broke in", but "something was produced, recorded, or asserted, and nothing checked that
 it was consumed or honoured".
 
+## The second revision — 2026-08-04, and why it matters more than the first
+
+Every one of the 15 fixes above passed the repro that found its defect. A second adversarial
+pass then re-ran each original repro against HEAD and, separately, attacked each *fix* with
+four new inputs in the same defect class. The result is the most useful thing this audit
+produced: **only 1 fix of 15 generalized. Two introduced new bugs, one defect was still live,
+and four defeated only the exact input from the audit.**
+
+The lesson is short: *a fix verified only against the input that exposed the bug is a fix
+verified against nothing.*
+
+**The rules gate needed a design change, not a patch.** Clause-scoped negation was defeated by
+a single line break — `"Participants are not\nallowed to use external data"`, i.e. hard-wrapped
+text, exactly what pasting from the rules tab produces. Also by a question (`"Q: Are
+participants allowed to use external data? A: No."`), by negation *after* the phrase
+(`"allowed in the practice competition, not in this one"`), by a table pipe between the negator
+and the phrase, and by a realistic rules page whose binding prohibition read "prohibited from
+using external data sources" while an obsolete permission sat two sections later.
+
+Enumerating how a rules page can say *no* is not a winnable game, and the costs are wildly
+asymmetric: a wrong `forbidden` costs external data on one competition, a wrong `permitted`
+costs a **disqualification**. So the gate stopped trying to be clever and became fail-closed by
+construction. `permitted` now requires *all* of: an explicit, clause-scoped, non-negated,
+non-interrogative permission; **zero restrictive signals anywhere in the document**; zero
+pretrained/model-weight language anywhere; and no scope limiter in the permitting clause.
+
+The second condition is load-bearing. It never has to decide *which* clause binds — that is a
+reading, and a reading is what the gate refuses to make. Any restrictive language anywhere
+means a human reads the page. That converts an unwinnable enumeration problem into a winnable
+one: **the restrictive vocabulary only has to be broad, never complete**, because breadth costs
+a human read and narrowness costs the run. Regression battery: 30 prohibition phrasings must not
+open it, 6 real permissions must — the second half matters as much, since a gate that refuses
+everything is equally broken.
+
+**Two regressions I introduced, both from the same fix.** Normalizing the calendar's dates
+(correct) created a worse bug than the one it fixed: `pd.NaT in {pd.NaT}` is `True` by identity,
+so a calendar with one blank date row began flagging *every data row with a missing date* as a
+holiday — a fabricated `1` where the broken code had at least given a correct `0`, and the
+fabricated count also defeated the all-zero join-failure guard added the same day. Separately,
+the `_matched` indicator column collided with a competition column of that name, and a null key
+on both sides matched itself and imported the reference row's values.
+
+**Still live after the "fix".** The all-null column was recorded in `unrealized` *and* left in
+`added_columns` and the realized entry, so the same column was booked both ways and still
+reached the arm builder. It is now dropped from the frame outright.
+
+**Fixes that only defeated their own repro.** The leakage gate's span check was guarded by
+`isinstance(period, int)`, so a datetime-keyed source skipped it entirely and `lag=99999` was
+read as 99999 *nanoseconds*; string periods crashed with a bare `TypeError` instead of a stated
+refusal; and grouping by `key_cols[0]` alone made the starvation check vacuous whenever the
+frame's first column was not the join key. The `date`-class dispatch route accepted `calendar`
+as an alias — so a NOAA source proposed under that name passed all five admission gates and
+then came back as national holiday flags under the requested column name.
+
+**And one the first fix could not have seen.** A holiday calendar can cover an *entity* and
+still not cover every *year* of the panel — `holidays==0.101` starts Spain in 2008 and Fiji in
+2016. Both `meta["unmatched"]` and `countries_without_calendar` report "fine" there, so the only
+witness is the flags themselves: a real calendar fires at least once in a full year. Zero
+flags across a full year for an entity is now reported as an uncovered entity-year.
+
 ## What did not change
 
 - No existing behaviour. A source absent from the registry keeps the `country_year` default, so

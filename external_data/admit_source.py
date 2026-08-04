@@ -103,18 +103,45 @@ def check_leakage(spec: SourceSpec, frame: pd.DataFrame, *, period_col: str = "p
     # verification). What must actually be checked is that the source can SUPPLY a value under
     # its own declared lag: for each key, at least one period must have a usable predecessor,
     # and the declared lag must not exceed the source's own coverage span.
-    span = periods[-1] - periods[0] if isinstance(periods[0], (int, np.integer)) else None
-    if span is not None and lag > span:
+    # The lag's UNIT follows the key class, and getting that wrong is silent. The first fix
+    # guarded the span check with `isinstance(periods[0], int)`, so a datetime64 period column
+    # skipped it entirely -- and `ps[-1] - lag` on a datetime64 subtracts NANOSECONDS, so
+    # lag=99999 read as 99999ns and a wildly over-declared lag passed (2026-08-04).
+    if pd.api.types.is_datetime64_any_dtype(frame[period_col]):
+        step = pd.Timedelta(days=30) if spec.join_key_class == "currency_month" \
+            else pd.Timedelta(days=1)
+        lag_delta = step * lag
+        span = periods[-1] - periods[0]
+    elif isinstance(periods[0], (int, np.integer)):
+        lag_delta = lag
+        span = periods[-1] - periods[0]
+    else:
         raise SourceRejected(
-            f"{spec.key!r}: declared lag={lag} exceeds the source's own coverage span "
-            f"({periods[0]}..{periods[-1]}, span {span}). Under this rule no prediction row "
-            f"could ever be given a value, so the source cannot support the rule it declares.")
+            f"{spec.key!r}: period column has dtype {frame[period_col].dtype} "
+            f"(e.g. {periods[0]!r}); the lag cannot be arithmetic on it. Emit integer periods "
+            f"(years) or real datetimes -- strings are refused rather than guessed at.")
+    if lag_delta > span:
+        raise SourceRejected(
+            f"{spec.key!r}: declared lag={lag} ({lag_delta}) exceeds the source's own coverage "
+            f"span ({periods[0]}..{periods[-1]}, span {span}). Under this rule no prediction "
+            f"row could ever be given a value, so the source cannot support the rule it "
+            f"declares.")
+
+    # Group by EVERY key column. Grouping on key_cols[0] alone hid a starved key whenever the
+    # frame's first non-period column was not the join key -- a constant leading column
+    # collapsed every entity into one group and the check became vacuous (2026-08-04).
+    if frame[key_cols].isna().all(axis=None):
+        raise SourceRejected(
+            f"{spec.key!r}: key column(s) {key_cols} are entirely null, so the lag check has "
+            f"nothing to group by and would pass vacuously.")
     starved = []
-    for kval, grp in frame.groupby(key_cols[0], observed=True):
+    for kval, grp in frame.dropna(subset=key_cols).groupby(key_cols, observed=True):
         ps = sorted(pd.unique(grp[period_col]))
         # the latest row this key could serve is ps[-1]; it needs some p <= ps[-1] - lag
-        if not any(p <= ps[-1] - lag for p in ps):
+        if not any(p <= ps[-1] - lag_delta for p in ps):
             starved.append(str(kval))
+    if not starved and not len(frame.dropna(subset=key_cols)):
+        raise SourceRejected(f"{spec.key!r}: no rows with a non-null key to check the lag on")
     if starved:
         raise SourceRejected(
             f"{spec.key!r}: lag={lag} leaves {len(starved)} key(s) with no usable value at "
@@ -195,6 +222,14 @@ def evaluate(spec: SourceSpec, fetch) -> dict:
     frame, meta = fetch()
     if not isinstance(frame, pd.DataFrame) or frame.empty:
         raise SourceRejected(f"{spec.key!r}: fetcher returned no rows")
+    if not isinstance(spec.ext_key, str) or not spec.ext_key.strip():
+        raise SourceRejected(
+            f"{spec.key!r}: ext_key must be a non-empty column name, got {spec.ext_key!r}")
+    if spec.join_key_class == "lookup" and spec.ext_key not in frame.columns:
+        raise SourceRejected(
+            f"{spec.key!r}: ext_key {spec.ext_key!r} is not a column of the fetched frame "
+            f"({list(frame.columns)}). evaluate() used to check value_columns but not the KEY, "
+            f"so a typo there was admitted and then failed mid-competition in the join.")
     missing_vals = [c for c in spec.value_columns if c not in frame.columns]
     if missing_vals:
         raise SourceRejected(f"{spec.key!r}: declared value_columns {missing_vals} are absent "
@@ -229,6 +264,8 @@ def admit(spec: SourceSpec, evidence: dict) -> Path:
 
 def _spec_from_json(path: Path) -> tuple[SourceSpec, dict]:
     d = json.loads(Path(path).read_text())
+    if not isinstance(d, dict):
+        raise SourceRejected(f"{path}: proposal must be a JSON object, got {type(d).__name__}")
     fetch_spec = d.pop("fetch", None)
     known = set(SourceSpec.__dataclass_fields__)
     unknown = sorted(set(d) - known)
@@ -250,9 +287,23 @@ def _spec_from_json(path: Path) -> tuple[SourceSpec, dict]:
 def _resolve_fetch(fetch_spec: dict):
     """Resolve the proposal's fetcher: {"module": "...", "callable": "...", "kwargs": {...}}."""
     import importlib
-    mod = importlib.import_module(fetch_spec["module"])
-    fn = getattr(mod, fetch_spec["callable"])
-    kwargs = fetch_spec.get("kwargs", {})
+    if not isinstance(fetch_spec, dict) or not fetch_spec:
+        raise SourceRejected('proposal has no "fetch" block: {"module": ..., "callable": ...}')
+    unknown = sorted(set(fetch_spec) - {"module", "callable", "kwargs"})
+    missing = [k for k in ("module", "callable") if k not in fetch_spec]
+    if missing or unknown:
+        raise SourceRejected(
+            f'proposal "fetch" block is malformed: missing {missing}, unknown {unknown}. '
+            f'Expected {{"module": "external_data.sources", "callable": "fetch_x", '
+            f'"kwargs": {{}}}}.')
+    try:
+        mod = importlib.import_module(fetch_spec["module"])
+        fn = getattr(mod, fetch_spec["callable"])
+    except (ImportError, AttributeError) as e:
+        raise SourceRejected(f'proposal "fetch" names an unresolvable callable: {e}') from None
+    kwargs = fetch_spec.get("kwargs") or {}
+    if not isinstance(kwargs, dict):
+        raise SourceRejected(f'proposal "fetch".kwargs must be an object, got {type(kwargs).__name__}')
     return lambda: fn(**kwargs)
 
 

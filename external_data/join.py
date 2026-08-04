@@ -79,6 +79,17 @@ def _to_period(series: pd.Series, freq: str, unit: str, side: str) -> pd.Series:
     raise ValueError(f"unknown time unit '{unit}' (datetime|month_ordinal|day_ordinal)")
 
 
+def _key_list(values) -> list[str]:
+    """Sorted, stringified, de-duplicated keys for a report.
+
+    `astype(str)` does NOT reliably turn a missing value into "nan" (pandas keeps NA), so
+    sorting a set that mixes real keys with NA raises TypeError -- from inside the REPORT
+    builder, discarding a join that had already succeeded (2026-08-04 adversarial
+    verification). Stringify per element and sort the strings.
+    """
+    return sorted({str(v) for v in values if pd.notna(v)})
+
+
 def _mapping_collisions(d: pd.DataFrame, df_key: str, mapped_col: str) -> dict[str, list[str]]:
     """mapped-key -> [distinct df keys] for every mapped key hit by >1 df key."""
     pairs = d[[df_key, mapped_col]].dropna().drop_duplicates()
@@ -114,8 +125,8 @@ def merge_year_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_country: str,
     # duplicate (key, year) rows: keep last, count in report (masks nothing silently)
     e = e.drop_duplicates([ext_key, ext_year], keep="last").sort_values([ext_key, ext_year])
 
-    unmatched_countries = sorted(d.loc[d["_iso3"].isna(), df_country].astype(str).unique().tolist())
-    keys_not_in_ext = sorted(set(d["_iso3"].dropna()) - set(e[ext_key])) if len(e) else []
+    unmatched_countries = _key_list(d.loc[d["_iso3"].isna(), df_country])
+    keys_not_in_ext = _key_list(set(d["_iso3"].dropna()) - set(e[ext_key])) if len(e) else []
     collisions = _mapping_collisions(d, df_country, "_iso3")
 
     if e.empty:
@@ -225,8 +236,8 @@ def merge_period_safe(df: pd.DataFrame, ext: pd.DataFrame, *, freq: str,
     got = merged.dropna(subset=["_used_period"])
     _assert_no_future(got, "_used_period", "_row_period", lag, f"freq={freq}, lag={lag}")
 
-    unmatched_keys = sorted(d.loc[d["_key"].isna(), df_key].astype(str).unique().tolist())
-    keys_not_in_ext = sorted(set(d["_key"].dropna()) - set(e["_key"])) if len(e) else []
+    unmatched_keys = _key_list(d.loc[d["_key"].isna(), df_key])
+    keys_not_in_ext = _key_list(set(d["_key"].dropna()) - set(e["_key"])) if len(e) else []
     any_match = merged[value_cols].notna().any(axis=1)
     report = {
         "value_cols": value_cols, "freq": freq, "lag": lag,
@@ -298,26 +309,36 @@ def merge_lookup_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_key: str,
     out_cols = list(rename.values())
     e = e.rename(columns=rename)
 
-    left_keys = d[df_key].astype(str)
+    # A key that is MISSING must never join. astype(str) turns NaN/None into the string "nan",
+    # so a null key on both sides matched itself and quietly imported that row's values
+    # (2026-08-04, a regression introduced by the previous fix). Keep the null mask explicitly.
+    left_null = d[df_key].isna()
+    left_keys = d[df_key].astype(str).mask(left_null, other=pd.NA)
     e = e.rename(columns={ext_key: "_k"})
-    # An explicit match indicator. Using "the first value column is null" as a proxy for "the
-    # key did not resolve" conflates a key that is ABSENT from the reference with a key that
-    # resolved to a row whose first value happens to be null -- it undercounts rows_matched,
-    # names resolved keys as unresolved, and (once the total-miss guard existed) could abort a
-    # join in which every key matched (2026-08-04 adversarial verification).
-    e["_matched"] = True
+    e = e[e["_k"].notna() & (e["_k"].astype(str) != "nan")]
+
+    # An explicit match indicator, under a name that cannot collide with a real column.
+    # Using "the first value column is null" as a proxy for "the key did not resolve"
+    # conflates a key ABSENT from the reference with a key that resolved to a row whose first
+    # value happens to be null; but a fixed sentinel name collided with a competition column
+    # called _matched, and with an output column of that name (2026-08-04).
+    taken = set(d.columns) | set(e.columns) | set(out_cols)
+    mcol = "_matched"
+    while mcol in taken:
+        mcol += "_"
+    e[mcol] = True
     merged = d.assign(_k=left_keys).merge(e, on="_k", how="left")
     merged = merged.sort_values("_orig_order").reset_index(drop=True)
     assert len(merged) == len(df), (
         f"lookup join changed the row count ({len(df)} -> {len(merged)}); duplicate keys "
         f"survived de-duplication")
 
-    unresolved_mask = merged["_matched"].isna()
+    unresolved_mask = merged[mcol].isna()
     # str() every key before sorting: under pandas 3 astype(str) preserves NA rather than
     # producing 'nan', and sorted() on a list mixing str with NA raises TypeError -- which
     # discarded a join that had already succeeded, from inside the REPORT builder
     # (2026-08-04 adversarial verification).
-    unresolved_keys = sorted({str(k) for k in left_keys[unresolved_mask.to_numpy()].unique()})
+    unresolved_keys = _key_list(left_keys[unresolved_mask.to_numpy()].unique())
     if unresolved_mask.all() and len(df):
         # Same failure as an empty table, reached by a different route: a non-empty reference
         # whose key space does not overlap the competition's (wrong column, wrong code
@@ -329,7 +350,7 @@ def merge_lookup_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_key: str,
             f"(data e.g. {left_keys.unique()[:3].tolist()}, "
             f"reference e.g. {e['_k'].unique()[:3].tolist() if '_k' in e else ext[ext_key].astype(str).unique()[:3].tolist()}). "
             f"This is a wiring error, not a weak feature.")
-    out = merged.drop(columns=["_k", "_orig_order", "_matched"])
+    out = merged.drop(columns=["_k", "_orig_order", mcol])
 
     report = {
         "out_cols": out_cols,
@@ -347,6 +368,7 @@ def merge_lookup_safe(df: pd.DataFrame, ext: pd.DataFrame, *, df_key: str,
         "all_null_columns": [c for c in out_cols if merged[c].isna().all()],
         "ext_duplicates_dropped": n_dup,
         "ext_rows": int(len(ext)),
+        "rows_with_no_key": int(left_null.sum()),
         "source_meta": meta or {},
         "joined_at": datetime.now().isoformat(timespec="seconds"),
     }
@@ -369,39 +391,58 @@ def merge_holiday_flags(df: pd.DataFrame, hol: pd.DataFrame, *, df_country: str 
     fired on country panels (2026-08-03 source-layer extension). In that form `hol` must
     carry exactly one country, so the calendar being applied is unambiguous.
     """
-    def _normalize_dates(s: pd.Series) -> pd.Series:
+    def _normalize_dates(s: pd.Series, what: str) -> pd.Series:
+        # Refuse numerics rather than guessing. pd.to_datetime(20240101) is 1970-01-01 plus
+        # 20240101 NANOSECONDS, so an int-encoded calendar silently collapses to one instant:
+        # every row matches or none does, and the report looks clean either way. The sibling
+        # helper _to_period already refuses this input; this one used to guess (2026-08-04).
+        if pd.api.types.is_numeric_dtype(s):
+            raise ValueError(
+                f"{what} date column is numeric ({s.dtype}); pass real dates or parsed "
+                f"Timestamps. Interpreting integers as datetimes collapses them all to the "
+                f"epoch and produces an all-or-nothing match with a clean-looking report.")
         out = pd.to_datetime(s)
         if getattr(out.dt, "tz", None) is not None:
             out = out.dt.tz_localize(None)
         return out.dt.normalize()
 
     d = df.copy()
-    d["_date"] = _normalize_dates(d[df_date])
+    d["_date"] = _normalize_dates(d[df_date], "competition")
     # The CALENDAR side needs the same normalization. It used to be compared raw, so a
     # calendar whose dates are strings, datetime.date objects, or tz-aware Timestamps matched
     # nothing at all and the function returned an all-zero flag with a clean report -- the
     # feature looked complete and was constant (2026-08-04 adversarial verification).
     hol = hol.copy()
-    hol["date"] = _normalize_dates(hol["date"])
+    hol["date"] = _normalize_dates(hol["date"], "calendar")
+    # NaT must never join. `pd.NaT in {pd.NaT}` is True by IDENTITY, so once both sides were
+    # normalized a calendar row with a blank date started flagging every data row with a
+    # missing date as a holiday -- a fabricated 1 where the pre-fix code gave a correct 0, and
+    # the fabricated count also defeats apply.py's all-zero join-failure guard (2026-08-04).
+    n_nat_cal = int(hol["date"].isna().sum())
+    hol = hol[hol["date"].notna()]
     if df_country is None:
-        cals = sorted(set(hol["country"])) if "country" in hol.columns else ["<none>"]
+        cals = _key_list(hol["country"]) if "country" in hol.columns else ["<none>"]
         if "country" in hol.columns and len(cals) != 1:
             raise ValueError(
                 f"date-only holiday join needs exactly one calendar in `hol`, got {cals}. "
                 f"With several, which one applies to a row is undefined -- pass df_country "
                 f"and let the country column decide.")
         key = set(hol["date"])
-        d[out_col] = [int(t in key) for t in d["_date"]]
+        d[out_col] = [0 if pd.isna(t) else int(t in key) for t in d["_date"]]
         countries_without_calendar = []
     else:
         key = set(zip(hol["country"], hol["date"]))
-        d[out_col] = [int((c, t) in key) for c, t in zip(d[df_country], d["_date"])]
-        countries_without_calendar = sorted(set(d[df_country]) - set(hol["country"]))
+        d[out_col] = [0 if pd.isna(t) else int((c, t) in key)
+                      for c, t in zip(d[df_country], d["_date"])]
+        countries_without_calendar = sorted(
+            str(c) for c in set(d[df_country]) - set(hol["country"]) if pd.notna(c))
     report = {
         "out_col": out_col,
         "rows": int(len(d)),
         "holiday_rows": int(d[out_col].sum()),
         "countries_without_calendar": [str(x) for x in countries_without_calendar],
+        "rows_with_no_date": int(d["_date"].isna().sum()),
+        "calendar_rows_with_no_date": n_nat_cal,
         "source_meta": meta or {},
         "joined_at": datetime.now().isoformat(timespec="seconds"),
         "leakage_check": "n/a (deterministic calendar)",

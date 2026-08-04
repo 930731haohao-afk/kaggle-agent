@@ -48,46 +48,94 @@ from pathlib import Path
 #   3. matching runs case-insensitively on the ORIGINAL text, never on a lowercased copy, since
 #      str.lower() is not length-preserving in Unicode and the offsets drifted (a 'permitted'
 #      verdict could be recorded with an empty quote, violating the module's own invariant).
+# 2026-08-04, SECOND REVISION, and the reason is worth stating because it is a design change
+# rather than another patch. The first version failed open on "Participants are NOT allowed to
+# use external data" (a permit pattern matching inside its own negation). The second version
+# added clause-scoped negation -- and an adversarial probe then broke it with a single line
+# break: "Participants are not\nallowed to use external data", i.e. hard-wrapped rules text,
+# which is exactly what pasting from the rules tab produces. It also fell to "Q: Are
+# participants allowed to use external data? A: No.", to "allowed ... in the practice
+# competition, not in this one", and to a real rules page whose binding prohibition was phrased
+# "prohibited from using external data sources" while an obsolete quoted permission sat two
+# sections later.
+#
+# The lesson is that enumerating how a rules page can say "no" is not a winnable game, and the
+# costs are wildly asymmetric: a wrong "forbidden" costs us external data on one competition, a
+# wrong "permitted" costs a DISQUALIFICATION. So the gate no longer tries to be clever. It is
+# fail-closed by construction:
+#
+#   permitted  REQUIRES  (a) an explicit, clause-scoped, non-negated, non-interrogative
+#                            permission, AND
+#                        (b) ZERO restrictive signals anywhere in the entire document, AND
+#                        (c) ZERO pretrained/model-weight language anywhere in the document, AND
+#                        (d) no scope limiter in the permitting clause.
+#   anything else resolves to forbidden / conflict / unstated -- all of which keep the gate shut.
+#
+# (b) is the load-bearing rule. It does not need to know WHICH prohibition is binding; the mere
+# presence of restrictive language anywhere means a human must read the page. That converts an
+# unwinnable enumeration problem into a winnable one: the restrictive vocabulary only has to be
+# broad, never complete, because breadth costs a human read and narrowness costs the run.
+_EXT = r"external\s+data(?:sets?)?|external\s+data\s+sources?|outside\s+data|third[-\s]party\s+data"
+
 _PERMIT_PATTERNS = [
-    r"external data (?:is|are) allowed",
-    r"use of external data is allowed",
-    r"(?:you|participants|entrants|teams) may use (?:publicly available )?external data",
-    r"external data:?\s*(?:is\s+)?permitted",
-    r"publicly available external data (?:is|are) allowed",
-    r"allowed to use (?:publicly available )?external data",
-    r"external data\s*[:|\-–]\s*\**\s*(?:allowed|permitted|yes)\b",
-]
-_FORBID_PATTERNS = [
-    # "is not allowed" / "is **not** permitted" / "| External data | Not allowed |"
-    r"external data\b[^.\n|]{0,40}?\**\s*not\s*\**\s*(?:allowed|permitted)",
-    r"external data\s*[:|\-–]\s*\**\s*(?:not allowed|not permitted|prohibited|forbidden|no)\b",
-    r"external data (?:is|are) (?:prohibited|forbidden|disallowed)",
-    r"use of external data is (?:not allowed|not permitted|prohibited|forbidden)",
-    r"no external data",
-    r"(?:may|must) not use (?:any )?(?:additional |outside |third[- ]party )?external data",
-    r"not (?:allowed|permitted) to use (?:any )?(?:publicly available )?external data",
-    # the "provided data only" family, which never says the words "external data"
-    r"(?:may|must|can) not use (?:any )?data other than",
-    r"(?:no|any) data other than the (?:competition|provided|training) data",
-    r"only the (?:provided|competition) data may be used",
-    r"restricted to the (?:provided|competition) data",
-    r"solely (?:from|on) the (?:provided|competition) data",
+    rf"(?:{_EXT})\s+(?:is|are)\s+allowed",
+    rf"use of (?:{_EXT}) is allowed",
+    rf"(?:you|participants|entrants|teams) may use (?:publicly available )?(?:{_EXT})",
+    rf"(?:{_EXT}):?\s*(?:is\s+)?permitted",
+    rf"publicly available (?:{_EXT}) (?:is|are) allowed",
+    rf"allowed to use (?:publicly available )?(?:{_EXT})",
+    rf"(?:{_EXT})\s*[:|\-–]\s*\**\s*(?:allowed|permitted|yes)\b",
 ]
 
-# Words that flip a permission when they appear in the clause BEFORE the matched phrase.
-_NEGATORS = re.compile(
-    r"\b(?:not|never|cannot|can't|won't|may\s+not|must\s+not|shall\s+not|"
-    r"prohibit(?:ed|s)?|forbid(?:den|s)?|disallow(?:ed|s)?|barred|no)\b|\bnot\b", re.I)
+# Restrictive signals. ANY occurrence anywhere in the document makes "permitted" unreachable.
+# Deliberately broad: a false hit costs a human reading the rules, a miss costs the run.
+_RESTRICTIVE = [
+    r"\bprohibit(?:ed|s|ion)?\b", r"\bforbid(?:den|s)?\b", r"\bban(?:ned|s)?\b",
+    r"\bbarred\b", r"\bdisallow(?:ed|s)?\b", r"\bnot\s+(?:be\s+)?(?:allowed|permitted)\b",
+    r"\bmay\s+not\b", r"\bmust\s+not\b", r"\bshall\s+not\b", r"\bcannot\b", r"\bcan\s?not\b",
+    r"\bdo\s+not\s+use\b", r"\bnever\s+use\b",
+    rf"\bno\s+(?:{_EXT})\b", r"\bno\s+(?:additional|other|outside|third[-\s]party)\s+data\b",
+    r"\bdata\s+other\s+than\b", r"\bother\s+than\s+the\s+(?:competition|provided|training)\s+data\b",
+    r"\bonly\s+the\s+(?:provided|competition|training)\s+data\b",
+    r"\brestricted\s+to\s+the\b", r"\b(?:competition|provided|training)\s+data\s+alone\b",
+    r"\bsolely\s+(?:from|on|using)\s+the\b", r"\bstrictly\s+(?:prohibited|forbidden)\b",
+]
 
 # A permission whose SUBJECT is a pretrained model is not a permission to join external data.
 # The two are routinely granted separately ("pretrained weights are fine; do not join extra
 # data"), and conflating them is how a run gets disqualified while believing it was compliant.
+# Checked DOCUMENT-WIDE, not clause-locally: the probe defeated the clause-local version with a
+# semicolon ("...allowed to use external data; specifically, pretrained weights are fine...").
 _PRETRAINED = re.compile(
     r"\bpre[-\s]?trained\b|\bpretrained\b|\bmodel weights\b|\bfoundation model\b|"
-    r"\bcheckpoints?\b|\bembeddings? (?:model|weights)\b", re.I)
+    r"\bcheckpoints?\b|\bbackbones?\b|\bimagenet\b|\btransfer learning\b|"
+    r"\bembeddings? (?:model|weights)\b", re.I)
 
-# Clause boundaries: sentence enders, newlines, and the pipes/bullets of tables and lists.
-_CLAUSE_SPLIT = re.compile(r"(?<=[.;!?])\s+|\n+|\s*\|\s*|\s+[•\-–]\s+")
+# Scope limiters: a permission that applies somewhere else, or only under a condition, is not a
+# permission here. ("allowed only in the sandbox arena", "allowed in the practice competition")
+_SCOPE_LIMITER = re.compile(
+    r"\bonly\b|\bunless\b|\bexcept\b|\bpractice competition\b|\bsandbox\b|\bprevious season\b|"
+    r"\blast (?:year|season)\b|\bdo not carry over\b|\bno longer\b|\bformerly\b", re.I)
+
+# Words that flip a permission when they appear before the matched phrase. Bare "no" is NOT here:
+# it wrongly negated "There is no restriction on data sources: external data is allowed."
+_NEGATORS = re.compile(
+    r"\b(?:not|never|cannot|can'?t|won'?t|nor|neither|"
+    r"prohibit(?:ed|s)?|forbid(?:den|s)?|disallow(?:ed|s)?|barred|banned)\b", re.I)
+
+# Clause boundaries: sentence enders, colons, blank lines, table pipes and line-initial bullets.
+# A single newline is NOT a boundary -- rules text is hard-wrapped, and treating a wrap as a
+# clause end is precisely what let "not\nallowed to use external data" read as a permission.
+_CLAUSE_SPLIT = re.compile(r"(?<=[.;!?:])\s+|\n\s*\n|\s*\|\s*|(?:^|\n)\s*[•*]\s+")
+
+# Hard-wrap normalizer: join a line to the next when the break is cosmetic (no sentence end, no
+# blank line, next line does not start a new numbered section or bullet).
+_HARD_WRAP = re.compile(r"(?<![.;!?:])\n(?!\s*\n)(?!\s*(?:\d+[.)]|[•*\-]|\|))[ \t]*")
+
+
+def _unwrap(text: str) -> str:
+    """Undo cosmetic line wrapping so clause scoping sees whole sentences."""
+    return _HARD_WRAP.sub(" ", text)
 
 # A section heading near the decisive sentence, so the record can cite where it came from.
 _SECTION_RE = re.compile(r"(?:^|\n)\s*((?:section\s+)?\d+(?:\.\d+)*\.?\s*[A-Z]?\.?)\s", re.I)
@@ -127,17 +175,24 @@ def _clause_around(text: str, start: int, end: int) -> tuple[str, int]:
 def _hits(patterns: list[str], text: str, *, drop_negated: bool) -> list[dict]:
     """Every match of any pattern, each re-read inside its own clause.
 
-    `drop_negated` is set for the permit list: a permission phrase preceded by a negator in
-    the same clause is not a permission, it is the prohibition that phrase appears inside.
-    Returned in document order so the recorded quote is the first real occurrence.
+    `drop_negated` is set for the permit list: a permission phrase negated in its own clause is
+    not a permission, it is the prohibition that phrase appears inside. Negation is checked in
+    the clause AND in a raw window immediately before the match, because a table pipe or a
+    stray boundary can sit between the negator and the phrase ("not | allowed to use...").
     """
     out: list[dict] = []
     for pat in patterns:
         for m in re.finditer(pat, text, re.I):
             clause, clause_start = _clause_around(text, m.start(), m.end())
-            before = text[clause_start:m.start()]
-            negated = bool(_NEGATORS.search(before))
-            if drop_negated and negated:
+            before_clause = text[clause_start:m.start()]
+            before_raw = text[max(0, m.start() - 60):m.start()]
+            after_clause = clause[m.end() - clause_start:] if m.end() > clause_start else ""
+            negated = bool(_NEGATORS.search(before_clause) or _NEGATORS.search(before_raw)
+                           # "allowed in the practice competition, NOT in this one"
+                           or _NEGATORS.search(after_clause))
+            # A permission inside a QUESTION is not a permission; the answer is elsewhere.
+            interrogative = clause.rstrip().endswith("?") or clause.lstrip().lower().startswith(("q:", "q."))
+            if drop_negated and (negated or interrogative):
                 continue
             secs = _SECTION_RE.findall(text[:m.start()])
             out.append({
@@ -146,10 +201,23 @@ def _hits(patterns: list[str], text: str, *, drop_negated: bool) -> list[dict]:
                 "clause": clause.strip(),
                 "quote": text[max(0, m.start() - 220):m.end() + 220].strip(),
                 "section": secs[-1].strip() if secs else "",
-                "pretrained_subject": bool(_PRETRAINED.search(clause)),
+                "scope_limited": bool(_SCOPE_LIMITER.search(clause)),
             })
     out.sort(key=lambda h: h["start"])
     return out
+
+
+def _restrictive_signals(text: str) -> list[str]:
+    """Every restrictive phrase anywhere in the document, verbatim.
+
+    Presence of ANY of these makes "permitted" unreachable. The gate does not try to decide
+    which clause binds -- that is a reading, and a reading is what it is refusing to do.
+    """
+    found = []
+    for pat in _RESTRICTIVE:
+        for m in re.finditer(pat, text, re.I):
+            found.append(m.group(0).strip())
+    return sorted(set(found), key=str.lower)
 
 
 def evaluate_rules(rules_text: str, *, config_flag: bool | None = None) -> RulesVerdict:
@@ -160,62 +228,97 @@ def evaluate_rules(rules_text: str, *, config_flag: bool | None = None) -> Rules
     disagreement is surfaced as a conflict for a human (or a documented rules citation) to
     settle -- the s3e19 behaviour.
     """
-    if not (rules_text or "").strip():
-        return RulesVerdict(
-            "unstated", config_flag=config_flag,
-            detail="no rules text supplied; the gate cannot grant permission it has not read")
-
-    permits = _hits(_PERMIT_PATTERNS, rules_text, drop_negated=True)
-    forbids = _hits(_FORBID_PATTERNS, rules_text, drop_negated=False)
-
-    if permits and forbids:
-        p, f = permits[0], forbids[0]
-        return RulesVerdict(
-            "conflict", quote=f"PERMIT: {p['quote']}\n---\nFORBID: {f['quote']}",
-            section=f"{p['section']} / {f['section']}", config_flag=config_flag,
-            detail=f"the rules text contains {len(permits)} permission-shaped and "
-                   f"{len(forbids)} prohibition-shaped clause(s); resolve by reading the full "
-                   f"clauses before any fetch -- do not pick one")
-    if forbids:
-        f = forbids[0]
-        v = RulesVerdict("forbidden", quote=f["quote"], section=f["section"],
-                         config_flag=config_flag,
-                         detail="external data is prohibited by the quoted clause")
-    elif permits:
-        p = permits[0]
-        # A permission whose clause is about pretrained models is not a permission to JOIN
-        # external data. The two are routinely granted separately, and reading one as the
-        # other is how a run gets disqualified while believing it was compliant.
-        if all(h["pretrained_subject"] for h in permits):
-            return RulesVerdict(
-                "conflict", quote=p["quote"], section=p["section"], config_flag=config_flag,
-                detail="every permission-shaped clause found also concerns pretrained models "
-                       "or model weights. A clause permitting pretrained weights is not a "
-                       "clause permitting extra data to be joined; read the rules yourself "
-                       "before any fetch.")
-        clean = [h for h in permits if not h["pretrained_subject"]]
-        p = clean[0]
-        if not p["quote"].strip():
-            return RulesVerdict(
-                "unstated", config_flag=config_flag,
-                detail="a permission matched but no quote could be extracted; this gate does "
-                       "not grant permission it cannot evidence.")
-        v = RulesVerdict("permitted", quote=p["quote"], section=p["section"],
-                         config_flag=config_flag,
-                         detail="external data is permitted by the quoted clause")
-    else:
-        return RulesVerdict(
-            "unstated", config_flag=config_flag,
-            detail="the rules text does not address external data. Absence of a prohibition "
-                   "is not a permission: unstated resolves to forbidden, and a competition "
-                   "whose rules are silent needs a human reading before any fetch.")
-
+    v = _read_rules(rules_text, config_flag)
+    # The config flag NEVER decides on its own, and this comparison must sit on EVERY path:
+    # an early return that skips it silently removes the s3e19 behaviour, which is the whole
+    # reason this module exists (caught 2026-08-04 when the fail-closed rewrite bypassed it).
     if config_flag is not None and config_flag != v.allows_external_data():
         return RulesVerdict(
             "conflict", quote=v.quote, section=v.section, config_flag=config_flag,
             detail=f"config.yaml says external_data_allowed={config_flag} but the rules text "
                    f"reads {v.verdict!r}. This is the s3e19 case: flag it for verification "
                    f"rather than letting either source win by default.")
+    return v
+
+
+def _read_rules(rules_text: str, config_flag: bool | None) -> RulesVerdict:
+    """The rules reading alone, with no config-flag arbitration -- see evaluate_rules."""
+    if not (rules_text or "").strip():
+        return RulesVerdict(
+            "unstated", config_flag=config_flag,
+            detail="no rules text supplied; the gate cannot grant permission it has not read")
+
+    text = _unwrap(rules_text)
+    permits = _hits(_PERMIT_PATTERNS, text, drop_negated=True)
+    restrictive = _restrictive_signals(text)
+    pretrained = sorted({m.group(0) for m in _PRETRAINED.finditer(text)}, key=str.lower)
+
+    # RULE (b), the load-bearing one: any restrictive language anywhere shuts the gate.
+    if restrictive:
+        f_quote = ""
+        m = re.search(_RESTRICTIVE[0] if not restrictive else re.escape(restrictive[0]), text, re.I)
+        if m:
+            f_quote = text[max(0, m.start() - 220):m.end() + 220].strip()
+            secs = _SECTION_RE.findall(text[:m.start()])
+            f_sec = secs[-1].strip() if secs else ""
+        else:
+            f_sec = ""
+        if permits:
+            p = permits[0]
+            return RulesVerdict(
+                "conflict", quote=f"PERMIT: {p['quote']}\n---\nRESTRICTIVE: {f_quote}",
+                section=f"{p['section']} / {f_sec}", config_flag=config_flag,
+                detail=f"the page contains {len(permits)} permission-shaped clause(s) AND "
+                       f"restrictive language {restrictive[:6]}. Which one binds is a reading, "
+                       f"and this gate does not make readings: a human must resolve it before "
+                       f"any fetch.")
+        return RulesVerdict(
+            "forbidden", quote=f_quote, section=f_sec, config_flag=config_flag,
+            detail=f"restrictive language present: {restrictive[:6]}. No unnegated permission "
+                   f"was found alongside it.")
+
+    if not permits:
+        return RulesVerdict(
+            "unstated", config_flag=config_flag,
+            detail="the rules text does not address external data. Absence of a prohibition "
+                   "is not a permission: unstated resolves to forbidden, and a competition "
+                   "whose rules are silent needs a human reading before any fetch.")
+
+    # RULE (c): pretrained-model language anywhere makes the SUBJECT of the permission
+    # ambiguous. "External data is allowed only in the form of ImageNet-trained backbones" is
+    # a permission to load weights, not to join rows, and no regex can reliably tell which
+    # sentence means which.
+    if pretrained:
+        return RulesVerdict(
+            "conflict", quote=permits[0]["quote"], section=permits[0]["section"],
+            config_flag=config_flag,
+            detail=f"a permission was found, but the page also uses pretrained-model language "
+                   f"{pretrained[:5]}. A clause permitting pretrained weights is not a clause "
+                   f"permitting extra data to be joined, and telling them apart is a reading. "
+                   f"Resolve by hand before any fetch.")
+
+    # RULE (d): a permission that applies elsewhere, or only conditionally, is not one here.
+    clean = [h for h in permits if not h["scope_limited"]]
+    if not clean:
+        return RulesVerdict(
+            "conflict", quote=permits[0]["quote"], section=permits[0]["section"],
+            config_flag=config_flag,
+            detail="every permission found is scope-limited (only / unless / except / a "
+                   "different competition or season). A conditional permission needs the "
+                   "condition checked by a human, not by this gate.")
+
+    p = clean[0]
+    if not p["quote"].strip():
+        return RulesVerdict(
+            "unstated", config_flag=config_flag,
+            detail="a permission matched but no quote could be extracted; this gate does "
+                   "not grant permission it cannot evidence.")
+    v = RulesVerdict("permitted", quote=p["quote"], section=p["section"],
+                     config_flag=config_flag,
+                     detail="external data is permitted by the quoted clause, and the page "
+                            "contains no restrictive, pretrained-model, or scope-limiting "
+                            "language anywhere")
+
     return v
 
 
@@ -316,6 +419,53 @@ def selftest() -> int:
          "allowed. For THIS competition the use of external data is prohibited.\n"),
         ("silence",
          "1. OVERVIEW\nPredict the target. Submissions are scored by RMSE.\n"),
+        # --- 2026-08-04 SECOND revision: every input that defeated the FIRST fix ------------
+        ("the same sentence, hard-wrapped (what pasting the rules tab produces)",
+         "3. DATA\n3.B Participants are not\nallowed to use external data of any kind.\n"),
+        ("negation AFTER the permitting phrase",
+         "7.C External data is allowed in the practice competition, not in this one."),
+        ("negator split by a dash parenthetical",
+         "4. Participants are not - under any circumstances - allowed to use external data."),
+        ("'nor' and 'prohibited from', neither an old negator",
+         "6.B Entrants are prohibited from joining outside sources; nor are they allowed to "
+         "use external data."),
+        ("permission scoped to another arena, prohibition here",
+         "2. External data is allowed only in the sandbox arena; unless the host says "
+         "otherwise, entrants here must not go outside the Competition Data."),
+        ("the permission is a QUESTION; the answer is no",
+         "Q: Are participants allowed to use external data? A: No."),
+        ("the same, as a table row", "| Are teams allowed to use external data? | No |"),
+        ("a table pipe between the negator and the phrase",
+         "Participants are not | allowed to use external data."),
+        ("a realistic page: binding prohibition plus an obsolete quoted permission",
+         "1. OVERVIEW\nPredict the target.\n\n4.B Participants are prohibited from using "
+         "external data sources of any kind when developing or testing their models.\n\n"
+         "5.A The rules of the 2025 season stated that entrants may use external data. Those "
+         "rules do not carry over.\n"),
+        ("'do not use'", "Do not use external data."),
+        ("'barred from'", "Entrants are barred from using external data."),
+        ("plural 'external datasets' defeats a word boundary",
+         "The use of external datasets is strictly prohibited."),
+        ("'banned'", "External data is banned."),
+        ("'Competition Data alone', never says the words 'external data'",
+         "Models must be trained on the Competition Data alone."),
+        ("pretrained: the permission is for backbones, no keyword in the clause",
+         "8.A External data is allowed only in the form of ImageNet-trained backbones. You "
+         "may not add any other data to the training set."),
+        ("pretrained: a semicolon ends the clause before the word 'pretrained'",
+         "4.B You are allowed to use external data; specifically, weights from a pretrained "
+         "model are fine, but you may not join any additional data."),
+        ("pretrained: an untagged FAQ hit satisfied the old all() quantifier",
+         "9.A You are allowed to use external data that a pretrained model was trained on, "
+         "but you may not join any additional data to the Competition Data.\nFAQ: in Kaggle "
+         "competitions external data is allowed when it is public."),
+        ("pretrained: markdown table", "| External data | Allowed | pretrained weights only |"),
+        ("pretrained: 'External data: permitted' then scoped to weights",
+         "2.A External data: permitted. This means pretrained model weights only; you must "
+         "not join any additional data."),
+        ("transfer learning without the word 'pretrained'",
+         "You may use external data that a model was trained on before the competition "
+         "(transfer learning)."),
     ]
     for label, text in must_not_permit:
         v = gate(text)
@@ -329,6 +479,13 @@ def selftest() -> int:
                                "to all participants.\n"),
         ("'permitted' form", "2.A External data: permitted.\n"),
         ("table row, allowed", "| External data | Allowed |\n"),
+        # the fail-CLOSED regression the same probe found: "no restriction" is not a negator
+        ("'There is no restriction on data sources'",
+         "7.C There is no restriction on data sources: external data is allowed provided it "
+         "is publicly available."),
+        ("a permission that is itself hard-wrapped",
+         "7. EXTERNAL DATA\n7.C External data is allowed provided it is publicly\navailable "
+         "and free to all participants.\n"),
     ]
     for label, text in must_permit:
         v = gate(text)

@@ -410,12 +410,149 @@ def stage_verification_regressions() -> None:
             raise AssertionError("an unknown proposal field was accepted")
 
 
+def stage_second_revision() -> None:
+    """The holes the 2026-08-04 ADVERSARIAL RE-VERIFICATION found in the first round of fixes.
+
+    Every defect in stage_verification_regressions passed its own repro; a probe then showed
+    that 14 of 15 fixes either did not generalize or introduced a new bug. These are those
+    cases. The lesson they encode: a fix verified only against the input that exposed the bug
+    is a fix verified against nothing.
+    """
+    section("regressions: holes found in the FIRST round of fixes (2026-08-04 re-verification)")
+
+    # --- the rules gate, rewritten fail-closed ------------------------------------------
+    fail_open = [
+        ("hard-wrapped negation", "3.B Participants are not\nallowed to use external data."),
+        ("negation after the phrase",
+         "7.C External data is allowed in the practice competition, not in this one."),
+        ("dash parenthetical",
+         "4. Participants are not - under any circumstances - allowed to use external data."),
+        ("nor / prohibited from",
+         "6.B Entrants are prohibited from joining outside sources; nor are they allowed to "
+         "use external data."),
+        ("permission is a question", "Q: Are participants allowed to use external data? A: No."),
+        ("question as a table row", "| Are teams allowed to use external data? | No |"),
+        ("pipe between negator and phrase", "Participants are not | allowed to use external data."),
+        ("obsolete permission + binding prohibition",
+         "4.B Participants are prohibited from using external data sources of any kind.\n\n"
+         "5.A The rules of the 2025 season stated that entrants may use external data. Those "
+         "rules do not carry over.\n"),
+        ("plural datasets", "The use of external datasets is strictly prohibited."),
+        ("competition data alone", "Models must be trained on the Competition Data alone."),
+        ("pretrained scope without the keyword in-clause",
+         "8.A External data is allowed only in the form of ImageNet-trained backbones."),
+        ("pretrained after a semicolon",
+         "4.B You are allowed to use external data; specifically, weights from a pretrained "
+         "model are fine, but you may not join any additional data."),
+    ]
+    for label, text in fail_open:
+        v = rules_gate.gate(text)
+        assert not v.allows_external_data(), f"rules gate FAILED OPEN on {label}: {v.verdict}"
+    ok(f"rules gate fails closed on all {len(fail_open)} inputs that defeated the first fix")
+    for label, text in [
+        ("plain permission", "7.C External data is allowed provided it is publicly available."),
+        ("'no restriction' preamble",
+         "7.C There is no restriction on data sources: external data is allowed provided it "
+         "is publicly available."),
+        ("a hard-wrapped PERMISSION",
+         "7.C External data is allowed provided it is publicly\navailable to all."),
+    ]:
+        v = rules_gate.gate(text)
+        assert v.allows_external_data() and v.quote.strip(), f"over-refused {label}: {v.verdict}"
+    ok("...and does not over-refuse: 3 real permissions still open it, with quotes")
+    v = rules_gate.gate("7.C External data is allowed provided it is publicly available.",
+                        config_flag=False)
+    assert v.verdict == "conflict", v
+    ok("the s3e19 config/rules arbitration survives on EVERY path, not just the old one")
+
+    # --- the two regressions the first round INTRODUCED ---------------------------------
+    from external_data.join import merge_holiday_flags
+    o, r = merge_holiday_flags(
+        pd.DataFrame({"date": pd.to_datetime(["2024-01-01", None, "2024-01-03", None])}),
+        pd.DataFrame({"country": ["Finland"] * 2, "date": ["2029-12-25", None]}),
+        df_country=None, df_date="date")
+    assert o["is_holiday"].tolist() == [0, 0, 0, 0], o["is_holiday"].tolist()
+    assert r["rows_with_no_date"] == 2, r
+    ok("a NaT calendar entry no longer matches NaT data rows (pd.NaT in {pd.NaT} is True!)")
+    try:
+        merge_holiday_flags(pd.DataFrame({"date": [20240101, 20240102]}),
+                            pd.DataFrame({"date": [20240101]}), df_country=None, df_date="date")
+    except ValueError as e:
+        assert "numeric" in str(e)
+        ok("an int-encoded date column is refused, not read as nanoseconds since the epoch")
+    else:
+        raise AssertionError("a numeric date column was accepted")
+
+    joined, rep = merge_lookup_safe(
+        pd.DataFrame({"code": ["A", None]}),
+        pd.DataFrame({"code": ["A", None], "title": ["a", "SECRET"]}),
+        df_key="code", ext_key="code", value_cols=["title"], out_prefix="",
+        meta={"snapshot": "t"})
+    assert joined["title"].tolist()[1] != "SECRET", joined
+    assert rep["rows_matched"] == 1 and rep["rows_with_no_key"] == 1, rep
+    ok("a missing key no longer joins to the reference's own missing key")
+    joined, _ = merge_lookup_safe(
+        pd.DataFrame({"code": ["A"], "_matched": [9]}),
+        pd.DataFrame({"code": ["A"], "title": ["a"]}), df_key="code", ext_key="code",
+        value_cols=["title"], out_prefix="", meta={"snapshot": "t"})
+    assert "_matched" in joined.columns and joined["title"].tolist() == ["a"], joined
+    ok("a competition column named _matched no longer collides with the join's sentinel")
+
+    # --- the defect that was still live -------------------------------------------------
+    _, rep = merge_lookup_safe(
+        pd.DataFrame({"code": ["A", "B"]}),
+        pd.DataFrame({"code": ["A", "B"], "title": ["a", "b"], "extra": [None, None]}),
+        df_key="code", ext_key="code", value_cols=["title", "extra"], out_prefix="",
+        meta={"snapshot": "t"})
+    assert rep["all_null_columns"] == ["extra"], rep
+    ok("an all-null value column is named in the report (and apply.py now DROPS it)")
+
+    # --- leakage gate: units, dtypes, grouping ------------------------------------------
+    from external_data.admit_source import _good_spec, check_leakage
+    dt = pd.DataFrame([{"iso3": k, "period": p, "value": 1.0} for k in ("SWE", "NOR")
+                       for p in pd.to_datetime(["2020-01-01", "2020-01-02"])])
+    for label, spec, frame in [
+        ("datetime periods with an absurd lag",
+         _good_spec(join_key_class="country_date", leakage_rule="lag=99999"), dt),
+        ("string periods", _good_spec(leakage_rule="lag=1"),
+         pd.DataFrame([{"iso3": k, "period": p, "value": 1.0}
+                       for k in ("SWE", "NOR") for p in ("2020", "2021")])),
+        ("an entirely null key column", _good_spec(leakage_rule="lag=2"),
+         pd.DataFrame({"iso3": [None] * 4, "period": [2019, 2020, 2021, 2022],
+                       "value": [1.0] * 4})),
+        ("a constant leading column hiding the real key", _good_spec(leakage_rule="lag=1"),
+         pd.DataFrame([{"indicator": "GDP", "iso3": k, "period": 2020, "value": 1.0}
+                       for k in ("SWE", "NOR")]
+                      + [{"indicator": "GDP", "iso3": "SWE", "period": 2021, "value": 1.0}])),
+    ]:
+        try:
+            check_leakage(spec, frame)
+        except SourceRejected:
+            continue
+        raise AssertionError(f"the leakage gate accepted: {label}")
+    ok("the leakage gate refuses all 4 shapes that slipped past the first fix")
+    assert check_leakage(_good_spec(join_key_class="country_date", leakage_rule="lag=1"), dt)
+    ok("...and still accepts a legitimate datetime-keyed source at lag=1")
+
+    # --- dispatch: key-squatting on the calendar route ----------------------------------
+    from external_data.apply import dispatch_route
+    try:
+        dispatch_route("calendar", "date")
+    except ValueError:
+        ok("'calendar' is no longer an alias a foreign source can squat to become holidays")
+    else:
+        raise AssertionError("'calendar' still routes to the holiday path")
+    assert dispatch_route("holidays", "date")
+    ok("...while the real holiday source still routes")
+
+
 def main() -> int:
     stage_rules_and_vocabulary()
     stage_admission()
     stage_dispatch_join_ledger()
     stage_adversarial()
     stage_verification_regressions()
+    stage_second_revision()
     print(f"\nselftest_pipeline: all seams passed ({_checks} checks)")
     return 0
 

@@ -199,6 +199,7 @@ def _apply_lookup_join(tr, te, params: dict, plan: dict):
     value_cols = rec.get("value_columns") or [c for c in frame.columns if c != ext_key]
     prefix = params.get("as_prefix") or f"{src.split(':')[0]}_"
     outs = []
+    empty_by_frame: dict[str, list[str]] = {}
     for name in ("train", "test"):
         df = tr if name == "train" else te
         joined, report = merge_lookup_safe(df, frame, df_key=df_key, ext_key=ext_key,
@@ -215,17 +216,33 @@ def _apply_lookup_join(tr, te, params: dict, plan: dict):
         # realized alongside the columns that did arrive, because the realized/unrealized
         # decision read only rows_unmatched -- which is driven by the FIRST value column
         # (2026-08-04 adversarial verification).
-        for empty in report.get("all_null_columns", []):
-            plan["unrealized"].append({
-                "operator": "join_feature", "params_subset": f"{name}: {empty}",
-                "reason": f"column {empty!r} is null for every row: {src!r} supplied the key "
-                          f"but no value. Recorded as unrealized rather than counted as a "
-                          f"joined feature."})
-    added = [f"{prefix}{c}" for c in value_cols]
+        empty_by_frame[name] = list(report.get("all_null_columns", []))
+
+    # A column that arrived empty is NOT a feature, so it must not appear in added_columns or
+    # in the realized entry -- the previous fix only appended an unrealized note beside them,
+    # so the same column was booked both ways and still reached the arm builder
+    # (2026-08-04 adversarial verification). Empty in EITHER split disqualifies it: a column
+    # present in train and absent in test is worse than one absent from both.
+    empty = sorted(set(empty_by_frame.get("train", [])) | set(empty_by_frame.get("test", [])))
+    for col in empty:
+        where = [n for n, cols in empty_by_frame.items() if col in cols]
+        plan["unrealized"].append({
+            "operator": "join_feature", "params_subset": col,
+            "reason": f"column {col!r} is null for every row in {where}: {src!r} supplied the "
+                      f"key but no value. Dropped, not counted as a joined feature."})
+    kept = [c for c in value_cols if f"{prefix}{c}" not in empty]
+    for name, frame in (("train", outs[0]), ("test", outs[1])):
+        frame.drop(columns=[c for c in empty if c in frame.columns], inplace=True)
+    added = [f"{prefix}{c}" for c in kept]
+    if not added:
+        raise ValueError(
+            f"{src!r} resolved its keys but every declared value column arrived empty "
+            f"({[f'{prefix}{c}' for c in value_cols]}); there is no feature to add.")
     plan["added_columns"].extend(added)
     plan["sources"][src] = meta.get("snapshot")
     plan["realized"].append({"operator": "join_feature", "columns": added,
-                             "join_key_class": "lookup"})
+                             "join_key_class": "lookup",
+                             "dropped_empty_columns": empty})
     return outs[0], outs[1]
 
 
@@ -262,7 +279,7 @@ def dispatch_route(source_key: str, join_key_class: str) -> str:
         # Only the holiday calendar is implemented on this path. Blessing any date-class key
         # here would let a source pass the reachability gate and then be silently realized as
         # holiday flags under its own column name (2026-08-04 adversarial verification).
-        if source_key in ("holidays", "calendar"):
+        if source_key == "holidays":
             return "flag_feature / calendar path (merge_holiday_flags)"
         raise ValueError(
             f"the date-class path realizes only the holiday calendar; {source_key!r} has no "
@@ -687,7 +704,7 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
             elif op == "flag_feature":
                 as_cols = params.get("as") or ["is_holiday"]
                 src = params.get("source", "holidays")
-                if src not in ("holidays", "calendar"):
+                if src != "holidays":
                     # This branch realizes exactly one thing: a same-day national holiday
                     # flag. It used to ignore params["source"] entirely, so a dossier naming
                     # any other date-class source got holiday flags back under the requested
@@ -724,6 +741,30 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                         "reason": f"no calendar for {uncovered}; those rows carry a "
                                   f"systematically ZERO flag, which is not the same as 'no "
                                   f"holidays'. Reported rather than filled."})
+                # A calendar can COVER an entity and still not cover every year of the panel
+                # (holidays==0.101 starts Spain in 2008, Fiji in 2016). meta['unmatched'] and
+                # countries_without_calendar both say "fine" there, so the only witness is the
+                # flags: a real calendar always fires at least once in a full year
+                # (2026-08-04 adversarial verification).
+                gaps = []
+                for name, df in (("train", tr), ("test", te)):
+                    if as_cols[0] not in df.columns or date_col not in df.columns:
+                        continue
+                    g = df.assign(_y=pd.to_datetime(df[date_col]).dt.year)
+                    keys = [country_col, "_y"] if country_col in g.columns else ["_y"]
+                    agg = g.groupby(keys, observed=True).agg(
+                        flags=(as_cols[0], "sum"), rows=(as_cols[0], "size")).reset_index()
+                    # only full-ish spans can be judged; a 3-row year proves nothing
+                    for _, row in agg[(agg["flags"] == 0) & (agg["rows"] >= 60)].iterrows():
+                        who = row[country_col] if country_col in g.columns else "(all)"
+                        gaps.append(f"{who}@{int(row['_y'])} ({int(row['rows'])} rows)")
+                if gaps:
+                    plan["unrealized"].append({
+                        "operator": op, "params_subset": f"{as_cols[0]}: uncovered entity-years",
+                        "reason": f"zero holidays flagged for {gaps[:12]}"
+                                  f"{' and %d more' % (len(gaps) - 12) if len(gaps) > 12 else ''}. "
+                                  f"The calendar covers the entity but not those years, so those "
+                                  f"rows carry a systematically ZERO flag."})
                 if not any(r.get("holiday_rows") for r in reports.values()):
                     # Zero flagged rows across the whole panel is not a plausible calendar
                     # result; it is the signature of a key mismatch (dtype, timezone, name
@@ -742,7 +783,8 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                 plan["realized"].append({"operator": op, "column": as_cols[0],
                                          "holiday_rows": {k: r.get("holiday_rows")
                                                           for k, r in reports.items()},
-                                         "entities_without_calendar": uncovered})
+                                         "entities_without_calendar": uncovered,
+                                         "uncovered_entity_years": gaps[:20]})
         except Exception as e:  # noqa: BLE001 — a failed operator is recorded, never hidden
             plan["unrealized"].append({"operator": op, "reason": f"{type(e).__name__}: {e}"})
 
