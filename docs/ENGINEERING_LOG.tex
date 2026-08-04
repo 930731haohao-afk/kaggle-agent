@@ -355,6 +355,69 @@ mechanism checked that anything consumed or honoured it. The count is not the po
 point is that the shape recurs in a codebase whose authors had just spent a day removing it,
 which is the argument for making the trace mechanical rather than remembered.
 
+\section{Generalizing the Source Layer, and the Gate That Failed Open}
+
+The injection layer had a property worth keeping and a limitation worth removing, and they
+were the same property. The dossier may name only whitelisted sources, so every joined column
+has a stated origin, a stated leakage rule and a pinned vintage --- and every whitelisted
+source was keyed by country and time, so the layer fired on exactly the country-panel
+competitions and nothing else. The architecture generalized; the vocabulary did not.
+
+Letting the agent fetch whatever it judges useful destroys the property that made the layer
+worth having, and it does so in a way no test can detect. On Kaggle the most valuable
+``external data'' for a competition is frequently a dataset another competitor assembled,
+occasionally containing the test labels; a temporal as-of join with a correct lag will happily
+join the answer, because nothing is dated wrong. The defence therefore cannot be a check. The
+dataset whitelist was replaced with a \textbf{domain} whitelist --- the host must be a listed
+general-purpose reference publisher, and data-sharing platforms are excluded outright --- plus
+an admission procedure whose five gates (structural, leakage, snapshot determinism, coverage,
+reachability) each refuse with a stated reason. Admission also requires a \emph{falsifiable
+pre-registration}: a predicted magnitude and the comparison that would prove it wrong, on the
+same discipline as \path{docs/preregistrations/}. The first source admitted through it is
+\texttt{cpc:titles}, chosen precisely because it has no country, no date and no time axis at
+all --- a shape the old layer could not express. Stage 0.5 may now propose a new source and
+write its fetcher when nothing admitted fits, but it may not admit its own source.
+
+\paragraph{The gate that failed open.} Four auditors then attacked the finished layer along
+different lenses, every finding handed to a separate verifier required to reproduce it before
+it counted: \textbf{15 survived, 13 were refuted}. The worst by a distance was in the rules
+gate --- the module that decides whether a competition permits external data at all, and whose
+false positive is a disqualification rather than a bad score. Its permit list contained the
+bare substring \texttt{allowed to use external data}, which matches inside the single commonest
+Kaggle prohibition, ``Participants are \textbf{not} allowed to use external data''. No forbid
+pattern covered that wording. The subsystem's hard stop returned \texttt{permitted} and cited
+the prohibiting clause as its evidence. Four related holes travelled with it: the forbid list
+missed Kaggle's canonical ``you may not use data other than the Competition Data'' family,
+bolded negation and table rows; the matcher took the first hit anywhere in the document, so one
+permission-shaped sentence in an FAQ outvoted a binding prohibition; a clause permitting
+\emph{pretrained models} was read as permitting joined data; and matching a lowercased copy
+while slicing the original text let a \texttt{permitted} verdict be recorded with an empty
+quote, violating the module's own stated invariant that a decision requires a quote. The
+matcher is now clause-scoped and negation-aware, collects every hit rather than the first, and
+treats a pretrained-only permission as a conflict to be read by a human.
+
+\paragraph{The defect the gate above it was written to prevent.} \texttt{check\_coverage}'s
+docstring names, as its reason for existing, countries with no calendar silently receiving
+all-zero holiday flags. The runtime path was still doing exactly that: \texttt{flag\_feature}
+discarded the merge report and never read the fetcher's \texttt{unmatched} list, so those rows
+carried a systematically zero feature while the ledger booked the operator realized and left
+\texttt{unrealized} empty. Underneath it, \path{merge_holiday_flags} normalized the
+competition's dates but never the \emph{calendar's} --- a calendar whose dates were strings,
+\texttt{datetime.date} objects or tz-aware Timestamps matched nothing at all, on any panel,
+and returned an all-zero column with a clean report. A zero-flag total across a whole panel is
+now a raised error, because it is a join failure and never a plausible calendar.
+
+\paragraph{And a gate that could not refuse.} The leakage invariant built
+\texttt{usable = [p for p in ps if p <= row\_period - lag]} and then asked whether any element
+of \texttt{usable} exceeded \texttt{row\_period - lag} --- false by construction. The violation
+count was always zero, so the gate reduced to ``a period column exists with at least two
+values'', and a source declaring \texttt{lag=500} over a one-year span passed it. Of the
+thirteen refuted findings, most were attacks on the domain gate (userinfo tricks, punycode,
+open redirects, arbitrary module import through the fetch spec) that its design already
+handles. The pattern in what \emph{survived} is the one this project keeps rediscovering, and
+it is not an intruder: something was produced, recorded or asserted, and nothing checked that
+it was consumed or honoured.
+
 \section{The Nine Defects of 2026-07-30}
 
 A single day's audit, recorded because the pattern matters more than the individual entries.
