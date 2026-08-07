@@ -29,7 +29,10 @@ import harness_v3 as hv3     # noqa: E402
 
 REPO = os.path.dirname(_HERE)
 EVAL_MOD = {"s3e16": "eval_s3e16_v2", "s3e1": "eval_s3e1", "s3e3": "eval_s3e3",
-            "s3e9": "eval_s3e9_v2", "s3e11": "eval_s3e11", "s3e19": "eval_s3e19"}
+            "s3e9": "eval_s3e9_v2", "s3e11": "eval_s3e11", "s3e19": "eval_s3e19",
+            # s3e5 pinned for the 20-competition re-run (docs/rerun_manifest.json):
+            # it has no dedicated run_*_v3 driver, so the generic one must know it.
+            "s3e5": "eval_s3e5_v2"}
 DEPTH_KEY = {"lgb": "max_depth", "xgb": "max_depth", "cat": "depth"}
 SEED_KEY = {"lgb": "random_state", "xgb": "random_state", "cat": "random_seed"}
 

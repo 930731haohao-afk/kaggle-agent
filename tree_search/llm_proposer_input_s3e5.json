@@ -560,5 +560,39 @@
    "weight_search": "dirichlet",
    "rounder": "full_oof"
   }
+ },
+ "param_whitelist": {
+  "lgb": [
+   "colsample_bytree",
+   "learning_rate",
+   "max_depth",
+   "min_child_samples",
+   "n_estimators",
+   "num_leaves",
+   "random_state",
+   "reg_alpha",
+   "reg_lambda",
+   "subsample"
+  ],
+  "cat": [
+   "depth",
+   "iterations",
+   "l2_leaf_reg",
+   "learning_rate",
+   "min_data_in_leaf",
+   "random_seed",
+   "random_strength"
+  ],
+  "xgb": [
+   "colsample_bytree",
+   "learning_rate",
+   "max_depth",
+   "min_child_weight",
+   "n_estimators",
+   "objective",
+   "random_state",
+   "reg_lambda",
+   "subsample"
+  ]
  }
 }

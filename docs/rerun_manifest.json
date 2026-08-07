@@ -1,0 +1,97 @@
+{
+  "_purpose": "THE definition of 'the final my-agent architecture' for the 20-competition re-run. Every competition names exactly ONE workspace, ONE eval module and ONE search driver. Without this file the re-run is undefined: s3e1 has 13 eval modules and s5e1 has 7, so 're-run with the final architecture' would mean a different thing on every relaunch, making the run neither reproducible nor comparable to the frozen AIDE/NVIDIA yardsticks (2026-08-04 finding).",
+  "_rules": {
+    "eval_module": "the canonical evaluator: the plain eval_<comp>.py, or its _v2 where a v2 superseded it. Variant evaluators (eval_ratio_*, eval_featurejoin_*, eval_*_v5_*) are ARM evaluators generated per-run by make_v5_arm and are never the competition's own.",
+    "driver": "the dedicated run_<comp>_v3.py where one exists — those build a tree from scratch. The six s3-era competitions (s3e1/s3e3/s3e5/s3e9/s3e11/s3e19) have no from-scratch v3 driver: their recorded trees were v1 runs adapted forward, and run_v3_generic.py only EXTENDS an existing tree. On a fresh (archived) workspace their driver is therefore skill-generated per references/07_tree_search.md; the agent MUST write the generated driver's path into 'driver_actual' for that competition before the run counts. run_v3_generic stays pinned as the forward-extension tool once a tree exists.",
+    "harness": "harness_v3 for all competitions (unified blend scoring per 5b2c7af); harness_v2 only as the library harness_v3 delegates to.",
+    "launcher": "run_myagent_headless.sh, one competition at a time under the lane lock, workspaces archived first (prep B)."
+  },
+  "competitions": {
+    "playground-series-s3e1": {
+      "eval": "eval_s3e1.py",
+      "driver": "skill-generated (07_tree_search.md); record into driver_actual",
+      "extension_tool": "run_v3_generic.py --comp s3e1"
+    },
+    "playground-series-s3e3": {
+      "eval": "eval_s3e3.py",
+      "driver": "skill-generated (07_tree_search.md); record into driver_actual",
+      "extension_tool": "run_v3_generic.py --comp s3e3"
+    },
+    "playground-series-s3e5": {
+      "eval": "eval_s3e5_v2.py",
+      "driver": "skill-generated (07_tree_search.md); record into driver_actual",
+      "extension_tool": "run_v3_generic.py --comp s3e5"
+    },
+    "playground-series-s3e7": {
+      "eval": "eval_s3e7.py",
+      "driver": "run_s3e7_v3.py"
+    },
+    "playground-series-s3e9": {
+      "eval": "eval_s3e9_v2.py",
+      "driver": "skill-generated (07_tree_search.md); record into driver_actual",
+      "extension_tool": "run_v3_generic.py --comp s3e9"
+    },
+    "playground-series-s3e11": {
+      "eval": "eval_s3e11.py",
+      "driver": "skill-generated (07_tree_search.md); record into driver_actual",
+      "extension_tool": "run_v3_generic.py --comp s3e11"
+    },
+    "playground-series-s3e14": {
+      "eval": "eval_s3e14.py",
+      "driver": "run_s3e14_v3.py"
+    },
+    "playground-series-s3e16": {
+      "eval": "eval_s3e16_v2.py",
+      "driver": "run_s3e16_v3.py"
+    },
+    "playground-series-s3e19": {
+      "eval": "eval_s3e19.py",
+      "driver": "skill-generated (07_tree_search.md); record into driver_actual",
+      "extension_tool": "run_v3_generic.py --comp s3e19"
+    },
+    "playground-series-s4e11": {
+      "eval": "eval_s4e11.py",
+      "driver": "run_s4e11_v3.py"
+    },
+    "playground-series-s5e10": {
+      "eval": "eval_s5e10.py",
+      "driver": "run_s5e10_v3.py"
+    },
+    "playground-series-s6e1": {
+      "eval": "eval_s6e1.py",
+      "driver": "run_s6e1_v3.py"
+    },
+    "playground-series-s6e2": {
+      "eval": "eval_s6e2.py",
+      "driver": "run_s6e2_v3.py"
+    },
+    "afsis-soil-properties": {
+      "eval": "eval_afsis.py",
+      "driver": "run_afsis_v3.py"
+    },
+    "cat-in-the-dat": {
+      "eval": "eval_citd.py",
+      "driver": "run_citd_v3.py"
+    },
+    "conway-s-reverse-game-of-life": {
+      "eval": "eval_conway.py",
+      "driver": "run_conway_v3.py"
+    },
+    "tabular-playground-series-aug-2022": {
+      "eval": "eval_aug22.py",
+      "driver": "run_aug22_v3.py"
+    },
+    "tabular-playground-series-jan-2022": {
+      "eval": "eval_tpsjan22.py",
+      "driver": "run_tpsjan22_v3.py"
+    },
+    "playground-series-s5e1": {
+      "eval": "eval_s5e1.py",
+      "driver": "run_s5e1_run2_v3.py"
+    },
+    "tabular-playground-series-sep-2022": {
+      "eval": "eval_tssep22.py",
+      "driver": "run_tssep22_v3.py"
+    }
+  }
+}
