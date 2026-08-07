@@ -142,7 +142,7 @@ the first needs per-fold computation inside the evaluator, the second a sparse l
 
 | scheme | when | evidence |
 |---|---|---|
-| `native` | the strong default for GBDTs | s3e11: AIDE's only outright first place came from a bug-fix node that accidentally enabled it |
+| `native` | the strong default for GBDTs | [withheld — the original evidence cited another lane's run, which is not a legitimate input under the isolation protocol; treat as an unvalidated strong default] |
 | `onehot_sparse` | all-categorical data, as a linear **member** in the pool | cat-in-the-dat: sparse OHE + logistic regression beat the GBDT outright |
 | `count` | high cardinality, no target involved | no leakage path |
 | `ordinal` | genuinely ordered levels only | |

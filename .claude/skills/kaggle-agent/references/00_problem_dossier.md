@@ -3,12 +3,14 @@
 ## Purpose
 
 Answer "what kind of problem is this?" BEFORE deep EDA or any modeling. The benchmark's
-largest my-agent failure (s3e19: all three agents in the lower mode of a bimodal leaderboard,
-48–50 vs. top 4.67) was a problem-identification miss — the needed judgment "this task requires
-external GDP data" exists at this stage, not at the modeling or blend stage. Post-hoc injection
-at the blend stage measured ~1e-5 gains (`docs/injection_all15_findings.md`); the same knowledge
-applied upstream on tps-jan-2022 moved CV SMAPE by whole points (4.1793 with GDP vs. AIDE's
-6.1551 without). Inject knowledge where the leverage is.
+largest my-agent failure was a problem-identification miss on a country-panel task: the needed
+judgment "this task requires external macro data" exists at this stage, not at the modeling or
+blend stage, and missing it left the run in the wrong mode of a bimodal leaderboard. Post-hoc
+injection at the blend stage measured ~1e-5 gains (`docs/injection_all15_findings.md`); the
+same knowledge applied upstream moved CV error by whole points. Inject knowledge where the
+leverage is. (Specific scores and competition names are deliberately absent here: this file is
+read on every benchmark run, and a motivating example that names a benchmark competition hands
+that competition's re-run its own recorded outcome — 2026-08-07 audit.)
 
 ## When
 
@@ -85,9 +87,17 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    than advisory: the host must be a listed general-purpose reference publisher, and a
    data-sharing platform is excluded outright because a file there may be a competitor's
    dataset containing the answer, which no leakage test can detect.
-7. Express every injection idea as a **typed operator** from
-   `knowledge/injection_operators.md` — that file is the shared vocabulary of this stage and
-   the execution layer. Free-text ideas are not executable and get silently dropped (this
+7. Express every injection idea as a **typed operator** from the operator vocabulary, read
+   through the same filter as the priors:
+
+   ```bash
+   python3 knowledge/task_priors_for.py <competition-slug> --ops
+   ```
+
+   That vocabulary (`knowledge/injection_operators.md`, filtered) is the shared contract of
+   this stage and the execution layer; the raw file's evidence tables carry per-competition
+   results, so during a benchmark run it is read only through the filter — every operator row
+   survives, but an evidence cell naming this competition is withheld. Free-text ideas are not executable and get silently dropped (this
    cost s3e19 its whole point: a correct "GDP as a level covariate" judgment reached an
    execution layer that could only append feature columns, and a GBDT cannot extrapolate a
    feature outside its training range). **Decision rule: if the test window lies outside the

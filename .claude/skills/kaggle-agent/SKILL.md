@@ -123,7 +123,8 @@ window relation, split policy, external-data need.
 
 See [references/00_problem_dossier.md](references/00_problem_dossier.md) for detailed instructions.
 
-Key actions: Match the competition against `knowledge/task_priors.md` ([TASK-*] entries),
+Key actions: Match the competition against the FILTERED prior library — `python3
+knowledge/task_priors_for.py <comp>` ([TASK-*] entries; never the raw file during a benchmark run),
 write `competitions/<comp>/dossier.json` (task family, split policy, external-data candidates
 from the whitelist only, data-level and model-level injection ideas). The dossier is a prior,
 not a conclusion — Stage 1 EDA must verify its hypotheses and record an `eda_verdict`.
@@ -229,7 +230,7 @@ Key actions: Retrain on full data, generate predictions, format submission, vali
 - `kaggle_auth.sh` — Kaggle API authentication helper
 
 ### Reference Files (references/)
-- `00_problem_dossier.md` — Stage 0.5 problem dossier (upstream knowledge injection; consumes `knowledge/task_priors.md`)
+- `00_problem_dossier.md` — Stage 0.5 problem dossier (upstream knowledge injection; consumes the filtered library via `knowledge/task_priors_for.py`)
 - `01_setup.md` — Competition setup instructions
 - `02_eda.md` — EDA instructions
 - `03_features.md` — Feature engineering instructions
