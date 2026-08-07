@@ -110,12 +110,26 @@ Write a feature engineering script that:
 Save the script to `competitions/<name>/scripts/feature_engineering.py`
 
 ### 5. Validate Features
-After running the feature engineering script, check:
-- **Shape check**: Train and test have the same columns (minus target)
-- **NaN check**: No unexpected NaN values introduced
-- **Dtype check**: All features are numeric (or appropriately encoded)
-- **Leakage check**: No features have suspiciously high correlation with target
-- **Scale check**: Report feature value ranges (some models are sensitive to scale)
+After running the feature engineering script, validate — and **validate BOTH frames, and
+STOP on failure, do not warn-and-continue**. This section used to inspect only the train
+frame and treat findings as warnings, so a broken `test_processed.csv` (all-NaN column from
+a category present only in test, wrong dtype from an unshared encoder) shipped into Stage 3
+and surfaced as a mysteriously bad leaderboard score instead of a build error
+(2026-08-07, bucket-A #36).
+
+For **each of** `train_processed.csv` **and** `test_processed.csv`:
+- **Shape check**: identical columns (minus target), identical row counts to the raw files
+- **NaN check**: no column that is entirely NaN, and no NaN introduced where the raw data
+  had none — in EITHER frame; test is where encoder gaps actually appear
+- **Dtype check**: every feature numeric (or deliberately categorical), same dtype in both
+  frames — a column numeric in train and object in test means the encoder never saw test
+- **Leakage check**: no feature with |corr| > 0.99 against the target (train only, by
+  construction)
+- **Scale check**: report ranges from BOTH frames; a test range wildly outside train's is a
+  processing bug, not a distribution shift, when the raw ranges agree
+
+**Any failed check on either frame is a hard stop**: fix the feature script and re-run it.
+A warning that scrolls past is the same as no check — this project measured that repeatedly.
 
 ### 6. Quick Feature Importance
 Train a quick LightGBM/RandomForest model and report:

@@ -623,10 +623,30 @@ COMP_CITATION_ALIASES = {
 }
 
 
+# Suffixes the infrastructure appends to a base competition slug when it derives a workspace:
+# the headless launcher's repeat runs (".repeat-r1-<date>"), quarantined leftovers
+# (".leftover_pre_run"), and make_v5_arm's arm workspaces ("-v5-<arm>"). A DERIVED workspace
+# is still solving the BASE competition, so its aliases must be the base slug's aliases --
+# otherwise "playground-series-s3e16.repeat-r1-20260731" matches nothing the library cites and
+# the self-evidence filter silently fails open on every repeat run
+# (2026-08-07, bucket-A finding #49).
+_WORKSPACE_SUFFIX_RE = re.compile(r"(\.(repeat|leftover)[\w-]*|-v5-[\w-]+)$")
+
+
+def base_competition(comp: str) -> str:
+    """Strip workspace-derivation suffixes down to the competition actually being solved."""
+    prev = None
+    while comp and comp != prev:
+        prev = comp
+        comp = _WORKSPACE_SUFFIX_RE.sub("", comp)
+    return comp
+
+
 def comp_aliases(comp: str) -> list:
     """Every token the experience library might cite `comp` by, longest first."""
     if not comp:
         return []
+    comp = base_competition(comp)
     al = {comp}
     al.update(COMP_CITATION_ALIASES.get(comp, []))
     short = comp.replace("playground-series-", "").replace("tabular-", "")

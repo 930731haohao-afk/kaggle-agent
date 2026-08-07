@@ -53,6 +53,16 @@ if ID_COL in num_cols:
 if ID_COL in cat_cols:
     cat_cols.remove(ID_COL)
 
+# Cross-frame sections (unseen categories, train/test drift) index test[col], so they can
+# only run over columns BOTH frames have. Filtering out the target alone (2026-08-03) still
+# crashed on any other train-only column -- a fold index, a sample-weight column, an extra
+# annotation -- killing correlation and duplicate analysis with it (2026-08-07, bucket-A #1).
+train_only = [c for c in num_cols + cat_cols if c not in test.columns]
+shared_num = [c for c in num_cols if c in test.columns]
+shared_cat = [c for c in cat_cols if c in test.columns]
+if train_only:
+    print(f"\nTrain-only columns (excluded from cross-frame checks): {train_only}")
+
 print(f"\nNumerical features ({len(num_cols)}): {num_cols}")
 print(f"Categorical features ({len(cat_cols)}): {cat_cols}")
 
@@ -110,7 +120,7 @@ else:
 
 # --- Categorical Feature Statistics ---
 section("CATEGORICAL FEATURE STATISTICS")
-for col in cat_cols:
+for col in shared_cat:
     n_unique = train[col].nunique()
     top_5 = train[col].value_counts().head(5)
     rare_count = (train[col].value_counts() < len(train) * 0.01).sum()
@@ -181,7 +191,7 @@ if ID_COL in train.columns:
 
 # --- Train vs Test Distribution ---
 section("TRAIN VS TEST DISTRIBUTION COMPARISON")
-for col in num_cols[:10]:  # Limit to first 10 for brevity
+for col in shared_num:  # every shared numeric column (was: first 10 only)
     train_mean = train[col].mean()
     test_mean = test[col].mean()
     train_std = train[col].std()

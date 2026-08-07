@@ -151,42 +151,101 @@ def _entry_is_diagnostic(entry: dict) -> bool:
     return any(notes.startswith(m + ":") for m in _DIAGNOSTIC_LABELS)
 
 
+# Direction spellings seen in real logs, and metric families whose direction is known. Both
+# exist because "direction is a free-form string" and "no direction at all" each silently
+# resolved to MAXIMIZE -- inverting champion selection on every minimize-metric competition
+# whose log spelled it differently (2026-08-07, bucket-A #13/#17).
+_MINIMIZE_WORDS = {"minimize", "minimise", "min", "lower", "lower_is_better", "smaller"}
+_MAXIMIZE_WORDS = {"maximize", "maximise", "max", "higher", "higher_is_better", "greater"}
+_MINIMIZE_METRICS = {"rmse", "mae", "mse", "rmsle", "smape", "mape", "logloss", "log_loss",
+                     "mcrmse", "medae", "crps", "wrmsse", "brier"}
+_MAXIMIZE_METRICS = {"auc", "roc_auc", "rocauc", "aucroc", "accuracy", "acc", "f1", "qwk",
+                     "kappa", "r2", "map", "ndcg", "precision", "recall", "gini"}
+
+
+def _norm_direction(val) -> Optional[bool]:
+    """direction value -> minimize? (None = unrecognized)."""
+    s = str(val or "").strip().lower()
+    if s in _MINIMIZE_WORDS:
+        return True
+    if s in _MAXIMIZE_WORDS:
+        return False
+    return None
+
+
+def _metric_minimize(name) -> Optional[bool]:
+    s = str(name or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if s in _MINIMIZE_METRICS:
+        return True
+    if s in _MAXIMIZE_METRICS:
+        return False
+    return None
+
+
+def _entry_metric(e: dict):
+    return e.get("metric") or e.get("eval_metric")
+
+
 def get_best_experiment(
     competition_dir: str,
     metric: Optional[str] = None,
-    minimize: bool = False
+    minimize: Optional[bool] = None
 ) -> Optional[dict]:
     """
-    Get the best experiment by CV mean score.
+    Get the best non-diagnostic experiment.
 
-    Args:
-        competition_dir: Path to competition directory.
-        metric: Filter by eval_metric (optional).
-        minimize: If True, lower is better.
+    Direction resolution, in order: the caller's explicit `minimize`; the entries' own
+    recorded direction (normalized -- "min"/"minimise"/"MINIMIZE" all count); the metric
+    family. If none of those can decide, this RAISES rather than silently maximizing:
+    a wrong champion is a submission, and the old maximize default inverted every
+    minimize-metric competition whose log lacked a direction field.
 
-    Returns:
-        The best experiment dict, or None if no experiments exist.
+    Entries with different metrics are refused unless `metric=` filters to one -- ranking
+    raw scores across metrics compares apples against oranges (bucket-A #18).
     """
     experiments = load_experiments(competition_dir)
     if not experiments:
         return None
 
     if metric:
-        experiments = [e for e in experiments if e.get("eval_metric") == metric]
-
+        m_norm = str(metric).strip().lower()
+        experiments = [e for e in experiments
+                       if str(_entry_metric(e) or "").strip().lower() == m_norm]
     if not experiments:
         return None
 
-    # Reading only `cv_mean` raised KeyError on the v2 schema SKILL.md mandates, and the
-    # maximize default silently inverted every minimize-metric competition; v2 records the
-    # direction per entry, so use it when the log agrees (2026-08-03 audit).
     scored = [e for e in experiments if _entry_score(e) is not None]
     if not scored:
         return None
     scored = [e for e in scored if not _entry_is_diagnostic(e)] or scored
-    dirs = {e.get("direction") for e in scored if e.get("direction")}
-    if len(dirs) == 1:
-        minimize = dirs.pop() == "minimize"
+
+    metrics_present = {str(_entry_metric(e)).strip().lower()
+                       for e in scored if _entry_metric(e)}
+    if len(metrics_present) > 1:
+        raise ValueError(
+            f"experiments.json mixes metrics {sorted(metrics_present)}; ranking raw scores "
+            f"across metrics is meaningless. Pass metric=<one of them> to select the family "
+            f"to rank within.")
+
+    if minimize is None:
+        dirs = {_norm_direction(e.get("direction")) for e in scored if e.get("direction")}
+        dirs.discard(None)
+        if len(dirs) == 1:
+            minimize = dirs.pop()
+        elif len(dirs) > 1:
+            raise ValueError(
+                "experiments disagree on direction (some minimize, some maximize); the log "
+                "is inconsistent and picking a side silently would invert the champion for "
+                "half the entries.")
+        else:
+            only_metric = next(iter(metrics_present), None)
+            minimize = _metric_minimize(only_metric)
+            if minimize is None:
+                raise ValueError(
+                    f"cannot determine optimization direction: no entry records one, and "
+                    f"metric {only_metric!r} is not in the known families. Pass "
+                    f"minimize=True/False explicitly -- defaulting silently is how a "
+                    f"minimize-metric competition got a maximized champion.")
     return (min if minimize else max)(scored, key=_entry_score)
 
 

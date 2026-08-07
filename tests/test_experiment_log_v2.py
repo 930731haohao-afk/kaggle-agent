@@ -46,7 +46,25 @@ def test_v2_appends_and_omits_optional_fields(tmp_path, load_module):
         assert absent not in e
 
 
-def test_both_skill_copies_identical():
-    a = (ROOT / ".claude/skills/kaggle-agent/assets/utils/experiment_log.py").read_bytes()
-    b = (ROOT / ".claude/skills/kaggle-agent-self-improvement/assets/utils/experiment_log.py").read_bytes()
-    assert a == b, "兩份 experiment_log.py 必須 byte-identical(改完要 cp 同步)"
+def test_all_duplicated_utils_identical():
+    """EVERY duplicated util must be byte-identical across all three locations.
+
+    This test used to cover experiment_log only, across the two skill copies only — so the
+    2026-08-03 dtype-consistency fix in utils/data_loader.py never reached the copies the
+    agent actually runs, and two fix rounds' worth of experiment_log repairs sat in utils/
+    while the live copies stayed broken (2026-08-07 re-verification). One test, every file,
+    every location, including the repo utils/ as the source of truth.
+    """
+    duplicated = ["experiment_log.py", "data_loader.py", "evaluation.py"]
+    roots = [ROOT / "utils",
+             ROOT / ".claude/skills/kaggle-agent/assets/utils",
+             ROOT / ".claude/skills/kaggle-agent-self-improvement/assets/utils"]
+    for fname in duplicated:
+        variants = {}
+        for r in roots:
+            fp = r / fname
+            if fp.exists():
+                variants.setdefault(fp.read_bytes(), []).append(str(fp.relative_to(ROOT)))
+        assert len(variants) == 1, (
+            f"{fname} has {len(variants)} distinct versions: "
+            f"{[v for v in variants.values()]} — 改完要 cp 同步到三份")

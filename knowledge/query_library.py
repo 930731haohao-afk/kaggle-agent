@@ -43,10 +43,28 @@ _COMP_CITATION_ALIASES = {
 }
 
 
+_WORKSPACE_SUFFIX_RE = re.compile(r"(\.(repeat|leftover)[\w-]*|-v5-[\w-]+)$")
+
+
+def _base_competition(comp: str) -> str:
+    """Strip workspace-derivation suffixes (repeat runs, leftovers, v5 arms) to the base slug.
+
+    A derived workspace is still solving the base competition; without this, the launcher's
+    "<comp>.repeat-r1-<date>" naming matched nothing the library cites and self-exclusion
+    silently failed open on every repeat run (2026-08-07, bucket-A #49 -- mirrors harness_v2).
+    """
+    prev = None
+    while comp and comp != prev:
+        prev = comp
+        comp = _WORKSPACE_SUFFIX_RE.sub("", comp)
+    return comp
+
+
 def _comp_aliases(comp: str | None) -> list[str]:
     """Every token the library might cite `comp` by, longest first (mirrors harness_v2)."""
     if not comp:
         return []
+    comp = _base_competition(comp)
     al = {comp}
     al.update(_COMP_CITATION_ALIASES.get(comp, []))
     al.add(comp.replace("playground-series-", "").replace("tabular-", ""))

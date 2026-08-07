@@ -70,7 +70,13 @@ except Exception:  # noqa: BLE001 - stay usable if the harness is not importable
         "cat-in-the-dat": ["citd"],
     }
 
+    _WS_SUFFIX = re.compile(r"(\.(repeat|leftover)[\w-]*|-v5-[\w-]+)$")
+
     def _aliases(comp: str) -> list[str]:
+        prev = None
+        while comp and comp != prev:              # strip workspace-derivation suffixes
+            prev = comp
+            comp = _WS_SUFFIX.sub("", comp)
         al = {comp} | set(_ALIASES.get(comp, []))
         al.add(comp.replace("playground-series-", "").replace("tabular-", ""))
         return sorted(al, key=len, reverse=True)

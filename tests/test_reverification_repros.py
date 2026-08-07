@@ -215,6 +215,100 @@ class TestLibraryContinuationEvidence:
 
 
 # ---------------------------------------------------------------------------
+# champion direction and metric handling (bucket-A #13/#17/#18)
+# ---------------------------------------------------------------------------
+class TestChampionDirection:
+    def _write(self, tmp_path, entries):
+        import json as _json
+        (tmp_path / "experiments.json").write_text(_json.dumps(entries))
+        return str(tmp_path)
+
+    def test_v1_schema_minimize_metric_not_inverted(self, tmp_path):
+        # v1 entries carry no direction; the old default silently MAXIMIZED rmse
+        from utils.experiment_log import get_best_experiment
+        d = self._write(tmp_path, [
+            {"experiment_id": 1, "model_name": "a", "eval_metric": "rmse", "cv_mean": 10.0},
+            {"experiment_id": 2, "model_name": "b", "eval_metric": "rmse", "cv_mean": 5.0}])
+        best = get_best_experiment(d)
+        assert best["experiment_id"] == 2, (
+            f"rmse champion is the HIGHER score (id={best['experiment_id']}): with no "
+            f"direction recorded, the maximize default inverted a minimize metric")
+
+    def test_freeform_direction_spellings(self, tmp_path):
+        from utils.experiment_log import get_best_experiment
+        for spelling in ("min", "minimise", "MINIMIZE", "lower_is_better"):
+            d = self._write(tmp_path, [
+                {"experiment_id": 1, "model": "a", "metric": "rmse", "direction": spelling,
+                 "score": 10.0},
+                {"experiment_id": 2, "model": "b", "metric": "rmse", "direction": spelling,
+                 "score": 5.0}])
+            best = get_best_experiment(d)
+            assert best["experiment_id"] == 2, (
+                f"direction={spelling!r} was not recognized as minimize; the champion is the "
+                f"worse model")
+
+    def test_mixed_metrics_refuse_rather_than_rank_apples_against_oranges(self, tmp_path):
+        from utils.experiment_log import get_best_experiment
+        d = self._write(tmp_path, [
+            {"experiment_id": 1, "model": "a", "metric": "rmse", "direction": "minimize",
+             "score": 0.2},
+            {"experiment_id": 2, "model": "b", "metric": "auc", "direction": "maximize",
+             "score": 0.9}])
+        with pytest.raises(ValueError):
+            get_best_experiment(d)
+
+    def test_explicit_metric_filter_still_works_on_mixed(self, tmp_path):
+        from utils.experiment_log import get_best_experiment
+        d = self._write(tmp_path, [
+            {"experiment_id": 1, "model": "a", "metric": "rmse", "direction": "minimize",
+             "score": 0.2},
+            {"experiment_id": 2, "model": "b", "metric": "auc", "direction": "maximize",
+             "score": 0.9}])
+        best = get_best_experiment(d, metric="auc")
+        assert best["experiment_id"] == 2
+
+    def test_unknown_direction_and_metric_refuses(self, tmp_path):
+        from utils.experiment_log import get_best_experiment
+        d = self._write(tmp_path, [
+            {"experiment_id": 1, "model": "a", "metric": "mystery_metric", "score": 1.0},
+            {"experiment_id": 2, "model": "b", "metric": "mystery_metric", "score": 2.0}])
+        with pytest.raises(ValueError):
+            get_best_experiment(d)
+
+
+# ---------------------------------------------------------------------------
+# derived workspace names must not open the library door (bucket-A #49)
+# ---------------------------------------------------------------------------
+class TestDerivedWorkspaceExclusion:
+    LIB = ("## MAE section\n- **the s3e16 recipe**: snap to observed values. "
+           "| 證據:s3e16, exp #14, MAE 341.02 → 340.96\n")
+
+    @pytest.mark.parametrize("comp", [
+        "playground-series-s3e16",
+        "playground-series-s3e16.repeat-r1-20260731",   # the launcher's repeat naming
+        "playground-series-s3e16.leftover_pre_run",
+        "playground-series-s3e16-v5-ratio",             # make_v5_arm's arm naming
+    ])
+    def test_all_workspace_derivations_exclude(self, comp, tmp_path):
+        import harness_v2 as hv2
+        lib = tmp_path / "experience.md"
+        lib.write_text(self.LIB)
+        hits = hv2.suggest_priors({"comp": comp, "metric": "mae"},
+                                  experience_path=str(lib), max_items=5)
+        assert not any("341.02" in h for h in hits), (
+            f"{comp}: the workspace-derived name failed open — the base competition's own "
+            f"answer was served")
+
+    def test_unrelated_comp_still_gets_the_bullet(self, tmp_path):
+        import harness_v2 as hv2
+        lib = tmp_path / "experience.md"
+        lib.write_text(self.LIB)
+        hits = hv2.suggest_priors({"comp": "playground-series-s4e1", "metric": "mae"},
+                                  experience_path=str(lib), max_items=5)
+        assert any("341.02" in h for h in hits), "over-exclusion: an unrelated comp lost it"
+
+
+# ---------------------------------------------------------------------------
 # blend routes must agree THROUGH the cost guard, not only beside it
 # ---------------------------------------------------------------------------
 class TestBlendRouteAgreementThroughGuard:
