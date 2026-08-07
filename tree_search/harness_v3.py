@@ -681,7 +681,8 @@ def _coordinate_ascent_refine(oofs, metric_fn, w0, s0, rounds=DEFAULT_ASCENT_ROU
 
 def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "dirichlet",
                k: int = DEFAULT_BLEND_K, seed: int = 42, grid_step: float = 0.05,
-               coordinate_ascent: bool = True, ascent_rounds: int = DEFAULT_ASCENT_ROUNDS):
+               coordinate_ascent: bool = True, ascent_rounds: int = DEFAULT_ASCENT_ROUNDS,
+               target=None):
     """v3's default ensemble-node evaluator: thin wrapper over
     `harness_v2.eval_blend` (unchanged, still directly importable as `v2.eval_blend`
     for exact v2-comparability -- see tests/test_tree_harness_v3.py's smoke test) that
@@ -704,9 +705,16 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
     # unified=False: this function applies the refinement itself just below, and passing
     # through v2's unified wrapper would apply coordinate ascent TWICE and override k
     # (a layering bug introduced and caught while unifying the two routes, 2026-08-04).
+    # The SAME deterministic coarsening rule as hv2's unified route. This function is what
+    # five live drivers (run_s5e10_v3 etc.) call for blend nodes, and it went straight to the
+    # core at full k -- so a blend big enough to coarsen scored k=1500 here and k=200
+    # everywhere else, the exact score-per-route class the unification claims closed
+    # (2026-08-07 round-3). Explicit k feeds the same rule, so k=800 from an old driver
+    # behaves identically on every route.
+    k = v2.unified_k_for(len(members), v2._cached_rows(cache_dir, members), k=k)
     best_w, best_s, oofs = v2.eval_blend(cache_dir, members, metric_fn,
                                           weight_search=weight_search, k=k, seed=seed,
-                                          grid_step=grid_step, unified=False)
+                                          grid_step=grid_step, unified=False, target=target)
     if coordinate_ascent:
         best_w, best_s = _coordinate_ascent_refine(oofs, metric_fn, best_w, best_s,
                                                      rounds=ascent_rounds)

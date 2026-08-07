@@ -67,7 +67,7 @@ def per_fold_target_encode(X_tr: pd.DataFrame, X_va: pd.DataFrame, X_te: pd.Data
 # ---------------------------------------------------------------------------
 def run_linear(params: dict, Xdf: pd.DataFrame, Xtestdf: pd.DataFrame,
                cat_feats: list[str], folds, y_target: np.ndarray, n_rows: int,
-               invert=None):
+               invert=None, invert_va=None):
     """Ridge on a sparse one-hot design, same OOF/pred contract as the GBDT runners.
 
     Per fold, the one-hot encoder and the numeric scaler are fit on the fold's training
@@ -110,7 +110,13 @@ def run_linear(params: dict, Xdf: pd.DataFrame, Xtestdf: pd.DataFrame,
         A_te = sparse.hstack(parts_te).tocsr()
         m = Ridge(alpha=alpha, random_state=0)
         m.fit(A_tr, np.asarray(y_target)[tr_mask])
-        oof[va_mask] = invert(m.predict(A_va))
+        # invert_va exists because the OOF inversion can be FOLD-SHAPED: a ratio arm inverts
+        # with the covariate, and the validation fold's covariate rows are _COV_TR[va_mask],
+        # not _COV_TE. Reusing the test-side invert for the OOF either broadcast a fold-sized
+        # vector against a test-sized one (crash) or algebraically cancelled back to ratio
+        # space (wrong units, silently) -- 2026-08-07 round-3.
+        oof[va_mask] = (invert_va(m.predict(A_va), va_mask) if invert_va
+                        else invert(m.predict(A_va)))
         pred += invert(m.predict(A_te))
         n_folds += 1
     pred /= max(n_folds, 1)

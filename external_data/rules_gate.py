@@ -525,6 +525,9 @@ def main(argv: list[str]) -> int:
                          "a disagreement with the rules text is reported as a conflict")
     ap.add_argument("--record-to", type=Path, default=None,
                     help="write the decision and its evidence here (next to dossier.json)")
+    ap.add_argument("--competition", default=None,
+                    help="slug this verdict is recorded FOR; consumers refuse a verdict "
+                         "recorded for a different competition")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
     if args.selftest:
@@ -536,7 +539,15 @@ def main(argv: list[str]) -> int:
         text = sys.stdin.read()
 
     flag = None if args.config_flag is None else (args.config_flag == "true")
-    v = gate(text, config_flag=flag, record_to=args.record_to)
+    v = gate(text, config_flag=flag, record_to=None)
+    if args.competition:
+        v.evidence["competition"] = args.competition
+    if args.record_to:
+        p_out = Path(args.record_to)
+        p_out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p_out.with_suffix(p_out.suffix + ".tmp")
+        tmp.write_text(json.dumps(v.evidence, indent=2, ensure_ascii=False))
+        tmp.replace(p_out)
     print(f"VERDICT  {v.verdict.upper()}"
           f"{'  (external data is OFF for this competition)' if not v.allows_external_data() else ''}")
     if v.section:

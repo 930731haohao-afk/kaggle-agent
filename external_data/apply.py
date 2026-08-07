@@ -474,7 +474,8 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                     target_col: str = "num_sold",
                     ledger_path: str | Path | None = None,
                     rules_verdict: dict | str | Path | None = None,
-                    allow_unchecked_rules: bool = False) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+                    allow_unchecked_rules: bool = False,
+                    expected_competition: str | None = None) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Realize typed injection operators on (train, test).
 
     Returns (train2, test2, plan) where `plan` carries the coverage ledger plus the
@@ -504,6 +505,21 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
         if isinstance(v, (str, Path)):
             vp = Path(v)
             v = json.loads(vp.read_text()) if vp.exists() else None
+        if v is not None and not isinstance(v, dict):
+            # a list or bare string is valid JSON; .get() on it raised AttributeError from
+            # inside the gate instead of a stated refusal (2026-08-07 round-3)
+            raise ValueError(
+                f"rules verdict must be a JSON object, got {type(v).__name__}: a malformed "
+                f"verdict cannot grant permission")
+        if (v is not None and expected_competition and v.get("competition")
+                and v.get("competition") != expected_competition):
+            # nothing bound a verdict to the competition it was recorded for, so a verdict
+            # copied (or symlinked) from another competition opened this one's gate
+            # (2026-08-07 round-3)
+            raise ValueError(
+                f"rules verdict was recorded for {v.get('competition')!r}, not "
+                f"{expected_competition!r}; a verdict is not transferable between "
+                f"competitions")
         # An EXPLICIT prohibition outranks the offline-test escape hatch. The first version
         # checked allow_unchecked_rules before reading the verdict, so a caller could fetch
         # despite a RECORDED "forbidden" (2026-08-07). Unchecked means unchecked -- it never

@@ -110,9 +110,12 @@ def _jsonable(v):
 
 def _entry_score(entry: dict):
     """Score under either schema (v2 `score`, v1 `cv_mean`)."""
+    import math as _math
     for k in ("score", "cv_mean"):
         v = entry.get(k)
-        if isinstance(v, (int, float)):
+        # Non-finite counts as no score: nan compares False with everything, so letting it
+        # through made the champion depend on entry ORDER (2026-08-07 round-3).
+        if isinstance(v, (int, float)) and _math.isfinite(v):
             return float(v)
     return None
 
@@ -315,6 +318,16 @@ def log_experiment_v2(
         "direction": direction,
         "score": round(float(score), 6),
     }
+    # A non-finite score is not an experiment result, it is a broken CV -- and it used to
+    # poison everything downstream: json.dump emits a bare NaN token (invalid JSON), every
+    # comparison with nan is False so min()/max() return whichever entry comes FIRST, and the
+    # champion became order-dependent (2026-08-07 round-3). Refuse loudly at log time.
+    import math as _math
+    if not _math.isfinite(entry["score"]):
+        raise ValueError(
+            f"score={score!r} is not finite; a NaN/inf score means the CV itself failed. "
+            f"Fix the evaluation and log a real number -- logging NaN poisons champion "
+            f"selection order-dependently and writes invalid JSON.")
     if features is not None:
         # `features` crosses the Stage 2 -> Stage 3 seam as a comma-separated STRING in one
         # contract and as a list in the other. list("a,b,c") explodes a string into single
@@ -344,7 +357,10 @@ def log_experiment_v2(
                      ("postprocess", postprocess), ("submission", submission),
                      ("leaderboard", leaderboard)):
         if val is not None:
-            entry[key] = val
+            # Sanitized like params: a numpy array anywhere here (fold scores from sklearn,
+            # blend weights) raised TypeError from json.dump AFTER training, discarding the
+            # experiment -- the exact class the params fix claimed closed (2026-08-07).
+            entry[key] = _jsonable(val)
     if notes:
         entry["notes"] = notes
     # Free-form extras. This is how the binding retrieval gate
@@ -356,6 +372,7 @@ def log_experiment_v2(
     clashing = sorted(set(entry) & set(extra))
     if clashing:
         raise ValueError(f"extras may not overwrite canonical fields: {clashing}")
+    extra = _jsonable(extra)
     for key, val in extra.items():
         if val is not None:
             entry[key] = val

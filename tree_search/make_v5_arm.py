@@ -91,9 +91,12 @@ def _invert_test(p):
         n_other += src.count(frm)
         src = src.replace(frm, to)
     # the linear family inverts with expm1 too; align it with the ratio inversion
+    # Use the SAME fold-aware pair the GBDT path uses. The old rewrite passed a test-side
+    # lambda for the OOF as well, which broadcast fold-sized predictions against the test
+    # covariate (crash) or cancelled to ratio space (wrong units) (2026-08-07 round-3).
     n_lin_inv = src.count("invert=np.expm1)")
-    src = src.replace("invert=np.expm1)", "invert=lambda p: _invert_test(p) / _COV_TE)"
-                      if kind == "ratio_log" else "invert=lambda p: p)")
+    src = src.replace("invert=np.expm1)",
+                      "invert=_invert_test, invert_va=_invert_va)")
     if n_other or n_lin_inv:
         print(f"   ratio target also applied to {n_other} non-GBDT fit site(s), "
               f"{n_lin_inv} linear inversion(s)")
@@ -158,6 +161,17 @@ ARM_DEFINING_OP = {"ratio": "ratio_target", "log": "log_offset", "logoffset": "l
                    "gdp": "join_feature", "gdp_hol": "flag_feature"}
 
 
+def _defining_op_for(arm: str):
+    """Longest-match lookup. Truncating at the first '_' made 'gdp_hol' resolve to 'gdp'
+    (the wrong operator) and its own dict entry unreachable (2026-08-07 round-3)."""
+    if arm in ARM_DEFINING_OP:
+        return ARM_DEFINING_OP[arm]
+    for cand in (arm.split("-")[0], arm.split("_")[0], arm.split("-")[0].split("_")[0]):
+        if cand in ARM_DEFINING_OP:
+            return ARM_DEFINING_OP[cand]
+    return None
+
+
 def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     base_mod, id_col = BASE[comp]
     base_dir = os.path.join(_ROOT, "competitions", comp)
@@ -178,14 +192,14 @@ def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     aug_tr, aug_te, plan = apply_operators(
         raw_tr, raw_te, ideas, target_col="num_sold",
         ledger_path=os.path.join(vdir, "injection_ledger.json"),
-        rules_verdict=rules_verdict_path)
+        rules_verdict=rules_verdict_path, expected_competition=comp)
 
     # THE ARM MUST BE WHAT ITS NAME SAYS. If the operator that defines this arm kind was
     # requested but not realized (a precondition refused it, a gate stopped it), refuse to
     # emit the arm rather than shipping a baseline clone under the arm's name -- nothing
     # downstream re-checks, and the search would race "ratio vs join" where one lane is
     # secretly the baseline.
-    defining = ARM_DEFINING_OP.get(arm.split("-")[0].split("_")[0])
+    defining = _defining_op_for(arm)
     if defining is None and len(ideas) == 1:
         defining = ideas[0].get("operator")
     if defining and any(i.get("operator") == defining for i in ideas):

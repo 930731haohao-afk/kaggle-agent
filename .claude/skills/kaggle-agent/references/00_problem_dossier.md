@@ -107,12 +107,21 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    `ratio_target`, and on both competitions measured so far the leaderboard favoured
    `join_feature` — see the form verdict in TASK-TS-FUTURE (via the filtered library).** Anything you want that the operator set cannot
    express goes in `not_recorded`.
-8. **Open pre-registrations are binding.** If the dossier fires external-data need on a
-   country-panel time-series task (TASK-TS-FUTURE class), check `docs/preregistrations/` for
-   REGISTERED hypotheses: copy each one's prediction into this dossier's `preregistration`
-   field and commit it BEFORE any model is fitted or any leaderboard is consulted. The
-   prediction never changes what runs — both forms still race; see
-   `docs/preregistrations/horizon_length_form_selector.md`.
+8. **Open pre-registrations are binding — read them through the filter.** If the dossier
+   fires external-data need on a country-panel time-series task (TASK-TS-FUTURE class), read
+   the registered hypotheses via
+
+   ```bash
+   python3 knowledge/task_priors_for.py <competition-slug> --prereg
+   ```
+
+   — **never `docs/preregistrations/` raw during a benchmark run.** The registration files
+   carry an evidence table naming benchmark competitions with their private scores and
+   winning forms, so a raw read hands a re-run of those competitions its own recorded answer
+   (2026-08-07 audit: this was the fourth unfiltered door). The filtered output keeps every
+   registered hypothesis and its protocol. Copy each open prediction into this dossier's
+   `preregistration` field and commit it BEFORE any model is fitted or any leaderboard is
+   consulted. The prediction never changes what runs — both forms still race.
 9. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.
 
 ## Output schema — `dossier.json`
@@ -135,7 +144,7 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
                 "join": {"keys": ["country", "year"], "lag": 0},
                 "space": "log", "carry_forward": true},
      "rationale": "test year is outside the training range; the covariate must carry the level because a GBDT cannot extrapolate it as a feature",
-     "source_prior": "experience.md GDP recipe (evidence: tpsjan22 exp #2/#3, -2.6 SMAPE)"},
+     "source_prior": "experience.md GDP recipe (cite the filtered library's own evidence line here — this example deliberately names no competition or score, because this file is read on every run: 2026-08-07 audit)"},
     {"operator": "trend_term", "params": {"unit": "year", "degree": 1, "centered": true},
      "rationale": "common year drift shared by all series", "source_prior": "TASK-TS-FUTURE"},
     {"operator": "flag_feature",

@@ -465,3 +465,258 @@ class TestSubmissionValidator:
         assert rep.suspicious or rep.structural, (
             "with the id column last, pred_col resolved TO the id column: constant 5.0 on an "
             "AUC competition was never examined and the gate passed")
+
+
+# ===========================================================================
+# ROUND 3 (2026-08-07): fresh-input attacks that survived verification
+# ===========================================================================
+class TestFourthDoorPreregistrations:
+    def test_prereg_read_is_filtered_for_the_comp_it_names(self):
+        # Stage 0.5 step 8 mandates reading docs/preregistrations/ on firing-class comps;
+        # the file names s3e19/sep-2022/s5e1 with their private scores and winning forms.
+        import subprocess
+        out = subprocess.run(
+            [sys.executable, os.path.join(REPO, "knowledge/task_priors_for.py"),
+             "playground-series-s5e1", "--prereg"],
+            capture_output=True, text=True, cwd=REPO, check=False)
+        assert out.returncode == 0, out.stderr[-300:]
+        assert "0.12417" not in out.stdout and "0.15626" not in out.stdout, (
+            "the mandated pre-registration read serves s5e1 its own private MAPE")
+        # the registered hypothesis itself must survive for OTHER competitions
+        out2 = subprocess.run(
+            [sys.executable, os.path.join(REPO, "knowledge/task_priors_for.py"),
+             "playground-series-s9e9", "--prereg"],
+            capture_output=True, text=True, cwd=REPO, check=False)
+        assert "H-HORIZON" in out2.stdout or "horizon" in out2.stdout.lower(), (
+            "the filter destroyed the registered hypothesis for an unrelated competition")
+
+    def test_step8_routes_through_the_filter(self):
+        doc = open(os.path.join(
+            REPO, ".claude/skills/kaggle-agent/references/00_problem_dossier.md")).read()
+        import re as _re
+        step8 = doc[doc.index("Open pre-registrations are binding"):]
+        step8 = step8[:step8.index("\n9.")]
+        assert "--prereg" in step8, (
+            "step 8 still orders a raw read of docs/preregistrations/ -- the fourth door")
+
+
+class TestNewSlugSelfExclusion:
+    MD = ("## TASK-NEW — some new family\n"
+          "- **Trigger**: something.\n"
+          "- **Action**: the recipe.\n"
+          "- **Evidence**: playground-series-s6e5 — ratio_target won, private SMAPE 3.1415 "
+          "vs 3.9999; carried by an independent fact about s3e7.\n")
+
+    def test_filter_priors_excludes_a_slug_not_in_the_token_list(self):
+        from knowledge.task_priors_for import filter_priors
+        out, _ = filter_priors(self.MD, "playground-series-s6e5")
+        assert "3.1415" not in out, (
+            "a post-benchmark slug absent from _ALL_COMP_TOKENS is served its own evidence")
+
+    def test_filter_ops_excludes_it_too(self):
+        from knowledge.task_priors_for import filter_ops
+        out, _ = filter_ops("Prose: playground-series-s6e5 scored private SMAPE 3.1415 "
+                            "with ratio_target.\n", "playground-series-s6e5")
+        assert "3.1415" not in out
+
+
+class TestNonTaskWriteBackScrubbed:
+    MD = ("## TASK-A — x\n- **Trigger**: t.\n- **Action**: a.\n- **Evidence**: s3e7, 0.5.\n\n"
+          "## Run notes 2026-08 (appended mid-run)\n"
+          "s3e11 re-run: native categorical handling, private AUC 0.80311 beat NVIDIA 0.77084.\n"
+          "AIDE's winning s3e11 node enabled native cats accidentally.\n"
+          "\n"
+          "An unrelated generic note that names nothing.\n")
+
+    def test_non_task_section_is_scrubbed_not_verbatim(self):
+        from knowledge.task_priors_for import filter_priors
+        out, _ = filter_priors(self.MD, "playground-series-s3e11")
+        assert "0.80311" not in out, "self result leaked through a non-TASK section"
+        assert "NVIDIA" not in out and "AIDE" not in out, "cross-agent leaked via write-back"
+        # A generic note in its OWN paragraph survives; one in the SAME paragraph as
+        # self-naming prose inherits the subject and is withheld -- failing SAFE. The cost of
+        # over-withholding is a lost prior; the cost of under-withholding is the benchmark.
+        assert "unrelated generic note" in out, "over-scrubbing: a separate paragraph was eaten"
+
+    def test_whitelist_table_still_survives(self):
+        from knowledge.task_priors_for import filter_priors, PRIORS
+        md = PRIORS.read_text(encoding="utf-8")
+        out, _ = filter_priors(md, "playground-series-s3e19")
+        rows = sum(1 for ln in out.splitlines() if ln.startswith("| "))
+        raw = sum(1 for ln in md.splitlines() if ln.startswith("| "))
+        assert rows == raw, "the scrub ate the external-data whitelist again"
+
+
+class TestUnicodeDashAliases:
+    def test_unicode_dash_spelling_is_excluded(self):
+        from knowledge.task_priors_for import filter_priors
+        md = ("## TASK-B — x\n- **Trigger**: t.\n- **Action**: a.\n"
+              "- **Evidence**: tps‑sep‑2022 scored 11.348 with ratio_target; "
+              "also s3e7, 0.4.\n")           # non-breaking hyphens
+        out, _ = filter_priors(md, "tabular-playground-series-sep-2022")
+        assert "11.348" not in out, "a unicode-dash spelling evaded the alias match"
+
+
+class TestExperimentLogRound3:
+    def test_nan_score_is_refused_at_log_time(self, tmp_path):
+        from utils.experiment_log import log_experiment_v2
+        with pytest.raises(ValueError):
+            log_experiment_v2(str(tmp_path), model="m", metric="rmse",
+                              direction="minimize", score=float("nan"))
+        assert not list(tmp_path.glob("*.tmp*")), "orphan tmp left behind"
+
+    def test_nan_score_in_an_existing_log_cannot_become_champion(self, tmp_path):
+        import json as _json
+        from utils.experiment_log import get_best_experiment
+        (tmp_path / "experiments.json").write_text(_json.dumps([
+            {"experiment_id": 1, "model": "broken-cv", "metric": "rmse",
+             "direction": "minimize", "score": float("nan")},
+            {"experiment_id": 2, "model": "good", "metric": "rmse",
+             "direction": "minimize", "score": 0.45},
+            {"experiment_id": 3, "model": "bad", "metric": "rmse",
+             "direction": "minimize", "score": 0.90}]), )
+        best = get_best_experiment(str(tmp_path))
+        assert best["experiment_id"] == 2, f"nan poisoned selection: {best}"
+
+    def test_numpy_anywhere_in_the_entry_survives(self, tmp_path):
+        import json as _json
+        from utils.experiment_log import log_experiment_v2
+        log_experiment_v2(str(tmp_path), model="m", metric="rmse", direction="minimize",
+                          score=0.5,
+                          cv={"mean": np.float64(0.5), "folds": np.array([0.4, 0.6])},
+                          ensemble={"weights": np.array([0.3, 0.7])},
+                          leaderboard={"public": np.float32(0.51)},
+                          cv_scores=np.array([1, 2]))
+        rec = _json.loads((tmp_path / "experiments.json").read_text())[0]
+        assert rec["cv"]["folds"] == [0.4, 0.6]
+        assert rec["ensemble"]["weights"] == [0.3, 0.7]
+        assert not list(tmp_path.glob("*.tmp*"))
+
+
+class TestBlendRound3:
+    def _mk(self, tmp_path, n_members, rows):
+        import harness_v2 as hv2
+        rng = np.random.default_rng(3)
+        y = rng.normal(size=rows)
+        for nid in range(n_members):
+            hv2.cache_oof(str(tmp_path), nid, y + rng.normal(scale=0.3, size=rows))
+        return y
+
+    def test_hv3_eval_blend_applies_the_same_coarsening(self, tmp_path):
+        import harness_v2 as hv2
+        import harness_v3 as hv3
+        # 4 members x 600k rows > 1.875e6 boundary -> both routes must coarsen identically
+        y = self._mk(tmp_path, 4, 600_000)
+        m = lambda v: float(np.sqrt(((v - y) ** 2).mean()))          # noqa: E731
+        w2, s2, _ = hv2.eval_blend(str(tmp_path), [0, 1, 2, 3], m)
+        w3, s3, _ = hv3.eval_blend(str(tmp_path), [0, 1, 2, 3], m)
+        assert s2 == s3, f"hv3.eval_blend bypasses the unified coarsening: {s2} vs {s3}"
+        np.testing.assert_array_equal(w2, w3)
+
+    def test_explicit_k_is_honoured_identically_on_both_routes(self, tmp_path):
+        import harness_v2 as hv2
+        import harness_v3 as hv3
+        y = self._mk(tmp_path, 3, 2000)
+        m = lambda v: float(np.sqrt(((v - y) ** 2).mean()))          # noqa: E731
+        _w2, s2, _ = hv2.eval_blend(str(tmp_path), [0, 1, 2], m, k=800)
+        _w3, s3, _ = hv3.eval_blend(str(tmp_path), [0, 1, 2], m, k=800)
+        assert s2 == s3, f"explicit k=800 diverges: {s2} vs {s3}"
+
+
+class TestRatioArmLinearFamily:
+    def test_run_linear_fold_aware_inversion(self):
+        import pandas as pd
+        from tree_search import eval_support as esup
+        rng = np.random.default_rng(0)
+        n, nte = 100, 37
+        cov_tr = rng.uniform(10, 20, n)
+        cov_te = rng.uniform(10, 20, nte)
+        y = cov_tr * rng.uniform(0.9, 1.1, n)        # y ~ covariate level
+        Xdf = pd.DataFrame({"f": rng.normal(size=n)})
+        Xte = pd.DataFrame({"f": rng.normal(size=nte)})
+        folds = []
+        idx = np.arange(n)
+        for k in range(3):
+            va = (idx % 3) == k
+            folds.append((~va, va))
+        y_ratio = np.log(y / cov_tr)
+        oof, pred = esup.run_linear({}, Xdf, Xte, [], folds, y_ratio, n,
+                                    invert=lambda p: np.exp(p) * cov_te,
+                                    invert_va=lambda p, mask: np.exp(p) * cov_tr[mask])
+        assert oof.shape == (n,) and pred.shape == (nte,)
+        # inverted OOF must be in TARGET units (~cov level), not ratio units (~1)
+        assert 5 < np.median(oof) < 40, f"OOF median {np.median(oof)} is not in target units"
+        assert 5 < np.median(pred) < 40
+
+    def test_codegen_emits_fold_aware_linear_inversion(self):
+        from tree_search.make_v5_arm import _patch_target_transform
+        base = open(os.path.join(REPO, "tree_search/eval_s5e1.py")).read()
+        for kind in ("ratio_log", "ratio_linear"):
+            out = _patch_target_transform(base, "cov_level", kind)
+            assert "invert_va=_invert_va" in out, (
+                f"{kind}: the linear family's OOF inversion is not fold-aware -- fold-sized "
+                f"predictions broadcast against the test-sized covariate (or stay in ratio "
+                f"space) and the lin member ships wrong units")
+            assert "invert=lambda p: p)" not in out, f"{kind}: identity inversion survives"
+            assert "_invert_test(p) / _COV_TE" not in out, f"{kind}: ratio-space algebra survives"
+
+
+class TestArmDefiningOpLookup:
+    def test_gdp_hol_resolves_to_flag_feature(self):
+        from tree_search.make_v5_arm import ARM_DEFINING_OP, _defining_op_for
+        assert _defining_op_for("gdp_hol") == "flag_feature"
+        assert _defining_op_for("ratio") == "ratio_target"
+        assert _defining_op_for("featurejoin") == "join_feature"
+        assert _defining_op_for("ratio-v2") == "ratio_target"
+
+
+class TestRulesVerdictRound3:
+    def test_non_dict_verdict_is_a_stated_refusal(self, tmp_path):
+        import pandas as pd
+        from external_data.apply import apply_operators
+        vp = tmp_path / "rules_verdict.json"
+        vp.write_text('["permitted"]')
+        tr = pd.DataFrame({"country": ["Sweden"] * 3, "y": [1.0] * 3,
+                           "date": ["2019-01-01", "2020-01-01", "2021-01-01"]})
+        idea = [{"operator": "join_feature",
+                 "params": {"source": "worldbank:gdp_per_capita",
+                            "join": {"keys": ["country", "year"], "lag": 0}},
+                 "rationale": "x"}]
+        with pytest.raises(ValueError):
+            apply_operators(tr, tr.drop(columns=["y"]).head(1), idea, target_col="y",
+                            rules_verdict=str(vp))
+
+    def test_verdict_bound_to_its_competition(self, tmp_path):
+        import json as _json
+        import pandas as pd
+        from external_data.apply import apply_operators
+        vp = tmp_path / "rules_verdict.json"
+        vp.write_text(_json.dumps({"verdict": "permitted",
+                                   "competition": "some-other-competition"}))
+        tr = pd.DataFrame({"country": ["Sweden"] * 3, "y": [1.0] * 3,
+                           "date": ["2019-01-01", "2020-01-01", "2021-01-01"]})
+        idea = [{"operator": "join_feature",
+                 "params": {"source": "worldbank:gdp_per_capita",
+                            "join": {"keys": ["country", "year"], "lag": 0}},
+                 "rationale": "x"}]
+        with pytest.raises(ValueError):
+            apply_operators(tr, tr.drop(columns=["y"]).head(1), idea, target_col="y",
+                            rules_verdict=str(vp), expected_competition="playground-series-x")
+
+
+class TestValidatorRound3:
+    def _vs(self):
+        return _load(".claude/skills/kaggle-safe-submit/scripts/validate_submission.py", "vs_r3")
+
+    def test_object_dtype_predictions_fail_for_numeric_kinds(self):
+        import pandas as pd
+        vs = self._vs()
+        sample = pd.DataFrame({"id": [1, 2, 3], "target": [0.0] * 3})
+        sub = pd.DataFrame({"id": [1, 2, 3], "target": ["0.5", "0.7", "0.9"]})
+        rep = vs.validate(sub, sample, id_col="id", metric="auc")
+        assert rep.structural or rep.suspicious, (
+            "numeric-as-strings predictions on a probability metric passed clean")
+
+    def test_nonascii_metric_still_resolves(self):
+        vs = self._vs()
+        assert vs._resolve_expectation("ＲＯＣ－ＡＵＣ", "auto", None) == "probability"

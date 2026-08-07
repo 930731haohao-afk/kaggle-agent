@@ -413,12 +413,16 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
         return _eval_blend_core(cache_dir, members, metric_fn, weight_search=weight_search,
                                 k=k, seed=seed, grid_step=grid_step, target=target)
     n_rows = _cached_rows(cache_dir, members)
+    # The caller's explicit k feeds the SAME deterministic rule instead of being ignored:
+    # ignoring it meant an old driver passing k=800 got 1500 here and 800 on the v3 route --
+    # a divergence in the other direction (2026-08-07 round-3).
+    k_req = k if k != 1500 else UNIFIED_BLEND_K
     if cost_budget_units is not None:
         k_used = (UNIFIED_COARSEN_K
-                  if n_rows and UNIFIED_BLEND_K * len(members) * n_rows > cost_budget_units
-                  and UNIFIED_BLEND_K > UNIFIED_COARSEN_K else UNIFIED_BLEND_K)
+                  if n_rows and k_req * len(members) * n_rows > cost_budget_units
+                  and k_req > UNIFIED_COARSEN_K else k_req)
     else:
-        k_used = unified_k_for(len(members), n_rows)
+        k_used = unified_k_for(len(members), n_rows, k=k_req)
     best_w, best_s, oofs = _eval_blend_core(
         cache_dir, members, metric_fn, weight_search=weight_search,
         k=k_used, seed=seed, grid_step=grid_step, target=target)

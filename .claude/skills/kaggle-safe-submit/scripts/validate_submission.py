@@ -63,8 +63,12 @@ _CONTINUOUS_METRICS = {
 
 
 def _norm(name: str) -> str:
-    """Lowercase and strip separators so 'ROC-AUC', 'roc_auc', 'roc auc' all collide."""
-    return re.sub(r"[^a-z0-9]", "", str(name).lower())
+    """Lowercase, NFKC-normalize and strip separators so 'ROC-AUC', 'roc_auc', 'roc auc' --
+    and fullwidth/unicode spellings like 'ＲＯＣ－ＡＵＣ' -- all collide. Non-ASCII spellings
+    silently disabled the probability gates before normalization (2026-08-07 round-3)."""
+    import unicodedata
+    flat = unicodedata.normalize("NFKC", str(name)).lower()
+    return re.sub(r"[^a-z0-9]", "", flat)
 
 
 def _norm_variants(name: str) -> set:
@@ -122,7 +126,9 @@ def _resolve_expectation(metric: Optional[str], expect: str,
         # downgraded to SKIP (2026-08-07 re-verification). Any individual token that is
         # itself a known metric name decides; probability outranks label outranks continuous
         # because its range check is the strictest.
-        tokens = {tok for tok in re.split(r"[^a-z0-9]+", str(metric).lower()) if tok}
+        import unicodedata
+        flat_metric = unicodedata.normalize("NFKC", str(metric)).lower()
+        tokens = {tok for tok in re.split(r"[^a-z0-9]+", flat_metric) if tok}
         if tokens & _PROBABILITY_METRICS:
             return "probability"
         if tokens & _LABEL_METRICS:
@@ -198,6 +204,16 @@ def validate(sub: pd.DataFrame, sample: pd.DataFrame, id_col: Optional[str] = No
     rep.check(rep.structural, "Finite", not bad_inf,
               f"({sum(bad_inf.values())} +/-inf across {len(bad_inf)}/{len(pred_cols)} "
               f"column(s): {dict(list(bad_inf.items())[:5])})" if bad_inf else "")
+    # A probability/continuous metric scored on an object-dtype column means the predictions
+    # are strings ("0.5"): Kaggle may coerce or reject, and every numeric gate here silently
+    # SKIPped, so it passed clean (2026-08-07 round-3). Structural, because the file is wrong
+    # as submitted whatever the values decode to.
+    _kind_now = _resolve_expectation(metric, expect, y_train)
+    if _kind_now in ("probability", "continuous"):
+        obj_cols = [c for c in pred_cols if not pd.api.types.is_numeric_dtype(sub[c])]
+        rep.check(rep.structural, "Numeric dtype", not obj_cols,
+                  f"({len(obj_cols)} prediction column(s) are non-numeric on a {_kind_now} "
+                  f"metric: {obj_cols[:5]})" if obj_cols else "")
     all_null_cols = [c for c in pred_cols if sub[c].isnull().all()]
     rep.check(rep.structural, "No empty target column", not all_null_cols,
               f"({len(all_null_cols)} column(s) entirely null: {all_null_cols[:5]})"

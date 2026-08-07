@@ -98,8 +98,13 @@ _ALL_COMP_TOKENS = sorted({
 }, key=len, reverse=True)
 
 
+# Unicode dash/hyphen variants normalize to ASCII '-' before any alias match: a write-back
+# spelling "tps‑sep‑2022" with non-breaking hyphens evaded every door (2026-08-07 round-3).
+_DASHES = dict.fromkeys(map(ord, "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"), ord("-"))
+
+
 def _names(text: str, aliases: list[str]) -> bool:
-    low = text.lower()
+    low = text.translate(_DASHES).lower()
     for a in aliases:
         if re.search(rf"(?<![0-9a-z]){re.escape(a.lower())}(?![0-9a-z])", low):
             return True
@@ -185,7 +190,11 @@ def filter_priors(md: str, comp: str) -> tuple[str, list[dict]]:
             self_named, cross_agent, keep = [], [], []
             subject_is_self = False
             for s in segs:
-                cites = _names(s, _ALL_COMP_TOKENS)
+                # The subject updates when a sentence names ANY competition -- known tokens
+                # OR the one being solved. Gating on the hardcoded token snapshot alone meant
+                # a post-benchmark slug (absent from the list) never set subject_is_self and
+                # was served its own evidence verbatim (2026-08-07 round-3).
+                cites = _names(s, _ALL_COMP_TOKENS) or _names(s, aliases)
                 if cites:                       # this sentence sets the subject
                     subject_is_self = _names(s, aliases)
                 # else: subject carries over from the previous sentence
@@ -245,13 +254,21 @@ def filter_priors(md: str, comp: str) -> tuple[str, list[dict]]:
         for lb, tx in kept_fields:
             kept_md.append(tx if lb == "_free" else f"- **{lb}**: {tx}")
 
-    # Non-TASK sections pass through verbatim. They carry no per-competition evidence to
-    # exclude -- the whitelist is a source vocabulary, not a result -- and the filter has no
-    # business editing a section whose shape it does not model.
+    # Non-TASK sections are SCRUBBED, not passed verbatim. "They carry no per-competition
+    # evidence" was a property of the file that day, not of the mechanism: the write-back
+    # convention appends run notes, and a note under "## Run notes 2026-08" naming this
+    # competition's fresh score (or another agent) sailed through untouched
+    # (2026-08-07 round-3). filter_ops' line/table scrub is exactly the right shape: it never
+    # deletes structure, so the whitelist table and its rows survive; only sentences whose
+    # subject is this competition or another agent are withheld.
     for sec in others:
         kept_md.append("")
         kept_md.append(sec["header"])
-        kept_md.extend(sec["lines"])
+        body = "\n".join(sec["lines"])
+        scrubbed, sec_rep = filter_ops(body, comp)
+        kept_md.append(scrubbed.rstrip("\n"))
+        report.extend({"entry": sec["header"].lstrip("# ").strip(), "action": "scrubbed",
+                       "reason": r["where"], "dropped": [r["dropped"]]} for r in sec_rep)
 
     return "\n".join(kept_md).rstrip() + "\n", report
 
@@ -275,7 +292,7 @@ def filter_ops(md: str, comp: str) -> tuple[str, list[dict]]:
         segs = [s for s in re.split(r"(?<=[.;])\s+", text) if s.strip()] or [text]
         kept, subject_is_self = [], False
         for s in segs:
-            if _names(s, _ALL_COMP_TOKENS):
+            if _names(s, _ALL_COMP_TOKENS) or _names(s, aliases):
                 subject_is_self = _names(s, aliases)
             if subject_is_self:
                 report.append({"where": where, "dropped": s.strip()[:140]})
@@ -343,6 +360,28 @@ def filter_ops(md: str, comp: str) -> tuple[str, list[dict]]:
     return "\n".join(out_lines) + "\n", report
 
 
+PREREG_DIR = _HERE.parent / "docs" / "preregistrations"
+
+
+def filter_prereg(comp: str) -> tuple[str, list[dict]]:
+    """Per-competition view of docs/preregistrations/*.md — the FOURTH door.
+
+    Stage 0.5 step 8 makes these files a MANDATED read on firing-class competitions, and the
+    evidence table inside horizon_length_form_selector.md names s3e19 / tps-sep-2022 / s5e1
+    with their private scores and winning forms — the exact facts filter_priors' selftest
+    proves withheld, served back verbatim through an instruction one directory over
+    (2026-08-07 round-3 verification). Same scrub as filter_ops: the registered HYPOTHESIS
+    and protocol survive for every competition; evidence naming the competition being solved
+    (or keyed table rows) is withheld.
+    """
+    parts, report = [], []
+    for f in sorted(PREREG_DIR.glob("*.md")):
+        out, rep = filter_ops(f.read_text(encoding="utf-8"), comp)
+        parts.append(f"<!-- {f.name} (filtered for {comp}) -->\n" + out)
+        report.extend(rep)
+    return "\n\n".join(parts), report
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("comp", nargs="?", help="competition slug, e.g. playground-series-s3e11")
@@ -350,15 +389,21 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--ops", action="store_true",
                     help="emit the filtered OPERATOR vocabulary (injection_operators.md) "
                          "instead of the task-prior library")
+    ap.add_argument("--prereg", action="store_true",
+                    help="emit the filtered PRE-REGISTRATIONS (docs/preregistrations/) "
+                         "instead of the task-prior library")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
     if args.selftest:
         return selftest()
     if not args.comp:
         ap.error("competition slug required (or --selftest)")
-    src = (_HERE / "injection_operators.md") if args.ops else PRIORS
-    fn = filter_ops if args.ops else filter_priors
-    md, rep = fn(src.read_text(encoding="utf-8"), args.comp)
+    if args.prereg:
+        md, rep = filter_prereg(args.comp)
+    else:
+        src = (_HERE / "injection_operators.md") if args.ops else PRIORS
+        fn = filter_ops if args.ops else filter_priors
+        md, rep = fn(src.read_text(encoding="utf-8"), args.comp)
     if args.report:
         print(f"# {'operator-vocabulary' if args.ops else 'task-prior'} exclusions "
               f"for {args.comp}\n")
