@@ -1,0 +1,11 @@
+{
+  "competition": "tabular-playground-series-sep-2022",
+  "source_url": "https://www.kaggle.com/competitions/tabular-playground-series-sep-2022/rules",
+  "scraped": "2026-08-07",
+  "resolved_by": "operator (build-time human read, 2026-08-07; the gate returns conflict on every real rules page because generic legal restrictive words appear in non-data clauses, and its design requires exactly one recorded human reading to resolve)",
+  "verdict": "permitted",
+  "section": "7.C",
+  "quote": "or access. C. External Data. You may use data other than the Competition Data (“External Data”) to develop and test your Submissions. However, you will ensure the External Data is publicly available to use by all participants of the Competition for purposes of the competition at no cost to the other participants. The ability to use External Data under this Section 7.C (External Data) does not limit your other obligations under these Competition Rules, inc",
+  "original_gate_verdict": "conflict",
+  "resolution_basis": "every restrictive hit on the page sits in a non-data clause (private code sharing, eligibility/sanctions, multiple accounts, team rules, hand-labeling); the 7.C permission is unconditional for publicly available, free external data."
+}

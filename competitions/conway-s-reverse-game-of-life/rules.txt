@@ -1,0 +1,97 @@
+menu
+Skip to
+content
+Create
+explore
+
+Home
+
+emoji_events
+
+Competitions
+
+leaderboard
+
+Benchmarks
+
+smart_toy
+
+Game Arena
+
+code
+
+Data Hub
+
+expand_more
+format_list_bulleted
+
+More
+
+expand_more
+search
+​
+Sign In
+Register
+Kaggle uses cookies from Google to deliver and enhance the quality of its services and to analyze traffic.
+Learn more
+OK, Got it.
+KAGGLE · PLAYGROUND PREDICTION COMPETITION · 12 YEARS AGO
+Late Submission
+more_horiz
+Conway's Reverse Game of Life
+
+Reverse the arrow of time in the Game of Life
+
+Overview
+Data
+Code
+Models
+Discussion
+Leaderboard
+Rules
+Competition Rules
+keyboard_arrow_up
+One account per participant
+
+You cannot sign up to Kaggle from multiple accounts and therefore you cannot submit from multiple accounts.
+
+No private sharing outside teams
+
+Privately sharing code or data outside of teams is not permitted. It's okay to share code if made available to all participants on the forums.
+
+Team Mergers
+
+Team mergers are allowed and can be performed by the team leader. In order to merge, the combined team must have a total submission count less than or equal to the maximum allowed as of the merge date. The maximum allowed is the number of submissions per day multiplied by the number of days the competition has been running.
+
+
+Team Limits
+
+There is no maximum team size.
+
+Submission Limits
+
+You may submit a maximum of 5 entries per day.
+
+You may select up to 2 final submissions for judging.
+
+Competition Timeline
+
+Start Date: 10/14/2013 8:18 PM UTC
+
+Merger Deadline: None
+
+Entry Deadline: None
+
+End Date: 3/2/2014 11:59 PM UTC
+
+We may release a new dataset if the problem turns out to be too easy or too difficult. We will reduce the board size if the competition is too hard, and increase it if it is too easy (e.g. it can be brute-forced).
+No cellular automata were harmed in the making of this competition.
+
+Rules
+Competition Rules
+One account per participant
+No private sharing outside teams
+Team Mergers
+Team Limits
+Submission Limits
+Competition Timeline

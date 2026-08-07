@@ -1,0 +1,10 @@
+{
+  "competition": "afsis-soil-properties",
+  "source_url": "https://www.kaggle.com/competitions/afsis-soil-properties/rules",
+  "scraped": "2026-08-07",
+  "resolved_by": "operator (build-time human read, 2026-08-07; the gate returns conflict on every real rules page because generic legal restrictive words appear in non-data clauses, and its design requires exactly one recorded human reading to resolve)",
+  "verdict": "forbidden",
+  "section": "EXTERNAL DATA",
+  "quote": "nership in, any of the Data. EXTERNAL DATA Unless otherwise expressly stated on the Competition Website, Participants must not use data other than the Data to develop and test their models and Submissions. Competition Sponsor reserves the right in its sole discretion to disqualify any Participant who Competition Sponsor discovers has undertaken or attempte",
+  "detail": "a GENUINE prohibition: participants must not use data other than the Data. External data stays OFF for this lane."
+}

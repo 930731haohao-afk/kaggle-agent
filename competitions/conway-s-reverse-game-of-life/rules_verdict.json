@@ -1,0 +1,8 @@
+{
+  "competition": "conway-s-reverse-game-of-life",
+  "source_url": "https://www.kaggle.com/competitions/conway-s-reverse-game-of-life/rules",
+  "scraped": "2026-08-07",
+  "resolved_by": "operator (build-time human read, 2026-08-07; the gate returns conflict on every real rules page because generic legal restrictive words appear in non-data clauses, and its design requires exactly one recorded human reading to resolve)",
+  "verdict": "unstated",
+  "detail": "the rules tab renders no content without login (12-year-old playground competition); no external-data ruling is readable, and unstated resolves to forbidden. External data stays OFF for this lane — consistent with the recorded run, where the structural task never proposed any."
+}
