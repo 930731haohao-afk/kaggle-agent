@@ -111,7 +111,11 @@ DEFAULT_TOTAL_BUDGET = v3.DEFAULT_TOTAL_BUDGET
 # ---------------------------------------------------------------------------
 _REPO_ROOT = os.path.dirname(_HERE)
 DEFAULT_EXPERIENCE_PATH = v2.DEFAULT_EXPERIENCE_PATH                       # knowledge/experience.md ([INT])
-DEFAULT_IDEA_BANK_PATH = os.path.join(_REPO_ROOT, "knowledge", "idea_bank.md")  # [EXT]
+# [EXT] idea bank ARCHIVED 2026-08-10: its 與經驗庫關係 fields quoted per-competition
+# results for 10+ benchmark comps with no guard naming it (round-6 finding). The [EXT]
+# channel is dormant (honest-null, round-6 verified); parse_idea_bank returns [] when the
+# file is absent, so nothing breaks. Un-archive only behind a per-competition filter.
+DEFAULT_IDEA_BANK_PATH = os.path.join(_REPO_ROOT, "knowledge", "idea_bank.md")
 DEFAULT_MAX_ITEMS = 20            # mirror suggest_priors' own default cap
 VALID_MODES = ("off", "ext")     # 'off' = stage-4 ([INT] only); 'ext' = stage-5 ([INT]+[EXT])
 
@@ -186,6 +190,10 @@ def parse_idea_bank(idea_bank_path: str = None) -> list:
     comparable tokens actually reachable (idea_bank.md's own intro describes this "標題含可比對
     關鍵字 + 條列式內文" structure)."""
     idea_bank_path = idea_bank_path or DEFAULT_IDEA_BANK_PATH
+    if not os.path.exists(idea_bank_path):
+        # archived 2026-08-10 (unguarded per-competition results; round-6 finding). The
+        # dormant [EXT] channel degrades to empty rather than crashing.
+        return []
     text = v2._load_experience_text(idea_bank_path)
     sections = v2._split_sections(text)
 
@@ -220,6 +228,10 @@ def parse_dedup_suppress_ids(idea_bank_path: str = None) -> set:
     Returns `set()` if the section/bullet is absent (fail-open: no suppression rather than a
     crash), so a driver never loses the whole injection path over a doc edit."""
     idea_bank_path = idea_bank_path or DEFAULT_IDEA_BANK_PATH
+    if not os.path.exists(idea_bank_path):
+        # archived 2026-08-10 (unguarded per-competition results; round-6 finding). The
+        # dormant [EXT] channel degrades to empty rather than crashing.
+        return []
     text = v2._load_experience_text(idea_bank_path)
     sections = v2._split_sections(text)
 

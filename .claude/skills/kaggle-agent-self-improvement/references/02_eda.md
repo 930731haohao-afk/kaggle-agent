@@ -87,7 +87,7 @@ Candidate schemes:
 **7c. Decide, and say which source won.** The dossier is a prior, not a conclusion: if the data
 contradicts it, the EDA finding wins and that contradiction is itself a headline finding. If the
 dossier said `"unknown"`, this step is where it gets resolved. The trap this exists to catch is a
-shuffled KFold on a future-window test set — 4.56 vs 20.41 SMAPE on s3e19, a 4.5× optimism bias
+shuffled KFold on a future-window test set — a controlled experiment measured a 4.5× optimism bias from the forbidden split (see the filtered prior library)
 (see `references/00_problem_dossier.md`).
 
 **7d. Write the verdict back into `dossier.json` under `"eda_verdict"`.** This is the step

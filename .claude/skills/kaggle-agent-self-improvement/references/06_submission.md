@@ -19,9 +19,33 @@ Generate a valid, competition-ready submission file from the best model(s).
 
 ### 1. Select Final Model(s)
 Review `experiments.json` and select the model(s) to use for submission:
-- **Single best model** — Simplest approach, use the model with the best CV score
+- **Single best model** — Simplest approach, use the model with the best CV score **among
+  submission candidates only**
 - **Ensemble** — If ensembling was done in Stage 3, use the ensemble
 - **Multiple submissions** — If daily limit allows, submit both single model and ensemble
+
+**Exclude diagnostics before ranking.** Not every logged experiment is a submission
+candidate. Leakage probes, illegal-split runs and sanity checks are logged deliberately
+and they usually score *highest*, because the thing being diagnosed is exactly what
+inflates CV. Picking the top row blind is the study's documented silent failure #4: a
+leakage probe explicitly marked not-for-submission won the selection.
+
+Use the helper rather than sorting the log yourself — it already drops them:
+```python
+from utils.experiment_log import get_best_experiment, _entry_is_diagnostic
+
+best = get_best_experiment('competitions/<name>', minimize=<True if lower is better>)
+assert best is not None and not _entry_is_diagnostic(best), "champion is a diagnostic run"
+```
+`_entry_is_diagnostic` matches these markers, case-insensitively, across an entry's
+`model` / `model_name` / `notes` / `tag` / `label` fields: `diagnostic`,
+`not used for submission`, `not for submission`, `leakage check`, `leak check`,
+`sanity probe`. So a diagnostic run is only excluded if it was *tagged* — when you log
+one, put one of those strings in `notes`.
+
+Verify explicitly before moving on: state which experiment ID was chosen, its score, and
+that it is not diagnostic-tagged. If the only experiments left are diagnostics, stop and
+say so — do not submit one. (2026-08-03 audit)
 
 Present the selection to the user for confirmation.
 
@@ -37,7 +61,7 @@ Present the selection to the user for confirmation.
 # Example: retrain best LightGBM on full data
 import lightgbm as lgb
 
-best_params = {}  # From experiments.json
+best_params = winning_entry["params"]   # experiments.json, v2 schema `params` field
 model = lgb.LGBMClassifier(**best_params)
 model.fit(X_train_full, y_train_full)
 predictions = model.predict(X_test)  # or predict_proba
@@ -48,6 +72,40 @@ predictions = model.predict(X_test)  # or predict_proba
 - Apply the same feature engineering pipeline used during training
 - For classification with probabilities: generate both hard predictions and probabilities (user chooses which to submit)
 - For regression: generate raw predictions
+
+**INVERT THE TARGET TRANSFORM BEFORE WRITING ANYTHING.** This step used to say "generate raw
+predictions" and stop, which is correct only when the model was trained on the raw target. If
+Stage 2's injection ledger carries a `target_transform`, the model was NOT:
+
+| `plan["target_transform"]["kind"]` | trained on | invert with |
+|---|---|---|
+| `ratio_log` | `log(target / covariate)` | `exp(pred) * covariate` |
+| `ratio_linear` | `target / covariate` | `pred * covariate` |
+| `log_offset` | `log1p(target)` | `expm1(pred)` |
+| (absent)    | the raw target | nothing |
+
+**A kind not in this table is a STOP, not a shrug.** `apply.py` writes
+`ratio_{space}`, so the space parameter mints new kinds — `ratio_linear` was missing from the
+first version of this table, and a dossier that chose `"space": "linear"` fell through the
+"(absent)" row and shipped a submission in `y/covariate` units (~1e-4 of the target's scale)
+that the validator passed because no `--train` was supplied (2026-08-07 re-verification). If
+the kind you read is not listed here, do not guess and do not submit: the inversion is defined
+by the transform, and an unlisted transform means this table is stale.
+
+**Run the validator WITH the training target** — `--train train.csv --target <col>` — every
+time. The Range check compares the submission against the training target's own range; without
+`--train` it silently SKIPs, which is exactly how an un-inverted ratio submission
+(values at ~1e-4 of the target's scale) got its "PASS — all checks clean".
+
+The covariate column must be joined onto the TEST frame for the inversion, with the same
+leakage rule the training join used — an inversion that reaches for a covariate value the
+training side could not see is a leak introduced at the last step.
+
+A submission written without its inversion is not a slightly worse submission; it is in the
+wrong units, and every downstream check that compares it against the training target's range
+is exactly the check that catches it. Read `competitions/<name>/injection_ledger.json`, state
+in your report which transform you inverted (or that there was none), and run the submission
+validator — its Range check exists for this.
 
 ### 4. Apply Post-Processing
 If any post-processing was found helpful during evaluation:
@@ -81,11 +139,26 @@ assert (submission[sample_sub.columns[0]] == sample_sub[sample_sub.columns[0]]).
 ```
 
 ### 6. Validate Submission
-Run validation checks before saving:
+Shape / columns / NaN / IDs are necessary but **not sufficient** — all four pass on inf
+values, constant predictions, all-zero predictions, out-of-range values, and
+probabilities sent to a hard-label metric, every one of which wastes a submission
+(2026-08-03 audit). Run the full gate:
+
+```bash
+uv run python .claude/skills/kaggle-safe-submit/scripts/validate_submission.py \
+  <submission.csv> <sample_submission.csv> --metric <metric> \
+  --train <train.csv> --target <target_col>
+```
+Exit 0 = pass, 1 = structural (never submit), 2 = suspicious (stop, report to the user,
+waive only with their agreement). The same two-tier gate is inlined in
+`assets/templates/submit_template.py`.
+
 - **Shape**: Matches sample submission exactly
 - **Columns**: Same names and order as sample submission
-- **IDs**: All test IDs are present, no extras, correct order
-- **Values**: No NaN, within expected range, correct dtype
+- **IDs**: All test IDs are present, no extras, no duplicates, correct order
+- **Values**: No NaN, no ±inf, within expected range, correct dtype
+- **Not degenerate**: More than one unique value, not all zeros
+- **Right value kind**: Probabilities for AUC/logloss, hard labels for accuracy/F1/QWK
 - **Sanity check**: Prediction distribution is similar to training target distribution (not required to match, but large deviations are suspicious)
 
 ### 7. Save Submission

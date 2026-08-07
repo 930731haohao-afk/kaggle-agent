@@ -65,13 +65,15 @@ OBJECTIVE_MAP = {
     "rmse":     ("rmse", "RMSE", "squared-error metric"),
     "rmsle":    ("rmse", "RMSE", "RMSLE = RMSE on log1p targets; transform the target, keep L2"),
     "auc":      ("binary", "Logloss", "AUC is a ranking metric: keep the plain likelihood loss "
-                                      "and drop imbalance weighting (s3e3 exp #3: 0.81901 -> "
-                                      "0.83292 after removing it; s4e1 confirms the sign at "
-                                      "scale, 0.893235 -> 0.893650)"),
+                                      "and drop imbalance weighting (measured on two benchmark "
+                                      "competitions; the per-competition numbers live in the "
+                                      "filtered knowledge library, not here -- a rationale "
+                                      "string is written into the ledger of the very "
+                                      "competition it may describe)"),
     "accuracy": ("binary", "Logloss", "threshold metric: tune the threshold in postprocess, "
                                       "not the loss"),
     "qwk":      ("rmse", "RMSE", "ordinal target: regression head plus an OptimizedRounder beats "
-                                 "a multiclass head (s3e5 exp #2->#3: QWK 0.47191 -> 0.52687)"),
+                                 "a multiclass head (measured; numbers in the filtered library)"),
 }
 _WB_PREFIX = "worldbank:"
 
@@ -83,10 +85,11 @@ def proportionality_check(df: pd.DataFrame, cov: pd.DataFrame, mapping: dict,
     total(country, year) / covariate must be near-equal ACROSS countries, leaving only a
     common year drift. Returns per-year cross-country dispersion and the years that break it.
 
-    Evidence for why this gate exists: s3e19 satisfies it in every year (dispersion
-    0.006-0.017) and the ratio target is worth -2.36 SMAPE there; sep-2022 satisfies it in
-    2017-2019 (~0.01) but 2020 breaks it 40x (0.466), and applying the ratio target blindly
-    there COST +0.46 SMAPE. The operator is conditional, not universal.
+    Why this diagnostic exists: one benchmark panel satisfies it in every year and the ratio
+    target helps decisively there; another satisfies it in normal years but breaks ~40x in an
+    anomalous year, and applying the ratio target blindly there hurt. The per-competition
+    numbers live in the filtered knowledge library -- not here, because these docstrings and
+    the ledger notes derived from them reach the very competitions they describe.
     """
     d = df.copy()
     d["_year"] = pd.to_datetime(d[date_col]).dt.year

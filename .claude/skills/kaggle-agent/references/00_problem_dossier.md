@@ -51,8 +51,12 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    mechanism working: you had no such prior before you solved that competition.
 4. Derive the split policy from the match (this pre-empts the shuffled-KFold-on-time-series
    trap: a controlled split experiment on a benchmark panel measured a 4.5× optimism bias from the forbidden split — see the filtered prior library's TASK-TS-FUTURE evidence).
-5. **Rules gate FIRST, before any external-data thinking.** Save the competition's rules text
-   to a file and run
+5. **Rules gate FIRST, before any external-data thinking.** A verdict may ALREADY be
+   recorded: if `competitions/<comp>/rules_verdict.json` already exists, READ it and move on —
+   it is an operator-resolved human reading, and re-running the gate overwrites it with
+   `conflict` (every real rules page carries generic restrictive words in non-data clauses),
+   silently shutting off a lane the human already opened (2026-08-10 audit). Only when no
+   verdict exists: save the competition's rules text to a file and run
 
    ```bash
    python3 external_data/rules_gate.py competitions/<comp>/rules.txt \
@@ -61,7 +65,9 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    ```
 
    (omit `--config-flag` if `config.yaml` has no `external_data_allowed`; exit status is the
-   verdict — 0 permitted, 3 forbidden, 4 conflict, 5 unstated). The gate
+   verdict — 0 permitted, 3 forbidden, 4 conflict, 5 unstated). On a CONFLICT, stop this line
+   of work and flag it for a human — do not resolve it yourself and do not re-run the gate
+   hoping for a different answer. The gate
    requires a QUOTE and a section reference, treats silence as forbidden (absence of a
    prohibition is not a permission), and reports a disagreement between `config.yaml` and the
    rules text as a CONFLICT to verify rather than picking a side — the recorded case where the

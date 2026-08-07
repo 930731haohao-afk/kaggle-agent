@@ -168,8 +168,8 @@ Key actions: Review experiments, analyze errors, propose improvements, track tra
 has produced a baseline solo model plus at least one blend, switch to tree search — see
 [references/07_tree_search.md](references/07_tree_search.md). Evidence: tree search beats
 the linear iteration best in 9 of 10 benchmarked competitions (1 exact tie, 0 losses;
-the archived prototype report (do not open during a run)). Harness: `tree_search/harness_v3.py`; example driver:
-`tree_search/run_s3e7_v3.py`. Keep the linear protocol above as the fallback for the very
+the archived prototype report (do not open during a run)). Harness: `tree_search/harness_v3.py`; template driver:
+`tree_search/run_template_v3.py` (competition-agnostic — never copy a per-competition run_*_v3.py, they embed recorded configs). Keep the linear protocol above as the fallback for the very
 first iteration pass (before a baseline + blend exist) and for small/cheap-eval
 competitions where a ~60-node search budget isn't worth it.
 

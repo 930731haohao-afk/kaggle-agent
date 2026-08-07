@@ -1,29 +1,27 @@
 # Stage 3: Modeling
 
 ## Contents
-1. [Consult Experience Library](#1-consult-experience-library)
-2. [Establish Baseline](#2-establish-baseline)
-3. [Best-of-N Candidate Generation](#3-best-of-n-candidate-generation)
-4. [Auto-ML Search](#4-auto-ml-search)
-5. [Log Experiments](#5-log-experiments)
-6. [Analyze Results](#6-analyze-results)
-7. [Manual Model Tuning (Optional)](#7-manual-model-tuning-optional)
-8. [Ensembling](#8-ensembling)
-9. [Recommend Next Steps](#9-recommend-next-steps)
+1. [Establish Baseline](#1-establish-baseline)
+2. [Auto-ML Search](#2-auto-ml-search)
+3. [Log Experiments](#3-log-experiments)
+4. [Analyze Results](#4-analyze-results)
+5. [Manual Model Tuning (Optional)](#5-manual-model-tuning-optional)
+6. [Ensembling](#6-ensembling)
+7. [Recommend Next Steps](#7-recommend-next-steps)
 
 ## Objective
 Train models using both a quick baseline and Auto-ML tools, tracking all experiments systematically.
 
 ## Steps
 
-### 1. Consult Experience Library
-Before choosing an approach, check past competition results for similar problems:
-- Read MEMORY.md for patterns from completed competitions
-- Scan `competitions/*/STATUS.md` for competitions with same problem type/metric
-- Note which models, features, and tricks worked best on similar data
-- Present recommendations to user before proceeding
+### 0. Retrieval Gate (before every new experiment)
+Run `VIRTUAL_ENV= uv run python3 knowledge/query_library.py --query <terms>` with the
+experiment's metric, data-type, and idea keywords; record `library_query` (the terms) and
+`library_hits` (top results, or `none`) in the experiment entry BEFORE running it. The
+self-exclusion HARD RULE from SKILL.md applies to the hits: skip any entry whose 證據 cites
+the current competition. No trace, no experiment — `query_library.py --audit` enforces.
 
-### 2. Establish Baseline
+### 1. Establish Baseline
 Before any Auto-ML, train a simple baseline to set a reference point:
 
 **For classification:**
@@ -53,30 +51,7 @@ Log the baseline CV score to `experiments.json`:
 }
 ```
 
-### 3. Best-of-N Candidate Generation
-Instead of trying one approach at a time, generate 3-5 diverse candidates and evaluate all:
-
-1. **Generate diverse candidates** — Ensure diversity across at least 2 axes:
-   - Model family: LightGBM, XGBoost, CatBoost, Ridge/ElasticNet, Neural Network
-   - Feature set: basic, advanced interactions, selected subset
-   - Preprocessing: raw vs. scaled vs. transformed target
-
-2. **Evaluate all candidates** with the same CV strategy
-
-3. **Report ranked results** to the user:
-   ```
-   Candidate Results (5-fold CV):
-   1. CatBoost + basic:     CV = 0.823  ← Best
-   2. LGB + interactions:   CV = 0.819
-   3. XGBoost + basic:      CV = 0.812
-   Selected: CatBoost for iteration, LGB for ensemble diversity.
-   ```
-
-4. **Expand the top 1-2 candidates** — Tune hyperparameters, add features, etc.
-
-This is especially valuable at the start of modeling and when stuck (combine with Adaptive Search results from evaluation stage).
-
-### 4. Auto-ML Search
+### 2. Auto-ML Search
 Run Auto-ML to systematically search model space. Choose based on availability:
 
 **AutoGluon (preferred for tabular):**
@@ -113,14 +88,14 @@ automl.fit(
 
 **Ask user before running** if time_limit > 600 seconds (10 minutes).
 
-### 5. Log Experiments
+### 3. Log Experiments
 After Auto-ML completes, log each model to `experiments.json`:
 - Model type and hyperparameters
 - CV score (mean and per-fold)
 - Training time
 - Feature set used
 
-### 6. Analyze Results
+### 4. Analyze Results
 Report to the user:
 - **Leaderboard**: All models ranked by CV score
 - **Baseline comparison**: How much did Auto-ML improve over baseline?
@@ -128,7 +103,7 @@ Report to the user:
 - **Score distribution**: How much variance across folds?
 - **Diminishing returns**: Is the gap between #1 and #5 small? (suggests feature engineering matters more than model tuning)
 
-### 7. Manual Model Tuning (Optional)
+### 5. Manual Model Tuning (Optional)
 If Auto-ML results suggest a particular model family works well, offer to fine-tune:
 - **LightGBM/XGBoost**: learning_rate, num_leaves, max_depth, min_child_samples, reg_alpha, reg_lambda
 - **CatBoost**: depth, l2_leaf_reg, learning_rate, iterations
@@ -152,7 +127,7 @@ study = optuna.create_study(direction='<maximize|minimize>')
 study.optimize(objective, n_trials=50)
 ```
 
-### 8. Ensembling
+### 6. Ensembling
 If multiple strong models exist, consider:
 - **Simple averaging**: Average predictions from top N models (good starting point)
 - **Weighted averaging**: Weight models by CV performance
@@ -160,7 +135,7 @@ If multiple strong models exist, consider:
 
 Log ensemble experiments the same way as individual models.
 
-### 9. Recommend Next Steps
+### 7. Recommend Next Steps
 Based on results, recommend one of:
 - **Iterate features** — If model scores are similar, features are the bottleneck
 - **Iterate models** — If one model family clearly dominates, tune it further

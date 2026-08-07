@@ -104,6 +104,12 @@ def canonical(comp: str, kb: dict | None = None) -> str:
         short = canon.replace("playground-series-", "").replace("tabular-", "")
         for stem in (canon, short):
             if stem and c.startswith(stem) and c != stem:
+                # A DIGIT continuation is a numbered sibling competition (s4e1 -> s4e11,
+                # s5e1 -> s5e10), not a workspace derivation: refusing it crashed the s4e11
+                # lane's only knowledge door (2026-08-10 round-6). Derivations always start
+                # with a separator, which the branches above already recognize.
+                if c[len(stem)].isdigit():
+                    continue
                 raise ValueError(
                     f"competition spelling {comp!r} extends the known slug {canon!r} but "
                     f"matches no recognized derivation pattern. Refusing to guess: if this "

@@ -1143,3 +1143,124 @@ class TestRound5MakeArm:
         from tree_search import make_v5_arm
         with pytest.raises(ValueError, match="BASE"):
             make_v5_arm.build("cat-in-the-dat", "ratio", [])
+
+
+# ===========================================================================
+# ROUND 6 (2026-08-10): the convergence check's findings
+# ===========================================================================
+class TestRound6:
+    def test_canonical_handles_numbered_sibling_slugs(self):
+        # s4e1 is a string prefix of s4e11 — a DIFFERENT competition, not a derivation;
+        # the round-5 ambiguity refusal crashed the s4e11 lane's only knowledge door
+        from knowledge.task_priors_for import canonical, load_kb
+        kb = load_kb()
+        assert canonical("playground-series-s4e11", kb) == "playground-series-s4e11"
+        assert canonical("playground-series-s4e11.repeat-r1-20260731", kb) == \
+            "playground-series-s4e11"
+        # the refusal still fires on a NON-numeric extension without a separator
+        with pytest.raises(ValueError):
+            canonical("playground-series-s5e1x-unknown-thing", kb)
+
+    def test_every_manifest_comp_renders_all_three_views(self):
+        import subprocess
+        import json as _json
+        comps = list(_json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))
+                     ["competitions"])
+        for comp in comps:
+            for mode in ([], ["--ops"], ["--prereg"]):
+                r = subprocess.run([sys.executable,
+                                    os.path.join(REPO, "knowledge/task_priors_for.py"),
+                                    comp, *mode], capture_output=True, text=True,
+                                   cwd=REPO, check=False)
+                assert r.returncode == 0, f"{comp} {mode}: {r.stderr[-200:]}"
+
+    def test_operator_doc_examples_are_not_a_competitions_recipe(self):
+        # the encoding example was {"columns": ["surname"], "smoothing": 20.0} — s4e1's
+        # actual recorded winning element, served to s4e1's own view as "generic" prose
+        from knowledge.task_priors_for import load_kb
+        kb = load_kb()
+        blob = " ".join(op["doc"] for op in kb["operators"]).lower()
+        assert "surname" not in blob, (
+            "an operator doc example uses a real competition's recorded recipe element")
+
+    def test_instruction_files_cite_no_per_comp_drivers(self):
+        # run_s3e7_v3.py was the mandated "template"/"full runnable example" — it embeds
+        # s3e7's recorded champion config and digit-verify targets
+        import re as _re
+        for skill in ("kaggle-agent", "kaggle-agent-self-improvement"):
+            refdir = os.path.join(REPO, f".claude/skills/{skill}/references")
+            files = [os.path.join(REPO, f".claude/skills/{skill}/SKILL.md")]
+            if os.path.isdir(refdir):
+                files += [os.path.join(refdir, f) for f in os.listdir(refdir)
+                          if f.endswith(".md")]
+            for fp in files:
+                txt = open(fp).read()
+                hits = _re.findall(r"(?:run|eval)_s\d+e\d+\w*\.py|(?:run|eval)_(?:tps|afsis|citd|conway|aug|jan|sep)\w*\.py", txt)
+                assert not hits, (
+                    f"{skill}/{os.path.basename(fp)} cites per-competition driver(s) {hits[:3]} "
+                    f"— those files embed the competition's own recorded configs")
+
+    def test_sibling_skill_carries_no_removed_results(self):
+        # the self-improvement skill was a pre-fix snapshot still carrying 4.56/20.41 etc.
+        refdir = os.path.join(REPO, ".claude/skills/kaggle-agent-self-improvement/references")
+        skill_md = os.path.join(REPO, ".claude/skills/kaggle-agent-self-improvement/SKILL.md")
+        needles = ["4.56", "20.41", "2.17%", "4.1793", "6.1551"]
+        offenders = []
+        files = [skill_md] + [os.path.join(refdir, f) for f in os.listdir(refdir)
+                              if f.endswith(".md")]
+        for fp in files:
+            txt = open(fp).read()
+            offenders += [f"{os.path.basename(fp)}: {n}" for n in needles if n in txt]
+        assert not offenders, "the sibling skill still carries removed results:\n  " + \
+            "\n  ".join(offenders)
+
+    def test_sibling_skill_forbids_raw_library_reads(self):
+        txt = open(os.path.join(
+            REPO, ".claude/skills/kaggle-agent-self-improvement/SKILL.md")).read()
+        flat = " ".join(txt.lower().replace("`", "").split())
+        assert "consult knowledge/experience.md" not in flat or "do not open" in flat, (
+            "the sibling skill still mandates a raw experience.md read")
+
+    def test_idea_bank_is_guarded(self):
+        # idea_bank.md quoted [INT] results with scores for 10+ benchmark comps and no
+        # prohibition named it
+        assert not os.path.exists(os.path.join(REPO, "knowledge/idea_bank.md")), (
+            "knowledge/idea_bank.md still sits unguarded beside the tool-only library; "
+            "archive it (its consumer channel is dormant) or put it behind a filter")
+
+    def test_step5_reads_the_recorded_verdict_instead_of_overwriting(self):
+        doc = open(os.path.join(
+            REPO, ".claude/skills/kaggle-agent/references/00_problem_dossier.md")).read()
+        step5 = doc[doc.index("Rules gate FIRST"):]
+        step5 = step5[:step5.index("\n6.")]
+        assert "already exists" in step5 or "already recorded" in step5, (
+            "step 5 unconditionally re-records the verdict, overwriting the operator's "
+            "human-resolved one with 'conflict' and shutting off the external-data lane")
+
+    def test_apply_py_rationales_carry_no_competition_results(self):
+        import re as _re
+        src = open(os.path.join(REPO, "external_data/apply.py")).read()
+        # recorded scores that belong in the knowledge base, not in dispatch-time strings
+        # that get written into the same competition's own ledger
+        needles = ["0.81901", "0.83292", "0.47191", "0.52687", "0.893235", "0.893650",
+                   "8.43", "5.80", "-2.36", "11.348", "0.466", "10.148", "7.793"]
+        hits = [n for n in needles if n in src]
+        assert not hits, (
+            f"apply.py hardcodes recorded results {hits[:6]} into rationale/evidence "
+            f"strings; they are written into the ledger of the very competition they came "
+            f"from, bypassing the renderer's exclusion")
+
+    def test_manifest_prescribes_no_self_seeded_driver(self):
+        import json as _json
+        m = _json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))
+        for comp, spec in m["competitions"].items():
+            drv = spec.get("driver", "")
+            assert not _re_matches_per_comp(drv), (
+                f"{comp}: manifest pins {drv!r}, a per-competition driver embedding that "
+                f"competition's own recorded root/champion — a fresh run would warm-start "
+                f"from its own answer")
+
+
+def _re_matches_per_comp(drv: str) -> bool:
+    import re as _re
+    return bool(_re.match(r"run_(?:s\d+e\d+|tps\w+|afsis|citd|conway|aug\d+|jan\d+|sep\d+|tssep\d+|tpsjan\d+)", drv))

@@ -30,7 +30,7 @@ This document is the **advanced Stage 4 loop** that follows [05_evaluation.md](0
 | Structure-dominant (a panel whose generative structure — e.g. grouped historical means — beats a GBDT outright) | **structural configs**: `kind="solo"` but `params` are structural knobs (window size, anomalous-year downweighting, joint shift amount) rather than GBDT hyperparameters. First confirm whether the residual diagnostic already shows "features carry no structured predictable signal about the target beyond structure" — if so, do not waste budget forcing a GBDT node-space. | measured on one structure-dominant benchmark competition |
 | Discretized / post-rounding decision metrics (e.g. QWK-after-rounder, rounded MAE) | metric_fn **must include the postprocessing** (rounding/OptimizedRounder); decisions are always made on the **post-processed** score, never on the raw OOF score — otherwise you hit the "raw improves, rounded gets worse" mirror-failure mode. | measured: a winning combination had worse raw MAE than the linear champion but better rounded MAE — decide on the post-processed score |
 
-Regardless of type, **every node's `config` field must be the canonical/hashable "stored form"** (so the hash the dedup relies on is meaningful) — see the `core(cfg)` convention in `run_s3e7_v3.py`: drop output fields such as `result`/`want_importance`, and sort a blend's `members` before storing.
+Regardless of type, **every node's `config` field must be the canonical/hashable "stored form"** (so the hash the dedup relies on is meaningful) — see the `core(cfg)` convention in `run_template_v3.py`: drop output fields such as `result`/`want_importance`, and sort a blend's `members` before storing.
 
 ### Sign convention: every stored `score` is lower-is-better
 
@@ -60,7 +60,7 @@ Getting this wrong does not raise: a maximize metric stored unflipped makes `min
 
 ## 4. Driver script checklist
 
-Using `tree_search/run_s3e7_v3.py` as the template (already wired with the three Phase H-1 productionization features), a new competition's driver **must**:
+Copying `tree_search/run_template_v3.py` (competition-agnostic; the per-competition run_*_v3.py files embed their competition's RECORDED configs and exist only to reproduce recorded trees — never copy one of those for a fresh run: 2026-08-10 audit), a new competition's driver **must**:
 
 1. **Digit-for-digit root verification**: the root node's configuration must be bit-identical to that comp's known-best solo (usually from linear iteration or a previous harness version); immediately after evaluating it, `assert round(auc_or_score, 6) == <known_value>` and abort on failure — do not let drift in the root's own data/features silently contaminate the whole tree.
 2. **OOF cache reuse** (optional but recommended): if an old tree (v2 or linear iteration) already has cached OOF for the identical configuration, reload it and recompute the metric, accepting the reuse only when it matches to 6 decimal places (digit-verified), otherwise fall back to real training — saves the compute of redundant training without sacrificing correctness.
@@ -82,7 +82,7 @@ After each search, if a new validated insight is found, write it back into `know
 
 Every completed tree-search run must report:
 
-- **evals-to-beat**: the evaluation at which it matched/surpassed the linear-iteration best score (the driver should compute `evals_to_match_linear_best` mechanically, like `run_s3e7_v3.py`, not estimate from impression).
+- **evals-to-beat**: the evaluation at which it matched/surpassed the linear-iteration best score (the driver should compute `evals_to_match_linear_best` mechanically from this run's own linear-protocol best, not estimate from impression).
 - **backtracks / plateau log**: `tree["search_state"]["backtrack_log"]` and the `plateaued` lineage list, attached verbatim without summarizing away the detail.
 - **dedup rejection count**: `DEDUP_REJECTIONS`/`dedup_rejections` — too many means the node-space design is too narrow and the mutation queue is worth revisiting.
 - **cost-guard / sanity-gate trigger records**: both default to "a trigger must leave an explicit warning," never silent — list each one when reporting, and say so explicitly even when "neither fired this run."
@@ -117,4 +117,4 @@ while not hv3.should_stop(tree):
     hv3.save_search_state(tree, TREE_PATH)
 ```
 
-Full runnable example: `tree_search/run_s3e7_v3.py`. Full API list: the `tree_search/harness_v3.py` module docstring.
+Template: `tree_search/run_template_v3.py`. Full API list: the `tree_search/harness_v3.py` module docstring.

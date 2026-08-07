@@ -25,7 +25,13 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 import harness_v3 as hv3   # noqa: E402  -- for the mode='off' == stage-4-baseline equality check
-import harness_v4 as hv4   # noqa: E402
+import harness_v4 as hv4
+import os as _os
+# the live idea bank is archived (2026-08-10, unguarded per-comp results);
+# these tests exercise the PARSER against the archived historical file
+hv4.DEFAULT_IDEA_BANK_PATH = _os.path.join(
+    _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+    'knowledge', 'archive_pre_structured', 'idea_bank.md')   # noqa: E402
 
 # comp_meta a distribution-shift / adversarial-validation scenario would carry (any metric;
 # adversarial validation triggers on the SCENARIO, per idea_bank EXT-14's "任何指標").
