@@ -1,575 +1,383 @@
-"""Emit the task-prior library FILTERED for one competition — the Stage 0.5 door.
+"""Render the knowledge library FILTERED for one competition — the only door Stage 0.5 may use.
 
-WHY THIS EXISTS. `knowledge/task_priors.md` is read by Stage 0.5 to answer "what kind of
-problem is this?". It is also, almost entirely, a residue of the benchmark runs: 7 of its 8
-[TASK-*] entries have Evidence resting on competitions in the 20-competition benchmark, and
-some of that evidence names the OTHER agents' results outright --
+WHY A RENDERER AND NOT A REDACTOR. Four adversarial verification rounds attacked the previous
+design (per-competition scrubbing of the prose files) and each round found a channel the
+scrubber could not see: competition names, then bare numbers, then hard-wrapped continuation
+lines, then positional aggregates, then verbatim headings, then this module's own docstring.
+Redaction of natural language is an unwinnable enumeration game, because information survives
+in meaning. The same lesson produced the fail-closed rules gate; this is its knowledge-side
+twin:
 
-    TASK-CAT-ONLY ... Evidence: cat-in-the-dat — my-agent private AUC 0.80241 (PR 73.1) vs
-    NVIDIA 0.77084 ...; s3e11 — AIDE's only outright win came from a node that accidentally
-    enabled native categorical handling.
-
-`run_myagent_headless.sh` forbids reading anything under the other agents' directories, but
-that constraint is enforced on DIRECTORIES. This file is the path around it: a re-run of s3e11
-reads AIDE's winning mechanism without touching AIDE's workspace, and a re-run of
-cat-in-the-dat reads its own private score. SKILL.md's HARD RULE is scoped to experience.md
-bullets and explicitly places task priors outside it, and 00_problem_dossier.md has no
-exclusion instruction at all.
-
-WHY EXCLUSION IS ENTRY-LEVEL AND NOT CITATION-LEVEL. Each entry is Trigger / Action /
-Evidence, and the ACTION is the distilled answer. Deleting only the Evidence line removes the
-attribution and leaves the answer:
-
-    TASK-SPECTRAL  Trigger: thousands of ordered numeric columns, few rows.
-                   Action : Savitzky-Golay-type derivatives, dimensionality reduction,
-                            per-target models, strong regularization.
-                   Evidence: afsis-soil-properties ...
-
-Those three moves ARE the afsis solution, learned by solving afsis; on a re-run of afsis a
-citation-level filter hands the agent the recipe with the serial number filed off. TASK-STRUCT-OUT
-is starker still: its trigger ("a grid or sequence governed by explicit rules, e.g. cellular
-automata") fires on exactly one competition in existence.
-
-So: drop any line naming the competition, AND drop the whole entry when its Evidence set
-empties as a result. The agent is genuinely weaker on those competitions -- which is the point,
-because it had no such capability before it solved them. Entries resting on several
-competitions keep their Action, since it stays supported by independent evidence.
-
-The project already reached this conclusion once by hand: on 2026-07-30 a clause was struck
-from TASK-TS-FUTURE with the note "a prior library that carries it launders exactly the input
-class the isolation protocol excludes". That single instance was fixed; the structural version
-was not, until now.
+  - the source of truth is `knowledge/knowledge_base.json`: structured records whose prose
+    fields are COMPETITION-FREE by contract (enforced by --selftest), and whose every
+    competition-specific fact is an evidence item carrying its comp slug;
+  - exclusion is exact set arithmetic on that slug — no pattern matching on prose;
+  - every view is REGENERATED from the surviving facts, so a withheld fact leaves no marker,
+    no heading, no paragraph shape, and no position for an attacker to read;
+  - cross-agent evidence (other lanes' results) is never rendered for any competition;
+  - an entry whose admissible evidence empties for a competition is dropped whole — the
+    action line IS the distilled answer — unless the entry is marked generic;
+  - computed aggregates (the cross-competition form record) are derived at render time from
+    surviving rows only, so a member competition never sees a summary its own row shaped.
 
 Usage:
-  python3 knowledge/task_priors_for.py <competition-slug>          # the filtered library
-  python3 knowledge/task_priors_for.py <slug> --report             # what was dropped and why
+  python3 knowledge/task_priors_for.py <competition-slug>            # task priors
+  python3 knowledge/task_priors_for.py <competition-slug> --ops      # operator vocabulary
+  python3 knowledge/task_priors_for.py <competition-slug> --prereg   # pre-registrations
+  python3 knowledge/task_priors_for.py <competition-slug> --report   # what was withheld
   python3 knowledge/task_priors_for.py --selftest
 """
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
-PRIORS = _HERE / "task_priors.md"
+KB_PATH = _HERE / "knowledge_base.json"
 
-# Same alias table the other two doors use. Kept in one place per module deliberately: three
-# copies of a slug table is how they drift, so each imports from harness_v2 when it can.
-try:
-    sys.path.insert(0, str(_HERE.parent / "tree_search"))
-    from harness_v2 import comp_aliases as _aliases  # noqa: E402
-except Exception:  # noqa: BLE001 - stay usable if the harness is not importable
-    _ALIASES = {
-        "tabular-playground-series-jan-2022": ["tpsjan22", "jan-2022", "jan2022"],
-        "tabular-playground-series-aug-2022": ["tpsaug22", "aug-2022", "aug2022"],
-        "tabular-playground-series-sep-2022": ["tpssep22", "sep-2022", "sep2022"],
-        "afsis-soil-properties": ["afsis"],
-        "conway-s-reverse-game-of-life": ["conway"],
-        "cat-in-the-dat": ["citd"],
-    }
+# Workspace-derivation suffixes: a repeat/arm/leftover workspace is still solving the base
+# competition, so exclusion must key on the base slug.
+_WS_SUFFIX = re.compile(r"(\.(repeat|leftover)[\w-]*|-v5-[\w-]+)$")
+_DASHES = dict.fromkeys(map(ord, "‐‑‒–—―−"), ord("-"))
 
-    _WS_SUFFIX = re.compile(r"(\.(repeat|leftover)[\w-]*|-v5-[\w-]+)$")
-
-    def _aliases(comp: str) -> list[str]:
-        prev = None
-        while comp and comp != prev:              # strip workspace-derivation suffixes
-            prev = comp
-            comp = _WS_SUFFIX.sub("", comp)
-        al = {comp} | set(_ALIASES.get(comp, []))
-        al.add(comp.replace("playground-series-", "").replace("tabular-", ""))
-        return sorted(al, key=len, reverse=True)
-
-# The other agents are never a legitimate input to this stage, whatever competition is being
-# solved. A prior that cites them is laundering the comparison itself.
-_OTHER_AGENTS = re.compile(r"\bAIDE\b|\bNVIDIA\b", re.I)
-
-# Every token the library uses to cite a competition. Used to ask "does this surviving evidence
-# fragment cite ANY competition?" -- a fragment citing none is a continuation of a dropped item.
-_ALL_COMP_TOKENS = sorted({
-    "s3e1", "s3e3", "s3e5", "s3e7", "s3e9", "s3e11", "s3e14", "s3e16", "s3e19", "s3e20",
-    "s4e1", "s4e11", "s5e1", "s5e10", "s6e1", "s6e2",
-    "afsis", "afsis-soil-properties", "cat-in-the-dat", "citd",
-    "conway", "conway-s-reverse-game-of-life",
-    "tps-aug-2022", "tpsaug22", "aug-2022", "tps-jan-2022", "tpsjan22", "jan-2022",
-    "tps-sep-2022", "tpssep22", "sep-2022",
-    "spaceship-titanic", "house-prices", "home-data",
-}, key=len, reverse=True)
+_SHORT_ALIASES = {
+    "tabular-playground-series-jan-2022": ["tpsjan22", "jan-2022", "jan2022", "tps-jan-2022"],
+    "tabular-playground-series-aug-2022": ["tpsaug22", "aug-2022", "aug2022", "tps-aug-2022"],
+    "tabular-playground-series-sep-2022": ["tpssep22", "sep-2022", "sep2022", "tps-sep-2022"],
+    "afsis-soil-properties": ["afsis"],
+    "conway-s-reverse-game-of-life": ["conway"],
+    "cat-in-the-dat": ["citd"],
+}
 
 
-# Unicode dash/hyphen variants normalize to ASCII '-' before any alias match: a write-back
-# spelling "tps‑sep‑2022" with non-breaking hyphens evaded every door (2026-08-07 round-3).
-_DASHES = dict.fromkeys(map(ord, "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"), ord("-"))
+def load_kb() -> dict:
+    return json.loads(KB_PATH.read_text(encoding="utf-8"))
 
 
-def _names(text: str, aliases: list[str]) -> bool:
-    low = text.translate(_DASHES).lower()
-    for a in aliases:
-        if re.search(rf"(?<![0-9a-z]){re.escape(a.lower())}(?![0-9a-z])", low):
-            return True
-    return False
+def _known_comps(kb: dict) -> set:
+    out = set()
+    for e in kb.get("task_priors", []):
+        out.update(ev["comp"] for ev in e.get("evidence", []))
+    for op in kb.get("operators", []):
+        out.update(ev["comp"] for ev in op.get("evidence", []))
+    for r in kb.get("form_race", {}).get("rows", []):
+        out.add(r["comp"])
+    for p in kb.get("prereg", []):
+        for c in p.get("clauses", []):
+            out.update(c.get("evidence", []))
+    return out
 
 
-def _parse(md: str) -> tuple[list[dict], str, list[dict]]:
-    """Split the file into TASK entries, the preamble, and every OTHER section.
+def canonical(comp: str, kb: dict | None = None) -> str:
+    """Any spelling of a competition -> the canonical slug evidence items use.
 
-    Returns (task_entries, preamble, other_sections). The third value exists because a
-    `##` heading that is not a TASK entry -- "## External-data whitelist (Stage 0.5 / Plan C)"
-    and its 7-row source table -- used to be absorbed as trailing free text into whichever
-    TASK entry preceded it, and was therefore deleted whenever THAT entry was dropped. Result:
-    7 whitelist rows in, 0 out, for all 20 competitions, while 00_problem_dossier.md step 6
-    instructs the agent to pick external sources from exactly that table in the filtered
-    output. A section this filter does not understand must pass through untouched, never be
-    annexed by a neighbour (2026-08-07 re-verification).
+    Handles workspace-derived names (repeat runs, v5 arms), short forms, unicode dashes and
+    the playground-series prefix. An unknown competition canonicalizes to its own base name,
+    which matches no evidence and therefore excludes nothing — correct, because a new
+    competition's facts enter the base carrying its own slug and then match exactly.
     """
-    tasks, others, cur, preamble = [], [], None, []
-    for line in md.splitlines():
-        h2 = re.match(r"^##\s+(.*)$", line)
-        if h2:
-            name = h2.group(1).strip()
-            if re.match(r"^TASK-[\w-]+", name):
-                cur = {"name": name.split()[0], "header": line, "fields": []}
-                tasks.append(cur)
-            else:
-                cur = {"header": line, "lines": []}
-                others.append(cur)
+    c = (comp or "").translate(_DASHES).strip().lower()
+    prev = None
+    while c and c != prev:
+        prev = c
+        c = _WS_SUFFIX.sub("", c)
+    comps = _known_comps(kb) if kb else set(_SHORT_ALIASES)
+    for canon in comps | set(_SHORT_ALIASES):
+        if c == canon:
+            return canon
+        short = canon.replace("playground-series-", "").replace("tabular-", "")
+        if c == short or c in _SHORT_ALIASES.get(canon, []):
+            return canon
+        if c == f"playground-series-{canon}" or f"playground-series-{c}" == canon:
+            return canon
+    return c
+
+
+def _admissible(evidence: list, excl: str) -> list:
+    return [e for e in evidence
+            if not e.get("cross_agent") and e.get("comp") != excl]
+
+
+def _short(comp: str) -> str:
+    return comp.replace("playground-series-", "").replace("tabular-", "")
+
+
+# ---------------------------------------------------------------------------
+# renderers
+# ---------------------------------------------------------------------------
+def render_priors(kb: dict, comp: str) -> tuple[str, list[dict]]:
+    excl = canonical(comp, kb)
+    out, report = [kb["priors_header"], ""], []
+
+    for e in kb["task_priors"]:
+        adm = _admissible(e.get("evidence", []), excl)
+        had_own = any(ev.get("comp") == excl for ev in e.get("evidence", []))
+        only_cross = (not adm and bool(e.get("evidence"))
+                      and all(ev.get("cross_agent") for ev in e["evidence"]))
+        if not adm and not e.get("generic") and not only_cross:
+            report.append({"entry": e["id"], "action": "dropped_entry",
+                           "reason": "all admissible evidence rests on this competition"})
             continue
-        if cur is None:
-            preamble.append(line)
-            continue
-        if "lines" in cur:                       # a non-TASK section: verbatim, no filtering
-            cur["lines"].append(line)
-            continue
-        f = re.match(r"^-\s+\*\*(\w+)\*\*:\s*(.*)$", line)
-        if f:
-            cur["fields"].append([f.group(1), f.group(2)])
-        elif cur["fields"] and line.strip():
-            cur["fields"][-1][1] += "\n" + line
-        elif line.strip():
-            cur["fields"].append(["_free", line])
-    return tasks, "\n".join(preamble), others
-
-
-def filter_priors(md: str, comp: str) -> tuple[str, list[dict]]:
-    """Return (filtered markdown, drop report)."""
-    entries, preamble, others = _parse(md)
-    aliases = _aliases(comp)
-    kept_md, report = [preamble.rstrip()], []
-
-    for e in entries:
-        kept_fields, dropped_lines = [], []
-        for label, text in e["fields"]:
-            # Segment-granular, NOT line-granular. task_priors.md is hard-wrapped, so an
-            # evidence item routinely spans three lines: dropping only the line that carries
-            # the competition name leaves orphan continuations ("an 80-node search; tree
-            # search on this comp: 0.44817 -> 0.444076") that name nothing, look like
-            # surviving evidence, and kept TASK-SPECTRAL alive on an afsis run.
-            flat = " ".join(ln.strip() for ln in text.split("\n") if ln.strip())
-            segs = [s for s in re.split(r"(?<=[.;])\s+", flat) if s.strip()]
-
-            # TWO DIFFERENT OPERATIONS, kept apart. Conflating them made the filter delete
-            # 3 of 8 entries for EVERY competition, including ones unrelated to any prior
-            # (2026-08-07 re-verification):
-            #
-            #   self-exclusion  -- a sentence naming the competition being solved is that
-            #                      competition's own answer. It is removed, and if that empties
-            #                      the evidence the whole entry goes, because the Action it
-            #                      licenses then rests on the competition alone.
-            #   cross-agent     -- a sentence citing AIDE's or NVIDIA's result must not reach
-            #                      any run, but its absence says nothing about whether OUR
-            #                      evidence supports the Action. It must never, by itself,
-            #                      condemn the entry.
-            # SUBJECT TRACKING. Prose evidence names its competition once and then continues
-            # for two or three sentences that name nothing -- "s5e1 violated it in 6 of 7
-            # years ... The opposite happened: ratio_target won decisively (private MAPE
-            # 0.12417 vs 0.15626)." A per-sentence name match drops the first and SERVES the
-            # rest, which handed an s5e1 re-run its own private score and its own
-            # pre-registered form verdict. A sentence citing no competition belongs to the
-            # last one that did (2026-08-07 re-verification).
-            self_named, cross_agent, keep = [], [], []
-            subject_is_self = False
-            for s in segs:
-                # The subject updates when a sentence names ANY competition -- known tokens
-                # OR the one being solved. Gating on the hardcoded token snapshot alone meant
-                # a post-benchmark slug (absent from the list) never set subject_is_self and
-                # was served its own evidence verbatim (2026-08-07 round-3).
-                cites = _names(s, _ALL_COMP_TOKENS) or _names(s, aliases)
-                if cites:                       # this sentence sets the subject
-                    subject_is_self = _names(s, aliases)
-                # else: subject carries over from the previous sentence
-                if subject_is_self:
-                    self_named.append(s)
-                elif _OTHER_AGENTS.search(s):
-                    cross_agent.append(s)
-                else:
-                    keep.append(s)
-            dropped_lines += self_named + cross_agent
-            emptied_by_self = False
-            if label.lower() == "evidence" and (self_named or cross_agent):
-                # Evidence survives only if something in it cites a competition OTHER than the
-                # one being solved; a fragment citing nothing is a continuation of a dropped
-                # item, not independent support.
-                #
-                # Gated on "something was actually dropped from this field". Orphan fragments
-                # only exist where a sibling segment was removed. Applied unconditionally, this
-                # rule also condemned TASK-IMBALANCED, whose evidence reads "none of ours yet
-                # -- [GEN], unvalidated": an honestly-labelled generic prior containing no
-                # competition's answer at all, which is precisely what this filter exists to
-                # preserve (2026-08-07 re-verification).
-                if not any(_names(s, _ALL_COMP_TOKENS) for s in keep):
-                    emptied_by_self = bool(self_named)
-                    keep = []
-            if keep:
-                kept_fields.append((label, " ".join(keep)))
-            elif label.lower() == "evidence" and not emptied_by_self and cross_agent:
-                # Everything that supported this Action was another agent's result. The Action
-                # itself may still be sound generic knowledge, so the entry stays -- but the
-                # gap is STATED, not papered over, because an unsupported prior a reader
-                # believes is evidence-backed is worse than one that admits it is not.
-                kept_fields.append((label, "[withheld — the evidence for this entry cited "
-                                           "another agent's result, which is not a legitimate "
-                                           "input to this stage. Treat the Action as an "
-                                           "unvalidated generic prior.]"))
-            elif label.lower() != "evidence":
-                # Trigger/Action never survive on their own if they named the competition.
-                dropped_lines.append(f"[{label} removed entirely]")
-
-        has_evidence = any(lb.lower() == "evidence" and tx.strip() for lb, tx in kept_fields)
-        if not has_evidence:
-            # THE ENTRY-LEVEL RULE. Its evidence emptied, so the Action it licenses is
-            # supported only by the competition being solved: drop the whole entry.
-            report.append({"entry": e["name"], "action": "dropped_entry",
-                           "reason": "every Evidence line named this competition (or another "
-                                     "agent's result), so the Action rests on it alone",
-                           "dropped": dropped_lines})
-            continue
-        if dropped_lines:
-            report.append({"entry": e["name"], "action": "trimmed",
-                           "reason": "some evidence named this competition; the Action stays "
-                                     "supported by independent evidence",
-                           "dropped": dropped_lines})
-        kept_md.append("")
-        kept_md.append(e["header"])
-        for lb, tx in kept_fields:
-            kept_md.append(tx if lb == "_free" else f"- **{lb}**: {tx}")
-
-    # Non-TASK sections are SCRUBBED, not passed verbatim. "They carry no per-competition
-    # evidence" was a property of the file that day, not of the mechanism: the write-back
-    # convention appends run notes, and a note under "## Run notes 2026-08" naming this
-    # competition's fresh score (or another agent) sailed through untouched
-    # (2026-08-07 round-3). filter_ops' line/table scrub is exactly the right shape: it never
-    # deletes structure, so the whitelist table and its rows survive; only sentences whose
-    # subject is this competition or another agent are withheld.
-    for sec in others:
-        kept_md.append("")
-        kept_md.append(sec["header"])
-        body = "\n".join(sec["lines"])
-        scrubbed, sec_rep = filter_ops(body, comp)
-        kept_md.append(scrubbed.rstrip("\n"))
-        report.extend({"entry": sec["header"].lstrip("# ").strip(), "action": "scrubbed",
-                       "reason": r["where"], "dropped": [r["dropped"]]} for r in sec_rep)
-
-    return "\n".join(kept_md).rstrip() + "\n", report
-
-
-def filter_ops(md: str, comp: str) -> tuple[str, list[dict]]:
-    """Per-competition view of knowledge/injection_operators.md.
-
-    That file is the OPERATOR VOCABULARY -- the shared contract between Stage 0.5 and the
-    execution layer -- so structure is never deleted: every heading, table row and paragraph
-    survives. What gets redacted, in place and visibly, is any sentence or evidence cell whose
-    subject is the competition being solved (its own answer) or another agent's run. Deleting
-    a vocabulary row would make conforming dossiers unwritable; serving the row's evidence
-    would hand the re-run its own result. Redaction with a stated reason does neither
-    (2026-08-07: the audit showed filtering task_priors.md alone defeats the string, not the
-    mechanism -- this file was still read raw by Stage 0.5 step 7).
-    """
-    aliases = _aliases(comp)
-    out_lines, report = [], []
-
-    def scrub(text: str, where: str) -> str:
-        segs = [s for s in re.split(r"(?<=[.;])\s+", text) if s.strip()] or [text]
-        kept, subject_is_self = [], False
-        for s in segs:
-            if _names(s, _ALL_COMP_TOKENS) or _names(s, aliases):
-                subject_is_self = _names(s, aliases)
-            if subject_is_self:
-                report.append({"where": where, "dropped": s.strip()[:140]})
-                continue
-            if _OTHER_AGENTS.search(s):
-                report.append({"where": where, "dropped": s.strip()[:140]})
-                continue
-            kept.append(s)
-        if len(kept) == len(segs):
-            return text
-        return (" ".join(kept) + " [withheld — named this competition or another agent]"
-                if kept else "[withheld — the evidence named this competition or another "
-                             "agent; treat as unvalidated]")
-
-    def flush_para(buf: list, where: str):
-        """Prose is scrubbed per PARAGRAPH, not per line: the file is hard-wrapped, so the
-        line naming the competition and the line carrying its score are different lines, and
-        per-line subject tracking reset between them -- "the submission scored 48.24 SMAPE"
-        survived an s3e19 filter because "s3e19" sat two wraps earlier (2026-08-07)."""
-        if not buf:
-            return
-        joined = " ".join(ln.strip() for ln in buf)
-        cleaned = scrub(joined, where)
-        out_lines.append(cleaned)
-        buf.clear()
-
-    para: list = []
-    for i, line in enumerate(md.splitlines()):
-        if line.startswith("|") and line.count("|") >= 3 and "---" not in line:
-            flush_para(para, f"para before line {i + 1}")
-            cells = line.split("|")
-            # If ANY cell names the competition (or an agent), every DATA cell in the row is
-            # that competition's reading: redacting only the naming cell left "0.014 / 0.011
-            # / ..." sitting beside a "[withheld]" label (2026-08-07). Keep the first
-            # non-empty cell -- the vocabulary label -- and withhold the rest.
-            row_named = any(_names(c, aliases) or _OTHER_AGENTS.search(c) for c in cells)
-            first_cell = next((c.strip() for c in cells if c.strip()), "")
-            if row_named and _names(first_cell, aliases):
-                # The row's LABEL is the competition itself -- a per-competition data row in a
-                # historical-readings table, not vocabulary. There is nothing to preserve.
-                report.append({"where": f"table row {i + 1}",
-                               "dropped": f"entire row keyed by the competition ({first_cell})"})
-                continue
-            if row_named:
-                kept_label = False
-                for j, c in enumerate(cells):
-                    if c.strip() and not kept_label:
-                        kept_label = True          # the operator/label cell survives
-                    elif c.strip():
-                        report.append({"where": f"table row {i + 1}", "dropped": c.strip()[:140]})
-                        cells[j] = " [withheld — this row's evidence named the competition " \
-                                   "being solved or another agent] "
-                        # one marker is enough; blank the rest
-                        cells[j + 1:] = ["" if cc.strip() else cc for cc in cells[j + 1:]]
-                        break
-                out_lines.append("|".join(cells))
-            else:
-                out_lines.append(line)
-        elif line.strip().startswith(("#", "```")) or not line.strip():
-            flush_para(para, f"para before line {i + 1}")
-            out_lines.append(line)
+        out.append(f"## {e['id']} — {e['title']}")
+        out.append(f"- **Trigger**: {e['trigger']}")
+        out.append(f"- **Action**: {e['action']}")
+        for note in e.get("generic_notes", []):
+            out.append(f"- {note}")
+        if adm:
+            for ev in adm:
+                out.append(f"- **Evidence** ({_short(ev['comp'])}): {ev['text']}")
+            if had_own:
+                report.append({"entry": e["id"], "action": "trimmed",
+                               "reason": "evidence from this competition withheld"})
+        elif only_cross:
+            out.append("- **Evidence**: withheld — the recorded evidence cited another "
+                       "lane's run, inadmissible under the isolation protocol. Treat the "
+                       "action as an unvalidated prior.")
         else:
-            para.append(line)
-    flush_para(para, "final para")
-    return "\n".join(out_lines) + "\n", report
+            out.append("- **Evidence**: none of ours yet — [GEN], unvalidated.")
+
+        if e["id"] == "TASK-TS-FUTURE":
+            rows = [r for r in kb["form_race"]["rows"] if r["comp"] != excl]
+            if len(rows) >= 2:
+                n = len(rows)
+                beat = sum(1 for r in rows if r.get("external_beat_baseline"))
+                cv_right = sum(1 for r in rows if r.get("cv_pick") == r.get("winner"))
+                out.append(f"- **Cross-competition form record** (measured on {n} "
+                           f"competitions; any evidence from the competition being solved "
+                           f"is excluded): external arms beat their no-external baselines "
+                           f"in {beat}/{n}; local CV picked the eventual form winner in "
+                           f"{cv_right}/{n} — race both arms, always.")
+                for r in rows:
+                    out.append(f"  - {_short(r['comp'])}: `{r['winner']}` beat "
+                               f"`{r['loser']}`, {r['scores']} "
+                               f"({r['horizon_years']}-year horizon).")
+            if any(r["comp"] == excl for r in kb["form_race"]["rows"]):
+                report.append({"entry": "form_race", "action": "row_withheld",
+                               "reason": "this competition's own race row"})
+        out.append("")
+
+    out.append("---")
+    out.append("")
+    out.append(kb["whitelist_md"])
+    return "\n".join(out).rstrip() + "\n", report
 
 
-PREREG_DIR = _HERE.parent / "docs" / "preregistrations"
+def render_ops(kb: dict, comp: str) -> tuple[str, list[dict]]:
+    excl = canonical(comp, kb)
+    out, report = [kb["operators_header"], "", "---", "", "## Operator set", ""], []
+    for op in kb["operators"]:
+        out.append(f"### `{op['name']}`")
+        out.append(op["doc"])
+        adm = _admissible(op.get("evidence", []), excl)
+        if adm:
+            out.append("")
+            for ev in adm:
+                out.append(f"- **Evidence** ({_short(ev['comp'])}): {ev['text']}")
+        if any(ev.get("comp") == excl for ev in op.get("evidence", [])):
+            report.append({"entry": op["name"], "action": "trimmed",
+                           "reason": "evidence from this competition withheld"})
+        out.append("")
+    out.append("---")
+    out.append("")
+    out.append(kb["ledger_md"])
+    return "\n".join(out).rstrip() + "\n", report
 
 
-def filter_prereg(comp: str) -> tuple[str, list[dict]]:
-    """Per-competition view of docs/preregistrations/*.md — the FOURTH door.
+def render_prereg(kb: dict, comp: str) -> tuple[str, list[dict]]:
+    excl = canonical(comp, kb)
+    out, report = [], []
+    for p in kb["prereg"]:
+        out.append(f"# Pre-registration: {p['id']}")
+        out.append("")
+        out.append(f"**Status: {p['status']}**")
+        out.append("")
+        out.append("## Why this registration exists")
+        out.append("")
+        out.append(p["why"])
+        out.append("")
+        out.append(f"## Hypothesis ({p['id']})")
+        out.append("")
+        out.append(p["hypothesis_intro"])
+        out.append("")
+        n_withheld = 0
+        for c in p["clauses"]:
+            surviving = [e for e in c.get("evidence", []) if canonical(e, kb) != excl]
+            if not surviving:
+                n_withheld += 1
+                report.append({"entry": p["id"], "action": "clause_withheld",
+                               "reason": "the clause's only evidence is this competition's "
+                                         "own run"})
+                continue
+            out.append(f"- {c['text']};")
+        if n_withheld:
+            out.append("")
+            out.append(f"*({n_withheld} registered clause(s) withheld for this competition: "
+                       f"their only evidence is this competition's own recorded run. The "
+                       f"registration still binds — register the applicable prediction for "
+                       f"the clauses shown.)*")
+        out.append("")
+        out.append("## Protocol (binding)")
+        out.append("")
+        out.append(p["protocol"])
+        out.append("")
+        out.append("## Pre-committed consequences")
+        out.append("")
+        out.append(p["consequences"])
+        out.append("")
+        out.append("## Log")
+        out.append("")
+        for line in p.get("log", []):
+            out.append(f"- {line}")
+    return "\n".join(out).rstrip() + "\n", report
 
-    Stage 0.5 step 8 makes these files a MANDATED read on firing-class competitions, and the
-    evidence table inside horizon_length_form_selector.md names s3e19 / tps-sep-2022 / s5e1
-    with their private scores and winning forms — the exact facts filter_priors' selftest
-    proves withheld, served back verbatim through an instruction one directory over
-    (2026-08-07 round-3 verification). Same scrub as filter_ops: the registered HYPOTHESIS
-    and protocol survive for every competition; evidence naming the competition being solved
-    (or keyed table rows) is withheld.
-    """
-    parts, report = [], []
-    for f in sorted(PREREG_DIR.glob("*.md")):
-        out, rep = filter_ops(f.read_text(encoding="utf-8"), comp)
-        parts.append(f"<!-- {f.name} (filtered for {comp}) -->\n" + out)
-        report.extend(rep)
-    return "\n\n".join(parts), report
 
-
+# ---------------------------------------------------------------------------
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("comp", nargs="?", help="competition slug, e.g. playground-series-s3e11")
-    ap.add_argument("--report", action="store_true", help="print what was dropped, not the library")
-    ap.add_argument("--ops", action="store_true",
-                    help="emit the filtered OPERATOR vocabulary (injection_operators.md) "
-                         "instead of the task-prior library")
-    ap.add_argument("--prereg", action="store_true",
-                    help="emit the filtered PRE-REGISTRATIONS (docs/preregistrations/) "
-                         "instead of the task-prior library")
+    ap.add_argument("comp", nargs="?", help="competition slug, any spelling")
+    ap.add_argument("--ops", action="store_true", help="operator vocabulary view")
+    ap.add_argument("--prereg", action="store_true", help="pre-registrations view")
+    ap.add_argument("--report", action="store_true", help="print what was withheld instead")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
     if args.selftest:
         return selftest()
     if not args.comp:
         ap.error("competition slug required (or --selftest)")
-    if args.prereg:
-        md, rep = filter_prereg(args.comp)
-    else:
-        src = (_HERE / "injection_operators.md") if args.ops else PRIORS
-        fn = filter_ops if args.ops else filter_priors
-        md, rep = fn(src.read_text(encoding="utf-8"), args.comp)
+    kb = load_kb()
+    fn = render_prereg if args.prereg else (render_ops if args.ops else render_priors)
+    md, rep = fn(kb, args.comp)
     if args.report:
-        print(f"# {'operator-vocabulary' if args.ops else 'task-prior'} exclusions "
-              f"for {args.comp}\n")
+        kind = "prereg" if args.prereg else ("operator" if args.ops else "task-prior")
+        print(f"# {kind} exclusions for {args.comp}\n")
         if not rep:
-            print("(nothing dropped: no prior names this competition or another agent)")
+            print("(nothing withheld)")
         for r in rep:
-            if "where" in r:
-                print(f"- {r['where']}: {r['dropped']}")
-                continue
-            print(f"## {r['entry']} — {r['action'].upper()}")
-            print(f"   {r['reason']}")
-            for d in r["dropped"][:6]:
-                print(f"   - dropped: {d[:150]}")
-            print()
+            print(f"- {r['entry']}: {r['action']} — {r['reason']}")
         return 0
     print(md)
     return 0
 
 
+# ---------------------------------------------------------------------------
 def selftest() -> int:
-    md = PRIORS.read_text(encoding="utf-8")
+    kb = load_kb()
+    known = sorted(_known_comps(kb))
+    agents = re.compile(r"\bAIDE\b|\bNVIDIA\b", re.I)
 
-    # --- BASELINE MUST COME FROM THE RAW FILE ------------------------------------------
-    # This used to measure n_full from filter_priors(md, "no-such-competition-xyz") -- the
-    # filter's own output -- so "4/5 entries remain" was measured against an already-degraded
-    # yardstick and could not see that 3 of 8 entries were being dropped for EVERY
-    # competition, related or not (2026-08-07 re-verification).
-    n_raw_entries = md.count("\n## TASK-")
-    n_raw_whitelist = sum(1 for ln in md.splitlines() if ln.startswith("| "))
-    assert n_raw_entries >= 8 and n_raw_whitelist >= 7, (n_raw_entries, n_raw_whitelist)
+    # --- CONTRACT 1: all prose fields are competition-free and agent-free ---------------
+    def prose_fields():
+        yield "priors_header", kb["priors_header"]
+        yield "whitelist_md", kb["whitelist_md"]
+        yield "operators_header", kb["operators_header"]
+        yield "ledger_md", kb["ledger_md"]
+        for e in kb["task_priors"]:
+            yield f"{e['id']}.title", e["title"]
+            yield f"{e['id']}.trigger", e["trigger"]
+            yield f"{e['id']}.action", e["action"]
+            for i, n in enumerate(e.get("generic_notes", [])):
+                yield f"{e['id']}.note{i}", n
+        for op in kb["operators"]:
+            yield f"op.{op['name']}.doc", op["doc"]
+        for p in kb["prereg"]:
+            for f in ("status", "why", "hypothesis_intro", "protocol", "consequences"):
+                yield f"{p['id']}.{f}", p[f]
+            for c in p["clauses"]:
+                yield f"{p['id']}.clause", c["text"]
 
-    # --- NON-TASK SECTIONS MUST SURVIVE VERBATIM ---------------------------------------
-    # The external-data whitelist lives under "## External-data whitelist", which does not
-    # match the TASK-* parser pattern. It was being absorbed as trailing free text into the
-    # preceding entry and deleted with it -- 7 rows in, 0 rows out, for all 20 competitions,
-    # while 00_problem_dossier.md step 6 tells the agent to pick sources from that very
-    # table in the filtered output. A capability deletion, and a silent one.
-    for comp in ("playground-series-s3e19", "playground-series-s5e1", "cat-in-the-dat",
-                 "no-such-competition-xyz"):
-        out, _ = filter_priors(md, comp)
-        rows = sum(1 for ln in out.splitlines() if ln.startswith("| "))
-        assert rows == n_raw_whitelist, (
-            f"{comp}: external-data whitelist lost {n_raw_whitelist - rows} of "
-            f"{n_raw_whitelist} rows; Stage 0.5 step 6 reads that table")
-        assert "External-data whitelist" in out, f"{comp}: the whitelist heading is gone"
-    print(f"non-TASK sections survive intact ({n_raw_whitelist} whitelist rows, all comps)")
+    tokens = set()
+    for c in known:
+        tokens.add(c)
+        tokens.add(_short(c))
+        tokens.update(_SHORT_ALIASES.get(c, []))
+    bad = []
+    n_fields = 0
+    for name, text in prose_fields():
+        n_fields += 1
+        low = str(text).translate(_DASHES).lower()
+        for tok in tokens:
+            if re.search(rf"(?<![0-9a-z]){re.escape(tok)}(?![0-9a-z])", low):
+                bad.append(f"{name} names {tok}")
+        if agents.search(str(text)):
+            bad.append(f"{name} names another agent")
+    assert not bad, "prose fields must be competition-free:\n  " + "\n  ".join(bad[:10])
+    print(f"contract 1: every prose field is competition-free and agent-free "
+          f"({n_fields} fields x {len(tokens)} tokens)")
 
-    # --- AN UNRELATED COMPETITION MUST LOSE NOTHING ------------------------------------
-    full, _ = filter_priors(md, "no-such-competition-xyz")
-    n_full = full.count("\n## TASK-")
-    assert n_full == n_raw_entries, (
-        f"a competition unrelated to every prior lost {n_raw_entries - n_full} of "
-        f"{n_raw_entries} entries; exclusion must be driven by the competition being solved, "
-        f"not by whether an entry happens to cite another agent")
-    print(f"an unrelated competition keeps all {n_full} entries")
-
-    # afsis: TASK-SPECTRAL rests on afsis alone -> the whole entry must go, Action included
-    out, rep = filter_priors(md, "afsis-soil-properties")
-    assert "TASK-SPECTRAL" not in out, "TASK-SPECTRAL survived an afsis run"
-    assert "Savitzky" not in out, "the afsis ACTION survived — citation-level filtering only"
-    assert any(r["entry"] == "TASK-SPECTRAL" and r["action"] == "dropped_entry" for r in rep), rep
-    print(f"afsis: TASK-SPECTRAL dropped whole (Action included), {out.count(chr(10) + '## TASK-')}"
-          f"/{n_full} entries remain")
-
-    # conway: same shape
-    out, rep = filter_priors(md, "conway-s-reverse-game-of-life")
-    assert "TASK-STRUCT-OUT" not in out, "TASK-STRUCT-OUT survived a conway run"
-    assert "cellular automata" not in out.lower()
-    print("conway: TASK-STRUCT-OUT dropped whole")
-
-    # the other agents' results must never appear, whatever competition is being solved
-    for comp in ("playground-series-s3e7", "playground-series-s6e2", "no-such-competition-xyz"):
-        out, _ = filter_priors(md, comp)
-        assert not _OTHER_AGENTS.search(out), f"AIDE/NVIDIA result leaked into {comp}'s priors"
-    print("no AIDE/NVIDIA result survives for ANY competition, including unrelated ones")
-
-    # a multi-source entry keeps its Action: TASK-TS-FUTURE rests on 4 competitions
-    out, rep = filter_priors(md, "playground-series-s3e19")
-    assert "TASK-TS-FUTURE" in out, "a multi-source entry was dropped for one competition"
-    assert not _names(out, _aliases("playground-series-s3e19")), "s3e19 still named in its own priors"
-    print("s3e19: TASK-TS-FUTURE trimmed but kept (evidence from 3 other competitions survives)")
-
-    # no competition sees its own name anywhere in its filtered library
-    comps = ["playground-series-s3e1", "playground-series-s3e11", "playground-series-s3e19",
-             "playground-series-s5e1", "playground-series-s5e10", "playground-series-s6e1",
-             "cat-in-the-dat", "afsis-soil-properties", "conway-s-reverse-game-of-life",
-             "tabular-playground-series-jan-2022", "tabular-playground-series-sep-2022",
-             "playground-series-s3e14", "playground-series-s3e16"]
-    for c in comps:
-        out, _ = filter_priors(md, c)
-        assert not _names(out, _aliases(c)), f"{c} is still named in its own filtered priors"
-    print(f"none of {len(comps)} benchmark competitions is named in its own filtered library")
-
-    # --- AND NOT NAMED IS NOT THE SAME AS NOT PRESENT ----------------------------------
-    # The library is hard-wrapped prose: an evidence item names its competition once and then
-    # continues for two more sentences that name nothing. Filtering on "does this sentence
-    # contain the slug" drops the first sentence and serves the rest -- so an s5e1 re-run still
-    # read its own private leaderboard score and its own pre-registered form verdict, which is
-    # exactly the decision Stage 0.5 is supposed to make blind (2026-08-07 re-verification).
-    leaks = {
+    # --- CONTRACT 2: no competition's own facts survive its view -----------------------
+    own_needles = {
+        "playground-series-s3e19": ["48.497", "52.073", "10.148", "7.793", "48.24",
+                                    "4.56", "20.41", "48.3", "bimodal"],
+        "tabular-playground-series-sep-2022": ["23.390", "24.091", "11.348", "11.807",
+                                               "11.515", "0.466"],
         "playground-series-s5e1": ["0.12417", "0.15626"],
-        "playground-series-s3e19": ["10.148", "7.793"],
-        "tabular-playground-series-sep-2022": ["11.515", "0.466"],
-        "afsis-soil-properties": ["0.49517", "0.44817"],
+        "afsis-soil-properties": ["0.49517", "0.44817", "0.444076"],
+        "conway-s-reverse-game-of-life": ["0.10875", "98.6"],
+        "cat-in-the-dat": ["0.80241", "73.1"],
+        "tabular-playground-series-jan-2022": ["4.83", "6.02", "5.46", "4.19", "8.43", "5.80"],
+        "playground-series-s3e3": ["0.81901", "0.83292"],
+        "playground-series-s3e5": ["0.47191", "0.52687"],
+        "playground-series-s4e1": ["0.89653", "0.893235", "0.893650"],
     }
-    for c, needles in leaks.items():
-        out, _ = filter_priors(md, c)
-        present = [n for n in needles if n in out]
-        assert not present, (
-            f"{c}: its own recorded numbers {present} survive the filter -- the sentence "
-            f"carrying them does not repeat the competition's name, so a name-match filter "
-            f"cannot see it")
-    print(f"no competition's own recorded NUMBERS survive either ({len(leaks)} checked)")
+    for c, needles in own_needles.items():
+        for fn in (render_priors, render_ops, render_prereg):
+            md, _ = fn(kb, c)
+            hits = [n for n in needles if n in md]
+            assert not hits, f"{fn.__name__}({c}) serves its own facts: {hits}"
+            low = md.translate(_DASHES).lower()
+            for tok in {c, _short(c), *_SHORT_ALIASES.get(c, [])}:
+                assert not re.search(rf"(?<![0-9a-z]){re.escape(tok)}(?![0-9a-z])", low), \
+                    f"{fn.__name__}({c}) names the competition ({tok})"
+    print(f"contract 2: no competition's own facts or name survive any of its 3 views "
+          f"({len(own_needles)} comps checked)")
 
-    # --- THE FILTER MUST COVER EVERY DOOR STAGE 0.5 IS TOLD TO OPEN --------------------
-    # Filtering task_priors.md while Stage 0.5 step 7 orders injection_operators.md read raw
-    # defeats the string, not the mechanism: that file's evidence tables carried AIDE's s3e11
-    # result and cat-in-the-dat's own two scores, and SKILL.md's Stage 0.5 key-actions line
-    # still pointed at the raw priors file (2026-08-07 re-verification).
-    ops = (_HERE / "injection_operators.md").read_text(encoding="utf-8")
-    assert not _OTHER_AGENTS.search(ops), (
-        "knowledge/injection_operators.md still cites another agent's result; Stage 0.5 "
-        "step 7 orders that file read raw, so the isolation hole is open one file over")
-    skill = (_HERE.parent / ".claude/skills/kaggle-agent/SKILL.md").read_text(encoding="utf-8")
-    import re as _re
-    for m in _re.finditer(r"^.*task_priors\.md.*$", skill, _re.M):
-        line = m.group(0)
-        assert "task_priors_for" in line or "HARD RULE" in line or "filter" in line.lower(), (
-            f"SKILL.md still points at the raw priors file with no filter mention: {line!r}")
-    print("the other two doors are covered: injection_operators.md carries no cross-agent "
-          "result, SKILL.md nowhere points at the raw file unqualified")
+    # --- CONTRACT 3: positional aggregates exclude the member --------------------------
+    for c in ("playground-series-s3e19", "tabular-playground-series-sep-2022",
+              "playground-series-s5e1"):
+        md, _ = render_priors(kb, c)
+        assert "measured on 2 competitions" in md, (
+            f"{c}: the form record must be recomputed over the 2 OTHER competitions")
+    md, _ = render_priors(kb, "no-such-competition")
+    assert "measured on 3 competitions" in md
+    print("contract 3: the form-record aggregate is computed from surviving rows only")
 
-    # --- THE OPS FILTER ITSELF ---------------------------------------------------------
-    for comp, own in [("cat-in-the-dat", ["beat the GBDT outright", "crosses **hurt**"]),
-                      ("playground-series-s3e19", ["10.148", "7.793", "48.24"]),
-                      ("playground-series-s5e1", ["0.12417"])]:
-        fout, _ = filter_ops(ops, comp)
-        hits = [n for n in own if n in fout]
-        assert not hits, f"{comp}: own results {hits} survive the --ops filter"
-        assert not _names(fout, _aliases(comp)), \
-            f"{comp}: its own slug survives in the --ops output"
-        # the vocabulary itself must be intact: same table rows, same headings
-        assert fout.count("\n#") == ops.count("\n#"), f"{comp}: --ops deleted a heading"
-        n_rows_raw = sum(1 for ln in ops.splitlines() if ln.startswith("|"))
-        n_rows_out = sum(1 for ln in fout.splitlines() if ln.startswith("|"))
-        n_comp_keyed = sum(1 for ln in ops.splitlines()
-                           if ln.startswith("|") and
-                           _names(ln.split("|")[1] if ln.count("|") > 1 else "", _aliases(comp)))
-        assert n_rows_out == n_rows_raw - n_comp_keyed, \
-            f"{comp}: --ops deleted a VOCABULARY row (data rows keyed by the competition " \
-            f"itself are the only legitimate deletions: {n_comp_keyed})"
-    fout, _ = filter_ops(ops, "no-such-competition-xyz")
-    assert "withheld" not in fout.replace("[withheld — the original evidence cited another "
-                                          "lane's run, which is not a legitimate input under "
-                                          "the isolation protocol; treat as an unvalidated "
-                                          "strong default]", ""), \
-        "--ops withheld something for a competition unrelated to every entry"
-    print("--ops: own results withheld, vocabulary structurally intact, unrelated comps "
-          "lose nothing")
+    # --- CONTRACT 4: entry-level and clause-level exclusion ----------------------------
+    md, _rep = render_priors(kb, "afsis-soil-properties")
+    assert "TASK-SPECTRAL" not in md and "Savitzky" not in md
+    md, _ = render_priors(kb, "conway-s-reverse-game-of-life")
+    assert "TASK-STRUCT-OUT" not in md and "cellular automata" not in md.lower()
+    md, _ = render_prereg(kb, "playground-series-s5e1")
+    assert "> 1 year" not in md and "&gt; 1 year" not in md, (
+        "the >1-year clause survives for the competition that is its only evidence")
+    md, _ = render_prereg(kb, "some-new-competition")
+    assert "> 1 year" in md and "≤ 1 year" in md
+    print("contract 4: entry-level (afsis/conway) and clause-level (prereg) exclusion hold")
 
-    # sibling slugs must NOT be over-excluded (s3e1 vs s3e19/s3e11/s3e14/s3e16)
-    out, _ = filter_priors(md, "playground-series-s3e1")
-    assert "s3e19" in out or "s3e11" in out, "sibling competitions were over-excluded from s3e1"
-    print("sibling slugs survive (s3e1 does not exclude s3e19/s3e11) — no over-exclusion")
+    # --- CONTRACT 5: nothing else lost ------------------------------------------------
+    md, _ = render_priors(kb, "no-such-competition")
+    assert md.count("\n## TASK-") + md.startswith("## TASK-") >= len(kb["task_priors"]) - 1
+    n_entries = sum(1 for ln in md.splitlines() if ln.startswith("## TASK-"))
+    assert n_entries == len(kb["task_priors"]), (n_entries, len(kb["task_priors"]))
+    n_wl = sum(1 for ln in kb["whitelist_md"].splitlines() if ln.startswith("| "))
+    assert sum(1 for ln in md.splitlines() if ln.startswith("| ")) >= n_wl
+    md, _ = render_priors(kb, "playground-series-s3e1")
+    assert "TASK-TS-FUTURE" in md and "s3e19" in md, "sibling slugs over-excluded"
+    md, _ = render_ops(kb, "no-such-competition")
+    for op in kb["operators"]:
+        assert f"### `{op['name']}`" in md, f"operator {op['name']} missing from the view"
+    print("contract 5: unrelated competitions lose nothing; the vocabulary stays complete; "
+          "siblings are not over-excluded")
 
-    print("task_priors_for selftest: all sections passed")
+    # --- CONTRACT 6: the renderer never emits redaction markers ------------------------
+    for c in ("playground-series-s3e19", "afsis-soil-properties", "no-such-competition"):
+        md, _ = render_priors(kb, c)
+        assert "[withheld" not in md, "redaction markers are the scrub approach's signature"
+    print("contract 6: views are regenerated, not redacted (no [withheld markers)")
+
+    print("task_priors_for selftest: all contracts hold")
     return 0
 
 

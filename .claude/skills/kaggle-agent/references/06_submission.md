@@ -94,8 +94,8 @@ by the transform, and an unlisted transform means this table is stale.
 
 **Run the validator WITH the training target** — `--train train.csv --target <col>` — every
 time. The Range check compares the submission against the training target's own range; without
-`--train` it silently SKIPs, which is exactly how the un-inverted s5e1-shaped submission
-([8e-05, 0.16] against a target of [5, 5939]) got its "PASS — all checks clean".
+`--train` it silently SKIPs, which is exactly how an un-inverted ratio submission
+(values at ~1e-4 of the target's scale) got its "PASS — all checks clean".
 
 The covariate column must be joined onto the TEST frame for the inversion, with the same
 leakage rule the training join used — an inversion that reaches for a covariate value the

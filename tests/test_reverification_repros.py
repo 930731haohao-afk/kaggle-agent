@@ -501,60 +501,78 @@ class TestFourthDoorPreregistrations:
 
 
 class TestNewSlugSelfExclusion:
-    MD = ("## TASK-NEW — some new family\n"
-          "- **Trigger**: something.\n"
-          "- **Action**: the recipe.\n"
-          "- **Evidence**: playground-series-s6e5 — ratio_target won, private SMAPE 3.1415 "
-          "vs 3.9999; carried by an independent fact about s3e7.\n")
+    """Under the renderer, a new competition's facts enter knowledge_base.json as evidence
+    items carrying its slug; exclusion is exact set arithmetic, so no hardcoded token list
+    exists to go stale (the round-4 hole)."""
 
-    def test_filter_priors_excludes_a_slug_not_in_the_token_list(self):
-        from knowledge.task_priors_for import filter_priors
-        out, _ = filter_priors(self.MD, "playground-series-s6e5")
-        assert "3.1415" not in out, (
-            "a post-benchmark slug absent from _ALL_COMP_TOKENS is served its own evidence")
+    def _kb(self):
+        return {
+            "priors_header": "# priors", "whitelist_md": "| a | b |",
+            "operators_header": "# ops", "ledger_md": "ledger",
+            "task_priors": [
+                {"id": "TASK-NEW", "title": "new family", "trigger": "something.",
+                 "action": "the recipe.",
+                 "evidence": [
+                     {"comp": "playground-series-s6e5",
+                      "text": "ratio_target won, private SMAPE 3.1415 vs 3.9999."},
+                     {"comp": "playground-series-s3e7", "text": "independent fact, 0.4."}]}],
+            "form_race": {"rows": []}, "operators": [], "prereg": [],
+        }
 
-    def test_filter_ops_excludes_it_too(self):
-        from knowledge.task_priors_for import filter_ops
-        out, _ = filter_ops("Prose: playground-series-s6e5 scored private SMAPE 3.1415 "
-                            "with ratio_target.\n", "playground-series-s6e5")
-        assert "3.1415" not in out
+    def test_new_slug_excluded_without_any_token_list(self):
+        from knowledge.task_priors_for import render_priors
+        out, _ = render_priors(self._kb(), "playground-series-s6e5")
+        assert "3.1415" not in out, "a post-benchmark slug was served its own evidence"
+        assert "independent fact" in out, "the other competition's evidence must survive"
+
+    def test_entry_drops_whole_when_new_slug_is_sole_evidence(self):
+        from knowledge.task_priors_for import render_priors
+        kb = self._kb()
+        kb["task_priors"][0]["evidence"] = kb["task_priors"][0]["evidence"][:1]
+        out, rep = render_priors(kb, "playground-series-s6e5")
+        assert "TASK-NEW" not in out and "the recipe" not in out, (
+            "the action survived with no admissible evidence — the distilled answer leaked")
+        assert any(r["action"] == "dropped_entry" for r in rep)
 
 
-class TestNonTaskWriteBackScrubbed:
-    MD = ("## TASK-A — x\n- **Trigger**: t.\n- **Action**: a.\n- **Evidence**: s3e7, 0.5.\n\n"
-          "## Run notes 2026-08 (appended mid-run)\n"
-          "s3e11 re-run: native categorical handling, private AUC 0.80311 beat NVIDIA 0.77084.\n"
-          "AIDE's winning s3e11 node enabled native cats accidentally.\n"
-          "\n"
-          "An unrelated generic note that names nothing.\n")
+class TestWriteBackIsStructured:
+    """Write-back goes into knowledge_base.json as evidence items — there is no prose
+    append path for a run note to leak through (the round-4 non-TASK-section hole)."""
 
-    def test_non_task_section_is_scrubbed_not_verbatim(self):
-        from knowledge.task_priors_for import filter_priors
-        out, _ = filter_priors(self.MD, "playground-series-s3e11")
-        assert "0.80311" not in out, "self result leaked through a non-TASK section"
-        assert "NVIDIA" not in out and "AIDE" not in out, "cross-agent leaked via write-back"
-        # A generic note in its OWN paragraph survives; one in the SAME paragraph as
-        # self-naming prose inherits the subject and is withheld -- failing SAFE. The cost of
-        # over-withholding is a lost prior; the cost of under-withholding is the benchmark.
-        assert "unrelated generic note" in out, "over-scrubbing: a separate paragraph was eaten"
+    def test_archived_prose_files_are_not_read(self):
+        import knowledge.task_priors_for as tp
+        import inspect
+        src = inspect.getsource(tp)
+        assert "task_priors.md" not in src and "injection_operators.md" not in src, (
+            "the renderer still references the archived prose files")
+        assert "knowledge_base.json" in src
 
-    def test_whitelist_table_still_survives(self):
-        from knowledge.task_priors_for import filter_priors, PRIORS
-        md = PRIORS.read_text(encoding="utf-8")
-        out, _ = filter_priors(md, "playground-series-s3e19")
-        rows = sum(1 for ln in out.splitlines() if ln.startswith("| "))
-        raw = sum(1 for ln in md.splitlines() if ln.startswith("| "))
-        assert rows == raw, "the scrub ate the external-data whitelist again"
+    def test_prose_files_are_archived(self):
+        assert not os.path.exists(os.path.join(REPO, "knowledge/task_priors.md"))
+        assert not os.path.exists(os.path.join(REPO, "knowledge/injection_operators.md"))
+        assert os.path.exists(os.path.join(
+            REPO, "knowledge/archive_pre_structured/task_priors.md"))
+
+    def test_whitelist_survives_every_view(self):
+        from knowledge.task_priors_for import load_kb, render_priors
+        kb = load_kb()
+        n_wl = sum(1 for ln in kb["whitelist_md"].splitlines() if ln.startswith("| "))
+        assert n_wl >= 7
+        for comp in ("playground-series-s3e19", "afsis-soil-properties", "no-such-comp"):
+            out, _ = render_priors(kb, comp)
+            assert sum(1 for ln in out.splitlines() if ln.startswith("| ")) >= n_wl, (
+                f"{comp}: the external-data whitelist lost rows in the rendered view")
 
 
 class TestUnicodeDashAliases:
-    def test_unicode_dash_spelling_is_excluded(self):
-        from knowledge.task_priors_for import filter_priors
-        md = ("## TASK-B — x\n- **Trigger**: t.\n- **Action**: a.\n"
-              "- **Evidence**: tps‑sep‑2022 scored 11.348 with ratio_target; "
-              "also s3e7, 0.4.\n")           # non-breaking hyphens
-        out, _ = filter_priors(md, "tabular-playground-series-sep-2022")
-        assert "11.348" not in out, "a unicode-dash spelling evaded the alias match"
+    def test_unicode_dash_spelling_canonicalizes(self):
+        from knowledge.task_priors_for import canonical, load_kb
+        kb = load_kb()
+        assert canonical("tps‑sep‑2022", kb) == "tabular-playground-series-sep-2022"
+        assert canonical("sep2022", kb) == "tabular-playground-series-sep-2022"
+        assert canonical("playground-series-s5e1.repeat-r1-20260731", kb) ==             "playground-series-s5e1"
+        # sibling short forms stay distinct
+        assert canonical("s5e1", kb) != canonical("s5e10", kb)
 
 
 class TestExperimentLogRound3:
@@ -890,3 +908,96 @@ class TestValidatorRound4:
                             capture_output=True, text=True, check=False)
         assert "--target" in (r2.stdout + r2.stderr) and r2.returncode != 0, (
             "no name match and no --target: the Range gate silently skipped")
+
+
+# ===========================================================================
+# ROUND 4 isolation redesign: structured knowledge, regenerated views
+# ===========================================================================
+class TestIsolationRedesign:
+    """Prose scrubbing lost four rounds; these tests bind the REDESIGN: views are
+    REGENERATED from structured facts, so positional/heading/paragraph channels
+    cannot exist by construction."""
+
+    def _view(self, comp, mode=""):
+        import subprocess
+        args = [sys.executable, os.path.join(REPO, "knowledge/task_priors_for.py"), comp]
+        if mode:
+            args.append(mode)
+        r = subprocess.run(args, capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stderr[-400:]
+        return r.stdout
+
+    def test_no_form_verdict_aggregates_for_the_one_year_comps(self):
+        # round-4 #1: "CV picked ratio/baseline/featurejoin ... LB said featurejoin/..."
+        # and "the two 1-year comps went to join_feature" reconstruct the verdict without
+        # naming the competition. OTHER competitions' rows are legitimate transferable
+        # knowledge (the approved measurement object); only the comp's OWN row is a leak.
+        own = {"playground-series-s3e19": ["48.497", "52.073"],
+               "tabular-playground-series-sep-2022": ["23.390", "24.091"]}
+        for comp, needles in own.items():
+            out = self._view(comp)
+            assert "LB said" not in out and "1-year comps" not in out, (
+                f"{comp}: positional aggregate sentences survive")
+            hits = [n for n in needles if n in out]
+            assert not hits, f"{comp}: its own race row survives: {hits}"
+
+    def test_prereg_view_withholds_the_clause_resting_on_the_comp_alone(self):
+        # round-4 #3: the '>1 year -> ratio_target' clause has s5e1 as its only evidence,
+        # and the Protocol heading names s5e1 outright
+        out = self._view("playground-series-s5e1", "--prereg")
+        low = out.lower()
+        assert "s5e1" not in low, "the heading (or anything else) still names s5e1"
+        assert not ("> 1 year" in low and "ratio_target" in low) \
+            and not ("&gt; 1 year" in low and "ratio_target" in low), (
+            "the >1-year clause survives for s5e1, whose own run is its only evidence")
+        # ...and both clauses survive for an unrelated competition
+        out2 = self._view("playground-series-s9e9", "--prereg")
+        assert "ratio_target" in out2 and "join_feature" in out2, (
+            "the hypothesis was destroyed for an unrelated competition")
+
+    def test_mandated_instruction_files_carry_no_benchmark_results(self):
+        # round-4 #2, the fifth door: instruction files themselves served answers
+        import re as _re
+        slugs = ["s3e19", "s3e20", "s3e16", "s3e9", "s3e11", "s5e1", "s5e10", "s6e1",
+                 "tps-jan-2022", "tpsjan22", "sep-2022", "afsis", "conway", "citd",
+                 "cat-in-the-dat"]
+        # score-like numbers that are per-competition results in the current files
+        needles = ["4.56", "20.41", "2.17%", "12.070034", "4.1793", "6.1551"]
+        files = [os.path.join(REPO, ".claude/skills/kaggle-agent/SKILL.md")]
+        refdir = os.path.join(REPO, ".claude/skills/kaggle-agent/references")
+        files += [os.path.join(refdir, f) for f in os.listdir(refdir) if f.endswith(".md")]
+        offenders = []
+        for fp in files:
+            txt = open(fp).read()
+            for n in needles:
+                if n in txt:
+                    offenders.append(f"{os.path.basename(fp)}: score {n}")
+            for s in slugs:
+                for m in _re.finditer(rf"(?<![0-9a-z]){_re.escape(s)}(?![0-9a-z])",
+                                      txt.lower()):
+                    line = txt[:m.start()].count("\n") + 1
+                    offenders.append(f"{os.path.basename(fp)}:{line}: names {s}")
+                    break
+        assert not offenders, (
+            "instruction files read on EVERY run still carry per-competition content:\n  "
+            + "\n  ".join(offenders[:15]))
+
+    def test_knowledge_tool_docstrings_carry_no_results(self):
+        # round-4 #5: task_priors_for.py's own docstring quoted the withheld facts
+        import knowledge.task_priors_for as tp
+        blob = (tp.__doc__ or "") + "".join(
+            (getattr(tp, n).__doc__ or "") for n in dir(tp)
+            if callable(getattr(tp, n, None)) and not n.startswith("__"))
+        for needle in ("0.80241", "0.77084", "AIDE", "NVIDIA", "0.12417"):
+            assert needle not in blob, (
+                f"the tool's own docstrings quote {needle!r} -- an agent reading the source "
+                f"gets the withheld fact from the filter itself")
+
+    def test_views_are_rendered_not_redacted(self):
+        # structural: the renderer's output must contain NO '[withheld' markers for the
+        # priors view -- redaction markers are the signature of the scrub approach; a
+        # rendered view simply does not emit excluded facts
+        out = self._view("playground-series-s3e19")
+        assert "[withheld" not in out, (
+            "the priors view still uses redaction markers: it is scrubbing prose, not "
+            "rendering from structured facts")

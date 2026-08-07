@@ -21,7 +21,7 @@ After Stage 0 (setup) and before Stage 1 (EDA). Cheap: reading + reasoning only,
 - Competition description / rules / metric definition (official pages or `config.yaml`)
 - Data schema: column names, dtypes, ranges — a `head`/`describe` of each file is enough here
 - The task-level prior library ([TASK-*] entries), read via
-  `python3 knowledge/task_priors_for.py <comp>` — never `knowledge/task_priors.md` raw (step 3)
+  `python3 knowledge/task_priors_for.py <comp>` — rendered from `knowledge/knowledge_base.json`; there is no raw prose file to read (step 3)
 
 **Forbidden inputs**: competition-specific discussion threads, public kernels, or write-ups.
 Reproducing competition-specific solutions is the NVIDIA lane's frozen method, not ours; the
@@ -41,17 +41,16 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    python3 knowledge/task_priors_for.py <competition-slug> --report   # what was withheld, and why
    ```
 
-   List every [TASK-*] entry whose trigger fits, from that output only. **Do not open
-   `knowledge/task_priors.md` directly during a benchmark run.** The raw file is a residue of
-   previous runs: 7 of its 8 entries rest on benchmark competitions, and some cite the other
-   agents' results outright, so reading it hands this competition its own recorded answer and
-   routes around the lane isolation the run is conducted under. The filter drops any prior
-   naming this competition AND drops the whole entry when its evidence set empties — because
-   the Action line *is* the distilled answer, and removing only the citation would leave the
-   recipe with the serial number filed off. If `--report` shows an entry was dropped whole,
-   that is the mechanism working: you had no such prior before you solved that competition.
+   List every [TASK-*] entry whose trigger fits, from that output only. **There is no raw
+   prose library to read**: the knowledge lives in `knowledge/knowledge_base.json` as
+   structured facts whose prose is competition-free by contract, and the command above RENDERS
+   your competition's view — evidence from the competition being solved is excluded by exact
+   set arithmetic, an entry whose admissible evidence empties is dropped whole (the Action
+   line *is* the distilled answer), cross-agent evidence is never rendered, and aggregates are
+   recomputed from the surviving facts. If `--report` shows an entry was dropped, that is the
+   mechanism working: you had no such prior before you solved that competition.
 4. Derive the split policy from the match (this pre-empts the shuffled-KFold-on-time-series
-   trap: 4.5× optimism bias measured, 4.56 vs. 20.41 SMAPE on s3e19).
+   trap: a controlled split experiment on a benchmark panel measured a 4.5× optimism bias from the forbidden split — see the filtered prior library's TASK-TS-FUTURE evidence).
 5. **Rules gate FIRST, before any external-data thinking.** Save the competition's rules text
    to a file and run
 
@@ -65,7 +64,7 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    verdict — 0 permitted, 3 forbidden, 4 conflict, 5 unstated). The gate
    requires a QUOTE and a section reference, treats silence as forbidden (absence of a
    prohibition is not a permission), and reports a disagreement between `config.yaml` and the
-   rules text as a CONFLICT to verify rather than picking a side — the s3e19 case, where the
+   rules text as a CONFLICT to verify rather than picking a side — the recorded case where the
    local flag said no and rules Section 7.C said yes. If the gate does not return
    `permitted`, external data is off for this competition: say so in the dossier and stop
    this line of work. A run that ignores the rules is disqualified whatever it scores.
@@ -95,11 +94,11 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    python3 knowledge/task_priors_for.py <competition-slug> --ops
    ```
 
-   That vocabulary (`knowledge/injection_operators.md`, filtered) is the shared contract of
+   That vocabulary (rendered from `knowledge/knowledge_base.json`) is the shared contract of
    this stage and the execution layer; the raw file's evidence tables carry per-competition
    results, so during a benchmark run it is read only through the filter — every operator row
    survives, but an evidence cell naming this competition is withheld. Free-text ideas are not executable and get silently dropped (this
-   cost s3e19 its whole point: a correct "GDP as a level covariate" judgment reached an
+   cost a benchmark competition its whole point: a correct "macro covariate as a level" judgment reached an
    execution layer that could only append feature columns, and a GBDT cannot extrapolate a
    feature outside its training range). **Decision rule: if the test window lies outside the
    training range and the covariate carries the level, emit BOTH `join_feature` and
@@ -176,4 +175,4 @@ Fields that cannot be determined are listed in `not_recorded` — never guessed.
   become seed lineages inside the main tree. See `references/07_tree_search.md`.
 - **Experience library write-back**: after the competition, any dossier hypothesis that was
   confirmed with a score delta becomes a new evidence-backed entry in `knowledge/experience.md`
-  or a trigger refinement in `knowledge/task_priors.md`.
+  or a structured evidence item / trigger refinement in `knowledge/knowledge_base.json` (never prose appended to a file — prose write-back is the leak class the renderer exists to close).

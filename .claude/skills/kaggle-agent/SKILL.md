@@ -86,18 +86,20 @@ Apply what transfers; log new validated insights back into it after major score 
 `knowledge/query_library.py --query <metric/data-type/idea terms>` and record the query terms in
 the experiment's `library_query` field (and top hits, or the literal string `none`, in
 `library_hits`). An experiment record without a `library_query` trace is invalid;
-`query_library.py --audit <experiments.json>` checks this. Why binding: on s3e19 we re-derived a
-result the library already held because nothing forced a query, and separately retrieved an
-over-claiming entry when a correct one sat beside it — evidence-delta-ranked retrieval plus a
-mandatory trace is the fix for both (main report, Open Problems).
-Task-LEVEL priors (problem identification: split policy, external-data need) live separately in
-`knowledge/task_priors.md` and are consumed by Stage 0.5 — **and the HARD RULE below applies to
-them too**. It used to say they lived outside it, which made that file the one unfiltered door
-into the library: `run_myagent_headless.sh` forbids reading the other agents' directories, but
-their per-competition results were quoted inside this file, so a lane could read AIDE's winning
-mechanism for s3e11 without touching AIDE's workspace (2026-08-04 architecture gate). Stage 0.5
-now reads the library through `knowledge/task_priors_for.py <comp>`, which enforces the rule at
-ENTRY level: a prior whose evidence rests solely on the competition being solved is dropped
+`query_library.py --audit <experiments.json>` checks this. Why binding: on a benchmark
+competition we re-derived a result the library already held because nothing forced a query,
+and separately retrieved an over-claiming entry when a correct one sat beside it —
+evidence-delta-ranked retrieval plus a mandatory trace is the fix for both (main report,
+Open Problems).
+Task-LEVEL priors (problem identification: split policy, external-data need) live in
+`knowledge/knowledge_base.json` and are consumed by Stage 0.5 — **and the HARD RULE below
+applies to them too**. An earlier design held them in a raw prose file outside the rule,
+which made it an unfiltered door into the library: the lane-isolation constraint is enforced
+on directories, but other agents' per-competition results were quoted inside the file itself,
+so a lane could read another lane's winning mechanism without touching its workspace
+(2026-08-04 architecture gate). Stage 0.5 reads the library ONLY through
+`knowledge/task_priors_for.py <comp>`, which RENDERS a per-competition view from structured
+facts: a prior whose evidence rests solely on the competition being solved is dropped
 whole, Action included, because the Action is the answer.
 
 **HARD RULE — never read the answers this competition already produced.** Every bullet ends in a

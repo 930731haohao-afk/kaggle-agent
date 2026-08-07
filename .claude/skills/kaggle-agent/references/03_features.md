@@ -17,7 +17,7 @@ channel between the judgment layer and this stage; the EDA report's free-text "f
 bullets are not. This section exists because it was missing: `00_problem_dossier.md` declared
 Stage 2 the consumer of `injection_ideas`, this file never mentioned them, and 28 of 32 dossiers
 in the repo have no `injection_ledger.json` beneath them — every idea silently dropped, on the
-very competition (s3e19) the contract was created for (2026-08-04 architecture gate).
+very competition the contract was created for (2026-08-04 architecture gate).
 
 1. **Conform first.** An idea that does not typecheck cannot be dispatched:
 
@@ -26,7 +26,7 @@ very competition (s3e19) the contract was created for (2026-08-04 architecture g
    ```
 
    Non-zero exit means fix the dossier before continuing — do not hand-wave past it. Operator
-   names come from `knowledge/injection_operators.md` and nowhere else; inventing a name is how
+   names come from the rendered operator vocabulary (`python3 knowledge/task_priors_for.py <comp> --ops`) and nowhere else; inventing a name is how
    an idea becomes unexecutable, and 234 of 282 recorded ideas across this repo do not conform
    while every one of those runs completed anyway.
 
@@ -97,7 +97,7 @@ Write a feature engineering script that:
 - **Target encoding is FOLD-BOUND, and this stage cannot do it.** Computing an encoder from the
   whole training target and then training on those columns leaks the target into every fold: the
   encoder saw each row's own label. This project measured that trap directly (see
-  `knowledge/injection_operators.md`: target encoding "REQUIRES fold-aligned computation"), and
+  the operator vocabulary: target encoding "REQUIRES fold-aligned computation"), and
   this file used to license the whole-train form under a generic "fit on train" rule. Stage 2
   runs before the fold definition exists, so it has no way to do it correctly. Therefore:
   **emit target encoding as an `encoding` operator with `scheme: "target"` for the evaluator to
