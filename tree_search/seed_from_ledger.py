@@ -50,14 +50,29 @@ _DEPTH_KEY = {"lgb": "max_depth", "xgb": "max_depth", "cat": "depth"}
 
 
 def load_emitted(workspace: str) -> list[dict]:
-    """Read the arm's emitted node configs from its manifest (or bare ledger)."""
-    for name, path in (("manifest", os.path.join(workspace, "data", "arm_manifest.json")),
-                       ("ledger", os.path.join(workspace, "data", "injection_ledger.json"))):
+    """Read the arm's emitted node configs from its manifest or ledger.
+
+    Checks BOTH ledger locations: <workspace>/data/ is where make_v5_arm writes, and
+    <workspace>/ directly is the path 03_features.md instructs Stage 2 to write. Reading only
+    the first meant a conforming target-encoding idea was dispatched exactly as documented,
+    written to the documented path, and then never seeded by anyone -- emitted into a ledger
+    nothing read (2026-08-07 re-verification). Falls back from "node_configs" to
+    "emitted_config" for the same reason: two producers, one key each.
+    """
+    candidates = (("manifest", os.path.join(workspace, "data", "arm_manifest.json")),
+                  ("ledger", os.path.join(workspace, "data", "injection_ledger.json")),
+                  ("ledger", os.path.join(workspace, "injection_ledger.json")))
+    for name, path in candidates:
         if not os.path.exists(path):
             continue
         obj = json.load(open(path))
         plan = obj.get("ledger", obj) if name == "manifest" else obj
         cfgs = plan.get("node_configs") or []
+        if not cfgs:
+            # emitted_config entries carry {"operator", "config": {...}} or bare configs
+            cfgs = [e.get("config", e) for e in (plan.get("emitted_config") or [])
+                    if isinstance(e, dict)]
+            cfgs = [c for c in cfgs if c]
         if cfgs:
             return cfgs
     return []

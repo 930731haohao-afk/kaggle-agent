@@ -62,18 +62,29 @@ def _names_comp(text: str, aliases: list[str]) -> bool:
 
 
 def parse_library(path: Path = LIBRARY) -> list[dict]:
-    """Flatten the library into entries: {section, text, has_evidence, has_delta}."""
+    """Flatten the library into entries: {section, text, has_evidence, has_delta}.
+
+    Continuation lines attach to the bullet above them. The library is hard-wrapped and its
+    own write-back convention puts "  | 證據: ..." on its own line, so a parser that keeps
+    only "-"-prefixed lines detaches a bullet from its evidence -- and the self-exclusion in
+    query() then cannot see which competition the bullet cites, serving it verbatim to that
+    competition's re-run (2026-08-07 re-verification).
+    """
     entries, section = [], ""
     for line in path.read_text().splitlines():
         if line.startswith("#"):
             section = line.lstrip("# ").strip()
             continue
-        if line.lstrip().startswith("-"):
-            text = line.lstrip("- ").strip()
+        stripped = line.strip()
+        if stripped.startswith("-"):
+            text = stripped.lstrip("- ").strip()
             if text:
-                entries.append({"section": section, "text": text,
-                                "has_evidence": bool(EVIDENCE_PAT.search(text)),
-                                "has_delta": bool(DELTA_PAT.search(text))})
+                entries.append({"section": section, "text": text})
+        elif stripped and entries and not stripped.startswith("```"):
+            entries[-1]["text"] += " " + stripped
+    for e in entries:
+        e["has_evidence"] = bool(EVIDENCE_PAT.search(e["text"]))
+        e["has_delta"] = bool(DELTA_PAT.search(e["text"]))
     return entries
 
 

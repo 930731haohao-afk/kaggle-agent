@@ -87,6 +87,27 @@ _EXCLUSION_PHRASES = ("not used for submission", "not for submission", "diagnost
 _DIAGNOSTIC_LABELS = ("diagnostic", "leakage check", "leak check", "sanity probe", "probe")
 
 
+def _jsonable(v):
+    """Coerce to something json.dump accepts, losing as little as possible."""
+    if isinstance(v, (bool, int, float, str, type(None))):
+        return v
+    if hasattr(v, "item") and not hasattr(v, "__len__"):     # numpy scalar
+        try:
+            return v.item()
+        except Exception:  # noqa: BLE001
+            return str(v)
+    if isinstance(v, dict):
+        return {str(k) if not isinstance(k, str) else k: _jsonable(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple, set)):
+        return [_jsonable(x) for x in v]
+    if hasattr(v, "tolist"):                                  # numpy array
+        try:
+            return v.tolist()
+        except Exception:  # noqa: BLE001
+            return str(v)
+    return str(v)
+
+
 def _entry_score(entry: dict):
     """Score under either schema (v2 `score`, v1 `cv_mean`)."""
     for k in ("score", "cv_mean"):
@@ -102,19 +123,32 @@ def _entry_is_diagnostic(entry: dict) -> bool:
     Champion selection that ignores the label reproduces the study's silent failure #4:
     a leakage probe explicitly marked not-for-submission won the aggregation.
     """
-    # 1. An explicit boolean is authoritative. This is what a run SHOULD set.
+    # 1. An explicit flag is authoritative -- and it arrives as bool, 0/1, or "true"/"false"
+    #    depending on which code path wrote the entry. isinstance(flag, bool) alone skipped
+    #    {"diagnostic": 0}, fell through to tier 2, and excluded an entry whose flag SAID it
+    #    was not a diagnostic (2026-08-07 re-verification).
     flag = entry.get("diagnostic")
     if isinstance(flag, bool):
         return flag
-    # 2. Dedicated label fields are short and deliberate, so a topic word there means it.
-    labels = " ".join(str(entry.get(k, "")) for k in
-                      ("tag", "label", "model", "model_name")).lower()
+    if isinstance(flag, (int, float)) and flag in (0, 1):
+        return bool(flag)
+    if isinstance(flag, str) and flag.strip().lower() in ("true", "false", "yes", "no", "0", "1"):
+        return flag.strip().lower() in ("true", "yes", "1")
+    # 2. Dedicated LABEL fields only. model/model_name were scanned here too, but in this repo
+    #    they hold long free-text blend DESCRIPTIONS -- the real s3e19 champion is
+    #    "tree-search v2 blend (10-way: ... calendar-probe ...)" and the bare word "probe"
+    #    demoted it to second place (2026-08-07). A label is deliberate; a description is not.
+    labels = " ".join(str(entry.get(k, "")) for k in ("tag", "label")).lower()
     if any(m in labels for m in _DIAGNOSTIC_LABELS):
         return True
-    # 3. Free-text notes: only a phrase that ASSERTS exclusion counts. "passed the leakage
-    #    check" is evidence the entry is sound, not evidence it is a diagnostic.
-    notes = str(entry.get("notes", "")).lower()
-    return any(p in notes for p in _EXCLUSION_PHRASES)
+    # 3. Free-text notes: a phrase that ASSERTS exclusion counts anywhere; a diagnostic LABEL
+    #    counts only as the notes' opening prefix ("leakage check: target leaks via row
+    #    ordering" is the documented way to mark a leak probe), never mid-prose ("passed the
+    #    leakage check" is evidence the entry is sound).
+    notes = str(entry.get("notes", "")).strip().lower()
+    if any(p in notes for p in _EXCLUSION_PHRASES):
+        return True
+    return any(notes.startswith(m + ":") for m in _DIAGNOSTIC_LABELS)
 
 
 def get_best_experiment(
@@ -240,13 +274,13 @@ def log_experiment_v2(
         entry["features"] = feats
         entry["n_features"] = len(feats)
     if params is not None:
-        # The hyperparameters that produced this score. Absent until 2026-08-04: the v2 schema
-        # recorded model name and score but not the configuration, while 06_submission.md told
-        # the agent to read `best_params` "From experiments.json" -- an instruction nothing
-        # could satisfy, so the winning configuration had to be reconstructed by hand or
-        # guessed (architecture gate). Stringified like the v1 schema so the record stays JSON.
-        entry["params"] = {k: (v if isinstance(v, (int, float, bool, str, type(None))) else str(v))
-                           for k, v in params.items()}
+        # The hyperparameters that produced this score. Absent until 2026-08-04; the first fix
+        # stringified top-level VALUES only, so a numpy scalar value or key -- which is what
+        # sklearn/lightgbm actually hand back -- raised TypeError from json.dump AFTER
+        # training, discarding the experiment and leaving an orphan .tmp file
+        # (2026-08-07 re-verification). Sanitize recursively: keys become str, numpy scalars
+        # unwrap via .item(), arrays become lists, anything else falls back to str().
+        entry["params"] = _jsonable(params)
     for key, val in (("cv", cv), ("base_models", base_models), ("ensemble", ensemble),
                      ("postprocess", postprocess), ("submission", submission),
                      ("leaderboard", leaderboard)):

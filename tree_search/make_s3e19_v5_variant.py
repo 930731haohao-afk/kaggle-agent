@@ -51,6 +51,21 @@ def build(variant: str) -> None:
     years = []
     for split in ("train", "test"):
         years += pd.to_datetime(raw[split]["date"]).dt.year.unique().tolist()
+
+    # The rules gate is binding on EVERY fetch path, not only apply_operators. This builder
+    # called fetch_worldbank/fetch_holidays directly, so it reached external data with no
+    # verdict at all -- the exact bypass the gate exists to close (2026-08-07 re-verification).
+    import json as _json
+    _vpath = os.path.join(BASE_DIR, "rules_verdict.json")
+    if not os.path.exists(_vpath):
+        raise SystemExit(
+            f"no rules verdict at {_vpath}. Run `python3 external_data/rules_gate.py "
+            f"<rules.txt> --record-to {_vpath}` first; this builder fetches external data "
+            f"and absence of a verdict is not permission.")
+    _v = _json.load(open(_vpath))
+    if _v.get("verdict") != "permitted":
+        raise SystemExit(f"rules verdict is {_v.get('verdict')!r}; external data is off for "
+                         f"this competition and this builder must not run.")
     gdp, gmeta = fetch_worldbank("gdp_per_capita", min(years) - 1, max(years))
     hol, hmeta = fetch_holidays(countries, sorted(set(years)))
 

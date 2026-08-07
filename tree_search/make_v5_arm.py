@@ -149,6 +149,15 @@ def _patch_sample_weight(src: str, wcol: str) -> str:
     return src
 
 
+# Which operator DEFINES each arm kind: an arm whose defining operator did not realize is a
+# baseline clone wearing the arm's name, which is precisely the artifact the 2026-08-07
+# re-verification found this module emitting (arm="ratio", target_transform=null, ledger
+# realized=[], evaluator byte-identical to the baseline).
+ARM_DEFINING_OP = {"ratio": "ratio_target", "log": "log_offset", "logoffset": "log_offset",
+                   "featurejoin": "join_feature", "join": "join_feature",
+                   "gdp": "join_feature", "gdp_hol": "flag_feature"}
+
+
 def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     base_mod, id_col = BASE[comp]
     base_dir = os.path.join(_ROOT, "competitions", comp)
@@ -156,11 +165,38 @@ def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     vdir = os.path.join(_ROOT, "competitions", vcomp, "data")
     os.makedirs(vdir, exist_ok=True)
 
+    # The rules gate in apply_operators is binding, and this is its production caller: the
+    # verdict Stage 0.5 recorded lives in the competition workspace. Read it from there rather
+    # than growing a parameter every call site would have to thread through -- and if Stage 0.5
+    # never ran the gate, apply_operators refuses, which is the correct outcome
+    # (2026-08-07: build() had no way to supply a verdict, so every external-op arm died at
+    # construction with the gate's ValueError).
+    rules_verdict_path = os.path.join(base_dir, "rules_verdict.json")
+
     raw_tr = pd.read_csv(os.path.join(base_dir, "data", "train.csv"), parse_dates=["date"])
     raw_te = pd.read_csv(os.path.join(base_dir, "data", "test.csv"), parse_dates=["date"])
     aug_tr, aug_te, plan = apply_operators(
         raw_tr, raw_te, ideas, target_col="num_sold",
-        ledger_path=os.path.join(vdir, "injection_ledger.json"))
+        ledger_path=os.path.join(vdir, "injection_ledger.json"),
+        rules_verdict=rules_verdict_path)
+
+    # THE ARM MUST BE WHAT ITS NAME SAYS. If the operator that defines this arm kind was
+    # requested but not realized (a precondition refused it, a gate stopped it), refuse to
+    # emit the arm rather than shipping a baseline clone under the arm's name -- nothing
+    # downstream re-checks, and the search would race "ratio vs join" where one lane is
+    # secretly the baseline.
+    defining = ARM_DEFINING_OP.get(arm.split("-")[0].split("_")[0])
+    if defining is None and len(ideas) == 1:
+        defining = ideas[0].get("operator")
+    if defining and any(i.get("operator") == defining for i in ideas):
+        realized_ops = {r.get("operator") for r in plan.get("realized", [])}
+        if defining not in realized_ops:
+            reasons = [u.get("reason", "")[:120] for u in plan.get("unrealized", [])
+                       if u.get("operator") == defining]
+            raise RuntimeError(
+                f"arm {arm!r} is defined by operator {defining!r}, which was requested but "
+                f"NOT realized ({reasons or 'no reason recorded'}). Refusing to emit a "
+                f"baseline clone under this arm's name.")
     new_cols = list(plan["added_columns"])
     tt = plan.get("target_transform")
     if tt:

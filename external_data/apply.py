@@ -138,10 +138,37 @@ def covariate_volatility_check(cov: pd.DataFrame, mapping: dict, years: list[int
                 "worst_spread_pp": None, "threshold_pp": threshold_pp}
     pct = (c.pct_change() * 100).dropna(how="all")
     spread = pct.std(axis=1).round(2)
-    worst = float(spread.max()) if len(spread) else 0.0
-    return {"spread_pp_by_year": {int(y): float(v) for y, v in spread.items()},
+
+    # NaN must not decide, in EITHER direction (2026-08-07 re-verification):
+    #   fail-open : with a country's volatile years MISSING, its column drops out of std(),
+    #               the spread over the remaining country is 0.0, and `worst <= threshold`
+    #               certified "stable" on exactly the data that could not show the shock;
+    #   fail-closed: on a single-country panel std(axis=1) is NaN everywhere, worst was nan,
+    #               `nan <= threshold` is False, and ratio_target was refused with
+    #               "moves up to nanpp" -- but a one-country panel HAS no cross-country
+    #               spread to carry; the check is simply not applicable.
+    if len(iso) < 2:
+        return {"spread_pp_by_year": {}, "worst_spread_pp": None,
+                "threshold_pp": threshold_pp, "verdict": "not_applicable_single_group",
+                "note": "cross-group volatility needs at least two groups; a single-group "
+                        "panel cannot fail this check and must not be refused on it"}
+    n_groups = pct.notna().sum(axis=1)
+    measured = spread[n_groups >= 2].dropna()
+    unmeasured_years = sorted(int(y) for y in spread.index if y not in measured.index)
+    worst = float(measured.max()) if len(measured) else None
+    if worst is None:
+        verdict = "unmeasured"
+    elif worst > threshold_pp:
+        verdict = "volatile"
+    elif unmeasured_years:
+        # some transitions were fine, but the missing ones cannot certify anything
+        verdict = f"unmeasured_{','.join(map(str, unmeasured_years))}"
+    else:
+        verdict = "stable"
+    return {"spread_pp_by_year": {int(y): (None if pd.isna(v) else float(v))
+                                  for y, v in spread.items()},
             "worst_spread_pp": worst, "threshold_pp": threshold_pp,
-            "verdict": "stable" if worst <= threshold_pp else "volatile"}
+            "unmeasured_years": unmeasured_years, "verdict": verdict}
 
 
 def _fetch_covariate(source: str, years: list[int], countries: list[str]):
@@ -465,12 +492,29 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
     # scores, so this fails CLOSED: no verdict is not permission.
     _ext_ops = {"join_feature", "ratio_target", "log_offset", "flag_feature"}
     _wants_external = any((i.get("operator") in _ext_ops) for i in ideas)
-    if _wants_external and not allow_unchecked_rules:
+    if _wants_external:
+        # allow_unchecked_rules is a strict boolean: `"no"` is truthy, so a caller passing the
+        # string opened the gate while believing they had closed it (2026-08-07).
+        if not isinstance(allow_unchecked_rules, bool):
+            raise TypeError(
+                f"allow_unchecked_rules must be a bool, got "
+                f"{type(allow_unchecked_rules).__name__} {allow_unchecked_rules!r}: any truthy "
+                f"non-bool would silently open the rules gate")
         v = rules_verdict
         if isinstance(v, (str, Path)):
             vp = Path(v)
             v = json.loads(vp.read_text()) if vp.exists() else None
-        if v is None:
+        # An EXPLICIT prohibition outranks the offline-test escape hatch. The first version
+        # checked allow_unchecked_rules before reading the verdict, so a caller could fetch
+        # despite a RECORDED "forbidden" (2026-08-07). Unchecked means unchecked -- it never
+        # means overridden.
+        if v is not None and (v or {}).get("verdict") != "permitted":
+            raise ValueError(
+                f"external data is not permitted for this competition: rules verdict is "
+                f"{(v or {}).get('verdict')!r} ({(v or {}).get('detail', '')[:160]}). "
+                f"Remove the external-data operators from the dossier and record why. "
+                f"allow_unchecked_rules does not override a recorded prohibition.")
+        if v is None and not allow_unchecked_rules:
             raise ValueError(
                 "this dossier requests external-data operators "
                 f"({sorted(o for o in _ext_ops if any(i.get('operator') == o for i in ideas))}) "
@@ -479,11 +523,6 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                 "competitions/<comp>/rules_verdict.json` and pass rules_verdict=<that path>. "
                 "Absence of a verdict is not permission; pass allow_unchecked_rules=True only "
                 "for offline tests, which is recorded in the ledger.")
-        if (v or {}).get("verdict") != "permitted":
-            raise ValueError(
-                f"external data is not permitted for this competition: rules verdict is "
-                f"{(v or {}).get('verdict')!r} ({(v or {}).get('detail', '')[:160]}). "
-                f"Remove the external-data operators from the dossier and record why.")
 
     # Panel keys are resolved LAZILY (07-30). They used to be computed unconditionally here,
     # which raised KeyError('date') on any competition without a date and a country column --
@@ -650,7 +689,7 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                                        "target multiplies FX/inflation shocks into predictions. "
                                        "Use gdp_per_capita_const or gdp_per_capita_ppp instead "
                                        "(measured: 14.6pp vs 3.0pp cross-country spread)")})
-                    if vol.get("verdict") != "stable":
+                    if vol.get("verdict") not in ("stable", "not_applicable_single_group"):
                         gate_failures.append(f"covariate stability ({vol.get('verdict')})")
                         plan["unrealized"].append({
                             "operator": op, "params_subset": "covariate stability",
@@ -829,9 +868,8 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
             plan["unrealized"].append({"operator": op, "reason": f"{type(e).__name__}: {e}"})
 
     if _wants_external:
-        plan["rules_gate"] = ({"verdict": "unchecked (allow_unchecked_rules=True)"}
-                              if allow_unchecked_rules else
-                              {"verdict": "permitted", "checked": True})
+        plan["rules_gate"] = ({"verdict": "permitted", "checked": True} if v is not None
+                              else {"verdict": "unchecked (allow_unchecked_rules=True)"})
     plan["realized_count"] = len(plan["realized"])          # data-layer only, by construction
     plan["emitted_config_count"] = len(plan["emitted_config"])
     plan["advisory_count"] = len(plan["advisory"])

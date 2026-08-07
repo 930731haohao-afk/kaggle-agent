@@ -116,6 +116,19 @@ def _resolve_expectation(metric: Optional[str], expect: str,
             return "label"
         if variants & _CONTINUOUS_METRICS:
             return "continuous"
+        # Token-level fallback: "area under the ROC curve (AUC)" and
+        # "categorization_accuracy" -- both verbatim from this repo's config.yaml files --
+        # match no whole-name variant, resolved to "unknown", and the value gate silently
+        # downgraded to SKIP (2026-08-07 re-verification). Any individual token that is
+        # itself a known metric name decides; probability outranks label outranks continuous
+        # because its range check is the strictest.
+        tokens = {tok for tok in re.split(r"[^a-z0-9]+", str(metric).lower()) if tok}
+        if tokens & _PROBABILITY_METRICS:
+            return "probability"
+        if tokens & _LABEL_METRICS:
+            return "label"
+        if tokens & _CONTINUOUS_METRICS:
+            return "continuous"
     if y_train is not None and pd.api.types.is_numeric_dtype(y_train):
         uniq = np.unique(y_train.dropna().to_numpy())
         integral = np.all(uniq == np.round(uniq))
@@ -130,7 +143,12 @@ def validate(sub: pd.DataFrame, sample: pd.DataFrame, id_col: Optional[str] = No
     """Run every check. Caller decides what to do with the two failure lists."""
     rep = Report()
     id_col = id_col or sample.columns[0]
-    pred_col = sample.columns[-1]
+    # The prediction column is the last NON-ID column. sample.columns[-1] was taken
+    # unconditionally, so a submission whose id sits last had its IDs value-checked as
+    # predictions while the real prediction column was never examined
+    # (2026-08-07 re-verification).
+    non_id = [c for c in sample.columns if c != id_col]
+    pred_col = non_id[-1] if non_id else sample.columns[-1]
 
     # ---- STRUCTURAL ----
     rep.check(rep.structural, "Row count", len(sub) == len(sample),
@@ -194,15 +212,27 @@ def validate(sub: pd.DataFrame, sample: pd.DataFrame, id_col: Optional[str] = No
         vals = np.array([])
 
     # ---- SUSPICIOUS ----
-    n_unique = int(preds.nunique(dropna=False))
-    rep.check(rep.suspicious, "Variance", n_unique > 1,
-              f"({n_unique} unique value(s)"
-              + (f", constant = {preds.iloc[0]}" if n_unique == 1 and len(preds) else "")
-              + ")")
-
-    all_zero = bool(numeric and len(vals) and (vals == 0).all())
-    rep.check(rep.suspicious, "Non-zero", not all_zero,
-              "(every prediction is exactly 0 — a placeholder array was never filled in)")
+    # Variance and non-zero run PER COLUMN. They used to read only the last column, so a
+    # multi-target submission (afsis: 6 columns, conway: 401, emvic: 37) with a constant or
+    # all-zero placeholder anywhere else passed untouched (2026-08-07 re-verification).
+    const_cols, zero_cols = {}, []
+    for c in pred_cols:
+        col = sub[c]
+        nu = int(col.nunique(dropna=False))
+        if nu <= 1:
+            const_cols[c] = col.iloc[0] if len(col) else None
+        if pd.api.types.is_numeric_dtype(col):
+            a = col.to_numpy(dtype=float)
+            fin = a[np.isfinite(a)]
+            if len(fin) and (fin == 0).all():
+                zero_cols.append(c)
+    rep.check(rep.suspicious, "Variance", not const_cols,
+              f"({len(const_cols)}/{len(pred_cols)} column(s) constant: "
+              f"{dict(list(const_cols.items())[:5])})" if const_cols else
+              f"(all {len(pred_cols)} column(s) vary)")
+    rep.check(rep.suspicious, "Non-zero", not zero_cols,
+              f"({len(zero_cols)} column(s) entirely 0 — a placeholder array was never "
+              f"filled in: {zero_cols[:5]})" if zero_cols else "")
 
     kind = _resolve_expectation(metric, expect, y_train)
     labels = (set(np.unique(y_train.dropna().to_numpy()).tolist())

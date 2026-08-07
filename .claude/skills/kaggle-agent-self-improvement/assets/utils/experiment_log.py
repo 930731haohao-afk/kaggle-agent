@@ -74,8 +74,38 @@ def log_experiment(
     return exp_id
 
 
-_DIAGNOSTIC_MARKERS = ("diagnostic", "not used for submission", "not for submission",
-                       "leakage check", "leak check", "sanity probe")
+# Markers that ASSERT an entry is not a submission candidate. Split into two tiers because the
+# single list matched free-text notes: an entry whose notes said "passed the leakage check" was
+# classified a diagnostic and silently dropped from champion selection, so a legitimate winner
+# lost to a weaker model for mentioning a check it had passed (2026-08-04 architecture gate).
+#
+# Tier 1 asserts exclusion and is safe anywhere, including prose.
+_EXCLUSION_PHRASES = ("not used for submission", "not for submission", "diagnostic only",
+                      "do not submit", "excluded from selection", "not a candidate")
+# Tier 2 are topic words. A short, deliberate LABEL field of "diagnostic" means it; the same
+# word inside a sentence does not. Never matched against `notes`.
+_DIAGNOSTIC_LABELS = ("diagnostic", "leakage check", "leak check", "sanity probe", "probe")
+
+
+def _jsonable(v):
+    """Coerce to something json.dump accepts, losing as little as possible."""
+    if isinstance(v, (bool, int, float, str, type(None))):
+        return v
+    if hasattr(v, "item") and not hasattr(v, "__len__"):     # numpy scalar
+        try:
+            return v.item()
+        except Exception:  # noqa: BLE001
+            return str(v)
+    if isinstance(v, dict):
+        return {str(k) if not isinstance(k, str) else k: _jsonable(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple, set)):
+        return [_jsonable(x) for x in v]
+    if hasattr(v, "tolist"):                                  # numpy array
+        try:
+            return v.tolist()
+        except Exception:  # noqa: BLE001
+            return str(v)
+    return str(v)
 
 
 def _entry_score(entry: dict):
@@ -93,9 +123,32 @@ def _entry_is_diagnostic(entry: dict) -> bool:
     Champion selection that ignores the label reproduces the study's silent failure #4:
     a leakage probe explicitly marked not-for-submission won the aggregation.
     """
-    hay = " ".join(str(entry.get(k, "")) for k in
-                   ("model", "model_name", "notes", "tag", "label")).lower()
-    return any(m in hay for m in _DIAGNOSTIC_MARKERS)
+    # 1. An explicit flag is authoritative -- and it arrives as bool, 0/1, or "true"/"false"
+    #    depending on which code path wrote the entry. isinstance(flag, bool) alone skipped
+    #    {"diagnostic": 0}, fell through to tier 2, and excluded an entry whose flag SAID it
+    #    was not a diagnostic (2026-08-07 re-verification).
+    flag = entry.get("diagnostic")
+    if isinstance(flag, bool):
+        return flag
+    if isinstance(flag, (int, float)) and flag in (0, 1):
+        return bool(flag)
+    if isinstance(flag, str) and flag.strip().lower() in ("true", "false", "yes", "no", "0", "1"):
+        return flag.strip().lower() in ("true", "yes", "1")
+    # 2. Dedicated LABEL fields only. model/model_name were scanned here too, but in this repo
+    #    they hold long free-text blend DESCRIPTIONS -- the real s3e19 champion is
+    #    "tree-search v2 blend (10-way: ... calendar-probe ...)" and the bare word "probe"
+    #    demoted it to second place (2026-08-07). A label is deliberate; a description is not.
+    labels = " ".join(str(entry.get(k, "")) for k in ("tag", "label")).lower()
+    if any(m in labels for m in _DIAGNOSTIC_LABELS):
+        return True
+    # 3. Free-text notes: a phrase that ASSERTS exclusion counts anywhere; a diagnostic LABEL
+    #    counts only as the notes' opening prefix ("leakage check: target leaks via row
+    #    ordering" is the documented way to mark a leak probe), never mid-prose ("passed the
+    #    leakage check" is evidence the entry is sound).
+    notes = str(entry.get("notes", "")).strip().lower()
+    if any(p in notes for p in _EXCLUSION_PHRASES):
+        return True
+    return any(notes.startswith(m + ":") for m in _DIAGNOSTIC_LABELS)
 
 
 def get_best_experiment(
@@ -173,6 +226,7 @@ def log_experiment_v2(
     metric: str,
     direction: str,
     score: float,
+    params: Optional[dict] = None,
     cv: Optional[dict] = None,
     features: Optional[List[str]] = None,
     base_models: Optional[List[dict]] = None,
@@ -203,8 +257,30 @@ def log_experiment_v2(
         "score": round(float(score), 6),
     }
     if features is not None:
-        entry["features"] = list(features)
-        entry["n_features"] = len(features)
+        # `features` crosses the Stage 2 -> Stage 3 seam as a comma-separated STRING in one
+        # contract and as a list in the other. list("a,b,c") explodes a string into single
+        # CHARACTERS, so the logged feature set became ['a', ',', 'b', ...] and n_features
+        # became the character count -- silently, in the artifact Stage 5 reads back
+        # (2026-08-04 architecture gate). Normalize instead of coercing blindly.
+        if isinstance(features, str):
+            feats = [f.strip() for f in features.split(",") if f.strip()]
+        elif isinstance(features, (list, tuple, set)):
+            feats = [str(f) for f in features]
+        else:
+            raise TypeError(
+                f"features must be a list or a comma-separated string, got "
+                f"{type(features).__name__}; blind list() on anything else silently produces "
+                f"a per-character feature list")
+        entry["features"] = feats
+        entry["n_features"] = len(feats)
+    if params is not None:
+        # The hyperparameters that produced this score. Absent until 2026-08-04; the first fix
+        # stringified top-level VALUES only, so a numpy scalar value or key -- which is what
+        # sklearn/lightgbm actually hand back -- raised TypeError from json.dump AFTER
+        # training, discarding the experiment and leaving an orphan .tmp file
+        # (2026-08-07 re-verification). Sanitize recursively: keys become str, numpy scalars
+        # unwrap via .item(), arrays become lists, anything else falls back to str().
+        entry["params"] = _jsonable(params)
     for key, val in (("cv", cv), ("base_models", base_models), ("ensemble", ensemble),
                      ("postprocess", postprocess), ("submission", submission),
                      ("leaderboard", leaderboard)):

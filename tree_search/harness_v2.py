@@ -378,23 +378,50 @@ def blend_optimism(cache_dir: str, members: list, y, metric, *, k: int = 1500,
 UNIFIED_BLEND_SCORING = True
 UNIFIED_BLEND_K = 1500
 UNIFIED_ASCENT_ROUNDS = 6
+# Deterministic coarsening, INSIDE the unified scorer so both routes coarsen identically.
+# The first unification put the coarsening decision in harness_v3's cost guard only, so a
+# blend big enough to coarsen got k=200 on the driver route and k=1500 on the eval-module
+# route -- a score per route again, through the guard this time (2026-08-07 re-verification;
+# s4e11's champion blend, 8 members x 140,700 rows, was the live case). The boundary is
+# preserved from the k=800 calibration: coarsen when members*rows > 1.875e6, i.e. budget =
+# 1.875e6 * UNIFIED_BLEND_K. Raising k without raising the budget had silently LOWERED the
+# boundary and started coarsening blends that never coarsened before.
+UNIFIED_COARSEN_BOUNDARY = 1_875_000          # members * rows
+UNIFIED_COARSEN_K = 200
+
+
+def unified_k_for(members_count: int, n_rows: int, k: int = None) -> int:
+    """The k every route must use for this problem size. Deterministic: no clock, no load."""
+    k = UNIFIED_BLEND_K if k is None else k
+    if n_rows and members_count * n_rows > UNIFIED_COARSEN_BOUNDARY and k > UNIFIED_COARSEN_K:
+        return UNIFIED_COARSEN_K
+    return k
 
 
 def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "dirichlet",
                k: int = 1500, seed: int = 42, grid_step: float = 0.05, target=None,
-               unified: bool = None):
+               unified: bool = None, cost_budget_units: int = None):
     """Public entry point. Applies the unified scoring contract, then delegates.
 
     `unified=False` reproduces the pre-2026-08-04 v2 behaviour exactly (k as passed, no
     refinement) for anyone who needs digit-for-digit comparability with an old run.
+    `cost_budget_units` overrides the coarsening boundary (units = k * members * rows),
+    mainly for tests; the default reproduces the k=800 calibration.
     """
     use = UNIFIED_BLEND_SCORING if unified is None else unified
     if not use:
         return _eval_blend_core(cache_dir, members, metric_fn, weight_search=weight_search,
                                 k=k, seed=seed, grid_step=grid_step, target=target)
+    n_rows = _cached_rows(cache_dir, members)
+    if cost_budget_units is not None:
+        k_used = (UNIFIED_COARSEN_K
+                  if n_rows and UNIFIED_BLEND_K * len(members) * n_rows > cost_budget_units
+                  and UNIFIED_BLEND_K > UNIFIED_COARSEN_K else UNIFIED_BLEND_K)
+    else:
+        k_used = unified_k_for(len(members), n_rows)
     best_w, best_s, oofs = _eval_blend_core(
         cache_dir, members, metric_fn, weight_search=weight_search,
-        k=UNIFIED_BLEND_K, seed=seed, grid_step=grid_step, target=target)
+        k=k_used, seed=seed, grid_step=grid_step, target=target)
     # Coordinate ascent accepts only strictly improving moves, so this cannot make a blend
     # worse -- it makes the two routes agree. Imported lazily: harness_v3 imports this module.
     if best_w is not None and weight_search != "nnls":
@@ -405,6 +432,27 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
         except Exception:  # noqa: BLE001 - refinement is an improvement, never a dependency
             pass
     return best_w, best_s, oofs
+
+
+def _cached_rows(cache_dir: str, members: list) -> int:
+    """Row count of the cached OOF vectors -- deterministic, and robust to a corrupt member.
+
+    Tries EVERY member and skips unreadable files: returning 0 on the first corrupt file
+    disabled coarsening for the whole blend, silently running an unguarded full-k search
+    (2026-08-07 re-verification).
+    """
+    for nid in members:
+        fp = os.path.join(cache_dir, f"solo_{nid}.npz")
+        if not os.path.exists(fp):
+            continue
+        try:
+            with np.load(fp) as z:
+                if "_n_rows" in z:
+                    return int(z["_n_rows"])
+                return int(np.asarray(z["oof"]).shape[0])
+        except Exception:  # noqa: BLE001 - try the next member
+            continue
+    return 0
 
 
 def _eval_blend_core(cache_dir: str, members: list, metric_fn, weight_search: str = "dirichlet",
@@ -535,11 +583,15 @@ def _split_sections(text: str):
             stripped = line.strip()
             if stripped.startswith("- "):
                 cur["lines"].append(stripped[2:].strip())
-            elif stripped and cur["lines"] and not stripped.startswith(("#", "|", "```")):
+            elif stripped and cur["lines"] and not stripped.startswith(("#", "```")):
                 # A continuation line belongs to the bullet above it. Dropping it used to
                 # separate a multi-line bullet from its own 證據 tag, so the self-evidence
                 # filter had nothing to match and the bullet was returned unfiltered
-                # (2026-08-04 architecture gate).
+                # (2026-08-04 architecture gate). "|"-prefixed lines are NOT excluded: the
+                # library's own write-back convention puts "  | 證據: ..." on its own
+                # continuation line (see knowledge/vision_experience.md), and excluding the
+                # pipe detached exactly the evidence the filter needed to see
+                # (2026-08-07 re-verification).
                 cur["lines"][-1] += " " + stripped
     return sections
 

@@ -80,8 +80,22 @@ Stage 2's injection ledger carries a `target_transform`, the model was NOT:
 | `plan["target_transform"]["kind"]` | trained on | invert with |
 |---|---|---|
 | `ratio_log` | `log(target / covariate)` | `exp(pred) * covariate` |
+| `ratio_linear` | `target / covariate` | `pred * covariate` |
 | `log_offset` | `log1p(target)` | `expm1(pred)` |
 | (absent)    | the raw target | nothing |
+
+**A kind not in this table is a STOP, not a shrug.** `apply.py` writes
+`ratio_{space}`, so the space parameter mints new kinds — `ratio_linear` was missing from the
+first version of this table, and a dossier that chose `"space": "linear"` fell through the
+"(absent)" row and shipped a submission in `y/covariate` units (~1e-4 of the target's scale)
+that the validator passed because no `--train` was supplied (2026-08-07 re-verification). If
+the kind you read is not listed here, do not guess and do not submit: the inversion is defined
+by the transform, and an unlisted transform means this table is stale.
+
+**Run the validator WITH the training target** — `--train train.csv --target <col>` — every
+time. The Range check compares the submission against the training target's own range; without
+`--train` it silently SKIPs, which is exactly how the un-inverted s5e1-shaped submission
+([8e-05, 0.16] against a target of [5, 5939]) got its "PASS — all checks clean".
 
 The covariate column must be joined onto the TEST frame for the inversion, with the same
 leakage rule the training join used — an inversion that reaches for a covariate value the

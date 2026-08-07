@@ -720,30 +720,18 @@ DEFAULT_COST_GUARD_THRESHOLD_S = 45.0   # C-2c: s3e5's QWK-after-rounder blend n
 DEFAULT_COST_GUARD_COARSEN_K = 200
 
 
-# Deterministic cost budget, in k x members x rows "weight-search units". Calibrated so the
-# default k=800 coarsens on the shapes the old wall-clock guard actually fired on: a 6-member
-# blend over 500k rows (2.4e9 units) coarsens, a 5-member blend over 100k rows (4e8) does not.
-DEFAULT_COST_BUDGET_UNITS = 1_500_000_000
+# Deterministic cost budget, in k x members x rows "weight-search units". The BOUNDARY is what
+# is calibrated (members*rows > 1.875e6, from the k=800 guard: s5e10's 6x517k coarsens, s4e11's
+# 8x140.7k does not); the unit budget is that boundary times the unified k, so raising k can
+# never silently lower the boundary again (2026-08-07 re-verification -- the first version
+# kept 1.5e9 while k went 800 -> 1500, halving the boundary and coarsening s4e11's champion
+# blend on one route only).
+DEFAULT_COST_BUDGET_UNITS = 1_875_000 * v2.UNIFIED_BLEND_K
 
 
 def _oof_rows(cache_dir: str, members: list) -> int:
-    """Row count of the cached OOF vectors — a deterministic stand-in for "how big is this".
-
-    Returns 0 when it cannot be read, which disables coarsening rather than guessing: a guard
-    that fires on unknown input would be another way for the score to depend on the
-    environment.
-    """
-    for nid in members:
-        fp = os.path.join(cache_dir, f"solo_{nid}.npz")
-        if os.path.exists(fp):
-            try:
-                with np.load(fp) as z:
-                    if "_n_rows" in z:          # the identity stamp cache_oof writes
-                        return int(z["_n_rows"])
-                    return int(np.asarray(z["oof"]).shape[0])
-            except Exception:  # noqa: BLE001
-                return 0
-    return 0
+    """Shared with harness_v2 so the guard and the direct route measure the same thing."""
+    return v2._cached_rows(cache_dir, members)
 
 
 def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree: dict = None,
@@ -778,19 +766,26 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
     n_rows = _oof_rows(cache_dir, members)
     predicted_units = (k * max(len(members), 1) * n_rows) if n_rows else None
     warning = None
-    k_used = k
-    if predicted_units is not None and predicted_units > cost_budget_units and k > coarsen_k:
+    # The k decision is the SHARED deterministic rule in harness_v2 -- the same one
+    # eval_blend applies on the direct route -- so both routes coarsen identically and a
+    # blend has one score. The guard's own job is reduced to REPORTING the decision
+    # (2026-08-07: deciding here and not there gave s4e11's champion two scores again).
+    boundary = cost_budget_units / max(k, 1)
+    if n_rows and len(members) * n_rows > boundary and k > coarsen_k:
         k_used = coarsen_k
         warning = (f"predicted weight-search cost {predicted_units:,} units "
                    f"(k={k} x {len(members)} members x {n_rows:,} rows) exceeds the "
                    f"{cost_budget_units:,}-unit budget -- COARSENING to k={coarsen_k} BEFORE "
                    f"running it, logged explicitly per C-2c/E-2 (never silent). This decision "
                    f"is a function of the problem size only, so it reproduces.")
+    else:
+        k_used = k
 
     t0 = time.time()
     best_w, best_s, oofs = eval_blend(cache_dir, members, metric_fn, weight_search=weight_search,
                                        k=k_used, seed=seed, grid_step=grid_step,
-                                       coordinate_ascent=coordinate_ascent, ascent_rounds=ascent_rounds)
+                                       coordinate_ascent=coordinate_ascent,
+                                       ascent_rounds=ascent_rounds)
     wall = time.time() - t0
 
     if tree is not None:
