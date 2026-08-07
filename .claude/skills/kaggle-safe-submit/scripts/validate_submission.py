@@ -145,7 +145,8 @@ def _resolve_expectation(metric: Optional[str], expect: str,
 
 def validate(sub: pd.DataFrame, sample: pd.DataFrame, id_col: Optional[str] = None,
              y_train: Optional[pd.Series] = None, metric: Optional[str] = None,
-             expect: str = "auto") -> Report:
+             expect: str = "auto",
+             y_train_frame: Optional[pd.DataFrame] = None) -> Report:
     """Run every check. Caller decides what to do with the two failure lists."""
     rep = Report()
     id_col = id_col or sample.columns[0]
@@ -254,25 +255,55 @@ def validate(sub: pd.DataFrame, sample: pd.DataFrame, id_col: Optional[str] = No
     labels = (set(np.unique(y_train.dropna().to_numpy()).tolist())
               if y_train is not None and pd.api.types.is_numeric_dtype(y_train) else None)
 
-    # Range. Probabilities are [0, 1]; everything else is judged against the training
-    # target's own range widened by half its span, so a wider test distribution passes
-    # but a scale error (log space, un-inverted transform, wrong column) does not.
-    if not numeric or not len(vals):
-        rep.skip("Range", "(non-numeric prediction column)")
-    elif kind == "probability":
-        n_out = int(((vals < 0) | (vals > 1)).sum())
-        rep.check(rep.suspicious, "Range", n_out == 0,
-                  f"({n_out} values outside [0, 1]; observed "
-                  f"[{vals.min():.6g}, {vals.max():.6g}])")
-    elif y_train is not None and pd.api.types.is_numeric_dtype(y_train):
-        t_lo, t_hi = float(y_train.min()), float(y_train.max())
+    # Range, PER COLUMN. Probabilities are [0, 1]; everything else is judged against that
+    # target column's OWN training range widened by half its span. Two defects made this
+    # single-column before (2026-08-07 round-4): only the last column was inspected (a 1000x
+    # scale error in afsis's non-last 'P' passed clean), and the one --target reference was
+    # compared against whatever column happened to be last -- a cross-target comparison that
+    # only catches errors when the targets share a scale. y_train_frame carries the training
+    # columns matched BY NAME.
+    def _ref_for(col):
+        if y_train_frame is not None and col in y_train_frame.columns \
+                and pd.api.types.is_numeric_dtype(y_train_frame[col]):
+            return y_train_frame[col]
+        if y_train is not None and pd.api.types.is_numeric_dtype(y_train) \
+                and (getattr(y_train, "name", None) in (col, None) or len(pred_cols) == 1):
+            return y_train
+        return None
+
+    range_fails, range_skips = [], []
+    for col in pred_cols:
+        colvals = sub[col]
+        if not pd.api.types.is_numeric_dtype(colvals):
+            continue
+        cv = colvals.to_numpy(dtype=float)
+        cv = cv[np.isfinite(cv)]
+        if not len(cv):
+            continue
+        if kind == "probability":
+            n_out = int(((cv < 0) | (cv > 1)).sum())
+            if n_out:
+                range_fails.append(f"{col}: {n_out} outside [0,1], observed "
+                                   f"[{cv.min():.6g}, {cv.max():.6g}]")
+            continue
+        ref = _ref_for(col)
+        if ref is None:
+            range_skips.append(col)
+            continue
+        t_lo, t_hi = float(ref.min()), float(ref.max())
         span = (t_hi - t_lo) or max(abs(t_hi), 1.0)
         lo, hi = t_lo - 0.5 * span, t_hi + 0.5 * span
-        n_out = int(((vals < lo) | (vals > hi)).sum())
-        rep.check(rep.suspicious, "Range", n_out == 0,
-                  f"({n_out} values outside [{lo:.6g}, {hi:.6g}] "
-                  f"(train target +/-50% span); observed "
-                  f"[{vals.min():.6g}, {vals.max():.6g}])")
+        n_out = int(((cv < lo) | (cv > hi)).sum())
+        if n_out:
+            range_fails.append(f"{col}: {n_out} outside [{lo:.6g}, {hi:.6g}] "
+                               f"(its own train range +/-50%), observed "
+                               f"[{cv.min():.6g}, {cv.max():.6g}]")
+    if kind == "probability" or any(_ref_for(c) is not None for c in pred_cols):
+        rep.check(rep.suspicious, "Range", not range_fails,
+                  ("(" + "; ".join(range_fails[:4]) + ")") if range_fails else
+                  (f"({len(pred_cols) - len(range_skips)}/{len(pred_cols)} column(s) "
+                   f"checked" + (f"; no reference for {range_skips[:3]}" if range_skips
+                                 else "") + ")"))
     else:
         rep.skip("Range", "(no reference — pass --metric and/or --train/--target)")
 
@@ -328,12 +359,40 @@ def main(argv: Optional[list] = None) -> int:
         p.error("need a submission and a sample_submission (positional or --submission/--sample)")
 
     sub, sample = pd.read_csv(sub_path), pd.read_csv(sample_path)
-    y_train = None
-    if a.train and a.target:
-        y_train = pd.read_csv(a.train, usecols=[a.target])[a.target]
+    y_train, y_train_frame = None, None
+    if a.train and not a.target:
+        # Half the mandated pair silently dropped the range reference and passed clean --
+        # the same silent-downgrade class as omitting --train entirely (2026-08-07 round-4).
+        # For multi-target submissions we can do better than an error: load every training
+        # column that matches a prediction column BY NAME.
+        train_df = pd.read_csv(a.train)
+        pred_names = [c for c in sample.columns if c != (a.id_col or sample.columns[0])]
+        matched = [c for c in pred_names if c in train_df.columns]
+        if matched:
+            y_train_frame = train_df[matched]
+            print(f"[validate] --target omitted; matched {len(matched)} training column(s) "
+                  f"by name: {matched[:6]}")
+        else:
+            print("ERROR: --train given without --target, and no training column matches a "
+                  "prediction column by name. The Range gate would silently skip — refusing "
+                  "instead. Pass --target <col>.")
+            return EXIT_STRUCTURAL
+    elif a.train and a.target:
+        train_df = pd.read_csv(a.train)
+        if a.target not in train_df.columns:
+            print(f"ERROR: --target {a.target!r} not in --train columns "
+                  f"{list(train_df.columns)[:8]}")
+            return EXIT_STRUCTURAL
+        y_train = train_df[a.target]
+        # multi-target: every other prediction column that matches by name gets its own ref
+        pred_names = [c for c in sample.columns if c != (a.id_col or sample.columns[0])]
+        matched = [c for c in pred_names if c in train_df.columns]
+        if len(matched) > 1:
+            y_train_frame = train_df[matched]
 
     print(f"Validating {sub_path}\n      against {sample_path}")
-    rep = validate(sub, sample, a.id_col, y_train, a.metric, a.expect)
+    rep = validate(sub, sample, a.id_col, y_train, a.metric, a.expect,
+                   y_train_frame=y_train_frame)
 
     if rep.structural:
         print(f"\nSTRUCTURAL FAILURE ({len(rep.structural)}) — do NOT submit:")

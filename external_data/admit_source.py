@@ -69,11 +69,22 @@ def check_leakage(spec: SourceSpec, frame: pd.DataFrame, *, period_col: str = "p
     source has a time axis its declared class denies.
     """
     if spec.join_key_class not in TEMPORAL_CLASSES:
-        if period_col in frame.columns:
+        # any time-axis column violates the static claim, not only one literally named
+        # 'period' -- a frame keyed [code, year, title] was admitted static and then
+        # merge_lookup_safe's keep-last silently served each key its LATEST year
+        # (2026-08-07 round-4)
+        time_cols = [c for c in frame.columns
+                     if str(c).strip().lower() in
+                     {period_col, "year", "date", "month", "quarter", "week", "day",
+                      "timestamp", "datetime", "time", "asof", "as_of", "vintage_year"}
+                     or pd.api.types.is_datetime64_any_dtype(frame[c])]
+        if time_cols:
             raise SourceRejected(
                 f"{spec.key!r}: declared join_key_class {spec.join_key_class!r} (static) but "
-                f"the fetched frame carries a {period_col!r} column. A time axis the class "
-                f"denies means the leakage rule 'static' is a claim the data contradicts.")
+                f"the fetched frame carries time-axis column(s) {time_cols}. A time axis the "
+                f"class denies means the leakage rule 'static' is a claim the data "
+                f"contradicts -- and the lookup join's keep-last would silently serve each "
+                f"key its latest period.")
         return "static source: no time axis, no temporal leakage path"
 
     if period_col not in frame.columns:

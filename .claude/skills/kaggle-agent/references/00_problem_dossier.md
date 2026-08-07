@@ -57,7 +57,8 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
 
    ```bash
    python3 external_data/rules_gate.py competitions/<comp>/rules.txt \
-       --config-flag <true|false>  --record-to competitions/<comp>/rules_verdict.json
+       --competition <comp> --config-flag <true|false> \
+       --record-to competitions/<comp>/rules_verdict.json
    ```
 
    (omit `--config-flag` if `config.yaml` has no `external_data_allowed`; exit status is the

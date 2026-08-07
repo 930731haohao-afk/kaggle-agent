@@ -715,7 +715,10 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
     best_w, best_s, oofs = v2.eval_blend(cache_dir, members, metric_fn,
                                           weight_search=weight_search, k=k, seed=seed,
                                           grid_step=grid_step, unified=False, target=target)
-    if coordinate_ascent:
+    if coordinate_ascent and weight_search != "nnls":
+        # nnls is a CLOSED FORM on the target; refining it with coordinate ascent both breaks
+        # the diagnostic semantics and made this route disagree with v2's unified route,
+        # which already skips ascent for nnls (2026-08-07 round-4)
         best_w, best_s = _coordinate_ascent_refine(oofs, metric_fn, best_w, best_s,
                                                      rounds=ascent_rounds)
     return best_w, best_s, oofs
@@ -778,7 +781,14 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
     # eval_blend applies on the direct route -- so both routes coarsen identically and a
     # blend has one score. The guard's own job is reduced to REPORTING the decision
     # (2026-08-07: deciding here and not there gave s4e11's champion two scores again).
-    boundary = cost_budget_units / max(k, 1)
+    # The SAME rule as v2.unified_k_for, not budget/k algebra: dividing the budget by the
+    # caller's k made the boundary SCALE with k, so k=6000 (real recorded drivers) coarsened
+    # here while the direct route did not -- score-per-route again (2026-08-07 round-4). The
+    # explicit-budget form is kept only for tests that pass cost_budget_units.
+    if cost_budget_units != DEFAULT_COST_BUDGET_UNITS:
+        boundary = cost_budget_units / max(v2.UNIFIED_BLEND_K, 1)
+    else:
+        boundary = v2.UNIFIED_COARSEN_BOUNDARY
     if n_rows and len(members) * n_rows > boundary and k > coarsen_k:
         k_used = coarsen_k
         warning = (f"predicted weight-search cost {predicted_units:,} units "

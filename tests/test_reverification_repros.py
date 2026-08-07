@@ -720,3 +720,173 @@ class TestValidatorRound3:
     def test_nonascii_metric_still_resolves(self):
         vs = self._vs()
         assert vs._resolve_expectation("ＲＯＣ－ＡＵＣ", "auto", None) == "probability"
+
+
+# ===========================================================================
+# ROUND 4 (2026-08-07): mechanical findings (isolation redesign tracked separately)
+# ===========================================================================
+class TestArmIntegrityRound4:
+    def test_unknown_arm_name_with_multiple_ideas_still_guarded(self):
+        # 'ratioconst' resolves to no defining op and ideas>1 skipped the check entirely
+        from tree_search.make_v5_arm import _defining_op_for
+        assert _defining_op_for("ratioconst") == "ratio_target"
+        assert _defining_op_for("ratiogated") == "ratio_target"
+
+    def test_unresolvable_arm_name_is_refused_not_unguarded(self):
+        from tree_search.make_v5_arm import _defining_op_for
+        with pytest.raises(ValueError):
+            _defining_op_for("mystery-arm", strict=True)
+
+
+class TestStaticSourceTimeAxisAliases:
+    def test_year_and_date_columns_are_a_time_axis_too(self):
+        import pandas as pd
+        from external_data.admit_source import check_leakage, _good_spec
+        from external_data.source_registry import SourceRejected
+        look = _good_spec(key="cpc:titles",
+                          url="https://www.cooperativepatentclassification.org/x",
+                          publisher="CPC", join_key_class="lookup",
+                          join_columns=["code"], value_columns=["title"],
+                          leakage_rule="static")
+        for col in ("year", "date", "month", "timestamp", "asof"):
+            frame = pd.DataFrame({"code": ["A", "A", "B"], col: [2020, 2021, 2020],
+                                  "title": ["x", "y", "z"]})
+            with pytest.raises(SourceRejected):
+                check_leakage(look, frame)
+
+
+class TestVerdictBindingNotInert:
+    def test_make_v5_arm_requires_the_competition_field(self, tmp_path, monkeypatch):
+        # the documented recording command omitted --competition, so the binding never fired
+        import json as _json
+        import inspect
+        from tree_search import make_v5_arm
+        src = inspect.getsource(make_v5_arm.build)
+        assert "competition" in src and ("require" in src.lower() or "raise" in src), (
+            "build() accepts an unbound verdict; the transfer guard is inert in the "
+            "documented flow")
+
+    def test_step5_instruction_passes_competition(self):
+        doc = open(os.path.join(
+            REPO, ".claude/skills/kaggle-agent/references/00_problem_dossier.md")).read()
+        assert "--competition" in doc, (
+            "the documented rules_gate recording command still omits --competition, so "
+            "every verdict it produces is unbound")
+
+
+class TestBlendRound4:
+    def test_guard_boundary_matches_unified_rule_for_any_k(self, tmp_path):
+        import harness_v2 as hv2
+        import harness_v3 as hv3
+        rng = np.random.default_rng(4)
+        rows = 1_000_000                     # 2 members x 1e6 = 2e6 > 1.875e6 boundary
+        y = rng.normal(size=rows)
+        for nid in range(2):
+            hv2.cache_oof(str(tmp_path), nid, y + rng.normal(scale=0.4, size=rows))
+        m = lambda v: float(np.sqrt(((v - y) ** 2).mean()))          # noqa: E731
+        for k in (6000, 800, 300):
+            _w, s_g, _o, _warn = hv3.eval_blend_with_cost_guard(str(tmp_path), [0, 1], m, k=k)
+            _w, s_d, _o = hv2.eval_blend(str(tmp_path), [0, 1], m, k=k)
+            assert s_g == s_d, f"k={k}: guard {s_g} != direct {s_d}"
+
+    def test_nnls_routes_agree(self, tmp_path):
+        import harness_v2 as hv2
+        import harness_v3 as hv3
+        rng = np.random.default_rng(5)
+        y = rng.normal(size=500)
+        for nid in range(3):
+            hv2.cache_oof(str(tmp_path), nid, y + rng.normal(scale=0.3, size=500))
+        m = lambda v: float(np.sqrt(((v - y) ** 2).mean()))          # noqa: E731
+        w2, s2, _ = hv2.eval_blend(str(tmp_path), [0, 1, 2], m, weight_search="nnls", target=y)
+        w3, s3, _ = hv3.eval_blend(str(tmp_path), [0, 1, 2], m, weight_search="nnls", target=y)
+        assert s2 == s3, f"nnls diverges across routes: {s2} vs {s3}"
+        np.testing.assert_array_equal(w2, w3)
+
+
+class TestExperimentLogRound4:
+    def test_datetime64_survives_jsonable(self, tmp_path):
+        import json as _json
+        from utils.experiment_log import log_experiment_v2
+        log_experiment_v2(str(tmp_path), model="m", metric="rmse", direction="minimize",
+                          score=0.4,
+                          params={"cutoff": np.datetime64("2026-01-01"),
+                                  "delta": np.timedelta64(3, "D")})
+        rec = _json.loads((tmp_path / "experiments.json").read_text())[0]
+        assert isinstance(rec["params"]["cutoff"], str)
+        assert not list(tmp_path.glob("*.tmp*"))
+
+    def test_dict_schema_experiments_json_is_read(self, tmp_path):
+        import json as _json
+        from utils.experiment_log import get_best_experiment
+        (tmp_path / "experiments.json").write_text(_json.dumps(
+            {"competition": "x", "experiments": [
+                {"experiment_id": 1, "model": "a", "metric": "rmse",
+                 "direction": "minimize", "score": 0.5},
+                {"experiment_id": 2, "model": "b", "metric": "rmse",
+                 "direction": "minimize", "score": 0.3}]}))
+        best = get_best_experiment(str(tmp_path))
+        assert best is not None and best["experiment_id"] == 2
+
+    def test_print_leaderboard_direction_agrees_with_champion(self, tmp_path, capsys):
+        import json as _json
+        from utils.experiment_log import print_leaderboard, get_best_experiment
+        (tmp_path / "experiments.json").write_text(_json.dumps([
+            {"experiment_id": 1, "model": "worse", "metric": "wrmsse", "score": 0.70},
+            {"experiment_id": 2, "model": "better", "metric": "wrmsse", "score": 0.55}]))
+        best = get_best_experiment(str(tmp_path))
+        assert best["experiment_id"] == 2
+        print_leaderboard(str(tmp_path))
+        outlines = capsys.readouterr().out.strip().splitlines()
+        rank1 = next(ln for ln in outlines if ln.strip().startswith("1"))
+        assert "better" in rank1, (
+            f"print_leaderboard ranks the worse wrmsse entry first: {rank1!r} — its inline "
+            f"direction set disagrees with get_best_experiment")
+
+
+class TestValidatorRound4:
+    def _vs(self):
+        return _load(".claude/skills/kaggle-safe-submit/scripts/validate_submission.py", "vs_r4")
+
+    def test_range_checked_on_every_target_column(self):
+        import pandas as pd
+        vs = self._vs()
+        rng = np.random.default_rng(0)
+        sample = pd.DataFrame({"PIDN": list("abc"), "Ca": [0.0] * 3, "P": [0.0] * 3,
+                               "Sand": [0.0] * 3})
+        train = pd.DataFrame({"Ca": rng.normal(0, 1, 50), "P": rng.normal(0, 1, 50),
+                              "Sand": rng.normal(0, 1, 50)})
+        sub = pd.DataFrame({"PIDN": list("abc"), "Ca": [0.1, -0.2, 0.3],
+                            "P": [1000.0, 2000.0, 1500.0],       # 1000x scale error, NON-last
+                            "Sand": [0.2, 0.1, -0.1]})
+        rep = vs.validate(sub, sample, id_col="PIDN", metric="mcrmse",
+                          y_train_frame=train)
+        assert rep.suspicious, "a 1000x scale error in a non-last target column passed clean"
+
+    def test_train_without_target_is_loud(self, tmp_path):
+        import subprocess
+        import pandas as pd
+        vs_path = os.path.join(REPO, ".claude/skills/kaggle-safe-submit/scripts/validate_submission.py")
+        pd.DataFrame({"id": [1, 2], "t": [0.5, 0.6]}).to_csv(tmp_path / "sub.csv", index=False)
+        pd.DataFrame({"id": [1, 2], "t": [0.0, 0.0]}).to_csv(tmp_path / "sample.csv", index=False)
+        pd.DataFrame({"t": [0.4, 0.7]}).to_csv(tmp_path / "train.csv", index=False)
+        r = subprocess.run([sys.executable, vs_path, str(tmp_path / "sub.csv"),
+                            str(tmp_path / "sample.csv"), "--metric", "rmse",
+                            "--train", str(tmp_path / "train.csv")],
+                           capture_output=True, text=True, check=False)
+        out = r.stdout + r.stderr
+        # LOUD, not silent: either the tool matched training columns by name and SAYS so
+        # (and the Range gate actually ran), or it refuses telling the user to pass --target.
+        assert ("matched" in out and "Range" in out and "SKIP" not in
+                [ln for ln in out.splitlines() if "Range" in ln][0]) or \
+               ("--target" in out and r.returncode != 0), (
+            f"--train without --target was silent: rc={r.returncode}\n{out[-400:]}")
+
+        # and when NOTHING matches by name, it must refuse rather than silently skip
+        import pandas as pd
+        pd.DataFrame({"unrelated": [0.4, 0.7]}).to_csv(tmp_path / "train2.csv", index=False)
+        r2 = subprocess.run([sys.executable, vs_path, str(tmp_path / "sub.csv"),
+                             str(tmp_path / "sample.csv"), "--metric", "rmse",
+                             "--train", str(tmp_path / "train2.csv")],
+                            capture_output=True, text=True, check=False)
+        assert "--target" in (r2.stdout + r2.stderr) and r2.returncode != 0, (
+            "no name match and no --target: the Range gate silently skipped")

@@ -157,18 +157,30 @@ def _patch_sample_weight(src: str, wcol: str) -> str:
 # re-verification found this module emitting (arm="ratio", target_transform=null, ledger
 # realized=[], evaluator byte-identical to the baseline).
 ARM_DEFINING_OP = {"ratio": "ratio_target", "log": "log_offset", "logoffset": "log_offset",
+                   "ratioconst": "ratio_target", "ratiogated": "ratio_target",
                    "featurejoin": "join_feature", "join": "join_feature",
                    "gdp": "join_feature", "gdp_hol": "flag_feature"}
 
 
-def _defining_op_for(arm: str):
+def _defining_op_for(arm: str, strict: bool = False):
     """Longest-match lookup. Truncating at the first '_' made 'gdp_hol' resolve to 'gdp'
-    (the wrong operator) and its own dict entry unreachable (2026-08-07 round-3)."""
+    (the wrong operator) and its own dict entry unreachable (2026-08-07 round-3).
+
+    `strict=True` raises on an unresolvable name instead of returning None: returning None
+    SKIPPED the arm-name integrity check entirely, so an arm named 'ratioconst' (absent from
+    the map at the time) shipped unguarded -- the exact baseline-clone hole the check exists
+    to close, reopened by its own escape hatch (2026-08-07 round-4).
+    """
     if arm in ARM_DEFINING_OP:
         return ARM_DEFINING_OP[arm]
     for cand in (arm.split("-")[0], arm.split("_")[0], arm.split("-")[0].split("_")[0]):
         if cand in ARM_DEFINING_OP:
             return ARM_DEFINING_OP[cand]
+    if strict:
+        raise ValueError(
+            f"arm name {arm!r} resolves to no defining operator; add it to ARM_DEFINING_OP "
+            f"so the arm-name integrity check can bind it -- an unresolvable name would ship "
+            f"unguarded.")
     return None
 
 
@@ -186,6 +198,17 @@ def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     # (2026-08-07: build() had no way to supply a verdict, so every external-op arm died at
     # construction with the gate's ValueError).
     rules_verdict_path = os.path.join(base_dir, "rules_verdict.json")
+    if os.path.exists(rules_verdict_path):
+        _v = json.load(open(rules_verdict_path))
+        # binding is only real if the field is REQUIRED here: the documented recording
+        # command could omit --competition, producing an unbound verdict that opened any
+        # competition's gate (2026-08-07 round-4)
+        if not isinstance(_v, dict) or _v.get("competition") != comp:
+            raise ValueError(
+                f"rules_verdict.json at {rules_verdict_path} is not bound to {comp!r} "
+                f"(competition field: {_v.get('competition') if isinstance(_v, dict) else type(_v).__name__!r}). "
+                f"Re-record it with: python3 external_data/rules_gate.py <rules.txt> "
+                f"--competition {comp} --record-to {rules_verdict_path}")
 
     raw_tr = pd.read_csv(os.path.join(base_dir, "data", "train.csv"), parse_dates=["date"])
     raw_te = pd.read_csv(os.path.join(base_dir, "data", "test.csv"), parse_dates=["date"])
@@ -199,12 +222,19 @@ def build(comp: str, arm: str, ideas: list[dict]) -> dict:
     # emit the arm rather than shipping a baseline clone under the arm's name -- nothing
     # downstream re-checks, and the search would race "ratio vs join" where one lane is
     # secretly the baseline.
-    defining = _defining_op_for(arm)
-    if defining is None and len(ideas) == 1:
-        defining = ideas[0].get("operator")
-    if defining and any(i.get("operator") == defining for i in ideas):
-        realized_ops = {r.get("operator") for r in plan.get("realized", [])}
-        if defining not in realized_ops:
+    if len(ideas) == 1:
+        defining = _defining_op_for(arm) or ideas[0].get("operator")
+    else:
+        defining = _defining_op_for(arm, strict=True)
+    # normalized comparison: a typo'd operator name ('ratio-target') made the request-check
+    # False and skipped the guard -- while validate_dossier would flag it, nothing forced
+    # that gate on this path (2026-08-07 round-4)
+    def _norm_op(o):
+        return str(o or "").strip().lower().replace("-", "_")
+    requested = {_norm_op(i.get("operator")) for i in ideas}
+    if defining and _norm_op(defining) in requested:
+        realized_ops = {_norm_op(r.get("operator")) for r in plan.get("realized", [])}
+        if _norm_op(defining) not in realized_ops:
             reasons = [u.get("reason", "")[:120] for u in plan.get("unrealized", [])
                        if u.get("operator") == defining]
             raise RuntimeError(

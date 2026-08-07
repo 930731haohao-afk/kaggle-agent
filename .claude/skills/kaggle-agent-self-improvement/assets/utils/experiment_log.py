@@ -93,9 +93,16 @@ def _jsonable(v):
         return v
     if hasattr(v, "item") and not hasattr(v, "__len__"):     # numpy scalar
         try:
-            return v.item()
+            unwrapped = v.item()
         except Exception:  # noqa: BLE001
             return str(v)
+        # np.datetime64.item() returns datetime.date/datetime, np.timedelta64.item() returns
+        # timedelta -- none JSON-serializable, so the "sanitized" entry still crashed
+        # json.dump after training (2026-08-07 round-4). Recurse: non-JSON unwraps fall
+        # through to str().
+        if isinstance(unwrapped, (bool, int, float, str, type(None))):
+            return unwrapped
+        return _jsonable(unwrapped)
     if isinstance(v, dict):
         return {str(k) if not isinstance(k, str) else k: _jsonable(x) for k, x in v.items()}
     if isinstance(v, (list, tuple, set)):
@@ -105,6 +112,9 @@ def _jsonable(v):
             return v.tolist()
         except Exception:  # noqa: BLE001
             return str(v)
+    import datetime as _dt
+    if isinstance(v, (_dt.date, _dt.datetime, _dt.timedelta)):
+        return str(v)
     return str(v)
 
 
@@ -207,6 +217,11 @@ def get_best_experiment(
     raw scores across metrics compares apples against oranges (bucket-A #18).
     """
     experiments = load_experiments(competition_dir)
+    if isinstance(experiments, dict):
+        # the dict schema ({"competition": ..., "experiments": [...]}) exists in this repo
+        # (child-mind workspace); iterating its KEYS raised AttributeError from _entry_score
+        # (2026-08-07 round-4)
+        experiments = experiments.get("experiments", [])
     if not experiments:
         return None
 
@@ -255,14 +270,24 @@ def get_best_experiment(
 def print_leaderboard(competition_dir: str, top_n: int = 10):
     """Print a formatted leaderboard of experiments."""
     experiments = load_experiments(competition_dir)
+    if isinstance(experiments, dict):
+        experiments = experiments.get("experiments", [])
     if not experiments:
         print("No experiments logged yet.")
         return
 
     metric = experiments[0].get("metric") or experiments[0].get("eval_metric", "unknown")
-    dirs = {e.get("direction") for e in experiments if e.get("direction")}
-    minimize = (dirs.pop() == "minimize") if len(dirs) == 1 else \
-        metric in {"log_loss", "rmse", "mae", "rmsle", "smape", "mape", "mcrmse"}
+    # One direction logic, not two: this function used to re-derive direction from its own
+    # 7-metric inline set and a raw string compare, so a wrmsse log printed "higher is
+    # better" and ranked the WORSE entry first while get_best_experiment picked the better
+    # one (2026-08-07 round-4).
+    dirs = {_norm_direction(e.get("direction")) for e in experiments if e.get("direction")}
+    dirs.discard(None)
+    if len(dirs) == 1:
+        minimize = dirs.pop()
+    else:
+        inferred = _metric_minimize(metric)
+        minimize = inferred if inferred is not None else False
     scored = [e for e in experiments if _entry_score(e) is not None]
     sorted_exps = sorted(scored, key=_entry_score, reverse=not minimize)
 
