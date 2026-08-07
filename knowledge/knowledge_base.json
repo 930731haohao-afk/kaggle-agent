@@ -11,12 +11,31 @@
         "Race both arms, always; no local signal or diagnostic currently earns the right to choose the form for you. A horizon-length selector is registered as H-HORIZON (read via --prereg) and is binding on the next firing-class competition."
       ],
       "evidence": [
-        {"comp": "playground-series-s3e19", "text": "controlled split experiment: SMAPE 4.56 (shuffled) vs 20.41 (time split) — 4.5× optimism bias from the forbidden split."},
-        {"comp": "playground-series-s3e19", "text": "outcome: all three agents scored 48.3–50.5 in the lower mode of a bimodal leaderboard — a problem-identification miss, not a modeling one."},
-        {"comp": "tabular-playground-series-jan-2022", "text": "GDP-per-capita recipe (`target = log(num_sold / gdp_pc)`) measured −2.6 SMAPE (8.43 → 5.80); ablating the linear `year_c` drift term cost 4.83 → 6.02 on the last-year fold (exp #2/#3)."},
-        {"comp": "playground-series-s3e19", "text": "counter-evidence for the plain-feature form: joining `gdp_pc` as a feature predicted the next-year level at 0.96× the prior year while the data implied +5..+33% growth — 48.24 SMAPE, because a feature outside the training range cannot be extrapolated. The `ratio_target` operator on the identical configuration gave CV 10.148 → 7.793."},
-        {"comp": "tabular-playground-series-sep-2022", "text": "bound on the recipe: the same ratio operator HURT here (CV 11.348 → 11.807; 11.515 with the anomalous year down-weighted), and the proportionality diagnostic predicted it — cross-country dispersion ~0.01 in normal years but 0.466 in the anomalous one. The down-weighting remedy improved CV and worsened the private LB."},
-        {"comp": "playground-series-s5e1", "text": "the proportionality diagnostic was falsified as a form predictor here by a pre-registered test: the diagnostic said this was the worst violation in the class (dispersion 0.05–0.21, 6 of 7 years broken) and the committed prediction said ratio_target would therefore lose; the opposite happened — ratio_target won decisively (private MAPE 0.12417 vs 0.15626, paired-test significant), with NO remedy applied."}
+        {
+          "comp": "playground-series-s3e19",
+          "text": "controlled split experiment: SMAPE 4.56 (shuffled) vs 20.41 (time split) — 4.5× optimism bias from the forbidden split."
+        },
+        {
+          "comp": "playground-series-s3e19",
+          "text": "[cross-agent evidence withheld under the isolation protocol]",
+          "cross_agent": true
+        },
+        {
+          "comp": "tabular-playground-series-jan-2022",
+          "text": "GDP-per-capita recipe (`target = log(num_sold / gdp_pc)`) measured −2.6 SMAPE (8.43 → 5.80); ablating the linear `year_c` drift term cost 4.83 → 6.02 on the last-year fold (exp #2/#3)."
+        },
+        {
+          "comp": "playground-series-s3e19",
+          "text": "counter-evidence for the plain-feature form: joining `gdp_pc` as a feature predicted the next-year level at 0.96× the prior year while the data implied +5..+33% growth — 48.24 SMAPE, because a feature outside the training range cannot be extrapolated. The `ratio_target` operator on the identical configuration gave CV 10.148 → 7.793."
+        },
+        {
+          "comp": "tabular-playground-series-sep-2022",
+          "text": "bound on the recipe: the same ratio operator HURT here (CV 11.348 → 11.807; 11.515 with the anomalous year down-weighted), and the proportionality diagnostic predicted it — cross-country dispersion ~0.01 in normal years but 0.466 in the anomalous one. The down-weighting remedy improved CV and worsened the private LB."
+        },
+        {
+          "comp": "playground-series-s5e1",
+          "text": "the proportionality diagnostic was falsified as a form predictor here by a pre-registered test: the diagnostic said this was the worst violation in the class (dispersion 0.05–0.21, 6 of 7 years broken) and the committed prediction said ratio_target would therefore lose; the opposite happened — ratio_target won decisively (private MAPE 0.12417 vs 0.15626, paired-test significant), with NO remedy applied."
+        }
       ]
     },
     {
@@ -25,8 +44,15 @@
       "trigger": "daily-resolution series with country/store/product keys.",
       "action": "calendar features (day-of-week, month, holidays, Black-Friday-type events); holiday calendar join from the whitelist. The stronger form is per-holiday-name flags with a displacement window rather than a single pooled flag.",
       "evidence": [
-        {"comp": "tabular-playground-series-jan-2022", "text": "pooled holiday flag → per-name displacement window moved SMAPE 5.46 → 4.19."},
-        {"comp": "tabular-playground-series-jan-2022", "cross_agent": true, "text": "[cross-agent evidence withheld under the isolation protocol]"}
+        {
+          "comp": "tabular-playground-series-jan-2022",
+          "text": "pooled holiday flag → per-name displacement window moved SMAPE 5.46 → 4.19."
+        },
+        {
+          "comp": "tabular-playground-series-jan-2022",
+          "cross_agent": true,
+          "text": "[cross-agent evidence withheld under the isolation protocol]"
+        }
       ]
     },
     {
@@ -35,8 +61,15 @@
       "trigger": "all (or nearly all) feature columns categorical, incl. high-cardinality.",
       "action": "encoding is the whole game — target encoding with CV-safe folds, ordinal mappings for ordered categories, pairwise feature crosses; GBDT native categorical handling as a strong baseline; a sparse one-hot + linear model belongs in the pool as a MEMBER on all-categorical data.",
       "evidence": [
-        {"comp": "cat-in-the-dat", "text": "private AUC 0.80241 (percentile rank 73.1); sparse OHE + logistic regression beat the GBDT outright on this all-categorical set, and explicit crosses HURT the already-saturated sparse linear model."},
-        {"comp": "playground-series-s3e11", "cross_agent": true, "text": "[cross-agent evidence withheld under the isolation protocol]"}
+        {
+          "comp": "cat-in-the-dat",
+          "text": "private AUC 0.80241 (percentile rank 73.1); sparse OHE + logistic regression beat the GBDT outright on this all-categorical set, and explicit crosses HURT the already-saturated sparse linear model."
+        },
+        {
+          "comp": "playground-series-s3e11",
+          "cross_agent": true,
+          "text": "[cross-agent evidence withheld under the isolation protocol]"
+        }
       ]
     },
     {
@@ -45,7 +78,10 @@
       "trigger": "thousands of ordered numeric columns (wavelengths/frequencies), few rows.",
       "action": "derivative/smoothing transforms (Savitzky–Golay-type), dimensionality reduction, per-target models for multi-target; strong regularization (rows are scarce).",
       "evidence": [
-        {"comp": "afsis-soil-properties", "text": "1,157 × 3,600; MCRMSE 0.49517 (percentile rank 46.6) with an 80-node search; tree search moved CV 0.44817 → 0.444076 while wall time fell 32 → 17 min."}
+        {
+          "comp": "afsis-soil-properties",
+          "text": "1,157 × 3,600; MCRMSE 0.49517 (percentile rank 46.6) with an 80-node search; tree search moved CV 0.44817 → 0.444076 while wall time fell 32 → 17 min."
+        }
       ]
     },
     {
@@ -54,7 +90,10 @@
       "trigger": "output is a grid/sequence governed by explicit rules (e.g., cellular automata).",
       "action": "exploit the structure directly (per-cell models, local neighborhoods, rule-informed features) rather than flat multi-output regression.",
       "evidence": [
-        {"comp": "conway-s-reverse-game-of-life", "text": "MAE 0.10875, percentile rank 98.6 (best three-way)."}
+        {
+          "comp": "conway-s-reverse-game-of-life",
+          "text": "MAE 0.10875 — percentile rank 98.6."
+        }
       ]
     },
     {
@@ -63,8 +102,14 @@
       "trigger": "metric is MAE / SMAPE / quantile-like.",
       "action": "L1 objective (not L2) for training; rounding/threshold post-processing inside the metric function so every blend candidate sees it.",
       "evidence": [
-        {"comp": "playground-series-s3e14", "text": "L1-objective family evidence (experience library entry)."},
-        {"comp": "playground-series-s3e16", "text": "postprocessing-in-metric rule from tree-search v2: snap-to-observed beat plain clipping for integer-valued MAE targets."}
+        {
+          "comp": "playground-series-s3e14",
+          "text": "L1-objective family evidence (experience library entry)."
+        },
+        {
+          "comp": "playground-series-s3e16",
+          "text": "postprocessing-in-metric rule from tree-search v2: snap-to-observed beat plain clipping for integer-valued MAE targets."
+        }
       ]
     },
     {
@@ -73,9 +118,18 @@
       "trigger": "blend pool dominated by deep/low-regularization members (variance-dominated).",
       "action": "add one shallow, heavily regularized, diverse-library member (bias-dominated) as a decorrelator before re-optimizing weights; for RMSE-family metrics verify weights with the NNLS closed form (Dirichlet search approximation error ~1e-5 can eat the real gain).",
       "evidence": [
-        {"comp": "playground-series-s6e1", "text": "the archetype took the largest LLM-member weight (+3e-5 R²)."},
-        {"comp": "playground-series-s4e1", "text": "the archetype took the largest LLM-member weight (+7e-5 AUC)."},
-        {"comp": "playground-series-s5e10", "text": "the NNLS diagnostic reused the same shape (docs/prior_wiring_findings.md)."}
+        {
+          "comp": "playground-series-s6e1",
+          "text": "the archetype took the largest LLM-member weight (+3e-5 R²)."
+        },
+        {
+          "comp": "playground-series-s4e1",
+          "text": "the archetype took the largest LLM-member weight (+7e-5 AUC)."
+        },
+        {
+          "comp": "playground-series-s5e10",
+          "text": "the NNLS diagnostic reused the same shape."
+        }
       ]
     },
     {
@@ -90,9 +144,33 @@
   "form_race": {
     "_purpose": "The structured record behind TASK-TS-FUTURE's cross-competition aggregate. Rendered as a computed summary from SURVIVING rows only, so a re-run of any member competition never sees an aggregate its own row helped define — including positionally.",
     "rows": [
-      {"comp": "playground-series-s3e19", "horizon_years": 1, "winner": "join_feature", "loser": "ratio_target", "scores": "48.497 vs 52.073 (SMAPE)", "cv_pick": "ratio_target", "external_beat_baseline": true},
-      {"comp": "tabular-playground-series-sep-2022", "horizon_years": 1, "winner": "join_feature", "loser": "ratio_target", "scores": "23.390 vs 24.091 (SMAPE)", "cv_pick": "baseline", "external_beat_baseline": true},
-      {"comp": "playground-series-s5e1", "horizon_years": 3, "winner": "ratio_target", "loser": "join_feature", "scores": "0.12417 vs 0.15626 (MAPE)", "cv_pick": "join_feature", "external_beat_baseline": true}
+      {
+        "comp": "playground-series-s3e19",
+        "horizon_years": 1,
+        "winner": "join_feature",
+        "loser": "ratio_target",
+        "scores": "48.497 vs 52.073 (SMAPE)",
+        "cv_pick": "ratio_target",
+        "external_beat_baseline": true
+      },
+      {
+        "comp": "tabular-playground-series-sep-2022",
+        "horizon_years": 1,
+        "winner": "join_feature",
+        "loser": "ratio_target",
+        "scores": "23.390 vs 24.091 (SMAPE)",
+        "cv_pick": "baseline",
+        "external_beat_baseline": true
+      },
+      {
+        "comp": "playground-series-s5e1",
+        "horizon_years": 3,
+        "winner": "ratio_target",
+        "loser": "join_feature",
+        "scores": "0.12417 vs 0.15626 (MAPE)",
+        "cv_pick": "join_feature",
+        "external_beat_baseline": true
+      }
     ]
   },
   "operators": [
@@ -105,8 +183,14 @@
       "name": "ratio_target",
       "doc": "Divide the target by an external level covariate, fit on the ratio, multiply back at predict time. This is the operator that extrapolates: the test-period level comes from the covariate, not from the model.\n```json\n{\"operator\": \"ratio_target\", \"params\": {\"source\": \"worldbank:gdp_per_capita\",\n \"join\": {\"keys\": [\"country\", \"year\"], \"lag\": 0}, \"space\": \"log\",\n \"carry_forward\": true}}\n```\n`space: \"log\"` fits `log(y / c)` and inverts with `exp(pred) * c`; `space: \"linear\"` fits `y / c`. `carry_forward` reuses the last available covariate value when the test period has none published yet — required whenever the test year post-dates the source's coverage, and it must be logged.\n\n**Covariate must be a constant-price / PPP series — never a current-price one.** A ratio target multiplies the covariate into the prediction, so a nominal series propagates exchange-rate and inflation moves as though they were demand moves. Measured on a real country panel, one year-over-year transition: the current-USD series moved −14.5% (one country) to +30.0% (another), a 14.6 pp cross-country spread, while the constant-price and PPP series stayed within 3.0 pp. Use `gdp_per_capita_const` or `gdp_per_capita_ppp`. `apply.py` files a ledger entry if a current-price indicator reaches this operator, and `covariate_volatility_check` flags any covariate whose cross-group moves exceed 8 pp.\n\n**Proportionality diagnostic (`apply.proportionality_check`) — RECORDED, NOT A GATE.** It was originally a precondition; a pre-registered falsification demoted it (see the TASK-TS-FUTURE evidence in the filtered prior library). The check still runs and its verdict is still written to the ledger — it describes the data honestly — but it must not block or select the operator.\n\n**Open caveat.** A CV whose folds all sit inside the training range cannot see this operator's actual advantage (extrapolation to an unseen period), and a broken in-train year can make CV score the operator twice on its worst case while the real test period is fine. Evaluate the precondition over *the periods the score depends on*, not merely over all training periods.",
       "evidence": [
-        {"comp": "playground-series-s3e19", "text": "dispersion by year 0.014/0.011/0.010/0.006/0.017 — proportional throughout; measured effect CV 10.148 → 7.793."},
-        {"comp": "tabular-playground-series-sep-2022", "text": "dispersion 0.011/0.011/0.009/0.466 (anomalous year) — breaks in that year; CV 11.348 → 11.807 (worse); with the year down-weighted to 0.3, 11.515 — and that remedy improved CV while worsening the private LB."}
+        {
+          "comp": "playground-series-s3e19",
+          "text": "dispersion by year 0.014/0.011/0.010/0.006/0.017 — proportional throughout; measured effect CV 10.148 → 7.793."
+        },
+        {
+          "comp": "tabular-playground-series-sep-2022",
+          "text": "dispersion 0.011/0.011/0.009/0.466 (anomalous year) — breaks in that year; CV 11.348 → 11.807 (worse); with the year down-weighted to 0.3, 11.515 — and that remedy improved CV while worsening the private LB."
+        }
       ]
     },
     {
@@ -118,14 +202,20 @@
       "name": "trend_term",
       "doc": "Add an explicit linear (or polynomial) time term so a common drift shared by all series can be extrapolated. Pairs with `ratio_target`: the covariate carries the cross-sectional level, the trend term carries the common year drift.\n```json\n{\"operator\": \"trend_term\", \"params\": {\"unit\": \"year\", \"degree\": 1, \"centered\": true}}\n```",
       "evidence": [
-        {"comp": "tabular-playground-series-jan-2022", "text": "ablating the centered year term cost 4.83 → 6.02 on the last-year fold."}
+        {
+          "comp": "tabular-playground-series-jan-2022",
+          "text": "ablating the centered year term cost 4.83 → 6.02 on the last-year fold."
+        }
       ]
     },
     {
       "name": "flag_feature",
       "doc": "Join deterministic indicator columns (holiday calendars, regime flags). No leakage concept applies to a deterministic future calendar.\n```json\n{\"operator\": \"flag_feature\", \"params\": {\"source\": \"holidays\",\n \"join\": {\"keys\": [\"country\", \"date\"]}, \"as\": [\"is_holiday\"],\n \"window\": {\"before\": 5, \"after\": 10}, \"per_name\": true}}\n```\n`per_name` + a displacement window is the stronger form.",
       "evidence": [
-        {"comp": "tabular-playground-series-jan-2022", "text": "pooled flag → per-name window, 5.46 → 4.19."}
+        {
+          "comp": "tabular-playground-series-jan-2022",
+          "text": "pooled flag → per-name window, 5.46 → 4.19."
+        }
       ]
     },
     {
@@ -137,26 +227,50 @@
       "name": "encoding",
       "doc": "How categorical columns enter the model. **Routed by scheme**: `count`, `ordinal` and `crosses` involve no target, so `apply.py` computes them as added columns in the data layer — there is no fold boundary for a target-free transform to protect. `native` is the evaluators' default and is recorded as advisory. `target` and `onehot_sparse` are emitted as node configs: the first needs per-fold computation inside the evaluator, the second a sparse linear family.\n```json\n{\"operator\": \"encoding\", \"params\": {\"scheme\": \"target\", \"columns\": [\"surname\"],\n \"smoothing\": 20.0}}\n```\n`scheme` ∈ {native, ordinal, count, onehot_sparse, target, crosses}. `native` is an unvalidated strong default (its original evidence is inadmissible under the isolation protocol). `count` has no leakage path. `ordinal` is for genuinely ordered levels only.\n\n**`target` carries a hard requirement.** The encoding must be computed inside each fold from that fold's training rows, using *the model's own folds*. Computing it on an independent fold split with a different seed looks safer and is in fact another leakage path. The operator therefore sets `fold_aligned: true` and `requires_evaluator_support: per_fold_target_encoding`; an evaluator that cannot honour it must file a ledger entry rather than approximate.",
       "evidence": [
-        {"comp": "cat-in-the-dat", "text": "onehot_sparse: sparse OHE + logistic regression beat the GBDT outright; explicit crosses HURT the already-saturated sparse linear model."},
-        {"comp": "playground-series-s4e1", "text": "target encoding on an independent fold split inflated AUC to 0.89653; aligning the folds brought the same recipe back to ~0.8937."}
+        {
+          "comp": "cat-in-the-dat",
+          "text": "onehot_sparse: sparse OHE + logistic regression beat the GBDT outright; explicit crosses HURT the already-saturated sparse linear model."
+        },
+        {
+          "comp": "playground-series-s4e1",
+          "text": "target encoding on an independent fold split inflated AUC to 0.89653; aligning the folds brought the same recipe back to ~0.8937."
+        }
       ]
     },
     {
       "name": "objective",
       "doc": "Match the training loss to what the metric actually charges. Config-only: it changes what the search proposes, not the data, so it is emitted as a seed node config and `tree_search/seed_from_ledger.py` translates the emission into one seed node per model family.\n```json\n{\"operator\": \"objective\", \"params\": {\"metric_family\": \"mae\",\n \"drop_imbalance_weighting\": true}}\n```\n`metric_family` ∈ {mae, smape, rmse, rmsle, auc, accuracy, qwk}. AUC is a ranking metric, so imbalance weighting perturbs the loss surface without improving the ranking; ordinal targets take a regression head plus an OptimizedRounder rather than a multiclass head; RMSLE means RMSE on log1p targets, so transform the target and keep L2.",
       "evidence": [
-        {"comp": "playground-series-s3e3", "text": "removing imbalance weighting under AUC: 0.81901 → 0.83292 (exp #3)."},
-        {"comp": "playground-series-s4e1", "text": "confirms the sign at 165k rows: 0.893235 → 0.893650."},
-        {"comp": "playground-series-s3e5", "text": "ordinal target, regression head + OptimizedRounder over multiclass head: QWK 0.47191 → 0.52687 (exp #2→#3)."}
+        {
+          "comp": "playground-series-s3e3",
+          "text": "removing imbalance weighting under AUC: 0.81901 → 0.83292 (exp #3)."
+        },
+        {
+          "comp": "playground-series-s4e1",
+          "text": "confirms the sign at 165k rows: 0.893235 → 0.893650."
+        },
+        {
+          "comp": "playground-series-s3e5",
+          "text": "ordinal target, regression head + OptimizedRounder over multiclass head: QWK 0.47191 → 0.52687 (exp #2→#3)."
+        }
       ]
     },
     {
       "name": "blend_member",
       "doc": "Add one bias-dominated member to a variance-heavy pool as a decorrelator — added to the pool, never replacing an existing member. Config-only.\n```json\n{\"operator\": \"blend_member\", \"params\": {\"archetype\": \"shallow_regularized\", \"depth\": 3,\n \"weight_search\": \"nnls_then_dirichlet\"}}\n```\nThis is the transferable prototype from the prior-wiring experiments. For RMSE-family metrics verify the weights with the NNLS closed form — the Dirichlet search's ~1e-5 approximation error is large enough to eat the gain.",
       "evidence": [
-        {"comp": "playground-series-s6e1", "text": "largest LLM-member weight, +3e-5 R²."},
-        {"comp": "playground-series-s4e1", "text": "largest LLM-member weight, +7e-5 AUC."},
-        {"comp": "playground-series-s5e10", "text": "NNLS diagnostic reused the same shape."}
+        {
+          "comp": "playground-series-s6e1",
+          "text": "largest LLM-member weight, +3e-5 R²."
+        },
+        {
+          "comp": "playground-series-s4e1",
+          "text": "largest LLM-member weight, +7e-5 AUC."
+        },
+        {
+          "comp": "playground-series-s5e10",
+          "text": "NNLS diagnostic reused the same shape."
+        }
       ]
     },
     {
@@ -177,12 +291,25 @@
       "why": "Every local signal tested for choosing the external-data injection form is 0-for-N (CV, held-out-year, the proportionality diagnostic — the last killed by its own pre-registered prediction). One post-hoc pattern survives in the evidence and earns belief the only way the dead selector did not: by predicting in advance.",
       "hypothesis_intro": "On a firing-class competition (country-panel time series where the dossier proposes external data), the winning injection form is decided by the test-horizon length:",
       "clauses": [
-        {"text": "horizon **≤ 1 year** → `join_feature` beats `ratio_target` on the private leaderboard", "evidence": ["playground-series-s3e19", "tabular-playground-series-sep-2022"]},
-        {"text": "horizon **> 1 year** → `ratio_target` beats `join_feature`", "evidence": ["playground-series-s5e1"]}
+        {
+          "text": "horizon **≤ 1 year** → `join_feature` beats `ratio_target` on the private leaderboard",
+          "evidence": [
+            "playground-series-s3e19",
+            "tabular-playground-series-sep-2022"
+          ]
+        },
+        {
+          "text": "horizon **> 1 year** → `ratio_target` beats `join_feature`",
+          "evidence": [
+            "playground-series-s5e1"
+          ]
+        }
       ],
       "protocol": "1. **Trigger**: the Stage 0.5 dossier of a new competition fires external-data need in the country-panel family (TASK-TS-FUTURE class).\n2. **Before any model is fitted and before any leaderboard is consulted**, write into that competition's `dossier.json` a `preregistration` object: `{\"hypothesis\": \"H-HORIZON\", \"horizon_years\": <n>, \"predicted_winner\": <form>, \"falsifier\": \"the predicted loser wins the paired test, or the paired test returns a tie\"}` and commit it to version control.\n3. Race both forms as usual — **the prediction never changes what runs** (the operating rule \"race both arms, always\" stands regardless of this hypothesis's fate; pre-registration is epistemics, not a gate).\n4. Score both arms on the real leaderboard; judge by the paired test.",
       "consequences": "- **Falsifier fires** → H-HORIZON is demoted to a recorded note (exactly as the proportionality diagnostic was), the form-selection question stays open, and no new post-hoc pattern may be promoted without its own registration first.\n- **Prediction holds** → H-HORIZON gains one confirmation at n=1 pre-registered; it still does not gate racing until it has survived **two** pre-registered tests, and even then it selects the racing order (which arm gets the first budget), never a single-arm run.",
-      "log": ["2026-07-31 — registered. No firing-class competition pending; next one triggers step 2."]
+      "log": [
+        "2026-07-31 — registered. No firing-class competition pending; next one triggers step 2."
+      ]
     }
   ],
   "whitelist_md": "## External-data whitelist (Stage 0.5 / Plan C)\n\nOnly these sources may be proposed by the dossier; each join must state a leakage rule.\n\n| Source | Content | Join key | Leakage rule |\n|---|---|---|---|\n| World Bank Open Data | 8 macro indicators: GDP family (level/per-capita/growth), population, CPI, unemployment, urbanization, internet penetration | country × year | only values dated ≤ the prediction year |\n| Public holiday calendars (e.g., `holidays` pkg) | national holidays | country × date | deterministic future — no leakage |\n| ISO country/region tables | codes, geo groupings | country | static — no leakage |\n| Exchange rates (ECB SDMX) | monthly reference rates vs EUR, 12 currencies | currency × month | only values dated ≤ prediction month |\n| OWID COVID (compact) | cases/deaths per million (raw + smoothed) | country × date | only values dated ≤ row date; relevant to 2020+ windows; ~178 MB one-time cache, download must be explicitly allowed |\n| CPC classification titles (EPO/USPTO) | official code → title text for patent classification codes | **code (lookup, no time axis)** | static — no temporal leakage path |\n\n**The list can GROW.** A new source enters through `external_data/admit_source.py`, which admits only what passes its mechanical gates: the host is a listed general-purpose reference publisher (never a data-sharing platform, where a file may be a competitor's dataset containing the answer); the join key class is known and its leakage rule matches it; two consecutive fetches agree on the vintage; the fetcher reports which requested keys it could not cover; and the dispatcher has a route that realizes the class. The proposal must also carry a falsifiable pre-registration of what the source is expected to be worth and how that will be judged. Admitted sources and their evidence live in `external_data/admitted_sources.json`; widening the DOMAIN list stays a deliberate review step.\n\n**Rules**: (1) join keys must exist in the official data or be derivable from it; (2) no future information relative to the prediction row's date — implemented as `lag` in `external_data/join.py`: `lag=0` allows same-period values (historical-solution convention), `lag=1` restricts to strictly earlier periods; state which lag a dossier assumes; (3) the join script must log the source snapshot date; (4) competition rules must permit external data — checked MECHANICALLY: `apply_operators` refuses external operators without a `permitted` rules verdict bound to this competition.",

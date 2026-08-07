@@ -1001,3 +1001,145 @@ class TestIsolationRedesign:
         assert "[withheld" not in out, (
             "the priors view still uses redaction markers: it is scrubbing prose, not "
             "rendering from structured facts")
+
+
+# ===========================================================================
+# ROUND 5 (2026-08-07): attacks on the rendered-knowledge redesign
+# ===========================================================================
+class TestRound5Renderer:
+    def test_v5arms_workspace_names_canonicalize(self):
+        from knowledge.task_priors_for import canonical, load_kb
+        kb = load_kb()
+        assert canonical("playground-series-s5e1.v5arms-20260731", kb) == \
+            "playground-series-s5e1"
+        assert canonical("tabular-playground-series-sep-2022.v5arms-20260731", kb) == \
+            "tabular-playground-series-sep-2022"
+
+    def test_near_miss_spellings_refuse_rather_than_fail_open(self):
+        from knowledge.task_priors_for import canonical, load_kb
+        kb = load_kb()
+        # underscore + path forms of a KNOWN competition must resolve, not fail open
+        assert canonical("playground_series_s5e1", kb) == "playground-series-s5e1"
+        assert canonical("competitions/playground-series-s5e1", kb) == \
+            "playground-series-s5e1"
+        # a spelling that EXTENDS a known slug but resolves to nothing is ambiguous:
+        # refusing beats silently serving the base competition its own facts
+        with pytest.raises(ValueError):
+            canonical("playground-series-s5e1x-unknown-thing", kb)
+        # a genuinely new competition still passes through
+        assert canonical("brand-new-comp-2027", kb) == "brand-new-comp-2027"
+
+    def test_prereg_view_carries_no_withheld_marker(self):
+        import subprocess
+        r = subprocess.run([sys.executable, os.path.join(REPO, "knowledge/task_priors_for.py"),
+                            "playground-series-s5e1", "--prereg"],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert "withheld" not in r.stdout.lower(), (
+            "the marker tells an s5e1 re-run a clause about it exists — under a dichotomy "
+            "intro that IS the verdict")
+        assert "decided by the test-horizon length" not in r.stdout, (
+            "the dichotomy framing plus the surviving clause reconstructs the withheld one")
+
+    def test_report_names_no_entries(self):
+        import subprocess
+        for mode in ([], ["--ops"], ["--prereg"]):
+            r = subprocess.run([sys.executable,
+                                os.path.join(REPO, "knowledge/task_priors_for.py"),
+                                "playground-series-s5e1", "--report", *mode],
+                               capture_output=True, text=True, cwd=REPO, check=False)
+            low = r.stdout.lower()
+            assert "h-horizon" not in low and "form_race" not in low \
+                and "task-ts-" not in low and "task-blend" not in low, (
+                f"--report {mode} names withheld entries; counts only — an entry name plus "
+                f"a withheld reason is a deduction oracle")
+
+    def test_rendered_views_contain_no_doc_pointers(self):
+        import subprocess
+        for comp in ("playground-series-s6e1", "playground-series-s4e1",
+                     "playground-series-s3e19"):
+            for mode in ([], ["--ops"], ["--prereg"]):
+                r = subprocess.run([sys.executable,
+                                    os.path.join(REPO, "knowledge/task_priors_for.py"),
+                                    comp, *mode],
+                                   capture_output=True, text=True, cwd=REPO, check=False)
+                assert "docs/" not in r.stdout, (
+                    f"{comp} {mode}: a rendered view points at a repo doc — pointer "
+                    f"indirection defeats set-arithmetic exclusion")
+
+    def test_no_cross_agent_content_in_any_view(self):
+        from knowledge.task_priors_for import load_kb, render_priors
+        kb = load_kb()
+        for comp in ("playground-series-s6e1", "no-such-comp"):
+            md, _ = render_priors(kb, comp)
+            assert "three agents" not in md and "three-way" not in md, (
+                f"{comp}: cross-lane comparative content renders — the isolation protocol "
+                f"forbids other lanes' results in any view")
+
+
+class TestRound5RulesGate:
+    def test_canonical_kaggle_permission_is_not_restrictive(self):
+        from external_data.rules_gate import gate
+        v = gate("7.C You may use data other than the Competition Data to develop and test "
+                 "your Submissions provided that such data is publicly available and "
+                 "equally accessible to all participants.")
+        assert v.allows_external_data(), (
+            f"the CANONICAL Kaggle permission clause reads {v.verdict!r}: the restrictive "
+            f"pattern matches inside the permission itself")
+
+    def test_full_page_with_eligibility_clauses_is_conflict_not_forbidden(self):
+        from external_data.rules_gate import gate
+        page = ("1. ELIGIBILITY\nYou may not enter if you are a resident of a sanctioned "
+                "region.\n\n7. EXTERNAL DATA\n7.C You may use data other than the "
+                "Competition Data provided it is publicly available and equally accessible "
+                "to all participants at no cost.\n")
+        v = gate(page)
+        # restrictive language elsewhere on the page still demands a human read — but the
+        # verdict must be conflict (resolvable, quotable), never a flat forbidden
+        assert v.verdict == "conflict", v.verdict
+        assert "7.C" in v.section or "may use data other than" in v.quote.lower()
+
+
+class TestRound5Doors:
+    def test_launcher_and_skill_mandate_tool_only_library_access(self):
+        sh = open(os.path.join(REPO, "run_myagent_headless.sh")).read()
+        skill = open(os.path.join(REPO, ".claude/skills/kaggle-agent/SKILL.md")).read()
+        assert "consult knowledge/experience.md" not in sh, (
+            "the launcher prompt still mandates a RAW read of the prose library")
+        assert "query_library" in sh
+        skill_flat = " ".join(skill.lower().replace("`", "").split())
+        assert "never open knowledge/experience.md" in skill_flat or \
+               "do not open knowledge/experience.md" in skill_flat, (
+            "SKILL.md must forbid the raw read and route through query_library")
+
+    def test_instruction_files_cite_no_result_bearing_docs(self):
+        banned = ["tree_search_prototype.md", "scaling_experiment.md",
+                  "injection_all15_findings.md", "prior_wiring_findings.md"]
+        refdir = os.path.join(REPO, ".claude/skills/kaggle-agent/references")
+        files = [os.path.join(REPO, ".claude/skills/kaggle-agent/SKILL.md")] + \
+                [os.path.join(refdir, f) for f in os.listdir(refdir) if f.endswith(".md")]
+        offenders = []
+        for fp in files:
+            txt = open(fp).read()
+            for b in banned:
+                if b in txt:
+                    offenders.append(f"{os.path.basename(fp)} cites {b}")
+        assert not offenders, (
+            "instruction files cite docs that carry per-competition results:\n  "
+            + "\n  ".join(offenders))
+
+    def test_experience_preamble_carries_no_headline_results(self):
+        txt = open(os.path.join(REPO, "knowledge/experience.md")).read()
+        preamble = txt.split("\n## ")[0]
+        import re as _re
+        # digits like 0.80241 / 9.75707 in the preamble are headline results
+        scores = _re.findall(r"\b\d+\.\d{3,}\b", preamble)
+        assert not scores, (
+            f"experience.md's preamble carries headline scores {scores[:5]} outside any "
+            f"證據-tagged bullet — served by the mandated read with no filter able to see it")
+
+
+class TestRound5MakeArm:
+    def test_uncovered_competition_is_a_stated_refusal(self):
+        from tree_search import make_v5_arm
+        with pytest.raises(ValueError, match="BASE"):
+            make_v5_arm.build("cat-in-the-dat", "ratio", [])

@@ -78,6 +78,8 @@ from pathlib import Path
 _EXT = r"external\s+data(?:sets?)?|external\s+data\s+sources?|outside\s+data|third[-\s]party\s+data"
 
 _PERMIT_PATTERNS = [
+    # the canonical Kaggle permission wording
+    r"may\s+use\s+data\s+other\s+than\s+the\s+competition\s+data",
     rf"(?:{_EXT})\s+(?:is|are)\s+allowed",
     rf"use of (?:{_EXT}) is allowed",
     rf"(?:you|participants|entrants|teams) may use (?:publicly available )?(?:{_EXT})",
@@ -95,7 +97,11 @@ _RESTRICTIVE = [
     r"\bmay\s+not\b", r"\bmust\s+not\b", r"\bshall\s+not\b", r"\bcannot\b", r"\bcan\s?not\b",
     r"\bdo\s+not\s+use\b", r"\bnever\s+use\b",
     rf"\bno\s+(?:{_EXT})\b", r"\bno\s+(?:additional|other|outside|third[-\s]party)\s+data\b",
-    r"\bdata\s+other\s+than\b", r"\bother\s+than\s+the\s+(?:competition|provided|training)\s+data\b",
+    # NEGATED forms only: the canonical Kaggle PERMISSION reads "you MAY use data other than
+    # the Competition Data provided that...", and a bare \bdata other than\b matched inside
+    # it, turning the standard permission clause itself into a prohibition
+    # (2026-08-07 round-5 -- the whole external-data lane deadlocked on real rules text).
+    r"(?:not|never|cannot)\s+use\s+(?:any\s+)?data\s+other\s+than\b",
     r"\bonly\s+the\s+(?:provided|competition|training)\s+data\b",
     r"\brestricted\s+to\s+the\b", r"\b(?:competition|provided|training)\s+data\s+alone\b",
     r"\bsolely\s+(?:from|on|using)\s+the\b", r"\bstrictly\s+(?:prohibited|forbidden)\b",

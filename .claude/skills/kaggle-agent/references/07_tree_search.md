@@ -9,7 +9,7 @@
 6. [Honest reporting rules](#6-honest-reporting-rules)
 7. [Quick start](#7-quick-start)
 
-This document is the **advanced Stage 4 loop** that follows [05_evaluation.md](05_evaluation.md) (the linear iteration protocol) — it does not replace it, but takes over once the conditions are met. Evidence: `docs/tree_search_prototype.md` (a full report over 15 runs / 10 competitions) and `docs/scaling_experiment.md` (the Phase E-5 scaling curve).
+This document is the **advanced Stage 4 loop** that follows [05_evaluation.md](05_evaluation.md) (the linear iteration protocol) — it does not replace it, but takes over once the conditions are met. Evidence: a full prototype report over 15 runs / 10 competitions plus the Phase E-5 scaling curve — both archived, both listing per-competition results, both **DO NOT OPEN during a benchmark run**.
 
 ## 1. When to switch to tree search
 

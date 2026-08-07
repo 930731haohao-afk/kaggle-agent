@@ -40,7 +40,7 @@ KB_PATH = _HERE / "knowledge_base.json"
 
 # Workspace-derivation suffixes: a repeat/arm/leftover workspace is still solving the base
 # competition, so exclusion must key on the base slug.
-_WS_SUFFIX = re.compile(r"(\.(repeat|leftover)[\w-]*|-v5-[\w-]+)$")
+_WS_SUFFIX = re.compile(r"(\.(repeat|leftover|v5arms)[\w-]*|-v5-[\w-]+)$")
 _DASHES = dict.fromkeys(map(ord, "‐‑‒–—―−"), ord("-"))
 
 _SHORT_ALIASES = {
@@ -80,6 +80,9 @@ def canonical(comp: str, kb: dict | None = None) -> str:
     competition's facts enter the base carrying its own slug and then match exactly.
     """
     c = (comp or "").translate(_DASHES).strip().lower()
+    c = c.replace("_", "-")                      # underscore spellings of known slugs
+    if "/" in c:                                  # path forms: competitions/<slug>
+        c = c.rstrip("/").rsplit("/", 1)[-1]
     prev = None
     while c and c != prev:
         prev = c
@@ -93,6 +96,19 @@ def canonical(comp: str, kb: dict | None = None) -> str:
             return canon
         if c == f"playground-series-{canon}" or f"playground-series-{c}" == canon:
             return canon
+    # AMBIGUITY REFUSAL. A name that EXTENDS a known slug but resolved to nothing is far more
+    # likely an unanticipated workspace derivation than a new competition -- and failing open
+    # here serves the base competition its own facts with no warning (the .v5arms case,
+    # 2026-08-07 round-5). A genuinely new competition shares no known slug as a prefix.
+    for canon in comps | set(_SHORT_ALIASES):
+        short = canon.replace("playground-series-", "").replace("tabular-", "")
+        for stem in (canon, short):
+            if stem and c.startswith(stem) and c != stem:
+                raise ValueError(
+                    f"competition spelling {comp!r} extends the known slug {canon!r} but "
+                    f"matches no recognized derivation pattern. Refusing to guess: if this "
+                    f"is a workspace of {canon!r}, add its suffix to _WS_SUFFIX; if it is a "
+                    f"new competition, rename it so no known slug is its prefix.")
     return c
 
 
@@ -118,8 +134,7 @@ def render_priors(kb: dict, comp: str) -> tuple[str, list[dict]]:
         only_cross = (not adm and bool(e.get("evidence"))
                       and all(ev.get("cross_agent") for ev in e["evidence"]))
         if not adm and not e.get("generic") and not only_cross:
-            report.append({"entry": e["id"], "action": "dropped_entry",
-                           "reason": "all admissible evidence rests on this competition"})
+            report.append({"action": "dropped_entry"})
             continue
         out.append(f"## {e['id']} — {e['title']}")
         out.append(f"- **Trigger**: {e['trigger']}")
@@ -130,8 +145,7 @@ def render_priors(kb: dict, comp: str) -> tuple[str, list[dict]]:
             for ev in adm:
                 out.append(f"- **Evidence** ({_short(ev['comp'])}): {ev['text']}")
             if had_own:
-                report.append({"entry": e["id"], "action": "trimmed",
-                               "reason": "evidence from this competition withheld"})
+                report.append({"action": "trimmed"})
         elif only_cross:
             out.append("- **Evidence**: withheld — the recorded evidence cited another "
                        "lane's run, inadmissible under the isolation protocol. Treat the "
@@ -155,8 +169,7 @@ def render_priors(kb: dict, comp: str) -> tuple[str, list[dict]]:
                                f"`{r['loser']}`, {r['scores']} "
                                f"({r['horizon_years']}-year horizon).")
             if any(r["comp"] == excl for r in kb["form_race"]["rows"]):
-                report.append({"entry": "form_race", "action": "row_withheld",
-                               "reason": "this competition's own race row"})
+                report.append({"action": "row_withheld"})
         out.append("")
 
     out.append("---")
@@ -177,8 +190,7 @@ def render_ops(kb: dict, comp: str) -> tuple[str, list[dict]]:
             for ev in adm:
                 out.append(f"- **Evidence** ({_short(ev['comp'])}): {ev['text']}")
         if any(ev.get("comp") == excl for ev in op.get("evidence", [])):
-            report.append({"entry": op["name"], "action": "trimmed",
-                           "reason": "evidence from this competition withheld"})
+            report.append({"action": "trimmed"})
         out.append("")
     out.append("---")
     out.append("")
@@ -202,22 +214,27 @@ def render_prereg(kb: dict, comp: str) -> tuple[str, list[dict]]:
         out.append("")
         out.append(p["hypothesis_intro"])
         out.append("")
-        n_withheld = 0
+        surviving_clauses, n_withheld = [], 0
         for c in p["clauses"]:
             surviving = [e for e in c.get("evidence", []) if canonical(e, kb) != excl]
             if not surviving:
                 n_withheld += 1
-                report.append({"entry": p["id"], "action": "clause_withheld",
-                               "reason": "the clause's only evidence is this competition's "
-                                         "own run"})
+                report.append({"action": "clause_withheld"})
                 continue
-            out.append(f"- {c['text']};")
-        if n_withheld:
-            out.append("")
-            out.append(f"*({n_withheld} registered clause(s) withheld for this competition: "
-                       f"their only evidence is this competition's own recorded run. The "
-                       f"registration still binds — register the applicable prediction for "
-                       f"the clauses shown.)*")
+            surviving_clauses.append(c["text"])
+        # NO MARKER, and no dichotomy framing when anything was withheld: "1 clause withheld"
+        # under "decided by the horizon length" plus the surviving <=1-year clause IS the
+        # withheld clause, reconstructed (2026-08-07 round-5). A withheld fact must leave no
+        # marker; when the clause set is incomplete, the intro must not describe its shape.
+        del out[-2:]                              # drop hypothesis_intro + its blank line
+        if n_withheld == 0:
+            out.append(p["hypothesis_intro"])
+        else:
+            out.append("The following registered prediction(s) apply where their trigger "
+                       "matches:")
+        out.append("")
+        for text in surviving_clauses:
+            out.append(f"- {text};")
         out.append("")
         out.append("## Protocol (binding)")
         out.append("")
@@ -252,11 +269,12 @@ def main(argv: list[str]) -> int:
     md, rep = fn(kb, args.comp)
     if args.report:
         kind = "prereg" if args.prereg else ("operator" if args.ops else "task-prior")
+        # COUNTS ONLY. Naming the withheld entry plus its reason was a deduction oracle: an
+        # entry name under a known hypothesis reconstructs the withheld content
+        # (2026-08-07 round-5). Auditors diff the views against knowledge_base.json directly.
         print(f"# {kind} exclusions for {args.comp}\n")
-        if not rep:
-            print("(nothing withheld)")
-        for r in rep:
-            print(f"- {r['entry']}: {r['action']} — {r['reason']}")
+        print(f"{len(rep)} item(s) withheld for this competition." if rep
+              else "(nothing withheld)")
         return 0
     print(md)
     return 0
@@ -287,6 +305,10 @@ def selftest() -> int:
                 yield f"{p['id']}.{f}", p[f]
             for c in p["clauses"]:
                 yield f"{p['id']}.clause", c["text"]
+            for i, line in enumerate(p.get("log", [])):
+                yield f"{p['id']}.log{i}", line
+        yield "_schema", kb.get("_schema", "")
+        yield "form_race._purpose", kb.get("form_race", {}).get("_purpose", "")
 
     tokens = set()
     for c in known:
@@ -352,6 +374,9 @@ def selftest() -> int:
     md, _ = render_prereg(kb, "playground-series-s5e1")
     assert "> 1 year" not in md and "&gt; 1 year" not in md, (
         "the >1-year clause survives for the competition that is its only evidence")
+    assert "withheld" not in md.lower(), "a withheld fact must leave no marker"
+    assert "horizon length" not in md.lower(), (
+        "the dichotomy framing plus the surviving clause reconstructs the withheld one")
     md, _ = render_prereg(kb, "some-new-competition")
     assert "> 1 year" in md and "≤ 1 year" in md
     print("contract 4: entry-level (afsis/conway) and clause-level (prereg) exclusion hold")
@@ -376,6 +401,15 @@ def selftest() -> int:
         md, _ = render_priors(kb, c)
         assert "[withheld" not in md, "redaction markers are the scrub approach's signature"
     print("contract 6: views are regenerated, not redacted (no [withheld markers)")
+
+    # --- CONTRACT 7: no doc pointers in any rendered view ------------------------------
+    for c in ("playground-series-s6e1", "playground-series-s4e1", "no-such-comp"):
+        for fn in (render_priors, render_ops, render_prereg):
+            md, _ = fn(kb, c)
+            assert "docs/" not in md, (
+                f"{fn.__name__}({c}) points at a repo doc -- pointer indirection defeats "
+                f"set-arithmetic exclusion (2026-08-07 round-5)")
+    print("contract 7: rendered views contain no doc pointers")
 
     print("task_priors_for selftest: all contracts hold")
     return 0

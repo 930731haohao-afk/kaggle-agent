@@ -78,7 +78,11 @@ read only when its stage begins.
 
 ### Experience Library (check first)
 
-Before Stage 1 (EDA) and Stage 3 (Modeling), consult `knowledge/experience.md` at the project root
+Before Stage 1 (EDA) and Stage 3 (Modeling), consult the experience library — ONLY through
+`python3 knowledge/query_library.py --query <terms> --comp <competition-slug>`. Do not open
+`knowledge/experience.md` directly during a benchmark run: the raw file carries results in its
+preamble and section headers that sit outside any tagged bullet, so no reading rule applied by
+hand can filter them; the tool's whole-entry self-exclusion can (2026-08-07 audit). The library lives at the project root
 for validated cross-competition insights (indexed by metric/data-type, each entry evidence-backed).
 Apply what transfers; log new validated insights back into it after major score changes.
 
@@ -164,7 +168,7 @@ Key actions: Review experiments, analyze errors, propose improvements, track tra
 has produced a baseline solo model plus at least one blend, switch to tree search — see
 [references/07_tree_search.md](references/07_tree_search.md). Evidence: tree search beats
 the linear iteration best in 9 of 10 benchmarked competitions (1 exact tie, 0 losses;
-`docs/tree_search_prototype.md`). Harness: `tree_search/harness_v3.py`; example driver:
+the archived prototype report (do not open during a run)). Harness: `tree_search/harness_v3.py`; example driver:
 `tree_search/run_s3e7_v3.py`. Keep the linear protocol above as the fallback for the very
 first iteration pass (before a baseline + blend exist) and for small/cheap-eval
 competitions where a ~60-node search budget isn't worth it.

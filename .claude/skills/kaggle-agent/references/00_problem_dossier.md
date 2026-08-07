@@ -6,7 +6,7 @@ Answer "what kind of problem is this?" BEFORE deep EDA or any modeling. The benc
 largest my-agent failure was a problem-identification miss on a country-panel task: the needed
 judgment "this task requires external macro data" exists at this stage, not at the modeling or
 blend stage, and missing it left the run in the wrong mode of a bimodal leaderboard. Post-hoc
-injection at the blend stage measured ~1e-5 gains (`docs/injection_all15_findings.md`); the
+injection at the blend stage measured ~1e-5 gains (archived findings report — do not open during a run); the
 same knowledge applied upstream moved CV error by whole points. Inject knowledge where the
 leverage is. (Specific scores and competition names are deliberately absent here: this file is
 read on every benchmark run, and a motivating example that names a benchmark competition hands

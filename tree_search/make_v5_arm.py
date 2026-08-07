@@ -185,6 +185,13 @@ def _defining_op_for(arm: str, strict: bool = False):
 
 
 def build(comp: str, arm: str, ideas: list[dict]) -> dict:
+    if comp not in BASE:
+        raise ValueError(
+            f"make_v5_arm.BASE covers {sorted(BASE)} — {comp!r} has no baseline evaluator "
+            f"mapping, so no v5 arm can be built for it. A firing-class competition outside "
+            f"this map needs a BASE entry (baseline eval module + id column) before arms can "
+            f"race; a non-panel competition never builds arms at all (2026-08-07 round-5: "
+            f"this was a bare KeyError).")
     base_mod, id_col = BASE[comp]
     base_dir = os.path.join(_ROOT, "competitions", comp)
     vcomp = f"{comp}-v5-{arm}"

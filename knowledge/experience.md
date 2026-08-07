@@ -1,6 +1,6 @@
 # 跨競賽經驗庫(自動蒸餾,每則附證據)
 
-最後更新:2026-07-28d(aug-2022 重跑新增:AUC 上 fitted-weight blend 樂觀 +0.001 且翻轉排行(mega-blend 誠實分數輸 root 單模)、LOFO-selection 作為零成本模型選擇誠實閘門)。先前:2026-07-28c(cat-in-the-dat 新增:全類別特徵節——稀疏 OHE+LogisticRegression 大勝 GBDT、顯式交互 cross 對已飽和的稀疏 LR 反而有害、近同質 LR 成員 blend 僅噪音級增益)。先前:2026-07-28b(afsis-soil-properties 全流程重跑新增:樹搜尋成員池回種不全會結構性壓低 blend 天花板(0.4497 vs 0.4288,同預算)、權重搜尋方法只是二階旋鈕、逐目標權重 vs 共用權重差 0.0198、貪婪樂觀 +0.0153 再驗證)。先前:2026-07-28(afsis-soil-properties 新增:p>>n 光譜資料節(核化勝前處理、隱藏地點群組 CV、RMSE 下勿轉換偏態目標)、成員超參選擇偏誤的量化、貪婪權重搜尋樂觀量級)。先前:2026-07-04(s3e20 Phase B 迭代新增:歷史均值的三段去噪配方(經驗貝葉斯收縮/異常年降權/鄰週平滑,22.6488→21.1487)與「結構飽和延伸到殘差層」的殘差診斷反例)。查詢方式:先按「資料型態/指標」節找,再看「證據」欄確認遷移性。
+最後更新:2026-07-28d(aug-2022 重跑新增 2 則)。先前:2026-07-28c(cat-in-the-dat 新增 3 則)、2026-07-28b(afsis-soil-properties 重跑新增 4 則)、2026-07-28(afsis-soil-properties 新增 3 則)、2026-07-04(s3e20 新增 2 則)。各則內容一律在對應章節的證據欄——本前言不重述任何機制或分數(2026-08-07 稽核:前言曾複述五場的頭條結果,而任何閱讀規則都過濾不了前言)。查詢方式:python3 knowledge/query_library.py --query <詞> --comp <slug>——benchmark 執行期間禁止直接開啟本檔。
 來源:playground-series s3e1/s3e3/s3e5/s3e7/s3e9/s3e11/s3e14/s3e16/s3e19/s3e20 的 STATUS.md 與 experiments.json。
 凡未附分數差的傳聞一律不收錄;「證據」欄格式為 `競賽, exp #N, 分數A→分數B`。
 
