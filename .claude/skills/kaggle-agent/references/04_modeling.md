@@ -15,11 +15,12 @@ Train models using both a quick baseline and Auto-ML tools, tracking all experim
 ## Steps
 
 ### 0. Retrieval Gate (before every new experiment)
-Run `VIRTUAL_ENV= uv run python3 knowledge/query_library.py --query <terms>` with the
+Run `VIRTUAL_ENV= uv run python3 knowledge/query_library.py --query <terms> --comp <competition-slug>` with the
 experiment's metric, data-type, and idea keywords; record `library_query` (the terms) and
-`library_hits` (top results, or `none`) in the experiment entry BEFORE running it. The
-self-exclusion HARD RULE from SKILL.md applies to the hits: skip any entry whose 證據 cites
-the current competition. No trace, no experiment — `query_library.py --audit` enforces.
+`library_hits` (top results, or `none`) in the experiment entry BEFORE running it. `--comp` is not optional: without it the tool raises, and it is what
+performs the self-exclusion. Do NOT try to apply the HARD RULE by hand to the hits — SKILL.md
+is explicit that a reading rule applied by hand cannot filter them and the tool's whole-entry
+exclusion can (2026-08-10 round-10). No trace, no experiment — `query_library.py --audit` enforces.
 
 ### 1. Establish Baseline
 Before any Auto-ML, train a simple baseline to set a reference point:

@@ -1908,3 +1908,225 @@ class TestRound9:
             assert r.returncode != 0, f"{mod} imported cleanly from a root with no Stage 2"
             assert "ModuleNotFoundError" not in out, f"{mod}: bare import error\n{out[-300:]}"
             assert "stage2_module_contract" in out or "Stage 2" in out, out[-400:]
+
+
+# ---------------------------------------------------------------------------
+# ROUND 10 (2026-08-10): the run root and the rebuilt gate, attacked. Verified by hand —
+# 19 of the round's 22 agents died on the session limit, so its "18 refuted" was an
+# artifact of missing verdicts, not a judgement.
+# ---------------------------------------------------------------------------
+class TestRound10:
+    @pytest.fixture(scope="class")
+    def run_root(self, tmp_path_factory):
+        import subprocess
+        root = str(tmp_path_factory.mktemp("rr10") / "rr")
+        r = subprocess.run([sys.executable, "benchmark_infra/build_myagent_run_root.py",
+                            "--write", "--root", root],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout[-1200:] + r.stderr[-600:]
+        return root
+
+    def _gate(self, root, *extra):
+        import subprocess
+        return subprocess.run([sys.executable,
+                               os.path.join(REPO, "benchmark_infra/verify_clean_slate.py"),
+                               "--root", str(root), *extra],
+                              capture_output=True, text=True, check=False)
+
+    # --- the memory channel -------------------------------------------------------------
+    def test_project_key_matches_the_harness_rule(self):
+        # The guard derived the key with .replace("/", "-"); the CLI replaces EVERY
+        # non-alphanumeric character, so it guarded a path nothing can ever create and
+        # always reported "absent". Proof by the directory the recorded run left behind:
+        # /home/tjyen/ai_agents/kaggle -> -home-tjyen-ai-agents-kaggle (underscore → dash).
+        import re as _re
+        b = _load("benchmark_infra/build_myagent_run_root.py", "brr")
+        for p in ("/home/tjyen/ai_agents/myagent-rerun", "/tmp/a_b.c/d",
+                  "/home/tjyen/ai_agents/kaggle"):
+            assert b.project_key(p) == _re.sub(r"[^a-zA-Z0-9]", "-", p), p
+        real = os.path.expanduser("~/.claude/projects/-home-tjyen-ai-agents-kaggle")
+        if os.path.isdir(real):
+            assert b.project_key("/home/tjyen/ai_agents/kaggle") == os.path.basename(real)
+
+    def test_run_root_disables_auto_memory(self, run_root):
+        # The memory directory is not a static artifact cleared once before the run: the
+        # harness WRITES to it during a session, and all 20 lanes share one cwd, so lane k's
+        # notes reach lanes k+1..20 — and a relaunched lane reads its own previous attempt.
+        # The recorded run's directory holds 16 such files (s3e16-run5.md, s4e11-run2.md...).
+        found = []
+        for name in (".claude/settings.json", ".claude/settings.local.json"):
+            p = os.path.join(run_root, name)
+            if os.path.exists(p):
+                found.append(json.load(open(p)))
+        assert any(s.get("autoMemoryEnabled") is False for s in found), (
+            "the run root does not turn auto-memory off, so the harness writes per-lane "
+            "notes into one shared project directory and injects them into every later lane")
+
+    # --- the credential -----------------------------------------------------------------
+    def test_run_root_ships_no_kaggle_credential_path(self, run_root):
+        # utils/kaggle_auth.sh points at ~/.kaggle/huang_token — the account holding every
+        # benchmark submission for all three lanes — and kaggle-safe-submit prescribes
+        # `kaggle competitions submissions -c <name>`, which returns this competition's prior
+        # submissions with their public LB scores.
+        offenders = []
+        for dirpath, _dn, fns in os.walk(run_root):
+            for fn in fns:
+                if not fn.endswith((".sh", ".md", ".py")):
+                    continue
+                p = os.path.join(dirpath, fn)
+                try:
+                    txt = open(p, encoding="utf-8", errors="replace").read()
+                except OSError:
+                    continue
+                for needle in ("huang_token", "competitions submissions -c",
+                               "KAGGLE_API_TOKEN"):
+                    if needle in txt:
+                        offenders.append(f"{os.path.relpath(p, run_root)}: {needle}")
+        assert not offenders, (
+            "the run root can authenticate to Kaggle and read its own leaderboard history:\n  "
+            + "\n  ".join(sorted(set(offenders))[:8]))
+
+    # --- prose that names the lane's own lever ------------------------------------------
+    def test_shared_harness_names_no_competition(self, run_root):
+        # harness_v2/v3 are pinned for every competition and read by every lane. Round 9
+        # stripped their NUMBERS and left the attributions: "s3e11's CatBoost depth 10->12,
+        # s3e16's learning_rate...". Which lever won on which lane is the answer.
+        import re as _re
+        comps = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        short = {_re.search(r"(s\d+e\d+)$", c).group(1) for c in comps
+                 if _re.search(r"(s\d+e\d+)$", c)}
+        short |= {"afsis", "conway", "citd"}
+        offenders = []
+        for fn in ("harness.py", "harness_v2.py", "harness_v3.py", "eval_support.py",
+                   "make_v5_arm.py", "run_template_v3.py"):
+            p = os.path.join(run_root, "tree_search", fn)
+            if not os.path.exists(p):
+                continue
+            for i, line in enumerate(open(p).read().splitlines(), 1):
+                # the slug->alias table is functional data every renderer needs; it maps
+                # names to names and states no result
+                if _re.match(r'\s*"[a-z0-9-]+":\s*\[', line):
+                    continue
+                for s in short:
+                    if _re.search(rf"(?<![0-9a-z]){s}(?![0-9a-z])", line, _re.I):
+                        offenders.append(f"{fn}:{i} names {s}")
+                        break
+        assert not offenders, (
+            f"{len(offenders)} lines in the shared harness attribute a lever to a named "
+            "competition:\n  " + "\n  ".join(offenders[:10]))
+
+    def test_redaction_notices_do_not_leak_what_they_redact(self, run_root):
+        # eval_s3e16_v2 says the tuned configuration "is NOT reproduced here ... it names no
+        # value", and the next line names the parameter and its bound.
+        txt = open(os.path.join(run_root, "tree_search/eval_s3e16_v2.py")).read()
+        i = txt.find("is the recorded run's tuned configuration and is NOT reproduced here")
+        assert i > 0, "fixture drift: the round-9 redaction notice is gone"
+        after = txt[i:i + 1400]
+        assert "learning_rate saturates" not in after, (
+            "the redaction notice is followed by the value it withholds")
+
+    # --- the gate ------------------------------------------------------------------------
+    def test_detector_sees_the_three_code_literal_shapes(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            open(os.path.join(d, "leak.md"), "w").write(
+                "playground-series-s3e16\n   0.57291\n"
+                "S5E1_PRIVATE = 0.06253\n"
+                "cat-in-the-dat = (0.80417, 0.80390)\n")
+            r = self._gate(d)
+            assert r.returncode != 0, (
+                "_CONST / _SEQ_CONT / _NUM_SEQ suppress the score before the window runs, so "
+                "the three most natural score-table shapes pass:\n" + r.stdout[-400:])
+
+    def test_detector_sees_low_precision_scores_next_to_a_metric_word(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            open(os.path.join(d, "t.md"), "w").write(
+                "playground-series-s3e14 final MAE 340\n"
+                "playground-series-s3e19 SMAPE 48.24 on the private split\n")
+            r = self._gate(d)
+            assert r.returncode != 0, (
+                "the 3-decimal floor is the wrong axis: what makes a number a score is the "
+                "metric word beside it\n" + r.stdout[-400:])
+
+    def test_detector_reads_utf16_and_reports_partial_reads(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            open(os.path.join(d, "u.md"), "wb").write(
+                "playground-series-s6e2 private AUC 0.955529\n".encode("utf-16"))
+            r = self._gate(d)
+            assert r.returncode != 0, "a UTF-16 table is invisible to every rule"
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "big.log"), "w") as fh:
+                fh.write("filler\n" * 1_500_000)
+                fh.write("playground-series-s3e16 private MAE 1.34712\n")
+            r = self._gate(d)
+            assert r.returncode != 0 and ("NOT FULLY EXAMINED" in r.stdout
+                                          or "big.log" in r.stdout), (
+                "a file larger than the read window is certified clean past the cut:\n"
+                + r.stdout[-400:])
+
+    def test_detector_flags_a_legend_style_table(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            rows = "".join(f"L{i:02d}  {v}\n" for i, v in
+                           enumerate(["1.34712", "0.06253", "0.80417", "0.09112"], 1))
+            open(os.path.join(d, "lanes.md"), "w").write(
+                "# Lane legend\nL01 = playground-series-s3e16\nL02 = playground-series-s5e1\n"
+                + "\n" * 40 + "# Results\n" + rows)
+            r = self._gate(d)
+            assert r.returncode != 0, (
+                "a legend at the top and a table below defeats a 10-line window, and that is "
+                "the most natural way to write a multi-lane result table")
+
+    def test_data_exemption_is_bounded_by_the_official_file_list(self, run_root):
+        # The exemption's stated mechanism — "only manifest-verified official files are ever
+        # materialized there" — stops being true the moment lane 1 writes its Stage-2 table
+        # into the same directory, and the gate runs once, before lane 1.
+        p = os.path.join(run_root, "competitions/playground-series-s5e1/data/train_processed.csv")
+        open(p, "w").write("playground-series-s5e1 leftover private MAPE 0.12417\n")
+        try:
+            r = self._gate(run_root)
+            assert r.returncode != 0, (
+                "anything a run writes into data/ is exempt by prefix, including a leftover "
+                "from an aborted attempt at the same competition")
+        finally:
+            os.remove(p)
+
+    # --- the other knowledge door ---------------------------------------------------------
+    def test_query_library_does_not_announce_its_exclusions(self, run_root):
+        import subprocess
+        r = subprocess.run([sys.executable, "knowledge/query_library.py", "--query", "zzzzz",
+                            "--comp", "playground-series-s3e16", "--top", "1"],
+                           capture_output=True, text=True, cwd=run_root, check=False)
+        out = r.stdout + r.stderr
+        assert "excluded" not in out or "entry/entries naming" not in out, (
+            "query_library prints a per-competition withheld COUNT on the exact command the "
+            "launcher prescribes — the oracle task_priors_for.py locks behind "
+            "KAGGLE_KB_AUDIT=1:\n" + out[:300])
+
+    def test_binding_retrieval_command_is_runnable_as_written(self, run_root):
+        import re as _re
+        import subprocess
+        docs = [".claude/skills/kaggle-agent/SKILL.md",
+                ".claude/skills/kaggle-agent/references/04_modeling.md"]
+        bad = []
+        for d in docs:
+            p = os.path.join(run_root, d)
+            if not os.path.exists(p):
+                continue
+            for i, line in enumerate(open(p).read().splitlines(), 1):
+                if "query_library.py --query" in line and "--comp" not in line:
+                    bad.append(f"{d}:{i}")
+        assert not bad, ("the binding retrieval-gate command is documented without --comp, "
+                         f"and query() raises without it: {bad}")
+        # the raise itself is the intended guard (round 8); it just has to say why
+        r = subprocess.run([sys.executable, "knowledge/query_library.py", "--query", "MAE"],
+                           capture_output=True, text=True, cwd=run_root, check=False)
+        assert r.returncode != 0 and "--comp" in (r.stdout + r.stderr), \
+            (r.stdout + r.stderr)[-300:]
+        # and the documented form must actually work
+        r = subprocess.run([sys.executable, "knowledge/query_library.py", "--query", "MAE",
+                            "--comp", "playground-series-s3e16"],
+                           capture_output=True, text=True, cwd=run_root, check=False)
+        assert r.returncode == 0, r.stderr[-300:]

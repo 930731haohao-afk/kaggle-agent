@@ -1,5 +1,5 @@
 """tree_search/harness_v2.py — Stage 4 / Phase D-1 tree-search harness, implementing the
-four Stage-4 recommendations from docs/tree_search_prototype.md §5-6 (the s3e9/s3e14/s3e5
+four Stage-4 recommendations from docs/tree_search_prototype.md §5-6 (the several competitions
 prototype's "known gaps" -> "recommendations" sections). v1 (tree_search/harness.py) is
 left untouched for reproducibility; this module reuses its unchanged pieces (new_tree,
 load, save, next_id, lineage_of, global_best, lineage_size, select_next_parent — the
@@ -8,7 +8,7 @@ four recommendations call for:
 
   1. Ensemble-default node space (§6.1): every node now carries a first-class `kind`
      ("solo"|"blend") field (previously buried inside `config`, v1-only). The
-     OOF-caching contract each eval_s3e14.py/eval_s3e5.py hand-rolled is formalized here
+     OOF-caching contract each a per-competition evaluator/a per-competition evaluator hand-rolled is formalized here
      as `cache_oof(cache_dir, node_id, oof, **extra)` / `load_oof(cache_dir, node_id)`,
      and a comp-agnostic `eval_blend(cache_dir, members, metric_fn, weight_search=...)`
      does Dirichlet (or grid-simplex) weight search over cached member OOFs. Per-comp
@@ -21,8 +21,8 @@ four recommendations call for:
   2. Metric-aware plateau (§6.2): `PLATEAU_STREAK` is no longer a single global
      constant. `tie_rate(tree)` measures the exact-duplicate fraction among all
      evaluated scores so far. If `tie_rate(tree) > TIE_RATE_THRESHOLD` (0.15) — i.e. the
-     score surface looks discretized (s3e5's QWK-after-rounder: 4 exact-duplicate
-     5-decimal groups out of 40 nodes, tie_rate ~0.19; s3e9/s3e14's continuous
+     score surface looks discretized (one competition's QWK-after-rounder: 4 exact-duplicate
+     5-decimal groups out of 40 nodes, tie_rate ~0.19; one competition/one competition's continuous
      RMSE/MAE never tied) — two things change for the active lineage's streak
      bookkeeping in `add_node`: (a) the streak-to-plateau threshold becomes
      `ADAPTIVE_PLATEAU_STREAK` (5) instead of `PLATEAU_STREAK` (3), and (b) a child
@@ -94,7 +94,7 @@ def tie_rate(tree: dict) -> float:
     `1 - distinct_scores / n_evaluated`. 0.0 if fewer than 2 evaluated nodes exist.
     This is the harness's cheap proxy for "is this comp's metric surface discretized"
     (recommendation #2) — measured on already-rounded `score` values exactly as stored
-    on each node, matching how eval_s3e5.py rounds every score to 5 decimals before
+    on each node, matching how a per-competition evaluator rounds every score to 5 decimals before
     handing it to add_node."""
     scores = [n["score"] for n in tree["nodes"] if n["status"] == "evaluated"]
     if len(scores) < 2:
@@ -135,7 +135,7 @@ def config_hash(config: dict) -> str:
     values (e.g. numpy scalars in a params dict).
 
     What this hash CAN catch (2026-08-03 audit, after reading how the drivers actually
-    build configs -- run_v3_generic.py, run_s4e1_v3.py, run_citd_v3.py, run_conway_v3.py):
+    build configs -- run_v3_generic.py, a per-competition driver, a per-competition driver, a per-competition driver):
     every driver stores the MERGED config a node was evaluated with (full `params` dict,
     not the one-line mutation), normalized by its own local `core(cfg)` helper, and passes
     that same dict to both `find_duplicate_config` and `add_node` -- so an identical
@@ -255,7 +255,7 @@ def cache_oof(cache_dir: str, node_id: int, oof, **extra) -> str:
     """Persist node_id's OOF prediction array (plus any extra named arrays the caller
     wants alongside it, e.g. pred=test_pred, y=target) to
     `<cache_dir>/solo_<node_id>.npz`, atomically (temp file + os.replace). Formalizes the
-    OOF-caching contract eval_s3e14.py/eval_s3e5.py each hand-rolled per-comp. Returns
+    OOF-caching contract a per-competition evaluator/a per-competition evaluator each hand-rolled per-comp. Returns
     the path written."""
     os.makedirs(cache_dir, exist_ok=True)
     path = os.path.join(cache_dir, f"solo_{node_id}.npz")
@@ -278,8 +278,8 @@ def load_oof(cache_dir: str, node_id: int, expect_rows: int = None,
     """Load node_id's cached OOF array (see cache_oof). Raises ValueError with a clear
     message if the node was never cached — callers (typically eval_blend) should let
     this propagate so the eval dispatch can catch it and mark the node "failed" instead
-    of crashing the search loop, same contract as eval_s3e14.load_solo_cache /
-    eval_s3e5.load_solo_cache.
+    of crashing the search loop, same contract the per-competition evaluators each
+    hand-rolled as load_solo_cache.
 
     `expect_rows` / `expect_config`, when given, are checked against the stamp cache_oof
     wrote. A mismatch means this id belongs to a different tree or a different dataset --
@@ -383,7 +383,7 @@ UNIFIED_ASCENT_ROUNDS = 6
 # The first unification put the coarsening decision in harness_v3's cost guard only, so a
 # blend big enough to coarsen got k=200 on the driver route and k=1500 on the eval-module
 # route -- a score per route again, through the guard this time (2026-08-07 re-verification;
-# s4e11's champion blend, 8 members x 140,700 rows, was the live case). The boundary is
+# one competition's champion blend, 8 members x 140,700 rows, was the live case). The boundary is
 # preserved from the k=800 calibration: coarsen when members*rows > 1.875e6, i.e. budget =
 # 1.875e6 * UNIFIED_BLEND_K. Raising k without raising the budget had silently LOWERED the
 # boundary and started coarsening blends that never coarsened before.
@@ -474,13 +474,13 @@ def _eval_blend_core(cache_dir: str, members: list, metric_fn, weight_search: st
 
     weight_search="dirichlet": `k` Dirichlet(1,...,1) draws plus the n unit-vectors and
     the uniform blend, then a refinement round of `k//3` draws concentrated around the
-    coarse best (mirrors eval_s3e14.py's two-round dirichlet search, generalized to an
+    coarse best (mirrors one competition's evaluator two-round dirichlet search, generalized to an
     arbitrary metric_fn instead of a hardcoded MAE proxy).
     weight_search="grid_simplex": exhaustive `grid_step`-spaced simplex grid, members<=5.
 
     Member OOFs may be 1-D `(n_samples,)` (the common single-target case) or 2-D
     `(n_samples, n_outputs)` (multiclass probabilities, or a multi-target regression like
-    afsis's 5 soil properties). Anything else raises, naming the offending shape.
+    one competition's 5 soil properties). Anything else raises, naming the offending shape.
 
     Returns (best_weights: np.ndarray, best_score: float, oofs: np.ndarray[n_samples,
     n_members] for 1-D members / np.ndarray[n_samples, n_outputs, n_members] for 2-D
@@ -500,7 +500,7 @@ def _eval_blend_core(cache_dir: str, members: list, metric_fn, weight_search: st
         # MEMBERS and yields (n_samples, n_outputs). Stacking on axis=1 like the 1-D case
         # gives (n_samples, n_members, n_outputs), and `@ w` then contracts the OUTPUT axis
         # against the weight vector: a shape error when n_outputs != n_members and, when
-        # they happen to be equal (afsis: 5 targets, and a 5-member blend is the obvious
+        # they happen to be equal (one competition: 5 targets, and a 5-member blend is the obvious
         # thing to try), a silently wrong number that still looks like a score
         # (2026-08-03 audit).
         oofs = np.stack(member_oofs, axis=-1)     # (n_samples, n_outputs, n_members)
@@ -535,7 +535,7 @@ def _eval_blend_core(cache_dir: str, members: list, metric_fn, weight_search: st
                 best_s, best_w = s, w
         return best_w, best_s, oofs
     elif weight_search == "nnls":
-        # Advertised as first-class by the firing-class evaluators (and by the s5e10 NNLS
+        # Advertised as first-class by the firing-class evaluators (and by the one competition NNLS
         # diagnostic) but never implemented here: every such proposal raised
         # "unknown weight_search method" (2026-08-03 audit). NNLS is a closed form on the
         # TARGET vector, which metric_fn only closes over -- so the caller must pass it.
@@ -632,7 +632,7 @@ COMP_CITATION_ALIASES = {
 # the headless launcher's repeat runs (".repeat-r1-<date>"), quarantined leftovers
 # (".leftover_pre_run"), and make_v5_arm's arm workspaces ("-v5-<arm>"). A DERIVED workspace
 # is still solving the BASE competition, so its aliases must be the base slug's aliases --
-# otherwise "playground-series-s3e16.repeat-r1-20260731" matches nothing the library cites and
+# otherwise a derived workspace name ("<slug>.repeat-r1-<date>") matches nothing the library cites and
 # the self-evidence filter silently fails open on every repeat run
 # (2026-08-07, bucket-A finding #49).
 _WORKSPACE_SUFFIX_RE = re.compile(r"(\.(repeat|leftover)[\w-]*|-v5-[\w-]+)$")
@@ -685,8 +685,8 @@ def _cites_own_competition(line: str, aliases: list) -> bool:
     if not m or not aliases:
         return False
     ev = m.group(1).lower()
-    # Token-boundary match, not naive substring: 's3e1' is a substring of s3e19/s3e11/s3e14/
-    # s3e16 and 's5e1' of s5e10, so the old test excluded every sibling competition's evidence
+    # Token-boundary match, not naive substring: 'one competition' is a substring of several competitions/
+    # one competition and 'one competition' of one competition, so the old test excluded every sibling competition's evidence
     # from those lanes -- over-exclusion, silently starving them of transferable priors
     # (2026-08-03 audit). Boundary = anything that is not alphanumeric.
     for a in aliases:

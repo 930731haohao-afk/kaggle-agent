@@ -2,7 +2,7 @@
 
 Exists to close the two encoding gaps the coverage audit exposed (engineering log,
 "what still cannot be executed"): `target` encoding needs per-fold computation inside the
-evaluator — computing it anywhere else is the s4e1 leakage path — and `onehot_sparse`
+evaluator — computing it anywhere else is the one competition leakage path — and `onehot_sparse`
 needs a linear model family the GBDT evaluators did not have. Both are implemented here
 once and imported by the per-competition evaluators, so an arm's codegen copy inherits
 them without further patching.
@@ -38,7 +38,7 @@ def per_fold_target_encode(X_tr: pd.DataFrame, X_va: pd.DataFrame, X_te: pd.Data
     encoders in external_data/apply.py). The encoding map is fit on `X_tr`/`y_tr`
     exclusively: validation and test rows only ever look values up, and unseen
     categories fall back to the fold's global prior. This is the fold-aligned
-    computation the operator contract requires (s4e1: an out-of-fold approximation
+    computation the operator contract requires (one competition: an out-of-fold approximation
     inflated AUC to 0.89653 vs ~0.8937 fold-aligned).
     """
     cols = [c for c in (columns or cat_fallback or []) if c in X_tr.columns]

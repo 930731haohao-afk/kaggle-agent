@@ -31,8 +31,10 @@ winning scripts/lgb_optuna_best.json params:
   (2026-08-10 round-9). Only the STRUCTURAL finding survives, because it is the lever
   this module implements and it names no value: exactly one parameter's optimum landed
   on its box's own edge, which is the boundary-push signal LGBBOUND probes.
-Only learning_rate saturates its box -- LGBBOUND (see run_s3e16_v2.py) pushes it further
-below 0.01, the run's single highest-conviction boundary-push probe.
+LGBBOUND is the node kind that acts on that finding: it re-proposes the saturating parameter
+past the edge of the box the study searched. Which parameter, and what the box was, are the
+recorded run's tuned configuration and stay withheld -- naming them here would undo the
+paragraph above (2026-08-10 round-10).
 
 Two node kinds, same schema convention as eval_s3e5_v2.py/eval_s3e9_v2.py:
 

@@ -38,8 +38,10 @@ Then verify:  python3 benchmark_infra/verify_clean_slate.py --root <run-root>
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -52,17 +54,22 @@ CLEAN_DATA = os.path.join(os.path.expanduser("~"), "ai_agents/bench-comps")
 # Whole directories a lane needs in full.
 DIRS = [
     ".claude/skills/kaggle-agent",          # the pipeline itself
-    ".claude/skills/kaggle-safe-submit",    # submission validation, cited by stage 6
     "external_data",                        # rules gate, dossier, operators, source caches
     "utils",                                # experiment log, evaluation helpers
     "templates",
 ]
+# Never copied out of an allowlisted directory, whatever else that directory holds.
+DIR_EXCLUDE = ["kaggle_auth.sh", "__pycache__", "*.pyc"]
 # Individual files, path-for-path.
 FILES = [
     "knowledge/knowledge_base.json",        # served ONLY through task_priors_for.py
     "knowledge/task_priors_for.py",
     "knowledge/query_library.py",
     "knowledge/experience.md",              # served ONLY through query_library.py
+    # the ONE piece of kaggle-safe-submit the pipeline uses (06_submission.md step 5). The
+    # rest of that skill prescribes `kaggle competitions submissions -c <comp>`, which
+    # returns this competition's own prior public LB scores (round 10).
+    ".claude/skills/kaggle-safe-submit/scripts/validate_submission.py",
     "docs/rerun_manifest.json",
     "pyproject.toml",
     "uv.lock",
@@ -95,12 +102,28 @@ NOT_COPIED = """
   .claude/skills/kaggle-agent-self-improvement/   prescribes scanning competitions/*/
                             experiments.json, which is how sibling workspaces leaked (round 8)
   .superpowers/             overnight plan files quoting per-lane four-stage score ladders
+  utils/kaggle_auth.sh      points at ~/.kaggle/huang_token, the account holding every
+                            benchmark submission for all three lanes; with it,
+                            `kaggle competitions submissions -c <comp>` returns this
+                            competition's own prior public LB scores (round 10)
+  .claude/skills/kaggle-safe-submit/SKILL.md   prescribes exactly that call at its quota
+                            check and back-fill steps; only its validator script is copied
 """
 
 
 def project_key(root: str) -> str:
-    """How the harness derives its per-project state directory from a working directory."""
-    return os.path.abspath(root).replace("/", "-")
+    """How the harness derives its per-project state directory from a working directory.
+
+    The CLI replaces EVERY non-alphanumeric character, not just the separator, and truncates
+    at 200 characters. Guarding `.replace("/", "-")` guarded a path nothing can ever create,
+    so the one check standing between the re-run and the recorded run's memory file always
+    printed "absent" (2026-08-10 round-10). The recorded run's own directory proves the rule:
+    /home/tjyen/ai_agents/kaggle -> -home-tjyen-ai-agents-kaggle, underscore to dash.
+    """
+    key = re.sub(r"[^a-zA-Z0-9]", "-", os.path.abspath(root))
+    if len(key) > 200:                      # the CLI appends a hash of the full path
+        key = key[:200] + "-" + hashlib.sha256(os.path.abspath(root).encode()).hexdigest()[:8]
+    return key
 
 
 def memory_dir(root: str) -> str:
@@ -133,6 +156,34 @@ def _materialize_data(src_dir: str, dst_dir: str) -> None:
             os.link(src, dst)
         except OSError:
             shutil.copy2(src, dst)
+
+
+def _drop_submit_routes(root: str) -> None:
+    """Rewrite the copied skill's routes to the submit skill, which is not in the root.
+
+    A lane that submits can read back `kaggle competitions submissions -c <comp>` — its own
+    recorded public LB, and the other two agents' (round 10). The benchmark does not need it:
+    the lane's contract ends at submission.csv, and scoring happens outside the run.
+    """
+    note = ("validate the CSV with `uv run python "
+            ".claude/skills/kaggle-safe-submit/scripts/validate_submission.py` — this run "
+            "does NOT submit to Kaggle and has no credentials; the operator scores "
+            "submission.csv after the run")
+    for rel in (".claude/skills/kaggle-agent/SKILL.md",
+                ".claude/skills/kaggle-agent/references/06_submission.md"):
+        p = os.path.join(root, rel)
+        if not os.path.exists(p):
+            continue
+        out = []
+        for line in open(p, encoding="utf-8").read().splitlines():
+            low = line.lower()
+            if "kaggle competitions submit" in low or "competitions submissions -c" in low \
+                    or "kaggle_auth.sh" in low or "kaggle_api_token" in low:
+                continue
+            if "kaggle-safe-submit` skill" in line or "use `kaggle-safe-submit`" in line:
+                line = note
+            out.append(line)
+        open(p, "w", encoding="utf-8").write("\n".join(out) + "\n")
 
 
 def plan(root: str) -> list[tuple[str, str]]:
@@ -173,6 +224,10 @@ and it is the one thing you must not undo:
   `knowledge/task_priors_for.py`; never open `knowledge/experience.md` or
   `knowledge/knowledge_base.json` directly.
 - **Package management is uv** — `uv run python3 ...`, never pip.
+- **This run does not submit to Kaggle and holds no credentials.** No network calls at all.
+  Your contract ends at `competitions/<comp>/submission.csv`; the operator scores it
+  afterwards. Do not look for a token, and do not try to read any leaderboard: your own
+  competition's prior submissions are exactly the answer this root exists to withhold.
 - Write experiments to `competitions/<comp>/experiments.json` and finish with
   `competitions/<comp>/submission.csv` plus a 3-line `STATUS.md` summary.
 """
@@ -196,7 +251,7 @@ def build(root: str, write: bool) -> int:
             os.makedirs(os.path.dirname(d), exist_ok=True)
             if os.path.isdir(s):
                 shutil.copytree(s, d, symlinks=False,
-                                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+                                ignore=shutil.ignore_patterns(*DIR_EXCLUDE))
             else:
                 shutil.copy2(s, d)
         else:
@@ -227,6 +282,15 @@ def build(root: str, write: bool) -> int:
 
     if write:
         open(os.path.join(root, "CLAUDE.md"), "w").write(RUN_ROOT_CLAUDE_MD)
+        _drop_submit_routes(root)
+        # Auto-memory is not a static artifact you clear once before the run: the harness
+        # WRITES to it during a session, and all 20 lanes share this one working directory,
+        # so lane k's notes would be injected into lanes k+1..20 -- and a lane relaunched
+        # after the 6 h cap or the stall watchdog would read its own previous attempt's CV
+        # score and champion recipe (2026-08-10 round-10). Off for this project entirely.
+        os.makedirs(os.path.join(root, ".claude"), exist_ok=True)
+        json.dump({"autoMemoryEnabled": False},
+                  open(os.path.join(root, ".claude/settings.json"), "w"), indent=2)
     n += 1
 
     # The memory directory is derived from the working directory, so a fresh root gets a

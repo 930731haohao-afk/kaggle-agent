@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -118,9 +119,10 @@ def query(terms: list[str], entries: list[dict], top: int = 5,
     """
     if comp is None and not allow_self:
         raise ValueError(
-            "query() needs comp=<competition slug> so entries naming the competition being "
-            "solved can be excluded -- the HARD RULE in SKILL.md. Pass allow_self=True only "
-            "for a deliberately unfiltered read (e.g. a post-hoc audit).")
+            "query() needs the competition being solved (CLI: --comp <competition-slug>; "
+            "API: comp=...) so entries naming it can be excluded -- the HARD RULE in "
+            "SKILL.md. Pass --allow-self / allow_self=True only for a deliberately "
+            "unfiltered read, e.g. a post-hoc audit; never during a benchmark run.")
     aliases = _comp_aliases(comp) if (comp and not allow_self) else []
     scored, dropped = [], []
     for e in entries:
@@ -134,7 +136,13 @@ def query(terms: list[str], entries: list[dict], top: int = 5,
         score = (hits, e["has_delta"], e["has_evidence"], -len(e["text"]))
         scored.append((score, e, hits))
     scored.sort(key=lambda x: x[0], reverse=True)
-    if dropped:
+    # NO COUNT. `dropped` is computed before keyword scoring, so its size is a per-competition
+    # CONSTANT: the number of delta-backed library entries this competition's own recorded run
+    # produced, printed on the exact command the launcher hands every lane. That is the same
+    # oracle task_priors_for.py locks behind KAGGLE_KB_AUDIT=1, and 00_problem_dossier states
+    # the invariant it breaks: "how much was withheld is deliberately not answerable from
+    # inside a run" (2026-08-10 round-10). Auditors can still see it.
+    if dropped and os.environ.get("KAGGLE_KB_AUDIT") == "1":
         print(f"[query_library] excluded {len(dropped)} entry/entries naming {comp!r} itself "
               f"(self-exclusion); {min(len(scored), top)} returned")
     return [{"section": e["section"], "hits": h, "evidence_backed": e["has_delta"],

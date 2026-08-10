@@ -4,7 +4,7 @@ The judgment layer (Stage 0.5) emits typed operators from
 `knowledge/injection_operators.md`; this module realizes the ones it implements and
 records the rest in a coverage ledger. An idea is never dropped in silence: that
 silence is precisely how a correct "GDP as a level covariate" judgment turned into a
-plain feature join on s3e19 and cost the run its point.
+plain feature join on a panel competition and cost that run its point.
 
 Realized here: join_feature, ratio_target, log_offset, trend_term, flag_feature,
 sample_weight, and the target-free encoding schemes (count / ordinal / crosses).
@@ -13,7 +13,7 @@ Emitted as node configs for the search driver to seed: objective, blend_member
 Recorded as advisory, NOT as done: split_policy and postprocess. This module runs on
 dataframes and has no handle on the evaluator, so it cannot check whether the evaluator
 implements what was asked -- and for months this branch nevertheless read as "honored by
-the evaluator", which is how a pure vocabulary mismatch on s3e19's postprocess survived
+the evaluator", which is how a pure vocabulary mismatch on a competition's postprocess survived
 unnoticed. `external_data/verify_advisory.py` is the checker that closes that hole; the
 ledger entry now points at it instead of asserting a verification that never happened.
 """
@@ -41,8 +41,8 @@ CONFIG_ONLY = {"objective", "blend_member", "encoding"}
 
 # encoding schemes and the evidence behind each
 ENCODING_SCHEMES = {
-    "native":     "GBDT native categorical handling — the strong default (s3e11: AIDE's only "
-                  "outright win came from a node that accidentally enabled it)",
+    "native":     "GBDT native categorical handling — the strong default; a reference run's "
+                  "single win on one competition came from a node that enabled it by accident",
     "ordinal":    "ordered categories keep their order; only for genuinely ordinal levels",
     "count":      "frequency/count encoding — cheap, no target involved, no leakage path",
     "onehot_sparse": "sparse one-hot with a linear member: on all-categorical data this beat "
@@ -123,7 +123,7 @@ def covariate_volatility_check(cov: pd.DataFrame, mapping: dict, years: list[int
     """Is the covariate itself a stable proxy for the level, or does it carry FX/inflation shocks?
 
     A ratio target multiplies the covariate straight into the prediction, so a nominal series
-    propagates currency moves as if they were demand moves. Measured on s3e19: current-USD GDP
+    propagates currency moves as if they were demand moves. Measured on a country panel: current-USD GDP
     per capita moved 2021->2022 by -14.5% (Japan, yen collapse) to +30% (Argentina, inflation),
     a 14.6pp cross-country spread, while the constant-price series moved within 3.0pp. The
     ratio arm lost on the leaderboard to the plain feature join for exactly this reason.
@@ -349,18 +349,17 @@ def _config_only(op: str, params: dict) -> dict:
         cfg = {"kind": "solo", "seed_role": "encoding", "scheme": scheme,
                "columns": cols, "rationale": ENCODING_SCHEMES[scheme]}
         if scheme == "target":
-            # The one non-negotiable: s4e1 measured that computing the encoding on folds that
-            # differ from the model's evaluation folds is itself a leakage path, even though it
-            # looks safer than in-fold encoding. An apparent 0.89653 collapsed to ~0.8937 once
-            # the folds were aligned. So the operator carries the requirement, and an evaluator
+            # The one non-negotiable: computing the encoding on folds that differ from the
+            # model's evaluation folds is itself a leakage path, even though it looks safer
+            # than in-fold encoding. An apparent gain collapsed once the folds were aligned. So the operator carries the requirement, and an evaluator
             # that cannot honour it must refuse rather than approximate.
             cfg["fold_aligned"] = True
             cfg["requires_evaluator_support"] = "per_fold_target_encoding"
             cfg["smoothing"] = float(params.get("smoothing", 20.0))
             cfg["rationale"] += (" — computed inside each fold from that fold's TRAINING rows "
-                                 "only, using the model's own folds (s4e1: independent folds "
-                                 "with a different seed inflated AUC to 0.89653 vs ~0.8937 "
-                                 "fold-aligned; 'looks safer' was another leakage path)")
+                                 "only, using the model's own folds (independent folds with "
+                                 "a different seed inflate the metric; 'looks safer' was "
+                                 "another leakage path)")
         if scheme == "onehot_sparse":
             # Needs a linear model family: one-hot into a GBDT is strictly worse than its
             # native categorical handling, so the scheme only pays inside a sparse linear
@@ -401,8 +400,8 @@ def _encode_columns(tr: pd.DataFrame, te: pd.DataFrame, scheme: str,
     frequency or its ordinal position carries no label information, so there is nothing for a
     fold boundary to protect. The one scheme that DOES involve the target (`target`) is refused
     by the caller and routed to `unrealized` with the reason, because computing it anywhere but
-    inside the model's own folds is the s4e1 leakage path (AUC inflated to 0.89653, fold-aligned
-    ~0.8937).
+    inside the model's own folds is a measured leakage path (the metric inflates when the
+    encoding folds differ from the evaluation folds).
 
     Columns are ADDED, never replaced, so a config that drops them reproduces the baseline.
     """
@@ -575,7 +574,7 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
             # NOT a claim that anything executed this. The dispatcher runs on dataframes and
             # has no handle on the evaluator, so it cannot check -- and for months this branch
             # nevertheless read as "honored by the evaluator", which is how a pure vocabulary
-            # mismatch on s3e19's postprocess survived unnoticed until 2026-07-30. The entry
+            # mismatch on a competition's postprocess survived unnoticed until 2026-07-30. The entry
             # now says what it actually knows (a request was made, unverified) and names the
             # tool that can check it: external_data/verify_advisory.py.
             plan["advisory"].append({"operator": op, "params": params,

@@ -1,9 +1,10 @@
 """tree_search/harness_v3.py — Phase F-1 tree-search harness, folding every validated
-lesson from the 11 tree-search runs (v1's s3e9/s3e14/s3e5 + v2's s3e3/s3e7/s3e1/s3e19/
-s3e11 + the s3e3-scale E-5 experiment + the s3e16 E-2/E-3/C-2c build) into the harness
-AS DEFAULTS, instead of leaving them as driver-script-local workarounds
-(run_s3e3_scale.py's dedup-budget-burn, eval_s3e16_v2.py's k=800+coordinate-ascent,
-D-6's manual "phase 2" re-seed, ...). v2 (tree_search/harness_v2.py) is left completely
+lesson from the eleven tree-search runs conducted so far into the harness AS DEFAULTS,
+instead of leaving them as driver-script-local workarounds (a dedup budget burn, a
+k=800+coordinate-ascent blend scorer, a manual "phase 2" re-seed, ...). Which competition
+motivated which default is deliberately not recorded here: this file is pinned for every
+lane, and "the lever that mattered on YOUR competition" is the answer a lane is being
+measured on finding (2026-08-10 round-10). v2 (tree_search/harness_v2.py) is left completely
 untouched for reproducibility; this module imports it (`import harness_v2 as v2`),
 re-exports every piece whose behavior doesn't change, and adds/overrides only what the
 six Phase F-1 recommendations call for. Node schema, `kind`, OOF-cache contract, child
@@ -18,7 +19,7 @@ from v2 — see harness_v2.py's own docstring for those.
    MANDATORY "explore_burst" (the driver is expected to inject 5-8 fresh long-shot
    lineages once this phase is observed), then stops 15-20 evals into the burst if
    none of them improved the global best; hard-stops at the total budget regardless.
-   Evidence: docs/scaling_experiment.md's Phase E-5 s3e3-scale curve — every one of the
+   Evidence: docs/scaling_experiment.md's Phase E-5 one competition-scale curve — every one of the
    3 post-exploit-phase global-best improvements came from a mandatory explore burst
    (kitchen-sink blend), and the run wasted a 28-eval (35% of its 80-node budget) idle
    tail with no stop rule in place.
@@ -29,7 +30,7 @@ from v2 — see harness_v2.py's own docstring for those.
    on, instead of spinning. Evidence: E-5 (docs/scaling_experiment.md "Implementation
    note") — v2's dedup rejects a duplicate but never consumes an expansion slot, so
    once a kitchen-sink blend lineage's fallback exhausted its member pool it
-   regenerated an identical config forever and stalled run_s3e3_scale.py at 50/80
+   regenerated an identical config forever and stalled a per-competition driver at 50/80
    nodes; that run's hand-rolled fix (`_parent_dup_streak`) is formalized here as the
    harness's own default.
 
@@ -37,7 +38,7 @@ from v2 — see harness_v2.py's own docstring for those.
    (`reopen_blend_lineage_on_solo_breakthrough`, called automatically from `add_node`)
    — whenever a solo node becomes the new global best, any already-`plateaued` blend
    lineage(s) are reopened (un-plateaued, streak reset) so they can absorb the new
-   member on the very next `select_next_parent()` call. Evidence: D-6 (s3e11,
+   member on the very next `select_next_parent()` call. Evidence: D-6 (one competition,
    docs/tree_search_prototype.md §"v3 候選規則" item 1) — the run's final global best
    was a depth-12 CatBoost solo node found AFTER the phase-1 BLEND lineage had already
    plateaued; harvesting that gain required a human-driven manual "phase 2" re-seed.
@@ -47,28 +48,27 @@ from v2 — see harness_v2.py's own docstring for those.
    hyperparameter in a config sitting within `edge_frac` of either edge of its declared
    search-space range and proposes pushing further past that edge. Evidence: D-6/E-2/
    E-3 (docs/tree_search_prototype.md §"v3 候選規則" item 2 + §7's four local-insight
-   examples) — three separate comps (s3e11's CatBoost depth 10->12, s3e16's
-   learning_rate below its Optuna box's own 0.01 floor, and the general "Optuna optimum
-   sitting on the search box's own edge" pattern) each found their single largest lever
+   examples) — three separate competitions, in different model families and on different
+   parameters, each found their single largest lever
    this way; leaving it to be "discovered" ad hoc means it is discovered late or not at
    all.
 
 5. Weight-search default k=800 + coordinate-ascent refinement, baked into v3's own
-   `eval_blend` (v2's `eval_blend` is untouched; this wraps it). Evidence: E-2 (s3e16)
+   `eval_blend` (v2's `eval_blend` is untouched; this wraps it). Evidence: E-2 (one run)
    — coarse Dirichlet grids silently tie (multiple candidate weight vectors round to
    the same discretized score, so the "winner" is arbitrary among near-duplicates)
    unless the search is both wide (k=800, up from ad hoc per-caller defaults) AND
    followed by a local coordinate-ascent hill-climb (ported from
-   eval_s3e16_v2.py's `_coord_ascent_refine`, previously hand-copied per eval script);
+   one competition's evaluator `_coord_ascent_refine`, previously hand-copied per eval script);
    E-3 additionally showed that raw search budget alone (more draws, no new idea) beat
    a hand-tuned champion blend, i.e. the harness should never under-search by default.
 
 6. Metric-aware blend-cost guard (`eval_blend_with_cost_guard`) — if a blend
    evaluation's wall-clock time exceeds a threshold (default 45s), the guard
    auto-coarsens the weight-search budget for that call ONLY with an explicit, logged
-   warning (never silently). Evidence: C-2c (s3e5, docs/tree_search_prototype.md §3/§4)
+   warning (never silently). Evidence: C-2c (one run, docs/tree_search_prototype.md §3/§4)
    — QWK-after-rounder blend nodes cost ~45-46s each (a Nelder-Mead OptimizedRounder
-   cutpoint-fit per candidate weight), on par with solo nodes, breaking the s3e14-
+   cutpoint-fit per candidate weight), on par with solo nodes, breaking the one competition-
    derived "blend nodes are near-free" assumption; and E-2 showed that SILENTLY
    coarsening a search to save time just ties (loses real signal) without telling
    anyone, so any coarsening this harness ever does must be loud, not silent.
@@ -80,7 +80,7 @@ from v2 — see harness_v2.py's own docstring for those.
    machine, plateau flags, lineage bookkeeping, budget counters, plus a free-form
    `search_state["driver_state"]` dict reserved for whatever per-driver bookkeeping needs
    to survive a restart), with a self-consistency check run before every save/after every
-   load. Evidence: F-2's s3e7 run needed 3 restarts, two of which were resume bugs — a
+   load. Evidence: F-2's one competition run needed 3 restarts, two of which were resume bugs — a
    `KeyError` from dispatching a blend-vs-solo lineage on its literal name instead of its
    `kind`, and module-level driver state (id->name maps, burst-injected flags, per-node
    result dicts) that silently did NOT survive a process restart because nothing put it
@@ -90,7 +90,7 @@ from v2 — see harness_v2.py's own docstring for those.
 8. Subprocess eval timeout (`eval_solo_subprocess`) — runs a per-comp evaluator's
    `evaluate(config, node_id=..., timeout_s=...)` in a child process and hard-kills
    (SIGKILL, whole process group) it on timeout, returning a `status="failed"` result
-   instead of hanging the search loop. Evidence: F-2's s3e7 run hit a CatBoost fit (depth
+   instead of hanging the search loop. Evidence: F-2's one competition run hit a CatBoost fit (depth
    9, bagging_temperature 2.0) that hung 28 minutes at 313% CPU — `signal.alarm`
    (SIGALRM), the mechanism every eval_*.py in this repo uses today, cannot interrupt a
    native (non-Python-bytecode) fit() call; only an OS-level process boundary can.
@@ -103,7 +103,7 @@ from v2 — see harness_v2.py's own docstring for those.
    gate everything). Failing the gate marks that seed's own lineage plateaued
    immediately (excluded from `select_next_parent`) — it burns exactly the one seed node
    that already cost real compute, not a whole lineage of children descending from it.
-   Evidence: F-2's s3e14 run — a DART long-shot seed scored 6144-6544 MAE against a
+   Evidence: F-2's one competition run — a DART long-shot seed scored 6144-6544 MAE against a
    ~340 root/global-best (~18x the gap), and the driver spent ~12 minutes (6 evals)
    training further DART children off that single garbage seed before giving up.
 """
@@ -382,7 +382,7 @@ def _refresh_phase(tree: dict) -> None:
     `update_phase` used to be reachable only from `add_node`, but `plateaued` has three
     other writers: `harness.select_next_parent`'s expansion-budget-exhaustion path
     (harness.py), `apply_burst_seed_sanity_gate` (feature 9), and drivers that mark their
-    own dead-end lineages (run_s4e1_v3.py's "propose_child exhausted" branch). Whenever the
+    own dead-end lineages (a per-competition driver's "propose_child exhausted" branch). Whenever the
     LAST lineage was plateaued by one of those, `plateau_saturated(tree)` became true with
     no node added, so the phase machine never noticed and the mandatory explore burst was
     skipped entirely (2026-08-03 audit). No-op on a tree that has no budget yet, so this
@@ -658,7 +658,7 @@ _ASCENT_DELTAS = (0.05, -0.05, 0.02, -0.02, 0.01, -0.01, 0.005, -0.005)
 def _coordinate_ascent_refine(oofs, metric_fn, w0, s0, rounds=DEFAULT_ASCENT_ROUNDS,
                                deltas=_ASCENT_DELTAS):
     """Per-coordinate hill-climb starting from (w0, s0), ported verbatim (as a default,
-    not a per-eval-script copy) from eval_s3e16_v2.py's `_coord_ascent_refine`. Stops
+    not a per-eval-script copy) from one competition's evaluator `_coord_ascent_refine`. Stops
     early if a full sweep over every coordinate/delta finds no improvement."""
     best_w, best_s = np.array(w0, dtype=float), s0
     k = len(best_w)
@@ -695,7 +695,7 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
       - `coordinate_ascent=True` by default: after the Dirichlet/grid search, run
         `_coordinate_ascent_refine` starting from the coarse-search winner. Can never
         make the result worse (only accepts strictly improving moves) and is what
-        eval_s3e16_v2.py hand-ported per-eval-script before this harness existed.
+        a per-competition evaluator hand-ported per-eval-script before this harness existed.
 
     Passing `coordinate_ascent=False` and the same `k`/`seed`/`grid_step` as a v2 call
     reproduces `harness_v2.eval_blend`'s output EXACTLY (digit-for-digit) -- this
@@ -707,7 +707,7 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
     # through v2's unified wrapper would apply coordinate ascent TWICE and override k
     # (a layering bug introduced and caught while unifying the two routes, 2026-08-04).
     # The SAME deterministic coarsening rule as hv2's unified route. This function is what
-    # five live drivers (run_s5e10_v3 etc.) call for blend nodes, and it went straight to the
+    # five live drivers (run_one competition_v3 etc.) call for blend nodes, and it went straight to the
     # core at full k -- so a blend big enough to coarsen scored k=1500 here and k=200
     # everywhere else, the exact score-per-route class the unification claims closed
     # (2026-08-07 round-3). Explicit k feeds the same rule, so k=800 from an old driver
@@ -728,15 +728,15 @@ def eval_blend(cache_dir: str, members: list, metric_fn, weight_search: str = "d
 # ---------------------------------------------------------------------------
 # Feature 6: metric-aware blend-cost guard
 # ---------------------------------------------------------------------------
-DEFAULT_COST_GUARD_THRESHOLD_S = 45.0   # C-2c: s3e5's QWK-after-rounder blend nodes cost ~45-46s
+DEFAULT_COST_GUARD_THRESHOLD_S = 45.0   # C-2c: one competition's QWK-after-rounder blend nodes cost ~45-46s
 DEFAULT_COST_GUARD_COARSEN_K = 200
 
 
 # Deterministic cost budget, in k x members x rows "weight-search units". The BOUNDARY is what
-# is calibrated (members*rows > 1.875e6, from the k=800 guard: s5e10's 6x517k coarsens, s4e11's
+# is calibrated (members*rows > 1.875e6, from the k=800 guard: one competition's 6x517k coarsens, one competition's
 # 8x140.7k does not); the unit budget is that boundary times the unified k, so raising k can
 # never silently lower the boundary again (2026-08-07 re-verification -- the first version
-# kept 1.5e9 while k went 800 -> 1500, halving the boundary and coarsening s4e11's champion
+# kept 1.5e9 while k went 800 -> 1500, halving the boundary and coarsening one competition's champion
 # blend on one route only).
 DEFAULT_COST_BUDGET_UNITS = 1_875_000 * v2.UNIFIED_BLEND_K
 
@@ -754,7 +754,7 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
                                 ascent_rounds: int = DEFAULT_ASCENT_ROUNDS,
                                 cost_budget_units: int = DEFAULT_COST_BUDGET_UNITS):
     """`eval_blend` (feature 5, above) wrapped with a wall-time guard: if the search
-    takes longer than `wall_time_threshold_s` (default 45s, C-2c's s3e5 QWK-blend cost),
+    takes longer than `wall_time_threshold_s` (default 45s, C-2c's one competition QWK-blend cost),
     it is re-run at a coarser `coarsen_k` (default 200) -- but ONLY with an explicit
     warning returned (and, if `tree` is passed, logged to
     `tree["search_state"]["cost_guard_log"]`). Never coarsens silently: E-2 showed that
@@ -781,7 +781,7 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
     # The k decision is the SHARED deterministic rule in harness_v2 -- the same one
     # eval_blend applies on the direct route -- so both routes coarsen identically and a
     # blend has one score. The guard's own job is reduced to REPORTING the decision
-    # (2026-08-07: deciding here and not there gave s4e11's champion two scores again).
+    # (2026-08-07: deciding here and not there gave one competition's champion two scores again).
     # The SAME rule as v2.unified_k_for, not budget/k algebra: dividing the budget by the
     # caller's k made the boundary SCALE with k, so k=6000 (real recorded drivers) coarsened
     # here while the direct route did not -- score-per-route again (2026-08-07 round-4). The
@@ -834,7 +834,7 @@ def eval_blend_with_cost_guard(cache_dir: str, members: list, metric_fn, *, tree
 # ---------------------------------------------------------------------------
 # `search_state` keys this contract knows about and validates. Not exhaustive by
 # construction -- any key not listed here is left alone (drivers may add their own
-# top-level search_state keys, e.g. run_s3e7_v3.py's "dedup_streak"/"node_results"/
+# top-level search_state keys, e.g. a per-competition driver's "dedup_streak"/"node_results"/
 # "cost_guard_log"), but a driver's own PER-RUN bookkeeping that doesn't already have a
 # blessed spot (id->name maps, "have I injected the burst yet" flags, dedup offsets, ...)
 # should go under "driver_state" specifically so it round-trips through save/load with
@@ -1010,12 +1010,12 @@ def eval_solo_subprocess(eval_module_path: str, config: dict, timeout_s: float, 
     search loop, which is what happens today: every eval_*.py uses `signal.alarm`
     (SIGALRM) for its in-process timeout, and SIGALRM CANNOT interrupt a native-code
     fit() call (CatBoost/LightGBM/XGBoost) that never returns to the Python bytecode
-    interpreter to notice the pending signal (F-2's s3e7 run: a CatBoost fit hung 28
+    interpreter to notice the pending signal (F-2's one competition run: a CatBoost fit hung 28
     minutes at 313% CPU past its 200s in-process timeout). A subprocess boundary is
     immune to that -- the OS can always kill it.
 
     `eval_module_path` is a per-comp evaluator module path (e.g.
-    "tree_search/eval_s3e7.py"), loaded in the child the same way tests/conftest.py's
+    "tree_search/a per-competition evaluator"), loaded in the child the same way tests/conftest.py's
     `load_module` fixture loads it (importlib, by file path -- these modules aren't a
     package). `config` is passed to the child via a temp JSON file (numpy scalars/arrays
     coerced to native JSON types), not argv/stdin, so arbitrary config nesting survives.
@@ -1107,7 +1107,7 @@ def eval_solo_subprocess(eval_module_path: str, config: dict, timeout_s: float, 
                         error=(f"eval_solo_subprocess: hard-killed (SIGKILL) after "
                                f"exceeding timeout_s={timeout_s}s -- a native-code fit() "
                                f"in the child ignored its own in-process SIGALRM timeout "
-                               f"(see harness_v3 module docstring feature 8 / F-2 s3e7 "
+                               f"(see harness_v3 module docstring feature 8 / F-2 one competition "
                                f"CatBoost hang)"))
         if proc.returncode != 0 or not os.path.exists(out_path):
             stderr_txt = (stderr or b"").decode(errors="replace")[-2000:]
@@ -1146,7 +1146,7 @@ def burst_seed_sanity_bound(tree: dict, *, factor: float = DEFAULT_SANITY_FACTOR
     to equal the current global best (gap 0), which would otherwise fail-gate every
     single burst seed by construction.
 
-    Evidence (module docstring feature 9): F-2's s3e14 DART burst seeds scored
+    Evidence (module docstring feature 9): F-2's one competition DART burst seeds scored
     6144-6544 MAE against a ~340 root/global-best (~18x the gap) -- this bound is sized
     to catch exactly that order-of-magnitude blowup while still tolerating a genuinely
     worse-but-plausible long-shot (e.g. 2x the gap is a normal, allowed exploratory
@@ -1178,7 +1178,7 @@ def apply_burst_seed_sanity_gate(tree: dict, seed_node_id: int, *,
     immediately marks that lineage `plateaued` (so `select_next_parent` never selects it
     for further expansion) and appends a `backtrack_log` entry explaining why -- burning
     exactly the one seed node's already-sunk evaluation cost instead of letting a full
-    mutation queue train children off a garbage seed (the fix for F-2's s3e14 lesson:
+    mutation queue train children off a garbage seed (the fix for F-2's one competition lesson:
     ~12 minutes / 6 evals spent chasing one 6144-6544-MAE DART seed against a ~340
     root/global-best).
 
@@ -1209,7 +1209,7 @@ def apply_burst_seed_sanity_gate(tree: dict, seed_node_id: int, *,
                         f"(factor={factor}x the root-to-global-best gap, floor="
                         f"{min_band_frac:.0%} of |global best|) -- burning this seed's "
                         f"own already-sunk evaluation cost only, NOT opening a mutation "
-                        f"lineage on top of it (feature 9; F-2 s3e14 lesson)")))
+                        f"lineage on top of it (feature 9; F-2 one competition lesson)")))
         # This gate is one of the plateau writers that is NOT add_node, so the phase
         # machine has to be told: gating the last live lineage saturates the tree without
         # any node being added (2026-08-03 audit, see `_refresh_phase`).

@@ -185,7 +185,10 @@ done < <(find docs -mindepth 1 -maxdepth 1 | sort)
 # documents/ is a near-homograph of docs/ that no earlier glob mentioned: it holds a
 # CV / Public LB / Private LB / winning-technique table for 9 of the 20 lanes. mlflow.db
 # mirrors 16 lanes' metric, score history and hyper-parameters (2026-08-10 round-9).
-for d in benchmark_results .superpowers documents mlflow.db search-tree-states.drawio; do
+# *.drawio figures at the root plot per-competition score lineages; the sibling
+# self-improvement skill quotes 17 per-lane values (2026-08-10 round-10).
+for d in benchmark_results .superpowers documents mlflow.db search-tree-states.drawio \
+         cat-lineage-growth.drawio .claude/skills/kaggle-agent-self-improvement; do
   [ -e "$d" ] || continue
   move "$d"; total=$((total+1))
 done

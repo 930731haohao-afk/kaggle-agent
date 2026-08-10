@@ -1,8 +1,8 @@
 """Comp-agnostic v5 arm builder — driven by the dossier's typed injection operators.
 
-Replaces the column-only `make_s3e19_v5_variant.py`: that builder could express exactly
+Replaces the column-only `make_one competition_v5_variant.py`: that builder could express exactly
 one operator (`join_feature`) and so silently truncated a correct `ratio_target` judgment
-into a plain feature join, which a GBDT cannot extrapolate (s3e19: 2022 predicted at 0.96x
+into a plain feature join, which a GBDT cannot extrapolate (one competition: 2022 predicted at 0.96x
 the 2021 level, 48.24 SMAPE, while the experience library already held the ratio recipe
 worth -2.6 SMAPE). Here the operator set drives both the data and the target.
 
@@ -39,9 +39,9 @@ def _slug(comp: str) -> str:
 
 
 BASE = {
-    "playground-series-s3e19": ("eval_s3e19", "id"),
-    "tabular-playground-series-sep-2022": ("eval_sep22", "row_id"),
-    "playground-series-s5e1": ("eval_s5e1", "id"),
+    "playground-series-one competition": ("eval_one competition", "id"),
+    "tabular-playground-series-sep-2022": ("eval_one competition", "row_id"),
+    "playground-series-one competition": ("eval_one competition", "id"),
 }
 
 

@@ -87,7 +87,7 @@ for validated cross-competition insights (indexed by metric/data-type, each entr
 Apply what transfers; log new validated insights back into it after major score changes.
 
 **RETRIEVAL GATE (binding, 2026-07-31).** Before creating any NEW experiment, run
-`knowledge/query_library.py --query <metric/data-type/idea terms>` and record the query terms in
+`knowledge/query_library.py --query <metric/data-type/idea terms> --comp <competition-slug>` and record the query terms in
 the experiment's `library_query` field (and top hits, or the literal string `none`, in
 `library_hits`). An experiment record without a `library_query` trace is invalid;
 `query_library.py --audit <experiments.json>` checks this. Why binding: on a benchmark

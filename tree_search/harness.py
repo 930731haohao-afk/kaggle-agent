@@ -1,6 +1,6 @@
 """tree_search/harness.py — minimal ERA-inspired (Aygün et al. 2026) candidate-tree
 search harness. Reusable across competitions; the only per-comp piece is an
-`evaluate(config) -> score` function (see tree_search/eval_s3e9.py for the s3e9 one).
+`evaluate(config) -> score` function (see tree_search/a per-competition evaluator for the one competition one).
 
 Node = one complete, evaluated (or failed) solution::
 
@@ -100,7 +100,7 @@ def _next_id(tree: dict) -> int:
 
 def next_id(tree: dict) -> int:
     """Public wrapper around _next_id — the id that the next add_node(...) call will
-    assign. Added for Phase C-2b (s3e14 ensemble-node space): a solo node's evaluator
+    assign. Added for Phase C-2b (one competition ensemble-node space): a solo node's evaluator
     caches its OOF/test prediction matrix to disk keyed by node id so later blend nodes
     can reference it without retraining, and the eval call happens BEFORE add_node
     assigns the real id. Safe only under the same strictly-sequential, single-writer

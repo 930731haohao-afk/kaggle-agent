@@ -70,42 +70,77 @@ EXEMPT_PREFIXES = (
 MAX_BYTES = 64 * 1024 * 1024
 BINARY_SNIFF = 8 * 1024 * 1024     # how much of a large file is searched
 
-# A score. 3 decimals, not 4: the report that defeated the round-8 gate wrote 0.955 / 0.790 /
-# 8.729, and three decimals is already past anything a data description states in passing.
+# A score, two ways. Precision alone is the wrong axis -- what makes a number a score is
+# the metric word beside it, and MAE ~340 / SMAPE ~48.24 are routinely written with 0-2
+# decimals (2026-08-10 round-10). So: 3+ decimals anywhere, OR any number adjacent to a
+# metric word.
 SCORE = re.compile(r"\b\d+\.\d{3,}\b")
+METRIC = (r"cv|oof|lb|leaderboard|score|auc|roc[_ ]?auc|rmsle|rmse|mae|mape|smape|kappa|qwk|"
+          r"r2|accuracy|logloss|mcrmse|private|public")
+# ADJACENT, not merely same-line: "MAE 340" and "SMAPE 48.24" are scores; `random_state=42`
+# and a 2022 in a competition name are not, and a same-line rule called both a score.
+SCORE_NEAR_METRIC = re.compile(
+    rf"(?:\b(?:{METRIC})\b[^\w\n]{{0,4}}(\d+(?:\.\d+)?)\b)"
+    rf"|(?:\b(\d+(?:\.\d+)?)[^\w\n]{{0,4}}\b(?:{METRIC})\b)", re.I)
 # Leaderboard language leaks even with no number attached.
 LB = re.compile(r"private\s+(?:lb|leaderboard)|public\s+(?:lb|leaderboard)"
                 r"|(?<![\w.])champion_metric(?![\w])|private\s+(?:mape|smape|rmse|auc)",
                 re.I)
-# How far apart a competition name and a score may be before they stop being about
-# each other. A table header is 1-3 lines from its rows; a docstring is hundreds of
-# lines from a hyper-parameter constant.
+# How far apart a competition name and a score may be before they stop being about each
+# other. A table header is 1-3 lines from its rows; a docstring is hundreds of lines from a
+# hyper-parameter constant.
 WINDOW = 10
-# Numbers that are code, not results: a hyper-parameter grid ([0.001, 0.003, 0.01, ...]), a
-# coordinate-descent step tuple, or an ALL_CAPS constant. Without this the 3-decimal
-# threshold turns every search space in a pinned evaluator into a finding.
-_NUM_SEQ = re.compile(r"[\[(]\s*-?\d+(?:\.\d+)?(?:\s*,\s*-?\d+(?:\.\d+)?)+\s*[\])]")
-_CONST = re.compile(r"^\s*[A-Z][A-Z0-9_]{2,}\s*=\s*-?\d+\.\d+\s*(?:#.*)?$")
-
-
+# A file that names a competition and carries this many HIGH-PRECISION values anywhere is a
+# result table however it is laid out -- a legend at the top and rows below defeats any
+# proximity rule, and that is the most natural way to write one (round 10).
+TABLE_SCORES = 3
+# Numbers that are code, not results: a hyper-parameter grid of three or more values.
+_NUM_SEQ = re.compile(r"[\[(]\s*-?\d+(?:\.\d+)?(?:\s*,\s*-?\d+(?:\.\d+)?){2,}\s*[\])]")
+# a continuation line of a multi-line grid: only numbers, and three or more of them, so the
+# two-line "name / single indented value" listing is still seen
 _SEQ_CONT = re.compile(r"^[\s\-0-9.,()\[\]]+:?\)?:?$")
+# An ALL_CAPS constant is code -- unless the constant's own NAME carries a competition, which
+# is exactly the `S5E1_PRIVATE = 0.06253` shape (round 10).
+_CONST = re.compile(r"^\s*([A-Z][A-Z0-9_]{2,})\s*=\s*-?\d+\.\d+\s*(?:#.*)?$")
 
 
 def _score_in(line: str):
-    """The first score-looking number on `line` that is not plainly code."""
-    if _CONST.match(line) or (line.strip() and _SEQ_CONT.match(line)):
+    """(match, strong) for the first score-looking number on `line`, else None.
+
+    Strong = 3+ decimal places, the shape nothing states in passing. Weak = any number
+    sitting against a metric word, which is how large-scale metrics get written. Round 9
+    suppressed whole lines that looked like code (ALL_CAPS constants, bare numeric lines);
+    that swallowed `S5E1_PRIVATE = 0.06253` and the universal two-line "name / indented
+    value" listing, so only genuine multi-value grids are excluded now (round 10).
+    """
+    if _SEQ_CONT.match(line) and len(re.findall(r"\d+\.\d+", line)) >= 3:
+        return None
+    mc = _CONST.match(line)
+    if mc and not re.search(r"(?<![0-9A-Z])(S\d+E\d+|AFSIS|CONWAY|CITD)(?![0-9A-Z])",
+                            mc.group(1)):
         return None
     spans = [m.span() for m in _NUM_SEQ.finditer(line)]
+
+    def outside(m):
+        return not any(a <= m.start() and m.end() <= b for a, b in spans)
+
     for m in SCORE.finditer(line):
-        if not any(a <= m.start() and m.end() <= b for a, b in spans):
-            return m
+        if outside(m):
+            return m, True
+    for m in SCORE_NEAR_METRIC.finditer(line):
+        if not outside(m):
+            continue
+        num = next(g for g in m.groups() if g)
+        # a weak hit must at least look like a measurement: 2+ decimals, or 3+ digits
+        if re.fullmatch(r"\d+\.\d{2,}", num) or re.fullmatch(r"\d{3,}", num):
+            return m, False
     return None
 
-# Hand-written display names the slug rules cannot derive. Each maps to its slug.
+
+# Hand-written short forms the slug rules cannot derive.
 DISPLAY_NAMES = {
     "afsis": "afsis-soil-properties",
-    "cat in the dat": "cat-in-the-dat", "cat-in-the-dat": "cat-in-the-dat",
-    "citd": "cat-in-the-dat",
+    "cat in the dat": "cat-in-the-dat", "citd": "cat-in-the-dat",
     "conway": "conway-s-reverse-game-of-life",
     "reverse game of life": "conway-s-reverse-game-of-life",
     "tps jan 2022": "tabular-playground-series-jan-2022",
@@ -113,9 +148,35 @@ DISPLAY_NAMES = {
     "tps aug 2022": "tabular-playground-series-aug-2022",
     "tpsaug22": "tabular-playground-series-aug-2022",
     "tps sep 2022": "tabular-playground-series-sep-2022",
-    "tpssep22": "tabular-playground-series-sep-2022",
-    "sep22": "tabular-playground-series-sep-2022",
+    "tpssep22": "tabular-playground-series-sep-2022", "sep22": "tabular-playground-series-sep-2022",
 }
+
+
+def _titles_from_configs(root: str, comp: str) -> set[str]:
+    """Human titles for `comp`, read from its own config.yaml.
+
+    A hand-written abbreviation list covered no competition's actual TITLE -- "Crab Age
+    Dataset", "Africa Soil Property Prediction Challenge" -- while the run root ships
+    config.yaml as the decoder ring that lets a reader join those titles to a slug
+    (2026-08-10 round-10). Deriving them from the same file closes the gap and cannot go
+    stale.
+    """
+    out: set[str] = set()
+    cfg = os.path.join(root, "competitions", comp, "config.yaml")
+    if not os.path.exists(cfg):
+        return out
+    for line in open(cfg, encoding="utf-8", errors="replace").read().splitlines():
+        m = re.match(r"\s*(title|name|description)\s*:\s*(.+?)\s*$", line)
+        if not m:
+            continue
+        val = m.group(2).strip().strip('"\'')
+        for phrase in re.findall(r"[A-Z][\w'-]*(?:\s+[A-Z0-9][\w'-]*){1,5}", val):
+            if len(phrase) >= 12:
+                out.add(phrase)
+        m2 = re.search(r"\(([^)]{8,60})\)", val)
+        if m2:
+            out.add(m2.group(1).strip())
+    return out
 
 
 def benchmark_slugs(root: str) -> dict[str, re.Pattern]:
@@ -141,6 +202,8 @@ def benchmark_slugs(root: str) -> dict[str, re.Pattern]:
         for name, slug in DISPLAY_NAMES.items():
             if slug == c:
                 forms.add(rf"(?<![0-9a-z]){re.escape(name)}(?![0-9a-z])")
+        for title in _titles_from_configs(root, c):
+            forms.add(re.escape(title))
         out[c] = re.compile("|".join(sorted(forms)), re.I)
     return out
 
@@ -163,7 +226,24 @@ def archive_plan(root: str) -> set[str]:
 # sitting in data/). data_official/ is the same set from the other side: every entry of
 # bench-comps/<comp>/data is a symlink INTO it. Scanning 1.4 GB of raw competition data on
 # every gate run buys nothing.
-_OFFICIAL_DATA = re.compile(r"^competitions/[^/]+/(data|data_official)/")
+_OFFICIAL_DATA = re.compile(r"^competitions/([^/]+)/(?:data|data_official)/(.+)$")
+
+
+def _is_official_file(rel: str) -> bool:
+    """True only for a data file whose NAME is in that competition's clean root.
+
+    A prefix exemption was a hole the run itself writes into: the pinned evaluators read
+    competitions/<comp>/data/train_processed.csv, which Stage 2 writes there, and the gate
+    runs once before lane 1 of 20 in a shared root -- so a leftover from an aborted attempt
+    at the same competition sat in an exempt directory (2026-08-10 round-10). Membership in
+    the Kaggle-manifest-verified clean root is the actual mechanism; check it.
+    """
+    m = _OFFICIAL_DATA.match(rel)
+    if not m:
+        return False
+    comp, tail = m.group(1), m.group(2)
+    root = os.path.join(CLEAN_DATA_ROOT, comp, "data")
+    return os.path.exists(os.path.join(root, tail))
 
 
 # Machine-generated caches, exempt wherever they appear (tree_search/__pycache__/ is not
@@ -172,7 +252,7 @@ EXEMPT_DIR_NAMES = {"__pycache__", ".ruff_cache", ".pytest_cache", ".mypy_cache"
 
 
 def is_exempt(rel: str) -> bool:
-    if _OFFICIAL_DATA.match(rel):
+    if _is_official_file(rel):
         return True
     if EXEMPT_DIR_NAMES.intersection(rel.split("/")):
         return True
@@ -185,14 +265,13 @@ def under_plan(rel: str, plan: set[str]) -> bool:
     return any(rel.startswith(p + "/") for p in plan)
 
 
-def _read(path: str) -> tuple[str, bool] | None:
-    """Text if we can get it, else a lossy decode of the head. None only on an OS error.
+def _read(path: str) -> tuple[str, bool, bool] | None:
+    """(text, is_binary, truncated) — or None if the file could not be opened.
 
-    Extension whitelists were the round-8 gate's largest hole: .db, .csv, .html and
-    extensionless files were never opened, which is exactly where mlflow.db's 284 runs and
-    the sibling tree's .out lane logs lived. Everything gets looked at now; unparseable
-    bytes are searched as latin-1 over the first BINARY_SNIFF bytes, which is enough to
-    find a slug next to a score in a SQLite page or a CSV header.
+    UTF-16 was invisible to every rule: it decodes under latin-1 as NUL-interleaved
+    characters, so no slug matched and the file returned before even reaching the binary
+    rule (2026-08-10 round-10). BOM-marked UTF-16 is now decoded properly, and a
+    NUL-interleaved body is retried as UTF-16 before being called binary.
     """
     try:
         size = os.path.getsize(path)
@@ -203,11 +282,27 @@ def _read(path: str) -> tuple[str, bool] | None:
             raw = fh.read(BINARY_SNIFF if size > BINARY_SNIFF else size)
     except OSError:
         return None
-    binary = b"\x00" in raw[:8192]
+    truncated = size > BINARY_SNIFF
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        try:
+            return raw.decode("utf-16"), False, truncated
+        except UnicodeDecodeError:
+            pass
+    head = raw[:8192]
+    if b"\x00" in head:
+        # every other byte NUL is UTF-16 text, not a binary artifact
+        nul_even = head[1::2].count(0)
+        nul_odd = head[0::2].count(0)
+        if max(nul_even, nul_odd) > len(head) // 4:
+            for enc in ("utf-16-le", "utf-16-be"):
+                try:
+                    return raw.decode(enc), False, truncated
+                except UnicodeDecodeError:
+                    continue
     try:
-        return raw.decode("utf-8"), binary
+        return raw.decode("utf-8"), b"\x00" in head, truncated
     except UnicodeDecodeError:
-        return raw.decode("latin-1", errors="replace"), True
+        return raw.decode("latin-1", errors="replace"), True, truncated
 
 
 def scan_file(path: str, rel: str, slugs: dict[str, re.Pattern]) -> list[str]:
@@ -224,7 +319,7 @@ def scan_file(path: str, rel: str, slugs: dict[str, re.Pattern]) -> list[str]:
     got = _read(path)
     if got is None:
         return []
-    text, binary = got
+    text, binary, _trunc = got
     lines = text.splitlines()
     named: dict[str, list[int]] = {}
     for i, line in enumerate(lines, 1):
@@ -233,13 +328,29 @@ def scan_file(path: str, rel: str, slugs: dict[str, re.Pattern]) -> list[str]:
                 named.setdefault(comp, []).append(i)
     if not named:
         return []
-    signals = []
+    signals, strong = [], []
     for i, ln in enumerate(lines, 1):
-        m = _score_in(ln) or LB.search(ln)
+        got = _score_in(ln)
+        if got:
+            m, is_strong = got
+            signals.append((i, m.group(0).strip()))
+            if is_strong:
+                strong.append((i, m.group(0)))
+            continue
+        m = LB.search(ln)
         if m:
             signals.append((i, m.group(0)))
+            strong.append((i, m.group(0)))
+    if binary:
+        # Unconditional now: round 9 fired this only when the file had NO signal anywhere,
+        # so one unrelated decimal (a version string, a timestamp) turned a hard finding
+        # into silence (round 10).
+        first = min(named, key=lambda c: named[c][0])
+        return [f"{rel}:{named[first][0]}: {first} :: BINARY artifact naming a benchmark "
+                f"competition — cannot be cleared by inspection; keep it out of the run "
+                f"root or justify it explicitly"]
     if not signals:
-        if binary:
+        if False:
             # A binary artifact naming a competition cannot be cleared by reading it:
             # mlflow.db stores its 284 runs' metrics as SQLite REALs, so the slug shows in
             # the page text and the score does not. Unverifiable is not clean (round 9).
@@ -248,6 +359,15 @@ def scan_file(path: str, rel: str, slugs: dict[str, re.Pattern]) -> list[str]:
                     f"competition — cannot be cleared by inspection; keep it out of the run "
                     f"root or justify it explicitly"]
         return []
+    # A legend at the top and a sorted table below defeats any proximity rule, and it is the
+    # most natural way to write a multi-lane result table (round 10). If the file names a
+    # competition at all and carries TABLE_SCORES score-shaped numbers, the layout does not
+    # matter.
+    if len(strong) >= TABLE_SCORES:
+        first = min(named, key=lambda c: named[c][0])
+        return [f"{rel}:{named[first][0]}: {first} :: {len(strong)} high-precision values in "
+                f"one file naming a benchmark competition (first at line {strong[0][0]}: "
+                f"{strong[0][1]}) — a result table, whatever its layout"]
     hits = []
     for comp in sorted(named, key=lambda c: named[c][0]):
         best = None
@@ -320,10 +440,16 @@ def main(argv: list[str]) -> int:
             except OSError as exc:
                 skipped.append(f"{rel} (unstatable: {exc})")
                 continue
-            if size > MAX_BYTES:
-                skipped.append(f"{rel} ({size // 1024 // 1024} MB > "
-                               f"{MAX_BYTES // 1024 // 1024} MB cap — only the first "
-                               f"{BINARY_SNIFF // 1024} KB would be searched)")
+            if size > BINARY_SNIFF:
+                # round 9 only reported files past MAX_BYTES, but _read stops at
+                # BINARY_SNIFF, so everything in between was searched partially and
+                # certified whole (round 10).
+                skipped.append(f"{rel} ({size // 1024 // 1024} MB — only the first "
+                               f"{BINARY_SNIFF // 1024 // 1024} MB was searched)")
+            got = _read(full)
+            if got is None:
+                skipped.append(f"{rel} (could not be opened)")
+                continue
             n_files += 1
             findings += scan_file(full, rel, slugs)
 
