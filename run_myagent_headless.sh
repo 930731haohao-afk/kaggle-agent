@@ -22,7 +22,9 @@
 set -uo pipefail
 
 REPO=/home/tjyen/ai_agents/kaggle
-RUN_ROOT=${RUN_ROOT:-/home/tjyen/ai_agents/myagent-rerun}
+# NOT under ~/ai_agents: MASTER_TODO.md and LANE_CLAIMS.md there carry the all-20
+# public/private table, one `..` from where this used to default (round 11).
+RUN_ROOT=${RUN_ROOT:-/home/tjyen/benchruns/myagent-rerun}
 BASE=$RUN_ROOT
 NV_MARKER=/home/tjyen/ai_agents/nvidia-kaggle-runs/RUN_READY_STATUS.md
 AIDE_MARKER=/home/tjyen/ai_agents/aideml-runs/PHASE9A_STATUS.md
@@ -30,6 +32,11 @@ STATUS=$BASE/MYAGENT_LANES_STATUS.md
 # Aborted attempts are moved here — OUTSIDE the run root, so a relaunched lane cannot read
 # what its previous attempt scored, while the operator keeps every byte of it.
 ATTEMPTS=${ATTEMPTS:-$RUN_ROOT.attempts}
+# Each lane gets its OWN transcript directory, bound over ~/.claude/projects inside the
+# sandbox. The lane's transcript survives on real disk (it is the evidence for the post-run
+# audit of what each lane actually opened), while the existing transcripts — and any sibling
+# lane's — stay invisible to it.
+TRANSCRIPTS=${TRANSCRIPTS:-$RUN_ROOT.transcripts}
 CLAUDE=/home/tjyen/.local/bin/claude
 PER_COMP_SECS=21600         # 6 h safety net — original method was uncapped; observed singles 0.4-4 h, so the cap must sit above the max, not inside the range
 STALL_MIN=30                # kill a session that has written nothing for this long — longest observed legitimate quiet gap is a single training epoch, well under this
@@ -90,6 +97,8 @@ for c in $COMPS; do
   python3 "$REPO/benchmark_infra/quarantine_partial_attempt.py" \
       --root "$RUN_ROOT" --comp "$c" --dest "$ATTEMPTS" >> "$STATUS" 2>&1 || {
     log "REFUSING to start $c: could not clear its aborted attempt"; continue; }
+  # ...including the transcript of that attempt, which records its scores turn by turn.
+  [ -d "$TRANSCRIPTS/$c" ] && mv "$TRANSCRIPTS/$c" "$ATTEMPTS/$c.transcript.$(date +%s)"
 
   # Hold the machine for exactly one competition, then hand it on. The upstream-marker wait
   # above establishes ordering; this makes non-overlap a mechanism rather than a convention
@@ -128,9 +137,16 @@ Work autonomously; never ask questions; take documented fallbacks when blocked."
   # So a stall requires BOTH: no file written under the workspace for STALL_MIN AND no CPU
   # consumed by the process tree across the check interval. Training always burns CPU;
   # a dead stream never does.
-  ( cd "$BASE" && timeout $PER_COMP_SECS "$CLAUDE" -p "$PROMPT" \
-      --dangerously-skip-permissions \
-      > "competitions/$c/headless_run.log" 2>&1 ) &
+  # Through the sandbox, always. Round 10 made the run root credential-free and stripped the
+  # submit routes from the skill; round 11 showed the lane never ran in the root's
+  # environment. ~/.bashrc exports a live KAGGLE_API_TOKEN into every Bash tool call,
+  # ~/.kaggle/huang_token is the account that submitted every competition for all three
+  # lanes, ~/ai_agents holds the all-20 public/private table, and ~/.claude/projects holds
+  # 1050 transcripts naming a benchmark competition. None of that is reachable by redaction.
+  ( LANE_TRANSCRIPTS="$TRANSCRIPTS/$c" \
+    timeout $PER_COMP_SECS bash "$REPO/benchmark_infra/lane_sandbox.sh" \
+      "$CLAUDE" -p "$PROMPT" --dangerously-skip-permissions \
+      > "$BASE/competitions/$c/headless_run.log" 2>&1 ) &
   run_pid=$!
 
   (

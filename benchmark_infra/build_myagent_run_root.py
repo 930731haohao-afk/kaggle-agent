@@ -47,7 +47,12 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-DEFAULT_ROOT = os.path.join(os.path.expanduser("~"), "ai_agents/myagent-rerun")
+# NOT under ~/ai_agents. This file's own header names that directory as one of the five leak
+# surfaces that justified moving the run out of the repo -- MASTER_TODO.md and LANE_CLAIMS.md
+# carry the all-20 public/private table -- and then the default put the run root one `..`
+# from it, while the gate only ever walks INSIDE --root (round 11). A neutral parent holding
+# nothing but run roots is the point, and _check_parent below enforces it.
+DEFAULT_ROOT = os.path.join(os.path.expanduser("~"), "benchruns/myagent-rerun")
 CLEAN_DATA = os.path.join(os.path.expanduser("~"), "ai_agents/bench-comps")
 
 # --- the allowlist ----------------------------------------------------------------------
@@ -156,6 +161,36 @@ def _materialize_data(src_dir: str, dst_dir: str) -> None:
             os.link(src, dst)
         except OSError:
             shutil.copy2(src, dst)
+
+
+def _check_parent(root: str) -> list[str]:
+    """The builder is the only thing that ever looks OUTSIDE the run root.
+
+    verify_clean_slate.py is a single os.walk(root), so nothing above the root is examined,
+    ever. That is why the default root sitting inside ~/ai_agents went unnoticed for two
+    rounds while MASTER_TODO.md, one `..` away, carried the all-20 public/private table
+    (round 11). A lane is separated from the parent directory by prose alone, and rounds 1-4
+    established that prose is not a boundary.
+
+    Files directly in the parent only: a recursive scan would walk sibling run roots, and
+    those are checked by their own gate.
+    """
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import verify_clean_slate as gate
+
+    parent = os.path.dirname(os.path.abspath(root))
+    slugs = gate.benchmark_slugs(REPO)
+    out = []
+    try:
+        entries = sorted(os.listdir(parent))
+    except OSError:
+        return out
+    for name in entries:
+        full = os.path.join(parent, name)
+        if not os.path.isfile(full) or os.path.islink(full):
+            continue
+        out += [f"../{f}" for f in gate.scan_file(full, name, slugs)]
+    return out
 
 
 def _write_baseline(root: str) -> None:
@@ -267,6 +302,18 @@ and it is the one thing you must not undo:
 
 
 def build(root: str, write: bool) -> int:
+    parent_leaks = _check_parent(root)
+    if parent_leaks:
+        print(f"REFUSING: {os.path.dirname(os.path.abspath(root))} — the run root's own "
+              f"parent directory states a benchmark competition's result, and a lane reaches "
+              f"it with one `..`. The gate never looks outside --root.\n", file=sys.stderr)
+        for f in parent_leaks[:10]:
+            print("  " + f, file=sys.stderr)
+        if len(parent_leaks) > 10:
+            print(f"  ... {len(parent_leaks) - 10} more", file=sys.stderr)
+        print(f"\nBuild into a directory whose parent holds nothing but run roots "
+              f"(default: {DEFAULT_ROOT}).", file=sys.stderr)
+        return 4
     steps = plan(root)
     if write:
         if os.path.exists(root):

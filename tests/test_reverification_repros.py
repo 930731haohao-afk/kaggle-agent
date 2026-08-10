@@ -2467,3 +2467,93 @@ class TestRound11:
         assert r.returncode == 0 and str(probe) in r.stdout, (
             "the timestamp form the watchdog uses must actually match a fresh file on this "
             f"machine's find:\nrc={r.returncode}\n{r.stdout}\n{r.stderr}")
+
+    # ------------------------------------------------------- the real boundary
+    #
+    # Round 10 made the run root credential-free and stripped the submit routes from the
+    # copied skill. But a lane does not run in the root's environment -- it runs in the
+    # operator's login shell, where ~/.bashrc exports KAGGLE_API_TOKEN unconditionally,
+    # ~/.kaggle/huang_token (the account holding EVERY benchmark submission for ALL THREE
+    # lanes) is one `cat` away, and `kaggle` is on PATH. `kaggle competitions submissions
+    # <comp>` takes the competition positionally, so the stripped literal was not even the
+    # required form. A stripped LINE is not a stripped CAPABILITY (round 11).
+    #
+    # Two more surfaces sit outside the root at fixed paths: ~/ai_agents/, whose MASTER_TODO
+    # and LANE_CLAIMS hold the all-20 public/private table one `..` from the default root;
+    # and ~/.claude/projects/, whose session transcripts are not the memory directory round
+    # 10 disabled -- 1050 of them name a benchmark competition.
+    #
+    # None of this is reachable by prose or by redaction. It is a filesystem boundary or it
+    # is nothing.
+
+    def test_default_run_root_is_not_a_child_of_the_benchmark_directory(self):
+        src = open(os.path.join(REPO, "benchmark_infra/build_myagent_run_root.py"),
+                   encoding="utf-8").read()
+        line = next(ln for ln in src.splitlines() if ln.startswith("DEFAULT_ROOT"))
+        assert "ai_agents" not in line, (
+            "the builder's own header names ~/ai_agents/ as one of the five leak surfaces "
+            "that justified moving the run out of the repo, and then defaulted the root to "
+            f"a child of it; the gate only ever walks INSIDE --root:\n  {line}")
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        rl = next(ln for ln in launcher.splitlines() if ln.startswith("RUN_ROOT="))
+        assert "ai_agents" not in rl, rl
+
+    def test_builder_refuses_a_root_whose_parent_holds_a_result(self, tmp_path):
+        import subprocess
+        parent = tmp_path / "runs"
+        parent.mkdir()
+        (parent / "MASTER_TODO.md").write_text(
+            "| comp | public | private |\n| playground-series-s3e16 | 1.34315 | 1.33859 |\n")
+        r = subprocess.run([sys.executable, "benchmark_infra/build_myagent_run_root.py",
+                            "--write", "--root", str(parent / "rr")],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode != 0, (
+            "a run root one `..` from a results table is the round-9 boundary error "
+            "repeated; the builder is the only thing that ever sees the parent:\n"
+            + (r.stdout + r.stderr)[-600:])
+        assert "MASTER_TODO.md" in (r.stdout + r.stderr)
+
+    def test_sandbox_hides_every_out_of_root_surface(self, tmp_path):
+        """The wrapper is the boundary; assert it against a real bwrap, not by reading it."""
+        import subprocess
+        wrapper = os.path.join(REPO, "benchmark_infra/lane_sandbox.sh")
+        assert os.path.exists(wrapper), "no sandbox wrapper"
+        root = tmp_path / "rr"
+        (root / "competitions").mkdir(parents=True)
+        probe = ("import os;"
+                 "print('kaggle_dir', sorted(os.listdir(os.path.expanduser('~/.kaggle'))) "
+                 "if os.path.isdir(os.path.expanduser('~/.kaggle')) else 'ABSENT');"
+                 "print('projects', sorted(os.listdir(os.path.expanduser('~/.claude/projects')))"
+                 " if os.path.isdir(os.path.expanduser('~/.claude/projects')) else 'ABSENT');"
+                 "print('ai_agents', sorted(os.listdir(os.path.expanduser('~/ai_agents')))"
+                 " if os.path.isdir(os.path.expanduser('~/ai_agents')) else 'ABSENT');"
+                 "print('token', os.environ.get('KAGGLE_API_TOKEN', 'UNSET'));"
+                 "print('root_writable', os.access(os.getcwd(), os.W_OK))")
+        env = dict(os.environ, RUN_ROOT=str(root), KAGGLE_API_TOKEN="KGAT_sentinel",
+                   LANE_TRANSCRIPTS=str(tmp_path / "transcripts"))
+        # NOT sys.executable: that is the repo's own .venv, which lives under ~/ai_agents and
+        # the sandbox blanks — correctly, since the repo is the thing being kept out.
+        r = subprocess.run(["bash", wrapper, "/usr/bin/python3", "-c", probe],
+                           capture_output=True, text=True, env=env, check=False)
+        assert r.returncode == 0, r.stdout + r.stderr
+        out = dict(ln.split(" ", 1) for ln in r.stdout.strip().splitlines())
+        assert out["kaggle_dir"] in ("ABSENT", "[]"), (
+            "~/.kaggle holds the account that submitted every competition for all three "
+            f"lanes: {out['kaggle_dir']}")
+        assert out["projects"] in ("ABSENT", "[]"), (
+            f"session transcripts name the competitions and their scores: {out['projects']}")
+        assert out["ai_agents"] in ("ABSENT", "[]"), (
+            f"~/ai_agents holds the all-20 public/private table: {out['ai_agents']}")
+        assert out["token"] == "UNSET", (
+            f"the lane inherited a live Kaggle token: {out['token'][:12]}")
+        assert out["root_writable"] == "True", "the lane must be able to write its own root"
+
+    def test_launcher_runs_every_lane_through_the_sandbox(self):
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        assert "lane_sandbox.sh" in src, "lanes must start inside the sandbox"
+        invoke = next(ln for ln in src.splitlines() if '-p "$PROMPT"' in ln)
+        i_line = src.index(invoke)
+        i_sandbox = src.index("lane_sandbox.sh")
+        assert i_sandbox < i_line, (
+            f"the wrapper must precede the agent it wraps:\n{invoke}")
+        assert "$CLAUDE" in invoke and "--dangerously-skip-permissions" in invoke
