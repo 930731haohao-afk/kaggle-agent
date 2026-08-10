@@ -44,6 +44,7 @@ _REPO_ROOT = os.path.dirname(_HERE)
 _COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "afsis-soil-properties")
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
+import stage2_inputs  # noqa: E402
 import harness_v3 as hv3  # noqa: E402
 
 CACHE_DIR = os.path.join(_HERE, "cache_afsis")
@@ -57,7 +58,10 @@ os.environ.setdefault("OMP_NUM_THREADS", str(N_THREADS))
 os.environ.setdefault("OPENBLAS_NUM_THREADS", str(N_THREADS))
 os.environ.setdefault("MKL_NUM_THREADS", str(N_THREADS))
 
-_D = np.load(FEATURES_NPZ)
+_D = np.load(stage2_inputs.require(
+    FEATURES_NPZ, comp="afsis-soil-properties", artifact="scripts/features.npz",
+    columns=["y (n_train x 5 targets)", "groups", "tr_raw", "te_raw"],
+    produced_by="Stage 2 spectral preprocessing"))
 _Y = _D["y"].astype(np.float64)              # (1157, 5)
 _GROUPS = _D["groups"]
 N_TRAIN, N_TARGETS = _Y.shape

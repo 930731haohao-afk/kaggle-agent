@@ -55,7 +55,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO_ROOT = os.path.dirname(_HERE)
 _COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "playground-series-s5e1")
 sys.path.insert(0, _HERE)
-import harness_v2 as hv2  # noqa: E402,F401  (imported for schema parity with the other evaluators)
+import harness_v2 as hv2  # noqa: E402
+import stage2_inputs  # noqa: E402,F401  (imported for schema parity with the other evaluators)
 import eval_support as esup  # noqa: E402
 
 DATA = os.path.join(_COMP_DIR, "data")
@@ -96,8 +97,17 @@ def _load_processed():
         te = pd.read_csv(te_path, parse_dates=["date"])
         print(f"eval_s5e1: loaded processed CSVs from disk, train={tr.shape} test={te.shape}")
         return tr, te
-    print("eval_s5e1: processed CSVs not found -- recomputing features via "
-          "scripts/features.py's pure functions")
+    if os.environ.get("KAGGLE_REPRO_ARTIFACTS") != "1":
+        # The fallback rebuilds features from competitions/<comp>/scripts/features.py --
+        # the RECORDED run's feature code, which the clean slate archives. A fresh lane
+        # reaching here has not written its own table yet; say so instead of importing a
+        # previous run's pipeline (2026-08-10 round-8).
+        stage2_inputs.require(
+            tr_path, comp="playground-series-s5e1", artifact="train_processed.csv",
+            columns=["date", "country", "store", "product", "the calendar and encoded "
+                     "categorical columns this run engineered"])
+    print("eval_s5e1: KAGGLE_REPRO_ARTIFACTS=1 -- recomputing features via the recorded "
+          "run's scripts/features.py pure functions (reproduction path)")
     sys.path.insert(0, os.path.join(_COMP_DIR, "scripts"))
     import features as feat_mod  # noqa: E402
     tr_raw = pd.read_csv(os.path.join(DATA, "train.csv"))

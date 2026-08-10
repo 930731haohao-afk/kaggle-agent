@@ -8,9 +8,12 @@
 # per competition. What a session loses by having no human is recoverable: the watchdog
 # flags stalls, and a dead session leaves its workspace for the next one to pick up.
 #
-# February leftovers are archived (.feb-archive) and data/ points at the manifest-verified
-# clean root, so a re-run cannot warm-start off its own old intermediates — the same rule
-# that voided AIDE's contaminated cells.
+# February leftovers are archived (.feb-archive). Before a benchmark re-run,
+# benchmark_infra/archive_workspaces_for_rerun.sh --execute clears every workspace down to
+# config.yaml + the official data files and then runs verify_clean_slate.py, so a re-run
+# cannot warm-start off its own old intermediates — the same rule that voided AIDE's
+# contaminated cells. Only 5 of the 20 workspaces symlink to the clean root; the other 15
+# are real directories that held the recorded run's own OOF matrices until round 8.
 #
 # Usage:  setsid nohup bash run_myagent_headless.sh > myagent_lanes.log 2>&1 < /dev/null &
 set -uo pipefail
@@ -72,7 +75,7 @@ for c in $COMPS; do
 
   PROMPT="You are running ONE benchmark competition with the kaggle-agent skill: $c.
 
-Work in competitions/$c/ (config.yaml present; data/ symlinks to the official files).
+Work in competitions/$c/ (config.yaml present; data/ holds the official competition files and nothing else — the workspace was archived to a clean slate before this run).
 
 Follow the kaggle-agent skill as written — read SKILL.md and its references and do what they say. Do not treat this prompt as the definition of the pipeline; the skill is. In particular the skill designates **tree search as the preferred Stage 4 optimisation loop** (references/07_tree_search.md, harness tree_search/harness_v3.py), to be entered once the linear Iteration Protocol has produced a baseline solo model plus at least one blend, with the linear protocol kept only as the first-pass fallback and for competitions where a ~60-node budget is not worth it. An earlier run of this benchmark listed the stages in the prompt and silently omitted tree search; every competition then finished in 5-32 minutes having never entered it, which is not this agent's method. If you judge a competition too cheap to justify the search, say so explicitly in STATUS.md with the reason.
 
@@ -81,7 +84,7 @@ Also per the skill: consult the experience library ONLY through its filtered too
 CRITICAL — run every training job in the FOREGROUND and wait for it. No '&', nohup or setsid, and never end a turn while a job is still running: this session ends the moment you stop calling tools, so a backgrounded job dies unfinished and the competition produces nothing. A previous conway attempt failed exactly this way. If a configuration would not finish in the budget, shrink it until it completes in the foreground.
 
 Constraints:
-- STRICT lane isolation: never read or reference anything under ~/ai_agents/aideml*, ~/ai_agents/nvidia-kaggle*, or other agents' outputs. Do not touch .feb-archive/ — it is a quarantined stale run.
+- STRICT lane isolation: never read or reference anything under ~/ai_agents/aideml*, ~/ai_agents/nvidia-kaggle*, or other agents' outputs. Do not touch .feb-archive/ or archive/ — they are quarantined records of previous runs, including this competition's own; reading them is reading the answer.
 - Machine is shared: cap threads at 10 (LightGBM num_threads, OMP). Fix seeds; deterministic=true, force_row_wise=true for LightGBM.
 - Budget: work at your normal pace; the pipeline decides when it is done (6 h hard safety net). A completed modest pipeline beats an unfinished ambitious one.
 - Finish by writing competitions/$c/submission.csv (columns/id order per sample_submission.csv) and a 3-line summary at the top of competitions/$c/STATUS.md with the final CV score.

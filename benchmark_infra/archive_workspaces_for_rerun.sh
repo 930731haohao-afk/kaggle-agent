@@ -42,9 +42,15 @@ COMPS=(
 )
 
 # Inside each workspace, KEEP (the run's inputs) vs ARCHIVE (the previous run's outputs).
-# data/ is kept: it symlinks to the manifest-verified clean root. config.yaml is kept.
-# rules_verdict.json is kept IF present -- it is a Stage 0.5 input, not an output.
+# config.yaml is kept. rules_verdict.json is kept IF present -- a Stage 0.5 input, not an
+# output. data/ is kept but PRUNED, not trusted wholesale: only 5 of the 20 workspaces
+# symlink to the manifest-verified clean root; the other 15 are real directories, and six of
+# them held the recorded run's own OOF/test prediction matrices, its Optuna champion
+# parameters and its engineered feature tables (2026-08-10 round-8). A file inside data/
+# survives only if the same name exists in ~/ai_agents/bench-comps/<comp>/data -- that root
+# IS the definition of "the competition's own inputs".
 KEEP_RE='^(data|config\.yaml|rules_verdict\.json)$'
+CLEAN_ROOT="$HOME/ai_agents/bench-comps"
 
 move() {  # move $1 under DEST preserving its relative path
   local src="$1" dst="${DEST}/$1"
@@ -57,7 +63,7 @@ move() {  # move $1 under DEST preserving its relative path
 }
 
 total=0
-echo "== 1/3 workspace artifacts =="
+echo "== 1/5 workspace artifacts =="
 for c in "${COMPS[@]}"; do
   ws="competitions/$c"
   [ -d "$ws" ] || { echo "MISSING $ws"; continue; }
@@ -66,6 +72,19 @@ for c in "${COMPS[@]}"; do
     [[ "$base" =~ $KEEP_RE ]] && continue
     move "$entry"; total=$((total+1))
   done < <(find "$ws" -mindepth 1 -maxdepth 1)
+  # data/ pruning: keep only what the clean root also has. Real directories only -- a
+  # symlinked data/ IS the clean root and must never be written through.
+  if [ -d "$ws/data" ] && [ ! -L "$ws/data" ]; then
+    if [ -d "$CLEAN_ROOT/$c/data" ]; then
+      while IFS= read -r f; do
+        base="$(basename "$f")"
+        [ -e "$CLEAN_ROOT/$c/data/$base" ] && continue
+        move "$f"; total=$((total+1))
+      done < <(find "$ws/data" -mindepth 1 -maxdepth 1)
+    else
+      echo "WARN  no clean root for $c -- data/ left untouched, inspect by hand"
+    fi
+  fi
   # derived workspaces of this competition (repeat runs, v5 arms, leftovers) go whole
   for d in competitions/"$c".* competitions/"$c"-v5-*; do
     [ -e "$d" ] || continue
@@ -73,7 +92,32 @@ for c in "${COMPS[@]}"; do
   done
 done
 
-echo "== 2/3 tree_search caches and generated arm evaluators =="
+echo "== 2/5 sibling workspaces and loose result files =="
+# Non-benchmark workspaces are not inputs to anything, and four of them hold verbatim
+# snapshots of the pre-redesign experience.md naming benchmark competitions with their own
+# scores -- including one Kaggle PRIVATE LB. The self-improvement skill prescribes scanning
+# `competitions/*/experiments.json`, and after this archive that glob resolves to exactly
+# those survivors (2026-08-10 round-8). They go whole.
+while IFS= read -r d; do
+  base="$(basename "$d")"
+  [ "$base" = "__pycache__" ] && { move "$d"; total=$((total+1)); continue; }
+  keep=0
+  for c in "${COMPS[@]}"; do
+    case "$base" in "$c"|"$c".*|"$c"-v5-*) keep=1; break;; esac
+  done
+  [ "$keep" = 1 ] && continue
+  move "$d"; total=$((total+1))
+done < <(find competitions -mindepth 1 -maxdepth 1 -type d)
+# Loose files at the root of competitions/ match none of the per-workspace patterns:
+# _batch_results.json and _batch.log are the recorded batch run's per-competition metric,
+# baseline score and winning blend weights for 8 lanes -- 7 of them byte-identical to the
+# frozen tier-1 reference the re-run is scored against.
+for f in competitions/_batch_results.json competitions/_batch.log; do
+  [ -e "$f" ] || continue
+  move "$f"; total=$((total+1))
+done
+
+echo "== 3/5 tree_search caches and generated arm evaluators =="
 for d in tree_search/cache_*; do
   [ -e "$d" ] || continue
   move "$d"; total=$((total+1))
@@ -85,7 +129,61 @@ for f in tree_search/eval_ratio_* tree_search/eval_featurejoin_* tree_search/eva
   move "$f"; total=$((total+1))
 done
 
-echo "== 3/3 launcher state =="
+echo "== 4/5 frozen per-competition tree-search artifacts =="
+# Round 6 demoted the dedicated run_<comp>_v3.py drivers because they embed their lane's
+# recorded champion. Their DATA siblings were never touched: llm_proposer_input_<slug>.json
+# carries that lane's champion metric AND champion config, 24-63 evaluated node scores, and
+# a pre-redesign snapshot of experience.md whose bullets cite the lane itself (one of them
+# quotes a Kaggle private LB). wire_<slug>_*.json exposes champion_metric as a top-level
+# key. Every lane enters tree_search/ to copy run_template_v3.py, so a file named for its
+# own competition sits in the listing (2026-08-10 round-8).
+for f in tree_search/llm_proposer_input_*.json tree_search/llm_proposals_*.json \
+         tree_search/wire_*.json; do
+  [ -e "$f" ] || continue
+  move "$f"; total=$((total+1))
+done
+
+echo "== 5/6 per-competition reproduction drivers and loose tree files =="
+# Round 6 un-pinned the dedicated run_<comp>_v3.py drivers from the manifest but left them in
+# the directory every lane enters to copy run_template_v3.py. They embed their competition's
+# recorded root config, champion parameters and digit-verify targets. Keep only the
+# competition-agnostic tools; the pinned evaluators (manifest 'eval') also stay, redacted.
+KEEP_TREE_TOOLS='^(run_template_v3|run_v3_generic|run_arm_search|run_faithful_v3|run_wire_v3)\.py$'
+mapfile -t PINNED_EVAL < <(python3 -c "
+import json
+print('\n'.join(sorted(s['eval'] for s in json.load(open('docs/rerun_manifest.json'))['competitions'].values())))")
+while IFS= read -r f; do
+  base="$(basename "$f")"
+  [[ "$base" =~ $KEEP_TREE_TOOLS ]] && continue
+  skip=0
+  for e in "${PINNED_EVAL[@]}"; do [ "$base" = "$e" ] && { skip=1; break; }; done
+  [ "$skip" = 1 ] && continue
+  move "$f"; total=$((total+1))
+done < <(find tree_search -mindepth 1 -maxdepth 1 -type f \
+           \( -name 'run_*.py' -o -name 'tree_*.json' -o -name 'smoke_*.json' \
+              -o -name 'report_*.json' -o -name '*_probe*.json' \
+              -o -name 'injection_bootstrap*.json' -o -name 'structural_probe.py' \) | sort)
+
+echo "== 6/6 the research record =="
+# docs/, benchmark_results/ and the plan files hold every competition's scores for all three
+# lanes -- the frozen references the re-run is measured against, the three-way tables, the
+# per-competition reports. Nothing in the kaggle-agent skill reads them during a run, and no
+# rule kept a lane out of them: they simply sat in the working tree (2026-08-10 round-8,
+# found by benchmark_infra/verify_clean_slate.py, which round 8's attackers did not reach).
+# Root STATUS.md got this treatment in round 7 for the same reason; instruction-only
+# protection is what kept failing.
+DOCS_KEEP='^(rerun_manifest\.json|reproducibility\.md)$'
+while IFS= read -r f; do
+  base="$(basename "$f")"
+  [[ "$base" =~ $DOCS_KEEP ]] && continue
+  move "$f"; total=$((total+1))
+done < <(find docs -mindepth 1 -maxdepth 1 | sort)
+for d in benchmark_results .superpowers; do
+  [ -e "$d" ] || continue
+  move "$d"; total=$((total+1))
+done
+
+echo "== launcher state =="
 for f in MYAGENT_LANES_STATUS.md myagent_lanes.log; do
   [ -e "$f" ] || continue
   move "$f"; total=$((total+1))
@@ -102,4 +200,12 @@ else
     echo "restore : mv the contents back to the repo root, preserving relative paths"
   } > "$DEST/ARCHIVE_MANIFEST.txt"
   echo "manifest -> $DEST/ARCHIVE_MANIFEST.txt"
+  echo
+  echo "== verifying the clean slate =="
+  # The glob lists above are the mechanism; this is the check. Five audit rounds running,
+  # a hand-maintained glob list missed a file the next round found.
+  python3 benchmark_infra/verify_clean_slate.py || {
+    echo "ARCHIVE INCOMPLETE — the re-run must not start until this passes." >&2
+    exit 3
+  }
 fi

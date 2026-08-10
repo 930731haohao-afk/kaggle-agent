@@ -24,7 +24,8 @@ from sklearn.linear_model import Ridge
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
-import harness_v2 as hv2
+import harness_v2 as hv2  # noqa: E402
+import stage2_inputs  # noqa: E402
 
 COMP = "/home/tjyen/ai_agents/kaggle/competitions/tabular-playground-series-sep-2022"
 CACHE_DIR = os.path.join(_HERE, "cache_tssep22_main")
@@ -50,9 +51,19 @@ def smape(y_true, y_pred):
 def _load():
     if _D:
         return _D
-    tr = pd.read_csv(f"{COMP}/data/train_processed.csv", parse_dates=["date"])
-    lvl = pd.read_csv(f"{COMP}/data/level_table.csv")
-    hol = pd.read_csv(f"{COMP}/data/holidays.csv", parse_dates=["date"])
+    C = "tabular-playground-series-sep-2022"
+    tr = pd.read_csv(stage2_inputs.require(
+        f"{COMP}/data/train_processed.csv", comp=C, artifact="train_processed.csv",
+        columns=["date", "country", "store", "product", "num_sold", "year", "doy365"]),
+        parse_dates=["date"])
+    lvl = pd.read_csv(stage2_inputs.require(
+        f"{COMP}/data/level_table.csv", comp=C, artifact="level_table.csv",
+        columns=["country", "year", "daily_level", "gdp_pc", "k_ratio"]))
+    hol = pd.read_csv(stage2_inputs.require(
+        f"{COMP}/data/holidays.csv", comp=C, artifact="holidays.csv",
+        columns=["date", "country", "holiday"],
+        produced_by="the external-data pipeline (external_data/apply.py) under this "
+                    "competition's own rules verdict"), parse_dates=["date"])
     hol["name"] = hol.holiday.str.replace(r"\s*\(.*\)", "", regex=True).str.strip()
     m = lvl.set_index(["country", "year"]).daily_level
     tr["daily_level_obs"] = [m[(c, y)] for c, y in zip(tr.country, tr.year)]

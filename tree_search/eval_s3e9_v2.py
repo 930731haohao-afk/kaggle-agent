@@ -214,6 +214,15 @@ def evaluate_solo(config):
 # members -- load + digit-for-digit RMSE recompute, no retraining, no timeout needed.
 # ---------------------------------------------------------------------------
 def load_legacy_solo(name: str, expected_rmse: float, tol: float = 2e-4):
+    # REPRODUCTION ONLY. These are the RECORDED run's trained solos: reusing them in a
+    # fresh benchmark lane is a warm start from that run's answer, and the digit-for-digit
+    # check below passes precisely BECAUSE the numbers are the recorded ones
+    # (2026-08-10 round-8).
+    if os.environ.get("KAGGLE_REPRO_ARTIFACTS") != "1":
+        raise ValueError(
+            "load_legacy_solo reuses a previous run's trained OOF/test vectors; a fresh "
+            "benchmark lane must train its own. Set KAGGLE_REPRO_ARTIFACTS=1 only when "
+            "reproducing the recorded tree.")
     if not os.path.exists(LEGACY_POOL_NPZ):
         raise ValueError(f"legacy pool cache {LEGACY_POOL_NPZ} not found -- cannot reuse, "
                           f"must retrain")

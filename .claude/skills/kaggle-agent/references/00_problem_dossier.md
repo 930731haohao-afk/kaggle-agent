@@ -38,7 +38,6 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
 
    ```bash
    python3 knowledge/task_priors_for.py <competition-slug>            # the priors you may use
-   python3 knowledge/task_priors_for.py <competition-slug> --report   # HOW MANY items were withheld (counts only)
    ```
 
    List every [TASK-*] entry whose trigger fits, from that output only. **There is no raw
@@ -47,8 +46,11 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    your competition's view — evidence from the competition being solved is excluded by exact
    set arithmetic, an entry whose admissible evidence empties is dropped whole (the Action
    line *is* the distilled answer), cross-agent evidence is never rendered, and aggregates are
-   recomputed from the surviving facts. If `--report` shows a nonzero count, that is the
-   mechanism working: you had no such prior before you solved that competition.
+   recomputed from the surviving facts. **Do not go looking for what the view does not
+   contain** — how much was withheld is deliberately not answerable from inside a run,
+   because knowing that a fact about you was removed is itself enough to reason about its
+   complement (2026-08-10 round-8). Whatever the view shows is the whole of what you had
+   before you solved this competition.
 4. Derive the split policy from the match (this pre-empts the shuffled-KFold-on-time-series
    trap: a controlled split experiment on a benchmark panel measured a 4.5× optimism bias from the forbidden split — see the filtered prior library's TASK-TS-FUTURE evidence).
 5. **Rules gate FIRST, before any external-data thinking.** A verdict may ALREADY be
@@ -127,8 +129,13 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    — **never `docs/preregistrations/` raw during a benchmark run.** The registration files
    carry an evidence table naming benchmark competitions with their private scores and
    winning forms, so a raw read hands a re-run of those competitions its own recorded answer
-   (2026-08-07 audit: this was the fourth unfiltered door). The filtered output keeps every
-   registered hypothesis and its protocol. Copy each open prediction into this dossier's
+   (2026-08-07 audit: this was the fourth unfiltered door). **An empty view is the ordinary
+   case, not a signal**: a registration renders whole or not at all, and it renders not-at-all
+   whenever your own competition is cited in its evidence — because then the hypothesis is
+   partly a statement about your own recorded outcome. Empty means no open registration
+   applies to you: say so in the dossier and move on. Do not ask what was hidden, do not
+   infer from the emptiness, and do not go looking for the registration elsewhere.
+   When the view is NOT empty, copy each open prediction into this dossier's
    `preregistration` field and commit it BEFORE any model is fitted or any leaderboard is
    consulted. The prediction never changes what runs — both forms still race.
 9. Write the dossier (schema below) to `competitions/<comp>/dossier.json`.

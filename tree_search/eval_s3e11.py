@@ -224,6 +224,12 @@ def evaluate_solo(config):
 # STATUS.md/experiments.json score -- no retraining, no signal timeout needed.
 # ---------------------------------------------------------------------------
 def load_legacy_solo(name: str, expected_rmsle: float, tol: float = 2e-4):
+    # REPRODUCTION ONLY -- see eval_s3e9_v2.load_legacy_solo (2026-08-10 round-8).
+    if os.environ.get("KAGGLE_REPRO_ARTIFACTS") != "1":
+        raise ValueError(
+            "load_legacy_solo reuses a previous run's trained OOF/test vectors; a fresh "
+            "benchmark lane must train its own. Set KAGGLE_REPRO_ARTIFACTS=1 only when "
+            "reproducing the recorded tree.")
     path = os.path.join(LEGACY_CACHE_DIR, f"{name}.npz")
     if not os.path.exists(path):
         raise ValueError(f"legacy cache {path} not found -- cannot reuse, must retrain")

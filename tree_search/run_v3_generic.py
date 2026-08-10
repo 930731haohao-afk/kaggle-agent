@@ -71,10 +71,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--comp", required=True, choices=EVAL_MOD)
     ap.add_argument("--nodes", type=int, default=24)
+    ap.add_argument("--reproduction", action="store_true",
+                    help="REQUIRED: acknowledge that this extends a RECORDED tree")
     ap.add_argument("--output", default=None,
                     help="tree file this run writes (default: experiments_tree_v3_gen.json "
                          "beside the source tree; the source tree is never modified)")
     args = ap.parse_args()
+    if not args.reproduction:
+        raise SystemExit(
+            "run_v3_generic.py is a REPRODUCTION tool, not a fresh-run driver: it seeds from "
+            "the committed experiments_tree_v3.json (that competition's recorded champion "
+            "pool) and reads llm_proposer_input_<comp>.json (its recorded champion plus a "
+            "pre-redesign snapshot of experience.md citing itself). A benchmark lane builds "
+            "its driver from tree_search/run_template_v3.py instead. Pass --reproduction if "
+            "you are genuinely extending a recorded tree (2026-08-10 round-8).")
     comp = args.comp
     ev = importlib.import_module(EVAL_MOD[comp])
     wl = json.load(open(os.path.join(_HERE, f"llm_proposer_input_{comp}.json")))["param_whitelist"]

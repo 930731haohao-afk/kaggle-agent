@@ -123,14 +123,13 @@ def _build_features_fresh():
     lands on bit-patterns that differ from the historical run by ~1e-13 per feature
     (pandas fillna/arithmetic ordering, not a correctness bug -- confirmed by round-
     tripping this function's own output through a CSV text buffer, which alone shifts
-    LGB_TUNED_SEED2024's OOF RMSE from <score> to the historical <score>) and that
-    tiny noise cascades into a real ~<score> RMSE difference. `_build_features` below
-    therefore prefers loading the existing processed_v2 CSVs (byte-identical to what
-    produced every STATUS.md/experiments.json number) and only falls back to this fresh
-    computation if those files are missing (e.g. a clean checkout that never ran the
-    linear-iteration scripts) -- in that fallback case exact digit-for-digit
-    reproduction of LINEAR_BEST is NOT guaranteed, only reproduction of the same
-    feature-engineering LOGIC."""
+    LGB_TUNED_SEED2024's OOF RMSE by a real margin) and that tiny noise cascades into a
+    real RMSE difference. This function is the DEFAULT path: exact digit-for-digit
+    reproduction of LINEAR_BEST is then NOT guaranteed, only reproduction of the same
+    feature-engineering LOGIC. Loading the recorded run's processed_v2 CSVs reproduces the
+    historical digits exactly and is available under KAGGLE_REPRO_ARTIFACTS=1 -- never by
+    default, because a fresh benchmark lane must not score on the recorded run's feature
+    matrix (2026-08-10 round-8)."""
     tr = _add_core_features(_train)
     te = _add_core_features(_test)
 
@@ -226,15 +225,21 @@ def _check_processed_content(proc: pd.DataFrame, raw: pd.DataFrame, what: str) -
 
 
 def _build_features():
-    """Prefer the linear run's already-on-disk train_processed_v2.csv/
-    test_processed_v2.csv (STATUS.md exp #7's exact 26-feature artifact, byte-identical
-    to what produced every historical score) for true digit-for-digit reproduction; fall
-    back to _build_features_fresh() (same logic, recomputed from raw CSVs) if those
-    files aren't present -- or if their CONTENT fails _check_processed_content, which
-    is what makes "prefer the file" safe rather than merely convenient."""
+    """Recompute features from the raw CSVs. REPRODUCTION ONLY (KAGGLE_REPRO_ARTIFACTS=1):
+    load the linear run's already-on-disk train_processed_v2.csv/test_processed_v2.csv --
+    that run's exact 26-feature artifact, byte-identical to what produced every historical
+    score -- for digit-for-digit reproduction.
+
+    The preference used to be the DEFAULT, guarded only by _check_processed_content. That
+    guard pins the raw pass-through columns, not the engineered ones, so it passes for any
+    plausible feature table; and a fresh Stage 2 writes train_processed.csv, never the _v2
+    name, so a fresh lane's tree silently scored on the RECORDED run's feature matrix while
+    believing it had built its own (2026-08-10 round-8). Reproduction is the special case
+    and must say so out loud."""
     v2_train = os.path.join(DATA, "train_processed_v2.csv")
     v2_test = os.path.join(DATA, "test_processed_v2.csv")
-    if os.path.exists(v2_train) and os.path.exists(v2_test):
+    if (os.environ.get("KAGGLE_REPRO_ARTIFACTS") == "1"
+            and os.path.exists(v2_train) and os.path.exists(v2_test)):
         tr = pd.read_csv(v2_train)
         te = pd.read_csv(v2_test)
         all_features = [c for c in tr.columns if c not in (TARGET, ID)]
@@ -248,8 +253,9 @@ def _build_features():
               f"train_processed_v2.csv/test_processed_v2.csv (exact linear-run artifact, "
               f"row/digest/sample-column content-checked against raw)")
         return tr, te, all_features
-    print("eval_s3e1: train_processed_v2.csv/test_processed_v2.csv not found -- "
-          "recomputing features fresh (LINEAR_BEST reproduction not guaranteed "
+    print("eval_s3e1: recomputing features fresh from the raw CSVs "
+          "(set KAGGLE_REPRO_ARTIFACTS=1 to reproduce the recorded tree from its own "
+          "on-disk feature table instead; LINEAR_BEST reproduction not guaranteed "
           "digit-for-digit, see _build_features_fresh docstring)")
     return _build_features_fresh()
 

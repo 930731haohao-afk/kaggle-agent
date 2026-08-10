@@ -1363,3 +1363,260 @@ class TestRound7:
         if m:
             assert "why" not in m.group(0).lower(), (
                 "--report is counts-only since round 6; the doc still promises reasons")
+
+
+# ---------------------------------------------------------------------------
+# ROUND 8 (2026-08-10): the deduction channels the round-7 predicate missed, and
+# every door the clean-slate archive left open.
+# ---------------------------------------------------------------------------
+class TestRound8:
+    def _view(self, comp, *mode, env=None):
+        import subprocess
+        e = dict(os.environ)
+        e.update(env or {})
+        return subprocess.run(
+            [sys.executable, os.path.join(REPO, "knowledge/task_priors_for.py"), comp, *mode],
+            capture_output=True, text=True, cwd=REPO, check=False, env=e)
+
+    def _kb(self):
+        return json.load(open(os.path.join(REPO, "knowledge/knowledge_base.json")))
+
+    def _archive_plan(self):
+        import subprocess
+        r = subprocess.run(["bash", os.path.join(REPO,
+                            "benchmark_infra/archive_workspaces_for_rerun.sh")],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stderr[-400:]
+        return [ln.split(" -> ")[0][len("DRY  mv "):]
+                for ln in r.stdout.splitlines() if ln.startswith("DRY  mv ")]
+
+    # --- the renderer -----------------------------------------------------------------
+    def test_prereg_withheld_for_every_evidence_competition(self):
+        # round 7's predicate withheld a clause only when its evidence list EMPTIED, so a
+        # clause with two evidence comps stayed visible for BOTH of them -- each was served
+        # the clause stating its own private-leaderboard winner.
+        kb = self._kb()
+        evidence = {e for p in kb["prereg"] for c in p["clauses"] for e in c.get("evidence", [])}
+        assert len(evidence) >= 2
+        for comp in sorted(evidence):
+            out = self._view(comp, "--prereg").stdout.strip()
+            assert out == "", (
+                f"--prereg for {comp} renders {len(out)} bytes; {comp} is evidence for a "
+                f"registered clause, so the registration states its own recorded outcome")
+        # a competition that is not evidence still gets the full registration
+        assert "ratio_target" in self._view("playground-series-s9e9", "--prereg").stdout
+
+    def test_no_view_advertises_that_a_registration_was_withheld(self):
+        # an empty --prereg only stays neutral if nothing else in the run asserts that an
+        # open registration exists; the priors view did exactly that.
+        kb = self._kb()
+        evidence = {e for p in kb["prereg"] for c in p["clauses"] for e in c.get("evidence", [])}
+        for comp in sorted(evidence):
+            priors = self._view(comp).stdout.lower()
+            # existential claims only: "if --prereg renders one it binds you" is symmetric
+            # and says nothing; "a selector IS under open pre-registration" does.
+            for needle in ("open pre-registration", "under open pre", "pre-registered test",
+                           "a registration exists"):
+                assert needle not in priors, (
+                    f"{comp}: the priors view asserts a registration exists while --prereg "
+                    f"renders nothing -- the empty view becomes a marker ({needle!r})")
+
+    def test_report_flag_is_audit_gated(self):
+        # --report is an auditor's tool. Reachable from a run it is a counting oracle:
+        # "1 item(s) withheld" tells the lane a fact about itself was removed.
+        plain = self._view("playground-series-s5e1", "--prereg", "--report")
+        assert plain.returncode != 0, "--report answered without the audit gate"
+        assert "withheld" not in plain.stdout
+        gated = self._view("playground-series-s5e1", "--prereg", "--report",
+                           env={"KAGGLE_KB_AUDIT": "1"})
+        assert gated.returncode == 0 and "withheld" in gated.stdout
+
+    def test_instructions_do_not_send_a_run_to_report(self):
+        doc = open(os.path.join(
+            REPO, ".claude/skills/kaggle-agent/references/00_problem_dossier.md")).read()
+        assert "--report" not in doc, (
+            "the Stage 0.5 recipe still hands the lane the withheld-count oracle")
+
+    # --- the kept files ---------------------------------------------------------------
+    def test_kept_config_yaml_carries_no_recorded_results(self):
+        import re as _re
+        comps = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        bad = _re.compile(r"\b\d+\.\d{4,}\b|public lb|private lb|\bCONFIRMED\b|\bREJECTED\b"
+                          r"|Feb 2026 run|STATUS\.md|experiments\.json|already trained"
+                          r"|prior-season", _re.I)
+        offenders = []
+        for comp in comps:
+            fp = os.path.join(REPO, "competitions", comp, "config.yaml")
+            if not os.path.exists(fp):
+                continue
+            for i, line in enumerate(open(fp).read().splitlines(), 1):
+                m = bad.search(line)
+                if m:
+                    offenders.append(f"{comp}/config.yaml:{i} {m.group(0)!r}")
+        assert not offenders, (
+            "config.yaml survives the clean slate and is the first file every lane reads:\n  "
+            + "\n  ".join(offenders[:10]))
+
+    # --- the archive ------------------------------------------------------------------
+    def test_archive_sweeps_frozen_tree_search_artifacts(self):
+        import glob as _glob
+        plan = set(self._archive_plan())
+        frozen = []
+        for pat in ("llm_proposer_input_*.json", "llm_proposals_*.json", "wire_*.json"):
+            frozen += [os.path.relpath(p, REPO)
+                       for p in _glob.glob(os.path.join(REPO, "tree_search", pat))]
+        assert frozen, "fixture drift: no frozen tree_search artifacts to sweep"
+        missed = [f for f in frozen if f not in plan]
+        assert not missed, (
+            f"{len(missed)} frozen per-competition tree artifacts survive the clean slate "
+            f"(they carry champion metrics, champion configs and self-citing priors):\n  "
+            + "\n  ".join(sorted(missed)[:8]))
+
+    def test_archive_sweeps_loose_batch_results(self):
+        plan = set(self._archive_plan())
+        for f in ("competitions/_batch_results.json", "competitions/_batch.log"):
+            assert os.path.exists(os.path.join(REPO, f)) is False or f in plan, (
+                f"{f} holds the recorded tier-1 baseline and blend weights for 8 lanes and "
+                f"sits in the directory the fresh run works in")
+
+    def test_archive_sweeps_non_benchmark_workspaces(self):
+        plan = set(self._archive_plan())
+        bench = set(json.load(open(os.path.join(REPO,
+                    "docs/rerun_manifest.json")))["competitions"])
+        survivors = []
+        for d in sorted(os.listdir(os.path.join(REPO, "competitions"))):
+            p = os.path.join("competitions", d)
+            if not os.path.isdir(os.path.join(REPO, p)) or d == "__pycache__":
+                continue
+            if d in bench or any(d.startswith(c + ".") or d.startswith(c + "-v5-")
+                                 for c in bench):
+                continue
+            if p not in plan:
+                survivors.append(p)
+        assert not survivors, (
+            f"{len(survivors)} sibling workspaces survive; they hold verbatim experience.md "
+            f"snapshots naming benchmark competitions with their own scores, and the "
+            f"self-improvement skill prescribes scanning competitions/*/experiments.json:\n  "
+            + "\n  ".join(survivors[:8]))
+
+    def test_archive_prunes_run_outputs_from_kept_data_dirs(self):
+        plan = set(self._archive_plan())
+        home = os.path.expanduser("~")
+        bench = sorted(json.load(open(os.path.join(REPO,
+                       "docs/rerun_manifest.json")))["competitions"])
+        leftovers, wrongly_swept = [], []
+        for c in bench:
+            ws = os.path.join(REPO, "competitions", c, "data")
+            if os.path.islink(ws) or not os.path.isdir(ws):
+                continue
+            root = os.path.join(home, "ai_agents/bench-comps", c, "data")
+            official = set(os.listdir(root)) if os.path.isdir(root) else set()
+            assert official, f"fixture drift: no clean root for {c}"
+            for f in sorted(os.listdir(ws)):
+                rel = os.path.join("competitions", c, "data", f)
+                if f in official and rel in plan:
+                    wrongly_swept.append(rel)
+                if f not in official and rel not in plan:
+                    leftovers.append(rel)
+        assert not leftovers, (
+            "the recorded run's own outputs survive inside the fresh run's data/ (OOF and "
+            "test prediction matrices, tuned hyper-parameters, engineered feature tables):\n  "
+            + "\n  ".join(leftovers[:10]))
+        assert not wrongly_swept, (
+            "the archive moves official competition inputs out of data/:\n  "
+            + "\n  ".join(wrongly_swept[:10]))
+
+    # --- the pinned tools -------------------------------------------------------------
+    def test_manifest_pins_no_tool_that_seeds_from_a_recorded_tree(self):
+        comps = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        offenders = [c for c, spec in comps.items() if "extension_tool" in spec]
+        assert not offenders, (
+            "run_v3_generic.py seeds from the committed experiments_tree_v3.json and reads "
+            "llm_proposer_input_<comp>.json (recorded champion + frozen self-citing priors); "
+            f"pinned as a fresh-run tool for: {sorted(offenders)}")
+
+    def test_run_v3_generic_refuses_without_an_explicit_reproduction_flag(self):
+        import subprocess
+        r = subprocess.run([sys.executable, "tree_search/run_v3_generic.py", "--comp", "s3e3",
+                            "--nodes", "1"], capture_output=True, text=True, cwd=REPO,
+                           check=False)
+        assert r.returncode != 0, "generic extender ran a fresh lane off the recorded tree"
+        assert "reproduction" in (r.stdout + r.stderr).lower()
+
+    # --- the standing check -----------------------------------------------------------
+    def test_clean_slate_verifier_catches_a_planted_leak(self):
+        import subprocess
+        import tempfile
+        script = os.path.join(REPO, "benchmark_infra/verify_clean_slate.py")
+        assert os.path.exists(script), (
+            "enumerating leak sites by hand lost four rounds running; the clean slate needs "
+            "a checkable gate, not a longer glob list")
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "competitions/playground-series-s3e16"))
+            open(os.path.join(d, "competitions/playground-series-s3e16/config.yaml"),
+                 "w").write("competition: playground-series-s3e16\nmetric: mae\n")
+            ok = subprocess.run([sys.executable, script, "--root", d],
+                                capture_output=True, text=True, check=False)
+            assert ok.returncode == 0, f"clean tree flagged: {ok.stdout[-500:]}"
+            open(os.path.join(d, "notes.md"), "w").write(
+                "s3e16 blend rounded 1.33812, Kaggle Private LB 1.34075\n")
+            bad = subprocess.run([sys.executable, script, "--root", d],
+                                 capture_output=True, text=True, check=False)
+            assert bad.returncode != 0 and "notes.md" in bad.stdout
+
+    # --- the pinned evaluators' data contract ------------------------------------------
+    def test_pinned_evaluator_does_not_silently_prefer_a_recorded_artifact(self):
+        # eval_s3e1 preferred the recorded run's train_processed_v2.csv over recomputing.
+        # A fresh Stage 2 writes train_processed.csv (no _v2), so the fresh tree silently
+        # scored on the recorded run's exact 26-feature matrix.
+        import subprocess
+        r = subprocess.run([sys.executable, "-c",
+                            "import sys; sys.path.insert(0,'tree_search'); import eval_s3e1"],
+                           capture_output=True, text=True, cwd=REPO, check=False,
+                           env={k: v for k, v in os.environ.items()
+                                if k != "KAGGLE_REPRO_ARTIFACTS"})
+        assert r.returncode == 0, r.stderr[-500:]
+        assert "recomputing features fresh" in r.stdout, (
+            "a fresh lane's evaluator loaded the recorded run's feature table:\n"
+            + r.stdout[-400:])
+
+    def test_evaluators_needing_stage2_artifacts_say_so(self):
+        # eval_tssep22 and eval_s3e5_v2 read data/*_processed.csv at import with no
+        # fallback; after the clean slate they must fail with an actionable message naming
+        # the artifact, not a bare pandas FileNotFoundError.
+        si = _load("tree_search/stage2_inputs.py", "stage2_inputs")
+        with pytest.raises(RuntimeError) as e:
+            si.require("/nonexistent/level_table.csv", comp="tabular-playground-series-sep-2022",
+                       artifact="level_table.csv", columns=["country", "year", "daily_level"],
+                       produced_by="Stage 2 feature engineering")
+        msg = str(e.value)
+        for needle in ("level_table.csv", "Stage 2", "country", "clean slate"):
+            assert needle in msg, f"missing {needle!r} from:\n{msg}"
+        for mod in ("eval_tssep22.py", "eval_s3e5_v2.py"):
+            src = open(os.path.join(REPO, "tree_search", mod)).read()
+            assert "stage2_inputs" in src, (
+                f"{mod} reads a data/ artifact at import with no fallback; after the clean "
+                f"slate that is a bare FileNotFoundError, not an instruction")
+
+    def test_simulated_post_archive_tree_is_clean(self):
+        # The standing gate: the archive plan must leave nothing that states a benchmark
+        # competition's own result. Five rounds of hand-maintained globs each missed a file
+        # the next round found; this asserts the property instead of the enumeration.
+        import subprocess
+        r = subprocess.run([sys.executable, "benchmark_infra/verify_clean_slate.py",
+                            "--simulate-archive"], capture_output=True, text=True,
+                           cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout[-2500:]
+
+    def test_legacy_solo_reuse_is_reproduction_only(self):
+        # load_legacy_solo returns the RECORDED run's trained OOF/test vectors, and its
+        # digit-for-digit guard passes precisely because the numbers are the recorded ones.
+        import subprocess
+        r = subprocess.run([sys.executable, "-c",
+                            "import sys;sys.path.insert(0,'tree_search');import eval_s3e11 as e;"
+                            "e.load_legacy_solo('LGB', 0.29)"],
+                           capture_output=True, text=True, cwd=REPO, check=False,
+                           env={k: v for k, v in os.environ.items()
+                                if k != "KAGGLE_REPRO_ARTIFACTS"})
+        assert r.returncode != 0 and "KAGGLE_REPRO_ARTIFACTS" in r.stderr, (
+            "a fresh lane can load the recorded run's trained members:\n" + r.stderr[-400:])

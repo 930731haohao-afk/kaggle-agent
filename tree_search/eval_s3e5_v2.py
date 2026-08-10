@@ -117,12 +117,18 @@ CACHE_DIR = os.path.join(V1_CACHE_DIR, "v2")
 
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
+import stage2_inputs  # noqa: E402
 
 TARGET, ID = "quality", "Id"
 N_SPLITS, SEED = 5, 42
 
-_train = pd.read_csv(os.path.join(DATA, "train_processed.csv"))
-_test = pd.read_csv(os.path.join(DATA, "test_processed.csv"))
+_C5 = "playground-series-s3e5"
+_train = pd.read_csv(stage2_inputs.require(
+    os.path.join(DATA, "train_processed.csv"), comp=_C5, artifact="train_processed.csv",
+    columns=[ID, TARGET, "the engineered feature columns this run built"]))
+_test = pd.read_csv(stage2_inputs.require(
+    os.path.join(DATA, "test_processed.csv"), comp=_C5, artifact="test_processed.csv",
+    columns=[ID, "the same feature columns as train_processed.csv"]))
 ALL_FEATURES = [c for c in _train.columns if c not in (ID, TARGET)]
 _y = _train[TARGET].to_numpy(int)
 LOW, HIGH = int(_y.min()), int(_y.max())

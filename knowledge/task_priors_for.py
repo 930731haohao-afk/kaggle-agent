@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -68,6 +69,19 @@ def _known_comps(kb: dict) -> set:
     for p in kb.get("prereg", []):
         for c in p.get("clauses", []):
             out.update(c.get("evidence", []))
+    return out
+
+
+def _all_evidence(kb: dict) -> list:
+    """Every evidence item in the base, plus the form-race rows rendered as evidence-like
+    dicts, so a caller can ask "what does the base record about competition X?"."""
+    out = []
+    for e in kb.get("task_priors", []):
+        out += e.get("evidence", [])
+    for op in kb.get("operators", []):
+        out += op.get("evidence", [])
+    for r in kb.get("form_race", {}).get("rows", []):
+        out.append({"comp": r["comp"], "text": " ".join(str(v) for v in r.values())})
     return out
 
 
@@ -221,21 +235,20 @@ def render_prereg(kb: dict, comp: str) -> tuple[str, list[dict]]:
     excl = canonical(comp, kb)
     out, report = [], []
     for p in kb["prereg"]:
-        # If ANY clause is withheld, render NOTHING identifying. Round 6 removed the
-        # dichotomy intro, but the registration id, the surviving pole and the selector
-        # variable together still reconstructed the withheld clause -- i.e. the reader's own
-        # recorded verdict (2026-08-10 round-7). A partially-visible registration is not a
-        # safe artifact: it is a complement puzzle with one piece missing.
-        n_withheld_pre = sum(
-            1 for c in p["clauses"]
-            if not [e for e in c.get("evidence", []) if canonical(e, kb) != excl])
-        if n_withheld_pre:
-            report.extend({"action": "clause_withheld"} for _ in range(n_withheld_pre))
-            # Render NOTHING -- not even a notice. Any marker is a signal, and within
-            # a single run an empty --prereg view is indistinguishable from "no open
-            # registrations exist". Stage 0.5 step 8 tells the agent to ask the
-            # operator whenever the view is empty, so the case is covered without a
-            # leak (2026-08-10 round-7).
+        # A registration renders WHOLE or NOT AT ALL, and "not at all" is decided by
+        # membership, not by survival. Round 7 asked whether a clause's evidence list
+        # EMPTIED after exclusion; a clause carrying two evidence competitions therefore
+        # stayed visible for BOTH of them, and the clause text states the private-
+        # leaderboard winner those competitions recorded -- each was served its own answer
+        # (2026-08-10 round-8). The right question is whether the reader is cited at all:
+        # its own result cannot be a premise of a hypothesis it is about to be tested on.
+        if any(canonical(e, kb) == excl
+               for c in p["clauses"] for e in c.get("evidence", [])):
+            report.append({"action": "registration_withheld"})
+            # Render NOTHING -- not even a notice. Any marker is a signal. Emptiness is a
+            # neutral, ordinary state: no other surface may assert that a registration
+            # exists (selftest CONTRACT 7), --report is audit-gated, and Stage 0.5 reads an
+            # empty view as "no open registration applies to you".
             continue
         out.append(f"# Pre-registration: {p['id']}")
         out.append("")
@@ -249,26 +262,11 @@ def render_prereg(kb: dict, comp: str) -> tuple[str, list[dict]]:
         out.append("")
         out.append(p["hypothesis_intro"])
         out.append("")
-        surviving_clauses, n_withheld = [], 0
-        for c in p["clauses"]:
-            surviving = [e for e in c.get("evidence", []) if canonical(e, kb) != excl]
-            if not surviving:
-                n_withheld += 1
-                report.append({"action": "clause_withheld"})
-                continue
-            surviving_clauses.append(c["text"])
-        # NO MARKER, and no dichotomy framing when anything was withheld: "1 clause withheld"
-        # under "decided by the horizon length" plus the surviving <=1-year clause IS the
-        # withheld clause, reconstructed (2026-08-07 round-5). A withheld fact must leave no
-        # marker; when the clause set is incomplete, the intro must not describe its shape.
-        del out[-2:]                              # drop hypothesis_intro + its blank line
-        if n_withheld == 0:
-            out.append(p["hypothesis_intro"])
-        else:
-            out.append("The following registered prediction(s) apply where their trigger "
-                       "matches:")
-        out.append("")
-        for text in surviving_clauses:
+        # Every clause renders: the reader is cited by none of them, so the whole
+        # registration is other competitions' evidence. There is no partial-render path any
+        # more -- a clause set with a hole is a complement puzzle with one piece missing
+        # (2026-08-07 round-5, 2026-08-10 round-7), and the only safe partial is silence.
+        for text in [c["text"] for c in p["clauses"]]:
             out.append(f"- {text};")
         out.append("")
         out.append("## Protocol (binding)")
@@ -292,7 +290,9 @@ def main(argv: list[str]) -> int:
     ap.add_argument("comp", nargs="?", help="competition slug, any spelling")
     ap.add_argument("--ops", action="store_true", help="operator vocabulary view")
     ap.add_argument("--prereg", action="store_true", help="pre-registrations view")
-    ap.add_argument("--report", action="store_true", help="print what was withheld instead")
+    ap.add_argument("--report", action="store_true",
+                    help="AUDITORS ONLY (needs KAGGLE_KB_AUDIT=1): how many items were "
+                         "withheld for this competition")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
     if args.selftest:
@@ -303,6 +303,17 @@ def main(argv: list[str]) -> int:
     fn = render_prereg if args.prereg else (render_ops if args.ops else render_priors)
     md, rep = fn(kb, args.comp)
     if args.report:
+        # A COUNTING ORACLE, not a view. "1 item(s) withheld" tells the reader that a fact
+        # about itself was removed -- and once it knows something is missing it can reason
+        # about the complement, which is the whole channel rounds 4-8 kept re-opening. The
+        # count is genuinely useful to a human auditor diffing views against the base, so it
+        # stays behind an env gate rather than being deleted (2026-08-10 round-8).
+        if os.environ.get("KAGGLE_KB_AUDIT") != "1":
+            print("--report is an auditor's tool: it discloses that facts about this "
+                  "competition were withheld, which is itself a deduction channel. "
+                  "Re-run with KAGGLE_KB_AUDIT=1 if you are auditing, not solving.",
+                  file=sys.stderr)
+            return 2
         kind = "prereg" if args.prereg else ("operator" if args.ops else "task-prior")
         # COUNTS ONLY. Naming the withheld entry plus its reason was a deduction oracle: an
         # entry name under a known hypothesis reconstructs the withheld content
@@ -365,24 +376,31 @@ def selftest() -> int:
           f"({n_fields} fields x {len(tokens)} tokens)")
 
     # --- CONTRACT 2: no competition's own facts survive its view -----------------------
-    own_needles = {
-        "playground-series-s3e19": ["48.497", "52.073", "10.148", "7.793", "48.24",
-                                    "4.56", "20.41", "48.3", "bimodal"],
-        "tabular-playground-series-sep-2022": ["23.390", "24.091", "11.348", "11.807",
-                                               "11.515", "0.466"],
-        "playground-series-s5e1": ["0.12417", "0.15626"],
-        "afsis-soil-properties": ["0.49517", "0.44817", "0.444076"],
-        "conway-s-reverse-game-of-life": ["0.10875", "98.6"],
-        "cat-in-the-dat": ["0.80241", "73.1"],
-        "tabular-playground-series-jan-2022": ["4.83", "6.02", "5.46", "4.19", "8.43", "5.80"],
-        "playground-series-s3e3": ["0.81901", "0.83292"],
-        "playground-series-s3e5": ["0.47191", "0.52687"],
-        "playground-series-s4e1": ["0.89653", "0.893235", "0.893650"],
-    }
+    # The needles are DERIVED from the base, never listed here. A hardcoded table of
+    # per-competition scores made this very file a leak: it sits in knowledge/, a lane can
+    # read it, and the table named ten competitions next to their own numbers -- the filter
+    # itself becoming the door it exists to close (2026-08-10 round-8, found by
+    # benchmark_infra/verify_clean_slate.py). Deriving is also strictly stronger: needles
+    # cannot go stale when the base grows.
+    _num = re.compile(r"\d+\.\d{2,}")
+    by_comp: dict[str, set] = {}
+    for ev in _all_evidence(kb):
+        c = canonical(ev.get("comp", ""), kb)
+        by_comp.setdefault(c, set()).update(_num.findall(ev.get("text", "")))
+    # A needle is a number ONLY this competition's evidence carries. A figure two
+    # competitions happen to share (0.011 turns up in two dispersion series) is nobody's
+    # own fact and matching on it would fail the contract for a coincidence.
+    own_needles = {c: sorted(ns - set().union(*(v for k, v in by_comp.items() if k != c)))
+                   for c, ns in by_comp.items()}
+    own_needles = {c: ns for c, ns in own_needles.items() if ns}
+    assert len(own_needles) >= 8, (
+        f"fixture drift: only {len(own_needles)} competitions carry numeric evidence")
     for c, needles in own_needles.items():
         for fn in (render_priors, render_ops, render_prereg):
             md, _ = fn(kb, c)
-            hits = [n for n in needles if n in md]
+            # whole-number match: "0.01" is a substring of another competition's "0.011"
+            hits = [n for n in needles
+                    if re.search(rf"(?<![\d.]){re.escape(n)}(?![\d])", md)]
             assert not hits, f"{fn.__name__}({c}) serves its own facts: {hits}"
             low = md.translate(_DASHES).lower()
             for tok in {c, _short(c), *_SHORT_ALIASES.get(c, [])}:
@@ -406,15 +424,20 @@ def selftest() -> int:
     assert "TASK-SPECTRAL" not in md and "Savitzky" not in md
     md, _ = render_priors(kb, "conway-s-reverse-game-of-life")
     assert "TASK-STRUCT-OUT" not in md and "cellular automata" not in md.lower()
-    md, _ = render_prereg(kb, "playground-series-s5e1")
-    assert "> 1 year" not in md and "&gt; 1 year" not in md, (
-        "the >1-year clause survives for the competition that is its only evidence")
-    assert "withheld" not in md.lower(), "a withheld fact must leave no marker"
-    assert "horizon length" not in md.lower(), (
-        "the dichotomy framing plus the surviving clause reconstructs the withheld one")
+    # Registration exclusion is by CITATION, not by survival: a clause with two evidence
+    # competitions used to stay visible for both of them (2026-08-10 round-8).
+    cited = {canonical(e, kb) for p in kb["prereg"] for c in p["clauses"]
+             for e in c.get("evidence", [])}
+    assert len(cited) >= 2, "fixture drift: registrations cite fewer than 2 competitions"
+    for c in sorted(cited):
+        md, rep = render_prereg(kb, c)
+        assert md.strip() == "", (
+            f"{c} is cited as evidence for a registered clause, so the registration states "
+            f"its own recorded outcome; it rendered {len(md)} bytes")
+        assert rep, "the withheld registration left no audit record"
     md, _ = render_prereg(kb, "some-new-competition")
     assert "> 1 year" in md and "≤ 1 year" in md
-    print("contract 4: entry-level (afsis/conway) and clause-level (prereg) exclusion hold")
+    print("contract 4: entry-level (afsis/conway) and citation-level (prereg) exclusion hold")
 
     # --- CONTRACT 5: nothing else lost ------------------------------------------------
     md, _ = render_priors(kb, "no-such-competition")
@@ -445,6 +468,23 @@ def selftest() -> int:
                 f"{fn.__name__}({c}) points at a repo doc -- pointer indirection defeats "
                 f"set-arithmetic exclusion (2026-08-07 round-5)")
     print("contract 7: rendered views contain no doc pointers")
+
+    # --- CONTRACT 8: silence is neutral -------------------------------------------------
+    # An empty --prereg is only safe if nothing else a run reads asserts that a registration
+    # exists: "a selector is under open pre-registration" + an empty view = the marker the
+    # silence was meant to erase (2026-08-10 round-8).
+    # EXISTENTIAL claims only. "if --prereg renders one, it binds you" is symmetric and
+    # tells the reader nothing; "a selector IS under open pre-registration" does.
+    advert = re.compile(r"open pre-?registration|under (an?\s+)?open pre-?regist|"
+                        r"pre-?registered test|a registration (is|exists)", re.I)
+    for c in sorted(cited):
+        for fn in (render_priors, render_ops):
+            md, _ = fn(kb, c)
+            hit = advert.search(md)
+            assert not hit, (
+                f"{fn.__name__}({c}) advertises a registration ({hit.group(0)!r}) whose "
+                f"view renders empty for this reader -- absence becomes evidence")
+    print("contract 8: no view advertises a registration that another view withholds")
 
     print("task_priors_for selftest: all contracts hold")
     return 0

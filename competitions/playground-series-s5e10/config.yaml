@@ -15,24 +15,11 @@ special_rules:
   internet_access_allowed: true
   daily_submission_limit: 5
 notes: |
-  517K train / 173K test. Target: accident_risk (0-1, mean=0.352). RMSE, minimize.
+  Target: accident_risk (continuous, 0-1). RMSE, minimize.
   Features: road_type, num_lanes, curvature, speed_limit, lighting, weather,
   road_signs_present, public_road, time_of_day, holiday, school_season,
-  num_reported_accidents. No missing values.
-  curvature (r=0.54) and speed_limit (r=0.43) strongest predictors.
-  lighting=night notably increases risk (0.47 vs 0.30).
-  Cross-season note: this is the S5E10 unit (3/5) of the cross-season
-  generalization sweep (after s4e1, s4e11). Feb 2026 run (STATUS.md,
-  experiments.json exp 1-4) already trained LGB/XGB/LGBM_v2 + an OOF
-  weight-searched ensemble (CV RMSE 0.056074, Public LB 0.05558, Private
-  0.05583) on a 27-feature engineered set with KFold(5, shuffle, seed=42) --
-  kept verbatim as the stage-1 record per this unit's protocol ("reuse
-  equivalent Feb records, don't retrain"), with the honest caveat that its
-  features were already EDA-engineered (not raw) and its third member was a
-  second LightGBM rather than CatBoost. The July run reuses the same folds
-  (KFold split depends only on n_samples + seed), so all scores are directly
-  comparable across both runs. Stage-3 round-1 prior checks: the s3e9
-  "explicit product interactions add nothing for GBDT" prior CONFIRMED here
-  (12 base features beat the 27-feature set per solo LGB), and the s3e14
-  snap-to-grid prior REJECTED for RMSE (target sits on a 0.01 grid but
-  squared error wants the conditional mean, not a grid point).
+  num_reported_accidents.
+  This workspace is a clean slate: any record of a previous run of this competition
+  (its scores, its engineered feature set, its fold scheme, and the verdicts it reached
+  on transferred priors) has been archived on purpose. config.yaml carries the
+  competition's own inputs only (2026-08-10 round-8).
