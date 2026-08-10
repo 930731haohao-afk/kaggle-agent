@@ -49,7 +49,10 @@ COMPS=(
 # parameters and its engineered feature tables (2026-08-10 round-8). A file inside data/
 # survives only if the same name exists in ~/ai_agents/bench-comps/<comp>/data -- that root
 # IS the definition of "the competition's own inputs".
-KEEP_RE='^(data|config\.yaml|rules_verdict\.json)$'
+# data_official/ is kept for a different reason: every entry of the SHARED clean root
+# ~/ai_agents/bench-comps/<comp>/data is a symlink into it, so archiving it would leave
+# all three agents' data root a farm of dangling links (2026-08-10 round-9).
+KEEP_RE='^(data|data_official|config\.yaml|rules_verdict\.json)$'
 CLEAN_ROOT="$HOME/ai_agents/bench-comps"
 
 move() {  # move $1 under DEST preserving its relative path
@@ -162,7 +165,8 @@ while IFS= read -r f; do
 done < <(find tree_search -mindepth 1 -maxdepth 1 -type f \
            \( -name 'run_*.py' -o -name 'tree_*.json' -o -name 'smoke_*.json' \
               -o -name 'report_*.json' -o -name '*_probe*.json' \
-              -o -name 'injection_bootstrap*.json' -o -name 'structural_probe.py' \) | sort)
+              -o -name 'injection_bootstrap*.json' -o -name 'structural_probe.py' \
+              -o -name 'eval_*.py' -o -name '*.log' \) | sort)
 
 echo "== 6/6 the research record =="
 # docs/, benchmark_results/ and the plan files hold every competition's scores for all three
@@ -178,7 +182,10 @@ while IFS= read -r f; do
   [[ "$base" =~ $DOCS_KEEP ]] && continue
   move "$f"; total=$((total+1))
 done < <(find docs -mindepth 1 -maxdepth 1 | sort)
-for d in benchmark_results .superpowers; do
+# documents/ is a near-homograph of docs/ that no earlier glob mentioned: it holds a
+# CV / Public LB / Private LB / winning-technique table for 9 of the 20 lanes. mlflow.db
+# mirrors 16 lanes' metric, score history and hyper-parameters (2026-08-10 round-9).
+for d in benchmark_results .superpowers documents mlflow.db search-tree-states.drawio; do
   [ -e "$d" ] || continue
   move "$d"; total=$((total+1))
 done

@@ -37,9 +37,9 @@ four recommendations call for:
      existing node with an identical config, or None. `add_node` calls this by default
      and REJECTS the child — returns `(None, dup_id)` instead of adding a node — so the
      mutation proposer is explicitly told the config it wanted to try already exists and
-     must propose something else. This is the exact fix for the s3e5 run's node
-     #37/#38/#39 (three fallback children with byte-identical `members=[0, 2, 5, 15]`,
-     all scoring -0.56725) that wasted plateau-streak budget under v1.
+     must propose something else. This is the exact fix for a run in which three fallback
+     children carried byte-identical `members` and therefore identical scores, wasting
+     plateau-streak budget under v1.
 
   4. Experience-library mutation prior (§6.3): `suggest_priors(comp_meta)` does simple
      keyword-to-section-header matching against knowledge/experience.md (every `##`/`###`
@@ -329,7 +329,8 @@ def blend_optimism(cache_dir: str, members: list, y, metric, *, k: int = 1500,
     returns the BEST score it found -- on the very vectors it searched. A solo node has no
     such freedom, so blends carry a structural advantage over solos in the same tree, and
     the two kinds are nonetheless compared with one min(). The experience library already
-    measured the size of this on afsis (greedy weight search optimistic by ~0.0153).
+    measured the size of this on a spectral-regression competition, and it was large
+    enough to flip a comparison.
 
     This does the honest version WITHOUT changing how anything is scored: search weights on
     each fold's training rows, score the held-out rows with those weights, and return the

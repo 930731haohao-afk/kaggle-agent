@@ -117,12 +117,12 @@ CACHE_DIR = os.path.join(V1_CACHE_DIR, "v2")
 
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
-import stage2_inputs  # noqa: E402
 
 TARGET, ID = "quality", "Id"
 N_SPLITS, SEED = 5, 42
 
 _C5 = "playground-series-s3e5"
+import stage2_inputs  # noqa: E402
 _train = pd.read_csv(stage2_inputs.require(
     os.path.join(DATA, "train_processed.csv"), comp=_C5, artifact="train_processed.csv",
     columns=[ID, TARGET, "the engineered feature columns this run built"]))

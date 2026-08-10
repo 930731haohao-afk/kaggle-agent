@@ -40,8 +40,12 @@ _COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "tabular-playground-series-
 sys.path.insert(0, os.path.join(_COMP_DIR, "scripts"))
 sys.path.insert(0, _HERE)
 
+import stage2_inputs  # noqa: E402
+stage2_inputs.require_module(os.path.join(_COMP_DIR, "scripts"), "common", comp="tabular-playground-series-jan-2022",
+                             exposes=['FOLDS '])
 import common  # noqa: E402
 import harness_v2 as hv2  # noqa: E402
+
 
 CACHE_DIR = os.path.join(_HERE, "cache_tpsjan22")
 

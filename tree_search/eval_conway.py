@@ -42,6 +42,11 @@ sys.path.insert(0, _SCRIPTS)
 sys.path.insert(0, _HERE)
 os.chdir(_REPO_ROOT)  # cnn_lib/common use repo-root-relative paths
 
+import stage2_inputs  # noqa: E402
+stage2_inputs.require_module(_SCRIPTS, "common", comp="conway-s-reverse-game-of-life",
+                             exposes=['CACHE', 'get_folds', 'life_step', 'load_arrays'])
+stage2_inputs.require_module(_SCRIPTS, "cnn_lib", comp="conway-s-reverse-game-of-life",
+                             exposes=['DEFAULT_CFG', 'run_cv'])
 import common  # noqa: E402
 import harness_v2 as hv2  # noqa: E402
 import harness_v3 as hv3  # noqa: E402

@@ -719,9 +719,9 @@ def apply_operators(train: pd.DataFrame, test: pd.DataFrame, ideas: list[dict], 
                     if diag["violating_years"] or diag.get("unmeasured_years"):
                         # RECORDED, NOT A GATE. knowledge/injection_operators.md demoted this
                         # on 2026-07-31 on the strength of a pre-registered falsification:
-                        # s5e1 violated proportionality in 6 of 7 years and ratio_target still
-                        # won the form race decisively (private MAPE 0.12417 vs join_feature's
-                        # 0.15626, paired-significant). The 08-03 sweep (a245b37) reinstated it
+                        # a panel competition violated proportionality in most of its years and
+                        # ratio_target still won the form race decisively, paired-significant.
+                        # The 08-03 sweep (a245b37) reinstated it
                         # as a blocking gate by mistake, which silently degraded the mandated
                         # form race to join-vs-baseline-clone on every non-proportional panel --
                         # make_v5_arm asserts nothing about what it was asked to realize, so the

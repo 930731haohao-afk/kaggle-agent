@@ -586,11 +586,10 @@ def boundary_candidates(config: dict, search_space: dict, *, params_key: str = "
     it). A driver turns each dict into a mutation by copying `config` and setting
     `config[params_key][param] = new_value`.
 
-    Evidence (module docstring feature 4): D-6 (s3e11 CatBoost depth 10->12, searched
-    [4,10], won at 10 -- the box's own upper edge), E-2/E-3 (s3e16 learning_rate
-    searched [0.01,0.06] log-scale, won at 0.0102 -- ~2% of the log-range from the box's
-    own lower edge, "the strongest boundary signal this comp has"). Both were found by a
-    human re-reading the Optuna trial table after the fact; this makes the check
+    Evidence (module docstring feature 4): two competitions whose Optuna optimum landed on
+    the search box's own edge -- one at the upper edge of a depth range, one a hair above
+    the lower edge of a log-scale learning-rate range. Both were found by a human
+    re-reading the Optuna trial table after the fact; this makes the check
     automatic and comp-agnostic.
     """
     params = config.get(params_key) or {}
@@ -646,9 +645,11 @@ def boundary_candidates(config: dict, search_space: dict, *, params_key: str = "
 # One number, read by BOTH routes, so a blend has one score rather than one per route. Set to
 # the LARGER of the two historical k values (v2's 1500, v3's 800) plus v3's refinement, so the
 # unified scorer dominates both: no competition's blend gets worse because the routes were
-# reconciled. Measured while unifying: k=800+ascent scored 0.2591128 where v2's k=1500 scored
-# 0.2591117 on the same data -- the refinement does NOT automatically pay for a smaller search,
-# which is why "unify upward" had to mean the larger k and not the cheaper default.
+# reconciled. Measured while unifying, on one competition's cached members: k=800+ascent
+# scored WORSE than v2's k=1500 -- the refinement does NOT automatically pay for a smaller
+# search, which is why "unify upward" had to mean the larger k and not the cheaper default.
+# (The two values are withheld: they are that competition's own blend scores, and this file
+# is read by every lane -- 2026-08-10 round-9.)
 DEFAULT_BLEND_K = 1500
 DEFAULT_ASCENT_ROUNDS = 6
 _ASCENT_DELTAS = (0.05, -0.05, 0.02, -0.02, 0.01, -0.01, 0.005, -0.005)

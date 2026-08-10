@@ -55,6 +55,9 @@ _COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "playground-series-s3e7")
 _SCRIPTS_DIR = os.path.join(_COMP_DIR, "scripts")
 sys.path.insert(0, _SCRIPTS_DIR)
 sys.path.insert(0, _HERE)
+import stage2_inputs  # noqa: E402
+stage2_inputs.require_module(_SCRIPTS_DIR, "features", comp="playground-series-s3e7",
+                             exposes=['build_features', 'feature_columns'])
 from features import build_features, feature_columns  # noqa: E402
 import harness_v2 as hv2  # noqa: E402
 

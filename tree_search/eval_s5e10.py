@@ -41,6 +41,9 @@ _COMP_DIR = os.path.join(_REPO_ROOT, "competitions", "playground-series-s5e10")
 _SCRIPTS_DIR = os.path.join(_COMP_DIR, "scripts")
 sys.path.insert(0, _SCRIPTS_DIR)
 sys.path.insert(0, _HERE)
+import stage2_inputs  # noqa: E402
+stage2_inputs.require_module(_SCRIPTS_DIR, "features", comp="playground-series-s5e10",
+                             exposes=['ID', 'TARGET', 'build_all', 'make_folds', 'rmse_clip'])
 from features import make_folds, build_all, rmse_clip, TARGET, ID  # noqa: E402
 import harness_v2 as hv2  # noqa: E402
 import eval_support as esup  # noqa: E402

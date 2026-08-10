@@ -35,6 +35,9 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 sys.path.insert(0, _HERE)
 sys.path.insert(0, os.path.join(_COMP, "scripts"))
 import harness_v2 as hv2  # noqa: E402
+import stage2_inputs  # noqa: E402
+stage2_inputs.require_module(os.path.join(_COMP, "scripts"), "prep", comp="tabular-playground-series-aug-2022",
+                             exposes=['build_features'])
 from prep import build_features  # noqa: E402
 
 THREADS = 10

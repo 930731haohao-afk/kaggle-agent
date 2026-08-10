@@ -40,7 +40,11 @@ import harness_v2 as hv2  # noqa: E402
 
 THREADS = 10
 N_FOLDS = 5
-_y = np.load(os.path.join(PROC, "y.npy"))
+import stage2_inputs  # noqa: E402
+_y = np.load(stage2_inputs.require(
+    os.path.join(PROC, "y.npy"), comp="cat-in-the-dat", artifact="data_proc/y.npy",
+    columns=["the training target vector, in train.csv row order"],
+    produced_by="Stage 2 preprocessing (it also writes folds.npy, gbdt_train/test.parquet\n    and ohe_train/test.npz into the same directory)"))
 _folds = np.load(os.path.join(PROC, "folds.npy"))
 
 

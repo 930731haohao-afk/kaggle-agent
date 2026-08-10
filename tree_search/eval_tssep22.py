@@ -27,7 +27,10 @@ sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
 import stage2_inputs  # noqa: E402
 
-COMP = "/home/tjyen/ai_agents/kaggle/competitions/tabular-playground-series-sep-2022"
+# Root-relative: an absolute repo path makes this the one evaluator of the 20 that reads
+# the ORIGINAL repo from an isolated run root (2026-08-10 round-9).
+COMP = os.path.join(os.path.dirname(_HERE), "competitions",
+                    "tabular-playground-series-sep-2022")
 CACHE_DIR = os.path.join(_HERE, "cache_tssep22_main")
 
 FOLDS = {
@@ -54,7 +57,11 @@ def _load():
     C = "tabular-playground-series-sep-2022"
     tr = pd.read_csv(stage2_inputs.require(
         f"{COMP}/data/train_processed.csv", comp=C, artifact="train_processed.csv",
-        columns=["date", "country", "store", "product", "num_sold", "year", "doy365"]),
+        columns=["date", "country", "store", "product", "num_sold", "year", "doy365",
+                 "dow", "is_weekend", "month", "day", "is_holiday", "days_since_hol",
+                 "days_until_hol",
+                 "doy_sin1..4 and doy_cos1..4 (this module computes only k>=5)",
+                 "gdp_pc", "log_gdp", "year_c (needed by the ratio/join families)"]),
         parse_dates=["date"])
     lvl = pd.read_csv(stage2_inputs.require(
         f"{COMP}/data/level_table.csv", comp=C, artifact="level_table.csv",

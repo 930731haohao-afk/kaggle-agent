@@ -25,17 +25,12 @@ near-duplicate of the same LGB-with-nudged-hyperparams recipe.
 --- Optuna box-edge check (the boundary-push lever, done BEFORE writing this module) ---
 scripts/tune_lgb_optuna.py's search box (21/50 trials completed, 300s timeout) and the
 winning scripts/lgb_optuna_best.json params:
-  learning_rate   searched [0.01, 0.06] log-scale -> won <score>       EXACTLY ON the box's
-                  own LOWER edge (2% of the log-range from the boundary) -- the strongest
-                  boundary signal this comp has, same lever s3e5/s3e11 already validated
-                  ("don't trust an Optuna optimum sitting on the box's own edge").
-  num_leaves      searched [15, 127]        -> won 61   (interior, ~41% of range)
-  min_child_samples searched [10, 100]      -> won 30   (interior, ~22% of range)
-  subsample       searched [0.6, 1.0]       -> won 0.809 (interior)
-  colsample_bytree searched [0.5, 1.0]      -> won 0.722 (interior)
-  reg_alpha       searched [1e-3, 10] log   -> won 0.113 (interior, ~51% of log-range)
-  reg_lambda      searched [1e-3, 10] log   -> won 2.56  (interior, ~85% of log-range,
-                  not edge)
+  The Optuna study's per-parameter outcome (which won value sat where inside its search
+  box) is the recorded run's tuned configuration and is NOT reproduced here: handing a
+  fresh lane the champion hyper-parameters is a warm start from its own answer
+  (2026-08-10 round-9). Only the STRUCTURAL finding survives, because it is the lever
+  this module implements and it names no value: exactly one parameter's optimum landed
+  on its box's own edge, which is the boundary-push signal LGBBOUND probes.
 Only learning_rate saturates its box -- LGBBOUND (see run_s3e16_v2.py) pushes it further
 below 0.01, the run's single highest-conviction boundary-push probe.
 
@@ -105,6 +100,9 @@ CACHE_DIR = os.path.join(_HERE, "cache_s3e16")
 sys.path.insert(0, _HERE)
 sys.path.insert(0, _SCRIPTS_DIR)
 import harness_v2 as hv2  # noqa: E402
+import stage2_inputs  # noqa: E402
+stage2_inputs.require_module(_SCRIPTS_DIR, "features", comp="playground-series-s3e16",
+                             exposes=['build_features', 'feature_columns'])
 from features import build_features, feature_columns  # noqa: E402
 
 TARGET, ID = "Age", "id"

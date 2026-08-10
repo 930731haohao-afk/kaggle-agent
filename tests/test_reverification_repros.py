@@ -1620,3 +1620,291 @@ class TestRound8:
                                 if k != "KAGGLE_REPRO_ARTIFACTS"})
         assert r.returncode != 0 and "KAGGLE_REPRO_ARTIFACTS" in r.stderr, (
             "a fresh lane can load the recorded run's trained members:\n" + r.stderr[-400:])
+
+
+# ---------------------------------------------------------------------------
+# ROUND 9 (2026-08-10): the clean slate's boundary was wrong, and the gate that
+# checked it was narrower than the thing it guarded.
+# ---------------------------------------------------------------------------
+class TestRound9:
+    @pytest.fixture(scope="class")
+    def run_root(self, tmp_path_factory):
+        """One build for the whole class: each build hardlinks 0.7 GB of official data and
+        copies the skill tree, and four independent builds made the pre-commit gate slow
+        enough to discourage running it."""
+        import subprocess
+        root = str(tmp_path_factory.mktemp("myagent-rerun") / "rr")
+        r = subprocess.run([sys.executable, "benchmark_infra/build_myagent_run_root.py",
+                            "--write", "--root", root],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout[-1500:] + r.stderr[-800:]
+        return root
+
+    def _gate(self, root, *extra):
+        import subprocess
+        return subprocess.run([sys.executable,
+                               os.path.join(REPO, "benchmark_infra/verify_clean_slate.py"),
+                               "--root", str(root), *extra],
+                              capture_output=True, text=True, check=False)
+
+    def _plant(self, d, rel, text, mode="w"):
+        p = os.path.join(d, rel)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, mode) as fh:
+            fh.write(text)
+        return p
+
+    # --- the detector -----------------------------------------------------------------
+    def test_detector_sees_display_names_and_three_decimal_scores(self):
+        # documents/SUMMARY_REPORT_23022026.md passed the gate: its scores have 3 decimals
+        # and it writes "Cat in the Dat" / "AfSIS Soil" / "Conway's Reverse GoL", none of
+        # which the slug regex knew.
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            self._plant(d, "report.md",
+                        "| Cat in the Dat | AUC | 0.831 | 0.793 | 0.790 | LGB+XGB |\n")
+            r = self._gate(d)
+            assert r.returncode != 0 and "report.md" in r.stdout, (
+                "display name + 3-decimal score is invisible to the gate:\n" + r.stdout[-400:])
+
+    def test_detector_flags_slug_and_signal_on_different_lines(self):
+        # markdown puts "Private LB" in the header row and the competition in a data row,
+        # so a per-line rule never sees them together -- the positional channel again.
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            self._plant(d, "table.md",
+                        "| Competition | Metric | CV | Public LB | Private LB |\n"
+                        "|---|---|---|---|---|\n"
+                        "| playground-series-s6e2 | AUC | 0.955 | 0.955 | 0.955 |\n")
+            r = self._gate(d)
+            assert r.returncode != 0 and "table.md" in r.stdout, (
+                "slug and leaderboard language on different lines of one table:\n"
+                + r.stdout[-400:])
+
+    def test_detector_examines_files_it_cannot_parse_as_text(self):
+        # mlflow.db (1.8 MB SQLite, repo root) holds 16 competitions' metric, score history
+        # and hyper-parameters; .db is not in the extension whitelist so it was never opened.
+        import sqlite3
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            con = sqlite3.connect(os.path.join(d, "runs.db"))
+            con.execute("create table e (name text, score real)")
+            con.execute("insert into e values ('playground-series-s3e16', 1.33812)")
+            con.commit()
+            con.close()
+            r = self._gate(d)
+            assert r.returncode != 0 and "runs.db" in r.stdout, (
+                "a database holding scores keyed by competition passes unopened:\n"
+                + r.stdout[-400:])
+
+    def test_detector_accounts_for_every_file_it_skips(self):
+        # "clean slate OK -- N files scanned" counted only files it read, so it could not
+        # distinguish scanned-and-clean from never-opened. A dangling symlink is the live
+        # case: the archive moves data_official/ out from under the 5 symlinked workspaces.
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            os.symlink(os.path.join(d, "gone.csv"), os.path.join(d, "train.csv"))
+            r = self._gate(d)
+            assert r.returncode != 0, "a dangling symlink was reported as a clean slate"
+            assert "NOT FULLY EXAMINED" in r.stdout and "DANGLING" in r.stdout, r.stdout[-400:]
+
+    def test_detector_attributes_a_hit_to_the_right_competition(self):
+        # 'playground-series-s3e1' is a prefix of 'playground-series-s3e19'; without a right
+        # boundary the first alternative wins and the finding names the wrong lane.
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            self._plant(d, "x.md", "playground-series-s3e19 scored 10.983835\n")
+            r = self._gate(d)
+            assert r.returncode != 0
+            assert "playground-series-s3e19" in r.stdout and \
+                   "playground-series-s3e1 " not in r.stdout, r.stdout[-400:]
+
+    # --- the boundary -----------------------------------------------------------------
+    def test_run_root_builder_admits_by_allowlist(self, run_root):
+        script = os.path.join(REPO, "benchmark_infra/build_myagent_run_root.py")
+        assert os.path.exists(script), (
+            "the leak surface provably extends past the repo (the harness auto-injects a "
+            "memory file naming 8 lanes' CV scores; git show retrieves every archived file; "
+            "the parent directory holds the all-20 private table). A denylist inside the "
+            "repo cannot close that; the run needs a root built by allowlist")
+        if True:
+            root = run_root
+            for forbidden in (".git", "docs/REPORT_v3.tex", "documents", "mlflow.db",
+                              "benchmark_results", "tests", ".superpowers",
+                              "tree_search/run_s3e7_v3.py", "tree_search/llm_proposals_s3e3.json",
+                              ".claude/skills/kaggle-agent-self-improvement"):
+                assert not os.path.exists(os.path.join(root, forbidden)), \
+                    f"{forbidden} reached the isolated run root"
+            for needed in (".claude/skills/kaggle-agent/SKILL.md",
+                           "knowledge/task_priors_for.py", "knowledge/knowledge_base.json",
+                           "tree_search/harness_v3.py", "tree_search/run_template_v3.py",
+                           "tree_search/stage2_inputs.py", "docs/rerun_manifest.json"):
+                assert os.path.exists(os.path.join(root, needed)), f"{needed} missing"
+            comps = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+            for c, spec in comps.items():
+                ws = os.path.join(root, "competitions", c)
+                assert os.path.exists(os.path.join(ws, "config.yaml")), f"{c}: no config"
+                assert os.path.exists(os.path.join(ws, "data")), f"{c}: no data"
+                assert os.path.exists(os.path.join(root, "tree_search", spec["eval"])), \
+                    f"{c}: pinned evaluator {spec['eval']} missing"
+                for stale in ("experiments.json", "STATUS.md", "scripts", "submissions"):
+                    assert not os.path.exists(os.path.join(ws, stale)), \
+                        f"{c}/{stale} reached the run root"
+
+    def test_run_root_passes_the_gate(self, run_root):
+        r = self._gate(run_root)
+        assert r.returncode == 0, (
+            "the isolated run root still states a competition's own result:\n"
+            + r.stdout[-2000:])
+
+    def test_run_root_has_no_auto_injected_memory(self):
+        # claude -p derives its project key from cwd; the recorded run's key
+        # (-home-tjyen-ai-agents-kaggle) has a MEMORY.md naming 8 lanes' CV scores and
+        # winning recipes, injected before the first tool call.
+        import re as _re
+        script = open(os.path.join(REPO, "benchmark_infra/build_myagent_run_root.py")).read()
+        assert "memory" in script.lower(), (
+            "the builder must check the memory directory its root's project key resolves to")
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh")).read()
+        assert _re.search(r"BASE=.*(RUN_ROOT|myagent-rerun)|RUN_ROOT", launcher), (
+            "the launcher still runs claude -p from the repo, whose project key carries the "
+            "recorded run's memory file")
+
+    # --- correctness of the pinned procedure -------------------------------------------
+    def test_launcher_runs_every_manifest_competition(self):
+        comps = set(json.load(open(os.path.join(REPO,
+                    "docs/rerun_manifest.json")))["competitions"])
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh")).read()
+        import re as _re
+        m = _re.search(r'^COMPS=(.*)$', launcher, _re.M)
+        assert m, "no COMPS line"
+        line = m.group(1)
+        if "$(" in line or "`" in line:
+            return                      # derived from the manifest: nothing to drift
+        listed = set(line.strip('"\' ').split())
+        assert listed == comps, (
+            f"the pinned launcher runs {len(listed)} of {len(comps)} competitions and then "
+            f"logs completion; missing: {sorted(comps - listed)[:6]}")
+
+    def test_stage2_contract_names_every_column_the_evaluator_needs(self):
+        # the sep-2022 contract named 7 columns; its evaluator uses 15 more it does not
+        # compute, and evaluate() swallows the KeyError into a failed node, so a Stage 2
+        # that satisfies the contract to the letter yields a tree of failures.
+        man = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))
+        doc = man["competitions"]["tabular-playground-series-sep-2022"]["stage2_inputs"]
+        for col in ("dow", "is_weekend", "month", "is_holiday", "days_since_hol",
+                    "doy_sin1", "gdp_pc", "log_gdp", "year_c"):
+            assert col in doc, f"stage2_inputs for sep-2022 omits required column {col!r}"
+
+    def test_pinned_evaluators_are_root_relative(self):
+        comps = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        offenders = []
+        for c, spec in comps.items():
+            fp = os.path.join(REPO, "tree_search", spec["eval"])
+            if not os.path.exists(fp):
+                continue
+            for i, line in enumerate(open(fp).read().splitlines(), 1):
+                if "/home/tjyen" in line and not line.strip().startswith("#"):
+                    offenders.append(f"{spec['eval']}:{i}")
+        assert not offenders, (
+            "a pinned evaluator hardcodes an absolute repo path, so from an isolated run "
+            f"root it reads the ORIGINAL repo's tables: {offenders}")
+
+    def test_exempted_knowledge_base_is_forbidden_by_the_texts_that_exempt_it(self):
+        # EXEMPT_PREFIXES promises SKILL.md and Stage 0.5 keep a lane out of
+        # knowledge_base.json. An exemption whose named mechanism does not exist is just a
+        # blind spot with a comment on it (round 9 #7/#8).
+        skill = open(os.path.join(REPO, ".claude/skills/kaggle-agent/SKILL.md")).read()
+        dossier = open(os.path.join(
+            REPO, ".claude/skills/kaggle-agent/references/00_problem_dossier.md")).read()
+        assert "knowledge/knowledge_base.json" in skill and "ONLY through" in skill
+        assert "no raw prose file to read" in dossier or \
+               "There is no raw prose library to read" in dossier
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh")).read()
+        assert "NEVER open knowledge/experience.md directly" in launcher
+
+    def test_run_root_carries_no_repository(self, run_root):
+        import subprocess
+        if True:
+            root, d = run_root, os.path.dirname(run_root)
+            r = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=root,
+                               capture_output=True, text=True, check=False)
+            assert r.returncode != 0 or not r.stdout.strip().startswith(d), (
+                "the run root sits inside a git repository, so `git show` retrieves every "
+                "recorded result the allowlist left out")
+
+    def test_run_root_data_does_not_resolve_back_into_the_repo(self, run_root):
+        # bench-comps/<comp>/data/* are symlinks into kaggle/competitions/<comp>/data_official/,
+        # so a symlinked data/ puts the lane one `..` from the repo it was isolated from.
+        if True:
+            root = run_root
+            comps = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+            escapes = []
+            for c in comps:
+                dd = os.path.join(root, "competitions", c, "data")
+                assert os.path.isdir(dd) and not os.path.islink(dd), f"{c}: data/ is a link"
+                for f in os.listdir(dd):
+                    real = os.path.realpath(os.path.join(dd, f))
+                    if not real.startswith(os.path.realpath(root) + os.sep):
+                        escapes.append(f"{c}/data/{f} -> {real}")
+            assert not escapes, ("official data resolves outside the run root:\n  "
+                                 + "\n  ".join(escapes[:6]))
+
+    def test_archive_keeps_what_the_shared_clean_data_root_points_at(self):
+        # every bench-comps/<comp>/data entry is a symlink into
+        # kaggle/competitions/<comp>/data_official/, so archiving that directory dangles the
+        # data root all three agents read.
+        import subprocess
+        r = subprocess.run(["bash", os.path.join(REPO,
+                            "benchmark_infra/archive_workspaces_for_rerun.sh")],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stderr[-300:]
+        moved = [ln for ln in r.stdout.splitlines() if "/data_official" in ln]
+        assert not moved, ("the archive dangles the shared clean data root:\n  "
+                           + "\n  ".join(moved[:5]))
+
+    def test_pinned_evaluators_name_their_stage2_module_when_it_is_absent(self, run_root):
+        # From the run root a pinned evaluator used to die on `ModuleNotFoundError: No module
+        # named 'features'` — feature code the RUN is supposed to write, with nothing saying
+        # so. 16 of the 20 depend on competitions/<comp>/scripts/ this way (round 9).
+        #
+        # Static over all of them (importing each one builds its features, which costs
+        # minutes), behavioural over three shapes: a plain `import features`, a two-module
+        # dependency, and one whose Stage-2 artifact is data rather than code.
+        import subprocess
+        comps = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        unguarded = []
+        for comp, spec in sorted(comps.items()):
+            contract = spec.get("stage2_module_contract", "")
+            mods = [m for m in __import__("re").findall(r"scripts/(\w+)\.py", contract)]
+            if not mods:
+                continue
+            src = open(os.path.join(REPO, "tree_search", spec["eval"])).read()
+            import ast as _ast
+            nested = {n.names[0].name.split(".")[0]
+                      for n in _ast.walk(_ast.parse(src))
+                      if isinstance(n, _ast.Import) and n.col_offset > 0}
+            for mod in mods:
+                if f'require_module' in src and f'"{mod}"' in src:
+                    continue
+                # a module imported inside the reproduction-only fallback is already gated by
+                # the stage2_inputs.require() call that guards that branch
+                if mod in nested and "stage2_inputs.require(" in src:
+                    continue
+                unguarded.append(f"{comp}: {spec['eval']} imports {mod} unguarded")
+        assert not unguarded, (
+            "a pinned evaluator imports this run's own Stage 2 feature code with no check, "
+            "so from a clean root it dies on a bare ModuleNotFoundError:\n  "
+            + "\n  ".join(unguarded[:8]))
+
+        for comp, mod in (("playground-series-s3e3", "eval_s3e3"),
+                          ("conway-s-reverse-game-of-life", "eval_conway"),
+                          ("afsis-soil-properties", "eval_afsis")):
+            r = subprocess.run(
+                [sys.executable, "-c",
+                 f"import sys;sys.path.insert(0,'tree_search');import {mod}"],
+                capture_output=True, text=True, cwd=run_root, check=False)
+            out = r.stdout + r.stderr
+            assert r.returncode != 0, f"{mod} imported cleanly from a root with no Stage 2"
+            assert "ModuleNotFoundError" not in out, f"{mod}: bare import error\n{out[-300:]}"
+            assert "stage2_module_contract" in out or "Stage 2" in out, out[-400:]

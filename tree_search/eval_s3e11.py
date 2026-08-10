@@ -77,6 +77,9 @@ sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
 
 sys.path.insert(0, os.path.join(_COMP_DIR, "scripts"))
+import stage2_inputs  # noqa: E402
+stage2_inputs.require_module(os.path.join(_COMP_DIR, "scripts"), "features", comp="playground-series-s3e11",
+                             exposes=['base_feature_columns'])
 import features as feat_mod  # noqa: E402 -- build_features()/base_feature_columns(), pure functions
 
 DATA = os.path.join(_COMP_DIR, "data")

@@ -8,17 +8,22 @@
 # per competition. What a session loses by having no human is recoverable: the watchdog
 # flags stalls, and a dead session leaves its workspace for the next one to pick up.
 #
-# February leftovers are archived (.feb-archive). Before a benchmark re-run,
-# benchmark_infra/archive_workspaces_for_rerun.sh --execute clears every workspace down to
-# config.yaml + the official data files and then runs verify_clean_slate.py, so a re-run
-# cannot warm-start off its own old intermediates — the same rule that voided AIDE's
-# contaminated cells. Only 5 of the 20 workspaces symlink to the clean root; the other 15
-# are real directories that held the recorded run's own OOF matrices until round 8.
+# THE RUN DOES NOT HAPPEN IN THE REPO. RUN_ROOT is an isolated tree built by allowlist
+# (benchmark_infra/build_myagent_run_root.py --write) holding the skill, the knowledge tools,
+# the harness, each competition's pinned evaluator, and each workspace's config.yaml plus a
+# data/ symlink to the Kaggle-manifest-verified bench-comps root. Nine audit rounds tried to
+# reach a clean slate by deleting things from the repo; round 9 showed the boundary was wrong.
+# The harness derives its memory directory from the working directory and auto-injects it, and
+# the repo's own key carries a MEMORY.md naming eight lanes' CV scores; `git show` retrieves
+# every archived file; documents/, mlflow.db and the repo's parent all hold per-lane private
+# scores. A fresh working directory has none of that, because none of it was ever copied in.
 #
 # Usage:  setsid nohup bash run_myagent_headless.sh > myagent_lanes.log 2>&1 < /dev/null &
 set -uo pipefail
 
-BASE=/home/tjyen/ai_agents/kaggle
+REPO=/home/tjyen/ai_agents/kaggle
+RUN_ROOT=${RUN_ROOT:-/home/tjyen/ai_agents/myagent-rerun}
+BASE=$RUN_ROOT
 NV_MARKER=/home/tjyen/ai_agents/nvidia-kaggle-runs/RUN_READY_STATUS.md
 AIDE_MARKER=/home/tjyen/ai_agents/aideml-runs/PHASE9A_STATUS.md
 STATUS=$BASE/MYAGENT_LANES_STATUS.md
@@ -32,10 +37,17 @@ MAX_WAIT_SECS=$((16*3600))
 # and the actual hung process survives — the one thing the stall handler exists to remove.
 kill_tree(){ local p; for p in $(pgrep -P "$1" 2>/dev/null); do kill_tree "$p"; done; kill -9 "$1" 2>/dev/null; }
 
-# conway moved last: attempt 3 hung on a dead HTTP stream on 2026-07-28 and was killed by
-# hand. aug-2022 and jan-2022 are what bring the significance-testable set to 19, so they
-# run first; conway then gets its retry with the stall watchdog rather than being dropped.
-COMPS="afsis-soil-properties cat-in-the-dat tabular-playground-series-aug-2022 tabular-playground-series-jan-2022 conway-s-reverse-game-of-life"
+# DERIVED, never hand-listed. A stale hand-written list ran 5 of the 20 competitions and then
+# logged "MY-AGENT LANES COMPLETE" — the same "reports success in minutes" shape the archive
+# script's header warns about, one layer up (2026-08-10 round-9). The manifest is the single
+# definition of which competitions the re-run covers.
+COMPS=$(python3 -c "import json,sys;print(' '.join(sorted(json.load(open(sys.argv[1]))['competitions'])))" "$REPO/docs/rerun_manifest.json") || {
+  echo "cannot read the competition list from $REPO/docs/rerun_manifest.json" >&2; exit 4; }
+
+# The run root must exist and must pass the clean-slate gate before a single lane starts.
+[ -d "$RUN_ROOT" ] || { echo "no run root at $RUN_ROOT — build it with python3 $REPO/benchmark_infra/build_myagent_run_root.py --write" >&2; exit 4; }
+python3 "$REPO/benchmark_infra/verify_clean_slate.py" --root "$RUN_ROOT" || {
+  echo "run root is not clean — refusing to start" >&2; exit 3; }
 
 log(){ echo "- \`$(date '+%m-%d %H:%M')\` $*" | tee -a "$STATUS"; }
 
@@ -75,7 +87,7 @@ for c in $COMPS; do
 
   PROMPT="You are running ONE benchmark competition with the kaggle-agent skill: $c.
 
-Work in competitions/$c/ (config.yaml present; data/ holds the official competition files and nothing else — the workspace was archived to a clean slate before this run).
+Work in competitions/$c/ (config.yaml present; data/ symlinks to the official competition files and nothing else). This whole tree is an isolated run root built for this benchmark: it holds the skill, the tools and the data, and no record of how any competition turned out before.
 
 Follow the kaggle-agent skill as written — read SKILL.md and its references and do what they say. Do not treat this prompt as the definition of the pipeline; the skill is. In particular the skill designates **tree search as the preferred Stage 4 optimisation loop** (references/07_tree_search.md, harness tree_search/harness_v3.py), to be entered once the linear Iteration Protocol has produced a baseline solo model plus at least one blend, with the linear protocol kept only as the first-pass fallback and for competitions where a ~60-node budget is not worth it. An earlier run of this benchmark listed the stages in the prompt and silently omitted tree search; every competition then finished in 5-32 minutes having never entered it, which is not this agent's method. If you judge a competition too cheap to justify the search, say so explicitly in STATUS.md with the reason.
 
@@ -84,7 +96,7 @@ Also per the skill: consult the experience library ONLY through its filtered too
 CRITICAL — run every training job in the FOREGROUND and wait for it. No '&', nohup or setsid, and never end a turn while a job is still running: this session ends the moment you stop calling tools, so a backgrounded job dies unfinished and the competition produces nothing. A previous conway attempt failed exactly this way. If a configuration would not finish in the budget, shrink it until it completes in the foreground.
 
 Constraints:
-- STRICT lane isolation: never read or reference anything under ~/ai_agents/aideml*, ~/ai_agents/nvidia-kaggle*, or other agents' outputs. Do not touch .feb-archive/ or archive/ — they are quarantined records of previous runs, including this competition's own; reading them is reading the answer.
+- STRICT lane isolation: never read or reference anything under ~/ai_agents/aideml*, ~/ai_agents/nvidia-kaggle*, or other agents' outputs. STAY INSIDE THIS ROOT: do not read the parent directory, ~/ai_agents/* (other than the data/ symlink target), any other checkout of this project, or ~/.claude/. There is no git repository here and you must not create or consult one. Everything you need is in this tree; anything outside it is either another agent's lane or a record of a previous run of this same competition.
 - Machine is shared: cap threads at 10 (LightGBM num_threads, OMP). Fix seeds; deterministic=true, force_row_wise=true for LightGBM.
 - Budget: work at your normal pace; the pipeline decides when it is done (6 h hard safety net). A completed modest pipeline beats an unfinished ambitious one.
 - Finish by writing competitions/$c/submission.csv (columns/id order per sample_submission.csv) and a 3-line summary at the top of competitions/$c/STATUS.md with the final CV score.

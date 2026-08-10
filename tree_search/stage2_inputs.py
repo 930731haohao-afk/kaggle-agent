@@ -30,3 +30,25 @@ def require(path: str, *, comp: str, artifact: str, columns: list[str],
         f"run's own table there, carrying at least: {', '.join(columns)}.\n"
         f"Do not restore the archived copy: scoring this run on a previous run's feature "
         f"matrix is the contamination the archive exists to prevent.")
+
+
+def require_module(scripts_dir: str, module: str, *, comp: str, exposes: list[str]) -> None:
+    """Check that THIS run's Stage 2 wrote `scripts/<module>.py`, before importing it.
+
+    Sixteen of the twenty pinned evaluators do `sys.path.insert(scripts_dir)` then
+    `import features` — feature code the run itself is supposed to have written. From an
+    isolated run root that import raises a bare `ModuleNotFoundError: No module named
+    'features'`, which tells a lane nothing about what it is expected to produce
+    (2026-08-10 round-9). docs/rerun_manifest.json's `stage2_module_contract` records the
+    module and the signature of every callable; this makes the failure point at it.
+    """
+    if os.path.exists(os.path.join(scripts_dir, module + ".py")):
+        return
+    raise RuntimeError(
+        f"{comp}: the pinned evaluator imports `{module}` from\n"
+        f"    {scripts_dir}\n"
+        f"which is THIS run's own Stage 2 feature code — not a competition input, and not "
+        f"something to copy from a previous run. Write {module}.py there exposing: "
+        f"{', '.join(exposes)}.\n"
+        f"The full signature contract is docs/rerun_manifest.json -> competitions[{comp!r}]"
+        f".stage2_module_contract.")
