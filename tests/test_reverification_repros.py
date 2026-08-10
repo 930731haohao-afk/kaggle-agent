@@ -1264,3 +1264,102 @@ class TestRound6:
 def _re_matches_per_comp(drv: str) -> bool:
     import re as _re
     return bool(_re.match(r"run_(?:s\d+e\d+|tps\w+|afsis|citd|conway|aug\d+|jan\d+|sep\d+|tssep\d+|tpsjan\d+)", drv))
+
+
+# ===========================================================================
+# ROUND 7 (2026-08-10): deduction channels and the pinned-module doors
+# ===========================================================================
+class TestRound7:
+    def _view(self, comp, *mode):
+        import subprocess
+        r = subprocess.run([sys.executable, os.path.join(REPO, "knowledge/task_priors_for.py"),
+                            comp, *mode], capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stderr[-300:]
+        return r.stdout
+
+    def test_no_stale_aggregate_in_instructions(self):
+        # "on both competitions measured so far the LB favoured join_feature" is a frozen
+        # 2-row aggregate; combined with the renderer's own 2-row view it identifies the
+        # reader's own winner by complement
+        import re as _re
+        refdir = os.path.join(REPO, ".claude/skills/kaggle-agent/references")
+        for fn in os.listdir(refdir):
+            if not fn.endswith(".md"):
+                continue
+            txt = open(os.path.join(refdir, fn)).read()
+            assert not _re.search(r"both competitions measured|on all three comp|"
+                                  r"in \d of \d benchmark", txt), (
+                f"{fn} states a frozen cross-competition tally; the renderer recomputes "
+                f"per view, so a hardcoded one leaks by complement")
+
+    def test_withheld_registration_renders_no_selector(self):
+        out = self._view("playground-series-s5e1", "--prereg").lower()
+        for needle in ("horizon", "h-horizon", "ratio_target", "join_feature", "≤ 1 year"):
+            assert needle not in out, (
+                f"--prereg for s5e1 still exposes {needle!r}: the selector variable plus the "
+                f"surviving pole reconstructs the withheld clause (its own verdict)")
+        # an unrelated competition still gets the full registration
+        other = self._view("playground-series-s9e9", "--prereg").lower()
+        assert "horizon" in other and "ratio_target" in other
+
+    def test_priors_view_names_no_selector_variable(self):
+        out = self._view("playground-series-s5e1").lower()
+        assert "horizon-length selector" not in out and "h-horizon" not in out, (
+            "the generic note names the selector variable; with only the <=1yr pole visible "
+            "the 3-year lane deduces its own complement")
+
+    def test_form_race_rows_carry_no_horizon(self):
+        for comp in ("playground-series-s5e1", "playground-series-s3e19",
+                     "tabular-playground-series-sep-2022"):
+            out = self._view(comp)
+            assert "-year horizon" not in out, (
+                f"{comp}: rendered race rows expose each competition's horizon, which is the "
+                f"selector variable — the reader knows its own horizon and completes the map")
+
+    def test_pinned_eval_modules_carry_no_recorded_scores(self):
+        import json as _json
+        import re as _re
+        pat = _re.compile(r"\b\d+\.\d{4,}\b")
+        comps = _json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        offenders = []
+        for comp, spec in comps.items():
+            fp = os.path.join(REPO, "tree_search", spec["eval"])
+            if not os.path.exists(fp):
+                continue
+            in_doc = False
+            for i, line in enumerate(open(fp).read().splitlines(), 1):
+                if line.count('"""') % 2:
+                    in_doc = not in_doc
+                if in_doc or line.strip().startswith("#"):
+                    hit = pat.search(line)
+                    if hit:
+                        offenders.append(f"{spec['eval']}:{i} {hit.group(0)}")
+                        break
+        assert not offenders, (
+            "pinned eval modules — which a fresh lane must read and run — carry recorded "
+            "scores in prose:\n  " + "\n  ".join(offenders[:8]))
+
+    def test_root_status_is_not_an_advertised_answer_file(self):
+        assert not os.path.exists(os.path.join(REPO, "STATUS.md")), (
+            "root STATUS.md holds per-competition results and CLAUDE.md advertises it in the "
+            "auto-loaded project layout")
+        claude_md = open(os.path.join(REPO, "CLAUDE.md")).read()
+        import re as _re
+        assert not _re.search(r"^\S*\s*STATUS\.md\s+#", claude_md, _re.M), (
+            "CLAUDE.md still lists STATUS.md in the layout the agent auto-loads")
+
+    def test_canonical_refuses_prefix_truncation(self):
+        from knowledge.task_priors_for import canonical, load_kb
+        kb = load_kb()
+        with pytest.raises(ValueError):
+            canonical("afsis-soil", kb)          # truncation of a known slug
+        assert canonical("brand-new-comp-2027", kb) == "brand-new-comp-2027"
+
+    def test_report_flag_documented_as_counts_only(self):
+        doc = open(os.path.join(
+            REPO, ".claude/skills/kaggle-agent/references/00_problem_dossier.md")).read()
+        import re as _re
+        m = _re.search(r"--report[^\n]*", doc)
+        if m:
+            assert "why" not in m.group(0).lower(), (
+                "--report is counts-only since round 6; the doc still promises reasons")

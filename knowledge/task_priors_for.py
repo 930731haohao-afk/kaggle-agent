@@ -103,6 +103,16 @@ def canonical(comp: str, kb: dict | None = None) -> str:
     for canon in comps | set(_SHORT_ALIASES):
         short = canon.replace("playground-series-", "").replace("tabular-", "")
         for stem in (canon, short):
+            # a TRUNCATION of a known slug is as ambiguous as an extension, and failing open
+            # served the truncated workspace the full library (2026-08-10 round-7)
+            # The digit-sibling rule applies symmetrically: playground-series-s3e1 is a real
+            # slug that happens to be a PREFIX of s3e11/s3e19, so a digit at the split point
+            # means numbered siblings, not truncation (2026-08-10 round-7).
+            if (stem and len(c) >= 6 and stem.startswith(c) and c != stem
+                    and not stem[len(c)].isdigit()):
+                raise ValueError(
+                    f"competition spelling {comp!r} is a truncation of the known slug "
+                    f"{canon!r}. Refusing to guess: pass the full slug.")
             if stem and c.startswith(stem) and c != stem:
                 # A DIGIT continuation is a numbered sibling competition (s4e1 -> s4e11,
                 # s5e1 -> s5e10), not a workspace derivation: refusing it crashed the s4e11
@@ -171,9 +181,12 @@ def render_priors(kb: dict, comp: str) -> tuple[str, list[dict]]:
                            f"in {beat}/{n}; local CV picked the eventual form winner in "
                            f"{cv_right}/{n} — race both arms, always.")
                 for r in rows:
+                    # horizon_years is DELIBERATELY not rendered: it is the selector
+                    # variable of the open registration, and the reader knows its own
+                    # horizon from its data -- printing the others completes the map
+                    # (2026-08-10 round-7).
                     out.append(f"  - {_short(r['comp'])}: `{r['winner']}` beat "
-                               f"`{r['loser']}`, {r['scores']} "
-                               f"({r['horizon_years']}-year horizon).")
+                               f"`{r['loser']}`, {r['scores']}.")
             if any(r["comp"] == excl for r in kb["form_race"]["rows"]):
                 report.append({"action": "row_withheld"})
         out.append("")
@@ -208,6 +221,22 @@ def render_prereg(kb: dict, comp: str) -> tuple[str, list[dict]]:
     excl = canonical(comp, kb)
     out, report = [], []
     for p in kb["prereg"]:
+        # If ANY clause is withheld, render NOTHING identifying. Round 6 removed the
+        # dichotomy intro, but the registration id, the surviving pole and the selector
+        # variable together still reconstructed the withheld clause -- i.e. the reader's own
+        # recorded verdict (2026-08-10 round-7). A partially-visible registration is not a
+        # safe artifact: it is a complement puzzle with one piece missing.
+        n_withheld_pre = sum(
+            1 for c in p["clauses"]
+            if not [e for e in c.get("evidence", []) if canonical(e, kb) != excl])
+        if n_withheld_pre:
+            report.extend({"action": "clause_withheld"} for _ in range(n_withheld_pre))
+            # Render NOTHING -- not even a notice. Any marker is a signal, and within
+            # a single run an empty --prereg view is indistinguishable from "no open
+            # registrations exist". Stage 0.5 step 8 tells the agent to ask the
+            # operator whenever the view is empty, so the case is covered without a
+            # leak (2026-08-10 round-7).
+            continue
         out.append(f"# Pre-registration: {p['id']}")
         out.append("")
         out.append(f"**Status: {p['status']}**")

@@ -1,7 +1,7 @@
 """tree_search/eval_s3e9_v2.py — per-competition evaluator for playground-series-s3e9
 (Concrete Compressive Strength, RMSE, minimize), REVENGE MATCH build on harness_v2
 (Phase E-1). v1 (tree_search/eval_s3e9.py, single-model-only nodes) LOST here:
-12.07459 vs the linear iteration's 7-way seed-bagged blend 12.07003 (STATUS.md's Phase
+<score> vs the linear iteration's 7-way seed-bagged blend <score> (STATUS.md's Phase
 C-2a verdict: "to actually beat this competition's current best score, Stage 4 needs
 the search space widened beyond single-model nodes"). v2 is exactly that widening —
 harness_v2's ensemble-default node space (`kind`: "solo"|"blend") — applied to the same
@@ -242,8 +242,8 @@ def _coord_descent_refine(oofs, metric_fn, w0, s0, rounds=60,
     """Coordinate-descent fine-refinement AFTER the coarse dirichlet search, ported
     verbatim (same deltas/round cap) from every historical s3e9 train_*.py's own
     weight_search() -- harness_v2.eval_blend's dirichlet search alone (1500 random +
-    500 refine draws) is coarser than this and, on its own, plateaued at 12.0713-12.0715
-    in this run's own first pass, short of the linear iteration's 12.07003 (which WAS
+    500 refine draws) is coarser than this and, on its own, plateaued at <score>-<score>
+    in this run's own first pass, short of the linear iteration's <score> (which WAS
     found via dirichlet+coordinate-descent). Applying the same two-stage recipe here
     keeps the search comparably thorough to what actually produced the number v2 is
     trying to beat."""

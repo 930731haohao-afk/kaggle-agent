@@ -16,13 +16,13 @@ Phase C-2b innovation vs eval_s3e9.py: TWO node kinds instead of one.
      going), weight-searches the blend, applies snap-to-grid, returns the score. No
      retraining at all -- this is what makes ensemble nodes cost seconds instead of
      20-60s, and is the fix for s3e9's key lesson (single-model-only node space can't
-     reach where linear iteration won: 340.59891 via a 5-way blend).
+     reach where linear iteration won: <score> via a 5-way blend).
 
 Reuses competitions/playground-series-s3e14/scripts/features.py UNMODIFIED and the exact
 same CV scheme as scripts/train_v2.py-train_v6.py (5-fold KFold, shuffle, seed=42) so
-scores are directly comparable to STATUS.md's numbers (root solo LGB ~342.02154, XGB
-~342.21778, CAT(native-cat) ~343.60196, Optuna-tuned LGB ~341.68775, linear-iteration best
-blend 340.59891).
+scores are directly comparable to STATUS.md's numbers (root solo LGB ~<score>, XGB
+~<score>, CAT(native-cat) ~<score>, Optuna-tuned LGB ~<score>, linear-iteration best
+blend <score>).
 """
 import json
 import os
@@ -188,7 +188,7 @@ def evaluate_solo(config):
     # defaulted snap=True, so the two node kinds were ranked on different metrics and then
     # compared with a single min(). Both now default to SNAP ON -- snapping to the observed
     # target grid can only help MAE on this competition (run_s3e14's own note: the same
-    # blend is 340.75961 raw vs 340.71180 snapped), so it is what a submission would do.
+    # blend is <score> raw vs <score> snapped), so it is what a submission would do.
     use_snap = pp.get("snap", True)
     score_oof = snap_to_grid(oof) if use_snap else oof
     score = mae(_y, score_oof)

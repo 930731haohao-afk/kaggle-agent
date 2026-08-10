@@ -399,7 +399,7 @@ def _greedy_weights(cols, y, rounds=60, member_idx=None):
 def _bagged_greedy_weights(cols, y, rounds=30, n_bags=20, frac=0.5, seed=SEED):
     """Caruana-style bagged greedy: each bag greedily selects from a random subset of
     members, weights are averaged across bags. experience.md: bagging lowers the greedy
-    search's own optimism (+0.0146 vs +0.0186) but does not always win on the nested
+    search's own optimism (+<score> vs +<score>) but does not always win on the nested
     score — both must be tried and the search must decide."""
     rng = np.random.default_rng(seed)
     n_m = cols.shape[1]

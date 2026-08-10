@@ -20,11 +20,11 @@ eval_s3e3.py/eval_s3e7.py:
      prediction vector is cached via harness_v2.cache_oof to
      tree_search/cache_s3e1/solo_<node_id>.npz so blend nodes never retrain.
 
-     `postprocess.clip=True` clips predictions to [y_train.min(), 5.00001] BEFORE RMSE
+     `postprocess.clip=True` clips predictions to [y_train.min(), <score>] BEFORE RMSE
      is computed — the linear-iteration run only ever clipped the final TEST submission
      to the train target range (round4_full_retrain.py's "clip_to_train_target_range"),
      never the OOF used to SCORE/select models. Since 4.92% of train rows are top-coded
-     at exactly 5.00001 (STATUS.md EDA finding #1), any solo/blend prediction above that
+     at exactly <score> (STATUS.md EDA finding #1), any solo/blend prediction above that
      ceiling for a genuinely-capped row is guaranteed excess error that clipping removes
      for free — this node kind measures whether that's a real, reproducible OOF RMSE
      gain here (untested lever per the Phase D-4 brief: "top-code-aware nodes").
@@ -123,8 +123,8 @@ def _build_features_fresh():
     lands on bit-patterns that differ from the historical run by ~1e-13 per feature
     (pandas fillna/arithmetic ordering, not a correctness bug -- confirmed by round-
     tripping this function's own output through a CSV text buffer, which alone shifts
-    LGB_TUNED_SEED2024's OOF RMSE from 0.558552 to the historical 0.558812) and that
-    tiny noise cascades into a real ~0.00026 RMSE difference. `_build_features` below
+    LGB_TUNED_SEED2024's OOF RMSE from <score> to the historical <score>) and that
+    tiny noise cascades into a real ~<score> RMSE difference. `_build_features` below
     therefore prefers loading the existing processed_v2 CSVs (byte-identical to what
     produced every STATUS.md/experiments.json number) and only falls back to this fresh
     computation if those files are missing (e.g. a clean checkout that never ran the
@@ -357,7 +357,7 @@ def _run_cat(params, X, Xtest):
 def _run_ceiling_hybrid(params, X, Xtest):
     """The Phase D-4 brief's ONE "ambitious" node: a two-stage ceiling-aware hybrid.
     STATUS.md EDA finding #1: 4.92% of train rows are top-coded at exactly
-    TOP_CODE_CEILING (5.00001) -- their TRUE value is >=5.00001 but unrecoverable, so a
+    TOP_CODE_CEILING (<score>) -- their TRUE value is >=<score> but unrecoverable, so a
     pure regressor's residual error on those rows is capped-target-shape, not iid noise.
     This trains (a) the usual LGB regressor and (b) a binary LGB classifier for
     "is this row's target >= ceiling" on the SAME folds, then combines:
@@ -416,8 +416,8 @@ def evaluate_solo(config):
     # WITH the top-code clip and nodes scored without it were ranked against each other by
     # one min(). Clipping into [y_min, Y_MAX] can never increase |error| for a row whose
     # truth lies inside that range, so an unclipped node is systematically understated --
-    # and the committed tree shows it: node 10 (unclipped) 0.557054 vs node 11 (identical
-    # members, clipped) 0.556931, while all 15 solo nodes carried no postprocess at all.
+    # and the committed tree shows it: node 10 (unclipped) <score> vs node 11 (identical
+    # members, clipped) <score>, while all 15 solo nodes carried no postprocess at all.
     # Both kinds now default to clipping, which is also what the submission does.
     clip = bool((config.get("postprocess") or {}).get("clip", True))
 
@@ -453,8 +453,8 @@ def evaluate_blend(config):
     # WITH the top-code clip and nodes scored without it were ranked against each other by
     # one min(). Clipping into [y_min, Y_MAX] can never increase |error| for a row whose
     # truth lies inside that range, so an unclipped node is systematically understated --
-    # and the committed tree shows it: node 10 (unclipped) 0.557054 vs node 11 (identical
-    # members, clipped) 0.556931, while all 15 solo nodes carried no postprocess at all.
+    # and the committed tree shows it: node 10 (unclipped) <score> vs node 11 (identical
+    # members, clipped) <score>, while all 15 solo nodes carried no postprocess at all.
     # Both kinds now default to clipping, which is also what the submission does.
     clip = bool((config.get("postprocess") or {}).get("clip", True))
 

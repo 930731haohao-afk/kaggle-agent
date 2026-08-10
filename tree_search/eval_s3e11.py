@@ -44,7 +44,7 @@ Two node kinds, same schema convention as eval_s3e1.py/eval_s3e19.py:
      Loads each member's cached OOF vector (LOG1P SPACE) via harness_v2.load_oof,
      weight-searches for the blend that MINIMIZES rmsle_from_log(y_log, oofs @ w) — same
      semantics as iterate2.py's weight_search(), so the seed_blend() 5-way reproduction
-     in run_s3e11.py should land at/near STATUS.md exp #8's 0.295648 (dirichlet search
+     in run_s3e11.py should land at/near STATUS.md exp #8's <score> (dirichlet search
      vs the linear run's coarser 0.1-step grid, so a small further gain is expected, not
      a regression).
 

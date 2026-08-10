@@ -1,8 +1,8 @@
 """tree_search/eval_s3e5_v2.py — per-competition evaluator for playground-series-s3e5
 (Wine Quality, ordinal regression, QWK, DISCRETIZED and maximize-better), harness_v2
 (Phase E-2) build. v1 (tree_search/eval_s3e5.py, hand-rolled solo+blend schema on
-harness.py) TIED the linear-iteration best here: node #11 (4-way blend) 0.56766 vs
-linear's 0.56769, a 0.00003 gap STATUS.md's own appendix calls "the cutpoint-boundary
+harness.py) TIED the linear-iteration best here: node #11 (4-way blend) <score> vs
+linear's <score>, a <score> gap STATUS.md's own appendix calls "the cutpoint-boundary
 noise gap" (single-sample cutpoint assignment territory). This build asks whether
 harness_v2's two mechanisms BUILT FOR exactly this situation — the metric-aware
 adaptive plateau (tie_rate-driven, §6.2) and the ensemble-default node space (§6.1) —
@@ -17,8 +17,8 @@ alternative rounder inside a node variant" instruction — fit OptimizedRounder 
 on each fold's own (oof[val_idx], y[val_idx]) slice, average the 5 resulting cutpoint
 vectors element-wise, then decode the FULL OOF with that averaged vector). This is
 EXACTLY the computation STATUS.md's exp #10 diagnostic already ran once by hand
-("Averaged-fold cutpoints applied globally = 0.56449" vs full-OOF 0.56769 on the 6-way
-blend, i.e. WORSE by -0.0032 at that pool's maturity) — this module makes it a first-
+("Averaged-fold cutpoints applied globally = <score>" vs full-OOF <score> on the 6-way
+blend, i.e. WORSE by -<score> at that pool's maturity) — this module makes it a first-
 class, re-runnable node config instead of a one-off diagnostic script, so the search can
 test it on THIS run's own pool compositions with a low, evidence-based prior (expect
 flat-to-worse, not an assumed win). Whichever rounder a node uses, it is applied inside
@@ -59,16 +59,16 @@ Two node kinds, same schema convention as eval_s3e9_v2.py/eval_s3e11.py:
      budget — document what you choose") — REVISED after an empirical check, not assumed:
      an initial pass tried k=200 (~15s/blend node). It reproduced v1's own exact best
      composition (members [root, CAT_tuned, XGB, FEAT]) but landed on a visibly WORSE
-     weight-simplex point (QWK 0.56601 vs v1's 0.56766 on the IDENTICAL 4 OOF vectors —
+     weight-simplex point (QWK <score> vs v1's <score> on the IDENTICAL 4 OOF vectors —
      confirmed by plugging v1's own weight vector into this module's own metric_fn, which
-     reproduces 0.56766 and v1's exact cutpoints digit-for-digit, so the gap is 100% a
+     reproduces <score> and v1's exact cutpoints digit-for-digit, so the gap is 100% a
      search-quality issue, not a data/implementation mismatch). Adding a coordinate-ascent
-     refinement stage on top of k=200 did NOT close the gap (still 0.56601) — the coarse
+     refinement stage on top of k=200 did NOT close the gap (still <score>) — the coarse
      dirichlet stage simply never sampled near the true optimum's basin, so no amount of
      *local* refinement could reach it. A direct k-sweep on that exact composition (200 /
      500 / 800 / 1500 dirichlet draws, each + coordinate-ascent refinement) found: k=200
-     -> 0.56601 (17s), k=500 -> 0.56766 (40s, matches v1 exactly), k=800 -> 0.56874 (60s,
-     BEATS both v1's 0.56766 and the linear iteration's 0.56769), k=1500 -> 0.56792 (112s,
+     -> <score> (17s), k=500 -> <score> (40s, matches v1 exactly), k=800 -> <score> (60s,
+     BEATS both v1's <score> and the linear iteration's <score>), k=1500 -> <score> (112s,
      still beats both, but LESS than k=800 — the search is stochastic, not monotonic in
      k). Given the run's actual wall-clock budget has ample headroom (the first full pass
      with k=200 used only ~90s total for 22 nodes against a ~28 min budget), the "coarser
@@ -179,7 +179,7 @@ def fold_avg_rounder_qwk(oof_vec):
     averaged), then average the 5 resulting cutpoint vectors element-wise and decode the
     FULL OOF vector with that single averaged vector. STATUS.md's own exp #10 already ran
     this exact computation once by hand on the linear run's 6-way blend and found it
-    WORSE than full-OOF fitting (0.56449 vs 0.56769) — this function makes that a
+    WORSE than full-OOF fitting (<score> vs <score>) — this function makes that a
     re-runnable node-level choice instead of a one-off diagnostic, with that result as
     the honest prior (expect flat-to-worse, not assumed to help)."""
     coefs = []
@@ -326,7 +326,7 @@ def _coord_ascent_refine(oofs, metric_fn, w0, s0, rounds=6,
     (ported in spirit from v1's own weight_search()/eval_s3e9_v2.py's
     _coord_descent_refine). ADDED after this module's first pass (k=200 dirichlet alone)
     reproduced v1's own exact best composition (members [root,CAT,XGB,FEAT]) but landed
-    on a visibly worse point of the weight simplex (0.56601 vs v1's 0.56766 on the
+    on a visibly worse point of the weight simplex (<score> vs v1's <score> on the
     IDENTICAL 4 members) -- i.e. the coarser dirichlet-only search was cutting corners
     that mattered on this discretized metric's narrow winning region, not just adding
     noise. This bounded local-search stage (<=6 rounds, single-coordinate perturbations,

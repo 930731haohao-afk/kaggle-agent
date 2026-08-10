@@ -8,7 +8,7 @@
       "action": "time-based split mandatory (`year < y` vs `year == y`, or TimeSeriesSplit); shuffled KFold forbidden. Assess macro external data (see whitelist) — target series that depend on country/region economics usually need them. **When the test window lies outside the training range, emit BOTH forms as separate arms — `join_feature` (covariate as a plain feature) and `ratio_target` / `log_offset` (covariate carries the level) — and select between them by a rule fixed before any score is seen. Do not assume either form wins.** The reasoning that a piecewise-constant GBDT cannot extrapolate a feature is sound and predicts `ratio_target`; the measured record says otherwise often enough that no local signal earns the choice. Pair whichever form is used with a `trend_term` for the drift common to all series.",
       "generic_notes": [
         "Run the proportionality diagnostic and RECORD its verdict — but do not gate on it: it was falsified as a form predictor by a pre-registered test (see evidence), and is demoted to a recorded note.",
-        "Race both arms, always; no local signal or diagnostic currently earns the right to choose the form for you. A horizon-length selector is registered as H-HORIZON (read via --prereg) and is binding on the next firing-class competition."
+        "Race both arms, always; no local signal or diagnostic currently earns the right to choose the form for you. A form selector is under open pre-registration (read via --prereg) and its protocol is binding on the next firing-class competition."
       ],
       "evidence": [
         {
@@ -53,7 +53,8 @@
           "cross_agent": true,
           "text": "[cross-agent evidence withheld under the isolation protocol]"
         }
-      ]
+      ],
+      "generic_notes": []
     },
     {
       "id": "TASK-CAT-ONLY",
@@ -70,7 +71,8 @@
           "cross_agent": true,
           "text": "[cross-agent evidence withheld under the isolation protocol]"
         }
-      ]
+      ],
+      "generic_notes": []
     },
     {
       "id": "TASK-SPECTRAL",
@@ -82,7 +84,8 @@
           "comp": "afsis-soil-properties",
           "text": "1,157 × 3,600; MCRMSE 0.49517 (percentile rank 46.6) with an 80-node search; tree search moved CV 0.44817 → 0.444076 while wall time fell 32 → 17 min."
         }
-      ]
+      ],
+      "generic_notes": []
     },
     {
       "id": "TASK-STRUCT-OUT",
@@ -94,7 +97,8 @@
           "comp": "conway-s-reverse-game-of-life",
           "text": "MAE 0.10875 — percentile rank 98.6."
         }
-      ]
+      ],
+      "generic_notes": []
     },
     {
       "id": "TASK-MAE-METRIC",
@@ -110,7 +114,8 @@
           "comp": "playground-series-s3e16",
           "text": "postprocessing-in-metric rule from tree-search v2: snap-to-observed beat plain clipping for integer-valued MAE targets."
         }
-      ]
+      ],
+      "generic_notes": []
     },
     {
       "id": "TASK-BLEND-DECOR",
@@ -130,7 +135,8 @@
           "comp": "playground-series-s5e10",
           "text": "the NNLS diagnostic reused the same shape."
         }
-      ]
+      ],
+      "generic_notes": []
     },
     {
       "id": "TASK-IMBALANCED",
@@ -138,7 +144,8 @@
       "generic": true,
       "trigger": "positive rate ≲ 2%.",
       "action": "stratified folds; rank-based metrics need no resampling — calibrate only if the metric is probability-sensitive; beware accuracy-style thresholds.",
-      "evidence": []
+      "evidence": [],
+      "generic_notes": []
     }
   ],
   "form_race": {

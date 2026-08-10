@@ -2,7 +2,7 @@
 (Hotel Reservation Cancellation, binary classification, ROC-AUC metric, maximize-better).
 
 Phase D-3 (3rd harness_v2 sweep comp, HARDEST case per the sweep brief: linear iteration
-squeezed only +0.0005 total over its generic baseline, AUC 0.899893, and is suspected to
+squeezed only +<score> total over its generic baseline, AUC <score>, and is suspected to
 be near a genuine ceiling for this feature set / model family). Same two-node-kind schema
 as eval_s3e3.py/eval_s3e14.py/eval_s3e5.py:
 
@@ -28,7 +28,7 @@ as eval_s3e3.py/eval_s3e14.py/eval_s3e5.py:
      Loads each member's cached OOF vector via harness_v2.load_oof, weight-searches for
      the blend that maximizes ROC-AUC. "prob" dispatches to harness_v2.eval_blend
      (recommendation #1's generic ensemble machinery); "rank" mirrors STATUS.md exp #6's
-     rank-average check (which came out worse than prob by a noise-level -0.000009 in the
+     rank-average check (which came out worse than prob by a noise-level -<score> in the
      linear run — re-verify under harness_v2's blend seeds, don't assume it stays worse).
 
 SIGN CONVENTION: harness.py/harness_v2.py assume lower-is-better scores; AUC is

@@ -11,8 +11,8 @@ during blend search itself, never retroactively applied only to a winner.
 --- Why this run is the acid test ---
 STATUS.md's Phase B iteration (scripts/round1.py, round2.py) already ran the validated
 "Optuna fold-proxy -> add to pool -> seed bag" recipe here and got the recipe's known
-FAILURE MODE: raw OOF MAE improved monotonically (1.35589 -> 1.35541 -> 1.35533) but
-ROUNDED OOF MAE got WORSE both times (1.33812 -> 1.33850 -> 1.33893) -- logged verbatim
+FAILURE MODE: raw OOF MAE improved monotonically (<score> -> <score> -> <score>) but
+ROUNDED OOF MAE got WORSE both times (<score> -> <score> -> <score>) -- logged verbatim
 in knowledge/experience.md's "MAE/整數目標" boundary-condition bullet (search "邊界條件").
 The tuned LGB variants only touched depth/lr/reg (same objective/features/folds as the
 original LGB), so they cluster tightly in OOF-space with the un-tuned LGB: real but tiny
@@ -25,7 +25,7 @@ near-duplicate of the same LGB-with-nudged-hyperparams recipe.
 --- Optuna box-edge check (the boundary-push lever, done BEFORE writing this module) ---
 scripts/tune_lgb_optuna.py's search box (21/50 trials completed, 300s timeout) and the
 winning scripts/lgb_optuna_best.json params:
-  learning_rate   searched [0.01, 0.06] log-scale -> won 0.0102       EXACTLY ON the box's
+  learning_rate   searched [0.01, 0.06] log-scale -> won <score>       EXACTLY ON the box's
                   own LOWER edge (2% of the log-range from the boundary) -- the strongest
                   boundary signal this comp has, same lever s3e5/s3e11 already validated
                   ("don't trust an Optuna optimum sitting on the box's own edge").

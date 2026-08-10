@@ -2,7 +2,7 @@
 tabular-playground-series-aug-2022 (product failure, binary, ROC-AUC, MAXIMIZE).
 
 Metric INCLUDES post-processing per 07_tree_search.md section 2: the decision score
-is pooled AUC after per-group rank normalization (validated +0.0007 in the prior
+is pooled AUC after per-group rank normalization (validated +<score> in the prior
 run; all sweep configs agreed in direction). Cached OOF/test preds are RAW
 probabilities; rank-pp is applied inside the metric so blends mix in probability
 space first, then get rank-normalized (mirrored exactly at submission time).

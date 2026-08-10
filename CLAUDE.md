@@ -38,7 +38,6 @@ The Kaggle skill provides Claude Code with a structured workflow and domain know
 ```
 kaggle\
 ├── CLAUDE.md                  # This file — project instructions
-├── STATUS.md                  # Session tracking
 ├── pyproject.toml             # Python dependencies managed by uv
 ├── .claude\
 │   └── skills\

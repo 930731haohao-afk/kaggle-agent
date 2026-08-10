@@ -23,7 +23,7 @@ eval_s3e14.py/eval_s3e5.py:
      ensemble-default node-space machinery this sweep is testing); "rank" is a small
      local re-implementation of the same dirichlet search operating on a
      rank-transformed member matrix (STATUS.md's own "next idea": re-check whether the
-     linear-iteration exp#7 rank-average-beats-prob-blend result (+0.000364) holds up
+     linear-iteration exp#7 rank-average-beats-prob-blend result (+<score>) holds up
      or is noise). No retraining either way — blend nodes cost a fraction of a second.
 
 SIGN CONVENTION: harness.py/harness_v2.py assume lower-is-better scores; AUC is
@@ -32,8 +32,8 @@ maximize-better, so every score this module hands to add_root/add_node is `-AUC`
 
 Reuses competitions/playground-series-s3e3/scripts/features.py UNMODIFIED for the
 label/freq-encoded feature set (build_features/feature_columns/fit_encoders) so scores
-are directly comparable to STATUS.md's numbers (root tuned-LGB solo ~0.837305,
-linear-iteration best 6-way blend, rank-average, 0.838140).
+are directly comparable to STATUS.md's numbers (root tuned-LGB solo ~<score>,
+linear-iteration best 6-way blend, rank-average, <score>).
 """
 import os
 import signal

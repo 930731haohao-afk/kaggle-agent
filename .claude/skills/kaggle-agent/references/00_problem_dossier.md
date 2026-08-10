@@ -38,7 +38,7 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
 
    ```bash
    python3 knowledge/task_priors_for.py <competition-slug>            # the priors you may use
-   python3 knowledge/task_priors_for.py <competition-slug> --report   # what was withheld, and why
+   python3 knowledge/task_priors_for.py <competition-slug> --report   # HOW MANY items were withheld (counts only)
    ```
 
    List every [TASK-*] entry whose trigger fits, from that output only. **There is no raw
@@ -47,7 +47,7 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    your competition's view — evidence from the competition being solved is excluded by exact
    set arithmetic, an entry whose admissible evidence empties is dropped whole (the Action
    line *is* the distilled answer), cross-agent evidence is never rendered, and aggregates are
-   recomputed from the surviving facts. If `--report` shows an entry was dropped, that is the
+   recomputed from the surviving facts. If `--report` shows a nonzero count, that is the
    mechanism working: you had no such prior before you solved that competition.
 4. Derive the split policy from the match (this pre-empts the shuffled-KFold-on-time-series
    trap: a controlled split experiment on a benchmark panel measured a 4.5× optimism bias from the forbidden split — see the filtered prior library's TASK-TS-FUTURE evidence).
@@ -110,8 +110,11 @@ dossier must be derivable from the problem statement plus *task-type* knowledge 
    training range and the covariate carries the level, emit BOTH `join_feature` and
    `ratio_target` (or `log_offset`) as separate arms and race them; state in the rationale which
    one you would pick and why, but do not drop either. Reason: the extrapolation argument favours
-   `ratio_target`, and on both competitions measured so far the leaderboard favoured
-   `join_feature` — see the form verdict in TASK-TS-FUTURE (via the filtered library).** Anything you want that the operator set cannot
+   `ratio_target`; the measured leaderboard record disagrees often enough that no local signal
+   earns the choice — read the cross-competition form record in TASK-TS-FUTURE from YOUR
+   filtered view, and do not carry any tally quoted in an instruction file: a frozen tally
+   plus your own filtered view identifies your competition's result by complement
+   (2026-08-10 audit).** Anything you want that the operator set cannot
    express goes in `not_recorded`.
 8. **Open pre-registrations are binding — read them through the filter.** If the dossier
    fires external-data need on a country-panel time-series task (TASK-TS-FUTURE class), read
