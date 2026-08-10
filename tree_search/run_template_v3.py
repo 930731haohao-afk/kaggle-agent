@@ -53,10 +53,16 @@ def main() -> None:
     def persist():
         json.dump(tree, open(TREE_PATH, "w"), ensure_ascii=False, indent=2)
 
-    # root
+    # root — add_root, NOT add_node(parent=None). new_tree initialises root_id=None and only
+    # add_root sets it; with root_id None, harness.lineage_of's walk terminates at node 0 for
+    # every descendant, so every node reports the same lineage. The multi-lineage rule the
+    # harness docstring calls the spec — active lineage, plateau, backtrack to the second-best
+    # subtree — then has exactly one lineage to work with: three non-improving children
+    # plateau the WHOLE tree, and the explore-burst seeds are themselves lineage 0 and already
+    # plateaued, so select_next_parent can never return them.
     nid = hv3.next_id(tree)
     r = ev.evaluate(ROOT_CONFIG, node_id=nid, timeout_s=600)
-    hv3.add_node(tree, None, "root: this run's Stage-3 best solo", ROOT_CONFIG,
+    hv3.add_root(tree, "root: this run's Stage-3 best solo", ROOT_CONFIG,
                  r["score"], r["status"], r.get("wall_s", 0.0))
     persist()
 

@@ -290,7 +290,13 @@ def evaluate(config, node_id=None, timeout_s=None):
                 hv2.cache_oof(CACHE_DIR, node_id, flat)
         else:
             raise ValueError(f"unknown kind {kind!r}")
-        return dict(score=float(score), status="ok", wall_s=round(time.time() - t0, 2),
+        # "evaluated", not "ok": every harness function that defines what a search IS keys on
+        # that literal -- n_evaluated, _lineage_best (so select_next_parent), global_best,
+        # add_node's plateau bookkeeping. With "ok" this competition's search was invisible to
+        # all of them: the budget cap could never fire, the explore burst never began, and no
+        # lineage could ever be expanded, so the tree could only be a flat fan of root
+        # children while reading as complete.
+        return dict(score=float(score), status="evaluated", wall_s=round(time.time() - t0, 2),
                     result=result, error=None)
     except Exception as e:  # noqa: BLE001
         import traceback

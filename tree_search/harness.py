@@ -109,8 +109,25 @@ def next_id(tree: dict) -> int:
     return _next_id(tree)
 
 
+# The whole search machine reads this vocabulary and nothing ever validated it. n_evaluated,
+# _lineage_best (so select_next_parent), global_best and the plateau bookkeeping all test
+# `status == "evaluated"`, so one evaluator returning a different word made that competition's
+# entire search invisible to every one of them while the tree still read as complete.
+STATUSES = ("evaluated", "failed")
+
+
+def _check_status(status: str) -> str:
+    if status not in STATUSES:
+        raise ValueError(
+            f"unknown node status {status!r}: the harness counts, ranks and stops on "
+            f"{STATUSES[0]!r} and skips {STATUSES[1]!r}; any other word is silently invisible "
+            f"to n_evaluated, select_next_parent, global_best and the plateau machine")
+    return status
+
+
 def add_root(tree: dict, mutation: str, config: dict, score, status: str, wall_s: float) -> int:
     assert not tree["nodes"], "root already exists"
+    _check_status(status)
     nid = 0
     tree["root_id"] = nid
     tree["nodes"].append(dict(id=nid, parent_id=None, mutation=mutation, config=config,

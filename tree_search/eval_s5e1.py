@@ -385,7 +385,12 @@ def evaluate(config: dict, node_id: int = None, timeout_s: int = 200) -> dict:
         else:
             raise ValueError(f"unknown node kind {kind!r}")
     except EvalTimeout:
-        return {"score": None, "status": "timeout", "wall_s": round(time.time() - t0, 2)}
+        # "failed", not "timeout": the harness's vocabulary is exactly {evaluated, failed},
+        # and a third word is invisible to n_evaluated, select_next_parent, global_best and
+        # the plateau machine alike -- the same defect as eval_conway's "ok". The 19 other
+        # evaluators already report a timeout this way, with the cause in `error`.
+        return {"score": None, "status": "failed", "wall_s": round(time.time() - t0, 2),
+                "result": None, "error": f"timeout>{timeout_s}s"}
     except Exception as e:  # noqa: BLE001 -- a failed node is recorded, never hidden
         return {"score": None, "status": "failed", "wall_s": round(time.time() - t0, 2),
                 "error": f"{type(e).__name__}: {e}"}

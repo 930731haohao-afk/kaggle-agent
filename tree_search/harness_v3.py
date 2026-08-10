@@ -573,6 +573,44 @@ def add_node(tree: dict, parent_id: int, mutation: str, config: dict, score, sta
 # ---------------------------------------------------------------------------
 # Feature 4: boundary-push as a first-class mutation type
 # ---------------------------------------------------------------------------
+# The NATURAL domain of a hyperparameter, as the learner enforces it -- distinct from the
+# declared search box, which is a choice. Where the two coincide there is nothing to explore
+# past, and a push proposes a value the learner rejects outright: the node is then a
+# guaranteed failure booked as an ordinary "we tried that and it did not work", and because a
+# failed solo caches no OOF it kills every blend that names it as a member. Measured on a
+# recorded tree, this accounted for 22% of its nodes and four of its blends. One driver had
+# hand-rolled a private clamp covering only the low side; it never reached the shared harness,
+# and the driver template every fresh lane copies had none at all.
+#
+# Matched on the parameter's SUFFIX so the LightGBM/CatBoost/XGBoost spellings of one concept
+# share an entry. (low, high); None means unbounded on that side.
+_PARAM_DOMAIN = {
+    # fractions of rows or columns: (0, 1]
+    "feature_fraction": (1e-6, 1.0), "bagging_fraction": (1e-6, 1.0), "subsample": (1e-6, 1.0),
+    "colsample_bytree": (1e-6, 1.0), "colsample_bylevel": (1e-6, 1.0),
+    "colsample_bynode": (1e-6, 1.0), "rsm": (1e-6, 1.0), "subsample_for_bin": (1, None),
+    # regularisation and gains: non-negative
+    "reg_lambda": (0.0, None), "reg_alpha": (0.0, None), "lambda_l1": (0.0, None),
+    "lambda_l2": (0.0, None), "l2_leaf_reg": (0.0, None), "min_split_gain": (0.0, None),
+    "min_child_weight": (0.0, None), "gamma": (0.0, None), "alpha": (0.0, None),
+    # counts: at least one, or at least zero where zero is meaningful
+    "min_child_samples": (0, None), "min_data_in_leaf": (0, None), "subsample_freq": (0, None),
+    "num_leaves": (2, None), "max_depth": (1, None), "depth": (1, None),
+    "max_bin": (2, None), "n_estimators": (1, None), "iterations": (1, None),
+    # rates: strictly positive
+    "learning_rate": (1e-6, None), "eta": (1e-6, None),
+}
+
+
+def _domain_of(name: str):
+    if name in _PARAM_DOMAIN:
+        return _PARAM_DOMAIN[name]
+    for suffix, dom in _PARAM_DOMAIN.items():
+        if name.endswith("_" + suffix):
+            return dom
+    return (None, None)
+
+
 def boundary_candidates(config: dict, search_space: dict, *, params_key: str = "params",
                          edge_frac: float = 0.05, push_factor: float = 1.5) -> list:
     """Flag every numeric hyperparameter in `config[params_key]` that sits within
@@ -635,6 +673,19 @@ def boundary_candidates(config: dict, search_space: dict, *, params_key: str = "
 
         if isinstance(val, int):
             new_val = int(round(new_val))
+
+        # Clamp into the learner's own domain, then drop the candidate if the clamp left it
+        # with nowhere to go. A push that cannot move is not a mutation, and proposing it
+        # costs a real node: harness.py counts FAILED children toward MAX_CHILDREN_PER_NODE,
+        # so three illegal pushes under one parent permanently exhaust it.
+        dlo, dhi = _domain_of(name)
+        if dlo is not None and new_val < dlo:
+            new_val = type(val)(dlo) if isinstance(val, int) else dlo
+        if dhi is not None and new_val > dhi:
+            new_val = type(val)(dhi) if isinstance(val, int) else dhi
+        if new_val == val:
+            continue
+
         out.append({"param": name, "edge": edge, "old_value": val, "new_value": new_val})
     return out
 

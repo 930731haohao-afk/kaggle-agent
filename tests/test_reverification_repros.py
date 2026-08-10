@@ -2668,3 +2668,212 @@ class TestRound11:
         assert r.returncode != 0, (
             "a directory the gate cannot list is not evidence of cleanliness:\n" + r.stdout)
         assert "INCONCLUSIVE" in r.stdout and "hidden/" in r.stdout, r.stdout
+
+
+class TestStages:
+    """The first audit aimed at whether the pipeline is CORRECT, not at whether it leaks.
+
+    Eleven rounds asked one question -- can a lane read its own recorded result -- and a leak
+    inflates my-agent, invalidating a WIN. Nothing had ever asked whether the machinery works,
+    and every bug this pass found deflates my-agent, invalidating a LOSS. Both destroy the
+    comparison the benchmark exists to make.
+    """
+
+    # Natural domains, as the learners enforce them. Only for params the harness may push.
+    ILLEGAL = [
+        ("min_child_samples", -5), ("min_data_in_leaf", -1), ("num_leaves", 0),
+        ("reg_lambda", -0.74), ("reg_alpha", -0.1), ("l2_leaf_reg", -1.0),
+        ("feature_fraction", 1.0354), ("subsample", 1.0375), ("colsample_bytree", 1.2),
+        ("learning_rate", -0.01), ("max_depth", 0), ("bagging_fraction", 1.05),
+    ]
+
+    def test_boundary_push_never_leaves_the_parameter_domain(self):
+        """boundary_candidates pushed `edge_frac*push_factor` past the DECLARED box with no
+        knowledge of the parameter's natural domain.
+
+        When the declared low edge is also the natural floor it proposed negative values;
+        when the declared high edge is also the natural ceiling it proposed values above 1.
+        LightGBM rejects all four outright, so the node could never be anything but a
+        failure -- and the tree recorded it as "we tried pushing that boundary and it did not
+        work". In the recorded s5e10 tree, 11 of 50 nodes; and because a failed solo caches
+        no OOF, four blend nodes died with it, in a competition whose champion is a blend.
+
+        run_s3e16_run5_phase3.py:46 documents this exact bug and hand-rolls a private clamp
+        that covers only the low side; it was never pushed into the shared harness, and the
+        template every fresh benchmark lane copies has no clamp at all.
+        """
+        hv3 = _load("tree_search/harness_v3.py", "hv3_dom")
+        space = {"min_child_samples": (10, 210), "min_data_in_leaf": (5, 100),
+                 "num_leaves": (8, 256), "reg_lambda": {"low": 1e-3, "high": 10.0, "log": True},
+                 "reg_alpha": {"low": 1e-3, "high": 10.0, "log": True},
+                 "l2_leaf_reg": (1.0, 10.0), "feature_fraction": (0.4, 1.0),
+                 "subsample": (0.5, 1.0), "colsample_bytree": (0.4, 1.0),
+                 "bagging_fraction": (0.5, 1.0),
+                 "learning_rate": {"low": 1e-3, "high": 0.3, "log": True},
+                 "max_depth": (1, 12)}
+        # every param sitting exactly on the edge that is ALSO its natural limit
+        cfg = {"params": {"min_child_samples": 10, "min_data_in_leaf": 5, "num_leaves": 8,
+                          "reg_lambda": 0.00148, "reg_alpha": 0.00102, "l2_leaf_reg": 1.0,
+                          "feature_fraction": 0.9905, "subsample": 1.0,
+                          "colsample_bytree": 1.0, "bagging_fraction": 1.0,
+                          "learning_rate": 0.00102, "max_depth": 1}}
+        bad = []
+        for c in hv3.boundary_candidates(cfg, space):
+            v = c["new_value"]
+            n = c["param"]
+            if n in ("feature_fraction", "subsample", "colsample_bytree", "bagging_fraction"):
+                if not (0.0 < v <= 1.0):
+                    bad.append(f"{n}={v} (must be in (0, 1])")
+            elif n in ("min_child_samples", "min_data_in_leaf"):
+                if v < 0:
+                    bad.append(f"{n}={v} (must be >= 0)")
+            elif n in ("num_leaves", "max_depth"):
+                if v < 1:
+                    bad.append(f"{n}={v} (must be >= 1)")
+            elif v < 0:
+                bad.append(f"{n}={v} (must be >= 0)")
+        assert not bad, (
+            "a boundary push outside the learner's legal domain is a guaranteed failure "
+            "recorded as an ordinary negative result, and it takes every blend that names "
+            "the node with it:\n  " + "\n  ".join(bad))
+
+    def test_boundary_push_still_proposes_a_real_move_when_there_is_room(self):
+        """The clamp must not turn the check into a no-op: where the declared edge is NOT the
+        natural limit, the push must still happen and must still MOVE the value."""
+        hv3 = _load("tree_search/harness_v3.py", "hv3_dom2")
+        space = {"num_leaves": (31, 255), "min_child_samples": (40, 200)}
+        cfg = {"params": {"num_leaves": 32, "min_child_samples": 42}}
+        got = {c["param"]: c["new_value"] for c in hv3.boundary_candidates(cfg, space)}
+        assert got, "both params sit on the low edge with room beneath; expected pushes"
+        for name, old in (("num_leaves", 32), ("min_child_samples", 42)):
+            if name in got:
+                assert got[name] < old, f"{name} did not move: {old} -> {got[name]}"
+                assert got[name] >= 1, f"{name} left its domain: {got[name]}"
+
+    def test_boundary_proposals_are_acceptable_to_lightgbm(self):
+        """The decisive check: fit with each proposal. A domain table that disagrees with the
+        learner is worth nothing."""
+        import lightgbm as lgb
+        hv3 = _load("tree_search/harness_v3.py", "hv3_dom3")
+        space = {"min_child_samples": (10, 210), "feature_fraction": (0.4, 1.0),
+                 "subsample": (0.5, 1.0), "reg_lambda": {"low": 1e-3, "high": 10.0, "log": True}}
+        cfg = {"params": {"min_child_samples": 10, "feature_fraction": 0.9905,
+                          "subsample": 1.0, "reg_lambda": 0.00148}}
+        rng = np.random.default_rng(0)
+        X, y = rng.normal(size=(200, 5)), rng.normal(size=200)
+        failed = []
+        for c in hv3.boundary_candidates(cfg, space):
+            p = {c["param"]: c["new_value"], "n_estimators": 5, "verbose": -1}
+            if c["param"] == "subsample":
+                p["subsample_freq"] = 1
+            try:
+                lgb.LGBMRegressor(**p).fit(X, y)
+            except Exception as e:  # noqa: BLE001 - the point is which ones reject
+                failed.append(f"{c['param']}={c['new_value']}: {type(e).__name__}: {e}")
+        assert not failed, "\n  ".join(["proposals the learner rejects outright:"] + failed)
+
+    # ------------------------------------------------- the harness's own vocabulary
+    #
+    # Every harness function that defines what a search IS keys on the literal string
+    # "evaluated": harness_v3.n_evaluated, harness._lineage_best (so select_next_parent),
+    # harness.global_best, harness_v2.add_node's plateau bookkeeping. add_node stores whatever
+    # status it is given, with no validation. One evaluator returning a different word is
+    # therefore invisible to the entire search machine while looking completely normal.
+
+    def _pinned(self):
+        man = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        out = {}
+        for comp, v in man.items():
+            for k in ("eval_module", "evaluator", "eval"):
+                if isinstance(v, dict) and v.get(k):
+                    out[comp] = str(v[k]).replace(".py", "")
+                    break
+        return out
+
+    def test_every_evaluator_speaks_the_status_vocabulary_the_harness_reads(self):
+        """eval_conway returned status="ok" on its success path; the other 19 return
+        "evaluated". n_evaluated therefore stayed 0 forever, so the 60-node budget cap could
+        never fire and should_stop was never True; plateau_saturated stayed False so the
+        mandatory explore burst never began; and select_next_parent returned (None, None) on
+        every call, so no lineage could ever be expanded. The tree could only be a flat fan of
+        root children -- a node space with no depth, which is the degenerate shape
+        07_tree_search.md section 6 blames for the one recorded loss.
+        """
+        import ast
+        allowed = {"evaluated", "failed"}
+        bad = []
+        for comp, mod in sorted(self._pinned().items()):
+            path = os.path.join(REPO, "tree_search", f"{mod}.py")
+            tree = ast.parse(open(path, encoding="utf-8").read())
+            for node in ast.walk(tree):
+                got = None
+                if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) \
+                        and node.func.id == "dict":
+                    for kw in node.keywords:
+                        if kw.arg == "status" and isinstance(kw.value, ast.Constant):
+                            got = kw.value.value
+                elif isinstance(node, ast.Dict):
+                    for k, v in zip(node.keys, node.values):
+                        if isinstance(k, ast.Constant) and k.value == "status" \
+                                and isinstance(v, ast.Constant):
+                            got = v.value
+                if isinstance(got, str) and got not in allowed:
+                    bad.append(f"{mod}.py: status={got!r} ({comp})")
+        assert not bad, (
+            "the harness counts, ranks and stops on the literal string 'evaluated'; any "
+            "other word makes that competition's entire search invisible to the machine "
+            "while the tree still reads as complete:\n  " + "\n  ".join(sorted(set(bad))))
+
+    def test_harness_rejects_a_status_it_does_not_understand(self):
+        """A vocabulary the harness reads but never validates is one typo from silence."""
+        hv3 = _load("tree_search/harness_v3.py", "hv3_status")
+        tree = hv3.new_tree("c")
+        with pytest.raises(ValueError, match="status"):
+            hv3.add_root(tree, "root", {"kind": "solo"}, 0.5, "ok", 1.0)
+
+    def test_template_registers_its_root_as_the_root(self):
+        """run_template_v3.py wrote the root with add_node(tree, None, ...) instead of
+        add_root, and new_tree initialises root_id=None, so root_id stayed None all run.
+
+        harness.lineage_of walks up while parent_id != root_id; with root_id None that test
+        terminates at node 0 for EVERY descendant, so every node reports lineage 0. The
+        multi-lineage rule the harness docstring calls the spec -- active lineage, plateau,
+        backtrack to the second-best subtree -- then has exactly one lineage, so three
+        non-improving children plateau the WHOLE tree, and the explore-burst seeds are
+        themselves lineage 0 and already plateaued, so select_next_parent can never return
+        them.
+        """
+        import ast
+        src = open(os.path.join(REPO, "tree_search/run_template_v3.py"), encoding="utf-8").read()
+        main = next(x for x in ast.parse(src).body
+                    if isinstance(x, ast.FunctionDef) and x.name == "main")
+        calls = [n.func.attr for n in ast.walk(main)
+                 if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)]
+        assert "add_root" in calls, (
+            "the root must be registered with add_root; add_node(parent=None) leaves "
+            "root_id=None and collapses every node into one lineage")
+
+    def test_a_tree_built_the_documented_way_has_working_lineages(self):
+        """The property the fix exists for, checked end to end on a real tree."""
+        hv3 = _load("tree_search/harness_v3.py", "hv3_lin")
+        h = _load("tree_search/harness.py", "h_lin")
+        tree = hv3.new_tree("c")
+        root = hv3.add_root(tree, "root", {"kind": "solo", "params": {"a": 1}}, 1.0,
+                            "evaluated", 1.0)
+        assert tree["root_id"] == root, "add_root must set root_id"
+        a = hv3.add_node(tree, root, "seed A", {"kind": "solo", "params": {"a": 2}}, 0.9,
+                         "evaluated", 1.0)
+        b = hv3.add_node(tree, root, "seed B", {"kind": "solo", "params": {"a": 3}}, 0.8,
+                         "evaluated", 1.0)
+        a_id = a[0] if isinstance(a, tuple) else a
+        b_id = b[0] if isinstance(b, tuple) else b
+        deep = hv3.add_node(tree, a_id, "child of A", {"kind": "solo", "params": {"a": 4}},
+                            0.95, "evaluated", 1.0)
+        deep_id = deep[0] if isinstance(deep, tuple) else deep
+        assert h.lineage_of(tree, a_id) == a_id
+        assert h.lineage_of(tree, b_id) == b_id
+        assert h.lineage_of(tree, deep_id) == a_id, (
+            "a grandchild must report the seed it descends from; if every node reports the "
+            "same lineage, backtracking to the second-best subtree cannot happen")
+        assert h.lineage_of(tree, a_id) != h.lineage_of(tree, b_id), (
+            "two independent seeds collapsed into one lineage")
