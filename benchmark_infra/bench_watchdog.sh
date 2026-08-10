@@ -13,6 +13,11 @@ set -uo pipefail
 RUNS=/home/tjyen/ai_agents/aideml-runs
 LOG=/home/tjyen/ai_agents/bench_watchdog.log
 STATE=/home/tjyen/ai_agents/.watchdog_idle_since
+# The my-agent re-run happens in an isolated root outside the repo (round 9), and the
+# launcher writes both its status file and every lane's output under it. Same default and
+# same override as run_myagent_headless.sh -- a watchdog pointed anywhere else supervises a
+# tree nothing writes to, which is the failure it exists to catch (round 11).
+RUN_ROOT=${RUN_ROOT:-/home/tjyen/ai_agents/myagent-rerun}
 
 log(){ echo "$(date -Is) $*" >> "$LOG"; }
 
@@ -36,12 +41,24 @@ while read -r pid _; do
   case "$exe" in *python*|*node*|*timeout*) alive=1; break;; esac
 done < <(pgrep -af "run_comp.py|reproduce.py|train.py|mlebench prepare|claude -p" 2>/dev/null | awk '{print $1, $2}')
 
+# An ABSOLUTE timestamp, computed here. `find` on this machine is bfs, which rejects the
+# relative form GNU find accepts -- `-newermt "-30 minutes"` exited with "Invalid timestamp",
+# and with stderr on /dev/null that was indistinguishable from "nothing was written". So
+# `advancing` was 0 on every tick, which with alive=1 is the critical HUNG branch: the
+# watchdog cried wolf continuously while a run worked, and `exit 0`ed there, before the
+# per-driver check that reports a driver that died (round 11).
+SINCE=$(date -d "-${STALE_MIN} minutes" '+%F %T') || { log "cannot compute the staleness cutoff"; exit 0; }
+
 advancing=0
-if find "$RUNS" /home/tjyen/ai_agents/nvidia-kaggle-runs /home/tjyen/ai_agents/kaggle/competitions \
-     -type f \( -name "journal.json" -o -name "*.log" -o -name "submission.csv" \) \
-     -newermt "-${STALE_MIN} minutes" 2>/dev/null | head -1 | grep -q .; then
-  advancing=1
-fi
+fresh=$(find "$RUNS" /home/tjyen/ai_agents/nvidia-kaggle-runs "$RUN_ROOT/competitions" \
+     -type f \( -name "journal.json" -o -name "*.log" -o -name "submission.csv" \
+                -o -name "STATUS.md" -o -name "experiments_tree_v3.json" \) \
+     -newermt "$SINCE" 2>&1 | head -1)
+case "$fresh" in
+  # A find that cannot run is not evidence of a stall. Say so instead of alarming.
+  *"error"*|*"Invalid"*|*"unknown predicate"*) log "freshness probe failed: $fresh"; exit 0;;
+  ?*) advancing=1;;
+esac
 
 if [ "$alive" = "1" ] && [ "$advancing" = "0" ]; then
   log "HUNG: interpreter alive but no benchmark output written in ${STALE_MIN}min"
@@ -64,7 +81,7 @@ DRIVERS=(
   "rerun_contaminated4.py|$RUNS/RERUN4_STATUS.md|RE-RUN COMPLETE"
   "phase9a_aide_lanes.py|$RUNS/PHASE9A_STATUS.md|PHASE 9A AIDE LANES COMPLETE"
   "run_ready_reproductions.py|/home/tjyen/ai_agents/nvidia-kaggle-runs/RUN_READY_STATUS.md|NVIDIA LANES COMPLETE"
-  "run_myagent_headless.sh|/home/tjyen/ai_agents/kaggle/MYAGENT_LANES_STATUS.md|MY-AGENT LANES COMPLETE"
+  "run_myagent_headless.sh|$RUN_ROOT/MYAGENT_LANES_STATUS.md|MY-AGENT LANES COMPLETE"
   "auto_submit_reruns.py|$RUNS/AUTO_SUBMIT.md|AUTO-SUBMIT COMPLETE"
   "run2_cells.py|$RUNS/RUN2_STATUS.md|RUN2 CELLS 2-9 COMPLETE"
 )

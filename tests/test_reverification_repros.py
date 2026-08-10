@@ -2390,3 +2390,80 @@ class TestRound11:
         assert i_skip < i_q < i_start, (
             "quarantine belongs after the skip test (a finished lane keeps its work) and "
             "before the lane starts")
+
+    # ------------------------------------------------------------- supervision
+    #
+    # Round 9 moved the run to $RUN_ROOT; bench_watchdog.sh did not move with it. Its DRIVERS
+    # entry still named the REPO's MYAGENT_LANES_STATUS.md -- left over from the recorded run
+    # and already containing "MY-AGENT LANES COMPLETE" -- and the loop does
+    # `grep -q "$marker" "$sf" && continue`, so the my-agent driver was permanently classified
+    # as finished cleanly and its death could never be reported. That is precisely the failure
+    # the per-driver check was added for: its own comment records the 2026-07-28 driver that
+    # "died at 17:58 and never ran a single competition ... every check passed and no alarm
+    # fired". Meanwhile the freshness probe searched the repo's competitions/, never the run
+    # root, so a working re-run reads as alive-but-not-advancing and fires the critical HUNG
+    # notification on every systemd tick, exiting before the per-driver check runs at all.
+
+    def _watchdog(self):
+        return open(os.path.join(REPO, "benchmark_infra/bench_watchdog.sh"),
+                    encoding="utf-8").read()
+
+    def test_watchdog_watches_the_run_root_not_the_repo(self):
+        src = self._watchdog()
+        assert "RUN_ROOT" in src, (
+            "the run happens in $RUN_ROOT since round 9; a watchdog pointed at the repo "
+            "supervises a tree nothing writes to")
+        stale = [ln.strip() for ln in src.splitlines()
+                 if "MYAGENT_LANES_STATUS.md" in ln and "ai_agents/kaggle/" in ln]
+        assert not stale, (
+            "the repo's MYAGENT_LANES_STATUS.md is the RECORDED run's, and it already says "
+            "MY-AGENT LANES COMPLETE — reading it marks the driver finished forever:\n  "
+            + "\n  ".join(stale))
+
+    def test_watchdog_freshness_probe_covers_the_run_root(self):
+        src = self._watchdog()
+        lines = src.splitlines()
+        start = next(i for i, ln in enumerate(lines) if ln.strip() == "advancing=0")
+        end = next(i for i, ln in enumerate(lines[start:], start) if ln.strip() == "esac")
+        probe = "\n".join(lines[start:end + 1])
+        assert "RUN_ROOT" in probe, (
+            "the freshness probe decides `advancing`; if it cannot see the run root, a "
+            "working re-run is alive-but-not-advancing and the critical HUNG notification "
+            "fires on every tick — and that branch exits before the per-driver check:\n"
+            + probe)
+
+    def test_watchdog_marker_file_matches_what_the_launcher_writes(self):
+        src = self._watchdog()
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        assert 'STATUS=$BASE/MYAGENT_LANES_STATUS.md' in launcher
+        assert 'BASE=$RUN_ROOT' in launcher, "the launcher writes STATUS under $BASE"
+        entry = [ln for ln in src.splitlines() if "run_myagent_headless.sh|" in ln]
+        assert len(entry) == 1, entry
+        assert "$RUN_ROOT/MYAGENT_LANES_STATUS.md" in entry[0], (
+            "the watchdog must read the file the launcher actually writes:\n" + entry[0])
+
+    def test_watchdog_freshness_predicate_parses_on_this_machine(self, tmp_path):
+        """`find` here is bfs, which rejects the relative timestamps GNU find accepts.
+
+        `-newermt "-30 minutes"` made bfs exit with "Invalid timestamp", and the probe sends
+        stderr to /dev/null, so the failure was indistinguishable from "nothing was written":
+        `advancing` was 0 on EVERY tick. With `alive=1` that is the critical HUNG branch,
+        which notifies and then `exit 0`s -- before the per-driver check that reports a dead
+        driver. So the watchdog cried wolf continuously while any run worked, and could never
+        report the one thing it was added for.
+        """
+        import subprocess
+        code = [ln for ln in self._watchdog().splitlines() if not ln.lstrip().startswith("#")]
+        bad = [ln.strip() for ln in code if '-newermt "-' in ln]
+        assert not bad, (
+            "a relative -newermt argument does not parse under bfs; the failure is silent "
+            "and reads as 'nothing is advancing':\n  " + "\n  ".join(bad))
+        probe = tmp_path / "STATUS.md"
+        probe.write_text("x")
+        since = subprocess.run(["date", "-d", "-30 minutes", "+%F %T"],
+                               capture_output=True, text=True, check=True).stdout.strip()
+        r = subprocess.run(["find", str(tmp_path), "-type", "f", "-name", "STATUS.md",
+                            "-newermt", since], capture_output=True, text=True, check=False)
+        assert r.returncode == 0 and str(probe) in r.stdout, (
+            "the timestamp form the watchdog uses must actually match a fresh file on this "
+            f"machine's find:\nrc={r.returncode}\n{r.stdout}\n{r.stderr}")
