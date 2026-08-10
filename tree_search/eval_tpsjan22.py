@@ -45,6 +45,7 @@ stage2_inputs.require_module(os.path.join(_COMP_DIR, "scripts"), "common", comp=
                              exposes=['FOLDS '])
 import common  # noqa: E402
 import harness_v2 as hv2  # noqa: E402
+import harness_v3 as hv3  # noqa: E402
 
 
 CACHE_DIR = os.path.join(_HERE, "cache_tpsjan22")
@@ -77,12 +78,38 @@ def evaluate_solo(config: dict):
     return oof, pred, score
 
 
+def evaluate_blend(config):
+    """Weighted sum of cached member OOFs -- no refit, so this runs in-process.
+
+    Uses this module's own `metric` (pooled SMAPE with the round-to-int inside it), which is
+    lower-is-better already, so the node score needs no sign flip and matches evaluate_solo's
+    directly. Owning the metric here rather than in the driver is round 11's fix: this module
+    happened to be the ONE of 20 that defined `metric` at module level, which is why the
+    template's `ev.metric` looked correct and silently failed everywhere else.
+    """
+    members = config.get("members") or []
+    if len(members) < 2:
+        raise ValueError(f"blend node needs >=2 members, got {members!r}")
+    method = config.get("weight_search", "dirichlet")
+    best_w, best_s, _oofs, warning = hv3.eval_blend_with_cost_guard(
+        CACHE_DIR, members, metric, weight_search=method)
+    result = dict(members=members, weights=[round(float(w), 4) for w in best_w],
+                  method=method, smape=round(best_s, 6))
+    if warning:  # the guard may never coarsen silently (harness_v3 feature 6)
+        result["cost_guard_warning"] = warning
+    return result, best_s
+
+
 def evaluate(config: dict, node_id: int = None, timeout_s: int = 300) -> dict:
     t0 = time.time()
     try:
         kind = config.get("kind", "solo")
+        if kind == "blend":
+            result, score = evaluate_blend(config)
+            return dict(status="evaluated", score=round(score, 6),
+                        wall_s=round(time.time() - t0, 1), result=result, error=None)
         if kind != "solo":
-            raise ValueError("blend nodes are evaluated in the driver, not this module")
+            raise ValueError(f"unknown node kind {kind!r}")
         oof, pred, score = evaluate_solo(config)
         if node_id is not None:
             hv2.cache_oof(CACHE_DIR, node_id, oof, pred=pred, smape=score)

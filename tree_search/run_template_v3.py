@@ -67,12 +67,18 @@ def main() -> None:
         nid = hv3.next_id(tree)
         t0 = time.time()
         try:
-            if proposal.get("kind") == "blend":
-                _w, s, _oofs, _warn = hv3.eval_blend_with_cost_guard(
-                    ev.CACHE_DIR, proposal["members"], ev.metric, tree=tree)
-                res = {"score": s, "status": "evaluated", "wall_s": time.time() - t0}
-            else:
-                res = ev.evaluate(proposal, node_id=nid, timeout_s=600)
+            # ONE call for every node kind. The evaluator dispatches on config["kind"] and
+            # owns its own blend path, because two things a driver cannot supply live in
+            # there: the competition's metric_fn WITH its postprocessing applied inside it
+            # (harness_v2.eval_blend's contract — postprocess must apply to every candidate
+            # weight vector, not just the winner), and its score sign convention (some
+            # return -auc, some return smape unflipped). Evaluating blends out here instead
+            # was round 11's measurement bug: the template read `ev.metric`, a name defined
+            # in 1 of the 20 pinned evaluators, so on the other 19 the AttributeError landed
+            # in the handler below and EVERY ensemble node was booked as an ordinary failure.
+            # 07_tree_search.md §6 traces the one recorded v1 loss to precisely that shape of
+            # node space, and run_tssep22_v3.py:99 records the same class landing once before.
+            res = ev.evaluate(proposal, node_id=nid, timeout_s=600)
         except Exception as e:  # noqa: BLE001 — a failed node is recorded, never hidden
             res = {"score": None, "status": "failed", "wall_s": time.time() - t0,
                    "error": str(e)}

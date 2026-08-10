@@ -25,6 +25,7 @@ from sklearn.linear_model import Ridge
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 import harness_v2 as hv2  # noqa: E402
+import harness_v3 as hv3  # noqa: E402
 import stage2_inputs  # noqa: E402
 
 # Root-relative: an absolute repo path makes this the one evaluator of the 20 that reads
@@ -200,9 +201,42 @@ def _shape_feats(p):
     return base + fourier_cols(p.get("fourier_k", 4))
 
 
+def evaluate_blend(config):
+    """Weighted sum of cached member OOFs -- no refit, so this runs in-process.
+
+    Members cache their PRIMARY-fold prediction vector (see the cache_oof call below), so the
+    blend is scored on the same fold, with the same SMAPE, as every solo node. Scoring it on
+    any other fold would put blend and solo nodes on different scales while the tree ranks
+    them with one comparison.
+
+    This module previously had no `kind` dispatch at all and the driver evaluated blends
+    itself. That is the shape round 11 found: run_template_v3.py evaluated them with
+    `ev.metric`, absent here, so every ensemble node was booked as an ordinary failure. This
+    module's own history has the same class recorded once already -- run_tssep22_v3.py:99
+    notes a 4-tuple unpacked into 3, after which "EVERY blend node in this competition died
+    before a single weight was searched, and the tree read as a complete search".
+    """
+    members = config.get("members") or []
+    if len(members) < 2:
+        raise ValueError(f"blend node needs >=2 members, got {members!r}")
+    method = config.get("weight_search", "dirichlet")
+    y_primary = fold_targets()[PRIMARY]          # bound once, not per candidate vector
+    best_w, best_s, _oofs, warning = hv3.eval_blend_with_cost_guard(
+        CACHE_DIR, members, lambda vec: smape(y_primary, vec), weight_search=method)
+    result = dict(members=members, weights=[round(float(w), 4) for w in best_w],
+                  method=method, fold_scores={PRIMARY: round(best_s, 5)})
+    if warning:  # the guard may never coarsen silently (harness_v3 feature 6)
+        result["cost_guard_warning"] = warning
+    return result, best_s
+
+
 def evaluate(config, node_id=None, timeout_s=None):
     t0 = time.time()
     try:
+        if config.get("kind", "solo") == "blend":
+            result, score = evaluate_blend(config)
+            return {"score": round(score, 5), "status": "evaluated",
+                    "wall_s": round(time.time() - t0, 2), "result": result, "error": None}
         d = _load()
         tr, lvl, hol = d["tr"], d["lvl"], d["hol"]
         model = config["model"]

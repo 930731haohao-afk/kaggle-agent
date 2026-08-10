@@ -35,6 +35,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 sys.path.insert(0, _HERE)
 sys.path.insert(0, os.path.join(_COMP, "scripts"))
 import harness_v2 as hv2  # noqa: E402
+import harness_v3 as hv3  # noqa: E402
 import stage2_inputs  # noqa: E402
 stage2_inputs.require_module(os.path.join(_COMP, "scripts"), "prep", comp="tabular-playground-series-aug-2022",
                              exposes=['build_features'])
@@ -125,6 +126,29 @@ def evaluate_solo(config):
     return oof, pred, auc_pp(oof)
 
 
+def evaluate_blend(config):
+    """Weighted sum of cached member OOFs -- no refit, so this runs in-process.
+
+    metric_fn is `-auc_pp`, matching evaluate_solo's own `auc_pp(oof)` and its sign flip:
+    the rank post-processing must be applied INSIDE the metric so it reaches every candidate
+    weight vector, not just the winner (harness_v2.eval_blend's contract). Owning it here is
+    what keeps a driver from having to know either fact -- round 11's measurement bug was a
+    driver reaching for `ev.metric`, a name this module does not define, which booked every
+    ensemble node as an ordinary failure.
+    """
+    members = config.get("members") or []
+    if len(members) < 2:
+        raise ValueError(f"blend node needs >=2 members, got {members!r}")
+    method = config.get("weight_search", "dirichlet")
+    best_w, best_neg, _oofs, warning = hv3.eval_blend_with_cost_guard(
+        CACHE_DIR, members, lambda vec: -auc_pp(vec), weight_search=method)
+    result = dict(members=members, weights=[round(float(w), 4) for w in best_w],
+                  method=method, auc_pp=round(-best_neg, 6))
+    if warning:  # the guard may never coarsen silently (harness_v3 feature 6)
+        result["cost_guard_warning"] = warning
+    return result, best_neg
+
+
 # ---------------------------------------------------------------------------
 # dispatch (evaluate contract for eval_solo_subprocess)
 # ---------------------------------------------------------------------------
@@ -145,7 +169,11 @@ def evaluate(config: dict, node_id: int = None, timeout_s: int = 600) -> dict:
                         wall_s=round(time.time() - t0, 1),
                         result={"auc_pp": round(score, 6),
                                 "auc_raw": round(auc_raw(oof), 6)}, error=None)
-        raise ValueError(f"eval_aug22 handles solo only in-subprocess, got {kind!r}")
+        if kind == "blend":
+            result, score = evaluate_blend(config)
+            return dict(status="evaluated", score=round(score, 6),
+                        wall_s=round(time.time() - t0, 1), result=result, error=None)
+        raise ValueError(f"unknown node kind {kind!r}")
     except EvalTimeout:
         return dict(status="failed", score=None, wall_s=round(time.time() - t0, 1),
                     result=None, error=f"timeout>{timeout_s}s")

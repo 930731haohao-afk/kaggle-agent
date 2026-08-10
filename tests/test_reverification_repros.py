@@ -2130,3 +2130,91 @@ class TestRound10:
                             "--comp", "playground-series-s3e16"],
                            capture_output=True, text=True, cwd=run_root, check=False)
         assert r.returncode == 0, r.stderr[-300:]
+
+
+class TestRound11:
+    """Round 11's measurement bug: every blend node died before a weight was searched.
+
+    run_template_v3.py evaluated blend proposals with
+    `hv3.eval_blend_with_cost_guard(ev.CACHE_DIR, members, ev.metric, tree=tree)`, but
+    `metric` is a module-level name in exactly ONE of the 20 pinned evaluators. On the other
+    19 the attribute lookup raised AttributeError inside the loop's own `except Exception`,
+    which books the node as status="failed" and moves on -- so a driver built from the
+    template searched a node space with no ensembles in it and the tree read as complete.
+
+    This is not hypothetical twice over. 07_tree_search.md §6 root-causes the single recorded
+    v1 loss to exactly a node space missing an ensemble, and run_tssep22_v3.py:99-103 records
+    the same class landing once already: a 4-tuple unpacked into 3 raised ValueError, "so
+    EVERY blend node in this competition died before a single weight was searched, and the
+    tree read as a complete search".
+
+    The fix makes the evaluator interface uniform: all 20 dispatch `kind == "blend"` inside
+    `evaluate()`, where the competition's own metric_fn and sign convention already live, and
+    the template evaluates every node kind through the one call.
+    """
+
+    def _pinned(self):
+        man = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        out = {}
+        for comp, v in man.items():
+            for key in ("eval_module", "evaluator", "eval"):
+                if isinstance(v, dict) and v.get(key):
+                    out[comp] = str(v[key]).replace(".py", "")
+                    break
+        return out
+
+    def test_every_pinned_evaluator_dispatches_blend_inside_evaluate(self):
+        import ast
+        missing = []
+        for comp, mod in sorted(self._pinned().items()):
+            path = os.path.join(REPO, "tree_search", f"{mod}.py")
+            tree = ast.parse(open(path, encoding="utf-8").read())
+            fn = next((x for x in tree.body
+                       if isinstance(x, ast.FunctionDef) and x.name == "evaluate"), None)
+            if fn is None or not any(isinstance(n, ast.Constant) and n.value == "blend"
+                                     for n in ast.walk(fn)):
+                missing.append(f"{comp} -> {mod}.py")
+        assert not missing, (
+            "a driver copied from run_template_v3.py evaluates EVERY node kind through "
+            "ev.evaluate(); an evaluator with no `kind == \"blend\"` branch turns each "
+            "ensemble proposal into a silent failed node:\n  " + "\n  ".join(missing))
+
+    def test_template_evaluates_every_node_kind_through_ev_evaluate(self):
+        import ast
+        src = open(os.path.join(REPO, "tree_search/run_template_v3.py"), encoding="utf-8").read()
+        tree = ast.parse(src)
+        main = next(x for x in tree.body
+                    if isinstance(x, ast.FunctionDef) and x.name == "main")
+        # every attribute read off the eval module, anywhere in main()
+        attrs = sorted({n.attr for n in ast.walk(main)
+                        if isinstance(n, ast.Attribute)
+                        and isinstance(n.value, ast.Name) and n.value.id == "ev"})
+        assert attrs == ["evaluate"], (
+            "the template may only reach into the eval module through evaluate(); "
+            f"`ev.{'`, `ev.'.join(a for a in attrs if a != 'evaluate')}` is not part of the "
+            "evaluator contract and is absent on most of the 20 pinned modules")
+        # and it must not reimplement blend evaluation outside the evaluator, where the
+        # competition's postprocess and sign convention would both be bypassed
+        guard = [n for n in ast.walk(main) if isinstance(n, ast.Attribute)
+                 and n.attr == "eval_blend_with_cost_guard"]
+        assert not guard, (
+            "blend evaluation belongs inside the evaluator: harness_v2.eval_blend's contract "
+            "requires postprocessing to run INSIDE metric_fn so it applies to every candidate "
+            "weight vector, and each evaluator's score sign convention is its own")
+
+    def test_template_has_one_evaluation_call_for_all_kinds(self):
+        import ast
+        src = open(os.path.join(REPO, "tree_search/run_template_v3.py"), encoding="utf-8").read()
+        main = next(x for x in ast.parse(src).body
+                    if isinstance(x, ast.FunctionDef) and x.name == "main")
+        calls = [n for n in ast.walk(main) if isinstance(n, ast.Call)
+                 and isinstance(n.func, ast.Attribute) and n.func.attr == "evaluate"]
+        assert len(calls) == 2, (
+            "expected exactly two ev.evaluate() calls in main() -- the root and the search "
+            f"loop's single kind-agnostic call -- found {len(calls)}. A per-kind branch is "
+            "how ev.metric got there.")
+        for c in calls:
+            kw = {k.arg for k in c.keywords}
+            assert "node_id" in kw, (
+                "every evaluated node must pass node_id: that is what caches its OOF vector, "
+                "and a blend can only weight members whose OOFs were cached")
