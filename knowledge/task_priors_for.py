@@ -24,8 +24,8 @@ Usage:
   python3 knowledge/task_priors_for.py <competition-slug>            # task priors
   python3 knowledge/task_priors_for.py <competition-slug> --ops      # operator vocabulary
   python3 knowledge/task_priors_for.py <competition-slug> --prereg   # pre-registrations
-  python3 knowledge/task_priors_for.py <competition-slug> --report   # what was withheld
-  python3 knowledge/task_priors_for.py --selftest
+  python3 knowledge/task_priors_for.py <competition-slug> --report   # AUDITORS ONLY
+  python3 knowledge/task_priors_for.py --selftest                    # AUDITORS ONLY
 """
 from __future__ import annotations
 
@@ -296,6 +296,19 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
     if args.selftest:
+        # AUDITOR-GATED, like --report. The contracts assert WHICH entries are withheld and
+        # what they say -- the three form-race member slugs, that afsis's withheld entry is
+        # TASK-SPECTRAL and mentions Savitzky, that conway's is TASK-STRUCT-OUT, the
+        # H-HORIZON thresholds whose lanes render as silence. Round 8 removed a hardcoded
+        # per-competition score table from this very file, recording the reason as "the
+        # filter itself becoming the door it exists to close"; it fixed contract 2 by
+        # deriving its needles and left 3, 4, 5 and 8 hardcoded (round 11). Until those are
+        # derived too, the tool that verifies the withholding may not be run by the party it
+        # withholds from.
+        if os.environ.get("KAGGLE_KB_AUDIT") != "1":
+            print("--selftest is for auditors: its contracts name the entries they verify "
+                  "are withheld. Re-run with KAGGLE_KB_AUDIT=1.", file=sys.stderr)
+            return 2
         return selftest()
     if not args.comp:
         ap.error("competition slug required (or --selftest)")

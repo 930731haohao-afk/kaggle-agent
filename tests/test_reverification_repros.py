@@ -2557,3 +2557,90 @@ class TestRound11:
         assert i_sandbox < i_line, (
             f"the wrapper must precede the agent it wraps:\n{invoke}")
         assert "$CLAUDE" in invoke and "--dangerously-skip-permissions" in invoke
+
+    # ------------------------------------------------------ attribution prose
+    #
+    # Round 10 genericized harness_v2/v3 because "round 9 stripped the numbers and left the
+    # attributions, which ARE the answer". The identical treatment was never applied to the
+    # 20 pinned evaluators or to utils/, both of which the allowlist copies verbatim. Numbers
+    # are redacted there, so every number-shaped rule in the gate passes it -- and the
+    # surviving prose names the recorded winner's STRUCTURE, which is what a lane needs.
+    # A property check, not a list: the previous ten rounds each deleted the file the last
+    # round found.
+
+    _OUTCOME_VERB = (r"\b(won|wins|winning|winner|lost|loses|losing|beat|beats|champion|"
+                     r"proven|outperform\w*)\b")
+
+    def test_no_admitted_file_attributes_an_outcome_to_a_competition(self):
+        import re
+        man = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        alias = {}
+        for comp, v in man.items():
+            alias[comp] = comp
+            m = re.search(r"(s\d+e\d+)$", comp)
+            if m:
+                alias[m.group(1)] = comp
+        verb = re.compile(self._OUTCOME_VERB, re.I)
+        pinned = []
+        for comp, v in man.items():
+            for k in ("eval_module", "evaluator", "eval"):
+                if isinstance(v, dict) and v.get(k):
+                    pinned.append(f"tree_search/{str(v[k]).replace('.py', '')}.py")
+                    break
+        # ...and the SKILL-ASSET MIRRORS of the utils, which are what the run root actually
+        # ships. Editing utils/experiment_log.py alone left the copy the lane reads intact.
+        skill_utils = [f"{d}/{f}"
+                       for d in (".claude/skills/kaggle-agent/assets/utils",
+                                 ".claude/skills/kaggle-agent-self-improvement/assets/utils")
+                       for f in ("experiment_log.py", "data_loader.py", "evaluation.py")]
+        targets = sorted(set(pinned)) + ["utils/experiment_log.py", "utils/evaluation.py",
+                                         "utils/data_loader.py", "templates/eda_template.py",
+                                         "tree_search/harness_v2.py", "tree_search/harness_v3.py",
+                                         "tree_search/stage2_inputs.py",
+                                         "tree_search/eval_support.py"] + skill_utils
+        hits = []
+        for rel in targets:
+            p = os.path.join(REPO, rel)
+            if not os.path.exists(p):
+                continue
+            for i, line in enumerate(open(p, encoding="utf-8", errors="replace"), 1):
+                if not verb.search(line):
+                    continue
+                for a in alias:
+                    if re.search(rf"(?<![0-9a-z]){re.escape(a)}(?![0-9a-z])", line, re.I):
+                        hits.append(f"{rel}:{i}: {line.strip()[:110]}")
+                        break
+        assert not hits, (
+            "a file every lane reads names a competition next to an outcome — the number is "
+            "redacted, so the gate passes it, and the structure is the answer:\n  "
+            + "\n  ".join(hits))
+
+    def test_selftest_that_hardcodes_what_it_withholds_is_auditor_only(self):
+        import subprocess
+        r = subprocess.run([sys.executable, "knowledge/task_priors_for.py", "--selftest"],
+                           capture_output=True, text=True, cwd=REPO, check=False,
+                           env={k: v for k, v in os.environ.items() if k != "KAGGLE_KB_AUDIT"})
+        assert r.returncode != 0, (
+            "--selftest asserts, in the file a lane must read to learn how to call the tool, "
+            "which entries are withheld and what they say; round 8 already removed a "
+            "hardcoded score table from this exact file for being 'the filter itself "
+            "becoming the door it exists to close':\n" + (r.stdout + r.stderr)[:400])
+        r = subprocess.run([sys.executable, "knowledge/task_priors_for.py", "--selftest"],
+                           capture_output=True, text=True, cwd=REPO, check=False,
+                           env=dict(os.environ, KAGGLE_KB_AUDIT="1"))
+        assert r.returncode == 0, "auditors must still be able to run it:\n" + r.stderr[-400:]
+
+    def test_suggest_priors_does_not_announce_how_much_it_withheld(self):
+        import subprocess
+        code = ("import sys; sys.path.insert(0, 'tree_search');"
+                "import harness_v2 as h;"
+                "h.suggest_priors({'comp': 'afsis-soil-properties', 'metric': 'rmse',"
+                " 'tags': ['ensemble', 'blend']}, 'knowledge/experience.md', max_items=200)")
+        r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                           cwd=REPO, check=False,
+                           env={k: v for k, v in os.environ.items() if k != "KAGGLE_KB_AUDIT"})
+        out = r.stdout + r.stderr
+        assert "excluded" not in out, (
+            "round 10 gated query_library's identical banner because a COUNT of what was "
+            "withheld is itself the signal; this is the function it was copied from, and "
+            "SKILL.md advertises it:\n" + out[:300])

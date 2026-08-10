@@ -76,8 +76,8 @@ def mae(a, b):
 
 def snap_to_grid(preds, grid=_TRAIN_SORTED_Y):
     """Snap each prediction to the nearer of its two bracketing observed train yield
-    values. Proven winner in every s3e14 iteration so far (STATUS.md); not re-tested as
-    a mutation, just applied via the postprocess.snap config flag."""
+    values. Available as the postprocess.snap config flag, which is searchable like any
+    other: whether it helps here is for this run's own tree to find out."""
     idx = np.searchsorted(grid, preds)
     idx = np.clip(idx, 1, len(grid) - 1)
     left = grid[idx - 1]

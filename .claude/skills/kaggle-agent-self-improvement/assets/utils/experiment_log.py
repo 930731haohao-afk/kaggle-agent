@@ -148,9 +148,9 @@ def _entry_is_diagnostic(entry: dict) -> bool:
     if isinstance(flag, str) and flag.strip().lower() in ("true", "false", "yes", "no", "0", "1"):
         return flag.strip().lower() in ("true", "yes", "1")
     # 2. Dedicated LABEL fields only. model/model_name were scanned here too, but in this repo
-    #    they hold long free-text blend DESCRIPTIONS -- the real s3e19 champion is
-    #    "tree-search v2 blend (10-way: ... calendar-probe ...)" and the bare word "probe"
-    #    demoted it to second place (2026-08-07). A label is deliberate; a description is not.
+    #    they hold long free-text blend DESCRIPTIONS, and a bare diagnostic word occurring
+    #    anywhere inside one demoted a real entry to second place (2026-08-07). A label is
+    #    deliberate; a description is not.
     labels = " ".join(str(entry.get(k, "")) for k in ("tag", "label")).lower()
     if any(m in labels for m in _DIAGNOSTIC_LABELS):
         return True

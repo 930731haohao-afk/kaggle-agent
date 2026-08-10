@@ -755,7 +755,11 @@ def suggest_priors(comp_meta: dict, experience_path: str = None, max_items: int 
                     break
         if len(out) >= max_items:
             break
-    if dropped:
+    # HOW MUCH was withheld is itself the signal: the count varies with how much the
+    # experience library recorded about this competition, and zero withheld is a signal too.
+    # Round 10 gated the identical banner in query_library.py and missed this one, which is
+    # the function it was copied FROM and the one SKILL.md advertises (round 11).
+    if dropped and os.environ.get("KAGGLE_KB_AUDIT") == "1":
         print(f"[suggest_priors] excluded {len(dropped)} bullet(s) whose evidence comes from "
               f"{comp!r} itself (self-evidence filter); {len(out)} returned")
     return out

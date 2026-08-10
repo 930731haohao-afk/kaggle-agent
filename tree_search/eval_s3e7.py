@@ -20,8 +20,8 @@ as eval_s3e3.py/eval_s3e14.py/eval_s3e5.py:
      `want_importance=True` (lgb only) additionally returns each of the 8 ENGINEERED
      features' average (over folds) LightGBM gain-importance in `result["importance"]` —
      used exactly once, on the root, to pick real weakest-importance engineered features
-     for a feature-PRUNING mutation direction (s3e3's winning lever per the Phase D-3
-     brief) instead of guessing from EDA correlations alone.
+     for a feature-PRUNING mutation direction, instead of guessing from EDA correlations
+     alone.
 
   2. blend — {kind:"blend", members:[<solo node id>, ...],
              weight_search:"dirichlet", space:"prob"|"rank"}

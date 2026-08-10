@@ -1,12 +1,9 @@
 """tree_search/eval_s3e9_v2.py — per-competition evaluator for playground-series-s3e9
-(Concrete Compressive Strength, RMSE, minimize), REVENGE MATCH build on harness_v2
-(Phase E-1). v1 (tree_search/eval_s3e9.py, single-model-only nodes) LOST here:
-<score> vs the linear iteration's 7-way seed-bagged blend <score> (STATUS.md's Phase
-C-2a verdict: "to actually beat this competition's current best score, Stage 4 needs
-the search space widened beyond single-model nodes"). v2 is exactly that widening —
-harness_v2's ensemble-default node space (`kind`: "solo"|"blend") — applied to the same
-data/CV/features v1 already used, so any win here is attributable to the harness change,
-not a different problem setup.
+(Concrete Compressive Strength, RMSE, minimize), built on harness_v2.
+
+The node space is harness_v2's ensemble default (`kind`: "solo"|"blend"), over the same
+data, CV scheme and features the earlier single-model-only evaluator used, so a difference
+in outcome is attributable to the node space rather than to a different problem setup.
 
 Two node kinds, same schema convention as eval_s3e11.py/eval_s3e14.py:
 
