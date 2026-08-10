@@ -481,7 +481,15 @@ def main(argv: list[str]) -> int:
     plan = archive_plan(root) if args.simulate_archive else set()
     findings, n_files = [], 0
     skipped: list[str] = []
-    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+    # os.walk's default swallows a listdir failure and yields NOTHING for that subtree, so an
+    # unreadable DIRECTORY was the one unexaminable path that never reached `skipped` -- it
+    # took the "no findings, no skips" branch and printed a normal pass, while every
+    # unreadable FILE correctly forced INCONCLUSIVE. A skip is not a pass (round 11).
+    for dirpath, dirnames, filenames in os.walk(
+            root, followlinks=False,
+            onerror=lambda e: skipped.append(
+                f"{os.path.relpath(getattr(e, 'filename', root), root)}/ "
+                f"(directory could not be listed: {e})")):
         rel_dir = os.path.relpath(dirpath, root)
         rel_dir = "" if rel_dir == "." else rel_dir + "/"
         keep = []

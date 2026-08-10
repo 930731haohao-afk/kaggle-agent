@@ -2644,3 +2644,27 @@ class TestRound11:
             "round 10 gated query_library's identical banner because a COUNT of what was "
             "withheld is itself the signal; this is the function it was copied from, and "
             "SKILL.md advertises it:\n" + out[:300])
+
+    def test_an_unreadable_directory_is_a_skip_not_a_pass(self, tmp_path):
+        """os.walk's default swallows a listdir failure and yields nothing for that subtree.
+
+        Every other unexaminable path in the gate reaches `skipped` and forces INCONCLUSIVE
+        -- unreadable files, dangling symlinks, oversized files. An unreadable DIRECTORY was
+        the one hole that bypassed it, taking the "no findings, no skips" branch and printing
+        a normal pass. The gate states the invariant in main() itself: "A skip is not a pass.
+        The round-8 gate counted only files it read and printed that count as if it were
+        coverage, so clean and never opened looked identical."
+        """
+        root = tmp_path / "r"
+        (root / "hidden").mkdir(parents=True)
+        (root / "hidden" / "leak.md").write_text(
+            "playground-series-s3e16 private MAE 1.34712\n")
+        (root / "ok.txt").write_text("harmless\n")
+        (root / "hidden").chmod(0o000)
+        try:
+            r = self._gate(root)
+        finally:
+            (root / "hidden").chmod(0o755)
+        assert r.returncode != 0, (
+            "a directory the gate cannot list is not evidence of cleanliness:\n" + r.stdout)
+        assert "INCONCLUSIVE" in r.stdout and "hidden/" in r.stdout, r.stdout
