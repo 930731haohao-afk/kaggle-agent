@@ -158,6 +158,39 @@ def _materialize_data(src_dir: str, dst_dir: str) -> None:
             shutil.copy2(src, dst)
 
 
+def _write_baseline(root: str) -> None:
+    """Record the frozen surface: every file the gate scans, by sha256.
+
+    Two things follow from this file existing. The gate can tell what the builder produced
+    from what the RUN produced, so a lane's own STATUS.md no longer fails it -- without which
+    the run could never restart, since the launcher gates startup on the gate and orders each
+    lane to write its final CV score there (round 11). And the guards the builder writes --
+    the stripped submit routes, .claude/settings.json -- become checkable at START time,
+    where the launcher actually looks, instead of only at build time, where it does not.
+    """
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import verify_clean_slate as gate
+
+    files = {}
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        rel_dir = os.path.relpath(dirpath, root)
+        rel_dir = "" if rel_dir == "." else rel_dir + "/"
+        dirnames[:] = [d for d in dirnames if not gate.is_exempt(rel_dir + d + "/")]
+        for fn in filenames:
+            rel = rel_dir + fn
+            if gate.is_exempt(rel):
+                continue
+            full = os.path.join(dirpath, fn)
+            if os.path.islink(full) or not os.path.isfile(full):
+                continue
+            try:
+                files[rel] = hashlib.sha256(open(full, "rb").read()).hexdigest()
+            except OSError:
+                continue
+    json.dump({"built_from": REPO, "files": files},
+              open(os.path.join(root, gate.BASELINE_FILE), "w"), indent=2, sort_keys=True)
+
+
 def _drop_submit_routes(root: str) -> None:
     """Rewrite the copied skill's routes to the submit skill, which is not in the root.
 
@@ -291,6 +324,7 @@ def build(root: str, write: bool) -> int:
         os.makedirs(os.path.join(root, ".claude"), exist_ok=True)
         json.dump({"autoMemoryEnabled": False},
                   open(os.path.join(root, ".claude/settings.json"), "w"), indent=2)
+        _write_baseline(root)
     n += 1
 
     # The memory directory is derived from the working directory, so a fresh root gets a

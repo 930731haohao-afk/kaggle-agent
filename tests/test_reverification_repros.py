@@ -2218,3 +2218,175 @@ class TestRound11:
             assert "node_id" in kw, (
                 "every evaluated node must pass node_id: that is what caches its OOF vector, "
                 "and a blend can only weight members whose OOFs were cached")
+
+    # ---------------------------------------------------------------- relaunch
+    #
+    # The gate ran on a tree defined only as "what the builder produced", so it could not
+    # tell the run's own output from a leak. run_myagent_headless.sh hard-gates startup on
+    # it, and the same launcher orders each lane to write "a 3-line summary at the top of
+    # competitions/$c/STATUS.md with the final CV score". The moment lane 1 finished, the
+    # root permanently failed the gate: every relaunch after a reboot, a kill or the
+    # documented `setsid nohup` exited 3 before lane 2 started, and the skip-if-submission
+    # -exists resume path was dead code (round 11).
+    #
+    # A baseline manifest written at build time splits the tree in two. The frozen surface
+    # must still hash-match -- which is also the check that makes the builder's guards
+    # enforceable at START time rather than only at build time. Everything else is the run's
+    # own output: a lane may write its OWN score, and may not name any other competition.
+
+    def _mini_root(self, tmp_path, comps):
+        import hashlib
+        root = tmp_path / "root"
+        (root / "docs").mkdir(parents=True)
+        json.dump({"competitions": {c: {"eval_module": "eval_x"} for c in comps}},
+                  open(root / "docs/rerun_manifest.json", "w"))
+        frozen = root / "harness.py"
+        frozen.write_text("def add_node(tree):\n    return tree\n")
+        base = {"files": {"harness.py": hashlib.sha256(frozen.read_bytes()).hexdigest(),
+                          "docs/rerun_manifest.json": hashlib.sha256(
+                              (root / "docs/rerun_manifest.json").read_bytes()).hexdigest()}}
+        json.dump(base, open(root / ".rerun_baseline.json", "w"))
+        return root
+
+    def _gate(self, root, *extra):
+        import subprocess
+        return subprocess.run([sys.executable, "benchmark_infra/verify_clean_slate.py",
+                               "--root", str(root), *extra],
+                              capture_output=True, text=True, cwd=REPO, check=False)
+
+    def test_gate_admits_the_running_lanes_own_status_line(self, tmp_path):
+        comps = ["playground-series-s3e16", "playground-series-s5e1"]
+        root = self._mini_root(tmp_path, comps)
+        d = root / "competitions/playground-series-s3e16"
+        d.mkdir(parents=True)
+        (d / "STATUS.md").write_text(
+            "# playground-series-s3e16\n\nFinal CV MAE 0.562912 (5-fold, seed 42).\n"
+            "Submission written to submission.csv.\n")
+        r = self._gate(root)
+        assert r.returncode == 0, (
+            "a lane's own STATUS.md is the deliverable the launcher orders it to write; "
+            "gating startup on a rule that rejects it makes every relaunch impossible:\n"
+            + (r.stdout + r.stderr)[-700:])
+
+    def test_gate_still_flags_a_lane_naming_another_competition(self, tmp_path):
+        comps = ["playground-series-s3e16", "playground-series-s5e1"]
+        root = self._mini_root(tmp_path, comps)
+        d = root / "competitions/playground-series-s3e16"
+        d.mkdir(parents=True)
+        (d / "STATUS.md").write_text(
+            "# playground-series-s3e16\n\nFinal CV MAE 0.562912.\n"
+            "For reference playground-series-s5e1 scored MAPE 0.06253 last time.\n")
+        r = self._gate(root)
+        assert r.returncode != 0 and "playground-series-s5e1" in r.stdout, (
+            "the exemption is for the lane's OWN competition only -- a lane that writes a "
+            "sibling's score is exactly the cross-lane channel the gate exists for:\n"
+            + (r.stdout + r.stderr)[-700:])
+
+    def test_gate_detects_a_modified_frozen_file(self, tmp_path):
+        root = self._mini_root(tmp_path, ["playground-series-s3e16"])
+        (root / "harness.py").write_text("def add_node(tree):\n    return None  # clobbered\n")
+        r = self._gate(root)
+        assert r.returncode != 0 and "harness.py" in r.stdout, (
+            "the frozen surface is what the builder's guards live in; if the gate cannot "
+            "tell it was edited, a root reused across nights or clobbered by a lane starts "
+            "20 lanes with those guards silently gone:\n" + (r.stdout + r.stderr)[-700:])
+
+    def test_gate_detects_a_deleted_frozen_file(self, tmp_path):
+        root = self._mini_root(tmp_path, ["playground-series-s3e16"])
+        (root / "harness.py").unlink()
+        r = self._gate(root)
+        assert r.returncode != 0 and "harness.py" in r.stdout, (
+            "a frozen file that vanished is not a pass:\n" + (r.stdout + r.stderr)[-700:])
+
+    def test_builder_emits_a_baseline_covering_what_the_gate_scans(self, tmp_path):
+        import subprocess
+        root = str(tmp_path / "rr")
+        r = subprocess.run([sys.executable, "benchmark_infra/build_myagent_run_root.py",
+                            "--write", "--root", root],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout[-1200:] + r.stderr[-600:]
+        bpath = os.path.join(root, ".rerun_baseline.json")
+        assert os.path.exists(bpath), "no baseline manifest — the gate cannot tell the " \
+                                      "frozen surface from the run's own output"
+        base = json.load(open(bpath))["files"]
+        for must in (".claude/settings.json", "docs/rerun_manifest.json"):
+            assert must in base, f"{must} is not frozen, so editing it is undetectable"
+        assert self._gate(root).returncode == 0, "a freshly built root must pass its own gate"
+
+    # ------------------------------------------------------- relaunch, safely
+    #
+    # Making restart POSSIBLE is only half of it. The launcher skips a competition whose
+    # submission.csv exists, so a lane is only ever relaunched when it did NOT finish -- and
+    # what it finds waiting is its own aborted attempt's STATUS.md, tree and OOF cache. That
+    # is the channel round 10 closed for auto-memory, arriving by a different road: "a lane
+    # relaunched after the 6h cap or the stall watchdog would read its own previous attempt's
+    # CV score and champion recipe". A partial attempt must be moved out of the run root
+    # before the lane restarts, and the baseline manifest is what says which files are the
+    # builder's (keep) and which the run's (move).
+
+    def _partial_root(self, tmp_path, comp="playground-series-s3e16"):
+        import hashlib
+        root = tmp_path / "root"
+        (root / "docs").mkdir(parents=True)
+        json.dump({"competitions": {comp: {"eval_module": "eval_x"}}},
+                  open(root / "docs/rerun_manifest.json", "w"))
+        cd = root / "competitions" / comp
+        (cd / "data").mkdir(parents=True)
+        (cd / "scripts").mkdir()
+        (cd / "config.yaml").write_text("metric: mae\ntarget: y\n")
+        (cd / "data" / "train.csv").write_text("id,y\n1,2\n")
+        files = {}
+        for rel in (f"competitions/{comp}/config.yaml", "docs/rerun_manifest.json"):
+            files[rel] = hashlib.sha256((root / rel).read_bytes()).hexdigest()
+        json.dump({"files": files}, open(root / ".rerun_baseline.json", "w"))
+        # what an aborted attempt leaves behind
+        (cd / "STATUS.md").write_text("# partial\nbest CV MAE 0.562912 so far, CatBoost d=12\n")
+        (cd / "experiments_tree_v3.json").write_text('{"nodes":[{"id":1,"score":0.562912}]}')
+        (cd / "scripts" / "features.py").write_text("def build():\n    return 1\n")
+        return root, cd
+
+    def test_quarantine_moves_the_partial_attempt_and_keeps_the_frozen_files(self, tmp_path):
+        import subprocess
+        comp = "playground-series-s3e16"
+        root, cd = self._partial_root(tmp_path)
+        dest = tmp_path / "attempts"
+        r = subprocess.run([sys.executable, "benchmark_infra/quarantine_partial_attempt.py",
+                            "--root", str(root), "--comp", comp, "--dest", str(dest)],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout + r.stderr
+        for gone in ("STATUS.md", "experiments_tree_v3.json", "scripts/features.py"):
+            assert not (cd / gone).exists(), (
+                f"{gone} is the lane's own aborted attempt; a relaunch that finds it reads "
+                f"its own previous CV score and champion recipe")
+        for kept in ("config.yaml", "data/train.csv"):
+            assert (cd / kept).exists(), (
+                f"{kept} is the builder's, not the run's — moving it would break the lane "
+                f"it is trying to protect")
+        assert (dest / comp / "STATUS.md").exists(), "quarantined work must be recoverable"
+
+    def test_quarantine_is_a_noop_when_nothing_partial_is_there(self, tmp_path):
+        import subprocess
+        comp = "playground-series-s3e16"
+        root, cd = self._partial_root(tmp_path)
+        for f in ("STATUS.md", "experiments_tree_v3.json"):
+            (cd / f).unlink()
+        (cd / "scripts" / "features.py").unlink()
+        dest = tmp_path / "attempts"
+        r = subprocess.run([sys.executable, "benchmark_infra/quarantine_partial_attempt.py",
+                            "--root", str(root), "--comp", comp, "--dest", str(dest)],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert (cd / "config.yaml").exists() and (cd / "data/train.csv").exists()
+
+    def test_launcher_quarantines_before_restarting_an_unfinished_lane(self):
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        assert "quarantine_partial_attempt.py" in src, (
+            "the launcher skips a competition whose submission.csv exists, so any lane it "
+            "DOES start may be a restart onto its own aborted attempt — it must clear that "
+            "attempt first")
+        i_skip = src.index("submission already present")
+        i_q = src.index("quarantine_partial_attempt.py")
+        i_start = src.index('log "START $c"')
+        assert i_skip < i_q < i_start, (
+            "quarantine belongs after the skip test (a finished lane keeps its work) and "
+            "before the lane starts")

@@ -27,6 +27,9 @@ BASE=$RUN_ROOT
 NV_MARKER=/home/tjyen/ai_agents/nvidia-kaggle-runs/RUN_READY_STATUS.md
 AIDE_MARKER=/home/tjyen/ai_agents/aideml-runs/PHASE9A_STATUS.md
 STATUS=$BASE/MYAGENT_LANES_STATUS.md
+# Aborted attempts are moved here — OUTSIDE the run root, so a relaunched lane cannot read
+# what its previous attempt scored, while the operator keeps every byte of it.
+ATTEMPTS=${ATTEMPTS:-$RUN_ROOT.attempts}
 CLAUDE=/home/tjyen/.local/bin/claude
 PER_COMP_SECS=21600         # 6 h safety net — original method was uncapped; observed singles 0.4-4 h, so the cap must sit above the max, not inside the range
 STALL_MIN=30                # kill a session that has written nothing for this long — longest observed legitimate quiet gap is a single training epoch, well under this
@@ -77,6 +80,16 @@ for c in $COMPS; do
     log "SKIP $c: submission already present"
     continue
   fi
+
+  # Anything still here has no submission, so it is an ABORTED attempt — killed by the 6h
+  # cap, the stall watchdog, a reboot or the operator. Its STATUS.md opens with "the final CV
+  # score" and its tree holds every node it evaluated, so a lane restarting on top of it gets
+  # a warm start from its own previous answer. Round 10 closed that channel for the harness's
+  # auto-memory; this is the same channel arriving through the filesystem (round 11). Moved,
+  # never deleted: the attempt stays available to the operator, outside the lane's reach.
+  python3 "$REPO/benchmark_infra/quarantine_partial_attempt.py" \
+      --root "$RUN_ROOT" --comp "$c" --dest "$ATTEMPTS" >> "$STATUS" 2>&1 || {
+    log "REFUSING to start $c: could not clear its aborted attempt"; continue; }
 
   # Hold the machine for exactly one competition, then hand it on. The upstream-marker wait
   # above establishes ordering; this makes non-overlap a mechanism rather than a convention

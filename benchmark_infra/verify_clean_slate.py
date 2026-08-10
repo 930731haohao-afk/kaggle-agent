@@ -49,6 +49,7 @@ The run root is the real boundary; this scan is how you find out whether it held
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -251,7 +252,85 @@ def _is_official_file(rel: str) -> bool:
 EXEMPT_DIR_NAMES = {"__pycache__", ".ruff_cache", ".pytest_cache", ".mypy_cache", ".ipynb_checkpoints"}
 
 
+BASELINE_FILE = ".rerun_baseline.json"
+
+
+def load_baseline(root: str) -> dict[str, str] | None:
+    """The frozen surface, as recorded by build_myagent_run_root.py at build time.
+
+    Absent for a tree that was never built by the builder -- the repo itself under
+    --simulate-archive, and the unit fixtures -- in which case every file is treated as
+    frozen and the gate behaves exactly as it did before.
+    """
+    p = os.path.join(root, BASELINE_FILE)
+    if not os.path.exists(p):
+        return None
+    try:
+        return json.load(open(p, encoding="utf-8"))["files"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def _own_comp(rel: str, slugs: dict) -> str | None:
+    parts = rel.split("/")
+    if len(parts) >= 2 and parts[0] == "competitions" and parts[1] in slugs:
+        # NOT data/. That directory holds official Kaggle files and nothing else, so a
+        # score-bearing file there is a leftover from an aborted attempt, not a deliverable
+        # -- the one thing a relaunched lane must not find (round 10).
+        if len(parts) >= 3 and parts[2] == "data":
+            return None
+        return parts[1]
+    return None
+
+
+def slugs_for(rel: str, slugs: dict, baseline: dict[str, str] | None) -> dict:
+    """Which competitions this file may not name.
+
+    A file the builder put there may name none of them. A file the RUN produced under
+    competitions/<comp>/ may name <comp> -- that is the deliverable the launcher orders each
+    lane to write ("a 3-line summary ... with the final CV score"), and gating startup on a
+    rule that rejects it made every relaunch exit 3 before lane 2 began (round 11). It may
+    still name no OTHER competition: the exemption is per-lane, so a lane that writes a
+    sibling's score is caught by exactly the rule it was always caught by.
+    """
+    if baseline is None or rel in baseline:
+        return slugs
+    own = _own_comp(rel, slugs)
+    return {c: p for c, p in slugs.items() if c != own} if own else slugs
+
+
+def baseline_findings(root: str, baseline: dict[str, str] | None) -> list[str]:
+    """The frozen surface must still be what the builder wrote.
+
+    Round 9 put the memory guard and round 10 the auto-memory setting in the BUILDER, but
+    run_myagent_headless.sh never runs the builder -- it checks `[ -d $RUN_ROOT ]` and then
+    this gate. So a root reused across nights, built by an older revision, or clobbered by a
+    lane started all 20 lanes with those guards silently absent (round 11). Hashing what the
+    builder froze is what makes a build-time guard enforceable at START time.
+    """
+    if not baseline:
+        return []
+    out = []
+    for rel, want in sorted(baseline.items()):
+        full = os.path.join(root, rel)
+        if not os.path.exists(full):
+            out.append(f"{rel}: frozen at build time and now MISSING — the run root is not "
+                       f"the tree the builder verified")
+            continue
+        try:
+            got = hashlib.sha256(open(full, "rb").read()).hexdigest()
+        except OSError as exc:
+            out.append(f"{rel}: frozen at build time and unreadable now ({exc})")
+            continue
+        if got != want:
+            out.append(f"{rel}: frozen at build time and MODIFIED since — a guard the "
+                       f"builder wrote cannot be assumed to still be there")
+    return out
+
+
 def is_exempt(rel: str) -> bool:
+    if rel == BASELINE_FILE:
+        return True
     if _is_official_file(rel):
         return True
     if EXEMPT_DIR_NAMES.intersection(rel.split("/")):
@@ -398,6 +477,7 @@ def main(argv: list[str]) -> int:
         return 4
 
     slugs = benchmark_slugs(root)
+    baseline = load_baseline(root)
     plan = archive_plan(root) if args.simulate_archive else set()
     findings, n_files = [], 0
     skipped: list[str] = []
@@ -451,7 +531,9 @@ def main(argv: list[str]) -> int:
                 skipped.append(f"{rel} (could not be opened)")
                 continue
             n_files += 1
-            findings += scan_file(full, rel, slugs)
+            findings += scan_file(full, rel, slugs_for(rel, slugs, baseline))
+
+    findings += baseline_findings(root, baseline)
 
     label = "post-archive (simulated)" if args.simulate_archive else "current tree"
     if skipped:
@@ -474,8 +556,10 @@ def main(argv: list[str]) -> int:
     by_file: dict[str, int] = {}
     for f in findings:
         by_file[f.split(":", 1)[0]] = by_file.get(f.split(":", 1)[0], 0) + 1
-    print(f"CLEAN-SLATE FAILED — {len(findings)} finding(s) in {len(by_file)} file(s) state a "
-          f"benchmark competition's own result ({label}, {n_files} files examined)\n")
+    print(f"CLEAN-SLATE FAILED — {len(findings)} finding(s) in {len(by_file)} file(s): a "
+          f"benchmark competition's own result is stated where the lane could read it, or "
+          f"the builder's frozen surface no longer matches ({label}, {n_files} files "
+          f"examined)\n")
     for f in findings[:args.max_report]:
         print("  " + f)
     if len(findings) > args.max_report:
