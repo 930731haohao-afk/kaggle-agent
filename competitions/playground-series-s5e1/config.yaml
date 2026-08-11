@@ -1,11 +1,16 @@
-competition: playground-series-s5e1
-title: "Forecasting Sticker Sales (Playground Series S5E1)"
-metric:
-  name: MAPE
-  direction: minimize
-target: num_sold
+name: playground-series-s5e1
+url: https://www.kaggle.com/competitions/playground-series-s5e1
+description: Forecast daily sticker sales for 6 countries x 3 stores x 5 products during 2017-2019, trained on 2010-2016.
+problem_type: regression (time-series forecast)
+evaluation_metric: MAPE
+optimization_direction: minimize
+target_column: num_sold
 id_column: id
+train_file: train.csv
+test_file: test.csv
+sample_submission_file: sample_submission.csv
 special_rules:
-  external_data_allowed: true
+  external_data_allowed: true  # official rules 2.6 standard clause; accepted 2026-07-30 on huang account
   pretrained_models_allowed: true
-  rules_source: "official rules 2.6 EXTERNAL DATA AND TOOLS -- publicly available external data permitted; verified 2026-07-30, account huangweihaohuang has accepted"
+  internet_access_allowed: false
+notes: Kaggle Playground benchmark (Season 5 Episode 1). Train targets contain nulls.
