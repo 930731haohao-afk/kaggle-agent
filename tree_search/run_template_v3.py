@@ -7,7 +7,13 @@ config, `LINEAR_BEST`, byte-level verification numbers — because their job is 
 recorded tree. Citing one of them as "the template" handed a re-run of that competition its
 own recorded champion as the starting point (2026-08-10 round-6 finding). A fresh benchmark
 run copies THIS file, fills the placeholders from its own Stage 1–3 artifacts, and records
-the copy's path into docs/rerun_manifest.json `driver_actual`.
+the copy's path in its own competitions/<comp>/STATUS.md.
+
+Do NOT record it into docs/rerun_manifest.json. That file is one of the 135 frozen in the
+run root's .rerun_baseline.json, so a lane that edits it makes verify_clean_slate.py refuse
+the NEXT relaunch — for all 20 lanes, including the ones that had not run yet. The earlier
+wording told every lane to write there, which is an instruction whose consequence was to
+brick the run's own restart path.
 
 What a driver must do (the Phase H-1 contract, references/07_tree_search.md):
   1. build the root from THIS run's own baseline (Stage 3's best solo config — never from a

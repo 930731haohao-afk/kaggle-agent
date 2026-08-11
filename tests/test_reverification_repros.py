@@ -2386,6 +2386,116 @@ class TestRound11:
                 f"it is trying to protect")
         assert (dest / comp / "STATUS.md").exists(), "quarantined work must be recoverable"
 
+    def test_quarantine_survives_an_evaluator_whose_caches_nest(self, tmp_path):
+        """eval_s3e5_v2.py declares BOTH `V1_CACHE_DIR = cache_s3e5` and
+        `CACHE_DIR = cache_s3e5/v2`, and cache_dirs_for matched every name ending in
+        CACHE_DIR. partial_paths then walked the parent — which already descends into v2/ —
+        and walked v2/ again, so every file under it was listed twice; shutil.move succeeded
+        on the first copy and raised FileNotFoundError on the second.
+
+        The launcher turns that non-zero exit into "REFUSING to start <comp> ... continue",
+        so the s3e5 lane never starts, and the run still ends with MY-AGENT LANES COMPLETE —
+        one of the twenty comparisons missing behind a clean-finish marker.
+        """
+        import subprocess
+        comp = "playground-series-s3e16"
+        root, _cd = self._partial_root(tmp_path)
+        (root / "tree_search" / "eval_x.py").write_text(
+            "import os\n_HERE = os.path.dirname(os.path.abspath(__file__))\n"
+            "V1_CACHE_DIR = os.path.join(_HERE, 'cache_x')\n"
+            "CACHE_DIR = os.path.join(V1_CACHE_DIR, 'v2')\n")
+        nested = root / "tree_search" / "cache_x" / "v2"
+        nested.mkdir(parents=True)
+        for i in range(3):
+            (nested / f"solo_{i}.npz").write_bytes(b"\x00")
+
+        sys.path.insert(0, os.path.join(REPO, "benchmark_infra"))
+        try:
+            import quarantine_partial_attempt as q
+            import importlib
+            importlib.reload(q)
+            rels = q.partial_paths(str(root), comp)
+        finally:
+            sys.path.pop(0)
+        assert len(rels) == len(set(rels)), (
+            "a path listed twice is moved twice, and the second move raises "
+            f"FileNotFoundError: {sorted(rels)}")
+
+        dest = tmp_path / "attempts"
+        r = subprocess.run([sys.executable, "benchmark_infra/quarantine_partial_attempt.py",
+                            "--root", str(root), "--comp", comp, "--dest", str(dest)],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, (
+            "one pass must clear the whole aborted attempt:\n" + r.stdout + r.stderr)
+        left = list(nested.glob("*.npz"))
+        assert not left, (
+            f"OOF vectors from the previous attempt survive: {left}. The relaunched lane "
+            f"blends on them under the same node ids with different configs.")
+
+    def test_quarantine_moves_stage2_tables_but_never_the_official_data(self, tmp_path):
+        """data/ was pruned by NAME, so the aborted attempt's Stage-2 output stayed put.
+
+        Four pinned evaluators read competitions/<comp>/data/train_processed.csv and friends
+        from exactly there. The prune is still load-bearing — the baseline holds no data/
+        entries, so without it train.csv itself reads as run-produced and gets moved, which
+        breaks the lane. Membership in the Kaggle-manifest-verified clean root is the test
+        that separates them, and it is the one the gate already uses.
+        """
+        import subprocess
+        comp = "playground-series-s3e16"
+        root, cd = self._partial_root(tmp_path)
+        (cd / "data" / "train_processed.csv").write_text("id,y,feat\n1,2,3\n")
+
+        clean = tmp_path / "clean" / comp / "data"
+        clean.mkdir(parents=True)
+        (clean / "train.csv").write_text("id,y\n1,2\n")   # official; train_processed is not
+
+        sys.path.insert(0, os.path.join(REPO, "benchmark_infra"))
+        try:
+            import verify_clean_slate as gate
+            import quarantine_partial_attempt as q
+            import importlib
+            importlib.reload(gate)
+            importlib.reload(q)
+            gate.CLEAN_DATA_ROOT = str(tmp_path / "clean")
+            rels = q.partial_paths(str(root), comp)
+        finally:
+            sys.path.pop(0)
+        assert f"competitions/{comp}/data/train_processed.csv" in rels, (
+            "Stage-2 tables from the aborted attempt are what the relaunched lane would "
+            f"read as its own feature matrix: {sorted(rels)}")
+        assert f"competitions/{comp}/data/train.csv" not in rels, (
+            "the official Kaggle file is the builder's, and moving it breaks the lane")
+
+        # and with no clean root on the machine, fall back to keeping data/ entirely:
+        # guessing wrong in that direction destroys the competition's input.
+        dest = tmp_path / "attempts"
+        r = subprocess.run([sys.executable, "benchmark_infra/quarantine_partial_attempt.py",
+                            "--root", str(root), "--comp", comp, "--dest", str(dest)],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert (cd / "data" / "train.csv").exists(), (
+            "without a clean root to check membership against, data/ must be left alone")
+
+    def test_no_instruction_tells_a_lane_to_write_into_a_frozen_file(self):
+        """The manifest told every lane, twenty times over, to record its generated driver
+        path into docs/rerun_manifest.json `driver_actual`.
+
+        That file is one of the 135 frozen in .rerun_baseline.json. A lane that obeyed would
+        make verify_clean_slate.py --require-baseline return 3, and run_myagent_headless.sh
+        exits on that before lane 1 — so one lane following the documentation would block
+        every subsequent relaunch, for all 20 competitions including those that never ran.
+        Nothing in the repo reads driver_actual, so the instruction bought nothing either.
+        """
+        man = open(os.path.join(REPO, "docs/rerun_manifest.json"), encoding="utf-8").read()
+        tpl = open(os.path.join(REPO, "tree_search/run_template_v3.py"),
+                   encoding="utf-8").read()
+        for name, src in (("docs/rerun_manifest.json", man),
+                          ("tree_search/run_template_v3.py", tpl)):
+            assert "driver_actual" not in src, (
+                f"{name} still instructs the lane to write into the frozen manifest; "
+                f"obeying it makes the gate refuse every relaunch")
+
     def test_quarantine_is_a_noop_when_nothing_partial_is_there(self, tmp_path):
         import subprocess
         comp = "playground-series-s3e16"
@@ -3294,8 +3404,16 @@ class TestStages:
                 missing.append(comp)
                 continue
             if comp in expected:
-                assert any(g.endswith(expected[comp]) for g in got), (
-                    f"{comp}: expected a cache at {expected[comp]}, resolver said {got}")
+                # COVERAGE, not equality. The resolver collapses ancestor/descendant pairs,
+                # so s3e5's `cache_s3e5/v2` is swept by the returned `cache_s3e5` -- walking
+                # the parent descends into it. Asserting the exact string instead would force
+                # the resolver to return both, which is the double-listing that crashed the
+                # move mid-way and left the lane unable to restart.
+                want = expected[comp]
+                covered = any(g.endswith(want) or want.startswith(
+                    g.split("tree_search/")[-1].rstrip("/") + "/") for g in got)
+                assert covered, (
+                    f"{comp}: nothing returned covers {want}, resolver said {got}")
         assert not missing, (
             "a competition whose cache cannot be resolved must not be silently skipped -- "
             f"that is the whole defect: {missing}")

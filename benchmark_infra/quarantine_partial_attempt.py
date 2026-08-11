@@ -106,8 +106,18 @@ def cache_dirs_for(repo_or_root: str, comp: str) -> list[str]:
         if name.endswith("CACHE_DIR") and isinstance(v, str) and "cache" in v:
             rel = os.path.relpath(v, repo_or_root) if os.path.isabs(v) else v
             out.append(rel.replace(os.sep, "/"))
-    # a nested cache (cache_x/v2) implies its parent is NOT this competition's to move
-    return sorted(set(out))
+    # Collapse ancestor/descendant pairs. eval_s3e5_v2.py declares BOTH
+    # V1_CACHE_DIR = cache_s3e5 and CACHE_DIR = cache_s3e5/v2, and both names end in
+    # CACHE_DIR, so this returned the pair -- partial_paths then walked the parent (which
+    # already descends into v2/) and walked v2/ again, listing every file under it twice.
+    # shutil.move succeeded on the first copy and raised FileNotFoundError on the second,
+    # which the launcher turns into "REFUSING to start playground-series-s3e5 ... continue".
+    # Keeping the ancestor is what subsumes the descendant; dropping it would leave v1's
+    # directory unswept. Both names come from THIS competition's own evaluator, so there is
+    # no other lane's cache to protect here.
+    dirs = sorted(set(out))
+    return [d for d in dirs
+            if not any(d != o and d.startswith(o.rstrip("/") + "/") for o in dirs)]
 
 
 def partial_paths(root: str, comp: str) -> list[str]:
@@ -115,15 +125,25 @@ def partial_paths(root: str, comp: str) -> list[str]:
     baseline = gate.load_baseline(root) or {}
     out = []
     base = os.path.join(root, "competitions", comp)
+    # Whether data/ can be swept by MEMBERSHIP rather than by name. Pruning the directory
+    # wholesale left the aborted attempt's Stage-2 tables in place -- train_processed.csv,
+    # test_processed.csv, level_table.csv, holidays.csv -- and four pinned evaluators read
+    # exactly those paths. The safe test is the gate's own: a file is official iff its name
+    # is in this competition's Kaggle-manifest-verified clean root. If that root is not on
+    # this machine we cannot tell official from run-produced, and moving the official data
+    # would break the lane this module exists to protect, so fall back to the name prune.
+    clean = os.path.join(gate.CLEAN_DATA_ROOT, comp, "data")
+    by_membership = os.path.isdir(clean)
     if os.path.isdir(base):
         for dirpath, dirnames, filenames in os.walk(base):
             rel_dir = os.path.relpath(dirpath, root).replace(os.sep, "/")
-            if rel_dir == f"competitions/{comp}":
+            if rel_dir == f"competitions/{comp}" and not by_membership:
                 dirnames[:] = [d for d in dirnames if d != "data"]  # official Kaggle files
             for fn in filenames:
                 rel = f"{rel_dir}/{fn}"
-                if rel not in baseline:
-                    out.append(rel)
+                if rel in baseline or gate._is_official_file(rel):
+                    continue
+                out.append(rel)
     for cache in cache_dirs_for(root, comp):
         full = os.path.join(root, cache)
         for dirpath, _dirnames, filenames in os.walk(full):
