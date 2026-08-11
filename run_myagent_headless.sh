@@ -125,6 +125,18 @@ until grep -q "NVIDIA LANES COMPLETE" "$NV_MARKER" 2>/dev/null \
 done
 
 source /home/tjyen/ai_agents/lane_lock.sh
+# lane_lock.sh ends with `trap lane_release EXIT INT TERM`, and `source` runs it in THIS
+# shell -- so it silently replaced the handler installed above, and on_signal became
+# unreachable for the whole run. Re-arm. Keep lane_lock's EXIT trap: releasing the lock on
+# any exit is the property it exists for, and on_signal releases explicitly before exiting.
+#
+# The handler this restores is not a nicety. Without it a SIGTERM makes `wait` return 143
+# while the bwrap/claude tree keeps running orphaned; the loop books the lane as
+# "NO SUBMISSION", starts the next competition on top of the still-running one, and writes
+# MY-AGENT LANES COMPLETE at the end. That is the same unequal-load condition this file's
+# header says voided RUN1 -- and it is verbatim the failure on_signal was written to fix,
+# reintroduced twenty lines below the fix.
+trap on_signal TERM INT
 
 lanes_ran=0
 for c in $COMPS; do

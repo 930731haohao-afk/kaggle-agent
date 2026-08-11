@@ -2413,6 +2413,40 @@ class TestRound11:
             "quarantine belongs after the skip test (a finished lane keeps its work) and "
             "before the lane starts")
 
+    def test_sourcing_the_lane_lock_does_not_disarm_the_launchers_signal_handler(self):
+        """`source lane_lock.sh` runs `trap lane_release EXIT INT TERM` in the LAUNCHER's own
+        shell, which silently replaced the `trap on_signal TERM INT` installed twenty lines
+        above it. on_signal was therefore unreachable for the entire run.
+
+        The consequence is exactly the failure on_signal exists to prevent, and its own
+        comment describes: SIGTERM makes `wait` return 143 while the bwrap/claude tree keeps
+        running orphaned, the loop books the lane NO SUBMISSION, starts the next competition
+        on top of the still-running one -- the unequal-load condition that voided RUN1 -- and
+        still writes MY-AGENT LANES COMPLETE, which bench_watchdog.sh reads as a clean finish.
+        """
+        import subprocess
+        lock = "/home/tjyen/ai_agents/lane_lock.sh"
+        if not os.path.exists(lock):
+            pytest.skip("lane_lock.sh not present on this machine")
+
+        # The hazard is live: sourcing it DOES rebind TERM. If that ever stops being true this
+        # test still passes, but for a reason worth seeing rather than by silently going vacuous.
+        probe = subprocess.run(
+            ["bash", "-c", f"on_signal(){{ :; }}; trap on_signal TERM INT; "
+                           f"source {lock} >/dev/null 2>&1; trap -p TERM"],
+            capture_output=True, text=True, check=False)
+        rebinds = "on_signal" not in probe.stdout
+
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        i_source = src.index("source /home/tjyen/ai_agents/lane_lock.sh")
+        after = src[i_source:]
+        assert "trap on_signal TERM INT" in after, (
+            "the launcher installs its signal handler and then sources lane_lock.sh, which "
+            "rebinds TERM/INT to lane_release"
+            + (" (confirmed live: after sourcing, `trap -p TERM` is "
+               f"{probe.stdout.strip()!r})" if rebinds else "")
+            + ". The handler must be re-armed AFTER the source or it can never fire.")
+
     def test_a_smoke_subset_is_checked_against_the_manifest_and_earns_no_marker(self):
         """SMOKE_COMPS exists so this launcher can be exercised on one competition instead of
         by committing a night to all 20. It reintroduces the hazard its own comment warns
