@@ -3071,3 +3071,67 @@ class TestStages:
         i_guard = src.index("MIN_PLAUSIBLE_SECS")
         i_complete = src.index("MY-AGENT LANES COMPLETE")
         assert i_guard < i_complete, "the guard must be able to prevent the marker"
+
+    # ------------------------------------- the sandbox's own regressions
+    #
+    # The isolation added earlier today introduced two faults that would have invalidated the
+    # whole benchmark, neither of them a leak:
+    #
+    #   `--dev /dev` mounts a MINIMAL devtmpfs with no /dev/nvidia*, so all 20 lanes would
+    #   have trained on CPU while the two frozen reference lanes had the GPU. It reads as a
+    #   fair loss and is not one.
+    #
+    #   `--tmpfs /run` left /etc/resolv.conf -- a symlink into /run/systemd/resolve/ --
+    #   dangling, so DNS failed and `claude -p` could not reach the API at all.
+    #
+    # And two surfaces it simply missed: the rest of ~/.claude (history, file-history, debug,
+    # backups, cache -- hundreds of files stating results, plus a live Kaggle token), and all
+    # of ~/benchruns, where the aborted attempts, the per-lane transcripts and an earlier
+    # PRE-SCRUB build of the run root all sit under their real paths.
+
+    def _probe_sandbox(self, tmp_path, code):
+        import subprocess
+        root = tmp_path / "rr"
+        (root / "competitions").mkdir(parents=True)
+        env = dict(os.environ, RUN_ROOT=str(root), KAGGLE_API_TOKEN="KGAT_sentinel",
+                   LANE_TRANSCRIPTS=str(tmp_path / "tr"))
+        r = subprocess.run(["bash", os.path.join(REPO, "benchmark_infra/lane_sandbox.sh"),
+                            "/usr/bin/python3", "-c", code],
+                           capture_output=True, text=True, env=env, check=False)
+        assert r.returncode == 0, r.stdout + r.stderr
+        return dict(ln.split(" ", 1) for ln in r.stdout.strip().splitlines())
+
+    def test_sandbox_keeps_the_gpu(self, tmp_path):
+        out = self._probe_sandbox(tmp_path, "import glob;"
+                                  "print('nvidia', bool(glob.glob('/dev/nvidia*')))")
+        assert out["nvidia"] == "True", (
+            "the reference lanes ran on the GPU; a my-agent lane confined to CPU is not a "
+            "comparable measurement, and nothing in the output would say so")
+
+    def test_sandbox_keeps_dns(self, tmp_path):
+        out = self._probe_sandbox(tmp_path, "import os,socket;"
+                                  "print('resolvconf', os.path.exists('/etc/resolv.conf'));"
+                                  "\ntry:\n socket.gethostbyname('api.anthropic.com');"
+                                  "print('dns','True')\nexcept Exception: print('dns','False')")
+        assert out["resolvconf"] == "True", "/etc/resolv.conf dangles; /run must not be blanked"
+        assert out["dns"] == "True", "the agent cannot reach its own API"
+
+    def test_sandbox_blanks_all_of_claude_except_credentials(self, tmp_path):
+        out = self._probe_sandbox(tmp_path, "import os;"
+                                  "print('entries', ','.join(sorted(os.listdir("
+                                  "os.path.expanduser('~/.claude')))))")
+        entries = set(out["entries"].split(",")) - {""}
+        assert entries <= {".credentials.json", "projects"}, (
+            "history.jsonl, file-history/, debug/, backups/ and cache/ under ~/.claude hold "
+            f"benchmark results and a live Kaggle token; visible: {sorted(entries)}")
+        assert ".credentials.json" in entries, "the agent must still be able to authenticate"
+
+    def test_sandbox_blanks_sibling_run_roots(self, tmp_path):
+        """The pre-scrub build, the aborted attempts and every sibling lane's transcript all
+        live beside the run root under their real paths."""
+        out = self._probe_sandbox(tmp_path, "import os;"
+                                  "print('siblings', ','.join(sorted(os.listdir("
+                                  "os.path.dirname(os.getcwd())))))")
+        sibs = set(out["siblings"].split(",")) - {""}
+        assert sibs == {"rr"}, (
+            f"only this run root may be visible in its own parent; saw {sorted(sibs)}")

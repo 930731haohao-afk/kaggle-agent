@@ -57,15 +57,40 @@ esac
 # --tmpfs over a path replaces it with an empty writable directory INSIDE the sandbox only;
 # nothing on the real filesystem is touched or deleted. Order matters: bwrap applies these
 # left to right, so a later --bind can re-expose one subtree of an earlier --tmpfs.
+#
+# THREE THINGS THIS MUST NOT BREAK, each of which the first version did:
+#
+#   --dev-bind, NOT --dev. `--dev /dev` mounts a MINIMAL devtmpfs, which has no /dev/nvidia*,
+#   so every lane would have trained on CPU while the two frozen reference lanes had the GPU.
+#   That does not leak anything -- it silently handicaps my-agent and makes the whole
+#   comparison meaningless in the direction that looks like a fair loss.
+#
+#   NO --tmpfs /run. /etc/resolv.conf is a symlink into /run/systemd/resolve/, so blanking
+#   /run leaves it dangling: DNS fails and `claude -p` cannot reach the API at all. /run holds
+#   no benchmark result; it was blanked out of tidiness and cost the run its network.
+#
+#   ~/.claude is blanked WHOLE, not just its projects/ subdirectory. The rest of it --
+#   history.jsonl, file-history/, debug/, backups/, cache/ -- holds hundreds of files stating
+#   benchmark results, and a live Kaggle token. Only .credentials.json is bound back, so the
+#   agent can authenticate; everything else it needs it recreates in the tmpfs.
+#
+# ~/benchruns is blanked too, with only THIS run root bound back: the aborted attempts, the
+# per-lane transcripts, and any earlier build (including one made before the prose scrubs)
+# all live there under their real paths.
+BENCHRUNS=$(dirname "$RUN_ROOT")
+
 exec bwrap \
   --ro-bind / / \
-  --dev /dev --proc /proc --tmpfs /tmp --tmpfs /run \
+  --dev-bind /dev /dev --proc /proc --tmpfs /tmp \
   --tmpfs "$HOME/.kaggle" \
   --tmpfs "$HOME/ai_agents" \
   --tmpfs "$HOME/Documents" \
+  --tmpfs "$HOME/.claude" \
+  --ro-bind "$HOME/.claude/.credentials.json" "$HOME/.claude/.credentials.json" \
+  --tmpfs "$BENCHRUNS" \
+  --bind "$RUN_ROOT" "$RUN_ROOT" \
   --bind "$LANE_TRANSCRIPTS" "$HOME/.claude/projects" \
   --bind "$HOME/.cache" "$HOME/.cache" \
-  --bind "$RUN_ROOT" "$RUN_ROOT" \
   --setenv MPLCONFIGDIR "$RUN_ROOT/.mplconfig" \
   --unsetenv KAGGLE_API_TOKEN \
   --unsetenv KAGGLE_USERNAME \
