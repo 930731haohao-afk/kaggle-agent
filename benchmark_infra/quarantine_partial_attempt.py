@@ -36,30 +36,78 @@ sys.path.insert(0, HERE)
 import verify_clean_slate as gate  # noqa: E402
 
 
-def _cache_dirs(root: str, comp: str) -> list[str]:
-    """The competition's OOF caches, which live OUTSIDE competitions/<comp>/.
+def _const_strings(tree, here: str) -> dict:
+    """Fold module-level string assignments, including os.path.join of resolvable parts.
 
-    harness_v2.cache_oof keys an entry by NODE ID alone, and a relaunch starts node ids at 0
-    again because the tree is quarantined with everything else. So attempt 2's node 5 loads
-    attempt 1's node 5 vectors -- a different config, same key -- and blends on them.
-
-    The guards built for exactly this are inert on both sides: nothing passes `config=` to
-    cache_oof, so no identity is ever stamped, and load_oof only compares the hash when one
-    is present, so a MISSING stamp skips the check instead of failing it. A guard that
-    defaults to trusting is not a guard, so the cache is moved instead (round 11 / stages).
+    Enough to resolve CACHE_DIR without importing the evaluator -- importing one costs a full
+    feature build, and this runs between every pair of lanes.
     """
+    import ast
+    env = {"_HERE": here}
+
+    def val(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, ast.Name):
+            return env.get(node.id)
+        if isinstance(node, ast.Call):
+            f = node.func
+            name = getattr(f, "attr", getattr(f, "id", ""))
+            if name == "join":
+                parts = [val(a) for a in node.args]
+                if all(p is not None for p in parts):
+                    return os.path.join(*parts)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            a, b = val(node.left), val(node.right)
+            if a is not None and b is not None:
+                return a + b
+        return None
+
+    for n in tree.body:
+        if isinstance(n, ast.Assign):
+            v = val(n.value)
+            if v is None:
+                continue
+            for t in n.targets:
+                if isinstance(t, ast.Name):
+                    env[t.id] = v
+    return env
+
+
+def cache_dirs_for(repo_or_root: str, comp: str) -> list[str]:
+    """Where this competition's OOF cache actually lives, per its evaluator's own source.
+
+    NOT a naming heuristic on the slug. The previous version derived a prefix from the
+    competition name, and the evaluators simply do not name CACHE_DIR that way:
+    cat-in-the-dat writes cache_citd, aug-2022 cache_aug22, jan-2022 cache_tpsjan22, sep-2022
+    cache_tssep22_main, and s3e5 nests its under cache_s3e5/v2 through a variable. Four lanes
+    were therefore left with the previous attempt's vectors -- the exact failure this module
+    exists to prevent -- and four unrelated competitions had their caches moved instead.
+    """
+    import ast
+    man_path = os.path.join(repo_or_root, "docs/rerun_manifest.json")
+    if not os.path.exists(man_path):
+        return []
+    entry = json.load(open(man_path))["competitions"].get(comp) or {}
+    mod = None
+    for k in ("eval_module", "evaluator", "eval"):
+        if isinstance(entry, dict) and entry.get(k):
+            mod = str(entry[k]).replace(".py", "")
+            break
+    if not mod:
+        return []
+    src_path = os.path.join(repo_or_root, "tree_search", f"{mod}.py")
+    if not os.path.exists(src_path):
+        return []
+    here = os.path.join(repo_or_root, "tree_search")
+    env = _const_strings(ast.parse(open(src_path, encoding="utf-8").read()), here)
     out = []
-    ts = os.path.join(root, "tree_search")
-    if not os.path.isdir(ts):
-        return out
-    short = comp.replace("playground-series-", "").replace("tabular-playground-series-", "")
-    for name in sorted(os.listdir(ts)):
-        if not name.startswith("cache_"):
-            continue
-        tail = name[len("cache_"):]
-        if tail.startswith(short) or tail.startswith(comp) or short.startswith(tail):
-            out.append(f"tree_search/{name}")
-    return out
+    for name, v in env.items():
+        if name.endswith("CACHE_DIR") and isinstance(v, str) and "cache" in v:
+            rel = os.path.relpath(v, repo_or_root) if os.path.isabs(v) else v
+            out.append(rel.replace(os.sep, "/"))
+    # a nested cache (cache_x/v2) implies its parent is NOT this competition's to move
+    return sorted(set(out))
 
 
 def partial_paths(root: str, comp: str) -> list[str]:
@@ -76,7 +124,7 @@ def partial_paths(root: str, comp: str) -> list[str]:
                 rel = f"{rel_dir}/{fn}"
                 if rel not in baseline:
                     out.append(rel)
-    for cache in _cache_dirs(root, comp):
+    for cache in cache_dirs_for(root, comp):
         full = os.path.join(root, cache)
         for dirpath, _dirnames, filenames in os.walk(full):
             rel_dir = os.path.relpath(dirpath, root).replace(os.sep, "/")
@@ -88,6 +136,17 @@ def partial_paths(root: str, comp: str) -> list[str]:
 
 
 def quarantine(root: str, comp: str, dest: str, *, dry_run: bool = False) -> int:
+    # A cache that cannot be located is a cache that will not be cleared, and the lane then
+    # blends on its previous attempt's vectors with nothing to say so. Refuse loudly instead:
+    # silently missing four of twenty is precisely what the name heuristic did.
+    man = os.path.join(root, "docs/rerun_manifest.json")
+    if os.path.exists(man) and comp in json.load(open(man)).get("competitions", {}):
+        if not cache_dirs_for(root, comp):
+            print(f"REFUSING: cannot resolve the OOF cache directory for {comp} from its "
+                  f"pinned evaluator. A cache left in place lets this lane blend on its "
+                  f"previous attempt's vectors -- same node ids, different configs.",
+                  file=sys.stderr)
+            return 4
     rels = partial_paths(root, comp)
     if not rels:
         print(f"no partial attempt for {comp} — nothing to move")
@@ -105,7 +164,9 @@ def quarantine(root: str, comp: str, dest: str, *, dry_run: bool = False) -> int
         print("  " + rel)
         if dry_run:
             continue
-        dst = os.path.join(target, os.path.relpath(rel, f"competitions/{comp}"))
+        prefix = f"competitions/{comp}/"
+        sub = rel[len(prefix):] if rel.startswith(prefix) else os.path.join("_outside", rel)
+        dst = os.path.join(target, sub)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.move(os.path.join(root, rel), dst)
     if not dry_run:

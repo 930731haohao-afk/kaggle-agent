@@ -2346,6 +2346,12 @@ class TestRound11:
         (root / "docs").mkdir(parents=True)
         json.dump({"competitions": {comp: {"eval_module": "eval_x"}}},
                   open(root / "docs/rerun_manifest.json", "w"))
+        # the quarantine resolves each competition's cache from its evaluator's own source
+        ts = root / "tree_search"
+        ts.mkdir()
+        (ts / "eval_x.py").write_text(
+            "import os\n_HERE = os.path.dirname(os.path.abspath(__file__))\n"
+            "CACHE_DIR = os.path.join(_HERE, 'cache_x')\n")
         cd = root / "competitions" / comp
         (cd / "data").mkdir(parents=True)
         (cd / "scripts").mkdir()
@@ -2981,8 +2987,15 @@ class TestStages:
         (cd / "data").mkdir(parents=True)
         (cd / "config.yaml").write_text("metric: mae\n")
         (cd / "STATUS.md").write_text("best CV MAE 0.5 so far\n")
-        cache = root / "tree_search" / f"cache_{comp}"
-        cache.mkdir(parents=True)
+        # the cache directory is whatever the evaluator SAYS it is, not what its slug
+        # suggests -- a stub evaluator declares one, exactly as the real 20 do
+        ts = root / "tree_search"
+        ts.mkdir(parents=True)
+        (ts / "eval_x.py").write_text(
+            "import os\n_HERE = os.path.dirname(os.path.abspath(__file__))\n"
+            "CACHE_DIR = os.path.join(_HERE, 'cache_citd_style')\n")
+        cache = ts / "cache_citd_style"
+        cache.mkdir()
         (cache / "solo_5.npz").write_bytes(b"\x00stale oof from attempt 1")
         import hashlib
         json.dump({"files": {f"competitions/{comp}/config.yaml": hashlib.sha256(
@@ -3185,3 +3198,59 @@ class TestStages:
             "the marker was written after a run in which zero competitions executed, and "
             "bench_watchdog.sh reads it as 'this driver finished cleanly' — so the failure "
             "reports itself as a success and nothing ever contradicts it")
+
+    # --------------------------------------- the cache quarantine guessed at names
+    #
+    # _cache_dirs() matched a competition to its OOF cache with a prefix heuristic on the
+    # SLUG. The evaluators do not name CACHE_DIR that way: cat-in-the-dat writes cache_citd,
+    # aug-2022 writes cache_aug22, jan-2022 cache_tpsjan22, sep-2022 cache_tssep22_main, and
+    # s3e5 nests its at cache_s3e5/v2 through a variable. So four lanes restarted with attempt
+    # 1's solo_<id>.npz still in place -- exactly what the function's own docstring says it
+    # exists to prevent -- while four other competitions' caches were moved out from under
+    # them. The cache directory is not a naming convention; it is a fact stated in each
+    # evaluator's source, so read it from there.
+
+    def test_every_pinned_evaluator_resolves_to_its_real_cache_dir(self):
+        sys.path.insert(0, os.path.join(REPO, "benchmark_infra"))
+        import importlib
+        q = importlib.import_module("quarantine_partial_attempt")
+        importlib.reload(q)
+        man = json.load(open(os.path.join(REPO, "docs/rerun_manifest.json")))["competitions"]
+        expected = {
+            "cat-in-the-dat": "cache_citd",
+            "tabular-playground-series-aug-2022": "cache_aug22",
+            "tabular-playground-series-jan-2022": "cache_tpsjan22",
+            "tabular-playground-series-sep-2022": "cache_tssep22_main",
+            "playground-series-s3e5": "cache_s3e5/v2",
+            "afsis-soil-properties": "cache_afsis",
+        }
+        missing = []
+        for comp in sorted(man):
+            got = q.cache_dirs_for(REPO, comp)
+            if not got:
+                missing.append(comp)
+                continue
+            if comp in expected:
+                assert any(g.endswith(expected[comp]) for g in got), (
+                    f"{comp}: expected a cache at {expected[comp]}, resolver said {got}")
+        assert not missing, (
+            "a competition whose cache cannot be resolved must not be silently skipped -- "
+            f"that is the whole defect: {missing}")
+
+    def test_quarantine_refuses_when_it_cannot_resolve_a_cache(self, tmp_path):
+        """Silently missing is what broke it; refusing loudly is the correct failure."""
+        import subprocess
+        root = tmp_path / "root"
+        (root / "docs").mkdir(parents=True)
+        json.dump({"competitions": {"playground-series-s3e16": {"eval_module": "eval_nope"}}},
+                  open(root / "docs/rerun_manifest.json", "w"))
+        (root / "competitions/playground-series-s3e16").mkdir(parents=True)
+        (root / "competitions/playground-series-s3e16/STATUS.md").write_text("CV 0.5\n")
+        json.dump({"files": {}}, open(root / ".rerun_baseline.json", "w"))
+        r = subprocess.run([sys.executable, "benchmark_infra/quarantine_partial_attempt.py",
+                            "--root", str(root), "--comp", "playground-series-s3e16",
+                            "--dest", str(tmp_path / "att")],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode != 0 and "cache" in (r.stdout + r.stderr).lower(), (
+            "an unresolvable cache must abort the restart, not be skipped:\n"
+            + (r.stdout + r.stderr)[-400:])
