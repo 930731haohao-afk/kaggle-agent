@@ -36,23 +36,54 @@ sys.path.insert(0, HERE)
 import verify_clean_slate as gate  # noqa: E402
 
 
-def partial_paths(root: str, comp: str) -> list[str]:
-    """Run-produced paths under competitions/<comp>/, relative to the root."""
-    baseline = gate.load_baseline(root) or {}
-    base = os.path.join(root, "competitions", comp)
-    if not os.path.isdir(base):
-        return []
+def _cache_dirs(root: str, comp: str) -> list[str]:
+    """The competition's OOF caches, which live OUTSIDE competitions/<comp>/.
+
+    harness_v2.cache_oof keys an entry by NODE ID alone, and a relaunch starts node ids at 0
+    again because the tree is quarantined with everything else. So attempt 2's node 5 loads
+    attempt 1's node 5 vectors -- a different config, same key -- and blends on them.
+
+    The guards built for exactly this are inert on both sides: nothing passes `config=` to
+    cache_oof, so no identity is ever stamped, and load_oof only compares the hash when one
+    is present, so a MISSING stamp skips the check instead of failing it. A guard that
+    defaults to trusting is not a guard, so the cache is moved instead (round 11 / stages).
+    """
     out = []
-    for dirpath, dirnames, filenames in os.walk(base):
-        rel_dir = os.path.relpath(dirpath, root).replace(os.sep, "/")
-        if rel_dir == f"competitions/{comp}":
-            # data/ is the official Kaggle files; the OOF cache is keyed per competition and
-            # lives outside this tree, and is handled by the caller's own cache argument.
-            dirnames[:] = [d for d in dirnames if d != "data"]
-        for fn in filenames:
-            rel = f"{rel_dir}/{fn}"
-            if rel not in baseline:
-                out.append(rel)
+    ts = os.path.join(root, "tree_search")
+    if not os.path.isdir(ts):
+        return out
+    short = comp.replace("playground-series-", "").replace("tabular-playground-series-", "")
+    for name in sorted(os.listdir(ts)):
+        if not name.startswith("cache_"):
+            continue
+        tail = name[len("cache_"):]
+        if tail.startswith(short) or tail.startswith(comp) or short.startswith(tail):
+            out.append(f"tree_search/{name}")
+    return out
+
+
+def partial_paths(root: str, comp: str) -> list[str]:
+    """Run-produced paths under competitions/<comp>/, plus its OOF caches."""
+    baseline = gate.load_baseline(root) or {}
+    out = []
+    base = os.path.join(root, "competitions", comp)
+    if os.path.isdir(base):
+        for dirpath, dirnames, filenames in os.walk(base):
+            rel_dir = os.path.relpath(dirpath, root).replace(os.sep, "/")
+            if rel_dir == f"competitions/{comp}":
+                dirnames[:] = [d for d in dirnames if d != "data"]  # official Kaggle files
+            for fn in filenames:
+                rel = f"{rel_dir}/{fn}"
+                if rel not in baseline:
+                    out.append(rel)
+    for cache in _cache_dirs(root, comp):
+        full = os.path.join(root, cache)
+        for dirpath, _dirnames, filenames in os.walk(full):
+            rel_dir = os.path.relpath(dirpath, root).replace(os.sep, "/")
+            for fn in filenames:
+                rel = f"{rel_dir}/{fn}"
+                if rel not in baseline:
+                    out.append(rel)
     return sorted(out)
 
 

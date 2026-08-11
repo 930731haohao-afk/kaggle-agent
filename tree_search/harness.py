@@ -188,14 +188,22 @@ def lineage_size(tree: dict, lineage_id) -> int:
 
 
 def add_node(tree: dict, parent_id: int, mutation: str, config: dict, score,
-             status: str, wall_s: float) -> int:
+             status: str, wall_s: float, *, error: str = None) -> int:
     """Append a child of parent_id and update plateau/streak bookkeeping. Returns the
-    new node id. Caller is responsible for calling save(tree, path) afterwards."""
+    new node id. Caller is responsible for calling save(tree, path) afterwards.
+
+    `error` is the evaluator's own message, persisted verbatim. Without it a wiring bug
+    (AttributeError, KeyError, a tuple unpacked at the wrong arity) and a learner
+    legitimately refusing a bad config are byte-identical nodes, so a search that never
+    happened is indistinguishable from one that happened and found nothing."""
+    _check_status(status)
     nid = _next_id(tree)
     prior_best = global_best(tree)
     prior_best_score = prior_best["score"] if prior_best else float("inf")
     node = dict(id=nid, parent_id=parent_id, mutation=mutation, config=config,
                 score=score, status=status, wall_s=wall_s)
+    if error:
+        node["error"] = str(error)
     tree["nodes"].append(node)
 
     if status == "evaluated" and parent_id != tree["root_id"]:

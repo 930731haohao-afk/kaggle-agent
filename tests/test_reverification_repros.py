@@ -2183,10 +2183,11 @@ class TestRound11:
         import ast
         src = open(os.path.join(REPO, "tree_search/run_template_v3.py"), encoding="utf-8").read()
         tree = ast.parse(src)
-        main = next(x for x in tree.body
-                    if isinstance(x, ast.FunctionDef) and x.name == "main")
-        # every attribute read off the eval module, anywhere in main()
-        attrs = sorted({n.attr for n in ast.walk(main)
+        # every attribute read off the eval module, anywhere in the file. (The call moved out
+        # of main() into evaluate_node() when solo evaluation became subprocess-isolated --
+        # the stages pass found that an in-process fit can hang past its timeout or kill the
+        # driver outright. The invariant is unchanged: evaluate() is the only way in.)
+        attrs = sorted({n.attr for n in ast.walk(tree)
                         if isinstance(n, ast.Attribute)
                         and isinstance(n.value, ast.Name) and n.value.id == "ev"})
         assert attrs == ["evaluate"], (
@@ -2195,29 +2196,44 @@ class TestRound11:
             "evaluator contract and is absent on most of the 20 pinned modules")
         # and it must not reimplement blend evaluation outside the evaluator, where the
         # competition's postprocess and sign convention would both be bypassed
-        guard = [n for n in ast.walk(main) if isinstance(n, ast.Attribute)
+        guard = [n for n in ast.walk(tree) if isinstance(n, ast.Attribute)
                  and n.attr == "eval_blend_with_cost_guard"]
         assert not guard, (
             "blend evaluation belongs inside the evaluator: harness_v2.eval_blend's contract "
             "requires postprocessing to run INSIDE metric_fn so it applies to every candidate "
             "weight vector, and each evaluator's score sign convention is its own")
 
-    def test_template_has_one_evaluation_call_for_all_kinds(self):
+    def test_template_routes_every_node_through_one_evaluator_entry(self):
+        """One entry point for every node kind, and it caches the OOF.
+
+        The original bug was a per-kind branch in the search loop that reimplemented blend
+        scoring with `ev.metric`. Solo and blend now differ only in WHERE they run -- solo in
+        a child process, blend in-process -- and both go through evaluate_node(), so the loop
+        itself has no kind branch to get wrong.
+        """
         import ast
         src = open(os.path.join(REPO, "tree_search/run_template_v3.py"), encoding="utf-8").read()
-        main = next(x for x in ast.parse(src).body
+        tree = ast.parse(src)
+        main = next(x for x in tree.body
                     if isinstance(x, ast.FunctionDef) and x.name == "main")
-        calls = [n for n in ast.walk(main) if isinstance(n, ast.Call)
-                 and isinstance(n.func, ast.Attribute) and n.func.attr == "evaluate"]
-        assert len(calls) == 2, (
-            "expected exactly two ev.evaluate() calls in main() -- the root and the search "
-            f"loop's single kind-agnostic call -- found {len(calls)}. A per-kind branch is "
-            "how ev.metric got there.")
-        for c in calls:
-            kw = {k.arg for k in c.keywords}
-            assert "node_id" in kw, (
-                "every evaluated node must pass node_id: that is what caches its OOF vector, "
-                "and a blend can only weight members whose OOFs were cached")
+        routed = [n for n in ast.walk(main) if isinstance(n, ast.Call)
+                  and isinstance(n.func, ast.Name) and n.func.id == "evaluate_node"]
+        assert len(routed) == 2, (
+            "expected exactly two evaluate_node() calls in main() -- the root and the search "
+            f"loop's single kind-agnostic call -- found {len(routed)}")
+        assert not [n for n in ast.walk(main) if isinstance(n, ast.Call)
+                    and isinstance(n.func, ast.Attribute)
+                    and n.func.attr in ("evaluate", "eval_solo_subprocess")], (
+            "the loop must not call the evaluator directly; that is the branch ev.metric "
+            "lived in")
+        node_fn = next(x for x in tree.body
+                       if isinstance(x, ast.FunctionDef) and x.name == "evaluate_node")
+        for c in [n for n in ast.walk(node_fn) if isinstance(n, ast.Call)]:
+            name = getattr(c.func, "attr", getattr(c.func, "id", ""))
+            if name in ("evaluate", "eval_solo_subprocess"):
+                assert "node_id" in {k.arg for k in c.keywords}, (
+                    "every evaluated node must pass node_id: that is what caches its OOF "
+                    "vector, and a blend can only weight members whose OOFs were cached")
 
     # ---------------------------------------------------------------- relaunch
     #
@@ -2877,3 +2893,107 @@ class TestStages:
             "same lineage, backtracking to the second-best subtree cannot happen")
         assert h.lineage_of(tree, a_id) != h.lineage_of(tree, b_id), (
             "two independent seeds collapsed into one lineage")
+
+    # ------------------------------------------- a failure you cannot tell apart
+    #
+    # Every evaluator carefully builds error=f"{type(e).__name__}: {e}" in its broad handler,
+    # and eval_solo_subprocess builds one too. The write path had nowhere to put it: add_node
+    # constructs the node dict with no error field, and the template dropped res["error"] on
+    # the floor. So an AttributeError from a wiring mistake and a learner legitimately
+    # refusing a bad config produce byte-identical JSON. That is the mechanism that made the
+    # round-11 class undetectable after the fact -- and it is why the illegal boundary pushes
+    # sat in a recorded tree for weeks reading as ordinary negative results.
+
+    def test_add_node_persists_the_evaluators_error(self):
+        hv3 = _load("tree_search/harness_v3.py", "hv3_err")
+        tree = hv3.new_tree("c")
+        hv3.add_root(tree, "root", {"kind": "solo"}, 1.0, "evaluated", 1.0)
+        hv3.add_node(tree, 0, "wiring", {"kind": "solo", "params": {"a": 2}}, None,
+                     "failed", 0.1,
+                     error="AttributeError: module 'eval_x' has no attribute 'metric'")
+        hv3.add_node(tree, 0, "genuine", {"kind": "solo", "params": {"a": 3}}, None,
+                     "failed", 9.2,
+                     error="LightGBMError: Check failed: (num_leaves) > (1)")
+        failed = [n for n in tree["nodes"] if n["status"] == "failed"]
+        assert len(failed) == 2
+        errs = [n.get("error") for n in failed]
+        assert all(errs), (
+            "a failed node with no error is indistinguishable from every other failed node; "
+            "the evaluator built the string and the write path threw it away")
+        assert "AttributeError" in errs[0] and "LightGBMError" in errs[1]
+
+    def test_template_records_why_a_node_failed(self):
+        import ast
+        src = open(os.path.join(REPO, "tree_search/run_template_v3.py"), encoding="utf-8").read()
+        main = next(x for x in ast.parse(src).body
+                    if isinstance(x, ast.FunctionDef) and x.name == "main")
+        add_calls = [n for n in ast.walk(main) if isinstance(n, ast.Call)
+                     and isinstance(n.func, ast.Attribute)
+                     and n.func.attr in ("add_node", "add_root")]
+        assert add_calls, "template must write nodes"
+        node_calls = [c for c in add_calls if c.func.attr == "add_node"]
+        assert node_calls and all("error" in {k.arg for k in c.keywords} for c in node_calls), (
+            "the search loop must pass the evaluator's error through; dropping it is what "
+            "made a wiring bug and a real fit failure the same JSON")
+
+    def test_solo_evaluation_is_subprocess_isolated(self):
+        """SIGALRM cannot interrupt a native fit().
+
+        eval_solo_subprocess's own docstring records a CatBoost fit that hung 28 minutes past
+        its 200 s in-process timeout, because SIGALRM is only noticed when control returns to
+        the bytecode interpreter. Worse, when the alarm DOES land inside CatBoost, CatBoost
+        converts it to KeyboardInterrupt -- a BaseException, so neither the evaluator's
+        `except EvalTimeout` nor its `except Exception` catches it, and neither does the
+        driver's. The node is not booked as failed; the driver dies where it stands, and 13 of
+        the 20 pinned evaluators pair signal.alarm with a CatBoost runner. A subprocess
+        boundary is immune to both: the OS can always kill it, and a child that dies takes
+        nothing with it.
+        """
+        import ast
+        src = open(os.path.join(REPO, "tree_search/run_template_v3.py"), encoding="utf-8").read()
+        assert "eval_solo_subprocess" in src, (
+            "an in-process solo fit can hang the whole lane past its timeout, or kill the "
+            "driver outright via KeyboardInterrupt")
+        # blend still goes through the evaluator itself: that is where the metric and the
+        # sign convention live, and a blend does no fitting, so it needs no isolation.
+        attrs = sorted({n.attr for n in ast.walk(ast.parse(src)) if isinstance(n, ast.Attribute)
+                        and isinstance(n.value, ast.Name) and n.value.id == "ev"})
+        assert attrs == ["evaluate"], (
+            f"the evaluator is reached only through evaluate(); found ev.{attrs}")
+
+    def test_quarantine_clears_the_oof_cache(self, tmp_path):
+        """The cache is keyed by node id ALONE, and a relaunch restarts ids at 0.
+
+        quarantine_partial_attempt.py moved competitions/<comp>/* -- including the tree, so
+        node numbering restarts -- but left tree_search/cache_<comp>/ standing, and the
+        stale-cache guards in load_oof are inert on both sides: nothing passes config= to
+        cache_oof, so no identity is ever stamped, and load_oof only compares the hash when
+        one is present, so a missing stamp SKIPS the check instead of failing it. Attempt 2's
+        blend can therefore be scored on attempt 1's prediction vectors, silently.
+        """
+        import subprocess
+        comp = "playground-series-s3e16"
+        root = tmp_path / "root"
+        (root / "docs").mkdir(parents=True)
+        json.dump({"competitions": {comp: {"eval_module": "eval_x"}}},
+                  open(root / "docs/rerun_manifest.json", "w"))
+        cd = root / "competitions" / comp
+        (cd / "data").mkdir(parents=True)
+        (cd / "config.yaml").write_text("metric: mae\n")
+        (cd / "STATUS.md").write_text("best CV MAE 0.5 so far\n")
+        cache = root / "tree_search" / f"cache_{comp}"
+        cache.mkdir(parents=True)
+        (cache / "solo_5.npz").write_bytes(b"\x00stale oof from attempt 1")
+        import hashlib
+        json.dump({"files": {f"competitions/{comp}/config.yaml": hashlib.sha256(
+            (cd / "config.yaml").read_bytes()).hexdigest()}},
+            open(root / ".rerun_baseline.json", "w"))
+        r = subprocess.run([sys.executable, "benchmark_infra/quarantine_partial_attempt.py",
+                            "--root", str(root), "--comp", comp,
+                            "--dest", str(tmp_path / "attempts")],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert not (cache / "solo_5.npz").exists(), (
+            "attempt 2's node 5 would blend on attempt 1's node 5 vectors — same key, "
+            "different config, no guard armed")
+        assert (cd / "config.yaml").exists(), "the builder's files must survive"

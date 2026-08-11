@@ -522,7 +522,7 @@ def reopen_blend_lineage_on_solo_breakthrough(tree: dict, node_id: int) -> list:
 # Feature 2 + 3 + 1 wired into add_node: the single v3 entry point drivers should use.
 # ---------------------------------------------------------------------------
 def add_node(tree: dict, parent_id: int, mutation: str, config: dict, score, status: str,
-             wall_s: float, *, kind: str = None):
+             wall_s: float, *, kind: str = None, error: str = None):
     """v3's `add_node` — same contract as `harness_v2.add_node` (`(nid, dup_id)`,
     `dup_id is None` on success), plus every relevant Phase F-1 default wired in
     automatically so a driver gets them "for free" just by calling this instead of
@@ -563,7 +563,8 @@ def add_node(tree: dict, parent_id: int, mutation: str, config: dict, score, sta
         return None, dup_id
 
     tree.setdefault("search_state", {}).setdefault("dedup_streak", {})[str(parent_id)] = 0
-    nid, add_dup = v2.add_node(tree, parent_id, mutation, config, score, status, wall_s, kind=kind)
+    nid, add_dup = v2.add_node(tree, parent_id, mutation, config, score, status, wall_s,
+                               kind=kind, error=error)
     if nid is not None:
         reopen_blend_lineage_on_solo_breakthrough(tree, nid)
         update_phase(tree)

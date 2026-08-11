@@ -192,7 +192,8 @@ def add_root(tree: dict, mutation: str, config: dict, score, status: str, wall_s
 
 
 def add_node(tree: dict, parent_id: int, mutation: str, config: dict, score, status: str,
-             wall_s: float, *, kind: str = None, allow_duplicate: bool = False):
+             wall_s: float, *, kind: str = None, allow_duplicate: bool = False,
+             error: str = None):
     """Same contract as harness.add_node, plus:
 
       - child dedup (recommendation #3): if `config`'s hash matches any existing node's
@@ -215,11 +216,14 @@ def add_node(tree: dict, parent_id: int, mutation: str, config: dict, score, sta
         if dup_id is not None:
             return None, dup_id
 
+    v1._check_status(status)
     nid = v1._next_id(tree)
     prior_best = v1.global_best(tree)
     prior_best_score = prior_best["score"] if prior_best else float("inf")
     node = dict(id=nid, parent_id=parent_id, mutation=mutation, config=config,
                 score=score, status=status, wall_s=wall_s, kind=_kind_of(config, kind))
+    if error:
+        node["error"] = str(error)
     tree["nodes"].append(node)
 
     if status == "evaluated" and parent_id != tree["root_id"]:

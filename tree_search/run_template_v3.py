@@ -34,8 +34,35 @@ import harness_v3 as hv3  # noqa: E402
 COMP = "<competition-slug>"                    # e.g. from docs/rerun_manifest.json
 EVAL_MODULE = "<eval_module_name>"             # the manifest's pinned eval module (no .py)
 TOTAL_BUDGET = 60                              # nodes; per 07_tree_search.md §4
+EVAL_TIMEOUT_S = 600                           # wall clock per solo node, enforced by the OS
 ROOT_CONFIG: dict = {}                         # Stage 3's best solo config — THIS run's own
 TREE_PATH = os.path.join(_HERE, "..", "competitions", COMP, "experiments_tree_v3.json")
+EVAL_MODULE_PATH = os.path.join(_HERE, EVAL_MODULE + ".py")
+
+
+def evaluate_node(ev, config: dict, nid: int) -> dict:
+    """Evaluate one node, whatever its kind, and NEVER let it take the driver with it.
+
+    Solo nodes fit models, so they run in a CHILD PROCESS. Two reasons, both measured in
+    this repo: signal.alarm cannot interrupt a native fit() that never returns to the
+    bytecode interpreter, so an in-process timeout does not fire (a CatBoost fit once ran 28
+    minutes past a 200 s limit); and when the alarm DOES land inside CatBoost, CatBoost
+    converts it to KeyboardInterrupt -- a BaseException, which neither the evaluator's
+    `except Exception` nor the loop's below catches, so the driver dies where it stands
+    rather than booking a failed node. 13 of the 20 pinned evaluators pair signal.alarm with
+    a CatBoost runner. A subprocess is immune to both: the OS can always kill it, and a child
+    that dies takes nothing with it.
+
+    Blend nodes fit nothing -- they reweight cached OOF vectors -- so they run in-process,
+    through the evaluator, which is where the competition's metric_fn (with its
+    postprocessing applied INSIDE it, per harness_v2.eval_blend's contract) and its score
+    sign convention both live. A driver cannot supply either; reaching for `ev.metric`
+    instead was round 11's measurement bug, and it silently emptied the node space of every
+    ensemble while the tree read as complete.
+    """
+    if config.get("kind") == "blend":
+        return ev.evaluate(config, node_id=nid, timeout_s=EVAL_TIMEOUT_S)
+    return hv3.eval_solo_subprocess(EVAL_MODULE_PATH, config, EVAL_TIMEOUT_S, node_id=nid)
 
 
 def main() -> None:
@@ -61,7 +88,11 @@ def main() -> None:
     # plateau the WHOLE tree, and the explore-burst seeds are themselves lineage 0 and already
     # plateaued, so select_next_parent can never return them.
     nid = hv3.next_id(tree)
-    r = ev.evaluate(ROOT_CONFIG, node_id=nid, timeout_s=600)
+    r = evaluate_node(ev, ROOT_CONFIG, nid)
+    if r["status"] != "evaluated":
+        # The root is not an ordinary node: every lineage descends from it and every score in
+        # the tree is compared against it. A failed root is a broken run, not a result.
+        raise SystemExit(f"root failed to evaluate: {r.get('error')}")
     hv3.add_root(tree, "root: this run's Stage-3 best solo", ROOT_CONFIG,
                  r["score"], r["status"], r.get("wall_s", 0.0))
     persist()
@@ -73,23 +104,17 @@ def main() -> None:
         nid = hv3.next_id(tree)
         t0 = time.time()
         try:
-            # ONE call for every node kind. The evaluator dispatches on config["kind"] and
-            # owns its own blend path, because two things a driver cannot supply live in
-            # there: the competition's metric_fn WITH its postprocessing applied inside it
-            # (harness_v2.eval_blend's contract — postprocess must apply to every candidate
-            # weight vector, not just the winner), and its score sign convention (some
-            # return -auc, some return smape unflipped). Evaluating blends out here instead
-            # was round 11's measurement bug: the template read `ev.metric`, a name defined
-            # in 1 of the 20 pinned evaluators, so on the other 19 the AttributeError landed
-            # in the handler below and EVERY ensemble node was booked as an ordinary failure.
-            # 07_tree_search.md §6 traces the one recorded v1 loss to precisely that shape of
-            # node space, and run_tssep22_v3.py:99 records the same class landing once before.
-            res = ev.evaluate(proposal, node_id=nid, timeout_s=600)
+            res = evaluate_node(ev, proposal, nid)
         except Exception as e:  # noqa: BLE001 — a failed node is recorded, never hidden
             res = {"score": None, "status": "failed", "wall_s": time.time() - t0,
-                   "error": str(e)}
+                   "error": f"{type(e).__name__}: {e}"}
+        # `error` is not decoration. Without it a wiring bug (AttributeError, KeyError, a
+        # tuple unpacked at the wrong arity) and a learner legitimately refusing a bad config
+        # are byte-identical nodes — which is exactly why illegal boundary pushes sat in a
+        # recorded tree reading as ordinary negative results. After the run, group the failed
+        # nodes by error string: a repeated exception TYPE is a wiring bug, not a result.
         hv3.add_node(tree, parent_id, mutation, proposal, res["score"], res["status"],
-                     res["wall_s"])
+                     res["wall_s"], error=res.get("error"))
         persist()
 
 
