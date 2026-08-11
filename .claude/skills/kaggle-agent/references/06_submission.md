@@ -32,9 +32,17 @@ leakage probe explicitly marked not-for-submission won the selection.
 
 Use the helper rather than sorting the log yourself — it already drops them:
 ```python
+# RECORD HOW EACH SCORE WAS MEASURED. Pass estimator= to log_experiment_v2 -- "oof",
+# "leave_fold_out", or "in_sample_blend_weights" for a blend whose weights were fit on the
+# same OOF it is then scored on. A blend measured that way is optimistic by construction, and
+# it shares a metric and a direction with an honest champion, so nothing else separates them:
+# ranking them together hands the championship to whichever was measured more generously.
+# get_best_experiment refuses to rank across estimators once they are recorded.
 from utils.experiment_log import get_best_experiment, _entry_is_diagnostic
 
 best = get_best_experiment('competitions/<name>', minimize=<True if lower is better>)
+# If your log mixes measurement methods, say which one to rank within:
+#   get_best_experiment('competitions/<name>', estimator='leave_fold_out')
 assert best is not None and not _entry_is_diagnostic(best), "champion is a diagnostic run"
 ```
 `_entry_is_diagnostic` matches these markers, case-insensitively, across an entry's

@@ -3381,3 +3381,84 @@ class TestStages:
         assert r.returncode != 0 and "baseline" in (r.stdout + r.stderr).lower(), (
             "an emptied manifest disables every hash check and grants the own-competition "
             "exemption everywhere:\n" + (r.stdout + r.stderr)[-500:])
+
+    # ------------------------------------- the validator's one un-inverted-transform gate
+    #
+    # 06_submission.md bolds "INVERT THE TARGET TRANSFORM BEFORE WRITING ANYTHING" and lists
+    # "prediction distribution is similar to the training target distribution" among the
+    # gate's checks. In validate_submission.py that line was a bare print, not a rep.check, so
+    # it could never fail. The only numeric guard was Range, judged against the target's own
+    # training range widened by half its span -- for a target in [2, 1380] the accepted band
+    # is [-687, 2069], and a submission left in log1p space (values ~1-7, a ~40x scale error)
+    # sits comfortably inside it and exits 0 with "PASS -- all checks clean."
+
+    def _validate(self, tmp_path, preds, target):
+        import subprocess
+        import pandas as pd
+        sub = pd.DataFrame({"id": range(len(preds)), "num_sold": preds})
+        sample = pd.DataFrame({"id": range(len(preds)), "num_sold": [0.0] * len(preds)})
+        train = pd.DataFrame({"num_sold": target})
+        sub.to_csv(tmp_path / "sub.csv", index=False)
+        sample.to_csv(tmp_path / "sample.csv", index=False)
+        train.to_csv(tmp_path / "train.csv", index=False)
+        return subprocess.run(
+            [sys.executable, ".claude/skills/kaggle-safe-submit/scripts/validate_submission.py",
+             str(tmp_path / "sub.csv"), "--sample", str(tmp_path / "sample.csv"),
+             "--train", str(tmp_path / "train.csv"), "--target", "num_sold"],
+            capture_output=True, text=True, cwd=REPO, check=False)
+
+    def test_validator_catches_a_submission_left_in_log_space(self, tmp_path):
+        rng = np.random.default_rng(0)
+        target = rng.integers(2, 1380, size=2000).astype(float)
+        preds = np.log1p(target)                      # the transform never inverted
+        r = self._validate(tmp_path, preds, target)
+        assert r.returncode != 0, (
+            "a 40x scale error is the failure 06_submission.md bolds; the widened Range band "
+            "swallows it:\n" + (r.stdout + r.stderr)[-800:])
+        assert "istribution" in r.stdout, r.stdout[-600:]
+
+    def test_validator_still_passes_an_honest_submission(self, tmp_path):
+        rng = np.random.default_rng(1)
+        target = rng.integers(2, 1380, size=2000).astype(float)
+        preds = target * rng.normal(1.0, 0.05, size=2000)     # a normal model's predictions
+        r = self._validate(tmp_path, preds, target)
+        assert r.returncode == 0, (
+            "a guard that refuses honest work costs more than the one it replaces:\n"
+            + (r.stdout + r.stderr)[-800:])
+
+    def test_the_estimator_field_is_writable_and_documented(self, tmp_path):
+        """A guard nothing can trip is not a guard.
+
+        get_best_experiment() refuses to rank across `estimator` values, but nothing in the
+        repo ever WROTE one: log_experiment_v2 had no such parameter, and the mandated logging
+        call in SKILL.md/06_submission.md never mentions it. The guard collects only non-None
+        values, so a real lane's log -- every entry unlabelled -- yields an empty set and the
+        check can never fire.
+        """
+        sys.path.insert(0, REPO)
+        import importlib
+        el = importlib.import_module("utils.experiment_log")
+        importlib.reload(el)
+        import inspect
+        assert "estimator" in inspect.signature(el.log_experiment_v2).parameters, (
+            "the field the selector refuses to mix must be a named parameter of the call the "
+            "skill mandates, or no lane will ever set it")
+        d = tmp_path / "c"
+        d.mkdir()
+        el.log_experiment_v2(str(d), model="lgb", metric="rmse", direction="minimize",
+                             score=0.5, estimator="leave_fold_out")
+        el.log_experiment_v2(str(d), model="blend", metric="rmse", direction="minimize",
+                             score=0.4, estimator="in_sample_blend_weights")
+        entries = json.load(open(d / "experiments.json"))
+        assert {e.get("estimator") for e in entries} == {"leave_fold_out",
+                                                         "in_sample_blend_weights"}
+        with pytest.raises(ValueError, match="estimator"):
+            el.get_best_experiment(str(d))
+        assert el.get_best_experiment(str(d), estimator="leave_fold_out")["score"] == 0.5
+
+    def test_the_submission_reference_tells_the_lane_to_record_it(self):
+        p = os.path.join(REPO, ".claude/skills/kaggle-agent/references/06_submission.md")
+        txt = open(p, encoding="utf-8").read()
+        assert "estimator" in txt, (
+            "06_submission.md is where the lane is told how to select a champion; if it does "
+            "not mention the field, the refusal never fires and the optimistic entry wins")

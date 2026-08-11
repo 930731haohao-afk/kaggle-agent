@@ -330,6 +330,41 @@ def validate(sub: pd.DataFrame, sample: pd.DataFrame, id_col: Optional[str] = No
     else:
         rep.skip("Value kind", "(no metric/expectation given)")
 
+    # DISTRIBUTION, per column. 06_submission.md bolds "INVERT THE TARGET TRANSFORM BEFORE
+    # WRITING ANYTHING" and lists this comparison among the gate's checks -- but it was a bare
+    # print, so it could never fail, and Range (the target's own train range widened by half
+    # its span) is far too loose to catch a transform: for a target in [2, 1380] the accepted
+    # band is [-687, 2069], and a submission left in log1p space (~1-7) sits inside it and
+    # exits 0 with "PASS". A scale error is a ratio, so test the ratio.
+    dist_fails = []
+    if kind != "probability":
+        for col in pred_cols:
+            ref = _ref_for(col)
+            if ref is None or not pd.api.types.is_numeric_dtype(sub[col]):
+                continue
+            cv = sub[col].to_numpy(dtype=float)
+            cv = cv[np.isfinite(cv)]
+            rv = ref.to_numpy(dtype=float)
+            rv = rv[np.isfinite(rv)]
+            if len(cv) < 20 or len(rv) < 20:
+                continue
+            pm, tm = float(np.median(cv)), float(np.median(rv))
+            # centred on zero either side: a ratio says nothing, so compare spread instead
+            scale = max(abs(tm), float(np.std(rv)) or 1.0)
+            if abs(tm) < 1e-9 or abs(pm) < 1e-9:
+                if abs(pm - tm) > 4 * scale:
+                    dist_fails.append(f"{col}: median {pm:.6g} vs train {tm:.6g}")
+                continue
+            ratio = pm / tm
+            if ratio <= 0 or ratio > 4 or ratio < 0.25:
+                dist_fails.append(
+                    f"{col}: median {pm:.6g} vs train median {tm:.6g} ({ratio:.3g}x) — a "
+                    f"ratio this large is a scale error, not a model: check the target "
+                    f"transform was inverted")
+        rep.check(rep.suspicious, "Distribution", not dist_fails,
+                  ("(" + "; ".join(dist_fails[:3]) + ")") if dist_fails else
+                  "(prediction medians within 4x of their training targets)")
+
     if numeric and len(vals) and y_train is not None and pd.api.types.is_numeric_dtype(y_train):
         print(f"  [info] pred mean {vals.mean():.6f} vs train target mean "
               f"{float(y_train.mean()):.6f}")

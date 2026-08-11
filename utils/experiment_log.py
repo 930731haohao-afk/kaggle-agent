@@ -352,6 +352,7 @@ def log_experiment_v2(
     submission: Optional[str] = None,
     leaderboard: Optional[dict] = None,
     notes: str = "",
+    estimator: Optional[str] = None,
     **extra: Any,
 ) -> int:
     """
@@ -418,6 +419,14 @@ def log_experiment_v2(
             entry[key] = _jsonable(val)
     if notes:
         entry["notes"] = notes
+    # HOW the score was measured, alongside WHAT was measured. get_best_experiment refuses to
+    # rank entries whose estimators differ, because an in-sample-weighted blend and a
+    # leave-fold-out champion share a metric and a direction but are not comparable and the
+    # optimistic one wins. That refusal was unreachable while nothing could write the field
+    # (2026-08-11). Conventional values: "oof", "leave_fold_out", "in_sample_blend_weights".
+    if estimator:
+        entry["estimator"] = str(estimator)
+
     # Free-form extras. This is how the binding retrieval gate
     # (references/04_modeling.md §0) records `library_query` / `library_hits`, and how a
     # run records its own bookkeeping (stage, params, cv_strategy, cv_scores) without
