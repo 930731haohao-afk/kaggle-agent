@@ -3322,3 +3322,62 @@ class TestStages:
                     and "--root" in ln)
         assert "--require-baseline" in line, (
             f"the startup gate must reject a root with no baseline:\n  {line.strip()}")
+
+    def test_watchdog_and_launcher_agree_on_where_the_run_lives(self):
+        """A supervisor pointed at the wrong tree supervises nothing, silently.
+
+        The abort-on-instant-failure guard added today is designed to fail LOUD -- exit 5, no
+        completion marker -- on the assumption that something notices a driver with no marker
+        and no process. bench_watchdog.sh is that something, and its RUN_ROOT default was left
+        at the path the run root used to have.
+        """
+        wd = open(os.path.join(REPO, "benchmark_infra/bench_watchdog.sh"),
+                  encoding="utf-8").read()
+        ln = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+
+        def default_of(src):
+            line = next(x for x in src.splitlines() if x.startswith("RUN_ROOT="))
+            return line.split(":-", 1)[1].rstrip("}").strip()
+
+        assert default_of(wd) == default_of(ln), (
+            f"watchdog watches {default_of(wd)}, the launcher runs in {default_of(ln)}")
+
+    def test_no_second_copy_of_the_watchdog_is_what_actually_runs(self):
+        """systemd ran a copy at ~/ai_agents/bench_watchdog.sh dated 2026-07-28, so this
+        morning's fixes to the repo file supervised nothing. Two copies of a supervisor is
+        one copy of a supervisor and one decoy."""
+        import subprocess
+        r = subprocess.run(["systemctl", "--user", "cat", "bench-watchdog.service"],
+                           capture_output=True, text=True, check=False)
+        if r.returncode != 0:
+            pytest.skip("no bench-watchdog user unit on this machine")
+        exec_line = next((x for x in r.stdout.splitlines() if x.startswith("ExecStart=")), "")
+        assert "ai_agents/kaggle/benchmark_infra/bench_watchdog.sh" in exec_line, (
+            "the unit must run the repo's copy, so a fix to it cannot fail to deploy:\n  "
+            + exec_line)
+
+    def test_the_baseline_cannot_certify_itself(self, tmp_path):
+        """The one file that defines "frozen" was exempt from scanning, absent from its own
+        manifest, and sat inside the tree every lane can write.
+
+        Rewriting it -- or simply emptying it to {"files":{}}, since baseline_findings()
+        early-returns on a falsy dict -- made every frozen guard unverifiable and handed the
+        own-competition exemption to every path. The authority has to live where the lane
+        cannot reach: a sidecar beside the root, which the sandbox blanks.
+        """
+        import subprocess
+        root = tmp_path / "runs" / "rr"
+        r = subprocess.run([sys.executable, "benchmark_infra/build_myagent_run_root.py",
+                            "--write", "--root", str(root)],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout[-800:] + r.stderr[-400:]
+        side = tmp_path / "runs" / "rr.baseline.sha256"
+        assert side.exists(), "no sidecar: the baseline is its own only witness"
+        assert self._gate(root, "--require-baseline").returncode == 0
+
+        # a lane rewrites the manifest to neuter every frozen-file check
+        json.dump({"files": {}}, open(root / ".rerun_baseline.json", "w"))
+        r = self._gate(root, "--require-baseline")
+        assert r.returncode != 0 and "baseline" in (r.stdout + r.stderr).lower(), (
+            "an emptied manifest disables every hash check and grants the own-competition "
+            "exemption everywhere:\n" + (r.stdout + r.stderr)[-500:])

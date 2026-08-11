@@ -17,7 +17,7 @@ STATE=/home/tjyen/ai_agents/.watchdog_idle_since
 # launcher writes both its status file and every lane's output under it. Same default and
 # same override as run_myagent_headless.sh -- a watchdog pointed anywhere else supervises a
 # tree nothing writes to, which is the failure it exists to catch (round 11).
-RUN_ROOT=${RUN_ROOT:-/home/tjyen/ai_agents/myagent-rerun}
+RUN_ROOT=${RUN_ROOT:-/home/tjyen/benchruns/myagent-rerun}
 
 log(){ echo "$(date -Is) $*" >> "$LOG"; }
 

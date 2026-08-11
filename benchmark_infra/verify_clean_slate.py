@@ -255,6 +255,33 @@ EXEMPT_DIR_NAMES = {"__pycache__", ".ruff_cache", ".pytest_cache", ".mypy_cache"
 BASELINE_FILE = ".rerun_baseline.json"
 
 
+def sidecar_path(root: str) -> str:
+    """Where the baseline's own hash lives: BESIDE the root, not inside it.
+
+    The run root is bound writable into every lane, and the manifest inside it is exempt from
+    scanning and absent from its own file list -- so it could be rewritten, or emptied, and
+    every frozen-file check would pass. The sandbox blanks the root's parent, so a lane can
+    neither read nor write this (round 12).
+    """
+    return os.path.abspath(root).rstrip(os.sep) + ".baseline.sha256"
+
+
+def baseline_tampered(root: str) -> str | None:
+    """Non-None if the manifest does not match the hash recorded outside the root."""
+    side = sidecar_path(root)
+    bpath = os.path.join(root, BASELINE_FILE)
+    if not os.path.exists(side):
+        return None
+    if not os.path.exists(bpath):
+        return f"{BASELINE_FILE} is missing but {os.path.basename(side)} records one"
+    want = open(side).read().strip()
+    got = hashlib.sha256(open(bpath, "rb").read()).hexdigest()
+    if got != want:
+        return (f"{BASELINE_FILE} does not match the hash recorded beside the root: the "
+                f"manifest that defines which files are frozen has itself been rewritten")
+    return None
+
+
 def load_baseline(root: str) -> dict[str, str] | None:
     """The frozen surface, as recorded by build_myagent_run_root.py at build time.
 
@@ -514,6 +541,10 @@ def main(argv: list[str]) -> int:
 
     slugs = benchmark_slugs(root)
     baseline = load_baseline(root)
+    tampered = baseline_tampered(root)
+    if tampered:
+        print(f"BASELINE TAMPERED — {tampered}", file=sys.stderr)
+        return 3
     if args.require_baseline and baseline is None:
         # The launcher gates startup on this. A root with no baseline is one the builder
         # never produced -- stale, hand-made, or half-copied -- and the quarantine then

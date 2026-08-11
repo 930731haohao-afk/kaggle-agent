@@ -222,8 +222,14 @@ def _write_baseline(root: str) -> None:
                 files[rel] = hashlib.sha256(open(full, "rb").read()).hexdigest()
             except OSError:
                 continue
-    json.dump({"built_from": REPO, "files": files},
-              open(os.path.join(root, gate.BASELINE_FILE), "w"), indent=2, sort_keys=True)
+    bpath = os.path.join(root, gate.BASELINE_FILE)
+    json.dump({"built_from": REPO, "files": files}, open(bpath, "w"), indent=2, sort_keys=True)
+    # AND a sidecar beside the root, which the lane cannot see: the sandbox blanks the run
+    # root's parent. Without it the manifest is its own only witness -- exempt from scanning,
+    # absent from its own file list, and writable by every lane, so rewriting it (or just
+    # emptying it to {"files":{}}) disabled every frozen-file check at once (round 12).
+    digest = hashlib.sha256(open(bpath, "rb").read()).hexdigest()
+    open(gate.sidecar_path(root), "w").write(digest + "\n")
 
 
 def _drop_submit_routes(root: str) -> None:
