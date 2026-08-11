@@ -48,7 +48,7 @@ export RUN_ROOT TRANSCRIPTS
 # "finished cleanly", which is the failure this whole file's header is about.
 MIN_PLAUSIBLE_SECS=${MIN_PLAUSIBLE_SECS:-60}
 CLAUDE=/home/tjyen/.local/bin/claude
-PER_COMP_SECS=21600         # 6 h safety net — original method was uncapped; observed singles 0.4-4 h, so the cap must sit above the max, not inside the range
+PER_COMP_SECS=${PER_COMP_SECS:-21600}   # 6 h safety net — original method was uncapped; observed singles 0.4-4 h, so the cap must sit above the max, not inside the range. Overridable ONLY so a smoke can be bounded; a real lane must keep the default, since a cap inside the observed range truncates the method rather than protecting it.
 STALL_MIN=30                # kill a session that has written nothing for this long — longest observed legitimate quiet gap is a single training epoch, well under this
 MAX_WAIT_SECS=$((16*3600))
 
@@ -63,6 +63,27 @@ kill_tree(){ local p; for p in $(pgrep -P "$1" 2>/dev/null); do kill_tree "$p"; 
 # definition of which competitions the re-run covers.
 COMPS=$(python3 -c "import json,sys;print(' '.join(sorted(json.load(open(sys.argv[1]))['competitions'])))" "$REPO/docs/rerun_manifest.json") || {
   echo "cannot read the competition list from $REPO/docs/rerun_manifest.json" >&2; exit 4; }
+
+# SMOKE_COMPS — run a subset, to exercise THIS file end to end before committing a night to
+# it. Every launch bug found so far (RUN_ROOT unexported, COMPLETE after zero lanes, SIGTERM
+# booking a live lane as finished) was found by launching all 20 and watching them fail
+# together, because there was no way to run one.
+#
+# The subset is checked against the manifest, so it cannot become the stale hand-list that
+# ran 5 of 20 and declared victory. And a smoke NEVER writes the completion marker:
+# bench_watchdog.sh reads that marker as "this driver finished cleanly", and a marker earned
+# by one competition would retire the other nineteen.
+SMOKE=0
+if [ -n "${SMOKE_COMPS:-}" ]; then
+  for c in $SMOKE_COMPS; do
+    case " $COMPS " in
+      *" $c "*) ;;
+      *) echo "SMOKE_COMPS names '$c', which is not in the manifest" >&2; exit 4;;
+    esac
+  done
+  COMPS=$SMOKE_COMPS
+  SMOKE=1
+fi
 
 # The run root must exist and must pass the clean-slate gate before a single lane starts.
 [ -d "$RUN_ROOT" ] || { echo "no run root at $RUN_ROOT — build it with python3 $REPO/benchmark_infra/build_myagent_run_root.py --write" >&2; exit 4; }
@@ -234,5 +255,10 @@ if [ "$lanes_ran" -eq 0 ]; then
   log "NO LANE RAN — refusing to write the completion marker, which bench_watchdog.sh "\
 "reads as 'this driver finished cleanly'"
   exit 5
+fi
+if [ "$SMOKE" = "1" ]; then
+  log "SMOKE RUN over $lanes_ran competition(s) — no completion marker; the other lanes "\
+"have not run"
+  exit 0
 fi
 log "MY-AGENT LANES COMPLETE ($lanes_ran/20 lanes ran)"

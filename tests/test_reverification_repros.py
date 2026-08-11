@@ -2413,6 +2413,29 @@ class TestRound11:
             "quarantine belongs after the skip test (a finished lane keeps its work) and "
             "before the lane starts")
 
+    def test_a_smoke_subset_is_checked_against_the_manifest_and_earns_no_marker(self):
+        """SMOKE_COMPS exists so this launcher can be exercised on one competition instead of
+        by committing a night to all 20. It reintroduces the hazard its own comment warns
+        about -- a hand-written list ran 5 of 20 and logged "MY-AGENT LANES COMPLETE" -- so it
+        carries two guards: the subset must be a subset of the manifest, and a smoke must
+        never write the completion marker that bench_watchdog.sh reads as "finished cleanly".
+        """
+        import subprocess
+        r = subprocess.run(["bash", "run_myagent_headless.sh"],
+                           capture_output=True, text=True, cwd=REPO, check=False,
+                           env={**os.environ, "SMOKE_COMPS": "not-a-real-competition",
+                                "RUN_ROOT": "/nonexistent-root-for-this-test"})
+        assert r.returncode != 0 and "not in the manifest" in (r.stdout + r.stderr), (
+            "an unrecognised smoke subset must be refused before any lane starts, or the "
+            "override becomes the stale hand-list:\n" + (r.stdout + r.stderr)[-400:])
+
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        i_smoke = src.index('if [ "$SMOKE" = "1" ]')
+        i_marker = src.index('log "MY-AGENT LANES COMPLETE')
+        assert i_smoke < i_marker, (
+            "the smoke branch must exit BEFORE the completion marker; a marker earned by one "
+            "competition retires the other nineteen as far as the watchdog is concerned")
+
     # ------------------------------------------------------------- supervision
     #
     # Round 9 moved the run to $RUN_ROOT; bench_watchdog.sh did not move with it. Its DRIVERS
