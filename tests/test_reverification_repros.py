@@ -3164,6 +3164,12 @@ class TestStages:
     def _launcher(self):
         return open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
 
+    def _gate(self, root, *extra):
+        import subprocess
+        return subprocess.run([sys.executable, "benchmark_infra/verify_clean_slate.py",
+                               "--root", str(root), *extra],
+                              capture_output=True, text=True, cwd=REPO, check=False)
+
     def test_lane_timeout_escalates_to_sigkill(self):
         src = self._launcher()
         line = next(ln for ln in src.splitlines()
@@ -3254,3 +3260,65 @@ class TestStages:
         assert r.returncode != 0 and "cache" in (r.stdout + r.stderr).lower(), (
             "an unresolvable cache must abort the restart, not be skipped:\n"
             + (r.stdout + r.stderr)[-400:])
+
+    # ------------------------------------------- the gate refused its own relaunch
+    #
+    # verify_clean_slate.py appends any file over BINARY_SNIFF (8 MB) to `skipped` and then
+    # returns 3, because a skip is not a pass. The launcher runs it before EVERY launch and
+    # exits 3 on failure. But the run itself produces files far over 8 MB -- conway's
+    # submission.csv is 40 MB, s5e1's processed features 49-58 MB, the OOF caches hundreds of
+    # MB -- so the first lane to write one makes every subsequent relaunch impossible. The
+    # rule is right (never certify what you did not read); the implementation gave up too
+    # early. A finding requires a competition to be NAMED, so a file with no slug anywhere in
+    # its bytes cannot state a result, however large it is -- checkable by streaming.
+
+    def test_a_large_file_naming_nothing_does_not_block_the_run(self, tmp_path):
+        root = tmp_path / "r"
+        (root / "docs").mkdir(parents=True)
+        json.dump({"competitions": {"playground-series-s3e16": {"eval": "eval_x.py"}}},
+                  open(root / "docs/rerun_manifest.json", "w"))
+        big = root / "submission.csv"
+        with open(big, "w") as f:
+            f.write("id,target\n")
+            for i in range(1_200_000):
+                f.write(f"{i},0.5\n")
+        assert big.stat().st_size > 9 * 1024 * 1024
+        r = self._gate(root)
+        assert r.returncode == 0, (
+            "a 20 MB submission naming no competition cannot state a result; refusing to "
+            "start because of it makes the run unrelaunchable the moment lane 1 writes "
+            "one:\n" + (r.stdout + r.stderr)[-600:])
+
+    def test_a_large_file_that_does_name_a_result_is_still_caught(self, tmp_path):
+        root = tmp_path / "r"
+        (root / "docs").mkdir(parents=True)
+        json.dump({"competitions": {"playground-series-s3e16": {"eval": "eval_x.py"}}},
+                  open(root / "docs/rerun_manifest.json", "w"))
+        big = root / "notes.csv"
+        with open(big, "w") as f:
+            for i in range(1_200_000):
+                f.write(f"{i},0.5\n")
+            f.write("playground-series-s3e16 private MAE 1.34712\n")
+        assert big.stat().st_size > 9 * 1024 * 1024
+        r = self._gate(root)
+        assert r.returncode != 0, (
+            "size must not become a way to hide a result:\n" + r.stdout[-500:])
+
+    def test_gate_can_require_the_baseline_to_exist(self, tmp_path):
+        root = tmp_path / "r"
+        (root / "docs").mkdir(parents=True)
+        json.dump({"competitions": {"playground-series-s3e16": {"eval": "eval_x.py"}}},
+                  open(root / "docs/rerun_manifest.json", "w"))
+        (root / "harmless.txt").write_text("nothing here\n")
+        assert self._gate(root).returncode == 0, "without the flag, unchanged behaviour"
+        r = self._gate(root, "--require-baseline")
+        assert r.returncode != 0 and "baseline" in (r.stdout + r.stderr).lower(), (
+            "a root the builder never produced must not pass a gate the launcher trusts:\n"
+            + (r.stdout + r.stderr)[-400:])
+
+    def test_launcher_requires_the_baseline(self):
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        line = next(ln for ln in src.splitlines() if "verify_clean_slate.py" in ln
+                    and "--root" in ln)
+        assert "--require-baseline" in line, (
+            f"the startup gate must reject a root with no baseline:\n  {line.strip()}")

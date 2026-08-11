@@ -384,6 +384,40 @@ def _read(path: str) -> tuple[str, bool, bool] | None:
         return raw.decode("latin-1", errors="replace"), True, truncated
 
 
+def names_any_competition(path: str, slugs: dict) -> bool | None:
+    """Does this file contain ANY competition token, anywhere in its bytes?
+
+    For files too large to decode whole. A finding requires a competition to be NAMED, so a
+    file naming none cannot state a result however big it is -- and that is decidable by
+    streaming. Without this, every file over 8 MB became a `skipped` entry and therefore
+    INCONCLUSIVE, and since the launcher gates EVERY start on this, the first lane to write a
+    40 MB submission made all subsequent relaunches impossible (round 12).
+
+    Returns None if the file could not be read at all -- that is a real skip.
+    """
+    tokens = set()
+    for comp in slugs:
+        tokens.add(comp.lower().encode())
+        m = re.search(r"(s\d+e\d+)$", comp)
+        if m:
+            tokens.add(m.group(1).lower().encode())
+    longest = max(len(t) for t in tokens) if tokens else 0
+    chunk = 4 * 1024 * 1024
+    try:
+        with open(path, "rb") as f:
+            tail = b""
+            while True:
+                buf = f.read(chunk)
+                if not buf:
+                    return False
+                hay = (tail + buf).lower()
+                if any(t in hay for t in tokens):
+                    return True
+                tail = hay[-longest:] if longest else b""
+    except OSError:
+        return None
+
+
 def scan_file(path: str, rel: str, slugs: dict[str, re.Pattern]) -> list[str]:
     """Flag a file where a benchmark competition is named WITHIN `WINDOW` lines of a score or
     leaderboard language.
@@ -467,6 +501,8 @@ def scan_file(path: str, rel: str, slugs: dict[str, re.Pattern]) -> list[str]:
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--root", default=DEFAULT_ROOT)
+    ap.add_argument("--require-baseline", action="store_true",
+                    help="fail unless the root carries the builder's baseline manifest")
     ap.add_argument("--simulate-archive", action="store_true",
                     help="also skip everything the archive script's dry run would move")
     ap.add_argument("--max-report", type=int, default=40)
@@ -478,6 +514,14 @@ def main(argv: list[str]) -> int:
 
     slugs = benchmark_slugs(root)
     baseline = load_baseline(root)
+    if args.require_baseline and baseline is None:
+        # The launcher gates startup on this. A root with no baseline is one the builder
+        # never produced -- stale, hand-made, or half-copied -- and the quarantine then
+        # refuses every competition while the loop logs a completion marker anyway (round 12).
+        print(f"no {BASELINE_FILE} in {root}: this root was not produced by "
+              f"build_myagent_run_root.py, so its frozen surface cannot be verified",
+              file=sys.stderr)
+        return 3
     plan = archive_plan(root) if args.simulate_archive else set()
     findings, n_files = [], 0
     skipped: list[str] = []
@@ -531,9 +575,17 @@ def main(argv: list[str]) -> int:
             if size > BINARY_SNIFF:
                 # round 9 only reported files past MAX_BYTES, but _read stops at
                 # BINARY_SNIFF, so everything in between was searched partially and
-                # certified whole (round 10).
-                skipped.append(f"{rel} ({size // 1024 // 1024} MB — only the first "
-                               f"{BINARY_SNIFF // 1024 // 1024} MB was searched)")
+                # certified whole (round 10). Round 12: that made every relaunch impossible
+                # once a lane wrote a 40 MB submission, so decide it by streaming first --
+                # a file naming no competition at all cannot state one's result.
+                named_anywhere = names_any_competition(full, slugs)
+                if named_anywhere is False:
+                    n_files += 1
+                    continue
+                skipped.append(f"{rel} ({size // 1024 // 1024} MB — names a benchmark "
+                               f"competition and only the first "
+                               f"{BINARY_SNIFF // 1024 // 1024} MB could be searched)"
+                               if named_anywhere else f"{rel} (could not be opened)")
             got = _read(full)
             if got is None:
                 skipped.append(f"{rel} (could not be opened)")

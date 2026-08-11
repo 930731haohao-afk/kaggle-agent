@@ -66,7 +66,7 @@ COMPS=$(python3 -c "import json,sys;print(' '.join(sorted(json.load(open(sys.arg
 
 # The run root must exist and must pass the clean-slate gate before a single lane starts.
 [ -d "$RUN_ROOT" ] || { echo "no run root at $RUN_ROOT — build it with python3 $REPO/benchmark_infra/build_myagent_run_root.py --write" >&2; exit 4; }
-python3 "$REPO/benchmark_infra/verify_clean_slate.py" --root "$RUN_ROOT" || {
+python3 "$REPO/benchmark_infra/verify_clean_slate.py" --root "$RUN_ROOT" --require-baseline || {
   echo "run root is not clean — refusing to start" >&2; exit 3; }
 
 log(){ echo "- \`$(date '+%m-%d %H:%M')\` $*" | tee -a "$STATUS"; }
