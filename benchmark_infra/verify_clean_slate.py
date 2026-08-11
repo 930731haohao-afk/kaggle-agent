@@ -545,6 +545,16 @@ def main(argv: list[str]) -> int:
     if tampered:
         print(f"BASELINE TAMPERED — {tampered}", file=sys.stderr)
         return 3
+    if args.require_baseline and not os.path.exists(sidecar_path(root)):
+        # baseline_tampered() cannot speak without the sidecar -- it early-returns None, which
+        # reads as "not tampered". So the check an attacker has to defeat is the one that only
+        # fires if they leave the witness in place, and deleting it is easier than forging it.
+        # A root built before the sidecar existed lands here too, and that root is stale by
+        # construction: rebuild rather than trust a manifest nothing vouches for.
+        print(f"no sidecar at {sidecar_path(root)}: nothing outside the root vouches for "
+              f"{BASELINE_FILE}, so the manifest that defines which files are frozen cannot "
+              f"be checked. Rebuild with build_myagent_run_root.py.", file=sys.stderr)
+        return 3
     if args.require_baseline and baseline is None:
         # The launcher gates startup on this. A root with no baseline is one the builder
         # never produced -- stale, hand-made, or half-copied -- and the quarantine then

@@ -3382,6 +3382,31 @@ class TestStages:
             "an emptied manifest disables every hash check and grants the own-competition "
             "exemption everywhere:\n" + (r.stdout + r.stderr)[-500:])
 
+    def test_a_missing_sidecar_is_not_evidence_of_an_untampered_baseline(self, tmp_path):
+        """baseline_tampered() early-returns None when the sidecar is absent, so "no witness"
+        was reported as "not tampered" -- the fail-open shape this audit keeps finding.
+
+        It is reachable two ways. A root built before the sidecar existed passes
+        --require-baseline with its manifest never checked against anything (the live root did
+        exactly this: the gate printed "clean slate OK"). And deleting the sidecar is strictly
+        easier than forging it, so the check an attacker must defeat is the one that fires
+        only when the attacker leaves it in place.
+        """
+        import subprocess
+        root = tmp_path / "runs" / "rr"
+        r = subprocess.run([sys.executable, "benchmark_infra/build_myagent_run_root.py",
+                            "--write", "--root", str(root)],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout[-800:] + r.stderr[-400:]
+        side = tmp_path / "runs" / "rr.baseline.sha256"
+        assert self._gate(root, "--require-baseline").returncode == 0
+
+        side.unlink()
+        r = self._gate(root, "--require-baseline")
+        assert r.returncode != 0 and "sidecar" in (r.stdout + r.stderr).lower(), (
+            "with no sidecar the manifest is its own only witness, and the gate said the "
+            "root was clean:\n" + (r.stdout + r.stderr)[-500:])
+
     # ------------------------------------- the validator's one un-inverted-transform gate
     #
     # 06_submission.md bolds "INVERT THE TARGET TRANSFORM BEFORE WRITING ANYTHING" and lists
