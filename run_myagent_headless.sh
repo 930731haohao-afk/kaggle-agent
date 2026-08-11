@@ -37,6 +37,16 @@ ATTEMPTS=${ATTEMPTS:-$RUN_ROOT.attempts}
 # audit of what each lane actually opened), while the existing transcripts — and any sibling
 # lane's — stay invisible to it.
 TRANSCRIPTS=${TRANSCRIPTS:-$RUN_ROOT.transcripts}
+# EXPORTED, because lane_sandbox.sh reads them from the environment, not from this shell. The
+# first launch of the fixed pipeline died on exactly this: RUN_ROOT was set but not exported,
+# so all 20 lanes hit the sandbox's own guard and exited rc=1 within a second of each other.
+export RUN_ROOT TRANSCRIPTS
+
+# A competition takes tens of minutes. A lane that returns in seconds did not run one -- it
+# failed to start, and the cause is the same for every lane behind it. Marching on turns one
+# broken invocation into 20 empty workspaces and a COMPLETE marker that the watchdog reads as
+# "finished cleanly", which is the failure this whole file's header is about.
+MIN_PLAUSIBLE_SECS=${MIN_PLAUSIBLE_SECS:-60}
 CLAUDE=/home/tjyen/.local/bin/claude
 PER_COMP_SECS=21600         # 6 h safety net — original method was uncapped; observed singles 0.4-4 h, so the cap must sit above the max, not inside the range
 STALL_MIN=30                # kill a session that has written nothing for this long — longest observed legitimate quiet gap is a single training epoch, well under this
@@ -181,7 +191,19 @@ Work autonomously; never ask questions; take documented fallbacks when blocked."
   kill $stall_pid 2>/dev/null
 
   lane_release
-  mins=$(( ($(date +%s) - start) / 60 ))
+  secs=$(( $(date +%s) - start ))
+  mins=$(( secs / 60 ))
+
+  # Did it RUN, or did it fail to start? A competition takes tens of minutes; seconds means
+  # the invocation is broken, and it is broken identically for every lane behind this one.
+  if [ "$rc" -ne 0 ] && [ "$secs" -lt "$MIN_PLAUSIBLE_SECS" ]; then
+    log "ABORTING: $c exited rc=$rc after ${secs}s — under ${MIN_PLAUSIBLE_SECS}s means the "\
+"lane never started, and the next 19 would fail the same way. Last lines of its log:"
+    tail -5 "$BASE/competitions/$c/headless_run.log" 2>/dev/null | sed 's/^/    /' | tee -a "$STATUS"
+    log "no COMPLETE marker written — this run did not happen"
+    exit 5
+  fi
+
   if [ -f "$BASE/competitions/$c/submission.csv" ]; then
     log "DONE $c: submission written (${mins} min, rc=$rc)"
   else

@@ -3037,3 +3037,37 @@ class TestStages:
             {"experiment_id": 2, "metric": "rmse", "score": 0.4, "direction": "minimize"},
         ], open(d / "experiments.json", "w"))
         assert get_best_experiment(str(d))["experiment_id"] == 2
+
+    # ------------------------------------------------ a launch that lied in 40 seconds
+    #
+    # The first launch of the fixed pipeline exited rc=1 on all 20 lanes in under a minute
+    # and wrote "MY-AGENT LANES COMPLETE". RUN_ROOT is a launcher shell variable and the
+    # sandbox reads it from the ENVIRONMENT, so without an export every lane died on
+    # lane_sandbox.sh's own guard -- correctly. What was not correct is what the launcher did
+    # with 20 instant failures: it kept going and declared the run finished, which is the
+    # "reports success in minutes" shape its own header warns about, and the watchdog then
+    # reads that marker and reports the driver finished cleanly.
+
+    def test_launcher_exports_what_the_sandbox_reads_from_the_environment(self):
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        sandbox = open(os.path.join(REPO, "benchmark_infra/lane_sandbox.sh"),
+                       encoding="utf-8").read()
+        needed = [v for v in ("RUN_ROOT", "LANE_TRANSCRIPTS") if f'"${{{v}:' in sandbox
+                  or f"${{{v}:?" in sandbox or f'"${v}"' in sandbox]
+        assert "RUN_ROOT" in needed, "the sandbox must require a run root"
+        for var in ("RUN_ROOT",):
+            assert f"export {var}" in src, (
+                f"lane_sandbox.sh reads {var} from the environment; a launcher shell "
+                f"variable that is never exported is invisible to it, and every lane dies "
+                f"on its guard")
+
+    def test_launcher_aborts_when_lanes_die_instantly(self):
+        """20 instant failures is an infrastructure fault, not 20 competition results."""
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        assert "MIN_PLAUSIBLE_SECS" in src, (
+            "a lane that exits in seconds did not run a competition; continuing through the "
+            "queue turns one broken invocation into a whole run of empty workspaces and a "
+            "COMPLETE marker the watchdog believes")
+        i_guard = src.index("MIN_PLAUSIBLE_SECS")
+        i_complete = src.index("MY-AGENT LANES COMPLETE")
+        assert i_guard < i_complete, "the guard must be able to prevent the marker"
