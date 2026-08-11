@@ -3135,3 +3135,53 @@ class TestStages:
         sibs = set(out["siblings"].split(",")) - {""}
         assert sibs == {"rr"}, (
             f"only this run root may be visible in its own parent; saw {sorted(sibs)}")
+
+    # -------------------------------------------------- the launcher's own faults
+    #
+    # Four, all confirmed against the running system:
+    #   `timeout` sends SIGTERM only, so at the 6 h cap the session survives and the launcher
+    #   starts the NEXT competition on top of it -- two lanes on one machine, which is the
+    #   contention that voided an earlier run.
+    #   The stall probe uses the relative -newermt form bfs rejects -- the identical bug fixed
+    #   in bench_watchdog.sh but not here -- so its file-freshness half never worked.
+    #   SIGTERM to the launcher does not stop it: `wait` returns, the still-running lane is
+    #   recorded as finished, its lock is released and the next competition starts. Observed.
+    #   "MY-AGENT LANES COMPLETE" is written even when zero competitions executed.
+
+    def _launcher(self):
+        return open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+
+    def test_lane_timeout_escalates_to_sigkill(self):
+        src = self._launcher()
+        line = next(ln for ln in src.splitlines()
+                    if "PER_COMP_SECS" in ln and ln.lstrip().startswith("timeout"))
+        assert "-k" in line, (
+            "`timeout` sends SIGTERM and gives up; bwrap and the agent under it can outlive "
+            f"it, and the launcher then starts the next competition alongside:\n  {line.strip()}")
+
+    def test_launcher_stall_probe_uses_an_absolute_timestamp(self):
+        code = [ln for ln in self._launcher().splitlines()
+                if not ln.lstrip().startswith("#")]
+        bad = [ln.strip() for ln in code if '-newermt "-' in ln]
+        assert not bad, (
+            "bfs rejects a relative -newermt and the error is discarded, so the freshness "
+            f"half of the stall test never fired:\n  " + "\n  ".join(bad))
+
+    def test_launcher_stops_on_a_signal_instead_of_advancing(self):
+        src = self._launcher()
+        assert "trap " in src and ("TERM" in src or "SIGTERM" in src), (
+            "SIGTERM makes `wait` return, so the launcher books the still-running lane as "
+            "finished and starts the next one — pausing the run requires killing it twice")
+        i_trap = src.index("trap ")
+        i_loop = src.index("for c in $COMPS")
+        assert i_trap < i_loop, "the trap must be installed before the first lane starts"
+
+    def test_completion_marker_requires_a_competition_to_have_run(self):
+        src = self._launcher()
+        # the LAST occurrence: the string also appears in a comment near the top
+        i_marker = src.rindex("MY-AGENT LANES COMPLETE")
+        head = src[:i_marker]
+        assert "lanes_ran" in head and 'lanes_ran" -eq 0' in head, (
+            "the marker was written after a run in which zero competitions executed, and "
+            "bench_watchdog.sh reads it as 'this driver finished cleanly' — so the failure "
+            "reports itself as a success and nothing ever contradicts it")

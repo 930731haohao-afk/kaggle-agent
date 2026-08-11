@@ -71,6 +71,20 @@ python3 "$REPO/benchmark_infra/verify_clean_slate.py" --root "$RUN_ROOT" || {
 
 log(){ echo "- \`$(date '+%m-%d %H:%M')\` $*" | tee -a "$STATUS"; }
 
+# SIGTERM used to make `wait` return, after which the launcher booked the still-running
+# lane as finished, released its lock and started the next competition -- so stopping the
+# run took two kills, and the first one corrupted the record of the lane it interrupted.
+run_pid=''; stall_pid=''
+on_signal(){
+  trap - TERM INT
+  log "stopping on signal — killing the running lane; no COMPLETE marker will be written"
+  [ -n "$stall_pid" ] && kill "$stall_pid" 2>/dev/null
+  [ -n "$run_pid" ] && kill_tree "$run_pid"
+  lane_release 2>/dev/null
+  exit 6
+}
+trap on_signal TERM INT
+
 # Append on relaunch — truncating would erase the record of lanes already run.
 [ -f "$STATUS" ] || printf '# my-agent lanes — headless overnight runs\n\n' > "$STATUS"
 
@@ -91,6 +105,7 @@ done
 
 source /home/tjyen/ai_agents/lane_lock.sh
 
+lanes_ran=0
 for c in $COMPS; do
   # Relaunch-safe: a competition that already produced its submission is done.
   if [ -f "$BASE/competitions/$c/submission.csv" ]; then
@@ -154,7 +169,7 @@ Work autonomously; never ask questions; take documented fallbacks when blocked."
   # lanes, ~/ai_agents holds the all-20 public/private table, and ~/.claude/projects holds
   # 1050 transcripts naming a benchmark competition. None of that is reachable by redaction.
   ( LANE_TRANSCRIPTS="$TRANSCRIPTS/$c" \
-    timeout $PER_COMP_SECS bash "$REPO/benchmark_infra/lane_sandbox.sh" \
+    timeout -k 60 $PER_COMP_SECS bash "$REPO/benchmark_infra/lane_sandbox.sh" \
       "$CLAUDE" -p "$PROMPT" --dangerously-skip-permissions \
       > "$BASE/competitions/$c/headless_run.log" 2>&1 ) &
   run_pid=$!
@@ -174,7 +189,10 @@ Work autonomously; never ask questions; take documented fallbacks when blocked."
       kill -0 $run_pid 2>/dev/null || break
       cur_cpu=$(tree_cpu $run_pid)
       quiet_files=0
-      [ -z "$(find "$BASE/competitions/$c" -newermt "-${STALL_MIN} minutes" -type f 2>/dev/null | head -1)" ] && quiet_files=1
+      # ABSOLUTE: bfs rejects a relative -newermt and the error goes to /dev/null, so this
+      # half of the test silently answered "quiet" every time (same bug as bench_watchdog).
+      stale_since=$(date -d "-${STALL_MIN} minutes" '+%F %T')
+      [ -z "$(find "$BASE/competitions/$c" -newermt "$stale_since" -type f 2>/dev/null | head -1)" ] && quiet_files=1
       # Under 5 CPU-seconds across 5 minutes = idle; an API round-trip alone costs more.
       if [ "$quiet_files" = "1" ] && [ $((cur_cpu - prev_cpu)) -lt 500 ]; then
         log "STALLED $c: no output for ${STALL_MIN}min and no CPU in 5min — killing the session"
@@ -191,6 +209,7 @@ Work autonomously; never ask questions; take documented fallbacks when blocked."
   kill $stall_pid 2>/dev/null
 
   lane_release
+  lanes_ran=$((lanes_ran + 1))
   secs=$(( $(date +%s) - start ))
   mins=$(( secs / 60 ))
 
@@ -211,4 +230,9 @@ Work autonomously; never ask questions; take documented fallbacks when blocked."
   fi
 done
 
-log "MY-AGENT LANES COMPLETE"
+if [ "$lanes_ran" -eq 0 ]; then
+  log "NO LANE RAN — refusing to write the completion marker, which bench_watchdog.sh "\
+"reads as 'this driver finished cleanly'"
+  exit 5
+fi
+log "MY-AGENT LANES COMPLETE ($lanes_ran/20 lanes ran)"
