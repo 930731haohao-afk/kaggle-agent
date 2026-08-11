@@ -2997,3 +2997,43 @@ class TestStages:
             "attempt 2's node 5 would blend on attempt 1's node 5 vectors — same key, "
             "different config, no guard armed")
         assert (cd / "config.yaml").exists(), "the builder's files must survive"
+
+    # -------------------------------------------------- what produced the number
+    #
+    # get_best_experiment guards against mixing METRICS -- "ranking raw scores across metrics
+    # is meaningless" -- but has no notion of the ESTIMATOR that produced a score, and the log
+    # schema had no field for one. A blend whose weights were fit on the same OOF it is then
+    # scored on is optimistic by construction; a tree-search champion scored
+    # leave-one-outer-fold-out is not. Ranking them together hands the champion to whichever
+    # was measured more generously, and 06_submission.md tells the agent to select with
+    # exactly this call. Same shape one level down: an evaluator that scores blends
+    # leave-fold-out and solos on plain OOF ranks the two against each other inside one tree.
+
+    def test_selection_refuses_to_rank_across_estimators(self, tmp_path):
+        sys.path.insert(0, REPO)
+        from utils.experiment_log import get_best_experiment
+        d = tmp_path / "comp"
+        d.mkdir()
+        json.dump([
+            {"experiment_id": 4, "metric": "rmse", "score": 0.433219, "direction": "minimize",
+             "estimator": "in_sample_blend_weights"},
+            {"experiment_id": 5, "metric": "rmse", "score": 0.444076, "direction": "minimize",
+             "estimator": "leave_fold_out"},
+        ], open(d / "experiments.json", "w"))
+        with pytest.raises(ValueError, match="estimator"):
+            get_best_experiment(str(d))
+        # filtered to one estimator, it must still work
+        best = get_best_experiment(str(d), estimator="leave_fold_out")
+        assert best["experiment_id"] == 5
+
+    def test_selection_is_unchanged_when_no_entry_declares_an_estimator(self, tmp_path):
+        """Silence must stay backwards compatible: every existing log predates the field."""
+        sys.path.insert(0, REPO)
+        from utils.experiment_log import get_best_experiment
+        d = tmp_path / "comp"
+        d.mkdir()
+        json.dump([
+            {"experiment_id": 1, "metric": "rmse", "score": 0.5, "direction": "minimize"},
+            {"experiment_id": 2, "metric": "rmse", "score": 0.4, "direction": "minimize"},
+        ], open(d / "experiments.json", "w"))
+        assert get_best_experiment(str(d))["experiment_id"] == 2

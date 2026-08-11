@@ -399,6 +399,15 @@ def unified_k_for(members_count: int, n_rows: int, k: int = None) -> int:
     """The k every route must use for this problem size. Deterministic: no clock, no load."""
     k = UNIFIED_BLEND_K if k is None else k
     if n_rows and members_count * n_rows > UNIFIED_COARSEN_BOUNDARY and k > UNIFIED_COARSEN_K:
+        # SAY SO. harness_v3's cost guard returns a warning when it coarsens, on the stated
+        # principle that it may "never coarsen silently" -- but 29 eval modules reach the
+        # scorer through eval_blend(), whose 3-tuple has nowhere to put one, so on that route
+        # the same decision was invisible. The score is unaffected (this boundary is a
+        # function of problem size alone -- no clock, no load), but a search whose weight
+        # resolution changed underneath it should not have to be inferred from the source.
+        print(f"[eval_blend] coarsened weight search k={k} -> {UNIFIED_COARSEN_K} "
+              f"({members_count} members x {n_rows} rows > {UNIFIED_COARSEN_BOUNDARY} "
+              f"units); deterministic, decided by problem size only", file=sys.stderr)
         return UNIFIED_COARSEN_K
     return k
 

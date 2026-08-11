@@ -199,10 +199,24 @@ def _entry_metric(e: dict):
     return e.get("metric") or e.get("eval_metric")
 
 
+def _entry_estimator(e: dict):
+    """HOW the score was measured, as distinct from WHAT was measured.
+
+    A blend whose weights were fit on the same OOF it is then scored on is optimistic by
+    construction; a champion scored leave-one-outer-fold-out is not. Both can carry the same
+    metric name and the same direction, so the metric guard above does not separate them, and
+    ranking them together hands the championship to whichever was measured more generously
+    (2026-08-11 stages pass). Absent on every entry written before this field existed, and
+    silence stays permissive so old logs rank exactly as they did.
+    """
+    return e.get("estimator") or e.get("score_estimator")
+
+
 def get_best_experiment(
     competition_dir: str,
     metric: Optional[str] = None,
-    minimize: Optional[bool] = None
+    minimize: Optional[bool] = None,
+    estimator: Optional[str] = None
 ) -> Optional[dict]:
     """
     Get the best non-diagnostic experiment.
@@ -214,7 +228,10 @@ def get_best_experiment(
     minimize-metric competition whose log lacked a direction field.
 
     Entries with different metrics are refused unless `metric=` filters to one -- ranking
-    raw scores across metrics compares apples against oranges (bucket-A #18).
+    raw scores across metrics compares apples against oranges (bucket-A #18). Entries with
+    different ESTIMATORS are refused the same way unless `estimator=` filters to one: an
+    in-sample-weighted blend and a leave-fold-out champion share a metric and a direction but
+    not a measurement, and the optimistic one wins a comparison it should never have been in.
     """
     experiments = load_experiments(competition_dir)
     if isinstance(experiments, dict):
@@ -229,6 +246,10 @@ def get_best_experiment(
         m_norm = str(metric).strip().lower()
         experiments = [e for e in experiments
                        if str(_entry_metric(e) or "").strip().lower() == m_norm]
+    if estimator:
+        e_norm = str(estimator).strip().lower()
+        experiments = [e for e in experiments
+                       if str(_entry_estimator(e) or "").strip().lower() == e_norm]
     if not experiments:
         return None
 
@@ -244,6 +265,15 @@ def get_best_experiment(
             f"experiments.json mixes metrics {sorted(metrics_present)}; ranking raw scores "
             f"across metrics is meaningless. Pass metric=<one of them> to select the family "
             f"to rank within.")
+
+    estimators_present = {str(_entry_estimator(e)).strip().lower()
+                          for e in scored if _entry_estimator(e)}
+    if len(estimators_present) > 1:
+        raise ValueError(
+            f"experiments.json mixes estimators {sorted(estimators_present)}; an "
+            f"in-sample-weighted blend and a leave-fold-out champion carry the same metric "
+            f"and the same direction but are not comparable, and the optimistic one wins. "
+            f"Pass estimator=<one of them> to select the family to rank within.")
 
     if minimize is None:
         dirs = {_norm_direction(e.get("direction")) for e in scored if e.get("direction")}
