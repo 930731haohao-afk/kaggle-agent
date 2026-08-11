@@ -60,7 +60,9 @@ Getting this wrong does not raise: a maximize metric stored unflipped makes `min
 
 ## 4. Driver script checklist
 
-Copying `tree_search/run_template_v3.py` (competition-agnostic; the per-competition run_*_v3.py files embed their competition's RECORDED configs and exist only to reproduce recorded trees — never copy one of those for a fresh run: 2026-08-10 audit), a new competition's driver **must**:
+Copy `tree_search/run_template_v3.py` (competition-agnostic; the per-competition run_*_v3.py files embed their competition's RECORDED configs and exist only to reproduce recorded trees — never copy one of those for a fresh run: 2026-08-10 audit) **into `competitions/<comp>/scripts/`**. Not into `tree_search/`: that directory is shared, and a driver left there is readable by every other lane, is not cleared when an aborted attempt is quarantined, and states its own competition beside its root config's numbers. The template locates the run root by walking up, so it works from the workspace unchanged.
+
+A new competition's driver **must**:
 
 1. **Digit-for-digit root verification**: the root node's configuration must be bit-identical to that comp's known-best solo (usually from linear iteration or a previous harness version); immediately after evaluating it, `assert round(auc_or_score, 6) == <known_value>` and abort on failure — do not let drift in the root's own data/features silently contaminate the whole tree.
 2. **OOF cache reuse** (optional but recommended): if an old tree (v2 or linear iteration) already has cached OOF for the identical configuration, reload it and recompute the metric, accepting the reuse only when it matches to 6 decimal places (digit-verified), otherwise fall back to real training — saves the compute of redundant training without sacrificing correctness.

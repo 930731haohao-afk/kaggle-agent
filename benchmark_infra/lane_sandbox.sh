@@ -79,6 +79,35 @@ esac
 # all live there under their real paths.
 BENCHRUNS=$(dirname "$RUN_ROOT")
 
+# ONE WORKSPACE PER LANE.
+#
+# The run root holds all twenty competition workspaces, and binding it whole handed every
+# lane the other nineteen. By the time lane 20 starts, nineteen STATUS.md files are sitting
+# beside it, each opening with its competition's final CV score and champion recipe, and the
+# only thing between them is a sentence in the prompt. That is true on a clean FIRST pass --
+# it needs no abort, no relaunch, no leftover. Twelve rounds of this audit have been about
+# the difference between a rule and a boundary; this was the outermost layer still relying
+# on a rule.
+#
+# It is also what made the run unrestartable. The startup gate scans the whole root, and a
+# finished lane's own deliverables cite sibling competitions by name and number -- because
+# SKILL.md REQUIRES a library_hits trace and query_library.py serves evidence from other
+# competitions by design. So the gate failed on the lane doing exactly what it was told, and
+# every relaunch exited 3. With the siblings unreachable, their content is no longer
+# something the gate has to protect against.
+#
+# LANE_COMP is REQUIRED, with no default. A default would be the fail-open shape this whole
+# audit keeps closing: a caller that forgets it would silently get the old, unbounded view.
+#   LANE_COMP=<slug>  bind only that workspace; the other nineteen do not exist
+#   LANE_COMP=none    no workspace at all -- for maintenance (uv sync, read-only probes)
+: "${LANE_COMP:?LANE_COMP must be set: a competition slug, or 'none' for maintenance}"
+comp_isolation=(--tmpfs "$RUN_ROOT/competitions")
+if [ "$LANE_COMP" != "none" ]; then
+  ws=$RUN_ROOT/competitions/$LANE_COMP
+  [ -d "$ws" ] || { echo "no workspace at $ws — LANE_COMP names a competition this root does not have" >&2; exit 4; }
+  comp_isolation+=(--bind "$ws" "$ws")
+fi
+
 exec bwrap \
   --ro-bind / / \
   --dev-bind /dev /dev --proc /proc --tmpfs /tmp \
@@ -89,6 +118,7 @@ exec bwrap \
   --ro-bind "$HOME/.claude/.credentials.json" "$HOME/.claude/.credentials.json" \
   --tmpfs "$BENCHRUNS" \
   --bind "$RUN_ROOT" "$RUN_ROOT" \
+  "${comp_isolation[@]}" \
   --bind "$LANE_TRANSCRIPTS" "$HOME/.claude/projects" \
   --bind "$HOME/.cache" "$HOME/.cache" \
   --setenv MPLCONFIGDIR "$RUN_ROOT/.mplconfig" \

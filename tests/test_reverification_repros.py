@@ -9,6 +9,7 @@ defect it claims to fix.
 import importlib.util
 import json
 import os
+import shutil
 import sys
 
 import numpy as np
@@ -2477,6 +2478,51 @@ class TestRound11:
         assert (cd / "data" / "train.csv").exists(), (
             "without a clean root to check membership against, data/ must be left alone")
 
+    def test_the_generated_driver_belongs_in_the_workspace_not_the_shared_tree(self):
+        """The smoke lane wrote its driver to tree_search/run_s3e3_v3.py, and the gate
+        flagged it: `tree_search/run_s3e3_v3.py:1: playground-series-s3e3 :: 3
+        high-precision values`. tree_search/ is shared, so a driver there is readable by all
+        twenty lanes, is not swept by the quarantine (which clears competitions/<comp>/
+        only), and _own_comp() cannot exempt it — the exemption keys on the workspace path.
+
+        The instruction never said where to put it; the lane inferred tree_search/ from where
+        the template lives. Say it, and make the template work from the workspace.
+        """
+        ref = open(os.path.join(REPO,
+                   ".claude/skills/kaggle-agent/references/07_tree_search.md"),
+                   encoding="utf-8").read()
+        assert "competitions/<comp>/scripts/" in ref, (
+            "07_tree_search.md must name where the generated driver goes; without it the "
+            "lane copies the template beside itself, into the shared tree")
+
+        tpl = open(os.path.join(REPO, "tree_search/run_template_v3.py"),
+                   encoding="utf-8").read()
+        for anchored in ('TREE_PATH = os.path.join(_HERE',
+                         'EVAL_MODULE_PATH = os.path.join(_HERE'):
+            assert anchored not in tpl, (
+                f"{anchored}...) resolves relative to the driver's own directory, so a copy "
+                f"living in the workspace would look for the tree and the evaluator one "
+                f"level too deep")
+
+        # and it must actually run from there — resolve the root from a workspace location
+        sys.path.insert(0, os.path.join(REPO, "tree_search"))
+        try:
+            import importlib
+            spec = importlib.util.spec_from_file_location(
+                "_tpl_probe", os.path.join(REPO, "tree_search/run_template_v3.py"))
+            mod = importlib.util.module_from_spec(spec)
+            # the template's own root-finder, exercised from a workspace path
+            src = open(os.path.join(REPO, "tree_search/run_template_v3.py"),
+                       encoding="utf-8").read()
+            ns: dict = {"os": os}
+            exec(src[src.index("def _run_root"):src.index("ROOT = _run_root")], ns)
+            here = os.path.join(REPO, "competitions", "playground-series-s3e3", "scripts")
+            assert ns["_run_root"](here) == REPO, (
+                "the template must find the run root from inside a competition workspace")
+        finally:
+            sys.path.pop(0)
+            del mod, spec
+
     def test_no_instruction_tells_a_lane_to_write_into_a_frozen_file(self):
         """The manifest told every lane, twenty times over, to record its generated driver
         path into docs/rerun_manifest.json `driver_actual`.
@@ -2518,10 +2564,61 @@ class TestRound11:
             "attempt first")
         i_skip = src.index("submission already present")
         i_q = src.index("quarantine_partial_attempt.py")
-        i_start = src.index('log "START $c"')
+        i_start = src.index('log "START $c')   # the line carries the caps in force too
         assert i_skip < i_q < i_start, (
             "quarantine belongs after the skip test (a finished lane keeps its work) and "
             "before the lane starts")
+
+    def test_a_lane_cannot_see_another_competitions_workspace(self):
+        """The run root holds all twenty workspaces and the sandbox bound it whole, so by the
+        time lane 20 started, nineteen STATUS.md files were sitting beside it — each opening
+        with its competition's final CV score and champion recipe — with only a sentence in
+        the prompt between them. True on a clean FIRST pass: no abort, no relaunch, no
+        leftover required.
+
+        It is also what made the run unrestartable. The startup gate scans the whole root,
+        and a finished lane's own deliverables cite sibling competitions by name and number
+        because SKILL.md requires a library_hits trace and query_library.py serves evidence
+        from other competitions by design — so the gate failed on the lane doing exactly what
+        it was told, and every relaunch exited 3 before lane 2.
+        """
+        import subprocess
+        sb = os.path.join(REPO, "benchmark_infra/lane_sandbox.sh")
+        src = open(sb, encoding="utf-8").read()
+        assert 'LANE_COMP:?' in src, (
+            "LANE_COMP must be REQUIRED. A default would be the fail-open shape: a caller "
+            "that forgets it silently gets the old, unbounded view of all twenty workspaces")
+        assert '--tmpfs "$RUN_ROOT/competitions"' in src, (
+            "the other nineteen workspaces must not exist inside the sandbox")
+
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        assert 'LANE_COMP="$c"' in launcher, (
+            "the launcher must scope each lane to its own competition")
+        # The gate's workspace exemption is only sound BECAUSE of that scoping. Bind them:
+        # neither may drift without the other.
+        assert "--lane-isolated" in launcher, (
+            "the gate exempts this run's own workspace output from the sibling scan only "
+            "under --lane-isolated, which is only true because LANE_COMP confines the lane")
+
+        if not shutil.which("bwrap"):
+            pytest.skip("bwrap not installed; the textual contract above still holds")
+        root = "/home/tjyen/benchruns/myagent-rerun"
+        if not os.path.isdir(os.path.join(root, "competitions")):
+            pytest.skip(f"no built run root at {root}")
+        comps = sorted(os.listdir(os.path.join(root, "competitions")))
+        if len(comps) < 2:
+            pytest.skip("need at least two workspaces to test isolation")
+        mine, sibling = comps[0], comps[1]
+        r = subprocess.run(
+            ["bash", sb, "bash", "-c", "ls competitions"],
+            capture_output=True, text=True, check=False,
+            env={**os.environ, "RUN_ROOT": root, "LANE_COMP": mine,
+                 "LANE_TRANSCRIPTS": "/tmp/claude-1000/-home-tjyen/lane-iso-test"})
+        seen = r.stdout.split()
+        assert seen == [mine], (
+            f"lane {mine} can see {[s for s in seen if s != mine]}; each of those holds a "
+            f"finished competition's CV score and champion recipe:\n{r.stdout}{r.stderr}")
+        assert sibling not in seen
 
     def test_sourcing_the_lane_lock_does_not_disarm_the_launchers_signal_handler(self):
         """`source lane_lock.sh` runs `trap lane_release EXIT INT TERM` in the LAUNCHER's own
@@ -2719,7 +2816,7 @@ class TestRound11:
                  "print('token', os.environ.get('KAGGLE_API_TOKEN', 'UNSET'));"
                  "print('root_writable', os.access(os.getcwd(), os.W_OK))")
         env = dict(os.environ, RUN_ROOT=str(root), KAGGLE_API_TOKEN="KGAT_sentinel",
-                   LANE_TRANSCRIPTS=str(tmp_path / "transcripts"))
+                   LANE_COMP="none", LANE_TRANSCRIPTS=str(tmp_path / "transcripts"))
         # NOT sys.executable: that is the repo's own .venv, which lives under ~/ai_agents and
         # the sandbox blanks — correctly, since the repo is the thing being kept out.
         r = subprocess.run(["bash", wrapper, "/usr/bin/python3", "-c", probe],
@@ -3273,8 +3370,10 @@ class TestStages:
         import subprocess
         root = tmp_path / "rr"
         (root / "competitions").mkdir(parents=True)
+        # LANE_COMP=none: no competition workspace at all. The sandbox now REQUIRES the
+        # variable, so a probe must state which lane it is -- that refusal is the point.
         env = dict(os.environ, RUN_ROOT=str(root), KAGGLE_API_TOKEN="KGAT_sentinel",
-                   LANE_TRANSCRIPTS=str(tmp_path / "tr"))
+                   LANE_COMP="none", LANE_TRANSCRIPTS=str(tmp_path / "tr"))
         r = subprocess.run(["bash", os.path.join(REPO, "benchmark_infra/lane_sandbox.sh"),
                             "/usr/bin/python3", "-c", code],
                            capture_output=True, text=True, env=env, check=False)
@@ -3493,7 +3592,10 @@ class TestStages:
 
     def test_launcher_requires_the_baseline(self):
         src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
-        line = next(ln for ln in src.splitlines() if "verify_clean_slate.py" in ln
+        # Join backslash continuations first: the invocation is now three lines, and a
+        # per-line search silently stopped seeing the flags it is here to check.
+        joined = src.replace("\\\n", " ")
+        line = next(ln for ln in joined.splitlines() if "verify_clean_slate.py" in ln
                     and "--root" in ln)
         assert "--require-baseline" in line, (
             f"the startup gate must reject a root with no baseline:\n  {line.strip()}")

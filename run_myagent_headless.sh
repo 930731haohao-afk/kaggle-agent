@@ -85,9 +85,26 @@ if [ -n "${SMOKE_COMPS:-}" ]; then
   SMOKE=1
 fi
 
+# PER_COMP_SECS is overridable ONLY for a smoke. A real lane inheriting a short cap from the
+# environment -- a leftover export, a cron wrapper -- would truncate all twenty runs inside
+# the 0.4-4 h band the method actually occupies, and the record would show twenty completed
+# lanes with no sign that any of them was cut off. Bind it to SMOKE and log the value, so the
+# cap in force is a fact in the run record rather than a property of someone's shell.
+if [ "$SMOKE" != "1" ] && [ "$PER_COMP_SECS" != "21600" ]; then
+  echo "PER_COMP_SECS=$PER_COMP_SECS but this is not a smoke run; a real lane keeps the 6 h "\
+"default. Re-run with SMOKE_COMPS set, or unset PER_COMP_SECS." >&2
+  exit 4
+fi
+
 # The run root must exist and must pass the clean-slate gate before a single lane starts.
 [ -d "$RUN_ROOT" ] || { echo "no run root at $RUN_ROOT — build it with python3 $REPO/benchmark_infra/build_myagent_run_root.py --write" >&2; exit 4; }
-python3 "$REPO/benchmark_infra/verify_clean_slate.py" --root "$RUN_ROOT" --require-baseline || {
+# --lane-isolated because every lane below runs under lane_sandbox.sh with LANE_COMP set, so
+# it sees ONLY its own competitions/<comp>/. Without the flag the gate scans a finished
+# lane's deliverables against the sibling slugs and fails on the library_hits trace SKILL.md
+# requires -- which made one completed lane enough to block every relaunch for all 20.
+# The flag and the LANE_COMP below are one mechanism; a test asserts they move together.
+python3 "$REPO/benchmark_infra/verify_clean_slate.py" --root "$RUN_ROOT" \
+        --require-baseline --lane-isolated || {
   echo "run root is not clean — refusing to start" >&2; exit 3; }
 
 log(){ echo "- \`$(date '+%m-%d %H:%M')\` $*" | tee -a "$STATUS"; }
@@ -156,13 +173,26 @@ for c in $COMPS; do
       --root "$RUN_ROOT" --comp "$c" --dest "$ATTEMPTS" >> "$STATUS" 2>&1 || {
     log "REFUSING to start $c: could not clear its aborted attempt"; continue; }
   # ...including the transcript of that attempt, which records its scores turn by turn.
-  [ -d "$TRANSCRIPTS/$c" ] && mv "$TRANSCRIPTS/$c" "$ATTEMPTS/$c.transcript.$(date +%s)"
+  #
+  # mkdir -p first, and CHECK the move. quarantine_partial_attempt creates $ATTEMPTS only
+  # when it actually moves something, so an attempt that died before writing a file -- but
+  # after a session had already reported scores in its transcript -- left $ATTEMPTS absent,
+  # the mv failed into a discarded stderr, and the transcript stayed at $TRANSCRIPTS/$c,
+  # which lane_sandbox.sh then binds over ~/.claude/projects for the replacement lane. The
+  # one case where the workspace quarantine has nothing to say is exactly the case where the
+  # transcript is the only surviving record of the previous attempt's answer.
+  if [ -d "$TRANSCRIPTS/$c" ]; then
+    mkdir -p "$ATTEMPTS"
+    mv "$TRANSCRIPTS/$c" "$ATTEMPTS/$c.transcript.$(date +%s)" || {
+      log "REFUSING to start $c: its previous attempt's transcript could not be moved out "\
+"of $TRANSCRIPTS, and the new lane would be handed it"; continue; }
+  fi
 
   # Hold the machine for exactly one competition, then hand it on. The upstream-marker wait
   # above establishes ordering; this makes non-overlap a mechanism rather than a convention
   # that every driver has to implement correctly.
   lane_acquire "my-agent/$c" || log "WARNING: started $c without the lane lock — contended"
-  log "START $c"
+  log "START $c (cap ${PER_COMP_SECS}s, stall ${STALL_MIN}min)"
   start=$(date +%s)
 
   PROMPT="You are running ONE benchmark competition with the kaggle-agent skill: $c.
@@ -201,7 +231,7 @@ Work autonomously; never ask questions; take documented fallbacks when blocked."
   # ~/.kaggle/huang_token is the account that submitted every competition for all three
   # lanes, ~/ai_agents holds the all-20 public/private table, and ~/.claude/projects holds
   # 1050 transcripts naming a benchmark competition. None of that is reachable by redaction.
-  ( LANE_TRANSCRIPTS="$TRANSCRIPTS/$c" \
+  ( LANE_TRANSCRIPTS="$TRANSCRIPTS/$c" LANE_COMP="$c" \
     timeout -k 60 $PER_COMP_SECS bash "$REPO/benchmark_infra/lane_sandbox.sh" \
       "$CLAUDE" -p "$PROMPT" --dangerously-skip-permissions \
       > "$BASE/competitions/$c/headless_run.log" 2>&1 ) &

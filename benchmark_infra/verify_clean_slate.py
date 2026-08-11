@@ -533,6 +533,13 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--simulate-archive", action="store_true",
                     help="also skip everything the archive script's dry run would move")
     ap.add_argument("--max-report", type=int, default=40)
+    ap.add_argument("--lane-isolated", action="store_true",
+                    help="each lane sees only its own competitions/<comp>/ (lane_sandbox.sh "
+                         "with LANE_COMP). Files THIS RUN wrote inside a workspace are then "
+                         "readable by one lane only -- the one that wrote them -- so they "
+                         "are not scanned for sibling competitions. Without this the gate "
+                         "scans them, which rejects a finished lane for citing the "
+                         "experience library exactly as SKILL.md requires.")
     args = ap.parse_args(argv)
     root = os.path.abspath(args.root)
     if not os.path.isdir(root):
@@ -565,6 +572,7 @@ def main(argv: list[str]) -> int:
         return 3
     plan = archive_plan(root) if args.simulate_archive else set()
     findings, n_files = [], 0
+    own_workspace = 0
     skipped: list[str] = []
     # os.walk's default swallows a listdir failure and yields NOTHING for that subtree, so an
     # unreadable DIRECTORY was the one unexaminable path that never reached `skipped` -- it
@@ -632,6 +640,22 @@ def main(argv: list[str]) -> int:
                 skipped.append(f"{rel} (could not be opened)")
                 continue
             n_files += 1
+            # A file THIS RUN produced inside a competition workspace, when every lane is
+            # confined to its own workspace, can be read by exactly one lane: the one that
+            # wrote it. Scanning it against the sibling slugs rejected the lane for obeying
+            # the skill -- SKILL.md requires a library_hits trace on every experiment and
+            # query_library.py serves evidence from OTHER competitions by design -- so one
+            # finished lane made every relaunch exit 3 before lane 2 began.
+            #
+            # The exemption is granted only under --lane-isolated, and only the launcher
+            # passes it, together with the LANE_COMP that lane_sandbox.sh now requires. Run
+            # by hand the gate stays strict, and a test binds the two so neither can drift
+            # alone. What this does NOT cover is the lane's own workspace holding a PREVIOUS
+            # run's answer; that is the quarantine's job, per-lane, before the lane starts.
+            if args.lane_isolated and baseline is not None and rel not in baseline \
+                    and _own_comp(rel, slugs):
+                own_workspace += 1
+                continue
             findings += scan_file(full, rel, slugs_for(rel, slugs, baseline))
 
     findings += baseline_findings(root, baseline)
@@ -651,7 +675,12 @@ def main(argv: list[str]) -> int:
             print(f"INCONCLUSIVE — {n_files} files examined and clean, but {len(skipped)} "
                   f"path(s) above were not fully examined ({label})")
             return 3
-        print(f"clean slate OK — {n_files} readable files examined, {label}, "
+        # Never silent about what was exempted. A count printed as coverage while files went
+        # unscanned is the round-8 shape this gate's own INCONCLUSIVE branch exists to avoid.
+        extra = (f", {own_workspace} of them this run's own lane output inside its workspace "
+                 f"(readable by that lane alone under --lane-isolated)"
+                 if own_workspace else "")
+        print(f"clean slate OK — {n_files} readable files examined{extra}, {label}, "
               f"{len(slugs)} benchmark competitions")
         return 0
     by_file: dict[str, int] = {}

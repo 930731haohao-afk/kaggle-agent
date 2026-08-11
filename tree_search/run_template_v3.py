@@ -6,8 +6,15 @@ per-competition drivers (run_<comp>_v3.py) embed exactly those things — a reco
 config, `LINEAR_BEST`, byte-level verification numbers — because their job is to REPRODUCE a
 recorded tree. Citing one of them as "the template" handed a re-run of that competition its
 own recorded champion as the starting point (2026-08-10 round-6 finding). A fresh benchmark
-run copies THIS file, fills the placeholders from its own Stage 1–3 artifacts, and records
-the copy's path in its own competitions/<comp>/STATUS.md.
+run copies THIS file **into its own competitions/<comp>/scripts/** — not into tree_search/ —
+fills the placeholders from its own Stage 1–3 artifacts, and records the copy's path in its
+own competitions/<comp>/STATUS.md.
+
+The location is not cosmetic. tree_search/ is shared by all twenty lanes; a driver written
+there is readable by every one of them, is not swept by the quarantine (which clears only
+competitions/<comp>/), and states its own competition beside its root config's numbers,
+which is what made the clean-slate gate refuse every relaunch. In the workspace it is hidden
+from the other lanes by the sandbox and cleared with the rest of an aborted attempt.
 
 Do NOT record it into docs/rerun_manifest.json. That file is one of the 135 frozen in the
 run root's .rerun_baseline.json, so a lane that edits it makes verify_clean_slate.py refuse
@@ -30,7 +37,31 @@ import sys
 import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, _HERE)
+
+
+def _run_root(start: str) -> str:
+    """Walk up to the run root, rather than assuming the driver sits in tree_search/.
+
+    The generated driver belongs in its own competition's workspace, not in the shared
+    tree_search/ directory: the sandbox gives each lane only its own workspace, so a driver
+    written to tree_search/ is visible to all twenty lanes, survives the quarantine (which
+    only sweeps competitions/<comp>/), and names its own competition next to numbers, which
+    is what made the clean-slate gate refuse every relaunch. Anchoring on __file__ would then
+    resolve every path one directory too deep.
+    """
+    d = start
+    for _ in range(6):
+        if os.path.exists(os.path.join(d, "tree_search", "harness_v3.py")):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    raise SystemExit(f"cannot find the run root above {start} — no tree_search/harness_v3.py")
+
+
+ROOT = _run_root(_HERE)
+sys.path.insert(0, os.path.join(ROOT, "tree_search"))
 import harness_v2 as hv2  # noqa: E402,F401  (cache_oof/load_oof live here)
 import harness_v3 as hv3  # noqa: E402
 
@@ -42,8 +73,8 @@ EVAL_MODULE = "<eval_module_name>"             # the manifest's pinned eval modu
 TOTAL_BUDGET = 60                              # nodes; per 07_tree_search.md §4
 EVAL_TIMEOUT_S = 600                           # wall clock per solo node, enforced by the OS
 ROOT_CONFIG: dict = {}                         # Stage 3's best solo config — THIS run's own
-TREE_PATH = os.path.join(_HERE, "..", "competitions", COMP, "experiments_tree_v3.json")
-EVAL_MODULE_PATH = os.path.join(_HERE, EVAL_MODULE + ".py")
+TREE_PATH = os.path.join(ROOT, "competitions", COMP, "experiments_tree_v3.json")
+EVAL_MODULE_PATH = os.path.join(ROOT, "tree_search", EVAL_MODULE + ".py")
 
 
 def evaluate_node(ev, config: dict, nid: int) -> dict:
