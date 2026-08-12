@@ -67,12 +67,14 @@ def probe(root: str) -> dict:
     if not os.path.exists(py):
         return {"_error": f"no interpreter at {py} — the run root has no virtualenv"}
     code = PROBE % {"mods": [m for m, _w, _f in REQUIRED]}
-    # Same PYTHONPATH the sandbox gives a lane: torch lives OUTSIDE .venv, because uv
-    # rebuilds .venv from uv.lock and torch is not in it. Probing without this would report
-    # a missing package that the lane can actually import, and probing the venv alone once
-    # reported a torch that a single uv invocation then deleted.
-    env = dict(os.environ, PYTHONPATH=os.path.join(root, ".extra-site"))
-    r = subprocess.run([py, "-c", code], capture_output=True, text=True, check=False, env=env)
+    # No PYTHONPATH of our own. It briefly added <root>/.extra-site, from the theory that uv
+    # was pruning torch as an out-of-lock package and it therefore had to live outside .venv.
+    # The theory was wrong -- uv had lost its own data directory (~/.local/share/uv) to a
+    # narrowed sandbox allowlist and was REBUILDING .venv from uv.lock, 228 packages down to
+    # 3 -- and the workaround outlived it. Injecting a path the sandbox does not set makes
+    # the preflight prove an import the lane cannot reproduce, which is the one thing a
+    # preflight must never do. os.environ unmodified is exactly what the lane inherits.
+    r = subprocess.run([py, "-c", code], capture_output=True, text=True, check=False)
     if r.returncode != 0:
         return {"_error": f"the run root's interpreter failed: {r.stderr.strip()[-400:]}"}
     try:
