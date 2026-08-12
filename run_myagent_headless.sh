@@ -191,6 +191,16 @@ for c in $COMPS; do
   python3 "$REPO/benchmark_infra/quarantine_partial_attempt.py" \
       --root "$RUN_ROOT" --comp "$c" --dest "$ATTEMPTS" >> "$STATUS" 2>&1 || {
     log "REFUSING to start $c: could not clear its aborted attempt"; continue; }
+
+  # PER LANE, not just before lane 1. The startup preflight proves the environment at that
+  # moment and cannot see a change made after it ran -- and torch is out-of-lock, so a single
+  # `uv sync` anywhere removes it (reproduced). UV_NO_SYNC in the sandbox is the prevention;
+  # this is the detection, and it costs about a second. Catching it here means one lane is
+  # affected instead of every competition after the one that broke it.
+  python3 "$REPO/benchmark_infra/preflight_run_root_env.py" --root "$RUN_ROOT" >/dev/null || {
+    log "ABORTING at $c: the run root's environment no longer satisfies the preflight — "\
+"something removed a package the remaining lanes need. Earlier lanes keep their results."
+    lane_release 2>/dev/null; exit 5; }
   # ...including the transcript of that attempt, which records its scores turn by turn.
   #
   # mkdir -p first, and CHECK the move. quarantine_partial_attempt creates $ATTEMPTS only

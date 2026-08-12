@@ -2817,6 +2817,32 @@ class TestRound11:
                            capture_output=True, text=True, cwd=REPO, check=False)
         assert r.returncode != 0, "a root with no virtualenv must not pass the preflight"
 
+    def test_the_environment_preflight_also_runs_before_every_later_lane(self):
+        """Checking once, before lane 1, proves the environment at that instant and nothing
+        after it. torch is out-of-lock, so a single `uv sync` anywhere in the root removes it
+        -- reproduced: 228 packages down to 3, taking torch with it. UV_NO_SYNC in the sandbox
+        is the prevention; a lane can still defeat it (it may run uv however it likes inside
+        its own root, and the driver template is a file it edits).
+
+        Without a per-lane check the damage is unbounded: whichever lane breaks the venv is
+        the last one that could import torch, and EVERY competition after it produces a
+        fabricated result with nothing in the log saying why. With it, one lane is affected
+        and the run stops.
+        """
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        i_loop = launcher.index("for c in $COMPS")
+        after = launcher[i_loop:]
+        assert "preflight_run_root_env.py" in after, (
+            "the preflight runs only before lane 1, so a lane that breaks the run root's "
+            "virtualenv silently poisons every competition after it")
+        # and it must abort rather than log-and-continue: a lane started on a broken venv
+        # books a real NO SUBMISSION against my-agent.
+        i_in_loop = i_loop + after.index("preflight_run_root_env.py")
+        window = launcher[i_in_loop:i_in_loop + 500]
+        assert "exit 5" in window, (
+            "detecting the broken environment and starting the lane anyway records the "
+            "fabricated loss it was there to prevent:\n" + window[:300])
+
     def test_sourcing_the_lane_lock_does_not_disarm_the_launchers_signal_handler(self):
         """`source lane_lock.sh` runs `trap lane_release EXIT INT TERM` in the LAUNCHER's own
         shell, which silently replaced the `trap on_signal TERM INT` installed twenty lines
