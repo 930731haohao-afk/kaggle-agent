@@ -4027,3 +4027,40 @@ class TestStages:
         assert "estimator" in txt, (
             "06_submission.md is where the lane is told how to select a champion; if it does "
             "not mention the field, the refusal never fires and the optimistic entry wins")
+
+    def test_the_lint_gate_command_works_inside_the_sandbox(self):
+        """The skill prescribed `uvx ruff@0.16.1`, and the sandbox mounts uv's tool directory
+        read-only. Observed in the 2026-08-12 end-to-end smoke:
+
+            error: Could not create temporary file
+              Caused by: Read-only file system (os error 30)
+                at path "/home/tjyen/.local/share/uv/tools/.tmpnBcIot"
+
+        ~/.local/share/uv is bound because without it uv rebuilds the run root's .venv from
+        uv.lock (228 packages down to 3, taking torch with it), and it is bound READ-ONLY
+        because it is one directory shared by all 20 lanes and the operator's own machine --
+        a lane installing a tool there is a cross-lane write channel. Both of those are
+        right; the skill's command was the thing that had to change.
+
+        The smoke lane recovered on its own after two failed calls, so nothing was scored
+        wrong. That is luck, not a guarantee: the lint gate is the layer that catches B023
+        late-binding closures and F821, the failures that produce a WRONG NUMBER rather than
+        a traceback, and a lane that gave up on it instead would have run unlinted with the
+        gate reporting nothing amiss.
+
+        `uv run --with` resolves into ~/.cache, which is bound writable and per-run.
+        """
+        skill = open(os.path.join(REPO, ".claude/skills/kaggle-agent/SKILL.md"),
+                     encoding="utf-8").read()
+        assert "ruff" in skill, "the pre-run lint gate is gone"
+        assert "uvx " not in skill, (
+            "the lint gate must not go through `uvx`: it writes to uv's tool directory, "
+            "which the sandbox mounts read-only on purpose")
+        assert "uv run --with ruff" in skill, (
+            "the lint gate needs a form that works with a read-only uv tool directory")
+
+        sandbox = open(os.path.join(REPO, "benchmark_infra/lane_sandbox.sh"),
+                       encoding="utf-8").read()
+        assert "--ro-bind" in sandbox and ".local/share/uv" in sandbox, (
+            "the two halves of this must stay consistent: if uv's data directory ever "
+            "becomes writable or unbound, this test is the record of why it was neither")

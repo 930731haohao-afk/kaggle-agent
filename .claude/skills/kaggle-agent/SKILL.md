@@ -57,8 +57,13 @@ Before executing any NEWLY WRITTEN competition script for the first time, lint i
 every finding — these rules flag code that produces wrong numbers silently:
 
 ```bash
-uvx ruff@0.16.1 check <script> --select F821,F841,B023,B006,E722,PLW1510,RUF059 --isolated
+uv run --with ruff==0.16.1 ruff check <script> --select F821,F841,B023,B006,E722,PLW1510,RUF059 --isolated
 ```
+
+Not `uvx`: it installs into uv's own tool directory, which the benchmark sandbox mounts
+read-only (it is shared with every other lane and with the operator's machine), so the gate
+fails with `Read-only file system` on the first script of every competition. `--with`
+resolves into the ephemeral environment under `~/.cache`, which is writable and per-run.
 
 Timing matters: a script is free to fix BEFORE its first logged run; after a run's score is
 logged the script is FROZEN as the as-run record — never lint or edit it again (this is why
