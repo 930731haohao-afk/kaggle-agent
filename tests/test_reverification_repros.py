@@ -2563,7 +2563,9 @@ class TestRound11:
             "DOES start may be a restart onto its own aborted attempt — it must clear that "
             "attempt first")
         i_skip = src.index("submission already present")
-        i_q = src.index("quarantine_partial_attempt.py")
+        # the INVOCATION, not the first mention: a comment naming the module now appears
+        # earlier in the file, and matching that made this assert the wrong ordering
+        i_q = src.index('python3 "$REPO/benchmark_infra/quarantine_partial_attempt.py"')
         i_start = src.index('log "START $c')   # the line carries the caps in force too
         assert i_skip < i_q < i_start, (
             "quarantine belongs after the skip test (a finished lane keeps its work) and "
@@ -2619,6 +2621,101 @@ class TestRound11:
             f"lane {mine} can see {[s for s in seen if s != mine]}; each of those holds a "
             f"finished competition's CV score and champion recipe:\n{r.stdout}{r.stderr}")
         assert sibling not in seen
+
+    def test_home_is_an_allowlist_not_a_deny_list(self):
+        """The sandbox blanked four named directories under a blanket --ro-bind / /, and the
+        benchmark's answer key was in three others. Measured with this project's own detector
+        against the 20 real slugs: ~/aide-benchmark-package 12 files (including
+        results/three_way_scores.csv — one row per competition with mine_local, nvidia_local,
+        aide_local, mine_pub, mine_priv, mine_rank and both reference lanes'), ~/Desktop 179
+        (including the previous run's tuned scripts for all 20 slugs), ~/Downloads and
+        ~/kaggle_aapb 4 more.
+
+        Naming those three would have left the shape intact and the next tree would reopen
+        it. A deny list is fail-open by construction; this asserts the inversion.
+        """
+        import subprocess
+        src = open(os.path.join(REPO, "benchmark_infra/lane_sandbox.sh"),
+                   encoding="utf-8").read()
+        assert '--tmpfs "$HOME"' in src, (
+            "$HOME must be blanked whole and bound back selectively; every path not named "
+            "in a deny list stays readable, and three such trees held the score table")
+        for tok in ("GITHUB_PERSONAL_ACCESS_TOKEN", "GH_TOKEN"):
+            assert f"--unsetenv {tok}" in src, (
+                f"{tok} is set in the operator's environment and this repository is "
+                f"published; the lane must not inherit it")
+
+        if not shutil.which("bwrap"):
+            pytest.skip("bwrap not installed; the textual contract above still holds")
+        root = "/home/tjyen/benchruns/myagent-rerun"
+        if not os.path.isdir(os.path.join(root, "competitions")):
+            pytest.skip(f"no built run root at {root}")
+        comp = sorted(os.listdir(os.path.join(root, "competitions")))[0]
+        r = subprocess.run(
+            ["bash", os.path.join(REPO, "benchmark_infra/lane_sandbox.sh"),
+             "bash", "-c", "ls -a ~ | grep -v '^[.][.]*$'"],
+            capture_output=True, text=True, check=False,
+            env={**os.environ, "RUN_ROOT": root, "LANE_COMP": comp,
+                 "LANE_TRANSCRIPTS": "/tmp/claude-1000/-home-tjyen/home-allowlist-test"})
+        seen = set(r.stdout.split())
+        allowed = {".bashrc", ".profile", ".gitconfig", ".cache", ".claude", ".local",
+                   os.path.basename(os.path.dirname(root))}
+        extra = seen - allowed
+        assert not extra, (
+            f"$HOME still exposes {sorted(extra)} to the lane. Each is a tree nothing "
+            f"vouches for:\n{r.stdout}{r.stderr}")
+
+    def test_the_run_log_is_not_written_where_the_lane_can_read_it(self):
+        """The launcher appends quarantine_partial_attempt.py's stdout to its status file,
+        and that stdout is one line per moved path — including
+        submissions/submission_top8_equalw_rank_0.849907_....csv, because the pipeline names
+        submissions after their CV score.
+
+        With the status file at $RUN_ROOT/MYAGENT_LANES_STATUS.md, --chdir put it in the
+        lane's first `ls`, and --tmpfs "$RUN_ROOT/competitions" does not hide something one
+        level above it. So the module whose whole purpose is stopping a relaunched lane from
+        reading its own previous attempt's score wrote that score where the lane arrives.
+        The gate does not catch it either: SCORE needs a word boundary and _0.849907_ has
+        none on either side.
+        """
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        line = next(ln for ln in launcher.splitlines() if ln.startswith("STATUS="))
+        assert "$RUN_ROOT/" not in line and "$BASE/" not in line, (
+            "the run log must live outside the run root, like $ATTEMPTS and $TRANSCRIPTS:\n"
+            "  " + line)
+        watchdog = open(os.path.join(REPO, "benchmark_infra/bench_watchdog.sh"),
+                        encoding="utf-8").read()
+        entry = [ln for ln in watchdog.splitlines() if "run_myagent_headless.sh|" in ln]
+        assert entry and "$RUN_ROOT.status.md" in entry[0], (
+            "the watchdog reads the launcher's status file to decide whether the driver "
+            "finished; pointed at the old path it supervises a file nothing writes:\n"
+            + str(entry))
+
+    def test_the_environment_preflight_runs_before_lane_one(self):
+        """A clean root can still be unable to run a competition. The run root's .venv is
+        built by `uv sync`, and torch is in neither pyproject.toml's dependencies nor
+        uv.lock — pyproject.toml records that it is installed separately. conway's pinned
+        evaluator calls require_module(..., "cnn_lib", ...) at module import and cnn_lib
+        imports torch, so that lane would have failed at import and produced a fabricated
+        LOSS on a competition my-agent wins on the record.
+
+        A missing package deflates my-agent exactly as leakage inflates it.
+        """
+        import subprocess
+        pf = os.path.join(REPO, "benchmark_infra/preflight_run_root_env.py")
+        assert os.path.exists(pf), "no environment preflight"
+        launcher = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        assert "preflight_run_root_env.py" in launcher, (
+            "the launcher must refuse to start on an environment that cannot run every "
+            "competition")
+        i_pf = launcher.index("preflight_run_root_env.py")
+        i_loop = launcher.index("for c in $COMPS")
+        assert i_pf < i_loop, "the preflight belongs before the first lane, not inside it"
+
+        # it must actually fail on a venv missing a required package
+        r = subprocess.run([sys.executable, pf, "--root", "/nonexistent-run-root"],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode != 0, "a root with no virtualenv must not pass the preflight"
 
     def test_sourcing_the_lane_lock_does_not_disarm_the_launchers_signal_handler(self):
         """`source lane_lock.sh` runs `trap lane_release EXIT INT TERM` in the LAUNCHER's own
@@ -2721,12 +2818,20 @@ class TestRound11:
     def test_watchdog_marker_file_matches_what_the_launcher_writes(self):
         src = self._watchdog()
         launcher = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
-        assert 'STATUS=$BASE/MYAGENT_LANES_STATUS.md' in launcher
-        assert 'BASE=$RUN_ROOT' in launcher, "the launcher writes STATUS under $BASE"
+        # Derived from the launcher, not hard-coded: the file moved OUT of the run root
+        # (the lane could read its own previous attempt's CV score there, via the submission
+        # filenames the quarantine listing prints), and a hard-coded copy of the old path
+        # would have made this test assert the bug.
+        import re
+        status_line = next(ln for ln in launcher.splitlines() if ln.startswith("STATUS="))
+        value = status_line.split("=", 1)[1].strip()
+        m = re.fullmatch(r"\$\{STATUS:-(.+)\}", value)   # unwrap the env-override default
+        path = (m.group(1) if m else value).strip()
         entry = [ln for ln in src.splitlines() if "run_myagent_headless.sh|" in ln]
         assert len(entry) == 1, entry
-        assert "$RUN_ROOT/MYAGENT_LANES_STATUS.md" in entry[0], (
-            "the watchdog must read the file the launcher actually writes:\n" + entry[0])
+        assert path and path in entry[0], (
+            f"the watchdog must read the file the launcher actually writes ({path}):\n"
+            + entry[0])
 
     def test_watchdog_freshness_predicate_parses_on_this_machine(self, tmp_path):
         """`find` here is bfs, which rejects the relative timestamps GNU find accepts.
@@ -3658,6 +3763,38 @@ class TestStages:
         assert r.returncode != 0 and "baseline" in (r.stdout + r.stderr).lower(), (
             "an emptied manifest disables every hash check and grants the own-competition "
             "exemption everywhere:\n" + (r.stdout + r.stderr)[-500:])
+
+    def test_a_large_lane_file_does_not_block_every_relaunch(self, tmp_path):
+        """The >8 MB branch appended to `skipped` before anything could exempt the file, and
+        a skip is not a pass — so one lane writing a big training log or submission made the
+        gate return INCONCLUSIVE and the launcher exit 3 forever. That is the same failure
+        --lane-isolated was added to fix, reintroduced eleven lines above the fix. Ownership
+        must be decided before size: whether a lane can read a file does not depend on how
+        big it is.
+        """
+        import subprocess
+        root = tmp_path / "runs" / "rr"
+        r = subprocess.run([sys.executable, "benchmark_infra/build_myagent_run_root.py",
+                            "--write", "--root", str(root)],
+                           capture_output=True, text=True, cwd=REPO, check=False)
+        assert r.returncode == 0, r.stdout[-800:] + r.stderr[-400:]
+        comp = sorted(os.listdir(root / "competitions"))[0]
+        big = root / "competitions" / comp / "train.log"
+        line = f"[LightGBM] [Info] competitions/{comp}/scripts/features.py iter done 0.842815\n"
+        with open(big, "w") as fh:
+            while fh.tell() < 9_000_000:
+                fh.write(line)
+
+        strict = self._gate(root, "--require-baseline")
+        assert strict.returncode != 0, (
+            "without the isolation flag a 9 MB workspace file naming a competition must "
+            "still be reported — that is what the flag is granting an exception to")
+
+        iso = self._gate(root, "--require-baseline", "--lane-isolated")
+        assert iso.returncode == 0, (
+            "a large file THIS RUN wrote inside its own workspace is readable by one lane, "
+            "the one that wrote it; blocking on it makes every relaunch impossible:\n"
+            + (iso.stdout + iso.stderr)[-600:])
 
     def test_a_missing_sidecar_is_not_evidence_of_an_untampered_baseline(self, tmp_path):
         """baseline_tampered() early-returns None when the sidecar is absent, so "no witness"

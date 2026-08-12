@@ -81,7 +81,7 @@ DRIVERS=(
   "rerun_contaminated4.py|$RUNS/RERUN4_STATUS.md|RE-RUN COMPLETE"
   "phase9a_aide_lanes.py|$RUNS/PHASE9A_STATUS.md|PHASE 9A AIDE LANES COMPLETE"
   "run_ready_reproductions.py|/home/tjyen/ai_agents/nvidia-kaggle-runs/RUN_READY_STATUS.md|NVIDIA LANES COMPLETE"
-  "run_myagent_headless.sh|$RUN_ROOT/MYAGENT_LANES_STATUS.md|MY-AGENT LANES COMPLETE"
+  "run_myagent_headless.sh|$RUN_ROOT.status.md|MY-AGENT LANES COMPLETE"
   "auto_submit_reruns.py|$RUNS/AUTO_SUBMIT.md|AUTO-SUBMIT COMPLETE"
   "run2_cells.py|$RUNS/RUN2_STATUS.md|RUN2 CELLS 2-9 COMPLETE"
 )

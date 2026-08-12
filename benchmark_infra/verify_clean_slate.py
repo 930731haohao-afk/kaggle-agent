@@ -616,6 +616,31 @@ def main(argv: list[str]) -> int:
                 if target.startswith(os.path.realpath(CLEAN_DATA_ROOT) + os.sep):
                     continue
                 # a lane reads straight through a symlink; follow it
+            # A file THIS RUN produced inside a competition workspace, when every lane is
+            # confined to its own workspace, can be read by exactly one lane: the one that
+            # wrote it. Scanning it against the sibling slugs rejected the lane for obeying
+            # the skill -- SKILL.md requires a library_hits trace on every experiment and
+            # query_library.py serves evidence from OTHER competitions by design -- so one
+            # finished lane made every relaunch exit 3 before lane 2 began.
+            #
+            # Granted only under --lane-isolated, passed only by the launcher, alongside the
+            # LANE_COMP that lane_sandbox.sh requires; run by hand the gate stays strict, and
+            # a test binds the two so neither drifts alone. What it does NOT cover is the
+            # lane's own workspace holding a PREVIOUS run's answer -- that is the
+            # quarantine's job, per-lane, before the lane starts.
+            #
+            # IT MUST COME BEFORE THE SIZE BRANCH. It used to sit below, so a run-produced
+            # workspace file over 8 MB reached `skipped` before anything could exempt it --
+            # and a skip is not a pass, so the gate returned INCONCLUSIVE and the launcher
+            # exited 3. One lane writing a large training log or submission blocked every
+            # relaunch permanently: the same failure this exemption was added to fix,
+            # reintroduced eleven lines above the fix. Whether a lane can read a file does
+            # not depend on how big it is.
+            if args.lane_isolated and baseline is not None and rel not in baseline \
+                    and _own_comp(rel, slugs):
+                own_workspace += 1
+                n_files += 1
+                continue
             try:
                 size = os.path.getsize(full)
             except OSError as exc:
@@ -640,22 +665,6 @@ def main(argv: list[str]) -> int:
                 skipped.append(f"{rel} (could not be opened)")
                 continue
             n_files += 1
-            # A file THIS RUN produced inside a competition workspace, when every lane is
-            # confined to its own workspace, can be read by exactly one lane: the one that
-            # wrote it. Scanning it against the sibling slugs rejected the lane for obeying
-            # the skill -- SKILL.md requires a library_hits trace on every experiment and
-            # query_library.py serves evidence from OTHER competitions by design -- so one
-            # finished lane made every relaunch exit 3 before lane 2 began.
-            #
-            # The exemption is granted only under --lane-isolated, and only the launcher
-            # passes it, together with the LANE_COMP that lane_sandbox.sh now requires. Run
-            # by hand the gate stays strict, and a test binds the two so neither can drift
-            # alone. What this does NOT cover is the lane's own workspace holding a PREVIOUS
-            # run's answer; that is the quarantine's job, per-lane, before the lane starts.
-            if args.lane_isolated and baseline is not None and rel not in baseline \
-                    and _own_comp(rel, slugs):
-                own_workspace += 1
-                continue
             findings += scan_file(full, rel, slugs_for(rel, slugs, baseline))
 
     findings += baseline_findings(root, baseline)

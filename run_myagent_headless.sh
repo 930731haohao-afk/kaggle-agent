@@ -28,7 +28,17 @@ RUN_ROOT=${RUN_ROOT:-/home/tjyen/benchruns/myagent-rerun}
 BASE=$RUN_ROOT
 NV_MARKER=/home/tjyen/ai_agents/nvidia-kaggle-runs/RUN_READY_STATUS.md
 AIDE_MARKER=/home/tjyen/ai_agents/aideml-runs/PHASE9A_STATUS.md
-STATUS=$BASE/MYAGENT_LANES_STATUS.md
+# OUTSIDE the run root, like $ATTEMPTS and $TRANSCRIPTS, and for the same reason.
+#
+# It used to live at $RUN_ROOT/MYAGENT_LANES_STATUS.md, which --chdir puts in the lane's
+# first `ls` and which --tmpfs "$RUN_ROOT/competitions" does not hide, being one level up.
+# The launcher appends quarantine_partial_attempt.py's stdout to it, and that stdout is one
+# line per moved path -- including submissions/submission_top8_equalw_rank_0.849907_....csv,
+# because the pipeline names submissions after their CV score. So the module that exists to
+# stop a relaunched lane reading its own previous attempt's score wrote that score into a
+# file the lane opens on arrival. The gate does not catch it either: its SCORE pattern needs
+# a word boundary and _0.849907_ has none.
+STATUS=${STATUS:-$RUN_ROOT.status.md}
 # Aborted attempts are moved here — OUTSIDE the run root, so a relaunched lane cannot read
 # what its previous attempt scored, while the operator keeps every byte of it.
 ATTEMPTS=${ATTEMPTS:-$RUN_ROOT.attempts}
@@ -106,6 +116,15 @@ fi
 python3 "$REPO/benchmark_infra/verify_clean_slate.py" --root "$RUN_ROOT" \
         --require-baseline --lane-isolated || {
   echo "run root is not clean — refusing to start" >&2; exit 3; }
+
+# The root can be clean and still unable to run a competition. Its .venv was built by `uv
+# sync`, and torch is not in uv.lock (pyproject.toml says so) -- so conway's pinned
+# evaluator, which imports a Stage-2 module that imports torch, would have failed at import
+# and produced a fabricated loss on a competition my-agent wins. A missing package deflates
+# my-agent exactly as leakage inflates it, and nothing checked either the packages or
+# whether the GPU the sandbox deliberately preserves is actually usable.
+python3 "$REPO/benchmark_infra/preflight_run_root_env.py" --root "$RUN_ROOT" || {
+  echo "run root's environment cannot run every competition — refusing to start" >&2; exit 3; }
 
 log(){ echo "- \`$(date '+%m-%d %H:%M')\` $*" | tee -a "$STATUS"; }
 

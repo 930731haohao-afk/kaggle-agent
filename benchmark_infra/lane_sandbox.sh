@@ -101,6 +101,13 @@ BENCHRUNS=$(dirname "$RUN_ROOT")
 #   LANE_COMP=<slug>  bind only that workspace; the other nineteen do not exist
 #   LANE_COMP=none    no workspace at all -- for maintenance (uv sync, read-only probes)
 : "${LANE_COMP:?LANE_COMP must be set: a competition slug, or 'none' for maintenance}"
+# Optional dotfiles, bound back only if present: bwrap fails the whole mount if a --bind
+# source is missing, and a machine without one of these must not lose its sandbox.
+home_files=()
+for f in .bashrc .profile .gitconfig; do
+  [ -e "$HOME/$f" ] && home_files+=(--ro-bind "$HOME/$f" "$HOME/$f")
+done
+
 comp_isolation=(--tmpfs "$RUN_ROOT/competitions")
 if [ "$LANE_COMP" != "none" ]; then
   ws=$RUN_ROOT/competitions/$LANE_COMP
@@ -108,23 +115,64 @@ if [ "$LANE_COMP" != "none" ]; then
   comp_isolation+=(--bind "$ws" "$ws")
 fi
 
+# $HOME IS AN ALLOWLIST, NOT A DENY LIST.
+#
+# It used to be four named directories blanked under a blanket --ro-bind / /: ~/.kaggle,
+# ~/ai_agents, ~/Documents, ~/.claude, plus ~/benchruns. That shape is fail-open by
+# construction -- every path NOT named stays readable -- and the benchmark's answer key was
+# sitting in three of them. Measured with this project's own detector (verify_clean_slate's
+# scan_file, against the 20 real slugs):
+#
+#   ~/aide-benchmark-package/    12 files, incl. results/three_way_scores.csv: one row per
+#                                competition with mine_local, nvidia_local, aide_local,
+#                                mine_pub, mine_priv, mine_rank and both reference lanes'
+#   ~/Desktop/                  179 files, incl. kaggle_competition_scripts/competitions/
+#                                <slug>/scripts/ for all 20 -- the previous run's tuned
+#                                scripts, i.e. exactly the warm start quarantine_partial_
+#                                attempt.py exists to prevent, reachable without ever
+#                                touching the run root
+#   ~/Downloads/, ~/kaggle_aapb/   4 more
+#
+# Naming those three would leave the shape intact and the next tree would reopen it. So
+# blank $HOME and bind back only what a lane needs to run. Everything omitted here is
+# invisible by default, which is the property a deny list can never have.
+#
+# What is bound back, and why each one:
+#   .local          the claude and uv binaries the lane executes
+#   .cache          uv's package cache; writable, or every lane re-downloads its wheels
+#   .bashrc/.profile  PATH. The token export at .bashrc:122 reads ~/.kaggle/kaggle.json,
+#                   which no longer exists inside, so it yields an empty string.
+#   .gitconfig      harmless, and tooling complains without it
+#   .claude/.credentials.json   the agent authenticates with this and nothing else
+# Deliberately NOT bound back: .ssh, .gnupg, .config (which holds a GitHub token under gh/).
+#
+# WHAT THIS STILL DOES NOT CLOSE, stated plainly because it cannot be closed here. The lane
+# needs the network to reach the Anthropic API, so there is no --unshare-net, and this
+# repository is published. A lane that chose to could fetch its own competition's recorded
+# STATUS.md over HTTPS. The credentials are gone (KAGGLE_* and the GitHub PAT are unset
+# above, ~/.config/gh is not bound), so this is unauthenticated fetching of a public repo,
+# and the compensating control is the post-run transcript audit: every lane's transcript is
+# preserved outside the sandbox and records every tool call it made. That is a DETECTIVE
+# control, not a boundary, and it is the one place in this design where prose still does
+# work. Closing it properly needs an egress proxy that allows only api.anthropic.com.
 exec bwrap \
   --ro-bind / / \
   --dev-bind /dev /dev --proc /proc --tmpfs /tmp \
-  --tmpfs "$HOME/.kaggle" \
-  --tmpfs "$HOME/ai_agents" \
-  --tmpfs "$HOME/Documents" \
-  --tmpfs "$HOME/.claude" \
+  --tmpfs "$HOME" \
+  --ro-bind "$HOME/.local" "$HOME/.local" \
+  --bind "$HOME/.cache" "$HOME/.cache" \
+  "${home_files[@]}" \
   --ro-bind "$HOME/.claude/.credentials.json" "$HOME/.claude/.credentials.json" \
-  --tmpfs "$BENCHRUNS" \
   --bind "$RUN_ROOT" "$RUN_ROOT" \
   "${comp_isolation[@]}" \
   --bind "$LANE_TRANSCRIPTS" "$HOME/.claude/projects" \
-  --bind "$HOME/.cache" "$HOME/.cache" \
   --setenv MPLCONFIGDIR "$RUN_ROOT/.mplconfig" \
   --unsetenv KAGGLE_API_TOKEN \
   --unsetenv KAGGLE_USERNAME \
   --unsetenv KAGGLE_KEY \
+  --unsetenv GITHUB_PERSONAL_ACCESS_TOKEN \
+  --unsetenv GITHUB_TOKEN \
+  --unsetenv GH_TOKEN \
   --unsetenv KAGGLE_CONFIG_DIR \
   --setenv KAGGLE_CONFIG_DIR "$HOME/.kaggle" \
   --setenv VIRTUAL_ENV "" \
