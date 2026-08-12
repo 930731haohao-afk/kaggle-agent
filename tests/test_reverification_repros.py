@@ -2721,6 +2721,50 @@ class TestRound11:
             f"$HOME still exposes {sorted(extra)} to the lane. Each is a tree nothing "
             f"vouches for:\n{r.stdout}{r.stderr}")
 
+        # DEPTH ONE IS NOT ENOUGH, and this test proved it by being green while the answer
+        # key was reachable. `.local` was allowlisted whole to obtain two binaries, and
+        # ~/.local/share/Trash — where `alias rm='trash-put'` sends everything the operator
+        # deletes — held the frozen reference lane's per-competition result.json (both
+        # lanes' numbers) and two copies of a previous run's tuned scripts: 310 files the
+        # project's own detector flags, more than the 195 the allowlist was written to close.
+        #
+        # So ask the detector, not the directory listing. An allowlist entry that is a whole
+        # tree is a deny list again, one level down, and only content scanning catches that.
+        # Enumerate INSIDE the sandbox (the detector is not importable there — it lives in
+        # the repo, which is blanked, and so does the interpreter that could import it), then
+        # scan the resulting paths OUTSIDE. The list is what the lane can reach; the verdict
+        # is the project's own scan_file, so a future tree that appears under an allowlisted
+        # parent is caught without anyone remembering to name it.
+        r2 = subprocess.run(
+            ["bash", os.path.join(REPO, "benchmark_infra/lane_sandbox.sh"), "bash", "-c",
+             'find "$HOME" -xdev -type f -size -2M -not -path "*/benchruns/*" 2>/dev/null'],
+            capture_output=True, text=True, check=False,
+            env={**os.environ, "RUN_ROOT": root, "LANE_COMP": comp,
+                 "LANE_TRANSCRIPTS": "/tmp/claude-1000/-home-tjyen/home-allowlist-test"})
+        visible = [p for p in r2.stdout.split("\n") if p.strip()]
+        if not visible:
+            pytest.skip("could not enumerate $HOME inside the sandbox:\n" + r2.stderr[-300:])
+
+        sys.path.insert(0, os.path.join(REPO, "benchmark_infra"))
+        try:
+            import verify_clean_slate as gate
+            slugs = gate.benchmark_slugs(root)
+            home = os.path.expanduser("~")
+            flagged = []
+            for p in visible:
+                if not os.path.exists(p):
+                    continue
+                if gate.scan_file(p, os.path.relpath(p, home), slugs):
+                    flagged.append(p)
+                    if len(flagged) > 5:
+                        break
+        finally:
+            sys.path.pop(0)
+        assert not flagged, (
+            f"the lane can read {len(flagged)}+ file(s) stating a benchmark competition's "
+            f"result, under a path the allowlist admitted wholesale — depth-1 listing alone "
+            f"would not have seen this:\n  " + "\n  ".join(flagged[:6]))
+
     def test_the_run_log_is_not_written_where_the_lane_can_read_it(self):
         """The launcher appends quarantine_partial_attempt.py's stdout to its status file,
         and that stdout is one line per moved path — including

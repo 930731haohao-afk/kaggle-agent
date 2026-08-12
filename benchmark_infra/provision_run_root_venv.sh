@@ -42,7 +42,17 @@ echo "== syncing the locked dependencies =="
 ( cd "$ROOT" && VIRTUAL_ENV= "$UV" sync --inexact ) || { echo "uv sync failed" >&2; exit 5; }
 
 echo "== installing the out-of-lock deep-learning stack =="
-if ( cd "$ROOT" && VIRTUAL_ENV= "$UV" run --no-sync python3 -c "import torch" ) >/dev/null 2>&1; then
+#
+# Into .venv, with `sync --inexact` above so the sync does not prune it.
+#
+# It was briefly installed into a separate directory on PYTHONPATH instead, on the theory
+# that uv was pruning an out-of-lock package. That theory was wrong and the workaround made
+# things worse. What actually happened: lane_sandbox.sh had narrowed ~/.local to bin and
+# share/claude, which took away uv's own data directory (~/.local/share/uv), and uv then
+# REBUILT the run root's .venv from uv.lock on the next `uv run` -- 228 packages down to 3,
+# taking torch with it. Binding that directory back fixed it, and .venv is stable again.
+# Recorded because the wrong theory was reproducible: torch present, one uv call later, gone.
+if "$ROOT/.venv/bin/python" -c "import torch" >/dev/null 2>&1; then
   echo "torch already present"
 else
   ( cd "$ROOT" && VIRTUAL_ENV= "$UV" pip install torch torchvision torchaudio \

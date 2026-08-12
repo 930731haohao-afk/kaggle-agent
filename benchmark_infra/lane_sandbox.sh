@@ -178,12 +178,38 @@ fi
 # invisible by default, which is the property a deny list can never have.
 #
 # What is bound back, and why each one:
-#   .local          the claude and uv binaries the lane executes
+#   .local/bin            the uv binary and the claude symlink
+#   .local/share/claude   what that symlink points at
+#   .local/share/uv       uv's own data directory (its managed pythons and tool state).
+#                         WITHOUT IT, uv does not merely lose a cache -- it REBUILDS the run
+#                         root's .venv on the next `uv run`, and it rebuilds it from uv.lock,
+#                         which is how 228 packages became 3 and how torch "disappeared"
+#                         twice today. That was never a sync pruning an out-of-lock package;
+#                         it was the whole environment being recreated. Scanned with this
+#                         project's own detector: 15986 files, 0 name a benchmark competition.
+#   .local/state/claude   the agent's own state, writable
+#
+#   NOT ~/.local WHOLE, which is what this first said, to obtain those same two binaries.
+#   ~/.local/share/Trash is the GNOME trash, and ~/.bashrc:142 is `alias rm='trash-put'`, so
+#   every tree the operator has ever deleted from $HOME is in there -- including
+#   nvidia-kaggle-runs/ (the frozen reference lane, with a per-competition result.json
+#   carrying BOTH lanes' numbers) and two copies of a previous run's tuned per-competition
+#   scripts. This project's own detector flags 314 files under ~/.local, 310 of them in the
+#   trash: MORE than the 195 this allowlist was written to close. The channel refills itself
+#   every time the operator deletes something. An allowlist entry that is a whole tree is a
+#   deny list again, one level down.
 #   .cache          uv's package cache; writable, or every lane re-downloads its wheels
 #   .bashrc/.profile  PATH. The token export at .bashrc:122 reads ~/.kaggle/kaggle.json,
 #                   which no longer exists inside, so it yields an empty string.
 #   .gitconfig      harmless, and tooling complains without it
 #   .claude/.credentials.json   the agent authenticates with this and nothing else
+#
+# UV_NO_SYNC=1 because torch is NOT in uv.lock (pyproject.toml records why), and a plain
+# `uv sync` REMOVES out-of-lock packages -- reproduced: torch present, `uv sync`, torch gone.
+# The run root's venv is provisioned by us with `sync --inexact`; a lane re-syncing it would
+# silently delete the package conway's evaluator imports, and the startup preflight cannot
+# see a removal that happens after it ran. The skill never tells a lane to sync, but that is
+# an instruction, and this file's whole premise is that instructions are not boundaries.
 # Deliberately NOT bound back: .ssh, .gnupg, .config (which holds a GitHub token under gh/).
 #
 # WHAT THIS STILL DOES NOT CLOSE, stated plainly because it cannot be closed here. The lane
@@ -199,7 +225,10 @@ exec bwrap \
   --ro-bind / / \
   --dev-bind /dev /dev --proc /proc --tmpfs /tmp \
   --tmpfs "$HOME" \
-  --ro-bind "$HOME/.local" "$HOME/.local" \
+  --ro-bind "$HOME/.local/bin" "$HOME/.local/bin" \
+  --ro-bind "$HOME/.local/share/claude" "$HOME/.local/share/claude" \
+  --ro-bind "$HOME/.local/share/uv" "$HOME/.local/share/uv" \
+  --bind "$HOME/.local/state/claude" "$HOME/.local/state/claude" \
   --bind "$HOME/.cache" "$HOME/.cache" \
   "${home_files[@]}" \
   --ro-bind "$HOME/.claude/.credentials.json" "$HOME/.claude/.credentials.json" \
@@ -207,6 +236,7 @@ exec bwrap \
   "${comp_isolation[@]}" \
   --bind "$LANE_TRANSCRIPTS" "$HOME/.claude/projects" \
   --setenv MPLCONFIGDIR "$RUN_ROOT/.mplconfig" \
+  --setenv UV_NO_SYNC 1 \
   --unsetenv KAGGLE_API_TOKEN \
   --unsetenv KAGGLE_USERNAME \
   --unsetenv KAGGLE_KEY \
