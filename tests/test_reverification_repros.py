@@ -2622,6 +2622,62 @@ class TestRound11:
             f"finished competition's CV score and champion recipe:\n{r.stdout}{r.stderr}")
         assert sibling not in seen
 
+    def test_a_lane_cannot_read_another_lanes_oof_cache(self):
+        """Isolating competitions/ left tree_search/ bound whole, and all 20 pinned
+        evaluators cache there — cache_afsis, cache_citd, cache_conway, one per competition.
+        Each .npz holds ['oof', 'pred', <metric>]: the out-of-fold vectors, the test
+        predictions and the score. So lane k could read lanes 1..k-1's vectors and their
+        metric values on a clean first pass, with no abort and no leftover.
+
+        The gate cannot cover this one. Its rule is that a file must NAME a benchmark
+        competition, and here the identity is in the DIRECTORY name while the payload is
+        binary numeric — a real cache file names nothing. Verified: a sentinel planted in a
+        sibling cache leaves the gate reporting "clean slate OK". Only isolation closes it.
+        """
+        import subprocess
+        sb = os.path.join(REPO, "benchmark_infra/lane_sandbox.sh")
+        src = open(sb, encoding="utf-8").read()
+        assert "cache_dirs_for" in src, (
+            "the sandbox must resolve this lane's cache from its evaluator's own CACHE_DIR, "
+            "the same reader the quarantine uses — a name heuristic guessed wrong for 4 of "
+            "20, and blanking a lane's OWN cache makes it blend on nothing")
+        for bad in ("*/*", ".*"):
+            assert bad in src, (
+                "LANE_COMP must be rejected unless it is a bare slug: ../other-comp "
+                "resolves back out of the isolation and it would look like it worked")
+
+        if not shutil.which("bwrap"):
+            pytest.skip("bwrap not installed; the textual contract above still holds")
+        root = "/home/tjyen/benchruns/myagent-rerun"
+        if not os.path.isdir(os.path.join(root, "tree_search")):
+            pytest.skip(f"no built run root at {root}")
+
+        # one line per cache directory: "<dir> <file count>". Every directory that is not
+        # this lane's must be empty inside the sandbox, whatever it holds on real disk.
+        r = subprocess.run(
+            ["bash", sb, "bash", "-c",
+             'for d in tree_search/cache_*; do [ -d "$d" ] && '
+             'echo "$d $(find "$d" -type f 2>/dev/null | wc -l)"; done'],
+            capture_output=True, text=True, check=False,
+            env={**os.environ, "RUN_ROOT": root, "LANE_COMP": "playground-series-s3e3",
+                 "LANE_TRANSCRIPTS": "/tmp/claude-1000/-home-tjyen/oof-iso"})
+        for line in r.stdout.split("\n"):
+            if not line.strip():
+                continue
+            d, _, n = line.rpartition(" ")
+            if "cache_s3e3" in d:
+                continue
+            assert n.strip() == "0", (
+                f"{d} holds {n.strip()} of a sibling's cached OOF file(s), each carrying "
+                f"its out-of-fold vectors, its test predictions and its score:\n" + r.stdout)
+
+        bad = subprocess.run(["bash", sb, "true"], capture_output=True, text=True, check=False,
+                             env={**os.environ, "RUN_ROOT": root,
+                                  "LANE_COMP": "../competitions",
+                                  "LANE_TRANSCRIPTS": "/tmp/claude-1000/-home-tjyen/oof-iso"})
+        assert bad.returncode != 0 and "bare competition slug" in bad.stderr, (
+            "a traversing LANE_COMP must be refused:\n" + bad.stdout + bad.stderr)
+
     def test_home_is_an_allowlist_not_a_deny_list(self):
         """The sandbox blanked four named directories under a blanket --ro-bind / /, and the
         benchmark's answer key was in three others. Measured with this project's own detector

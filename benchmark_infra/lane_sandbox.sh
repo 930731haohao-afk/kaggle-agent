@@ -110,9 +110,49 @@ done
 
 comp_isolation=(--tmpfs "$RUN_ROOT/competitions")
 if [ "$LANE_COMP" != "none" ]; then
+  # LANE_COMP must be a plain slug. Unvalidated, a value like ../other-comp or an absolute
+  # path resolves back out of the isolation and silently restores the view this exists to
+  # remove -- and it would look like it worked.
+  case "$LANE_COMP" in
+    */*|.*|"") echo "LANE_COMP must be a bare competition slug, not $LANE_COMP" >&2; exit 4;;
+  esac
   ws=$RUN_ROOT/competitions/$LANE_COMP
   [ -d "$ws" ] || { echo "no workspace at $ws — LANE_COMP names a competition this root does not have" >&2; exit 4; }
   comp_isolation+=(--bind "$ws" "$ws")
+
+  # THE OOF CACHES ARE THE SAME CHANNEL, ONE DIRECTORY OVER.
+  #
+  # Isolating competitions/ left tree_search/ bound whole, and all 20 pinned evaluators
+  # cache there: cache_afsis, cache_citd, cache_conway, ... one per competition. Each .npz
+  # holds ['oof', 'pred', <metric>] -- the out-of-fold vectors, the test predictions AND the
+  # score. So lane k could read lanes 1..k-1's cached vectors and their metric values, on a
+  # clean first pass, with no abort and no leftover: exactly the exposure the workspace
+  # isolation closed, in the directory next to it.
+  #
+  # Resolved by the SAME reader the quarantine uses -- each evaluator's own CACHE_DIR, from
+  # its source. Not a name heuristic: those guessed wrong for 4 of 20 (cat-in-the-dat writes
+  # cache_citd, sep-2022 cache_tssep22_main), and a lane whose own cache was tmpfs'd by
+  # mistake would silently recompute every vector or, worse, blend on an empty cache.
+  own_caches=$(python3 -c "
+import sys
+sys.path.insert(0, '$(dirname "$(readlink -f "$0")")')
+import quarantine_partial_attempt as q
+print(' '.join(q.cache_dirs_for('$RUN_ROOT', '$LANE_COMP')))" 2>/dev/null)
+  if [ -z "$own_caches" ]; then
+    echo "REFUSING: cannot resolve $LANE_COMP's OOF cache directory from its pinned "\
+"evaluator. Blanking the others without knowing which is this lane's would either expose "\
+"a sibling's vectors or destroy this lane's." >&2
+    exit 4
+  fi
+  for rel in $own_caches; do mkdir -p "$RUN_ROOT/$rel"; done
+  for d in "$RUN_ROOT"/tree_search/cache_*; do
+    [ -d "$d" ] || continue
+    keep=0
+    for rel in $own_caches; do
+      case "$d" in "$RUN_ROOT/$rel"|"$RUN_ROOT/$rel"/*) keep=1;; esac
+    done
+    [ "$keep" = "1" ] || comp_isolation+=(--tmpfs "$d")
+  done
 fi
 
 # $HOME IS AN ALLOWLIST, NOT A DENY LIST.
