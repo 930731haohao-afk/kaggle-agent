@@ -103,8 +103,15 @@ BENCHRUNS=$(dirname "$RUN_ROOT")
 : "${LANE_COMP:?LANE_COMP must be set: a competition slug, or 'none' for maintenance}"
 # Optional dotfiles, bound back only if present: bwrap fails the whole mount if a --bind
 # source is missing, and a machine without one of these must not lose its sandbox.
+#
+# NOT .bashrc, and NOT .profile. Both were bound back for PATH, and .bashrc:123 is
+# `export GITHUB_PERSONAL_ACCESS_TOKEN=<literal>` -- so the --unsetenv above was undone by
+# the allowlist entry beside it: the variable was empty and the credential was one `cat`
+# away in cleartext. PATH is set explicitly below instead, which is what the file was
+# wanted for. (.bashrc:142's `alias rm='trash-put'` is also why ~/.local/share/Trash holds
+# the answer key; the file has now cost this sandbox two findings.)
 home_files=()
-for f in .bashrc .profile .gitconfig; do
+for f in .gitconfig; do
   [ -e "$HOME/$f" ] && home_files+=(--ro-bind "$HOME/$f" "$HOME/$f")
 done
 
@@ -237,6 +244,7 @@ exec bwrap \
   --bind "$LANE_TRANSCRIPTS" "$HOME/.claude/projects" \
   --setenv MPLCONFIGDIR "$RUN_ROOT/.mplconfig" \
   --setenv UV_NO_SYNC 1 \
+  --setenv PATH "$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" \
   --unsetenv KAGGLE_API_TOKEN \
   --unsetenv KAGGLE_USERNAME \
   --unsetenv KAGGLE_KEY \
