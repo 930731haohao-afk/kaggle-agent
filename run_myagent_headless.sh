@@ -362,4 +362,21 @@ if [ "$SMOKE" = "1" ]; then
 "have not run"
   exit 0
 fi
+# The run-level audit, over all 20 transcripts at once, before the marker that tells
+# bench_watchdog.sh this finished cleanly.
+#
+# NOT a repeat of the per-lane pass. --require-all is the part only this can do: a lane whose
+# transcript is missing looks identical to a clean lane when you audit lane by lane, because
+# there is nothing to audit and nothing to report. The whole reason this file exists is that
+# "reports success in minutes" and "finished cleanly" are the same string.
+audit_json=$RUN_ROOT.transcript_audit.json
+if ! python3 "$REPO/benchmark_infra/audit_lane_transcript.py" \
+     --transcripts "$TRANSCRIPTS" --root "$RUN_ROOT" --require-all \
+     --json "$audit_json" >> "$STATUS" 2>&1; then
+  log "RUN-LEVEL TRANSCRIPT AUDIT FAILED — the lanes ran, but the run cannot be reported as "\
+"recorded. Full report: $audit_json. No completion marker."
+  exit 5
+fi
+log "transcript audit passed over all $lanes_ran lanes — $audit_json"
+
 log "MY-AGENT LANES COMPLETE ($lanes_ran/20 lanes ran)"

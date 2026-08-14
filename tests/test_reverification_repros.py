@@ -4219,3 +4219,19 @@ class TestStages:
         i_loop = src.index("for c in $COMPS")
         assert i_loop < i_audit < i_loop_end, "the audit must run per lane, inside the loop"
         assert "audit_fail_streak" in src, "a repeated audit failure must stop the run"
+
+    def test_the_run_level_audit_runs_before_the_completion_marker(self):
+        """--require-all is the one thing a per-lane audit cannot do. Audited lane by lane, a
+        competition with NO transcript looks exactly like a clean one: there is nothing to
+        examine, so there is nothing to report. That is the shape of every failure in this
+        file -- "reports success in minutes" and "finished cleanly" being the same string --
+        and bench_watchdog.sh reads the completion marker as the second one.
+        """
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        assert "--require-all" in src, (
+            "nothing checks that all 20 lanes left a transcript; a lane that produced none "
+            "passes the per-lane audit by having nothing to audit")
+        i_req = src.index("--require-all")
+        i_marker = src.rindex("MY-AGENT LANES COMPLETE")
+        assert i_req < i_marker, (
+            "the run-level audit must be able to withhold the marker, not follow it")
