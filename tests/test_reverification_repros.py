@@ -4064,3 +4064,158 @@ class TestStages:
         assert "--ro-bind" in sandbox and ".local/share/uv" in sandbox, (
             "the two halves of this must stay consistent: if uv's data directory ever "
             "becomes writable or unbound, this test is the record of why it was neither")
+
+    # ------------------------------------- the transcript audit
+    #
+    # The sandbox is a boundary for the filesystem and nothing else. The lane has a working
+    # network (claude -p needs it), the library's raw files are IN the run root (query_
+    # library.py reads them), and ~/.local plus ~/.cache are bound so uv and claude start.
+    # What stops a lane fetching a leaderboard or `cat`ing experience.md is a sentence in
+    # CLAUDE.md, and rounds 1-4 established that a sentence is not a boundary.
+    #
+    # audit_lane_transcript.py is the compensating control, and these tests exist because the
+    # dominant defect shape in this project is A CORRECT RULE WIRED TO NOTHING. A detector
+    # that has never fired is not a detector; it is a comment. Each channel gets a synthetic
+    # transcript that must trip it, and a near-miss that must not.
+
+    def _transcript(self, tmp_path, name, entries):
+        import json as _json
+        d = tmp_path / "t" / "playground-series-s3e3" / "-key"
+        d.mkdir(parents=True, exist_ok=True)
+        p = d / f"{name}.jsonl"
+        p.write_text("\n".join(_json.dumps(e) for e in entries), encoding="utf-8")
+        return str(tmp_path / "t")
+
+    @staticmethod
+    def _use(name, inp, tid="t1"):
+        return {"type": "assistant", "message": {"role": "assistant", "content": [
+            {"type": "tool_use", "id": tid, "name": name, "input": inp}]}}
+
+    @staticmethod
+    def _result(text, tid="t1"):
+        return {"type": "user", "message": {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": tid, "content": text}]}}
+
+    def _audit(self, tdir, extra=()):
+        import subprocess
+        r = subprocess.run(
+            [sys.executable, os.path.join(REPO, "benchmark_infra/audit_lane_transcript.py"),
+             "--transcripts", tdir, "--root", "/home/tjyen/benchruns/myagent-rerun",
+             *extra],
+            capture_output=True, text=True, cwd=REPO, check=False)
+        return r.returncode, r.stdout + r.stderr
+
+    def test_audit_catches_a_network_fetch(self, tmp_path):
+        t = self._transcript(tmp_path, "a", [
+            self._use("Bash", {"command": "curl -s https://kaggle.com/c/x/leaderboard"})])
+        rc, out = self._audit(t)
+        assert rc != 0 and "network" in out, out[-800:]
+
+    def test_audit_catches_the_kaggle_cli(self, tmp_path):
+        """`kaggle competitions submissions -c <comp>` returns this competition's own prior
+        public LB scores for all three agents — round 10's finding, and the single reason the
+        run root ships no credentials and the submit routes are stripped."""
+        t = self._transcript(tmp_path, "a", [
+            self._use("Bash", {"command": "kaggle competitions submissions -c foo"})])
+        rc, out = self._audit(t)
+        assert rc != 0 and "network" in out, out[-800:]
+
+    def test_audit_catches_webfetch(self, tmp_path):
+        t = self._transcript(tmp_path, "a", [
+            self._use("WebFetch", {"url": "https://example.com"})])
+        rc, out = self._audit(t)
+        assert rc != 0 and "network" in out, out[-800:]
+
+    def test_audit_does_not_fire_on_the_lint_gate(self, tmp_path):
+        """`uv run --with ruff` reaches PyPI. PyPI cannot answer what a competition scored,
+        and the lint gate is mandatory — a detector that forbids it forbids the method."""
+        t = self._transcript(tmp_path, "a", [
+            self._use("Bash", {"command": "uv run --with ruff==0.16.1 ruff check x.py"})])
+        rc, out = self._audit(t)
+        assert rc == 0, out[-800:]
+        assert "BLOCKER: 0" in out, out[-800:]
+
+    def test_audit_catches_opening_the_raw_library(self, tmp_path):
+        t = self._transcript(tmp_path, "a", [
+            self._use("Read", {"file_path": "knowledge/experience.md"})])
+        rc, out = self._audit(t)
+        assert rc != 0 and "library_raw" in out, out[-800:]
+        t2 = self._transcript(tmp_path, "b", [
+            self._use("Bash", {"command": "cat knowledge/knowledge_base.json | head -50"})])
+        rc2, out2 = self._audit(t2)
+        assert rc2 != 0 and "library_raw" in out2, out2[-800:]
+
+    def test_audit_does_not_fire_on_the_prohibition_itself(self, tmp_path):
+        """The first version flagged three times on the smoke lane, every time on the text of
+        the rule: the lane's prompt, SKILL.md, and the lane's own STATUS.md explaining why it
+        had NOT hand-appended to the library. A detector that fires on its own rule is one
+        the operator learns to scroll past, which is the same as not having it."""
+        t = self._transcript(tmp_path, "a", [
+            {"type": "assistant", "message": {"role": "assistant", "content": [
+                {"type": "text",
+                 "text": "never open knowledge/experience.md directly; use query_library.py"}]}},
+            self._use("Write", {"file_path": "STATUS.md",
+                                "content": "hand-appending to knowledge/experience.md is the "
+                                           "leak class the renderer exists to close"})])
+        rc, out = self._audit(t)
+        assert rc == 0 and "BLOCKER: 0" in out, out[-800:]
+
+    def test_audit_separates_a_library_echo_from_a_new_channel(self, tmp_path):
+        """The cross-competition library is my-agent's method, and its bullets name the
+        competitions they came from; the lane then quotes them into its driver comments and
+        STATUS.md. Counting every echo produced seven majors from one sanctioned read on the
+        smoke lane. A sibling result the library NEVER served is the actual finding."""
+        served = self._transcript(tmp_path, "a", [
+            self._use("Bash", {"command": "uv run python knowledge/query_library.py --comp x"}),
+            self._result("- s3e7 exp#6: blend micro-tuning noise on AUC 0.8412 "
+                         "(cat-in-the-dat)"),
+            self._use("Write", {"file_path": "run_x.py",
+                                "content": "# cat-in-the-dat: weight gains collapse, AUC "
+                                           "0.8412"}, tid="t2")])
+        rc, out = self._audit(served)
+        assert rc == 0, out[-800:]
+        assert "MAJOR: 0" in out and "library_derived" in out, out[-1500:]
+
+        unserved = self._transcript(tmp_path, "b", [
+            self._use("Write", {"file_path": "run_x.py",
+                                "content": "# cat-in-the-dat scored AUC 0.8412 on the "
+                                           "private LB"})])
+        _rc2, out2 = self._audit(unserved)
+        assert "MAJOR: 1" in out2 or "MAJOR: 2" in out2, out2[-1500:]
+        assert "sibling_result" in out2, out2[-1500:]
+
+    def test_audit_refuses_an_empty_or_missing_transcript(self, tmp_path):
+        """A missing witness reading as 'not tampered' is round 12's finding, and it applies
+        here more than anywhere: an audit over zero lanes prints no findings."""
+        rc, out = self._audit(str(tmp_path / "nothing-here"))
+        assert rc != 0 and "no transcripts" in out.lower(), out[-500:]
+
+        d = tmp_path / "e" / "playground-series-s3e3" / "-key"
+        d.mkdir(parents=True)
+        (d / "s.jsonl").write_text("", encoding="utf-8")
+        rc2, out2 = self._audit(str(tmp_path / "e"))
+        assert rc2 != 0, out2[-500:]
+
+    def test_audit_reports_what_it_examined(self, tmp_path):
+        """Liveness, printed, including zero. The whole class of failure this file records is
+        a checker that examined nothing and said nothing was wrong."""
+        t = self._transcript(tmp_path, "a", [self._use("Bash", {"command": "ls"})])
+        _rc, out = self._audit(t)
+        assert "tool calls examined: 1" in out, out[-500:]
+
+    def test_the_launcher_actually_runs_the_audit(self):
+        """The rule exists; is it wired to anything? That question is why this project has
+        twelve rounds. The audit has to run PER LANE -- an audit after 20 lanes reports that
+        the run is void once it has already been spent -- and two consecutive failures have
+        to stop the run, because two in a row is the pipeline rather than one lane."""
+        src = open(os.path.join(REPO, "run_myagent_headless.sh"), encoding="utf-8").read()
+        assert "audit_lane_transcript.py" in src, (
+            "the transcript audit is the only check on the three rules the sandbox does not "
+            "enforce, and nothing calls it")
+        i_audit = src.index("audit_lane_transcript.py")
+        # rindex: the launcher's own header comment quotes the completion marker 250 lines
+        # ABOVE the loop, so index() put the end of the loop before its start.
+        i_loop_end = src.rindex("MY-AGENT LANES COMPLETE")
+        i_loop = src.index("for c in $COMPS")
+        assert i_loop < i_audit < i_loop_end, "the audit must run per lane, inside the loop"
+        assert "audit_fail_streak" in src, "a repeated audit failure must stop the run"

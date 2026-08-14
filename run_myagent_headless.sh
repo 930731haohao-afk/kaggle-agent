@@ -175,6 +175,7 @@ source /home/tjyen/ai_agents/lane_lock.sh
 trap on_signal TERM INT
 
 lanes_ran=0
+audit_fail_streak=0
 for c in $COMPS; do
   # Relaunch-safe: a competition that already produced its submission is done.
   if [ -f "$BASE/competitions/$c/submission.csv" ]; then
@@ -319,6 +320,35 @@ Work autonomously; never ask questions; take documented fallbacks when blocked."
     log "DONE $c: submission written (${mins} min, rc=$rc)"
   else
     log "DONE $c: NO SUBMISSION (${mins} min, rc=$rc) — needs a human look"
+  fi
+
+  # WHILE THE TRANSCRIPT IS STILL ONE LANE. Three of this run's rules are held by instruction
+  # and not by the sandbox -- no network fetches, the library only through query_library.py,
+  # nothing outside the run root -- because claude needs the network and the library files
+  # live in the root. audit_lane_transcript.py reads what the lane actually reached for.
+  #
+  # Per lane, not only at the end: an audit that runs after 20 lanes tells you the run is
+  # void after you have spent it.
+  audit_out=$(python3 "$REPO/benchmark_infra/audit_lane_transcript.py" \
+      --transcripts "$TRANSCRIPTS" --root "$RUN_ROOT" --comp "$c" 2>&1)
+  audit_rc=$?
+  if [ "$audit_rc" -ne 0 ]; then
+    log "TRANSCRIPT AUDIT FAILED for $c — this lane's result cannot be used as recorded:"
+    printf '%s\n' "$audit_out" | sed 's/^/    /' | tee -a "$STATUS"
+    audit_fail_streak=$((audit_fail_streak + 1))
+    # One lane can misbehave on its own; two in a row is the pipeline doing it, and every
+    # remaining lane will do it too. Stopping then costs 18 lanes of compute instead of
+    # producing 20 results that have to be thrown away.
+    if [ "$audit_fail_streak" -ge 2 ]; then
+      log "ABORTING: two consecutive lanes failed the transcript audit — this is the "\
+"pipeline, not one lane. Earlier lanes keep their results."
+      exit 5
+    fi
+  else
+    audit_fail_streak=0
+    printf '%s\n' "$audit_out" | grep -E '^(MINOR|MAJOR|BLOCKER):' | tr '\n' ' ' \
+      | sed "s/^/- \`$(date '+%m-%d %H:%M')\` audit $c: /" >> "$STATUS"
+    echo >> "$STATUS"
   fi
 done
 
