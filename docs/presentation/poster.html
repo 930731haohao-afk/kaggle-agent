@@ -4,64 +4,65 @@
 <meta charset="utf-8">
 <title>AI Agents for Data Visualization and Kaggle Competitions</title>
 <style>
-  @page { size: 841.0mm 594.0mm; margin: 0; }
+  @page { size: 841mm 1189mm; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 841.0mm; height: 594.0mm; }
+  html, body { width: 841mm; height: 1189mm; }
   body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     color: #1c1e21; background: #ffffff;
     display: flex; flex-direction: column;
   }
-  .band { background: #0f2a4a; color: #fff; padding: 12.92mm 16.15mm 11.31mm; }
-  .band h1 { font-size: 20.99mm; font-weight: 700; letter-spacing: -0.4mm; }
-  .band .sub { margin-top: 4.04mm; font-size: 8.88mm; color: #bcd2ea; }
-  .band .meta { margin-top: 3.24mm; font-size: 6.47mm; color: #8fb0d4; }
+  .band { background: #0f2a4a; color: #fff; padding: 17.31mm 21.64mm 15.16mm; }
+  .band h1 { font-size: 28.13mm; font-weight: 700; letter-spacing: -0.54mm; }
+  .band .sub { margin-top: 5.41mm; font-size: 11.9mm; color: #bcd2ea; }
+  .band .meta b { color: #e2b13c; }
+  .band .meta { margin-top: 4.34mm; font-size: 8.67mm; color: #8fb0d4; }
   .grid {
-    flex: 1; display: grid; gap: 7.26mm; padding: 8.88mm 16.15mm 9.68mm;
-    grid-template-columns: 1.14fr 1.12fr 1.32fr 1.1fr;
+    flex: 1; display: grid; gap: 9.73mm; padding: 11.9mm 21.64mm 12.97mm;
+    grid-template-columns: 1fr 1.08fr;
     grid-template-rows: 1fr;
   }
-  .col { display: flex; flex-direction: column; gap: 7.26mm; min-width: 0; }
+  .col { display: flex; flex-direction: column; gap: 9.73mm; min-width: 0; }
   .col .card:last-child { flex: 1; }
-  .card { border: 0.65mm solid #d5dbe3; border-radius: 3.24mm; padding: 8.07mm; background: #fbfcfe; }
+  .card { border: 0.87mm solid #d5dbe3; border-radius: 4.34mm; padding: 10.81mm; background: #fbfcfe; }
   .card h2 {
-    font-size: 10.5mm; color: #0f2a4a; border-bottom: 0.96mm solid #e2b13c;
-    padding-bottom: 2.82mm; margin-bottom: 4.85mm; letter-spacing: -0.15mm;
+    font-size: 14.07mm; color: #0f2a4a; border-bottom: 1.29mm solid #e2b13c;
+    padding-bottom: 3.78mm; margin-bottom: 6.5mm; letter-spacing: -0.2mm;
   }
-  .card h3 { font-size: 7.43mm; color: #0f2a4a; margin: 4.85mm 0 2.43mm; }
-  p, li { font-size: 6.54mm; line-height: 1.45; color: #2a2e33; }
-  ul { padding-left: 7.67mm; } li { margin-bottom: 2.75mm; }
+  .card h3 { font-size: 9.96mm; color: #0f2a4a; margin: 6.5mm 0 3.26mm; }
+  p, li { font-size: 8.76mm; line-height: 1.45; color: #2a2e33; }
+  ul { padding-left: 10.28mm; } li { margin-bottom: 3.69mm; }
   b { color: #10365f; }
-  img.fig { width: 100%; border: 0.33mm solid #e0e4ea; border-radius: 1.61mm; background:#fff; }
-  .cap { font-size: 5.33mm; color: #5a6472; margin-top: 1.76mm; line-height: 1.35; }
-  table { width: 100%; border-collapse: collapse; font-size: 5.97mm; margin: 2.43mm 0; }
-  th { text-align: left; color: #445; border-bottom: 0.56mm solid #9fb0c4; padding: 1.76mm 2.01mm; font-size: 5.65mm; }
-  td { border-bottom: 0.28mm solid #dfe5ec; padding: 1.76mm 2.01mm; font-variant-numeric: tabular-nums; }
+  img.fig { width: 100%; border: 0.44mm solid #e0e4ea; border-radius: 2.16mm; background:#fff; }
+  .cap { font-size: 7.14mm; color: #5a6472; margin-top: 2.36mm; line-height: 1.35; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.0mm; margin: 3.26mm 0; }
+  th { text-align: left; color: #445; border-bottom: 0.75mm solid #9fb0c4; padding: 2.36mm 2.69mm; font-size: 7.57mm; }
+  td { border-bottom: 0.38mm solid #dfe5ec; padding: 2.36mm 2.69mm; font-variant-numeric: tabular-nums; }
   td.num, th.num { text-align: right; }
   .win { font-weight: 700; color: #10365f; }
   .tbd { color: #8a6d1a; font-weight: 600; }
-  .barwrap { margin: 3.24mm 0 1.61mm; }
-  .barrow { display: flex; align-items: center; gap: 3.24mm; margin-bottom: 2.9mm; }
-  .barlab { width: 38.76mm; font-size: 6.14mm; color: #2a2e33; flex: none; }
-  .bartrack { flex: 1; height: 10.1mm; background: #eef1f5; border-radius: 1.61mm; position: relative; margin-right: 19.39mm; }
-  .bar { height: 100%; border-radius: 1.61mm; }
+  .barwrap { margin: 4.34mm 0 2.16mm; }
+  .barrow { display: flex; align-items: center; gap: 4.34mm; margin-bottom: 3.89mm; }
+  .barlab { width: 51.94mm; font-size: 8.23mm; color: #2a2e33; flex: none; }
+  .bartrack { flex: 1; height: 13.53mm; background: #eef1f5; border-radius: 2.16mm; position: relative; margin-right: 25.98mm; }
+  .bar { height: 100%; border-radius: 2.16mm; }
   .bar.me   { background: #2b6cb0; }
   .bar.other{ background: #a8bdd4; }
-  .barval { position: absolute; right: -1.61mm; top: 50%; transform: translate(100%,-50%); font-size: 5.97mm; color: #2a2e33; padding-left: 2.01mm; }
-  .note { font-size: 5.5mm; color: #5a6472; line-height: 1.35; }
-  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 4.04mm; }
-  .footer { padding: 0 16.15mm 7.26mm; font-size: 5.17mm; color: #7a8494; }
+  .barval { position: absolute; right: -2.16mm; top: 50%; transform: translate(100%,-50%); font-size: 8.0mm; color: #2a2e33; padding-left: 2.69mm; }
+  .note { font-size: 7.37mm; color: #5a6472; line-height: 1.35; }
+  .twocol { display: grid; grid-template-columns: 1fr 1.08fr; gap: 5.41mm; }
+  .footer { padding: 0 21.64mm 9.73mm; font-size: 6.93mm; color: #7a8494; }
 </style>
 </head>
 <body>
   <div class="band">
     <h1>AI Agents for Data Visualization and Kaggle Competitions</h1>
     <div class="sub">An end-to-end LLM agent (my-agent) benchmarked against two frozen yardsticks on 20 Kaggle competitions — with the apparatus needed to make the comparison honest</div>
-    <div class="meta">Wei-Hao Huang · Academia Sinica ISS Summer Internship 2026 · Report v4 (2026-08-17) · github.com/930731haohao-afk/kaggle-agent</div>
+    <div class="meta"><b>Author:</b> Wei-Hao Huang (黃威昊) &nbsp;·&nbsp; <b>School:</b> National Chengchi University, Department of Economics (Double Major: Applied Mathematics)</div>
+    <div class="meta"><b>Advisor:</b> Dr. Tso-Jung Yen (顏佐榕), Institute of Statistical Science, Academia Sinica &nbsp;·&nbsp; Summer Internship 2026 · Report v4 (2026-08-17)</div>
   </div>
 
   <div class="grid">
-    <!-- COLUMN 1: Motivation -->
     <div class="col">
       <div class="card">
         <h2>1 · Motivation</h2>
@@ -79,6 +80,14 @@
         </ul>
       </div>
       <div class="card">
+        <h2>2 · Workflow</h2>
+        <p>An LLM reasons at every stage; Auto-ML libraries are invoked through the shell; a cross-competition <b>experience library</b> supplies evidence-backed priors; a <b>tree search</b> over candidate configurations is the optimisation loop.</p>
+        <img class="fig" src="fig1_architecture.png" alt="Agent architecture">
+        <div class="cap">Six-stage pipeline: problem dossier → EDA → features → modeling → evaluation → submission. The v5 dossier layer classifies the task and injects external data <i>upstream</i>, before any modeling.</div>
+        <img class="fig" src="fig2_tree_search.png" alt="Tree search loop" style="margin-top:4mm">
+        <div class="cap">Tree-search loop: ensembles are first-class nodes with OOF caching and weight search; exploit until plateau, then one forced exploration burst.</div>
+      </div>
+      <div class="card">
         <h2>4 · Advantages &amp; Difficulties</h2>
         <h3>Expected → experienced</h3>
         <ul>
@@ -89,20 +98,6 @@
         </ul>
       </div>
     </div>
-
-    <!-- COLUMN 2: Workflow -->
-    <div class="col">
-      <div class="card">
-        <h2>2 · Workflow</h2>
-        <p>An LLM reasons at every stage; Auto-ML libraries are invoked through the shell; a cross-competition <b>experience library</b> supplies evidence-backed priors; a <b>tree search</b> over candidate configurations is the optimisation loop.</p>
-        <img class="fig" src="fig1_architecture.png" alt="Agent architecture">
-        <div class="cap">Six-stage pipeline: problem dossier → EDA → features → modeling → evaluation → submission. The v5 dossier layer classifies the task and injects external data <i>upstream</i>, before any modeling.</div>
-        <img class="fig" src="fig2_tree_search.png" alt="Tree search loop" style="margin-top:4mm">
-        <div class="cap">Tree-search loop: ensembles are first-class nodes with OOF caching and weight search; exploit until plateau, then one forced exploration burst.</div>
-      </div>
-    </div>
-
-    <!-- COLUMN 3: Results -->
     <div class="col">
       <div class="card">
         <h2>3 · Results — Kaggle benchmark</h2>
@@ -122,7 +117,7 @@
           <tr><td>SIIM-ISIC (imaging)</td><td>AUC ↑</td><td class="num win">0.93529</td><td class="num">0.89822</td><td class="num">0.88579</td></tr>
         </table>
         <h3>Final-architecture re-run (in progress, 2026-08-17)</h3>
-        <p>All 20 competitions re-run under one frozen architecture, credential-free sandboxes, per-lane transcript audit. <b>15/20 lanes done</b>, 1 running, 4 queued — leaderboard scores <span class="tbd">TBD</span> until the operator scoring step.</p>
+        <p>All 20 competitions re-run under one frozen architecture, credential-free sandboxes, per-lane transcript audit. <b>16/20 lanes run</b> (one pending audit review), 1 running, 3 queued — leaderboard scores <span class="tbd">TBD</span> until the operator scoring step.</p>
       </div>
       <div class="card">
         <h2>3b · Results — visualization output</h2>
@@ -132,10 +127,6 @@
         </div>
         <div class="cap">Agent-generated EDA: target distribution and temporal-pattern diagnostics, produced automatically per dataset before modeling (example: energy-prosumer competition). The same pipeline emits per-competition ML-spec reports (22 published) and the flowcharts above.</div>
       </div>
-    </div>
-
-    <!-- COLUMN 4: Discussion -->
-    <div class="col">
       <div class="card">
         <h2>5 · Discussion — advice</h2>
         <ul>

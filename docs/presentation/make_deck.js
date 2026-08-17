@@ -104,7 +104,7 @@ function head(slide, num, title) {
   s.addShape(pres.ShapeType.roundRect, { x: 6.9, y: 4.15, w: 5.9, h: 2.35, fill: { color: LT }, line: { color: PALE, width: 1 }, rectRadius: 0.08 });
   s.addText([
     { text: "Final-architecture re-run — in progress", options: { fontSize: 15, bold: true, color: NAVY, breakLine: true } },
-    { text: "All 20 competitions re-run under one frozen architecture, in credential-free sandboxes with per-lane transcript audits. 15/20 lanes done, 1 running, 4 queued.", options: { fontSize: 12.5, color: INK, breakLine: true } },
+    { text: "All 20 competitions re-run under one frozen architecture, in credential-free sandboxes with per-lane transcript audits. 16/20 lanes run (one pending audit review), 1 running, 3 queued.", options: { fontSize: 12.5, color: INK, breakLine: true } },
     { text: "Leaderboard scores: TBD until the credentialed scoring step.", options: { fontSize: 12.5, bold: true, color: "8A6D1A" } },
   ], { x: 7.15, y: 4.3, w: 5.4, h: 2.05, fontFace: "Calibri", paraSpaceAfter: 8, margin: 0 });
   s.addNotes("Everything is scored on the real leaderboard, and a paired significance test decides which gaps are real. My agent wins 57 percent of decidable duels; 27 percent cannot be decided at all. On the three harder competitions outside tabular data, it takes the best score on all three. Right now all 20 competitions are re-running under the frozen final architecture with transcript audits; those leaderboard numbers are still TBD. (45s)");
