@@ -154,3 +154,13 @@ run confirms the same lesson from the inside — its two biggest wins (clip-awar
 hybrid) came from local top-code EDA, while transferred ensemble priors delivered only reliable-but-small gains. On this
 S3-era geo-regression problem, a well-optimized public coordinates kernel retains a substantial edge; the reproduce-vs-
 originate gap narrows to dead heats on several other seasons but not on s3e1.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-14, 30 min.
+- re-run local CV: **RMSE 0.548862** honest leave-fold-out (0.548353 in-sample), 26-member tree-search blend (node #32).
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

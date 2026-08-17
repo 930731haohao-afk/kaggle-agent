@@ -83,3 +83,13 @@ The result is a **dead heat** (`winner` = tie): our champion's 0.05597 is margin
 ---
 
 *Fields marked "not recorded": training peak memory (not separately measured); inference duration and memory (not separately profiled); leaderboard for the July run (competition closed — CV-only).*
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-17, 72 min — audit flagged raw library opens; transcript timeline shows all of them strictly after the submission was written and validated, so the score stands; the lane's post-run hand write-back to the shared knowledge library was reverted before any later lane ran.
+- re-run local CV: **RMSE 0.055971** (honest 0.055973), 29-member NNLS blend selected by leave-fold-out honest score.
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

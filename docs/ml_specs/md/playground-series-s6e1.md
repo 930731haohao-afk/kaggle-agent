@@ -142,3 +142,11 @@ leaderboard's best solution is a **neural net**, which the GBDT reproduce-agent 
 strictly GBM-vs-GBM, not a contest against the public state of the art. Within that GBM regime, this is an honest
 "last-mile" competition: the whole four-stage ladder moves inside a ~0.0008 R² band with extremely stable fold-level CV,
 so the gains are real but small, and neither agent's GBM pipeline separates from the other.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: lane **running** (started 2026-08-17 15:26); re-run CV and LB: TBD.

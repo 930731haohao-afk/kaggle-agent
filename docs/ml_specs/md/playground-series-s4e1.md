@@ -123,3 +123,9 @@ NVIDIA leads by ~0.4%. The honest caveat: the public kernel's headline score exp
 deliberately excluded for a fair, generalizable comparison — so both numbers here are leak-free. On the newer seasons
 (S5–S6) this reproduce-vs-originate gap collapses to a dead heat, which is analyzed separately in the four-axis
 evaluation; for this S3-era-style churn problem the well-optimized public kernel retains a small edge.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+- s4e1 is outside the frozen 20-competition baseline set used for the re-run, so it has no re-run lane.

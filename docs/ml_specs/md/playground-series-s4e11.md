@@ -148,3 +148,13 @@ The result is effectively a **tie** (our 0.9402 vs NVIDIA 0.9399, +~0.0003 to ou
 churn problem (s4e1) where the well-optimized public kernel kept a small edge, here our from-scratch pipeline matches and
 marginally exceeds the reproduce-agent — consistent with the newer-season pattern where the reproduce-vs-originate gap
 collapses to a dead heat.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-14, 81 min.
+- re-run local CV: **accuracy 0.940810** (5-fold StratifiedKFold, OOF-fitted threshold 0.480), 4-member weighted blend.
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

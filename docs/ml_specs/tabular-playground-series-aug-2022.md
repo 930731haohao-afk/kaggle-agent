@@ -85,3 +85,11 @@ The **Loss Function** is L2-regularized log-loss (sklearn `LogisticRegression`),
 ---
 
 *Fields marked "not recorded": total run wall-clock beyond the ~7 min tree search; training peak memory; inference duration and memory (not separately profiled). The run itself was OOF-only (no LB feedback at selection time); leaderboard figures come from the benchmark study's frozen score table.*
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: lane **queued**; re-run CV and LB: TBD.

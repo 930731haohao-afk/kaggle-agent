@@ -138,3 +138,13 @@ RMSLE spans 0.2947–0.2976). This is a genuinely low-signal dataset where every
 target, so both a well-engineered from-scratch pipeline and a reproduced public ensemble converge to essentially the same
 floor. On this problem the reproduce-vs-originate comparison ends in a tie, consistent with the broader sweep finding that
 the gap collapses on well-optimized modern Playground episodes.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-17, 107 min — first attempt (08-14) exited without a submission and was relaunched.
+- re-run local CV: **RMSLE 0.292886** (5-fold on log1p(cost)), 10-member NNLS blend over tree-search solos + linear-stage honest pool.
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

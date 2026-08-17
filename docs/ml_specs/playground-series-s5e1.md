@@ -86,3 +86,13 @@ The **Loss Function** is L2 on the log-space shape target (`log(y/level)`), with
 ---
 
 *Fields marked "not recorded": ridge design width / parameter count; training peak memory; inference duration and memory; per-stage wall-clock outside the tree search (only the 945.8 s search and the 9.2 s root refit are logged).*
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-15, 113 min.
+- re-run local CV: **cross-arm blend MAPE 5.840798%** (ratio-arm alone 5.886112) — weights and global scale fitted on the same OOF rows they score, so optimistic relative to held-out; lane's own caveat recorded.
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

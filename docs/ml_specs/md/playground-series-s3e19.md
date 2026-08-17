@@ -158,3 +158,13 @@ we recognized that 2022 is a pure future-year extrapolation and validated accord
 (regularized tuning, seed-bagging to cut the inflated fold variance, the ×1.02 level correction) toward what actually
 generalizes forward, whereas a kernel optimized on an optimistic random split transfers poorly to the honest extrapolation
 test. On this time-series episode, choosing the right validation scheme *is* the win.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-17, 39 min — clean re-run; the 08-14 first attempt was discarded by the transcript audit (raw knowledge-library opens + a network call), and the clean run scores worse on CV (6.706 vs the tainted 5.740), consistent with the audit pricing a real contamination advantage; the re-run's own audit flag was a verified detector false positive (operator waiver on record).
+- re-run local CV: **pooled OOF SMAPE 6.70585** (3 expanding year-forward folds), structural Ridge in log space on the ratio_target arm (node #17).
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

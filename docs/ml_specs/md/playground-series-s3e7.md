@@ -156,3 +156,13 @@ NVIDIA is numerically ahead by a **marginal +0.17%** (0.9014 vs ≈0.8999), but 
 squeezed only ~+0.0005 total and even the 60-node tree search added ~0.0006 more. As on the newer seasons, the
 reproduce-vs-originate contest here is effectively a dead heat: the well-optimized public kernel and our from-scratch
 pipeline land on the same fourth decimal.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-14, 50 min.
+- re-run local CV: **ROC-AUC 0.901769** honest leave-fold-out (0.901845 fitted-OOF), 16-member weighted blend (node #34).
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

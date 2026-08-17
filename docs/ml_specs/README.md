@@ -57,5 +57,13 @@ the note — LB numbers are the ones fit for between-agent claims. PR = percenti
 
 s5e1 and tps-sep-2022 ran the full v5 pipeline (dossier + external-data injection, knowledge library
 pinned) and joined the frozen baseline on 2026-07-31; the other five ran in the 9a coverage phase.
+
+**Final-architecture re-run (Stage 0.5 in every lane).** Every report now ends with a
+"Final-Architecture Re-Run" section: the 20 baseline competitions are being re-run in an isolated
+root under one frozen v5 architecture where **each lane runs the Stage 0.5 problem dossier in-lane**,
+holds no credentials, and passes a per-lane transcript audit. As of 2026-08-17, 15/20 lanes are done
+(local CV quoted per report), 1 running, 4 queued; **all re-run leaderboard numbers are TBD** until
+the credentialed operator scoring step. Nothing in the historical sections above is revised by these
+entries. s3e20 and s4e1 sit outside the baseline and have no re-run lane.
 tps-sep-2022 is our agent's known failure mode (wrong country-level regime bet, flagged as
 undecidable-from-data before submission — see that report's Evaluation section).

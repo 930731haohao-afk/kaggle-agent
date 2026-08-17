@@ -155,3 +155,9 @@ from-scratch agent independently discovered the *same* structural regime (histor
 and tuned it to 21.06–21.15, but did not close the last increment to the kernel's optimized 19.648. The load-bearing
 finding — that a 4-scalar structural model *beats every GBDT ensemble* here, confirmed five separate times — is itself the
 report's central result.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+- s3e20 is outside the frozen 20-competition baseline (late submission closed, no private-LB anchor), so it has no re-run lane.

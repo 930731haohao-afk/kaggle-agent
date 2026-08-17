@@ -88,3 +88,13 @@ One lever was tested and **rejected** (exp #3): forward-consistency refinement â
 ---
 
 *Fields marked "not recorded": CNN parameter count; full-grade cnn_v2 training wall-clock; training peak memory; inference duration and memory. The pipeline run was CV-only (LB closed 2014); leaderboard figures come from the study's frozen three-way scoring.*
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) â€” 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-14, 214 min, audit clean.
+- re-run local CV: **MAE 0.106688** (held-out fold 0 of 5), weighted residual-CNN bag with per-delta thresholds.
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

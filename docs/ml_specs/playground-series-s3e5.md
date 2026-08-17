@@ -140,3 +140,13 @@ over verbatim reproduction. The margin widens further (to 0.57066, ~+4.2%) once 
 member is included. The honest caveats: this is a CV-only comparison (neither side has an LB number on this machine),
 and the champion's cutpoints are fit on full OOF — though the nested-cutpoint diagnostic bounds that overfit risk as
 small and shrinking.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-14, 46 min.
+- re-run local CV: **QWK 0.57638** (honest leave-fold-out re-measurement 0.57198), six shallow-CatBoost blend with OptimizedRounder cutpoints (node #24).
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

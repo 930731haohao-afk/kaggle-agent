@@ -137,3 +137,11 @@ kernel:
 The result is effectively a **dead heat**, with our from-scratch agent fractionally ahead of the reproduced public
 kernel — consistent with the newer-season (S5–S6) pattern where the reproduce-vs-originate gap collapses, in contrast to
 the small public-kernel edge seen on older S3-era problems. Both numbers are leak-free.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: lane **queued**; re-run CV and LB: TBD.

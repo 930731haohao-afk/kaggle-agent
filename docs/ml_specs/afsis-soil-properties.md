@@ -83,3 +83,13 @@ The **Loss Function** family is L2 throughout, per the dossier's metric trap ("R
 ---
 
 *Fields marked "not recorded": linear-stage and total pipeline wall-clock; training peak memory; inference duration and memory; target physical units and standardization constants (not provided in the data). STATUS.md was written before benchmark scoring and marks the run OOF-only; the leaderboard figures above come from the study's frozen three-way score table.*
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-14, 24 min, audit clean.
+- re-run local CV: **MCRMSE 0.470503** honest (landscape-grouped 5-fold, weights refit per fold; same blend 0.455779 in-sample).
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).

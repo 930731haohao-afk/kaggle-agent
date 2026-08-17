@@ -147,3 +147,13 @@ Our agent wins by 0.0031 MAE on this episode — the from-scratch pool with a ro
 the reproduced public XGBoost kernel. The decisive levers were (1) precise blend-weight search decided directly on the
 rounded metric, and (2) genuinely diverse pool members — a feature-pruned LGB (dropping the r=0.993 collinear `Weight`)
 and a boundary-pushed low-LR LGB — that a verbatim kernel copy does not explore.
+
+---
+
+## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
+
+All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+
+- **Lane**: done 2026-08-14, 45 min.
+- re-run local CV: **MAE 1.334958** (5-fold StratifiedKFold on binned Age, post-processed), unweighted blend chosen over the tree champion to avoid refit optimism.
+- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
