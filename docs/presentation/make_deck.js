@@ -81,7 +81,7 @@ function head(slide, num, title) {
   }], {
     x: 0.55, y: 1.35, w: 5.7, h: 3.1, barDir: "bar",
     chartColors: [BLUE, PALE, PALE],
-    showTitle: true, title: "Decidable-duel win rate, 20 competitions (%)",
+    showTitle: true, title: "Decidable-duel win rate, 20 comps, pre-v5 baseline (%)",
     titleFontSize: 13, titleColor: NAVY, titleFontFace: "Calibri",
     showValue: true, dataLabelPosition: "outEnd", dataLabelColor: INK, dataLabelFontSize: 12, dataLabelFontFace: "Calibri",
     showLegend: false, catAxisLabelColor: INK, catAxisLabelFontSize: 12, catAxisLabelFontFace: "Calibri",
@@ -89,7 +89,7 @@ function head(slide, num, title) {
     valGridLine: { color: "E4E9F0", size: 0.5 }, catGridLine: { style: "none" },
     chartColorsOpacity: 100,
   });
-  s.addText("27% of all duels are undecidable at the measurable error scale; verdicts come from a paired test built on Kaggle's own public/private split. Median percentile rank: my-agent 72.3, NVIDIA 68.0, AIDE 68.7.", {
+  s.addText("27% of all duels are undecidable at the measurable error scale; verdicts come from a paired test built on Kaggle's own public/private split. Median percentile rank: my-agent 72.3, NVIDIA 68.0, AIDE 68.7. Standings are the pre-v5 baseline lanes; the Stage-0.5 re-run replaces them once scored.", {
     x: 0.55, y: 4.6, w: 5.7, h: 1.1, fontFace: "Calibri", fontSize: 12.5, color: MUT, margin: 0 });
 
   s.addText("Mid-complexity three-way — my-agent sweeps all three", { x: 6.9, y: 1.35, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 16, bold: true, color: NAVY, margin: 0 });
