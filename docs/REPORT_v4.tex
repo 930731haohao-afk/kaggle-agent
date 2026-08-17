@@ -41,7 +41,7 @@ Report v4 --- CONDENSED DRAFT (August 2026)\\
 \maketitle
 
 \begin{center}\textbf{\large Abstract}\end{center}
-\noindent We present \textbf{my-agent}, an end-to-end agent for machine-learning competitions, and the design decision at its centre: \emph{where external knowledge enters the pipeline}. The agent runs the full loop --- problem identification, EDA, feature engineering, modelling, evaluation, submission --- with an LLM reasoning at every stage, Auto-ML libraries invoked through the shell, a cross-competition experience library supplying evidence-backed priors, and a tree search over candidate configurations as the optimisation loop. Measuring our own first design, we found knowledge injected downstream at the blending stage worth only ${\sim}10^{-5}$; we therefore moved it upstream into a \emph{problem-identification layer} that classifies task family, train--test window relation, split policy, and external-data need before any modelling, emitting typed operators into a whitelisted, leakage-guarded external-data module. The layer separates cleanly (it fires on exactly the 2 of 18 baseline competitions that need external data, silent on the other 16 --- the silence being the informative half, since the two positives are partly in-sample); on the benchmark's canonical failure it significantly beats the agent's own frozen predecessor, lifting my-agent from clearly last to numerically first among the three agents; and in matched-configuration designs across three firing-class competitions all six external-data arms beat their own baselines --- while no local signal we tested can select the \emph{form} the injection should take, a negative result sharp enough that the one selector surviving hindsight was killed by its first pre-registered prediction. To place the agent, we benchmark it against two frozen, methodologically distinct yardsticks --- \textbf{AIDE}, LLM tree search, and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel --- on 20 Kaggle competitions under a mechanically enforced fairness protocol, plus three mid-complexity competitions spanning NLP, physiological time series, and medical imaging, where my-agent takes the three-way best on all three. Every submission is scored on the real leaderboard, and every verdict is adjudicated with an error model built from Kaggle's own public/private split and from measured run-to-run agent variance, so that the standing we report comes with the scale at which it is readable: my-agent wins 57\% of decidable duels (NVIDIA 48\%, AIDE 44\%) with 27\% undecidable, local cross-validation contradicts the leaderboard in 9 of 13 competitions, and the ranking's winner flips when the composition of the evaluation set changes --- which is why an agent's capability claim, ours included, must be stated together with the set it was measured on.
+\noindent We present \textbf{my-agent}, an end-to-end agent for machine-learning competitions, and the design decision at its centre: \emph{where external knowledge enters the pipeline}. The agent runs the full loop --- problem identification, EDA, feature engineering, modelling, evaluation, submission --- with an LLM reasoning at every stage, Auto-ML libraries invoked through the shell, a cross-competition experience library supplying evidence-backed priors, and a tree search over candidate configurations as the optimisation loop. Measuring our own first design, we found knowledge injected downstream at the blending stage worth only ${\sim}10^{-5}$; we therefore moved it upstream into a \emph{problem-identification layer} that classifies task family, train--test window relation, split policy, and external-data need before any modelling, emitting typed operators into a whitelisted, leakage-guarded external-data module. The layer separates cleanly (it fires on exactly the 2 of 18 baseline competitions that need external data, silent on the other 16 --- the silence being the informative half, since the two positives are partly in-sample); on the benchmark's canonical failure it significantly beats the agent's own frozen predecessor, lifting my-agent from clearly last to numerically first among the three agents; and in matched-configuration designs across three firing-class competitions all six external-data arms beat their own baselines --- while no local signal we tested can select the \emph{form} the injection should take, a negative result sharp enough that the one selector surviving hindsight was killed by its first pre-registered prediction. To place the agent, we benchmark it against two frozen, methodologically distinct yardsticks --- \textbf{AIDE}, LLM tree search, and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel --- on 20 Kaggle competitions under a mechanically enforced fairness protocol, plus three mid-complexity competitions spanning NLP, physiological time series, and medical imaging, where my-agent takes the three-way best on all three. Every submission is scored on the real leaderboard, and every verdict is adjudicated with an error model built from Kaggle's own public/private split and from measured run-to-run agent variance, so that the standing we report comes with the scale at which it is readable: my-agent wins 57\% of decidable duels (NVIDIA 48\%, AIDE 44\%) with 27\% undecidable on the pre-v5 baseline runs (a Stage-0.5 final-architecture re-run of all 20 competitions is complete or in flight, its leaderboard standings TBD pending scoring), local cross-validation contradicts the leaderboard in 9 of 13 competitions, and the ranking's winner flips when the composition of the evaluation set changes --- which is why an agent's capability claim, ours included, must be stated together with the set it was measured on.
 
 \vspace{0.5em}
 
@@ -352,32 +352,32 @@ s3e7  & $-0.00859$ & $-0.00772$ & $-0.00825$ & $-0.00819$ & 0.00087 \\
 
 \begin{table}[htbp]
 \centering\small
-\caption{Three-way performance, public leaderboard. \dn{} = lower is better, \up{} = higher is better; bold = best of the three.}
+\caption{Three-way performance, public leaderboard. \dn{} = lower is better, \up{} = higher is better; bold = best of the three scored columns. The \textbf{my-agent (v5)} column is the final-architecture Stage-0.5 re-run of Section~\ref{sec:rerun} --- its submissions exist but are unscored, so every cell is TBD; the \emph{pre-v5} column is the 2026-07 baseline runs, kept as the historical reference the analyses of this report were computed on.}
 \label{tab:public}
-\begin{tabular}{@{}rllrrr@{}}
+\begin{tabular}{@{}rllcrrr@{}}
 \toprule
-\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} \\
+\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent (v5)} & \textbf{my-agent (pre-v5)} & \textbf{NVIDIA} & \textbf{AIDE} \\
 \midrule
-1 & s3e1 & RMSE \dn & 0.56083 & \textbf{0.55332} & 0.55899 \\
-2 & s3e3 & ROC-AUC \up & 0.89262 & \textbf{0.93526} & 0.88484 \\
-3 & s3e5 & QWK \up & 0.57921 & 0.57515 & \textbf{0.59362} \\
-4 & s3e7 & ROC-AUC \up & 0.91116 & \textbf{0.91230} & 0.90934 \\
-5 & s3e9 & RMSE \dn & 11.84951 & \textbf{11.83399} & 11.86657 \\
-6 & s3e11 & RMSLE \dn & 0.29534 & 0.29559 & \textbf{0.29389} \\
-7 & s3e14 & MAE \dn & 341.26711 & \textbf{338.36524} & 342.44918 \\
-8 & s3e16 & MAE \dn & 1.34315 & \textbf{1.33566} & 1.33920 \\
-9 & s3e19 & SMAPE \dn & 50.22497 & \textbf{47.52145} & 48.39715 \\
-10 & s4e11 & Accuracy \up & 0.94125 & 0.94136 & \textbf{0.94184} \\
-11 & s5e10 & RMSE \dn & \textbf{0.05551} & 0.05562 & 0.05555 \\
-12 & s6e1 & Error \dn & \textbf{8.69338} & 8.70480 & 8.69449 \\
-13 & s6e2 & ROC-AUC \up & \textbf{0.95367} & 0.95348 & 0.95364 \\
-14 & afsis & MCRMSE \dn & \textbf{0.45207} & 0.61276 & 0.45636 \\
-15 & cat-in-the-dat & ROC-AUC \up & \textbf{0.80801} & 0.77641 & 0.80790 \\
-16 & conway & MAE \dn & \textbf{0.10771} & 0.11094 & 0.10960 \\
-17 & tps-aug-2022 & ROC-AUC \up & \textbf{0.58559} & 0.57920 & 0.58479 \\
-18 & tps-jan-2022 & SMAPE \dn & 4.90883 & \textbf{4.43958} & 10.11598 \\
-19 & s5e1 & MAPE \dn & 0.10236 & \textbf{0.05726} & 0.12573 \\
-20 & tps-sep-2022 & SMAPE \dn & 28.32738 & \textbf{4.77458} & 5.78998 \\
+1 & s3e1 & RMSE \dn & TBD & 0.56083 & \textbf{0.55332} & 0.55899 \\
+2 & s3e3 & ROC-AUC \up & TBD & 0.89262 & \textbf{0.93526} & 0.88484 \\
+3 & s3e5 & QWK \up & TBD & 0.57921 & 0.57515 & \textbf{0.59362} \\
+4 & s3e7 & ROC-AUC \up & TBD & 0.91116 & \textbf{0.91230} & 0.90934 \\
+5 & s3e9 & RMSE \dn & TBD & 11.84951 & \textbf{11.83399} & 11.86657 \\
+6 & s3e11 & RMSLE \dn & TBD & 0.29534 & 0.29559 & \textbf{0.29389} \\
+7 & s3e14 & MAE \dn & TBD & 341.26711 & \textbf{338.36524} & 342.44918 \\
+8 & s3e16 & MAE \dn & TBD & 1.34315 & \textbf{1.33566} & 1.33920 \\
+9 & s3e19 & SMAPE \dn & TBD & 50.22497 & \textbf{47.52145} & 48.39715 \\
+10 & s4e11 & Accuracy \up & TBD & 0.94125 & 0.94136 & \textbf{0.94184} \\
+11 & s5e10 & RMSE \dn & TBD & \textbf{0.05551} & 0.05562 & 0.05555 \\
+12 & s6e1 & Error \dn & TBD & \textbf{8.69338} & 8.70480 & 8.69449 \\
+13 & s6e2 & ROC-AUC \up & TBD & \textbf{0.95367} & 0.95348 & 0.95364 \\
+14 & afsis & MCRMSE \dn & TBD & \textbf{0.45207} & 0.61276 & 0.45636 \\
+15 & cat-in-the-dat & ROC-AUC \up & TBD & \textbf{0.80801} & 0.77641 & 0.80790 \\
+16 & conway & MAE \dn & TBD & \textbf{0.10771} & 0.11094 & 0.10960 \\
+17 & tps-aug-2022 & ROC-AUC \up & TBD & \textbf{0.58559} & 0.57920 & 0.58479 \\
+18 & tps-jan-2022 & SMAPE \dn & TBD & 4.90883 & \textbf{4.43958} & 10.11598 \\
+19 & s5e1 & MAPE \dn & TBD & 0.10236 & \textbf{0.05726} & 0.12573 \\
+20 & tps-sep-2022 & SMAPE \dn & TBD & 28.32738 & \textbf{4.77458} & 5.78998 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -385,46 +385,46 @@ s3e7  & $-0.00859$ & $-0.00772$ & $-0.00825$ & $-0.00819$ & 0.00087 \\
 \begin{table}[htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{3.5pt}
-\caption{Three-way performance, private leaderboard; percentile rank (PR) in parentheses. In the verdict column, \M{} = my-agent, \N{} = NVIDIA, \A{} = AIDE; ``$>$'' means the gap passes the paired significance test of Section~\ref{sec:exp2}, ``$\approx$'' means indistinguishable within error. Bold = best of the three.}
+\caption{Three-way performance, private leaderboard; percentile rank (PR) in parentheses. In the verdict column, \M{} = my-agent, \N{} = NVIDIA, \A{} = AIDE; ``$>$'' means the gap passes the paired significance test of Section~\ref{sec:exp2}, ``$\approx$'' means indistinguishable within error. Bold = best of the three scored columns. The \textbf{my-agent (v5)} column is the Stage-0.5 final-architecture re-run (Section~\ref{sec:rerun}), unscored as of this draft (TBD); \emph{pre-v5} is the 2026-07 baseline runs, and the paired verdicts are computed on those historical lanes.}
 \label{tab:private}
-\begin{tabular}{@{}rllrrrl@{}}
+\begin{tabular}{@{}rllcrrrl@{}}
 \toprule
-\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent (PR)} & \textbf{NVIDIA (PR)} & \textbf{AIDE (PR)} & \textbf{Paired verdict} \\
+\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent (v5)} & \textbf{my-agent pre-v5 (PR)} & \textbf{NVIDIA (PR)} & \textbf{AIDE (PR)} & \textbf{Paired verdict} \\
 \midrule
-1 & s3e1 & RMSE \dn & 0.55987 (63.3) & \textbf{0.55550} (93.2) & 0.55552 (81.0) & $\N \approx \A > \M$ \\
-2 & s3e3 & ROC-AUC \up & 0.87303 (29.4) & \textbf{0.89537} (66.8) & 0.86863 (26.4) & $\N > \M > \A$ \\
-3 & s3e5 & QWK \up & \textbf{0.59743} (78.8) & 0.56974 (75.7) & 0.58138 (79.8) & $\M \approx \A > \N$ \\
-4 & s3e7 & ROC-AUC \up & 0.90257 (74.3) & \textbf{0.90458} (78.1) & 0.90109 (67.1) & $\N > \M > \A$ \\
-5 & s3e9 & RMSE \dn & 12.29871 (50.6) & \textbf{12.22913} (59.1) & 12.30667 (44.5) & $\N > \M \approx \A$ \\
-6 & s3e11 & RMSLE \dn & 0.29597 (67.4) & 0.29624 (66.6) & \textbf{0.29445} (73.3) & $\A > \M > \N$ \\
-7 & s3e14 & MAE \dn & 332.43560 (76.1) & \textbf{330.71616} (89.2) & 332.31556 (71.2) & $\N > \M$; other pairs $\approx$ \\
-8 & s3e16 & MAE \dn & \textbf{1.33859} (84.2) & 1.34001 (96.4) & 1.34224 (91.4) & $\N > \A$; other pairs $\approx$ \\
-9 & s3e19 & SMAPE \dn & 50.45537 (28.5) & \textbf{48.26558} (41.4) & 48.34131 (40.1) & $\N \approx \A > \M$ \\
-10 & s4e11 & Accuracy \up & 0.94043 (50.7) & \textbf{0.94076} (52.8) & 0.94056 (62.1) & $\N > \M$; other pairs $\approx$ \\
-11 & s5e10 & RMSE \dn & \textbf{0.05576} (85.7) & 0.05588 (59.4) & 0.05579 (78.9) & $\M > \A > \N$ \\
-12 & s6e1 & Error \dn & \textbf{8.71733} (75.2) & 8.73239 (69.5) & 8.72191 (74.8) & $\M > \A > \N$ \\
-13 & s6e2 & ROC-AUC \up & \textbf{0.95516} (78.8) & 0.95508 (63.0) & \textbf{0.95516} (76.5) & $\M \approx \A \approx \N$ \\
-14 & afsis & MCRMSE \dn & \textbf{0.49517} (46.6) & 0.69855 (18.8) & 0.49861 (45.6) & $\M > \A > \N$ \\
-15 & cat-in-the-dat & ROC-AUC \up & \textbf{0.80241} (73.1) & 0.77084 (32.6) & 0.80217 (70.3) & $\M > \A > \N$ \\
-16 & conway & MAE \dn & \textbf{0.10875} (98.6) & 0.11189 (96.5) & 0.11065 (97.9) & $\M > \A > \N$ \\
-17 & tps-aug-2022 & ROC-AUC \up & 0.59055 (66.0) & 0.58730 (43.0) & \textbf{0.59106} (60.5) & $\M \approx \A > \N$ \\
-18 & tps-jan-2022 & SMAPE \dn & 6.46156 (71.5) & \textbf{4.63651} (76.4) & 10.66638 (28.9) & $\N > \M > \A$ \\
-19 & s5e1 & MAPE \dn & \textbf{0.12752} (76.5) & 0.14594 (69.3) & 0.17917 (48.1) & $\M > \A$; other pairs $\approx$ \\
-20 & tps-sep-2022 & SMAPE \dn & 28.54859 (14.6) & \textbf{5.48351} (80.3) & 9.72095 (48.3) & $\N > \A > \M$ \\
+1 & s3e1 & RMSE \dn & TBD & 0.55987 (63.3) & \textbf{0.55550} (93.2) & 0.55552 (81.0) & $\N \approx \A > \M$ \\
+2 & s3e3 & ROC-AUC \up & TBD & 0.87303 (29.4) & \textbf{0.89537} (66.8) & 0.86863 (26.4) & $\N > \M > \A$ \\
+3 & s3e5 & QWK \up & TBD & \textbf{0.59743} (78.8) & 0.56974 (75.7) & 0.58138 (79.8) & $\M \approx \A > \N$ \\
+4 & s3e7 & ROC-AUC \up & TBD & 0.90257 (74.3) & \textbf{0.90458} (78.1) & 0.90109 (67.1) & $\N > \M > \A$ \\
+5 & s3e9 & RMSE \dn & TBD & 12.29871 (50.6) & \textbf{12.22913} (59.1) & 12.30667 (44.5) & $\N > \M \approx \A$ \\
+6 & s3e11 & RMSLE \dn & TBD & 0.29597 (67.4) & 0.29624 (66.6) & \textbf{0.29445} (73.3) & $\A > \M > \N$ \\
+7 & s3e14 & MAE \dn & TBD & 332.43560 (76.1) & \textbf{330.71616} (89.2) & 332.31556 (71.2) & $\N > \M$; other pairs $\approx$ \\
+8 & s3e16 & MAE \dn & TBD & \textbf{1.33859} (84.2) & 1.34001 (96.4) & 1.34224 (91.4) & $\N > \A$; other pairs $\approx$ \\
+9 & s3e19 & SMAPE \dn & TBD & 50.45537 (28.5) & \textbf{48.26558} (41.4) & 48.34131 (40.1) & $\N \approx \A > \M$ \\
+10 & s4e11 & Accuracy \up & TBD & 0.94043 (50.7) & \textbf{0.94076} (52.8) & 0.94056 (62.1) & $\N > \M$; other pairs $\approx$ \\
+11 & s5e10 & RMSE \dn & TBD & \textbf{0.05576} (85.7) & 0.05588 (59.4) & 0.05579 (78.9) & $\M > \A > \N$ \\
+12 & s6e1 & Error \dn & TBD & \textbf{8.71733} (75.2) & 8.73239 (69.5) & 8.72191 (74.8) & $\M > \A > \N$ \\
+13 & s6e2 & ROC-AUC \up & TBD & \textbf{0.95516} (78.8) & 0.95508 (63.0) & \textbf{0.95516} (76.5) & $\M \approx \A \approx \N$ \\
+14 & afsis & MCRMSE \dn & TBD & \textbf{0.49517} (46.6) & 0.69855 (18.8) & 0.49861 (45.6) & $\M > \A > \N$ \\
+15 & cat-in-the-dat & ROC-AUC \up & TBD & \textbf{0.80241} (73.1) & 0.77084 (32.6) & 0.80217 (70.3) & $\M > \A > \N$ \\
+16 & conway & MAE \dn & TBD & \textbf{0.10875} (98.6) & 0.11189 (96.5) & 0.11065 (97.9) & $\M > \A > \N$ \\
+17 & tps-aug-2022 & ROC-AUC \up & TBD & 0.59055 (66.0) & 0.58730 (43.0) & \textbf{0.59106} (60.5) & $\M \approx \A > \N$ \\
+18 & tps-jan-2022 & SMAPE \dn & TBD & 6.46156 (71.5) & \textbf{4.63651} (76.4) & 10.66638 (28.9) & $\N > \M > \A$ \\
+19 & s5e1 & MAPE \dn & TBD & \textbf{0.12752} (76.5) & 0.14594 (69.3) & 0.17917 (48.1) & $\M > \A$; other pairs $\approx$ \\
+20 & tps-sep-2022 & SMAPE \dn & TBD & 28.54859 (14.6) & \textbf{5.48351} (80.3) & 9.72095 (48.3) & $\N > \A > \M$ \\
 \midrule
-\multicolumn{3}{@{}l}{Median PR (range)} & \textbf{72.3} (14.6--98.6) & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) & \\
+\multicolumn{3}{@{}l}{Median PR (range)} & TBD & \textbf{72.3} (14.6--98.6) & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) & \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 PR is the share of that competition's final private standings the submission would beat (a would-be rank $r$ among $N$ teams gives $\mathrm{PR}=100\,(N-r)/N$, against the frozen final leaderboard) --- an \emph{absolute} capability reference (``where would this agent have placed had it entered?''), separate from the relative ordering among the three. On s3e19 the PRs of 28.5--41.4 show all three far behind typical participants; on s3e16 the PRs of 84.2--96.4 put all three in the top tier, where their small mutual gaps carry little practical meaning.
 
-Public and private scores are shown in separate tables because the paired test (Section~\ref{sec:exp2}) is built on their difference. Under a naive ``bigger number wins'' count, the tally is my-agent 8, NVIDIA 9, AIDE 2 (one M--A tie) --- a count the next section shows cannot be trusted.
+Public and private scores are shown in separate tables because the paired test (Section~\ref{sec:exp2}) is built on their difference. Under a naive ``bigger number wins'' count over the scored (pre-v5) columns, the tally is my-agent 8, NVIDIA 9, AIDE 2 (one M--A tie) --- a count the next section shows cannot be trusted. Per the study's version rule, the my-agent column of record for this benchmark is the Stage-0.5 final-architecture re-run; until its scoring step runs, every my-agent (v5) leaderboard cell is TBD, and all standings quoted in this report are those of the pre-v5 baseline lanes, labeled as such.
 
 \subsection{Standing of the Three Agents Under the Paired Test}
 \label{sec:winrates}
 
-Applying the test of Section~\ref{sec:exp2} to all 60 duels yields the standing below. Against the rule's null false-verdict rate of roughly $25$--$35\%$, the observed decidable rate is $44/60 = 73\%$ --- far above what noise alone would produce, so most decided duels reflect genuine performance differences.
+Applying the test of Section~\ref{sec:exp2} to all 60 duels of the \emph{pre-v5 baseline} lanes yields the standing below (the Stage-0.5 re-run re-enters this table once scored; Section~\ref{sec:rerun}). Against the rule's null false-verdict rate of roughly $25$--$35\%$, the observed decidable rate is $44/60 = 73\%$ --- far above what noise alone would produce, so most decided duels reflect genuine performance differences.
 
 \begin{table}[htbp]
 \centering\small
@@ -932,7 +932,7 @@ ablation of the experience library.
 
 \section{Conclusion}
 
-This study set out to build an end-to-end competition agent and to find out honestly what its architecture is worth. Against two frozen, methodologically distinct yardsticks on a 20-competition baseline, my-agent wins 57\% of decidable duels (95\% CI 37--76\%), with its advantage concentrated where no mature public solutions exist, and takes the three-way best on all three mid-complexity competitions outside the tabular family. Behind those numbers is the architectural claim this report argues for. Acting on the benchmark's own diagnosis, we moved knowledge injection from the blend stage (${\sim}10^{-5}$, measured) upstream to problem identification --- a dossier layer with perfect fire/silence separation across the original 18-competition sweep and, on the canonical failure case, a paired-test-confirmed gain over its own frozen baseline that moves my-agent from clearly last to numerically first among the three. Holding that layer to the same discipline returns a mixed and more useful verdict than a win alone: every controlled external-data arm beats its matched baseline, now six of six across three competitions; no local validation protocol can choose between the arms --- and the one selector that survived hindsight died on its first pre-registered prediction, a failure we count as the method working, since a benchmark that can kill its own hypotheses is the thing this study set out to build; and tracing consumers showed that only 5\% of the layer's proposals were actually being applied (Section~\ref{sec:exp6v5}). None of these verdicts would be readable without the apparatus of Section~\ref{sec:apparatus}: 27\% of all duels cannot be decided at the measurable error scale, measured run-to-run variance revises several more, local cross-validation contradicts the real leaderboard in 9 of 13 comparable competitions, and the ranking's winner flips between two reasonable evaluation sets --- and, on one competition, between the public and private halves of a single test split. A capability claim about an agent, ours first of all, is therefore only as meaningful as the error model and evaluation set stated alongside it. The arc of the internship is a single loop closed: build the agent, benchmark it honestly, read its failures, fix the layer they identify, and re-verify under the same discipline that found the gap.
+This study set out to build an end-to-end competition agent and to find out honestly what its architecture is worth. Against two frozen, methodologically distinct yardsticks on a 20-competition baseline, my-agent wins 57\% of decidable duels (95\% CI 37--76\%; pre-v5 baseline lanes --- the Stage-0.5 re-run's standings are TBD pending scoring, Section~\ref{sec:rerun}), with its advantage concentrated where no mature public solutions exist, and takes the three-way best on all three mid-complexity competitions outside the tabular family. Behind those numbers is the architectural claim this report argues for. Acting on the benchmark's own diagnosis, we moved knowledge injection from the blend stage (${\sim}10^{-5}$, measured) upstream to problem identification --- a dossier layer with perfect fire/silence separation across the original 18-competition sweep and, on the canonical failure case, a paired-test-confirmed gain over its own frozen baseline that moves my-agent from clearly last to numerically first among the three. Holding that layer to the same discipline returns a mixed and more useful verdict than a win alone: every controlled external-data arm beats its matched baseline, now six of six across three competitions; no local validation protocol can choose between the arms --- and the one selector that survived hindsight died on its first pre-registered prediction, a failure we count as the method working, since a benchmark that can kill its own hypotheses is the thing this study set out to build; and tracing consumers showed that only 5\% of the layer's proposals were actually being applied (Section~\ref{sec:exp6v5}). None of these verdicts would be readable without the apparatus of Section~\ref{sec:apparatus}: 27\% of all duels cannot be decided at the measurable error scale, measured run-to-run variance revises several more, local cross-validation contradicts the real leaderboard in 9 of 13 comparable competitions, and the ranking's winner flips between two reasonable evaluation sets --- and, on one competition, between the public and private halves of a single test split. A capability claim about an agent, ours first of all, is therefore only as meaningful as the error model and evaluation set stated alongside it. The arc of the internship is a single loop closed: build the agent, benchmark it honestly, read its failures, fix the layer they identify, and re-verify under the same discipline that found the gap.
 
 \appendix
 
