@@ -1,0 +1,9 @@
+node_modules/
+package.json
+package-lock.json
+*.jpg
+pv*.png
+poster_preview*
+bar_crop*
+slides_4min.pdf
+v4page*

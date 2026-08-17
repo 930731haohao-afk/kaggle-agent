@@ -22,7 +22,11 @@ and the plan's §5.1, not the skill's format-specific rubric.
 | P7 | Honesty | CV-only / LB-closed stated where true; unavailable items marked "not recorded"; source conflicts surfaced |
 | P8 | Performance benchmarking | Cross-agent comparison (vs NVIDIA reproduce-agent) present, supporting Goal 3 |
 
-## Result — all 15 pass 8/8
+## Result — all 22 pass 8/8
+
+(15 original reports validated 2026-07-22; the 7 benchmark-baseline additions — afsis, cat-in-the-dat,
+conway, tps-aug-2022, tps-jan-2022, s5e1, tps-sep-2022 — drafted and number-audited 2026-08-17, every
+figure traced to the competition's workspace artifacts or the frozen three-way score table.)
 
 | Comp | P1 | P2 | P3 | P4 | P5 | P6 | P7 | P8 |
 |------|----|----|----|----|----|----|----|----|
@@ -41,6 +45,13 @@ and the plan's §5.1, not the skill's format-specific rubric.
 | s5e10 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | s6e1 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | s6e2 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| afsis-soil-properties | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| cat-in-the-dat | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| conway-s-reverse-game-of-life | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| tps-aug-2022 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| tps-jan-2022 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| s5e1 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| tps-sep-2022 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 **Not covered by these reports** (broader plan items, out of report scope): the plan's §5.2 code-consistency check
 (LLM compares report vs code), §5.3 reproducibility test (a third party rebuilds from report only),

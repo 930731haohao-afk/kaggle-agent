@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Agents for Data Visualization and Kaggle Competitions</title>
+<style>
+  @page { size: 841.0mm 594.0mm; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 841.0mm; height: 594.0mm; }
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #1c1e21; background: #ffffff;
+    display: flex; flex-direction: column;
+  }
+  .band { background: #0f2a4a; color: #fff; padding: 12.92mm 16.15mm 11.31mm; }
+  .band h1 { font-size: 20.99mm; font-weight: 700; letter-spacing: -0.4mm; }
+  .band .sub { margin-top: 4.04mm; font-size: 8.88mm; color: #bcd2ea; }
+  .band .meta { margin-top: 3.24mm; font-size: 6.47mm; color: #8fb0d4; }
+  .grid {
+    flex: 1; display: grid; gap: 7.26mm; padding: 8.88mm 16.15mm 9.68mm;
+    grid-template-columns: 1.14fr 1.12fr 1.32fr 1.1fr;
+    grid-template-rows: 1fr;
+  }
+  .col { display: flex; flex-direction: column; gap: 7.26mm; min-width: 0; }
+  .col .card:last-child { flex: 1; }
+  .card { border: 0.65mm solid #d5dbe3; border-radius: 3.24mm; padding: 8.07mm; background: #fbfcfe; }
+  .card h2 {
+    font-size: 10.5mm; color: #0f2a4a; border-bottom: 0.96mm solid #e2b13c;
+    padding-bottom: 2.82mm; margin-bottom: 4.85mm; letter-spacing: -0.15mm;
+  }
+  .card h3 { font-size: 7.43mm; color: #0f2a4a; margin: 4.85mm 0 2.43mm; }
+  p, li { font-size: 6.54mm; line-height: 1.45; color: #2a2e33; }
+  ul { padding-left: 7.67mm; } li { margin-bottom: 2.75mm; }
+  b { color: #10365f; }
+  img.fig { width: 100%; border: 0.33mm solid #e0e4ea; border-radius: 1.61mm; background:#fff; }
+  .cap { font-size: 5.33mm; color: #5a6472; margin-top: 1.76mm; line-height: 1.35; }
+  table { width: 100%; border-collapse: collapse; font-size: 5.97mm; margin: 2.43mm 0; }
+  th { text-align: left; color: #445; border-bottom: 0.56mm solid #9fb0c4; padding: 1.76mm 2.01mm; font-size: 5.65mm; }
+  td { border-bottom: 0.28mm solid #dfe5ec; padding: 1.76mm 2.01mm; font-variant-numeric: tabular-nums; }
+  td.num, th.num { text-align: right; }
+  .win { font-weight: 700; color: #10365f; }
+  .tbd { color: #8a6d1a; font-weight: 600; }
+  .barwrap { margin: 3.24mm 0 1.61mm; }
+  .barrow { display: flex; align-items: center; gap: 3.24mm; margin-bottom: 2.9mm; }
+  .barlab { width: 38.76mm; font-size: 6.14mm; color: #2a2e33; flex: none; }
+  .bartrack { flex: 1; height: 10.1mm; background: #eef1f5; border-radius: 1.61mm; position: relative; margin-right: 19.39mm; }
+  .bar { height: 100%; border-radius: 1.61mm; }
+  .bar.me   { background: #2b6cb0; }
+  .bar.other{ background: #a8bdd4; }
+  .barval { position: absolute; right: -1.61mm; top: 50%; transform: translate(100%,-50%); font-size: 5.97mm; color: #2a2e33; padding-left: 2.01mm; }
+  .note { font-size: 5.5mm; color: #5a6472; line-height: 1.35; }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 4.04mm; }
+  .footer { padding: 0 16.15mm 7.26mm; font-size: 5.17mm; color: #7a8494; }
+</style>
+</head>
+<body>
+  <div class="band">
+    <h1>AI Agents for Data Visualization and Kaggle Competitions</h1>
+    <div class="sub">An end-to-end LLM agent (my-agent) benchmarked against two frozen yardsticks on 20 Kaggle competitions — with the apparatus needed to make the comparison honest</div>
+    <div class="meta">Wei-Hao Huang · Academia Sinica ISS Summer Internship 2026 · Report v4 (2026-08-17) · github.com/930731haohao-afk/kaggle-agent</div>
+  </div>
+
+  <div class="grid">
+    <!-- COLUMN 1: Motivation -->
+    <div class="col">
+      <div class="card">
+        <h2>1 · Motivation</h2>
+        <h3>Why these tasks are hard</h3>
+        <ul>
+          <li><b>Kaggle competitions</b> demand the full expert loop — validation design, feature engineering, model selection, ensembling — where the difference between top entries sits at the 4th–5th decimal of the metric.</li>
+          <li>Local cross-validation is an unreliable compass: it <b>contradicts the real leaderboard in 9 of 13</b> comparable competitions we measured.</li>
+          <li><b>Data visualization</b> (EDA, diagnostics, reporting) is essential but repetitive: every dataset needs distribution, drift, and correlation views before modeling can be trusted.</li>
+        </ul>
+        <h3>Why an AI agent</h3>
+        <ul>
+          <li>Tireless, systematic search: 22–80 candidate configurations per competition, every experiment logged and reproducible.</li>
+          <li>Runs the same disciplined protocol on 20 competitions serially — a human cannot hold this consistency.</li>
+          <li>Generates per-dataset EDA figures and per-competition reports automatically, so every claim is grounded in an artifact.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>4 · Advantages &amp; Difficulties</h2>
+        <h3>Expected → experienced</h3>
+        <ul>
+          <li><b>Expected:</b> the agent would quickly beat most humans. <b>Experienced:</b> median percentile 72.3 — solidly above average, with wins concentrated where no mature public solutions exist.</li>
+          <li><b>Expected:</b> one run and one score decide a winner. <b>Experienced:</b> score noise + run-to-run variance leave <b>27% of duels undecidable</b>; a paired error model became mandatory.</li>
+          <li><b>Expected:</b> the agent follows the rules by default. <b>Experienced:</b> a transcript audit caught one lane reading its own competition's recorded findings — and the clean re-run scored <i>worse</i>, proving the contamination advantage was real.</li>
+          <li>Fairness is expensive: isolated data roots, credential-free sandboxes, and per-lane transcript audits cost real engineering time — but without them the numbers are not comparable.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- COLUMN 2: Workflow -->
+    <div class="col">
+      <div class="card">
+        <h2>2 · Workflow</h2>
+        <p>An LLM reasons at every stage; Auto-ML libraries are invoked through the shell; a cross-competition <b>experience library</b> supplies evidence-backed priors; a <b>tree search</b> over candidate configurations is the optimisation loop.</p>
+        <img class="fig" src="fig1_architecture.png" alt="Agent architecture">
+        <div class="cap">Six-stage pipeline: problem dossier → EDA → features → modeling → evaluation → submission. The v5 dossier layer classifies the task and injects external data <i>upstream</i>, before any modeling.</div>
+        <img class="fig" src="fig2_tree_search.png" alt="Tree search loop" style="margin-top:4mm">
+        <div class="cap">Tree-search loop: ensembles are first-class nodes with OOF caching and weight search; exploit until plateau, then one forced exploration burst.</div>
+      </div>
+    </div>
+
+    <!-- COLUMN 3: Results -->
+    <div class="col">
+      <div class="card">
+        <h2>3 · Results — Kaggle benchmark</h2>
+        <p class="note">All submissions scored on the real leaderboard (late submission); verdicts adjudicated by a paired test built from Kaggle's own public/private split.</p>
+        <h3>Decidable-duel win rate (20 competitions, 3 agents)</h3>
+        <div class="barwrap">
+          <div class="barrow"><div class="barlab"><b>my-agent</b></div><div class="bartrack"><div class="bar me" style="width:57%"><span class="barval">57%</span></div></div></div>
+          <div class="barrow"><div class="barlab">NVIDIA</div><div class="bartrack"><div class="bar other" style="width:48%"><span class="barval">48%</span></div></div></div>
+          <div class="barrow"><div class="barlab">AIDE</div><div class="bartrack"><div class="bar other" style="width:44%"><span class="barval">44%</span></div></div></div>
+        </div>
+        <p class="note">27% of all duels are undecidable at the measurable error scale. Median percentile rank: my-agent 72.3, NVIDIA 68.0, AIDE 68.7.</p>
+        <h3>Mid-complexity three-way (offline-graded, private split)</h3>
+        <table>
+          <tr><th>Competition</th><th>Metric</th><th class="num">my-agent</th><th class="num">NVIDIA</th><th class="num">AIDE</th></tr>
+          <tr><td>us-patent (NLP)</td><td>Pearson r ↑</td><td class="num win">0.86658</td><td class="num">0.86160</td><td class="num">0.65821</td></tr>
+          <tr><td>ventilator (time series)</td><td>MAE ↓</td><td class="num win">0.16525</td><td class="num">0.40093</td><td class="num">0.34591</td></tr>
+          <tr><td>SIIM-ISIC (imaging)</td><td>AUC ↑</td><td class="num win">0.93529</td><td class="num">0.89822</td><td class="num">0.88579</td></tr>
+        </table>
+        <h3>Final-architecture re-run (in progress, 2026-08-17)</h3>
+        <p>All 20 competitions re-run under one frozen architecture, credential-free sandboxes, per-lane transcript audit. <b>15/20 lanes done</b>, 1 running, 4 queued — leaderboard scores <span class="tbd">TBD</span> until the operator scoring step.</p>
+      </div>
+      <div class="card">
+        <h2>3b · Results — visualization output</h2>
+        <div class="twocol">
+          <div><img class="fig" src="eda_target.png" alt="Target distribution EDA"></div>
+          <div><img class="fig" src="eda_temporal.png" alt="Temporal patterns EDA"></div>
+        </div>
+        <div class="cap">Agent-generated EDA: target distribution and temporal-pattern diagnostics, produced automatically per dataset before modeling (example: energy-prosumer competition). The same pipeline emits per-competition ML-spec reports (22 published) and the flowcharts above.</div>
+      </div>
+    </div>
+
+    <!-- COLUMN 4: Discussion -->
+    <div class="col">
+      <div class="card">
+        <h2>5 · Discussion — advice</h2>
+        <ul>
+          <li><b>State the error model with every claim.</b> A ranking without an error scale is noise: 27% of our duels are undecidable, and the winner flips when the evaluation set changes.</li>
+          <li><b>Never trust local CV for between-agent claims.</b> Score on the real leaderboard; CV describes a pipeline's internal view only.</li>
+          <li><b>Freeze your yardsticks.</b> Improving a baseline mid-study silently turns the benchmark into an optimisation of the baseline.</li>
+          <li><b>Isolate mechanically, then audit the transcript.</b> Sandboxes stop leaks you anticipated; reading what the agent actually did catches the ones you didn't — in both directions (we hit one real contamination and one auditor false positive).</li>
+          <li><b>Put knowledge injection upstream.</b> Injected at the blend stage it was worth ~10⁻⁵; moved into problem identification it lifted the canonical failure case from last to first.</li>
+        </ul>
+        <h3>Where knowledge enters</h3>
+        <ul>
+          <li>Downstream (blend stage): measured gain ~10⁻⁵ — abandoned.</li>
+          <li>Upstream (problem dossier): fires on exactly the 2/18 competitions that need external data; all <b>6 of 6</b> controlled external-data arms beat their matched baselines.</li>
+          <li>But no local signal can select the <i>form</i> of injection — the one surviving selector died on its first pre-registered prediction.</li>
+        </ul>
+        <p class="note" style="margin-top:3mm">Companion documents: Report v4 (Overleaf), Engineering Log, Case Studies, 22 per-competition ML-spec reports.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">All numbers are real measurements as of 2026-08-17 · re-run leaderboard cells TBD pending the credentialed scoring step · AIDE = LLM tree search; NVIDIA = highest-voted-kernel reproduction, both frozen.</div>
+</body>
+</html>

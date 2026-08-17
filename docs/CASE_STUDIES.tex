@@ -1,0 +1,118 @@
+% Per-competition case studies -- companion document.
+% Compile with pdfLaTeX (Overleaf default). No external assets required.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{newtxtext,newtxmath}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{microtype}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage[hyphens]{url}
+\usepackage[colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue!50!black]{hyperref}
+\usepackage{xcolor}
+
+\emergencystretch=1.5em
+\captionsetup{font=small,labelfont=bf}
+
+\title{\textbf{Per-Competition Case Studies}\\
+\large Companion to \emph{Benchmarking AI Agents for Kaggle Competitions}\\
+\normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-07-31.}}
+\author{Wei-Hao Huang\\\small Advisor: Tso-Jung Yen}
+\date{Draft compiled July 31, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{center}\textbf{\large Why this document exists}\end{center}
+\noindent The main report states its claims at the level of methods and evaluation sets; the
+evidence behind several of them is a handful of competitions examined very closely. That
+forensic depth belongs neither in the report's running text, where it pulls the center of
+gravity toward single competitions, nor in the engineering log, which records what broke while
+building the machinery. It lives here. Most of these cases concern s3e19, the benchmark's
+canonical failure; the fourth records the s5e1 setting behind the pre-registered prediction.
+
+\vspace{0.5em}
+
+\section{The CV--Leaderboard Reversal Mechanism}
+
+Detail behind the main report's analysis \emph{Local CV and the Leaderboard Disagree}. CV and
+the leaderboard measure different things: CV asks ``how well do we do on resamples of the
+training data,'' the leaderboard asks ``how well do we do on a batch of never-seen data.'' The
+two correlate strongly when distributions are stable, and decouple as soon as the test--train
+relationship changes. s3e19 is the extreme case --- the matched-split CVs sit at 10--14
+(AIDE's own selected CV, 4.4, is the leaked shuffled-KFold number of the next case) while
+their leaderboard scores sit at 48--50: everyone misfires together, by amounts unrelated to the
+CV ordering, into the lower mode of a bimodal leaderboard that CV had no way to predict. The
+bimodality is sharp in the percentiles: on the 1{,}174-team leaderboard the 10th percentile is
+6.1 while the 25th percentile jumps to 22.8 --- almost no middle ground exists between the mode
+that solved the one-year extrapolation (265 teams below 10) and the mode that did not (570
+teams in 40--60).
+
+\section{AIDE's Silent Split Switch, Step by Step}
+
+Detail behind the main report's failure-mode analysis. AIDE's metric trajectory on s3e19 jumps
+from 18.42 to 4.41 within a single step:
+
+\begin{verbatim}
+step 0-10 : 18.42 ... 22.20 ... 18.42   (time-based validation)
+step 11   : 4.41                        <- switched to KFold(shuffle=True)
+step 12-19: 4.40, 4.37, 4.40, 4.49      (nine steps polishing a leaked number)
+\end{verbatim}
+
+Step 11's plan was merely to fix a LightGBM API compatibility issue; while rewriting the
+training loop it incidentally replaced the validation split with shuffled KFold. The SMAPE
+definition is identical before and after. This study confirmed the effect with a controlled
+experiment (same features, same model, split changed only): \texttt{KFold(shuffle=True)} yields
+SMAPE 4.56, while training on 2017--2020 and validating on 2021 yields 20.41 --- a $4.5\times$
+gap. The competition's test set is one full future year; shuffling rows lets the model
+interpolate within sequences it has memorized. AIDE noticed nothing.
+
+The contrast with my-agent is the sharpest method-level distinction the benchmark surfaced:
+my-agent also tried shuffled KFold in the same competition (SMAPE 4.2814) but explicitly tagged
+it in \texttt{experiments.json} as ``DIAGNOSTIC: not used for submission,'' its purpose being
+to isolate whether a score regression came from the split or from the features.
+
+\section{The Two Experience-Library Entries Behind the Midterm Correction}
+
+Tracing why the midterm had over-attributed s3e19's lower mode to the missing GDP join, we
+found the experience library held both readings at once: one entry correctly identified the
+one-year total extrapolation as the dominant obstacle, while a neighbouring entry over-claimed
+that joining GDP \emph{dissolves} it. That both coexisted --- and that we acted on the
+optimistic one --- is itself a finding: the library's weak link is retrieval, not content. The
+over-claiming entry has since been corrected against the leaderboard evidence reported in the
+main report's injection-layer experiments.
+
+\section{s5e1 (``Forecasting Sticker Sales''): the Setting Behind the Pre-Registered Prediction}
+
+playground-series-s5e1 is a fourth firing-class competition in the same
+country$\times$store$\times$product panel family as s3e19 and tps-sep-2022, with six real
+countries and a \emph{3-year} test horizon against the predecessors' one year. The
+proportionality diagnostic read it as the worst violation in the class: cross-country
+dispersion $0.05$--$0.21$, with the proportionality relation broken in 6 of 7 training years.
+On that reading --- and before any model was fitted or anything submitted --- the prediction of
+the main report's Result 2b (\texttt{ratio\_target} loses to \texttt{join\_feature}, by a
+larger relative margin than on either predecessor) was committed to the competition's dossier
+and to version control with its falsifier stated alongside. The three searched arms that then
+killed it (private MAPE $0.15751$ / $0.15626$ / $0.12417$) applied no remedy for the six
+violated years: the worst diagnosed violation in the class coincided with the ratio form's
+largest win, which is what demoted the diagnostic from a gate to a recorded note.
+
+\section{s3e19: the Residual Decomposition in Full}
+
+The level/shape split reported in the main report's Result 3 comes from global rescalings of
+the best arm's predictions, labelled as diagnostics and never reported as agent results:
+$\times 1.0$ scores private SMAPE 48.497, $\times 1.6$ scores 32.932, and $\times 2.2$ scores
+46.776 --- hence roughly 15.5 points of yearly-level error, with roughly 33 remaining as shape
+against the leaderboard top of 4.67. The evidence that the needed $1.6$ multiplier is
+unlearnable in sample: the proportionality relation implies $1.05$, and the evaluator's own
+global-scale grid search settles on $1.0$. The transfer test of the experience library's other
+candidate recipe: multiplicative panel decomposition, which had beaten a GBDT $4.19$ to $8.43$
+on tps-jan-2022, scores $12.35$ on s3e19's held-out 2021 against the GBDT's $11.59$, and
+$12.34$ even when handed the true held-out yearly total --- the recipe fails to transfer even
+though its proportionality precondition appears satisfied on the training years.
+
+\end{document}

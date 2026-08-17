@@ -32,10 +32,10 @@
 
 \title{\textbf{An End-to-End Agent for Kaggle Competitions}\\
 \large Benchmarked against two frozen yardsticks on 20 competitions\\
-Report v3 --- CONDENSED DRAFT (August 2026)\\
-\normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-08-03.}}
+Report v4 --- CONDENSED DRAFT (August 2026)\\
+\normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-08-17; cells marked TBD await lanes or leaderboard scoring still in progress.}}
 \author{Wei-Hao Huang}
-\date{Draft compiled August 3, 2026}
+\date{Draft compiled August 17, 2026}
 
 \begin{document}
 \maketitle
@@ -57,7 +57,7 @@ Testing an architectural claim of this kind requires reference points we did not
 
 Doing this honestly turned out to require apparatus of its own (Section~\ref{sec:apparatus}), because agent comparisons are ordinarily reported as one run and one score per competition with the higher number declared the winner, and two error sources make that fragile: competition metrics carry test-set sampling error, with top-two gaps often at the fourth or fifth decimal place, and agent execution is itself stochastic. We therefore enforce isolation mechanically, adjudicate every verdict with a paired significance test built from Kaggle's own public/private split, and measure run-to-run variance directly. 
 
-What we find: my-agent wins 57\% of decidable duels versus 48\% (NVIDIA) and 44\% (AIDE), takes the three-way best on all three mid-complexity competitions, and 27\% of duels cannot be decided at all; local cross-validation disagrees with the true leaderboard in 9 of 13 comparable competitions; and the ranking's winner flips when the evaluation set shifts from Playground-only to a broader mix. Held to the same discipline, the upstream injection layer returns one clear positive and one clear negative: external-data injection beats its matched baseline in all six controlled arms across three firing-class competitions, and no local validation protocol we tried can select the form that injection should take.
+What we find: my-agent wins 57\% of decidable duels versus 48\% (NVIDIA) and 44\% (AIDE), takes the three-way best on all three mid-complexity competitions, and 27\% of duels cannot be decided at all; local cross-validation disagrees with the true leaderboard in 9 of 13 comparable competitions; and the ranking's winner flips when the evaluation set shifts from Playground-only to a broader mix. Held to the same discipline, the upstream injection layer returns one clear positive and one clear negative: external-data injection beats its matched baseline in all six controlled arms across three firing-class competitions, and no local validation protocol we tried can select the form that injection should take. As this draft compiles, a verification re-run of the full 20-competition set under the frozen final architecture --- with per-lane sandboxing and transcript auditing --- is in progress (Section~\ref{sec:rerun}); its leaderboard numbers do not exist yet and are marked TBD.
 
 \section{Methods}
 
@@ -663,6 +663,63 @@ SIIM-ISIC & AUC \up & \textbf{0.93529}$\dagger$ & 0.89822 & 0.88579 \\
 \end{table}
 
 my-agent takes the three-way best on all three and the only above-median score on SIIM --- a cleaner sweep than on the Playground set, where its edge was narrow and evaluation-set dependent. The three task families are unrelated, so the result is about pipeline discipline rather than tabular-specific tuning. Offline grading yields one score per submission, so the paired public/private test of Section~\ref{sec:exp2} does not apply here.
+
+\section{The Final-Architecture Re-Run (In Progress)}
+\label{sec:rerun}
+
+\paragraph{Why a re-run.} The 20 my-agent lanes of Section~\ref{sec:exp1} were produced across the study's own development timeline, so different competitions ran different architecture vintages --- by the end of the study s3e1's workspace held 13 candidate evaluators and s5e1's held 7, and ``re-run with the final architecture'' would have meant a different thing on every relaunch (2026-08-04 finding). A re-run manifest (\path{docs/rerun_manifest.json}) now fixes exactly one workspace, one canonical evaluator and one search driver per competition, and all 20 competitions re-run under that frozen definition. The reference lanes do not move: AIDE and NVIDIA stay the frozen yardstick columns of Table~\ref{tab:private}, and the re-run will be placed against them by the same paired test once scored.
+
+\paragraph{Enforcement, tightened beyond Section~\ref{sec:fairness}.} Each lane runs in an isolated root whose data files are validated against the official Kaggle manifest, holds \emph{no credentials} (the Kaggle token is stripped from the environment; a lane can neither consult the leaderboard nor submit), sees only its own workspace (the other nineteen are unreadable), and is denied the answer-key and out-of-fold cache channels that an earlier audit found reachable. New in this run: a \emph{per-lane transcript audit} reads every tool call the lane made --- detectors for network access, raw opens of the shared knowledge library that bypass the query interface's self-citation exclusion, and results of sibling benchmark competitions appearing without a sanctioned source --- and the launcher halts the whole queue after two consecutive audit failures, on the reasoning that two in a row indicts the pipeline rather than one lane.
+
+\paragraph{Timeline.} The queue launched 2026-08-14 10:43 after operator approval and ran 14 lanes (13 of them writing submissions) by 08-15 02:05, when it aborted at a lane boundary: the Kaggle OAuth token had been revoked (HTTP 401) and the launcher reads a sub-minute lane exit as an environment fault, not a result. It resumed 08-17 after token triage, re-ran the three lanes that needed it (below), halted once more on the two-consecutive-audit-failures rule, and resumed again at 15:26 with s6e1 --- in flight as this draft compiles.
+
+\paragraph{The audit gate, exercised in both directions.} Three incidents, each resolved by reading the transcript rather than trusting either the lane or the auditor:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{s3e19, first attempt discarded --- real contamination.} The 08-14 lane opened the raw knowledge library four times and issued a genuine socket-opening command; the audit blocked it. The clean 08-17 re-run scores \emph{worse} on local CV (pooled OOF SMAPE 6.706 against the tainted attempt's 5.740) --- consistent with the contamination advantage being real, and with the audit pricing it correctly.
+  \item \textbf{s3e19, re-run flagged --- auditor false positive.} The network detector matches the substring \texttt{kaggle} anywhere in a command, and fired on an \texttt{ls} of a directory named \path{kaggle-safe-submit}. A manual scan of all 118 tool calls in the re-run transcript found zero network commands; the result was accepted under a recorded operator waiver, and the detector fix is queued for after the run (the run root is baseline-frozen, so mid-run edits would invalidate the remaining lanes).
+  \item \textbf{s5e10 --- score untainted, write-back in violation.} The audit flagged four raw library opens. The transcript timeline places every one of them strictly \emph{after} the submission was written and validated (tool-call indices 318--337 versus 302--306), with all modeling-phase library access going through the sanctioned query interface --- so the score stands. The genuine violation was different: the lane hand-edited the \emph{shared} knowledge library after finalisation, the channel by which one lane's outcomes could poison later lanes' priors. The library was surgically reverted, and no later lane consumed the polluted version because the queue had already halted before s6e1 started.
+\end{itemize}
+
+\paragraph{Progress and local numbers.} 15 of 20 lanes are complete (${\sim}17$ hours of lane time), one is running, four are queued. Because lanes hold no credentials, \emph{nothing in this section has touched the leaderboard yet}: scoring is a separate operator step, and every leaderboard cell below is TBD until it runs. The local numbers are each lane's own honest out-of-fold estimate (leave-fold-out where the lane measured its weight-fitting optimism), quoted for progress only --- Section~\ref{sec:exp3} showed local CV contradicting the leaderboard in 9 of 13 competitions, and this table re-illustrates the point (s3e19's pooled OOF SMAPE of 6.71 sits against baseline leaderboard SMAPEs near 50), so no comparative claim is made from them.
+
+\begin{table}[H]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Final-architecture re-run: state as of 2026-08-17 (evening). Local CV = the lane's honest OOF estimate, not leaderboard-validated; public/private leaderboard scores for all lanes are TBD pending the operator scoring step.}
+\label{tab:rerunprog}
+\begin{tabular}{@{}rllrrl@{}}
+\toprule
+\# & \textbf{Competition} & \textbf{Metric} & \textbf{Local CV (OOF)} & \textbf{Minutes} & \textbf{Lane status} \\
+\midrule
+1 & s3e1 & RMSE \dn & 0.548862 & 30 & done 08-14 \\
+2 & s3e3 & ROC-AUC \up & 0.841605 & 20 & done 08-14 \\
+3 & s3e5 & QWK \up & 0.571980 & 46 & done 08-14 \\
+4 & s3e7 & ROC-AUC \up & 0.901769 & 50 & done 08-14 \\
+5 & s3e9 & RMSE \dn & 12.082282 & 28 & done 08-14 \\
+6 & s3e11 & RMSLE \dn & 0.292886 & 107 & done 08-17 (first attempt exited without a submission) \\
+7 & s3e14 & MAE \dn & 340.95936 & 27 & done 08-14 \\
+8 & s3e16 & MAE \dn & 1.334958 & 45 & done 08-14 \\
+9 & s3e19 & SMAPE \dn & 6.70585 & 39 & done 08-17 (clean re-run; first attempt discarded by audit) \\
+10 & s4e11 & Accuracy \up & 0.940810 & 81 & done 08-14 \\
+11 & s5e10 & RMSE \dn & 0.055971 & 72 & done 08-17 (audit incident resolved, score accepted) \\
+12 & s6e1 & Error \dn & TBD & --- & \textbf{running} (started 08-17 15:26) \\
+13 & s6e2 & ROC-AUC \up & TBD & --- & queued \\
+14 & afsis & MCRMSE \dn & 0.470503 & 24 & done 08-14 \\
+15 & cat-in-the-dat & ROC-AUC \up & 0.803272 & 140 & done 08-14 \\
+16 & conway & MAE \dn & 0.106688 & 214 & done 08-14 \\
+17 & tps-aug-2022 & ROC-AUC \up & TBD & --- & queued \\
+18 & tps-jan-2022 & SMAPE \dn & TBD & --- & queued \\
+19 & s5e1 & MAPE \dn & 5.84\% & 113 & done 08-15 (cross-arm weights in-sample; see note) \\
+20 & tps-sep-2022 & SMAPE \dn & TBD & --- & queued \\
+\midrule
+\multicolumn{6}{@{}l}{\emph{Leaderboard scoring (all 20 lanes): \textbf{TBD} --- runs as a separate credentialed operator step after the last lane.}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\emph{Note on s5e1:} the lane's cross-arm blend weights and global scale are fitted on the same OOF rows they are scored on, so its 5.84\% is optimistic relative to a held-out estimate --- the lane's own summary records this caveat.
+
+\paragraph{What happens next.} After the last lane, the operator scoring step submits each lane's frozen \path{submission.csv} for real public/private scores (\path{score_lane_submissions.py}; dry-run by default, real submission behind an explicit flag), and \path{build_rerun_three_way.py} places the re-run column next to the frozen AIDE/NVIDIA yardsticks under the paired test of Section~\ref{sec:exp2}. Until then, every standing reported elsewhere in this document is the baseline's; nothing in this section revises any of it.
 
 \section{Discussion}
 
