@@ -3,6 +3,7 @@
 ### Reverse Conway's Game of Life · our from-scratch agent (delta-conditioned residual CNN + synthetic-board engine + tree-search v3)
 
 > *Figures grounded in the competition's `config.yaml`, `dossier.json`, `STATUS.md`, `experiments.json`, and `experiments_tree_v3.json` (plus `scripts/cnn_lib.py` for the training loop), with leaderboard and benchmark figures from the study's frozen three-way score table.*
+> *Version discipline: this competition ran 2026-07-28 under the pre-v5 (v3-frozen) pipeline, the same configuration as the rest of the frozen 18-competition baseline — Stage 0.5 did not yet exist. The cited `dossier.json` was produced by the retrospective problem-identification sweep of 2026-07-29/30 and was NOT consumed by this run; it is cited only as a descriptive record of the task.*
 
 ## Overview
 
