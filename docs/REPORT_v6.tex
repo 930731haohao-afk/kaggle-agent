@@ -497,114 +497,32 @@ judged by the paired test of Section~\ref{sec:exp2}.
 
 \paragraph{Result: perfect separation.} The layer fires on exactly the two country-panel time-series competitions --- s3e19 and jan-2022, the two whose accepted solutions are known to require external covariates --- and reports ``no / unlikely'' on all 16 iid-tabular, categorical, spectral, and structured-output competitions: sensitivity 2/2, specificity 16/16. (Two caveats keep this honest. The sensitivity half is partly in-sample: the task priors the dossier reads were distilled from this benchmark's own failure analysis of exactly these two competitions, so the 16/16 silence is the informative half, and 2/2 carries a 95\% CI reaching down to 16\%. And the two firing-class competitions added to the baseline later also fire, but they were \emph{selected} as firing-class, so the sweep claim rests on the original 18.) Two secondary behaviors: on s3e19 the dossier surfaced a genuine conflict --- a conservative setup-time \texttt{config.yaml} flag said external data was not allowed while the task prior's evidence implied otherwise --- and flagged it for verification rather than guessing (the official rules, Section 7.C, settle it in favor of permission); on the out-of-scope SIIM imaging competition it answers ``no'', correct within the current whitelist, whose source classes do not yet include prior-competition archives.
 
-\subsection{What Upstream Injection Is Worth, and What Selects Its Form}
+\subsection{What the Layer Delivers on the Real Leaderboard}
 \label{sec:exp6v5}
 
-\paragraph{Design.} s3e19 is the benchmark's canonical failure, so it is the causal test bed; tps-sep-2022 --- six-country daily sales, outside the frozen baseline, dossier written before any of the findings below --- is the held-out replication. For each competition we build arms whose processed feature tables are digit-identical to the baseline's plus whatever the operators add, so a configuration that drops the new columns reproduces the committed baseline score exactly (verified: difference 0.0). Each arm is submitted for real public and private scores and judged by the paired test of Section~\ref{sec:exp2}.
+\paragraph{Design.} s3e19 is the benchmark's canonical failure, so it is the causal test bed; tps-sep-2022 (held-out replication, dossier written in advance) and s5e1 (pre-registered test) complete the firing class. Arms are built so the operator's added columns are the \emph{only} difference from the baseline (verified digit-identical otherwise), and every arm is submitted for real public and private scores, judged by the paired test of Section~\ref{sec:exp2}. Full arm tables and probe-level detail are in the companion case-studies document.
 
-\paragraph{Result 1a: external-data injection works, robustly.} All four matched-budget comparisons in Table~\ref{tab:v5-2x2} beat the no-external baseline.
+\paragraph{Effect.} Across the three competitions, \textbf{all six external-data arms beat
+their no-external baselines, every one paired-significant}. In matched configuration the
+feature join is worth $6.01$ private SMAPE on s3e19 and $2.09$ on the held-out sep-2022; at a
+full 46-node search budget per arm both external arms still beat the searched baseline; and
+on s5e1 the winning form takes a $20\%$ relative private-MAPE margin ($0.12417$ vs.\
+$0.15751$), the largest effect in the class. On the canonical failure itself, the
+with-layer/without-layer ablation --- the full pipeline against a searched champion from the
+identical pipeline with the layer disabled --- passes the paired test (private $48.243$ vs.\
+$50.455$; $d_{\mathrm{pub}}{+}3.389$, $d_{\mathrm{priv}}{+}2.212$, movement $1.177$) and
+places the with-layer champion numerically ahead of both frozen yardsticks
+(48.26558 and 48.34131, Table~\ref{tab:bench}).
 
-\begin{table}[H]
-\centering\small
-\caption{Matched-configuration arms: identical pipeline, no search, no blending, so the operator is the only difference. SMAPE, lower is better. Every external arm beats its own baseline and passes the paired test of Section~\ref{sec:exp2}. s5e1, which joined the firing class later, skipped this matched-configuration stage --- its pre-registered test ran searched arms only (Result 2b).}
-\label{tab:v5-2x2}
-\setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}lrrrcrrrc@{}}
-\toprule
- & \multicolumn{4}{c}{\textbf{s3e19}} & \multicolumn{4}{c}{\textbf{tps-sep-2022} (held out)} \\
-\cmidrule(lr){2-5}\cmidrule(lr){6-9}
-\textbf{Arm} & \textbf{CV} & \textbf{public} & \textbf{private} & \textbf{sig.} & \textbf{CV} & \textbf{public} & \textbf{private} & \textbf{sig.} \\
-\midrule
-no external data & 10.148 & 52.492 & 54.506 & --- & \textbf{11.348} & 23.828 & 25.476 & --- \\
-\texttt{join\_feature} & 9.379 & \textbf{47.036} & \textbf{48.497} & yes & 11.624 & \textbf{21.973} & \textbf{23.390} & yes \\
-\texttt{ratio\_target} & \textbf{7.793} & 50.853 & 52.073 & yes & 11.807 & 21.209 & 24.091 & yes \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Against the baseline: on s3e19 the feature join gains $6.01$ private SMAPE and the ratio target $2.43$; on sep-2022, $2.09$ and $1.39$. The paired movements are small relative to the gaps ($0.55$, $0.79$, $0.23$, $1.23$ respectively), so all four survive. A with-layer versus without-layer ablation --- the full pipeline against a searched champion from the identical pipeline with the layer disabled --- also passes the paired test (with-layer private 48.243 vs.\ 50.455 without; $d_{\mathrm{pub}}{+}3.389$, $d_{\mathrm{priv}}{+}2.212$, movement $1.177$), and places the with-layer champion numerically ahead of both frozen yardsticks on s3e19 (48.26558 and 48.34131, Table~\ref{tab:bench}).
-
-\paragraph{Result 1b: the ordering survives a real search budget, and search does not rescue the weaker form.} At an equal 46-node budget per arm on tps-sep-2022, the no-external arm reaches CV $11.347$ / private $25.472$; \texttt{ratio\_target} $10.829$ / $23.774$; the gated variant (ratio paired with \texttt{sample\_weight} on 2020) $10.922$ / $23.973$. Both external arms beat the searched baseline and pass the paired test (movements $0.499$ and $0.577$ against gaps of $1.698$ and $1.499$). The informative comparison is across protocols: 46 nodes of search on the \emph{weaker} operator form ($23.774$) still lose to a \emph{single unsearched configuration} of the stronger one ($23.390$; a cross-protocol comparison, not a paired verdict) --- the choice of injection form is worth more than the entire search budget.
-
-\paragraph{Result 2a: cross-validation cannot choose between the forms, and errs in opposite directions.} On s3e19 CV ranks \texttt{ratio\_target} best ($7.793$) while the leaderboard ranks it middle; on sep-2022 CV ranks \emph{both} external forms \emph{behind} the baseline while the leaderboard has both beating it significantly. A cross-validation whose folds all sit inside the training range cannot measure an operator whose purpose is extrapolation beyond it --- and on sep-2022 the last folds land on 2020, the year the proportionality diagnostic flags as broken (cross-country dispersion $0.466$ against ${\sim}0.01$ elsewhere), so the operator is scored twice on its worst case; we predicted the inversion from the fold boundaries before submitting. Nor is CV's verdict stable in the budget: at one node it ranks \texttt{ratio\_target} behind the baseline, at 46 nodes ahead; the leaderboard says ``ahead'' in both cases.
-
-The diagnostic's own prescribed remedy --- down-weighting the broken 2020 to $0.3$ --- improves CV as designed ($11.807$ to $11.515$) but is slightly worse on the leaderboard (private $24.142$ vs.\ the ungated arm's $24.091$): CV misranks not only the operator choice but also the repair of a violated precondition. And a held-out-year protocol --- the obvious cheap substitute, whose validation geometry matches the task --- also fails: across three probes (s3e19 2021, sep-2022 2019 and 2020) it ranks \texttt{ratio\_target} first every time, while the leaderboard ranks \texttt{join\_feature} first on both competitions. Selecting the \emph{form} of an upstream injection is therefore not currently possible from local signals, and the leaderboard cannot stand in for them in a live competition.
-
-\paragraph{Result 2b: a pre-registered selection rule, killed by its own test (s5e1).} After
-the three probes above failed, one candidate selector remained standing: the proportionality
-diagnostic, which had matched the outcome on both competitions --- but only in hindsight. A
-fourth firing-class competition (playground-series-s5e1, ``Forecasting Sticker Sales''), which
-the diagnostic read as the worst proportionality violation in the class, allowed a real test:
-before any model was fitted or anything submitted, we committed a prediction to the
-competition's dossier and to version control --- \texttt{ratio\_target} loses to
-\texttt{join\_feature} here, by a larger relative margin than on either predecessor --- with
-the falsifier stated alongside (the diagnostic's full reading of s5e1 and the panel-family
-details are in the companion case-studies document).
-
-The falsifier fired. Three 46-node searched arms, identical except for the operator's added
-columns, scored public/private MAPE $0.14280/0.15751$ (baseline), $0.14193/0.15626$
-(\texttt{join\_feature}), and $0.12057/\mathbf{0.12417}$ (\texttt{ratio\_target}) --- the predicted loser won by a 20\% relative
-margin, paired-test significant on all three pairwise comparisons, with no remedy applied for
-the violated years. Per the consequence pre-committed with the prediction, the proportionality
-diagnostic is demoted from a gate to a recorded note: it describes the data honestly but does
-not predict which operator form wins.
-
-Three things follow. First, the injection claim itself \emph{replicates at $n{=}3$}: across
-three competitions, all six external-data arms beat their no-external baselines, every one
-paired-significant, s5e1 by the largest margin yet. Second, the form-selection problem hardens
-rather than resolves: the form verdict is now split (\texttt{join\_feature},
-\texttt{join\_feature}, \texttt{ratio\_target}), and every local signal tested is 0-for-3 ---
-CV picked ratio/baseline/featurejoin where the leaderboard said featurejoin/featurejoin/ratio,
-the held-out-year protocol misranked all three probes, and the proportionality diagnostic died on its first advance prediction. The operating rule is now: race both forms, always.
-Third, the two 1-year-horizon competitions went to \texttt{join\_feature} and the one 3-year competition to \texttt{ratio\_target}, so horizon length may be the real selector --- but that is post-hoc pattern-matching, exactly the move the proportionality story was built on, and it earns belief only by pre-registration on the next firing competition. (jan-2022, the class's fourth member, is not a clean test bed --- its outcomes are already inside the prior library --- but its record, a ratio-family decomposition beating a GBDT at a 1-year horizon, is counter-evidence the horizon story will have to explain.)
-
-\paragraph{Result 2c: the full three-way on the new firing-class competitions.} The
-controlled arms above isolate operators; they do not say how the three \emph{agents} compare
-on this class. Both new firing-class competitions were therefore run by all three agents under
-benchmark conditions (these runs are what admitted s5e1 and sep-2022 into the 20-competition
-baseline of Section~\ref{sec:exp1}) --- my-agent with the knowledge library pinned, per lane,
-to the last commit before any information about that lane's own competition entered it; AIDE
-and NVIDIA frozen exactly as in the main benchmark --- and every submission scored on the real
-leaderboard. These are the injection study's own scored lanes; the my-agent column of
-Table~\ref{tab:bench} is the separate frozen-architecture benchmark lane for the same
-competitions (s5e1 scored 2026-08-18 at 0.09076/0.08401 --- ahead of every arm in this
-study --- tps-sep-2022 still queued).
-
-\begin{table}[H]
-\centering\small
-\caption{Firing-class three-way, real leaderboard (both metrics \dn). NVIDIA's public
-scores match its source kernels' claimed LB digit-for-digit, verifying the faithful port.
-Verdicts per the paired test of Section~\ref{sec:exp2}.}
-\begin{tabular}{@{}llllll@{}}
-\toprule
-\textbf{Competition} & \textbf{Board} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} & \textbf{Verdict} \\
-\midrule
-s5e1 (MAPE) & public & 0.10236 & \textbf{0.05726} & 0.12573 & \\
- & private & \textbf{0.12752} & 0.14594 & 0.17917 & $\M > \A$;\; \M{} vs \N{} sign-flip \\
-\midrule
-sep-2022 (SMAPE) & public & 28.32738 & \textbf{4.77458} & 5.78998 & \\
- & private & 28.54859 & \textbf{5.48351} & 9.72095 & $\N > \A > \M$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The private ranking reverses completely between two competitions of the same narrow class:
-\M{}${>}$\N{}${>}$\A{} on s5e1, \N{}${>}$\A{}${>}$\M{} on sep-2022. Sharper still, on s5e1 the
-paired test refuses to order my-agent and NVIDIA at all: the public half of the test set says
-NVIDIA by $0.045$, the private half says my-agent by $0.018$ --- the evaluation-set caution of
-Section~\ref{sec:reversal} reproduced between the two disjoint halves of a single
-competition's test split. The mechanism is visible in the degradation: the vote-selected
-kernel was developed against the public board it is tuned to ($0.057 \to 0.146$, $+155\%$, on
-s5e1), while my-agent's CV-driven pipeline degrades least ($+24.6\%$) and takes the private
-board. sep-2022 is the mirror image and NVIDIA's textbook win: a mature public solution exists
-(a Ridge baseline, 277 votes), reproduction inherits it, and all three pairwise verdicts are
-significant. One observation closes the loop with the injection results: the s5e1 kernel
-NVIDIA reproduced \emph{itself} joins external GDP-per-capita data --- the same covariate the
-dossier layer identifies, both plausibly drawing on this competition family's shared folklore
---- so vote-selection inherits the injection for free exactly when a mature public solution
-exists, and when the public board misleads instead, the strategies separate.
-
-\paragraph{Result 3: decomposing what remains.} Diagnostic probes --- global rescalings of the best arm, labelled as diagnostics and never reported as agent results --- separate level from shape on s3e19: roughly 15.5 points of the residual are a yearly-level error and roughly 33 remain as shape, against a leaderboard top of 4.67; the needed $1.6$ level multiplier is unlearnable in sample, and external GDP data is worth $6.0$ of the 44-point gap. The same pipeline scores $11.59$ predicting 2021 from 2017--2020 and $48.497$ predicting 2022 from 2017--2021 --- a fourfold degradation from an identical procedure: the final transition of a synthetic series can differ in kind from every transition inside the training window, and no in-sample protocol can anticipate it. The probe grid, the in-sample evidence on the multiplier, and the full transfer test are in the companion case-studies document.
+\paragraph{The operating rule the experiments imposed.} One negative result ships with the
+layer: no local signal we tested selects which \emph{form} the injection should take.
+Cross-validation, a held-out-year protocol, and a proportionality diagnostic each misrank the
+form verdict (0-for-3); the diagnostic --- the one selector that survived hindsight --- was
+put to a pre-registered test on s5e1, its prediction committed to version control before any
+model was fitted, and its named falsifier fired. The layer therefore \emph{races both forms
+inside the search, always}, and the one surviving post-hoc candidate (horizon length) is
+committed as the H-HORIZON pre-registration for the next firing-class competition
+(Section~\ref{sec:future}).
 
 \paragraph{What the judgment layer proposes, and what actually consumes it.} Across the 20
 dossiers the layer proposes 241 ideas. Counting those whose operator family exists gives 73\%;
@@ -658,8 +576,8 @@ my-agent takes the three-way best on all three and the only above-median score o
   benchmark lanes are complete and scored on the real leaderboard (2026-08-18 operator
   step): my-agent leads the paired standing --- 15 wins, 5 losses, $75\%$ excluding ties
   (Section~\ref{sec:winrates}) --- with 8 duels pending the four unfinished lanes; also
-  scored are the mid-complexity sweep (three-way best on all three) and the firing-class
-  three-way of Result 2c.
+  scored are the mid-complexity sweep (three-way best on all three) and every controlled arm
+  of the injection study (Section~\ref{sec:exp6v5}).
 
   \item \textbf{A caution that constrains how any such claim may be stated.} A ranking is a
   property of method $\times$ evaluation set --- in development runs the winner flipped between
@@ -692,12 +610,12 @@ External data & Injection layer (typed operators, whitelisted sources) & Never c
 \end{tabular}
 \end{table}
 
-NVIDIA wins where a mature, high-quality public solution exists --- sep-2022's 277-vote Ridge baseline is the textbook case (Result 2c) --- and loses where public kernels are stale or tutorial-grade or where its vote signal misleads (Section~\ref{sec:votes}). AIDE wins on search depth with no external knowledge at all, and loses where a diagnosis needs to veto a score: it can produce a correct diagnosis and still select the optimistic node (Section~\ref{sec:exp4}). my-agent's edge is validation rigor and accumulated knowledge --- it quarantined the same shuffled split AIDE submitted --- while its measured bottleneck was judgment at the problem-identification level: exactly the gap the injection layer was built to close, and the reason the controlled experiments of Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} carry the report's thesis. What remains open within that layer is form selection (0-for-3) and the unmeasured value of the dossier on competitions where it stays silent. The shared limitation: on s3e19 all three development runs landed in the lower mode of a bimodal leaderboard, none recognizing the need for GDP data --- a join worth $6.0$ SMAPE, while the dominant shortfall is a one-year extrapolation no method in the comparison addresses.
+NVIDIA wins where a mature, high-quality public solution exists --- sep-2022's 277-vote Ridge baseline, which reproduction inherited for its cleanest development-run win, is the textbook case --- and loses where public kernels are stale or tutorial-grade or where its vote signal misleads (Section~\ref{sec:votes}). AIDE wins on search depth with no external knowledge at all, and loses where a diagnosis needs to veto a score: it can produce a correct diagnosis and still select the optimistic node (Section~\ref{sec:exp4}). my-agent's edge is validation rigor and accumulated knowledge --- it quarantined the same shuffled split AIDE submitted --- while its measured bottleneck was judgment at the problem-identification level: exactly the gap the injection layer was built to close, and the reason the controlled experiments of Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} carry the report's thesis. What remains open within that layer is form selection (0-for-3) and the unmeasured value of the dossier on competitions where it stays silent. The shared limitation: on s3e19 all three development runs landed in the lower mode of a bimodal leaderboard, none recognizing the need for GDP data --- a join worth $6.0$ SMAPE, while the dominant shortfall is a one-year extrapolation no method in the comparison addresses.
 
 \subsection{A Ranking Is Not a Property of the Method, but of Method $\times$ Evaluation Set}
 \label{sec:reversal}
 
-The most important methodological lesson of the development runs: same agents, same test --- swap the competition set and the paired-test winner flipped between the 14-competition Playground subset and the broader 20-competition set (those standings belong to superseded development lanes and are not reprinted here; the mechanism is a property of the methods and survives). The mechanism: reproduction dominates where a mature public solution exists, autonomous methods dominate on obscure, build-your-own-pipeline tasks, and relative verdicts binarize many near-tie gaps, so the paired win rate is highly sensitive to sample composition even while absolute position (median PR) stays stable. Result 2c reproduces the caution inside a single competition: on s5e1 the public and private halves of one test split order two agents oppositely. An agent benchmark's conclusion must therefore be stated together with the composition of its evaluation set, and should report both an absolute metric (PR) and a relative one (paired win rate).
+The most important methodological lesson of the development runs: same agents, same test --- swap the competition set and the paired-test winner flipped between the 14-competition Playground subset and the broader 20-competition set (those standings belong to superseded development lanes and are not reprinted here; the mechanism is a property of the methods and survives). The mechanism: reproduction dominates where a mature public solution exists, autonomous methods dominate on obscure, build-your-own-pipeline tasks, and relative verdicts binarize many near-tie gaps, so the paired win rate is highly sensitive to sample composition even while absolute position (median PR) stays stable. The s5e1 duel of Section~\ref{sec:winrates} reproduces the caution inside a single competition: the public and private halves of one test split order two agents oppositely. An agent benchmark's conclusion must therefore be stated together with the composition of its evaluation set, and should report both an absolute metric (PR) and a relative one (paired win rate).
 
 \subsection{Limitations of the Experimental Design}
 \label{sec:limitations}
@@ -732,8 +650,9 @@ The most important methodological lesson of the development runs: same agents, s
 Ordered by how much they would change this report's conclusions.
 
 \paragraph{Operator form cannot be selected from any local signal we have tested --- 0-for-3,
-with one selector killed by pre-registration.} Section~\ref{sec:exp6v5} details the
-misrankings; the split form verdict means no constant answer exists to fall back on. The one
+with one selector killed by pre-registration.} Section~\ref{sec:exp6v5} states the rule; the
+probe-level misrankings are in the companion case-studies document, and the split form
+verdict means no constant answer exists to fall back on. The one
 surviving candidate selector, horizon length, is post-hoc; testing it requires pre-registering
 it on the next firing-class competition before its leaderboard is consulted (the binding
 protocol is committed as the H-HORIZON pre-registration). This remains the sharpest open
@@ -943,7 +862,7 @@ AIDE per-competition ML spec reports (17) & \href{https://github.com/930731haoha
 my-agent per-competition ML spec reports (15) & \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{ai_agents/kaggle/docs/ml_specs/}} \\
 Coverage status table & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/BENCHMARK_COVERAGE.md}{\path{ai_agents/BENCHMARK_COVERAGE.md}} \\
 Benchmark-run manifest & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/docs/rerun_manifest.json}{\path{kaggle/docs/rerun_manifest.json}} \\
-Firing-class lane log (Result 2c runs) & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/FIRING_CLASS_LANES.md}{\path{benchmark_results/FIRING_CLASS_LANES.md}} \\
+Firing-class lane log (injection-study three-way runs) & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/FIRING_CLASS_LANES.md}{\path{benchmark_results/FIRING_CLASS_LANES.md}} \\
 Per-competition experiment logs & \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/competitions}{\path{kaggle/competitions/<comp>/experiments.json}}, \path{experiments_tree_v3.json} \\
 \bottomrule
 \end{tabular}
