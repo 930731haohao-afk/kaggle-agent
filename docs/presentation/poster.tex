@@ -67,34 +67,34 @@
 \newtcolorbox{secblock}{%
   enhanced, sharp corners=all, arc=3mm, rounded corners=all,
   colback=white, colframe=ruleline, boxrule=0.7mm,
-  left=10mm, right=10mm, top=9mm, bottom=10mm, boxsep=0pt,
-  before skip=0pt, after skip=10mm}
+  left=10mm, right=10mm, top=7.5mm, bottom=8mm, boxsep=0pt,
+  before skip=0pt, after skip=8mm}
 \newcommand{\blocktitle}[1]{%
   {\cardtitlesize\bfseries #1\par}%
   \vspace{2.5mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{5mm}}
 
 % Sub-heading: navy bold with a short orange underline accent
 \newcommand{\cardsub}[1]{%
-  \vspace{5mm}{\subheadsize\bfseries #1\par}\vspace{3.6mm}}
+  \vspace{4mm}{\subheadsize\bfseries #1\par}\vspace{3mm}}
 
 % Figure caption / note paragraph
 \newcommand{\figcap}[1]{\vspace{2mm}{\notesize\color{notegray}#1\par}}
 \newcommand{\notepar}[1]{{\notesize\color{notegray}#1\par}}
 
 % Bullet list defaults
-\setlist[itemize]{leftmargin=11mm, itemsep=4.2mm, parsep=0pt, topsep=1.5mm,
+\setlist[itemize]{leftmargin=11mm, itemsep=2.6mm, parsep=0pt, topsep=1mm,
                   label=\textbullet}
 
 % ---- Horizontal bar row: best-private count across the scored benchmark ----
 % #1 = label, #2 = bar color, #3 = fraction of track (0..1), #4 = value text
-\newlength{\bartracklen}\setlength{\bartracklen}{225mm}
+\newlength{\bartracklen}\setlength{\bartracklen}{190mm}
 \newcommand{\countbar}[4]{%
-  \makebox[64mm][l]{\bodysize #1}%
-  \begin{tikzpicture}[baseline={(0,4.2mm)}]
-    \fill[bartrack] (0,0) rectangle (\bartracklen,13.3mm);
-    \fill[#2] (0,0) rectangle (#3\bartracklen,13.3mm);
+  \makebox[52mm][l]{\notesize #1}%
+  \begin{tikzpicture}[baseline={(0,3.2mm)}]
+    \fill[bartrack] (0,0) rectangle (\bartracklen,10mm);
+    \fill[#2] (0,0) rectangle (#3\bartracklen,10mm);
   \end{tikzpicture}%
-  \hspace{3mm}{\tablesize\color{bodyink}#4}\par\vspace{3.6mm}}
+  \hspace{3mm}{\notesize\color{bodyink}#4}\par\vspace{2.4mm}}
 
 % ============================================================================
 \begin{document}%
@@ -118,12 +118,12 @@
     Department of Economics\par}
   \vspace{2.5mm}
   {\metasize\color{white}%
-    {\bfseries Advisor:} Dr.\ Tso-Jung Yen,
+    {\bfseries PI:} Dr.\ Tso-Jung Yen,
     Institute of Statistical Science, Academia Sinica\sep
     Summer Internship 2026\par}
 \end{tcolorbox}
 
-\vspace{12mm}
+\vspace{8mm}
 
 % ------------------------------------------------------------- BODY COLUMNS --
 \noindent\hspace*{\pagepad}%
@@ -150,7 +150,7 @@
 \end{itemize}
 \cardsub{Why an AI agent}
 \begin{itemize}
-  \item Tireless, systematic search: 22--80 candidate configurations per
+  \item Tireless, systematic search: 37--224 candidate configurations per
     competition, every experiment logged and reproducible.
   \item Runs the same disciplined protocol on 20 competitions serially ---
     a human cannot hold this consistency.
@@ -162,7 +162,7 @@
 \end{secblock}
 \begin{secblock}
 \blocktitle{2\sep Workflow}
-\centerline{\includegraphics[width=\linewidth]{fig1_arch.pdf}}
+\centerline{\includegraphics[width=0.90\linewidth]{fig1_arch.pdf}}
 \figcap{The pipeline, read top to bottom: the LLM reasons at every stage;
   the \kb{Stage-0.5 dossier} (injection layer) classifies the task and
   injects external data \emph{upstream}, before any modeling; submissions
@@ -171,13 +171,15 @@
   $\cdot$ gray Auto-ML tools. Solid arrows = execution flow; dashed =
   feedback, advisory, or post-run steps.}
 \vspace{4mm}
-\centerline{\includegraphics[width=216mm]{fig2_tree_poster.pdf}}
+\centerline{\includegraphics[width=193mm]{fig2_tree_poster.pdf}}
 \figcap{Tree-search loop: ensembles are first-class nodes with OOF caching
   and weight search; exploit until plateau, then one forced exploration
   burst; the loop terminates at the best-node submission. Purple = the
   injection layer's operator entry points; green = experience-library
   priors.}
 \end{secblock}
+
+
 
 \end{minipage}%
 \hspace{\colgap}%
@@ -189,21 +191,23 @@
 % ---- 3 · Results — Kaggle benchmark ---------------------------------------
 \begin{secblock}
 \blocktitle{3\sep Results --- Kaggle benchmark}
-\notepar{Benchmark lanes scored on the real leaderboard (late submission);
-  the mid-complexity three-way is offline-graded on the held-out private
-  split (late submission structurally unavailable there).}
-\cardsub{Benchmark standing (scored 2026-08-18, 16 of 20 lanes)}
+\cardsub{Benchmark standing (scored 2026-08-18, 19 of 20 lanes)}
 All 20 competitions run under the frozen Stage-0.5 architecture in
-credential-free sandboxes with a per-lane transcript audit. The 16 completed
+credential-free sandboxes with a per-lane transcript audit; the 19 completed
 lanes are scored on the real leaderboard, each duel adjudicated by a paired
-test built from Kaggle's own public/private split: \kb{my-agent leads the
-standing --- 15 wins / 5 losses (75\% excl.\ ties)} vs.\ AIDE 42\% and NVIDIA
-38\% --- takes the \kb{best private score on 10 of 16}, and beats its own
-development-lane score on 11 of 16. One lane running (s6e2), three queued
-(\textbf{TBD}).\par
+test on Kaggle's own public/private split. \kb{my-agent leads the standing ---
+15 wins / 7 losses (68\% excl.\ ties)} vs.\ AIDE 44\% and NVIDIA 40\%, and
+beats its own development-lane score on 12 of 19. The final lane is re-running
+clean after an audit discard (\textbf{TBD}).\par
+\cardsub{Best private score --- head-to-head count (19 scored)}
+\countbar{\textbf{my-agent}}{navy}{0.526}{10 / 19}
+\countbar{NVIDIA}{barother}{0.316}{6 / 19}
+\countbar{AIDE}{barother}{0.158}{3 / 19}
+\vspace{1mm}
+
 \cardsub{Private-leaderboard scores, all 20 benchmark competitions}
-{\fontsize{20}{26}\selectfont
-\renewcommand{\arraystretch}{1.12}%
+{\fontsize{18.5}{23}\selectfont
+\renewcommand{\arraystretch}{1.02}%
 \setlength{\tabcolsep}{1.3mm}%
 \setlength{\heavyrulewidth}{0.9mm}\setlength{\lightrulewidth}{0.45mm}%
 \begin{minipage}[t]{0.5\linewidth}
@@ -235,23 +239,22 @@ s6e1 & Error $\downarrow$ & \textbf{8.71516} & 8.73239 & 8.72191\\
 afsis & MCRMSE $\downarrow$ & \textbf{0.48917} & 0.69855 & 0.49861\\
 cat-in-dat & AUC $\uparrow$ & \textbf{0.80243} & 0.77084 & 0.80217\\
 conway & MAE $\downarrow$ & \textbf{0.10414} & 0.11189 & 0.11065\\
-s6e2 & AUC $\uparrow$ & TBD & 0.95508 & 0.95516\\
-tps-aug & AUC $\uparrow$ & TBD & 0.58730 & 0.59106\\
+s6e2 & AUC $\uparrow$ & 0.95505 & 0.95508 & \textbf{0.95516}\\
+tps-aug & AUC $\uparrow$ & 0.58930 & 0.58730 & \textbf{0.59106}\\
 tps-jan & SMAPE $\downarrow$ & TBD & 4.63651 & 10.6664\\
-tps-sep & SMAPE $\downarrow$ & TBD & 5.48351 & 9.72095\\
+tps-sep & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \bottomrule
 \end{tabular}
 \end{minipage}\par}
 \vspace{3mm}
 \notepar{Private-leaderboard score of each frozen submission; \textbf{bold} = best
-  of the three. my-agent takes it on \textbf{10 of the 16} scored competitions
-  (NVIDIA 5, AIDE 1); TBD = still running or queued. On s3e19, the canonical
-  failure case, the injection layer turns SMAPE 50.455 without the layer into
-  48.243 with it, and all \kb{6 of 6} controlled external-data arms beat their
-  matched baselines.}
+  of the three; TBD = the lane re-running clean. On s3e19, the canonical
+  failure case, the controlled with/without-layer ablation scores 48.243
+  against 50.455 without the layer, and all \kb{6 of 6} controlled
+  external-data arms beat their matched baselines.}
 \cardsub{Mid-complexity three-way (offline-graded, private split)}
 {\tablesize
-\renewcommand{\arraystretch}{1.45}%
+\renewcommand{\arraystretch}{1.3}%
 \setlength{\tabcolsep}{2.6mm}%
 \setlength{\heavyrulewidth}{1.1mm}\setlength{\lightrulewidth}{0.55mm}%
 \begin{tabular}{@{}llrrr@{}}
@@ -264,32 +267,39 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 \bottomrule
 \end{tabular}\par}
 
-% ---- 4 · Advantages & Difficulties ----------------------------------------
 \end{secblock}
+
+% ---- 4 · Advantages & Difficulties ----------------------------------------
 \begin{secblock}
 \blocktitle{4\sep Advantages \& Difficulties}
 \cardsub{Expected $\to$ experienced}
-\begin{itemize}
-  \item \kb{Expected:} the agent would quickly beat most humans.
-    \kb{Experienced:} development runs landed above average, with wins
-    concentrated where no mature public solutions exist; the
-    frozen-architecture re-run now leads the paired standing on the 16
-    scored lanes.
-  \item \kb{Expected:} one run and one score decide a winner.
-    \kb{Experienced:} score noise and run-to-run variance leave many duels
-    undecidable; a paired error model became mandatory.
-  \item \kb{Expected:} the agent follows the rules by default.
-    \kb{Experienced:} a transcript audit caught one lane reading its own
-    competition's recorded findings --- and the clean re-run's local
-    validation scored \emph{worse}, consistent with the contamination
-    advantage being real.
-  \item Fairness is expensive: isolated data roots, credential-free
-    sandboxes, and per-lane transcript audits cost real engineering time ---
-    but without them the numbers are not comparable.
-\end{itemize}
+{\setlength{\tabcolsep}{0pt}%
+\renewcommand{\arraystretch}{1.0}%
+\begin{tabular}{@{}p{0.31\linewidth}@{\hspace{7mm}}p{0.66\linewidth}@{}}
+{\itshape\color{notegray} The agent would quickly beat most humans.} &
+  Development runs landed above average, with wins concentrated where no
+  mature public solutions exist; the frozen-architecture re-run now
+  \kb{leads the paired standing} on the 19 scored lanes.\\[3.5mm]
+\arrayrulecolor{ruleline}\hline\noalign{\vskip 3.5mm}
+{\itshape\color{notegray} One run and one score decide a winner.} &
+  Score noise and run-to-run variance leave \kb{many duels undecidable};
+  a paired error model became mandatory.\\[3.5mm]
+\hline\noalign{\vskip 3.5mm}
+{\itshape\color{notegray} The agent follows the rules by default.} &
+  A transcript audit caught one lane reading its own competition's recorded
+  findings --- the clean re-run's local validation scored \emph{worse},
+  consistent with the advantage being real --- and later caught a lane whose
+  write-back polluted the next lane's priors.\\[3.5mm]
+\hline\noalign{\vskip 3.5mm}
+{\itshape\color{notegray} Fairness is mostly a mindset.} &
+  It is \kb{infrastructure}: isolated data roots, credential-free sandboxes,
+  and per-lane transcript audits cost real engineering time --- but without
+  them the numbers are not comparable.\\
+\end{tabular}\par}
+
+\end{secblock}
 
 % ---- 5 · Discussion — advice ----------------------------------------------
-\end{secblock}
 \begin{secblock}
 \blocktitle{5\sep Discussion --- advice}
 \begin{itemize}
@@ -302,11 +312,12 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
     turns the benchmark into an optimisation of the baseline.
   \item \kb{Isolate mechanically, then audit the transcript.} Sandboxes stop
     leaks you anticipated; reading what the agent actually did catches the
-    ones you didn't --- in both directions (we hit one real contamination
-    and one auditor false positive).
+    ones you didn't --- in both directions (two real contaminations, one
+    auditor false positive).
   \item \kb{Put knowledge injection upstream.} Injected at the blend stage
     it was worth ${\sim}10^{-5}$; moved into problem identification it
-    lifted the canonical failure case from last to first.
+    lifted the canonical failure case from last to first in the controlled
+    ablation.
 \end{itemize}
 \cardsub{Where knowledge enters}
 \begin{itemize}
@@ -318,24 +329,25 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
   \item But no local signal can select the \emph{form} of injection --- the
     one surviving selector died on its first pre-registered prediction.
 \end{itemize}
-\vspace{3mm}
-\notepar{Companion documents: Report v6 (Overleaf, main document)\sep
-  Engineering Log\sep Case Studies\sep 22 per-competition ML-spec reports.}
 \end{secblock}
 
 \end{minipage}
 
 % ------------------------------------------------------------------ FOOTER --
-\vfill
-\noindent\begin{tcolorbox}[enhanced, width=\paperwidth, sharp corners,
-    colback=navy, boxrule=0pt, frame hidden,
-    left=\pagepad, right=\pagepad, top=6mm, bottom=6mm, boxsep=0pt,
-    before skip=0pt, after skip=0pt]
-  {\footersize\color{white}%
-    All numbers are real measurements as of 2026-08-18 (16 of 20 re-run
-    lanes scored on the real leaderboard; four lanes still to finish)\sep
-    AIDE = LLM tree search; NVIDIA = highest-voted-kernel reproduction,
-    both frozen.\par}
-\end{tcolorbox}
+% Footer band, pinned to the page edge (never participates in page breaking)
+\begin{tikzpicture}[remember picture, overlay]
+  \node[anchor=south, inner sep=0pt] at (current page.south) {%
+    \begin{tcolorbox}[enhanced, width=\paperwidth, sharp corners,
+        colback=navy, boxrule=0pt, frame hidden,
+        left=\pagepad, right=\pagepad, top=4.5mm, bottom=4.5mm, boxsep=0pt,
+        before skip=0pt, after skip=0pt]
+      {\footersize\color{white}%
+        All numbers are real measurements as of 2026-08-18 (19 of 20 re-run
+        lanes scored on the real leaderboard; the final lane still to finish)\sep
+        AIDE = LLM tree search; NVIDIA = highest-voted-kernel reproduction,
+        both frozen\sep Companion documents: Report v6, Engineering Log,
+        Case Studies, 22 per-competition ML-spec reports.\par}
+    \end{tcolorbox}};
+\end{tikzpicture}
 
 \end{document}

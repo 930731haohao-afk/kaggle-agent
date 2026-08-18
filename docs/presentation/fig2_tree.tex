@@ -33,46 +33,6 @@
 \node[sidebox, text width=26mm, anchor=west] (out) at ([xshift=13mm, yshift=4.5mm]phase.east)
   {on stop:\\best node $\to$ submission};
 \draw[arr] ([yshift=4.5mm]phase.east) -- (out.west);
-% ----- panel: example search tree (complete, schematic) -----
-\begin{scope}[shift={(5.15,-2.7)},
-  tn/.style={circle, draw=flowblueline, fill=flowblue, inner sep=0pt, minimum size=4.6mm,
-             font=\fontsize{6}{6.5}\selectfont},
-  bn/.style={tn, draw=flowpurpleline, fill=flowpurple},
-  pl/.style={tn, draw=black!35, fill=flowgrey, text=black!45},
-  bl/.style={tn, diamond, minimum size=6mm},
-  te/.style={-{Stealth[length=1.6mm]}, thin, black!60}]
-  \node[font=\scriptsize\bfseries, anchor=north west] (ttl) at (-0.6,0.42) {example search tree};
-  % two draft lineages from the root
-  \node[tn] (r)  at (0.9,-0.6) {r};
-  \node[tn] (A)  at (0.2,-1.45) {a};
-  \node[tn] (B)  at (1.6,-1.45) {b};
-  \node[tn] (A1) at (0.2,-2.3) {a1};
-  \node[tn] (B1) at (1.6,-2.3) {b1};
-  \node[tn] (B2) at (1.6,-3.15) {b2};
-  \node[pl] (c1) at (1.0,-4.0) {};
-  \node[pl] (c2) at (1.6,-4.0) {};
-  \node[pl] (c3) at (2.2,-4.0) {};
-  \node[lab, anchor=north, font=\tiny] (plab) at (1.6,-4.28) {plateau (3 misses)};
-  % blend of the two lineages = global best
-  \node[bl, double, double distance=0.6pt] (bd) at (0.9,-3.3) {};
-  \node[lab, anchor=east, font=\tiny, align=right] (blab) at (0.55,-3.55) {blend\\(2 parents)};
-  % explore-burst fresh draft
-  \node[bn] (e)  at (2.9,-0.6) {e};
-  \node[tn] (e1) at (2.9,-1.45) {e1};
-  \node[lab, anchor=north, font=\tiny, align=center] (elab) at (2.9,-1.72) {burst\\draft};
-  \foreach \a/\b in {r/A, r/B, A/A1, B/B1, B1/B2, B2/c1, B2/c2, B2/c3, e/e1}{\draw[te] (\a) -- (\b);}
-  \draw[te] (B1) -- (bd); \draw[te] (A1) -- (bd);
-  \draw[te, dashed] (B2.west) -- ++(-0.15,0.1) -- (-0.45,-3.05) -- (-0.45,-1.45) -- (A.west);
-  \node[lab, font=\tiny, rotate=90, anchor=south] (klab) at (-0.58,-2.6) {backtrack};
-  % exit to submission
-  \draw[te] (bd) -- ++(243:1.2);
-  \node[lab, font=\tiny, anchor=north] (slab) at (0.15,-4.62) {best $\to$ submission};
-  % legend
-  \node[font=\tiny, anchor=north west, align=left, text width=34mm] (lgd) at (-0.6,-5.15)
-    {gray = plateaued (3 misses)\\dashed = backtrack\\$\diamond$ = blend $\cdot$ double = best\\purple = explore-burst draft};
-  \node[draw=black!55, rounded corners=2pt, fit={(ttl)(lgd)(plab)(slab)(klab)(r)(e)(c3)(bd)(elab)},
-        inner sep=3.5pt] (insetframe) {};
-\end{scope}
 % ----- side inputs, left column -----
 \node[injside, left=5mm of phase] (injcfg)
   {\textcolor{flowpurpleline!60!black}{\textbf{model-level operators}}\\seeded as\\starting nodes};

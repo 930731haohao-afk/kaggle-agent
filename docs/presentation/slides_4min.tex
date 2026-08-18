@@ -102,7 +102,7 @@
     \begin{column}{0.48\textwidth}
       {\color{navy}\bfseries Why an AI agent fits}
       \begin{itemize}\small
-        \item Tireless systematic search: 22--80 candidate configurations per
+        \item Tireless systematic search: 37--224 candidate configurations per
           competition, all logged.
         \item Holds one disciplined protocol across 20 competitions ---
           humans drift, agents don't.
@@ -161,19 +161,18 @@
 \begin{frame}{Results --- my-agent on real leaderboards}
   \begin{columns}[t]
     \begin{column}{0.47\textwidth}
-      {\color{navy}\bfseries\small Best private score across the 16 scored
+      {\color{navy}\bfseries\small Best private score across the 19 scored
        competitions}\\[3mm]
-      \countbar{my-agent}{barblue}{0.625}{10 / 16}
-      \countbar{NVIDIA}{pale}{0.3125}{5 / 16}
-      \countbar{AIDE}{pale}{0.0625}{1 / 16}
+      \countbar{my-agent}{barblue}{0.526}{10 / 19}
+      \countbar{NVIDIA}{pale}{0.316}{6 / 19}
+      \countbar{AIDE}{pale}{0.158}{3 / 19}
       \vspace{2mm}
-      {\color{mut}\scriptsize 16 of 20 lanes are scored on the real
+      {\color{mut}\scriptsize 19 of 20 lanes are scored on the real
        leaderboard, adjudicated by a paired test on Kaggle's public/private
-       split: my-agent stands 15 W / 5 L (75\% excl.\ ties). On s3e19 the
-       dossier layer's external-data injection turns the canonical failure
-       (SMAPE 50.455 without the layer) into a numerical first among the three
-       agents (48.243), and all 6 of 6 controlled arms beat their matched
-       baselines.}
+       split: my-agent stands 15 W / 7 L (68\% excl.\ ties). On s3e19, the
+       canonical failure case, the controlled with/without-layer ablation
+       scores 48.243 against 50.455 without the layer, and all 6 of 6
+       controlled arms beat their matched baselines.}
     \end{column}
     \begin{column}{0.49\textwidth}
       {\color{navy}\bfseries\small Beyond tabular --- my-agent beats both
@@ -196,21 +195,21 @@
       \begin{tikzpicture}
         \node[fill=lt, draw=pale, line width=0.4pt, rounded corners=2pt,
               inner sep=3mm, text width=\dimexpr\linewidth-8mm] {%
-          {\color{navy}\bfseries\small Final-architecture re-run --- 16/20
+          {\color{navy}\bfseries\small Final-architecture re-run --- 19/20
            scored}\\[1.5mm]
           {\scriptsize All 20 competitions re-run under one frozen
            architecture, in credential-free sandboxes with per-lane transcript
-           audits. 16/20 lanes scored, 1 running (s6e2), 3 queued; beats its
-           own development-lane score on 11 of 16.}\\[1.5mm]
-          {\color{gold}\scriptsize\bfseries Standing: my-agent 15 W / 5 L
-           (75\%) vs AIDE 42\% $\cdot$ NVIDIA 38\%.}};
+           audits. 19/20 lanes scored, the final lane re-running clean;
+           beats its own development-lane score on 12 of 19.}\\[1.5mm]
+          {\color{gold}\scriptsize\bfseries Standing: my-agent 15 W / 7 L
+           (68\%) vs AIDE 44\% $\cdot$ NVIDIA 40\%.}};
       \end{tikzpicture}
     \end{column}
   \end{columns}
-  \note{Sixteen of twenty lanes are scored on the real leaderboard under the
-    frozen architecture: fifteen wins, five losses --- seventy-five percent ---
-    against forty-two percent for AIDE and thirty-eight for NVIDIA, with the
-    best private score on ten of sixteen. The injection layer turns our worst
+  \note{Nineteen of twenty lanes are scored on the real leaderboard under the
+    frozen architecture: fifteen wins, seven losses --- sixty-eight percent ---
+    against forty-four percent for AIDE and forty for NVIDIA, with the
+    best private score on ten of nineteen. The injection layer turns our worst
     competition into a numerical first among the three agents, six of six
     controlled arms beat their baselines, and on the three harder competitions
     outside tabular data my agent takes the best score on all three. (45s)}
@@ -252,8 +251,8 @@
       Fairness is mostly a mindset.
     \end{column}
     \begin{column}{0.56\textwidth}\scriptsize
-      Scored frozen-architecture runs stand 15 W / 5 L (75\%) with the best
-      private score on 10 of 16 lanes; wins concentrate where no mature public
+      Scored frozen-architecture runs stand 15 W / 7 L (68\%) with the best
+      private score on 10 of 19 lanes; wins concentrate where no mature public
       solutions exist.\\[2.5mm]
       Score noise + run variance leave close duels undecidable on a single
       score; a paired error model became mandatory.\\[2.5mm]
@@ -266,8 +265,8 @@
     \end{column}
   \end{columns}
   \note{What surprised me. I expected the agent to beat most humans quickly
-    --- it wins fifteen of twenty scored head-to-heads, and its edge
-    concentrates where no public solutions exist. I expected one score to
+    --- it wins fifteen of its twenty-two decided duels, and its edge
+    concentrates where no mature public solutions exist. I expected one score to
     decide a winner --- close duels are undecidable without a paired error
     model. And I expected rule-following by default --- the transcript audit
     proved otherwise once, and proved itself once by a false positive. (40s)}

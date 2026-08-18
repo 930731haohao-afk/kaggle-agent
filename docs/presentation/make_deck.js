@@ -41,7 +41,7 @@ function head(slide, num, title) {
 
   s.addText("Why an AI agent fits", { x: 6.9, y: 1.2, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 18, bold: true, color: NAVY, margin: 0 });
   s.addText([
-    { text: "Tireless systematic search: 22–80 candidate configurations per competition, all logged.", options: { bullet: true, breakLine: true } },
+    { text: "Tireless systematic search: 37–224 candidate configurations per competition, all logged.", options: { bullet: true, breakLine: true } },
     { text: "Holds one disciplined protocol across 20 competitions — humans drift, agents don't.", options: { bullet: true, breakLine: true } },
     { text: "Emits EDA figures and per-competition reports automatically; every claim traces to an artifact.", options: { bullet: true } },
   ], { x: 6.9, y: 1.65, w: 5.9, h: 3.0, fontFace: "Calibri", fontSize: 15, color: INK, paraSpaceAfter: 10, margin: 0 });
@@ -88,7 +88,7 @@ function head(slide, num, title) {
     valAxisLabelColor: MUT, valAxisLabelFontSize: 10, valAxisMaxVal: 51, valAxisMinVal: 47, valAxisLabelFormatCode: "0.0",
     valGridLine: { color: "E4E9F0", size: 0.5 }, catGridLine: { style: "none" },
   });
-  s.addText("16 of 20 lanes are scored on the real leaderboard, adjudicated by a paired test on Kaggle's public/private split: my-agent stands 15 W / 5 L (75% excl. ties) with the best private score on 10 of 16. The dossier layer's external-data injection turns the canonical failure into a numerical first, and all 6 of 6 controlled arms beat their matched baselines.", {
+  s.addText("19 of 20 lanes are scored on the real leaderboard, adjudicated by a paired test on Kaggle's public/private split: my-agent stands 15 W / 7 L (68% excl. ties) with the best private score on 10 of 19. On s3e19 the controlled with/without-layer ablation scores 48.243 against 50.455 without the layer, and all 6 of 6 controlled arms beat their matched baselines.", {
     x: 0.55, y: 4.6, w: 5.7, h: 1.5, fontFace: "Calibri", fontSize: 12.5, color: MUT, margin: 0 });
 
   s.addText("Beyond tabular — my-agent beats both yardsticks on all three", { x: 6.9, y: 1.35, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 16, bold: true, color: NAVY, margin: 0 });
@@ -102,11 +102,11 @@ function head(slide, num, title) {
        border: { type: "solid", color: "DFE5EC", pt: 0.5 }, fill: { color: WHITE }, rowH: 0.34, valign: "middle", margin: 0.04 });
   s.addShape(pres.ShapeType.roundRect, { x: 6.9, y: 4.15, w: 5.9, h: 2.35, fill: { color: LT }, line: { color: PALE, width: 1 }, rectRadius: 0.08 });
   s.addText([
-    { text: "Final-architecture re-run — 16/20 scored", options: { fontSize: 15, bold: true, color: NAVY, breakLine: true } },
-    { text: "All 20 competitions re-run under one frozen architecture, in credential-free sandboxes with per-lane transcript audits. 16/20 lanes scored, 1 running (s6e2), 3 queued; beats its own development-lane score on 11 of 16.", options: { fontSize: 12.5, color: INK, breakLine: true } },
-    { text: "Standing: my-agent 15 W / 5 L (75%) vs AIDE 42% · NVIDIA 38%.", options: { fontSize: 12.5, bold: true, color: "8A6D1A" } },
+    { text: "Final-architecture re-run — 19/20 scored", options: { fontSize: 15, bold: true, color: NAVY, breakLine: true } },
+    { text: "All 20 competitions re-run under one frozen architecture, in credential-free sandboxes with per-lane transcript audits. 19/20 lanes scored, the final lane re-running clean; beats its own development-lane score on 12 of 19.", options: { fontSize: 12.5, color: INK, breakLine: true } },
+    { text: "Standing: my-agent 15 W / 7 L (68%) vs AIDE 44% · NVIDIA 40%.", options: { fontSize: 12.5, bold: true, color: "8A6D1A" } },
   ], { x: 7.15, y: 4.3, w: 5.4, h: 2.05, fontFace: "Calibri", paraSpaceAfter: 8, margin: 0 });
-  s.addNotes("Sixteen of twenty lanes are scored on the real leaderboard under the frozen architecture: fifteen wins, five losses — seventy-five percent — against forty-two percent for AIDE and thirty-eight for NVIDIA, with the best private score on ten of sixteen. The injection layer turns our worst competition into a numerical first among the three agents, six of six controlled arms beat their baselines, and on the three harder competitions outside tabular data my agent takes the best score on all three. (45s)");
+  s.addNotes("Nineteen of twenty lanes are scored on the real leaderboard under the frozen architecture: fifteen wins, seven losses — sixty-eight percent — against forty-four percent for AIDE and forty for NVIDIA, with the best private score on ten of nineteen. The injection layer turns our worst competition into a numerical first among the three agents, six of six controlled arms beat their baselines, and on the three harder competitions outside tabular data my agent takes the best score on all three. (45s)");
 }
 
 // ---------- 5 · Results: visualization output ----------
@@ -125,7 +125,7 @@ function head(slide, num, title) {
   const s = pres.addSlide();
   head(s, "6", "What I expected vs. what I experienced");
   const rows = [
-    ["The agent would quickly beat most humans.", "Scored frozen-architecture runs stand 15 W / 5 L (75%) with the best private score on 10 of 16 lanes; wins concentrate where no mature public solutions exist."],
+    ["The agent would quickly beat most humans.", "Scored frozen-architecture runs stand 15 W / 7 L (68%) with the best private score on 10 of 19 lanes; wins concentrate where no mature public solutions exist."],
     ["One run and one score decide a winner.", "Score noise + run variance leave close duels undecidable on a single score; a paired error model became mandatory."],
     ["The agent follows the rules by default.", "A transcript audit caught a lane reading its own competition's recorded findings — the clean re-run's local validation scored worse, consistent with a real contamination advantage."],
     ["Fairness is mostly a mindset.", "It is infrastructure: isolated data roots, credential-free sandboxes, per-lane audits — expensive, but without them numbers aren't comparable."],
@@ -140,7 +140,7 @@ function head(slide, num, title) {
     s.addText(b, { x: 6.8, y: y + 0.08, w: 5.75, h: 1.06, fontFace: "Calibri", fontSize: 13, color: INK, margin: 0, valign: "middle" });
     y += 1.38;
   }
-  s.addNotes("What surprised me. I expected the agent to beat most humans quickly — it wins fifteen of twenty scored head-to-heads, and its edge concentrates where no public solutions exist. I expected one score to decide a winner — close duels are undecidable without a paired error model. And I expected rule-following by default — the transcript audit proved otherwise once, and proved itself once by a false positive. (40s)");
+  s.addNotes("What surprised me. I expected the agent to beat most humans quickly — it wins fifteen of its twenty-two decided duels, and its edge concentrates where no mature public solutions exist. I expected one score to decide a winner — close duels are undecidable without a paired error model. And I expected rule-following by default — the transcript audit proved otherwise once, and proved itself once by a false positive. (40s)");
 }
 
 // ---------- 7 · Discussion ----------
