@@ -4,16 +4,21 @@
 % reads strictly downward and terminates at the deliverable.
 \documentclass[tikz,border=2mm]{standalone}
 \usetikzlibrary{positioning,arrows.meta,calc}
+\definecolor{flowblue}{HTML}{DAE8FC}\definecolor{flowblueline}{HTML}{6C8EBF}
+\definecolor{flowgreen}{HTML}{D5E8D4}\definecolor{flowgreenline}{HTML}{82B366}
+\definecolor{flowpurple}{HTML}{E1D5E7}\definecolor{flowpurpleline}{HTML}{9673A6}
+\definecolor{flowgrey}{HTML}{F5F5F5}\definecolor{flowgreyline}{HTML}{999999}
 \begin{document}
 \begin{tikzpicture}[
   font=\footnotesize,
-  sbox/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=5pt,
-               fill=gray!8, text width=52mm},
-  sidebox/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=3.5pt,
-                  fill=gray!3, text width=24mm, font=\scriptsize},
-  injside/.style={sidebox, fill=blue!7, draw=blue!50},
-  arr/.style={-{Stealth[length=2.6mm]}, thick},
-  barr/.style={arr, blue!55},
+  sbox/.style={draw=flowblueline, rounded corners=2pt, align=center, inner sep=5pt,
+               fill=flowblue, text width=52mm},
+  sidebox/.style={draw=flowgreyline, rounded corners=2pt, align=center, inner sep=3.5pt,
+                  fill=flowgrey, text width=24mm, font=\scriptsize},
+  injside/.style={sidebox, fill=flowpurple, draw=flowpurpleline},
+  arr/.style={-{Stealth[length=2.6mm]}, thick, black!70},
+  parr/.style={-{Stealth[length=2.6mm]}, thick, flowpurpleline},
+  barr/.style={parr},
   darr/.style={arr, dashed},
   lab/.style={font=\scriptsize, inner sep=1.5pt},
   node distance=6mm
@@ -27,20 +32,20 @@
 \node[sbox, below=of eval] (add) {\textbf{add node, update global best}\\a solo breakthrough reopens\\plateaued blend lineages};
 \foreach \a/\b in {phase/select, select/propose, propose/dedup, dedup/eval, eval/add}{\draw[arr] (\a) -- (\b);}
 % ----- exit at the BOTTOM: the column terminates at the deliverable -----
-\node[sbox, below=of add, fill=blue!8] (out)
+\node[sbox, below=of add, fill=flowgreen, draw=flowgreenline] (out)
   {\textbf{on stop: best node $\to$ submission}};
 \draw[arr] (add) -- node[lab, right]{phase = stop} (out);
 % ----- loop back, right side (re-enters at the select row) -----
 \draw[arr] (add.east) -- ++(9mm,0) |- node[lab, pos=0.25, right, align=left]{next\\iteration} (select.east);
 % ----- side inputs, left column -----
 \node[injside, left=6mm of phase] (injcfg)
-  {\textcolor{blue!60!black}{\textbf{model-level operators}}\\seeded as\\starting nodes};
+  {\textcolor{flowpurpleline!60!black}{\textbf{model-level operators}}\\seeded as\\starting nodes};
 \draw[barr] (injcfg) -- (phase);
-\node[sidebox, densely dashed, left=6mm of propose] (prior)
+\node[sidebox, densely dashed, fill=flowgreen, draw=flowgreenline, left=6mm of propose] (prior)
   {priors from\\experience library};
-\draw[darr] (prior) -- (propose);
+\draw[darr, flowgreenline] (prior) -- (propose);
 \node[injside, left=6mm of eval] (injdata)
-  {\textcolor{blue!60!black}{\textbf{data-level operators}}\\own arm each;\\arms race, winner\\takes full budget};
+  {\textcolor{flowpurpleline!60!black}{\textbf{data-level operators}}\\own arm each;\\arms race, winner\\takes full budget};
 \draw[barr] (injdata) -- (eval);
 \end{tikzpicture}
 \end{document}

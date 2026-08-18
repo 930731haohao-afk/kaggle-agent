@@ -17,6 +17,11 @@
 \usepackage{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,calc,decorations.pathreplacing,shapes.geometric,fit}
+% Figure role palette (draw.io convention used in the harness v1--v4 flowcharts)
+\definecolor{flowblue}{HTML}{DAE8FC}\definecolor{flowblueline}{HTML}{6C8EBF}
+\definecolor{flowgreen}{HTML}{D5E8D4}\definecolor{flowgreenline}{HTML}{82B366}
+\definecolor{flowpurple}{HTML}{E1D5E7}\definecolor{flowpurpleline}{HTML}{9673A6}
+\definecolor{flowgrey}{HTML}{F5F5F5}\definecolor{flowgreyline}{HTML}{999999}
 
 \emergencystretch=1.5em
 
@@ -86,81 +91,82 @@ Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms c
 \centering
 \begin{tikzpicture}[
   font=\footnotesize,
-  stage/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=3pt,
-                fill=gray!8, minimum height=8.5mm, minimum width=50mm},
-  supp/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=4pt,
-               fill=gray!3, text width=37mm},
-  injbox/.style={supp, fill=blue!7, draw=blue!50},
-  toolbox/.style={supp, fill=gray!15},
-  arr/.style={-{Stealth[length=2.4mm]}, semithick},
-  barr/.style={arr, blue!55},
+  stage/.style={draw=flowblueline, rounded corners=2pt, align=center, inner sep=3pt,
+                fill=flowblue, minimum height=8.5mm, minimum width=50mm},
+  inj/.style={stage, fill=flowpurple, draw=flowpurpleline},
+  supp/.style={draw=flowgreenline, rounded corners=2pt, align=center, inner sep=4pt,
+               fill=flowgreen, text width=37mm},
+  injbox/.style={supp, fill=flowpurple, draw=flowpurpleline},
+  toolbox/.style={supp, fill=flowgrey, draw=flowgreyline},
+  arr/.style={-{Stealth[length=2.4mm]}, semithick, black!70},
+  parr/.style={arr, flowpurpleline},
+  garr/.style={arr, flowgreenline},
   darr/.style={arr, dashed},
   lab/.style={font=\scriptsize, inner sep=1.5pt}
 ]
 % ----- main pipeline (top -> bottom) -----
 \node[stage]              (s1)  at (0,0)     {Data ingestion};
-\node[stage, fill=blue!8, text width=48mm] (s05) at (0,-1.75)
+\node[inj, text width=48mm] (s05) at (0,-1.7)
   {\textbf{0.5 Problem dossier}\\[-1pt]
-   {\scriptsize task family $\cdot$ train--test window $\cdot$ split policy $\cdot$ external-data need}\\[-1pt]
-   {\scriptsize from problem statement + task-type priors only (no kernels)}};
-\node[stage]              (s2)  at (0,-3.75)  {EDA\\[-2pt]{\scriptsize verify dossier hypotheses, record verdict}};
-\node[stage]              (s3)  at (0,-5.25)  {Feature eng.};
-\node[stage]              (s4)  at (0,-6.75)  {Modeling};
-\node[stage]              (s5)  at (0,-8.75)  {Evaluation};
-\node[stage]              (s6)  at (0,-10.35) {Submission};
+   {\scriptsize task family $\cdot$ window $\cdot$ split policy $\cdot$ external-data need}};
+\node[stage]              (s2)  at (0,-3.5)  {EDA\\[-2pt]{\scriptsize verify dossier hypotheses}};
+\node[stage]              (s3)  at (0,-5.0)  {Feature eng.};
+\node[stage]              (s4)  at (0,-6.5)  {Modeling};
+\node[stage]              (s5)  at (0,-8.5)  {Evaluation};
+\node[stage]              (s6)  at (0,-10.1) {Submission};
 \foreach \a/\b in {s1/s05, s05/s2, s2/s3, s3/s4, s4/s5, s5/s6}{\draw[arr] (\a) -- (\b);}
 % ----- EDA verdict back to the dossier -----
 \draw[darr] ([xshift=15mm]s2.north) -- node[lab, right]{verdict} ([xshift=15mm]s05.south);
 % ----- pipeline endpoint: the real leaderboard -----
-\node[stage, densely dashed, fill=white] (lb) at (0,-11.95)
+\node[stage, densely dashed, fill=white, draw=black!60] (lb) at (0,-11.7)
   {Real Kaggle leaderboard\\[-2pt]{\scriptsize public + private scoring}};
-\draw[darr] (s6) -- node[lab, anchor=west, xshift=1mm, align=left]
-  {scored post-run;\\no LB access during search} (lb);
+\draw[darr] (s6) -- node[lab, right]{scored post-run} (lb);
 % ----- LLM annotation: vertical brace spanning all stages -----
-\draw[decorate, decoration={brace, amplitude=2mm}]
+\draw[decorate, decoration={brace, amplitude=2mm}, flowblueline]
   ([xshift=-4mm]s6.south west) -- ([xshift=-4mm]s1.north west)
-  node[midway, xshift=-4mm, rotate=90, anchor=south]
+  node[midway, xshift=-4mm, rotate=90, anchor=south, black]
   {\textbf{Claude Code (LLM)} --- reasons and decides at every stage};
 % ----- tree-search loop (Evaluation -> Modeling), arc in the corridor -----
 \draw[arr] ([yshift=2.5mm]s5.east) to[out=30, in=-30] ([yshift=-3.5mm]s4.east);
-\node[lab, anchor=north west, align=left] at (3.7,-7.9)
-  {tree search: expand best / backtrack\\(22--80 nodes; after linear-protocol baseline)};
+\node[lab, anchor=west] at (3.6,-7.7) {tree search (22--80 nodes, Fig.~\ref{fig:tree})};
 % ----- right rail -----
 \node[supp]    (lib)   at (7.3,-0.2)  {\textbf{Experience library}\\[-1pt]
-  {\scriptsize entry = insight + evidence (comp, exp \#N, score A$\,\to\,$B); no score delta $\Rightarrow$ rejected}};
-\node[injbox]  (ext)   at (7.3,-3.0)  {\textbf{External-data layer}\\[-1pt]
-  {\scriptsize whitelist: World Bank, ECB FX, OWID, holidays, ISO}\\[-1pt]
-  {\scriptsize as-of joins: future-dated value $\Rightarrow$ error}\\[-1pt]
-  {\scriptsize coverage ledger: proposed / realized / unrealized}};
-\node[toolbox] (tools) at (7.3,-6.75) {LightGBM / XGBoost /\\CatBoost / Optuna\\(invoked via shell)};
-\node[supp]    (rec)   at (7.3,-10.05) {\textbf{Experiment records}\\[-1pt]
-  {\scriptsize every run logged (params, features, split, scores)}};
+  {\scriptsize evidence-backed priors}};
+\node[injbox]  (ext)   at (7.3,-2.9)  {\textbf{External-data layer}\\[-1pt]
+  {\scriptsize whitelist $\cdot$ as-of guard $\cdot$ coverage ledger}};
+\node[toolbox] (tools) at (7.3,-6.5)  {LightGBM / XGBoost /\\CatBoost / Optuna\\(invoked via shell)};
+\node[supp]    (rec)   at (7.3,-9.8)  {\textbf{Experiment records}\\[-1pt]
+  {\scriptsize params $\cdot$ features $\cdot$ split $\cdot$ scores}};
 % ----- rail / pipeline connections -----
-\draw[arr]  (lib.west) -- node[lab, above, align=center]{priors (queried before\\EDA \& modeling)} (s1.east);
-\draw[barr] (lib.south) -- node[lab, anchor=east, xshift=-0.5mm]{task priors} (ext.north);
-\draw[barr] ([yshift=1.5mm]s05.east) -- node[lab, above]{data-level operators}
+\draw[garr] (lib.west) -- node[lab, above]{priors} (s1.east);
+\draw[garr] (lib.south) -- node[lab, anchor=east, xshift=-0.5mm]{task priors} (ext.north);
+\draw[parr] ([yshift=1.5mm]s05.east) -- node[lab, above]{data-level ops}
   ([yshift=1.5mm]ext.west |- s05.east);
 % ----- model-level operators: dossier seeds the search directly -----
-\draw[barr] ([yshift=-2.5mm]s05.east) -- ++(4mm,0) |- ([yshift=3mm]s4.east);
-\node[lab, rotate=90, anchor=south, blue!60!black] at (2.95,-4.55)
-  {model-level ops: seed lineages};
-\draw[barr] (ext.south) -- node[lab, anchor=west, xshift=0.8mm, align=left]
-  {data-level arms:\\raced vs. no-external\\baseline; winner\\takes full budget} (tools.north);
+\draw[parr] ([yshift=-2.5mm]s05.east) -- ++(4mm,0) |- ([yshift=3mm]s4.east);
+\node[lab, rotate=90, anchor=south, flowpurpleline!60!black] at (2.95,-4.35)
+  {model-level ops};
+\draw[parr] (ext.south) -- node[lab, anchor=west, xshift=0.8mm]{arms race} (tools.north);
 \draw[arr, {Stealth[length=2.4mm]}-{Stealth[length=2.4mm]}] (s4.east) -- (tools.west);
-\draw[arr]  (s5.east) -- node[lab, above, pos=0.78]{log} (rec.north |- s5.east) -- (rec.north);
+\draw[garr] (s5.east) -- node[lab, above, pos=0.8]{log} (rec.north |- s5.east) -- (rec.north);
 % ----- dashed write-back, up the far right -----
-\draw[darr] (rec.east) -- ++(6mm,0) |- (lib.east);
-\node[lab, rotate=90, anchor=north] at (10.0,-4.85)
-  {validated insights (score-delta evidence) written back};
+\draw[darr, flowgreenline] (rec.east) -- ++(6mm,0) |- (lib.east);
+\node[lab, rotate=90, anchor=north] at (10.0,-4.8) {validated insights written back};
 \end{tikzpicture}
-\caption{Architecture of my-agent. The LLM drives every stage; modeling and evaluation iterate
-via tree search, invoking Auto-ML tools through the shell, while the experience library and
-experiment records close the evidence loop. Blue: the injection layer
-(Section~\ref{sec:v5}) --- the Stage 0.5 dossier emits data-level operators that drive the
-external-data layer (whose arms race against the no-external baseline) and model-level
-operators that seed search lineages directly. The dossier is a prior, not a conclusion: EDA
-verifies its hypotheses and records a verdict. The leaderboard is external to the agent ---
-lanes hold no credentials, and submissions are scored only after the run.}
+\caption{Architecture of my-agent. Color marks role.
+\textbf{Blue --- the LLM-driven pipeline}: Claude Code reasons and decides at every stage;
+EDA verifies the dossier's hypotheses and records a verdict (the dossier is a prior, not a
+conclusion). \textbf{Purple --- the injection layer} (Section~\ref{sec:v5}): the Stage-0.5
+dossier classifies the task from the problem statement and task-\emph{type} priors only (no
+competition kernels) and emits typed operators --- data-level operators drive the
+external-data layer (whitelisted sources, leakage-guarded as-of joins, a
+proposed/realized/unrealized coverage ledger), whose arms race against a no-external
+baseline with the winner taking the full budget, while model-level operators seed search
+lineages directly. \textbf{Green --- the evidence loop}: the experience library (every entry
+carries score-delta evidence; queried before EDA and modeling) and the experiment records
+that log every run's params, features, split, and scores, with validated insights written
+back. \textbf{Gray --- Auto-ML tools} invoked via the shell. The leaderboard is external to
+the agent: lanes hold no credentials, and submissions are scored only after the run.}
 \label{fig:arch}
 \end{figure}
 
@@ -170,13 +176,14 @@ lanes hold no credentials, and submissions are scored only after the run.}
 \centering
 \begin{tikzpicture}[
   font=\footnotesize,
-  sbox/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=5pt,
-               fill=gray!8, text width=60mm},
-  sidebox/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=4pt,
-                  fill=gray!3, text width=38mm},
-  injside/.style={sidebox, fill=blue!7, draw=blue!50},
-  arr/.style={-{Stealth[length=2.4mm]}, semithick},
-  barr/.style={arr, blue!55},
+  sbox/.style={draw=flowblueline, rounded corners=2pt, align=center, inner sep=5pt,
+               fill=flowblue, text width=60mm},
+  sidebox/.style={draw=flowgreyline, rounded corners=2pt, align=center, inner sep=4pt,
+                  fill=flowgrey, text width=30mm},
+  injside/.style={sidebox, fill=flowpurple, draw=flowpurpleline},
+  priorbox/.style={sidebox, fill=flowgreen, draw=flowgreenline, densely dashed},
+  arr/.style={-{Stealth[length=2.4mm]}, semithick, black!70},
+  parr/.style={arr, flowpurpleline},
   darr/.style={arr, dashed},
   lab/.style={font=\scriptsize, inner sep=1.5pt},
   node distance=5mm
@@ -195,56 +202,74 @@ lanes hold no credentials, and submissions are scored only after the run.}
 \node[sidebox, text width=26mm, anchor=west] (out) at ([xshift=13mm, yshift=4.5mm]phase.east)
   {on stop:\\best node $\to$ submission};
 \draw[arr] ([yshift=4.5mm]phase.east) -- (out.west);
-% ----- inset: example lineage (schematic) -----
-\begin{scope}[shift={(5.35,-3.1)},
-  tn/.style={circle, draw=black!75, fill=gray!12, inner sep=0pt, minimum size=3.2mm},
-  pl/.style={tn, draw=black!35, fill=gray!4, text=black!40},
-  bl/.style={tn, diamond, fill=gray!12, minimum size=4.2mm, inner sep=0pt},
+% ----- panel: example search tree (complete, schematic) -----
+\begin{scope}[shift={(5.15,-2.7)},
+  tn/.style={circle, draw=flowblueline, fill=flowblue, inner sep=0pt, minimum size=4.6mm,
+             font=\fontsize{6}{6.5}\selectfont},
+  bn/.style={tn, draw=flowpurpleline, fill=flowpurple},
+  pl/.style={tn, draw=black!35, fill=flowgrey, text=black!45},
+  bl/.style={tn, diamond, minimum size=6mm},
   te/.style={-{Stealth[length=1.6mm]}, thin, black!60}]
-  \node[draw=black!60, rounded corners=2pt, fit={(-0.65,0.35) (2.35,-4.75)},
-        inner sep=2.5pt] (insetframe) {};
-  \node[font=\scriptsize\bfseries, anchor=north west] at (-0.6,0.32) {example lineage};
-  \node[tn] (r)  at (0.85,-0.55) {};
-  \node[tn] (A)  at (0.25,-1.25) {};
-  \node[tn] (B)  at (1.45,-1.25) {};
-  \node[tn] (B1) at (1.45,-1.95) {};
-  \node[tn] (B2) at (1.45,-2.65) {};
-  \node[pl] (c1) at (0.95,-3.35) {};
-  \node[pl] (c2) at (1.45,-3.35) {};
-  \node[pl] (c3) at (1.95,-3.35) {};
-  \node[tn] (A1) at (0.25,-1.95) {};
-  \node[bl, double, double distance=0.5pt] (bd) at (0.85,-2.85) {};
-  \foreach \a/\b in {r/A, r/B, B/B1, B1/B2, B2/c1, B2/c2, B2/c3, A/A1}{\draw[te] (\a) -- (\b);}
+  \node[font=\scriptsize\bfseries, anchor=north west] (ttl) at (-0.6,0.42) {example search tree};
+  % two draft lineages from the root
+  \node[tn] (r)  at (0.9,-0.6) {r};
+  \node[tn] (A)  at (0.2,-1.45) {a};
+  \node[tn] (B)  at (1.6,-1.45) {b};
+  \node[tn] (A1) at (0.2,-2.3) {a1};
+  \node[tn] (B1) at (1.6,-2.3) {b1};
+  \node[tn] (B2) at (1.6,-3.15) {b2};
+  \node[pl] (c1) at (1.0,-4.0) {};
+  \node[pl] (c2) at (1.6,-4.0) {};
+  \node[pl] (c3) at (2.2,-4.0) {};
+  \node[lab, anchor=north, font=\tiny] (plab) at (1.6,-4.28) {plateau (3 misses)};
+  % blend of the two lineages = global best
+  \node[bl, double, double distance=0.6pt] (bd) at (0.9,-3.3) {};
+  \node[lab, anchor=east, font=\tiny, align=right] (blab) at (0.55,-3.55) {blend\\(2 parents)};
+  % explore-burst fresh draft
+  \node[bn] (e)  at (2.9,-0.6) {e};
+  \node[tn] (e1) at (2.9,-1.45) {e1};
+  \node[lab, anchor=north, font=\tiny, align=center] (elab) at (2.9,-1.72) {burst\\draft};
+  \foreach \a/\b in {r/A, r/B, A/A1, B/B1, B1/B2, B2/c1, B2/c2, B2/c3, e/e1}{\draw[te] (\a) -- (\b);}
   \draw[te] (B1) -- (bd); \draw[te] (A1) -- (bd);
   \draw[te, dashed] (B2) to[out=200, in=-90] (A);
-  \node[font=\tiny, anchor=north west, align=left] at (-0.6,-3.75)
-    {gray = plateaued lineage (3 misses)\\dashed = backtrack after plateau\\$\diamond$ = blend node (two parents)\\double border = global best};
+  \node[lab, font=\tiny, anchor=east] (klab) at (0.55,-2.75) {backtrack};
+  % exit to submission
+  \draw[te] (bd) -- ++(243:1.2);
+  \node[lab, font=\tiny, anchor=north] (slab) at (0.15,-4.62) {best $\to$ submission};
+  % legend
+  \node[font=\tiny, anchor=north west, align=left, text width=34mm] (lgd) at (-0.6,-5.15)
+    {gray = plateaued (3 misses)\\dashed = backtrack\\$\diamond$ = blend $\cdot$ double = best\\purple = explore-burst draft};
+  \node[draw=black!55, rounded corners=2pt, fit={(ttl)(lgd)(plab)(slab)(r)(e)(c3)(bd)(elab)},
+        inner sep=3.5pt] (insetframe) {};
 \end{scope}
 % ----- side inputs, left column -----
-\node[injside, left=7mm of phase] (injcfg)
-  {\textcolor{blue!60!black}{\textbf{model-level operators}}\\seeded as starting nodes\\(objective, blend member)};
-\draw[barr] (injcfg) -- (phase);
-\node[sidebox, densely dashed, left=7mm of propose] (prior)
+\node[injside, left=5mm of phase] (injcfg)
+  {\textcolor{flowpurpleline!60!black}{\textbf{model-level operators}}\\seeded as starting nodes\\(objective, blend member)};
+\draw[parr] (injcfg) -- (phase);
+\node[priorbox, left=5mm of propose] (prior)
   {priors from\\experience library};
-\draw[darr] (prior) -- (propose);
-\node[injside, left=7mm of eval] (injdata)
-  {\textcolor{blue!60!black}{\textbf{data-level operators}}\\each gets its own arm; arms race, the winner takes the full budget};
-\draw[barr] (injdata) -- (eval);
+\draw[darr, flowgreenline] (prior) -- (propose);
+\node[injside, left=5mm of eval] (injdata)
+  {\textcolor{flowpurpleline!60!black}{\textbf{data-level operators}}\\each gets its own arm; arms race, the winner takes the full budget};
+\draw[parr] (injdata) -- (eval);
 \end{tikzpicture}
 \caption{The tree-search loop used in all my-agent runs of this report (22--80 nodes per
 competition; per-competition counts in Table~\ref{tab:nodes}). Each node is a complete,
 executable solution scored by local cross-validation; lineages are abandoned on plateau, and
-the budget phase machine forces one exploration burst before stopping. Inset: a schematic
-lineage --- a plateaued branch is abandoned by backtracking, and a blend node joins two
-lineages. Blue: the injection layer's operator entry points (Section~\ref{sec:v5}) ---
-model-level operators seed starting nodes; data-level operators build separately raced arms.}
+the budget phase machine forces one exploration burst before stopping. Right panel: one
+search tree, schematic --- lineage $b$ plateaus after three children without improvement and
+is abandoned by backtracking; a blend node joins lineages $a$ and $b$ and becomes the global
+best; the explore-burst injects fresh drafts ($e$) as new roots. Purple: the injection
+layer's operator entry points (Section~\ref{sec:v5}) --- model-level operators seed starting
+nodes; data-level operators build separately raced arms. Green: priors from the experience
+library.}
 \label{fig:tree}
 \end{figure}
 
 \subsection{The Injection Layer: Dossier, External Data, and the Typed Contract}
 \label{sec:v5}
 
-The blue elements of Figures~\ref{fig:arch} and~\ref{fig:tree} form a single layer, and its placement carries the design argument. An earlier downstream variant had injected external ideas at the blend stage and measured a negligible effect (reweighting never displaced the convex-optimum champion in 8/8 rigorous competitions; pool expansion helped 2/8 by ${\sim}10^{-5}$); the architecture moves the injection point upstream to problem identification, where a failure-mode reading of the three agents' development runs locates their shared gap.
+The purple elements of Figures~\ref{fig:arch} and~\ref{fig:tree} form a single layer, and its placement carries the design argument. An earlier downstream variant had injected external ideas at the blend stage and measured a negligible effect (reweighting never displaced the convex-optimum champion in 8/8 rigorous competitions; pool expansion helped 2/8 by ${\sim}10^{-5}$); the architecture moves the injection point upstream to problem identification, where a failure-mode reading of the three agents' development runs locates their shared gap.
 
 \paragraph{The failure-mode reading that motivated the layer.}
 \label{sec:exp4}

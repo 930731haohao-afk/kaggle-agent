@@ -2,8 +2,9 @@
 % A0 PORTRAIT POSTER (841mm x 1189mm) — pdfLaTeX / Overleaf-compatible
 % "AI Agents for Data Visualization and Kaggle Competitions"
 %
-% Layout mirrors poster.html: navy top band, two columns of rounded cards
-% with gold-underlined section titles.
+% Style follows the IFSC prePoster/sciposter template the advisor referenced:
+% white page, plain two-column body, ONE navy band for the header and one
+% navy bar per section title (white text), a single orange accent, black ink.
 %
 % Compile with pdfLaTeX (Overleaf default). The only non-standard need is
 % the CJK bsmi font (arphic) for the two Chinese names in the top band.
@@ -14,41 +15,32 @@
 \usepackage[paperwidth=841mm,paperheight=1189mm,margin=0mm]{geometry}
 
 \usepackage[T1]{fontenc}
-\usepackage{helvet}                    % Helvetica clone, matches the HTML look
+\usepackage{helvet}
 \renewcommand{\familydefault}{\sfdefault}
 \usepackage{graphicx}
 \usepackage{xcolor}
-\usepackage{colortbl}                  % colored table rules
-\usepackage{booktabs}                  % \specialrule in the results table
+\usepackage{colortbl}
+\usepackage{booktabs}
 \usepackage{tikz}
-\usepackage[skins]{tcolorbox}          % cards
+\usepackage[skins]{tcolorbox}          % used only for the flat header band
 \usepackage{enumitem}
-\usepackage{textcomp}                  % \textperiodcentered
+\usepackage{textcomp}
 \usepackage{CJKutf8}                   % for the two Chinese names only
 
-% ---- Palette (taken from poster.html) --------------------------------------
-\definecolor{navy}{HTML}{0F2A4A}       % top band, headings
-\definecolor{gold}{HTML}{E2B13C}       % accent rules / label accents
-\definecolor{bandsub}{HTML}{BCD2EA}    % band subtitle
-\definecolor{bandmeta}{HTML}{8FB0D4}   % band meta lines
-\definecolor{cardborder}{HTML}{D5DBE3}
-\definecolor{cardbg}{HTML}{FBFCFE}
-\definecolor{bodyink}{HTML}{2A2E33}
-\definecolor{boldblue}{HTML}{10365F}   % bold emphasis inside text
-\definecolor{notegray}{HTML}{5A6472}   % captions / notes
-\definecolor{barme}{HTML}{2B6CB0}      % highlighted bar (ours)
-\definecolor{barother}{HTML}{A8BDD4}   % other bars
-\definecolor{bartrack}{HTML}{EEF1F5}   % bar background track
-\definecolor{tbdcol}{HTML}{8A6D1A}     % "TBD" highlight
-\definecolor{footergray}{HTML}{7A8494}
-\definecolor{ruleheavy}{HTML}{9FB0C4}  % table header rule
-\definecolor{rulelight}{HTML}{DFE5EC}  % table row rule
+% ---- Palette (sciposter-style: navy + one orange accent) -------------------
+\definecolor{navy}{RGB}{0,60,100}      % template BoxCol
+\definecolor{accent}{RGB}{244,107,2}   % template laranja
+\definecolor{bodyink}{RGB}{17,17,17}
+\definecolor{notegray}{RGB}{90,95,102}
+\definecolor{ruleline}{RGB}{200,205,210}
+\definecolor{bartrack}{RGB}{238,240,243}
+\definecolor{barother}{RGB}{176,186,196}
 
-% ---- Font sizes (pt), scaled from the HTML mm sizes ------------------------
+% ---- Font sizes (pt) -------------------------------------------------------
 \newcommand{\titlesize}{\fontsize{80}{90}\selectfont}
 \newcommand{\subsize}{\fontsize{35}{45}\selectfont}
 \newcommand{\metasize}{\fontsize{26}{36}\selectfont}
-\newcommand{\cardtitlesize}{\fontsize{43}{50}\selectfont}
+\newcommand{\cardtitlesize}{\fontsize{40}{47}\selectfont}
 \newcommand{\subheadsize}{\fontsize{30.5}{37}\selectfont}
 \newcommand{\bodysize}{\fontsize{26.5}{37.5}\selectfont}
 \newcommand{\notesize}{\fontsize{22.5}{30}\selectfont}
@@ -61,53 +53,54 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0pt}
 \setlength{\topskip}{0pt}
-\setlength{\maxdepth}{\paperheight}    % the column row is one very deep line
+\setlength{\maxdepth}{\paperheight}
 \pagestyle{empty}
 
-\newlength{\pagepad}\setlength{\pagepad}{21.25mm}   % outer horizontal padding
-\newlength{\colgap}\setlength{\colgap}{9.55mm}      % gap between columns/cards
+\newlength{\pagepad}\setlength{\pagepad}{21.25mm}
+\newlength{\colgap}\setlength{\colgap}{14mm}
 
 % ---- Helper macros ---------------------------------------------------------
-% Bold emphasis in body text (HTML <b> is dark blue)
-\newcommand{\kb}[1]{\textbf{\textcolor{boldblue}{#1}}}
-% Separator dot for meta/footer lines
+% Bold emphasis in body text
+\newcommand{\kb}[1]{\textbf{\textcolor{navy}{#1}}}
+% Separator dot
 \newcommand{\sep}{\ \textperiodcentered\ }
 
-% Card container
-\newtcolorbox{card}{%
-  enhanced, sharp corners=all, arc=4.26mm, rounded corners=all,
-  colback=cardbg, colframe=cardborder, boxrule=0.85mm,
-  left=11.5mm, right=11.5mm, top=11mm, bottom=12mm, boxsep=0pt,
-  before skip=0pt, after skip=\colgap}
+% Section title: white text on a navy bar spanning the column
+\newcommand{\secbar}[1]{%
+  \par\vspace{9mm}%
+  \noindent\begin{tikzpicture}
+    \node[fill=navy, text=white, font=\cardtitlesize\bfseries,
+          inner xsep=8mm, inner ysep=4.5mm, minimum width=\linewidth,
+          align=left, anchor=west] at (0,0) {\makebox[\dimexpr\linewidth-16mm][l]{#1}};
+  \end{tikzpicture}\par\vspace{6.5mm}}
+\newcommand{\firstsecbar}[1]{%
+  \noindent\begin{tikzpicture}
+    \node[fill=navy, text=white, font=\cardtitlesize\bfseries,
+          inner xsep=8mm, inner ysep=4.5mm, minimum width=\linewidth,
+          align=left, anchor=west] at (0,0) {\makebox[\dimexpr\linewidth-16mm][l]{#1}};
+  \end{tikzpicture}\par\vspace{6.5mm}}
 
-% Card section title: navy, gold underline
-\newcommand{\cardtitle}[1]{%
-  {\cardtitlesize\bfseries\color{navy}#1\par}%
-  \vspace{3.2mm}{\color{gold}\rule{\linewidth}{1.27mm}}\par\vspace{5.5mm}}
-
-% Card sub-heading (h3)
+% Sub-heading: navy bold with a short orange underline accent
 \newcommand{\cardsub}[1]{%
-  \vspace{4.5mm}{\subheadsize\bfseries\color{navy}#1\par}\vspace{2.8mm}}
+  \vspace{5mm}{\subheadsize\bfseries\color{navy}#1\par}%
+  \vspace{1.8mm}{\color{accent}\rule{42mm}{1.4mm}}\par\vspace{3.6mm}}
 
-% Figure caption
+% Figure caption / note paragraph
 \newcommand{\figcap}[1]{\vspace{2mm}{\notesize\color{notegray}#1\par}}
-% Note paragraph
 \newcommand{\notepar}[1]{{\notesize\color{notegray}#1\par}}
 
 % Bullet list defaults
 \setlist[itemize]{leftmargin=11mm, itemsep=4.2mm, parsep=0pt, topsep=1.5mm,
-                  label=\textbullet}
+                  label=\textcolor{navy}{\textbullet}}
 
-% ---- Horizontal bar row for the SMAPE ablation chart -----------------------
-% Bars are proportional to the margin over 52 (lower SMAPE is better),
-% i.e. bar length = (52 - value)/5 of the full track (matches the HTML).
+% ---- Horizontal bar row: best-private count across the scored benchmark ----
 % #1 = label, #2 = bar color, #3 = fraction of track (0..1), #4 = value text
-\newlength{\bartracklen}\setlength{\bartracklen}{235mm}
-\newcommand{\smapebar}[4]{%
+\newlength{\bartracklen}\setlength{\bartracklen}{225mm}
+\newcommand{\countbar}[4]{%
   \makebox[64mm][l]{\bodysize #1}%
   \begin{tikzpicture}[baseline={(0,4.2mm)}]
-    \fill[bartrack, rounded corners=2.12mm] (0,0) rectangle (\bartracklen,13.3mm);
-    \fill[#2, rounded corners=2.12mm] (0,0) rectangle (#3\bartracklen,13.3mm);
+    \fill[bartrack] (0,0) rectangle (\bartracklen,13.3mm);
+    \fill[#2] (0,0) rectangle (#3\bartracklen,13.3mm);
   \end{tikzpicture}%
   \hspace{3mm}{\tablesize\color{bodyink}#4}\par\vspace{3.6mm}}
 
@@ -123,36 +116,35 @@
   {\titlesize\bfseries\color{white}%
     AI Agents for Data Visualization and Kaggle Competitions\par}
   \vspace{5.3mm}
-  {\subsize\color{bandsub}%
+  {\subsize\color{white}%
     An end-to-end LLM agent (my-agent) benchmarked against two frozen
     yardsticks on 20 Kaggle competitions --- with the apparatus needed to
     make the comparison honest\par}
   \vspace{4.3mm}
-  {\metasize\color{bandmeta}%
-    {\bfseries\color{gold}Author:} Wei-Hao Huang
+  {\metasize\color{white}%
+    {\bfseries\color{accent}Author:} Wei-Hao Huang
     (\begin{CJK}{UTF8}{bsmi}黃威昊\end{CJK})\sep
-    {\bfseries\color{gold}School:} National Chengchi University,
+    {\bfseries\color{accent}School:} National Chengchi University,
     Department of Economics\par}
   \vspace{2.5mm}
-  {\metasize\color{bandmeta}%
-    {\bfseries\color{gold}Advisor:} Dr.\ Tso-Jung Yen
+  {\metasize\color{white}%
+    {\bfseries\color{accent}Advisor:} Dr.\ Tso-Jung Yen
     (\begin{CJK}{UTF8}{bsmi}顏佐榕\end{CJK}),
     Institute of Statistical Science, Academia Sinica\sep
     Summer Internship 2026\par}
 \end{tcolorbox}
 
-\vspace{11.7mm}
+\vspace{12mm}
 
 % ------------------------------------------------------------- BODY COLUMNS --
 \noindent\hspace*{\pagepad}%
 %
 % ============================== LEFT COLUMN (379.3mm) ======================
 \begin{minipage}[t]{379.3mm}
-\vspace{0pt}% anchor the column reference point at its top
+\vspace{0pt}
 
 % ---- 1 · Motivation --------------------------------------------------------
-\begin{card}
-\cardtitle{1\sep Motivation}
+\firstsecbar{1\sep Motivation}
 \cardsub{Why these tasks are hard}
 \begin{itemize}
   \item \kb{Kaggle competitions} demand the full expert loop --- validation
@@ -175,33 +167,33 @@
   \item Generates per-dataset EDA figures and per-competition reports
     automatically, so every claim is grounded in an artifact.
 \end{itemize}
-\end{card}
 
 % ---- 2 · Workflow ----------------------------------------------------------
-\begin{card}
-\cardtitle{2\sep Workflow}
+\secbar{2\sep Workflow}
 \centerline{\includegraphics[width=228mm]{fig1_arch_poster.pdf}}
 \figcap{The pipeline, read top to bottom: the LLM reasons at every stage;
   the \kb{Stage-0.5 dossier} (injection layer) classifies the task and
   injects external data \emph{upstream}, before any modeling; submissions
-  are scored post-run on the real leaderboard.}
+  are scored post-run on the real leaderboard. Colour = role: blue LLM
+  pipeline $\cdot$ purple injection layer $\cdot$ green evidence loop
+  $\cdot$ gray Auto-ML tools.}
 \vspace{4mm}
 \centerline{\includegraphics[width=216mm]{fig2_tree_poster.pdf}}
 \figcap{Tree-search loop: ensembles are first-class nodes with OOF caching
   and weight search; exploit until plateau, then one forced exploration
-  burst; the loop terminates at the best-node submission.}
-\end{card}
+  burst; the loop terminates at the best-node submission. Purple = the
+  injection layer's operator entry points; green = experience-library
+  priors.}
 
 \end{minipage}%
 \hspace{\colgap}%
 %
 % ============================== RIGHT COLUMN (409.65mm) ====================
-\begin{minipage}[t]{409.65mm}
-\vspace{0pt}% anchor the column reference point at its top
+\begin{minipage}[t]{404.65mm}
+\vspace{0pt}
 
 % ---- 3 · Results — Kaggle benchmark ---------------------------------------
-\begin{card}
-\cardtitle{3\sep Results --- Kaggle benchmark}
+\firstsecbar{3\sep Results --- Kaggle benchmark}
 \notepar{Benchmark lanes scored on the real leaderboard (late submission);
   the mid-complexity three-way is offline-graded on the held-out private
   split (late submission structurally unavailable there).}
@@ -213,29 +205,29 @@ test built from Kaggle's own public/private split: \kb{my-agent leads the
 standing --- 15 wins / 5 losses (75\% excl.\ ties)} vs.\ AIDE 42\% and NVIDIA
 38\% --- takes the \kb{best private score on 10 of 16}, and beats its own
 development-lane score on 11 of 16. One lane running (s6e2), three queued
-({\bfseries\color{tbdcol}TBD}).\par
-\cardsub{Injection-layer ablation (s3e19, private SMAPE $\downarrow$)}
-% Bar lengths proportional to margin over 52: (52 - SMAPE)/5 of the track.
-\smapebar{\kb{with layer}}{barme}{0.7514}{48.243}
-\smapebar{NVIDIA}{barother}{0.7469}{48.26558}
-\smapebar{AIDE}{barother}{0.7317}{48.34131}
-\smapebar{no layer}{barother}{0.3090}{50.455}
-\notepar{The dossier layer's external-data injection turns the
-  architecture's canonical failure into a numerical first among the three
-  agents --- and all \kb{6 of 6} controlled external-data arms beat their
-  matched baselines. Bar length $\propto$ margin over 52 (lower SMAPE is
-  better).}
+({\bfseries\color{accent}TBD}).\par
+\cardsub{Best private score across the 16 scored competitions}
+% fraction = count / 16
+\countbar{\kb{my-agent}}{navy}{0.625}{10 / 16}
+\countbar{NVIDIA}{barother}{0.3125}{5 / 16}
+\countbar{AIDE}{barother}{0.0625}{1 / 16}
+\notepar{Head-to-head on the same 16 real leaderboards: my-agent posts the
+  best private score twice as often as both yardsticks combined. On s3e19,
+  the architecture's canonical failure case, the injection layer's
+  external-data join turns last place (SMAPE 50.455 without the layer) into
+  a numerical first among the three agents (48.243) --- and all \kb{6 of 6}
+  controlled external-data arms beat their matched baselines.}
 \cardsub{Mid-complexity three-way (offline-graded, private split)}
 {\tablesize
 \renewcommand{\arraystretch}{1.55}%
 \setlength{\tabcolsep}{2.6mm}%
 \begin{tabular}{@{}l l r r r@{}}
-  \arrayrulecolor{ruleheavy}%
+  \arrayrulecolor{navy}%
   {\color{notegray}Competition} & {\color{notegray}Metric} &
     {\color{notegray}my-agent} & {\color{notegray}NVIDIA} &
     {\color{notegray}AIDE}\\
   \specialrule{0.74mm}{1mm}{1mm}%
-  \arrayrulecolor{rulelight}%
+  \arrayrulecolor{ruleline}%
   us-patent (NLP) & Pearson $r$ $\uparrow$ &
     \kb{0.86658} & 0.86160 & 0.65821\\ \specialrule{0.37mm}{0.8mm}{0.8mm}
   ventilator (time series) & MAE $\downarrow$ &
@@ -243,11 +235,9 @@ development-lane score on 11 of 16. One lane running (s6e2), three queued
   SIIM-ISIC (imaging) & AUC $\uparrow$ &
     \kb{0.93529} & 0.89822 & 0.88579\\ \specialrule{0.37mm}{0.8mm}{0.8mm}
 \end{tabular}\par}
-\end{card}
 
 % ---- 4 · Advantages & Difficulties ----------------------------------------
-\begin{card}
-\cardtitle{4\sep Advantages \& Difficulties}
+\secbar{4\sep Advantages \& Difficulties}
 \cardsub{Expected $\to$ experienced}
 \begin{itemize}
   \item \kb{Expected:} the agent would quickly beat most humans.
@@ -267,11 +257,9 @@ development-lane score on 11 of 16. One lane running (s6e2), three queued
     sandboxes, and per-lane transcript audits cost real engineering time ---
     but without them the numbers are not comparable.
 \end{itemize}
-\end{card}
 
 % ---- 5 · Discussion — advice ----------------------------------------------
-\begin{card}
-\cardtitle{5\sep Discussion --- advice}
+\secbar{5\sep Discussion --- advice}
 \begin{itemize}
   \item \kb{State the error model with every claim.} A ranking without an
     error scale is noise: many of our duels are undecidable, and the winner
@@ -301,20 +289,20 @@ development-lane score on 11 of 16. One lane running (s6e2), three queued
 \vspace{3mm}
 \notepar{Companion documents: Report v6 (Overleaf, main document)\sep
   Engineering Log\sep Case Studies\sep 22 per-competition ML-spec reports.}
-\end{card}
 
 \end{minipage}
 
 % ------------------------------------------------------------------ FOOTER --
 \vfill
-\noindent\hspace*{\pagepad}%
-\begin{minipage}{798.5mm}
-  {\footersize\color{footergray}%
+\noindent\begin{tcolorbox}[enhanced, width=\paperwidth, sharp corners,
+    colback=navy, boxrule=0pt, frame hidden,
+    left=\pagepad, right=\pagepad, top=6mm, bottom=6mm, boxsep=0pt,
+    before skip=0pt, after skip=0pt]
+  {\footersize\color{white}%
     All numbers are real measurements as of 2026-08-18 (16 of 20 re-run
     lanes scored on the real leaderboard; four lanes still to finish)\sep
     AIDE = LLM tree search; NVIDIA = highest-voted-kernel reproduction,
     both frozen.\par}
-\end{minipage}
-\vspace{9.5mm}
+\end{tcolorbox}
 
 \end{document}
