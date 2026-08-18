@@ -641,36 +641,25 @@ my-agent takes the three-way best on all three and the only above-median score o
 
 \begin{enumerate}[leftmargin=*]
   \item \textbf{An end-to-end competition agent whose knowledge enters at problem
-  identification rather than at blending} --- with the limits of that claim stated. The agent
-  runs the full pipeline under LLM control with Auto-ML tools, an experience library, and a
-  tree-search optimisation loop; the architectural claim this report argues for is the
-  upstream dossier layer. It separates cleanly on the benchmark (fires on exactly 2 of 18, no
-  false positives); in matched-configuration designs every external-data arm beats its own
-  baseline significantly --- six of six across three firing-class competitions --- against the
-  near-null effect the same pipeline measured at the blend stage (different competitions and
-  metric scales; the contrast is qualitative, not a same-unit ratio); and on the benchmark's
-  canonical failure the with-layer/without-layer ablation is paired-test significant. What we
-  cannot do is choose which \emph{form} the injection should take: every local signal tested is
-  0-for-3, including a diagnostic we believed enough to pre-register a prediction on --- which
-  its own named falsifier then killed.
+  identification rather than at blending.} The layer and its controlled, leaderboard-scored
+  evidence are Sections~\ref{sec:v5} and~\ref{sec:exp5v5}--\ref{sec:exp6v5}: clean 2-of-18
+  separation in the dossier sweep, six of six external-data arms paired-significant, the
+  with/without ablation significant on the benchmark's canonical failure --- and the sharp
+  negative result that no local signal selects the injection's \emph{form}, the one selector
+  surviving hindsight killed by its own pre-registered falsifier.
 
   \item \textbf{The agent's placement against two frozen, methodologically distinct
-  yardsticks, with the adjudication rule committed before the scores exist.} Of the 20
-  benchmark lanes, 16 have run to completion with frozen submissions (one running, three
-  queued as this draft compiles), all leaderboard standings TBD
-  pending the credentialed scoring step; when scored, all 60 duels are adjudicated by the
-  paired test and per-competition variance floors of Section~\ref{sec:exp2}. What is scored
-  already: the three-way best on all three mid-complexity competitions (NLP, physiological
-  time series, medical imaging), and the firing-class three-way of Result 2c, which
-  characterises \emph{where} each method's advantage lives --- reproduction inherits mature
-  public solutions for free, and the strategies separate when the public board misleads
-  (Section~\ref{sec:votes}).
+  yardsticks, with the adjudication rule committed before the scores exist.} 16 of the 20
+  benchmark lanes are complete with frozen submissions (one running, three queued as this
+  draft compiles), all standings TBD pending the credentialed scoring step
+  (Section~\ref{sec:exp1}); already scored are the mid-complexity sweep (three-way best on
+  all three) and the firing-class three-way of Result 2c.
 
   \item \textbf{A caution that constrains how any such claim may be stated.} A ranking is a
   property of method $\times$ evaluation set --- in development runs the winner flipped between
   two reasonable competition sets, and on s5e1 between the two halves of a single test split
-  (Section~\ref{sec:reversal}). The caution is demonstrated rather than asserted, and it
-  applies to our own agent first.
+  (Section~\ref{sec:reversal}). Demonstrated rather than asserted, it applies to our own
+  agent first.
 \end{enumerate}
 
 The measurement machinery itself --- the paired test, the variance measurement, and the audited, credential-free execution discipline of Section~\ref{sec:apparatus} --- is infrastructure rather than a contribution, and is packaged for reuse by other agent benchmarks.
@@ -702,23 +691,20 @@ NVIDIA wins where a mature, high-quality public solution exists --- sep-2022's 2
 \subsection{A Ranking Is Not a Property of the Method, but of Method $\times$ Evaluation Set}
 \label{sec:reversal}
 
-The most important methodological lesson of the development runs: same agents, same test --- swap the competition set and the paired-test winner flipped between the 14-competition Playground subset and the broader 20-competition set (those standings belong to superseded development lanes and are not reprinted here; the mechanism is a property of the methods and survives). Three of the six non-Playground competitions are old or non-mainstream (afsis 2014, conway 2014, cat-in-the-dat 2019), so NVIDIA's ``reproduce the top-voted kernel'' loses the mature solution ecosystem it enjoys in the Playground series --- its frozen PR drops to 18.8 (afsis) and 32.6 (cat-in-the-dat, Table~\ref{tab:bench}) --- while sep-2022, the one non-Playground competition with a mature public solution, is its cleanest win in the set (Result 2c). Result 2c also reproduces the caution inside a single competition: on s5e1 the public and private halves of one test split order two agents oppositely. Absolute-position metrics (median PR) ordered the three identically on both evaluation sets while the paired win rate reversed --- relative verdicts binarize many near-tie gaps and are therefore highly sensitive to sample composition. ``Which agent is stronger'' is thus an incomplete question; the correct question is ``stronger on what distribution of competitions'': with mature public solutions, reproduction dominates; on obscure, old, build-your-own-pipeline tasks, autonomous methods dominate. An agent benchmark's conclusion must be stated together with the composition of its evaluation set, and should report both an absolute metric (PR) and a relative one (paired win rate).
+The most important methodological lesson of the development runs: same agents, same test --- swap the competition set and the paired-test winner flipped between the 14-competition Playground subset and the broader 20-competition set (those standings belong to superseded development lanes and are not reprinted here; the mechanism is a property of the methods and survives). The mechanism: reproduction dominates where a mature public solution exists, autonomous methods dominate on obscure, build-your-own-pipeline tasks, and relative verdicts binarize many near-tie gaps, so the paired win rate is highly sensitive to sample composition even while absolute position (median PR) stays stable. Result 2c reproduces the caution inside a single competition: on s5e1 the public and private halves of one test split order two agents oppositely. An agent benchmark's conclusion must therefore be stated together with the composition of its evaluation set, and should report both an absolute metric (PR) and a relative one (paired win rate).
 
 \subsection{Limitations of the Experimental Design}
 \label{sec:limitations}
 
 \begin{itemize}[leftmargin=*]
-  \item \textbf{The significance test covers only test-set sampling noise}, not between-run agent variance. That variance is measured for my-agent and AIDE on four competitions (Section~\ref{sec:exp2}) and enters the combined error model as a per-competition floor; NVIDIA's term remains unmeasured.
+  \item \textbf{The significance test covers only test-set sampling noise}, not between-run agent variance. That variance is measured for my-agent and AIDE on four competitions (Section~\ref{sec:exp2}) and enters the combined error model as a per-competition floor; NVIDIA's term remains unmeasured, and widening that sample is the cheapest way to harden every verdict the benchmark will produce.
   \item \textbf{The duels are not independent trials.} Each competition contributes three
-  duels that are deterministic functions of six shared scores, and each submission enters two
-  duels, so duel-iid intervals are anti-conservative and the effective sample size is closer to 20
-  competitions than to 60 duels; interval estimates on the scored standings must use
-  competition-level cluster bootstrap. A further asymmetry touches every NVIDIA duel:
-  reproduced kernels were tuned by their authors against the realized public leaderboard, so
-  NVIDIA's public score is not an unbiased estimate of its private one. In the development lanes the median public-to-private degradation was small for all three
-  agents, but NVIDIA's distribution sat highest and held the
-  extreme ($+155\%$, s5e1). The paired test's exchangeability premise is weakest exactly where
-  the reproduction method is strongest.
+  duels computed from six shared scores, so the effective sample size is closer to 20
+  competitions than to 60 duels and interval estimates must use competition-level cluster
+  bootstrap. A further asymmetry touches every NVIDIA duel: reproduced kernels were tuned by
+  their authors against the realized public leaderboard (degradation extreme $+155\%$, s5e1),
+  so the paired test's exchangeability premise is weakest exactly where the reproduction
+  method is strongest.
   \item \textbf{Budgets are per-method conventions, not compute-matched.} AIDE runs its
   default 20 steps, my-agent 22--80 evaluated nodes plus a linear pass, NVIDIA minutes of
   reproduction; each method runs ``as shipped,'' so the comparison is methods-with-their-budgets,
@@ -730,7 +716,7 @@ The most important methodological lesson of the development runs: same agents, s
   leaderboards had been consulted for the injection experiments, and in the development runs
   that addition moved every rate --- so the 18-vs-20 composition is disclosed rather than
   hidden.
-  \item \textbf{The asymmetry created by the experience library is disclosed, not eliminated.} my-agent carries cross-competition memory; the other two cold-start --- a design difference rather than a flaw, but it colors the interpretation of the conclusions.
+  \item \textbf{The experience-library asymmetry is disclosed, not eliminated}: my-agent carries cross-competition memory; the other two cold-start.
   \item \textbf{The mid-complexity lanes ran without the injection layer and without tree search} (Section~\ref{sec:exp7run2}), and their offline grading yields one score per submission, outside the paired test's reach; their sweep is therefore a raw-score result, not a paired-verdict one.
 \end{itemize}
 
@@ -738,8 +724,6 @@ The most important methodological lesson of the development runs: same agents, s
 \label{sec:future}
 
 Ordered by how much they would change this report's conclusions.
-
-\paragraph{NVIDIA's between-run variance is unmeasured.} The variance measurement of Section~\ref{sec:exp2} covers my-agent and AIDE on four competitions; on those competitions, every development-lane verdict that survived the combined error model involves NVIDIA --- the one agent whose variance term is missing. Widening that sample is the cheapest way to harden every verdict the benchmark will produce.
 
 \paragraph{Operator form cannot be selected from any local signal we have tested --- 0-for-3,
 with one selector killed by pre-registration.} Section~\ref{sec:exp6v5} details the
@@ -756,21 +740,20 @@ Extending the class is worth more than re-running the 16 competitions where the 
 silent: a re-run there changes nothing the layer does and instead re-rolls 48 of the 60 duels
 with the run-to-run variance measured in Section~\ref{sec:exp2}.
 
-\paragraph{The experience library's weak link is retrieval, not content.} While decomposing
-the s3e19 residual we re-derived a result the library already held, because nothing forces a
-query before an experiment; a neighbouring entry meanwhile over-claimed and has since been
-corrected against leaderboard evidence. The next layer worth building is a retrieval gate
-rather than more stored knowledge.
+\paragraph{The experience library's residual weak link is retrieval quality.} The
+enforcement half is closed: the current architecture makes the library query binding --- an
+experiment record without a \texttt{library\_query} trace is invalid, and the audit tool
+checks this mechanically --- after a development episode in which we re-derived a result the
+library already held. What remains open is quality, not enforcement: a neighbouring entry
+over-claimed and had to be corrected against leaderboard evidence, and no mechanism yet scores
+retrieved priors for applicability.
 
 \paragraph{Smaller items.} Whitelisting further source classes (prior-competition archives,
-public text corpora). An automatic split-legality check triggered by a single-step metric
-improvement beyond a threshold (AIDE's two failures are the motivating cases).
-Reproduce-then-verify against the source's claimed rank, the concrete fix for NVIDIA's vote
-bottleneck. A direct ablation of the experience library.
+public text corpora), and a direct ablation of the experience library.
 
 \section{Conclusion}
 
-This study set out to build an end-to-end competition agent and to find out honestly what its architecture is worth. The claim is about placement: knowledge injected downstream at the blend stage measured worth ${\sim}10^{-5}$, so the architecture injects it upstream, at problem identification --- a dossier layer that fires on exactly the 2 of 18 baseline competitions needing external data and stays silent on the other 16, typed leakage-guarded operators that beat their matched baselines in all six controlled arms across three firing-class competitions, every one paired-significant, and a with-layer/without-layer ablation that passes the paired test on the benchmark's canonical failure. The same discipline returns the negative result that sharpens the claim: no local signal we tested can choose the \emph{form} the injection should take --- 0-for-3, the one selector surviving hindsight killed by its first pre-registered prediction --- a failure we count as the method working, since a benchmark that can kill its own hypotheses is the thing this study set out to build. The benchmark lanes run under the frozen architecture in credential-free, transcript-audited sandboxes --- 16 of 20 complete as this draft compiles, and the audit proved its worth by discarding a contaminated lane whose tainted local score beat its clean replacement's --- and my-agent takes the three-way best on all three mid-complexity competitions. The benchmark standings are TBD: the completed lanes' submissions exist, the scoring step is a separate credentialed operation, and when it runs every duel will be adjudicated by the error model stated in advance (Section~\ref{sec:apparatus}). The arc of the internship is a single loop closed: build the agent, benchmark it honestly, read its failures, fix the layer they identify, and re-verify under the same discipline that found the gap.
+This study set out to build an end-to-end competition agent and to find out honestly what its architecture is worth. The architectural answer is placement: downstream injection measured near-null, so knowledge enters at problem identification, and the layer's controlled, leaderboard-scored evidence carries the claim (Section~\ref{sec:exp6v5}) --- together with the negative result that no local signal selects the injection's form, a failure we count as the method working, since a benchmark that can kill its own hypotheses is the thing this study set out to build. The benchmark verdict is deliberately unfinished: 16 of 20 frozen, transcript-audited lanes are complete, their submissions frozen, standings TBD until the credentialed scoring step, at which point every duel is adjudicated by the error model committed in advance (Section~\ref{sec:apparatus}) --- restraint the development runs earned, where the winner flipped with the evaluation set and the audit discarded a contaminated lane whose tainted score looked better than its clean replacement's. The arc of the internship is a single loop closed: build the agent, benchmark it honestly, read its failures, fix the layer they identify, and re-verify under the same discipline that found the gap.
 
 \appendix
 
