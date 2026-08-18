@@ -180,20 +180,16 @@
 % ---- 2 · Workflow ----------------------------------------------------------
 \begin{card}
 \cardtitle{2\sep Workflow}
-An LLM reasons at every stage; Auto-ML libraries are invoked through the
-shell; a cross-competition \kb{experience library} supplies evidence-backed
-priors; a \kb{tree search} over candidate configurations is the optimisation
-loop.\par
+\centerline{\includegraphics[width=228mm]{fig1_arch_poster.pdf}}
+\figcap{The pipeline, read top to bottom: the LLM reasons at every stage;
+  the \kb{Stage-0.5 dossier} (injection layer) classifies the task and
+  injects external data \emph{upstream}, before any modeling; submissions
+  are scored post-run on the real leaderboard.}
 \vspace{4mm}
-\includegraphics[width=\linewidth]{fig1_arch.pdf}
-\figcap{Six-stage pipeline: problem dossier $\to$ EDA $\to$ features $\to$
-  modeling $\to$ evaluation $\to$ submission. The v5 dossier layer classifies
-  the task and injects external data \emph{upstream}, before any modeling.}
-\vspace{4mm}
-\includegraphics[width=\linewidth]{fig2_tree.pdf}
+\centerline{\includegraphics[width=216mm]{fig2_tree_poster.pdf}}
 \figcap{Tree-search loop: ensembles are first-class nodes with OOF caching
   and weight search; exploit until plateau, then one forced exploration
-  burst.}
+  burst; the loop terminates at the best-node submission.}
 \end{card}
 
 \end{minipage}%
@@ -206,17 +202,18 @@ loop.\par
 % ---- 3 · Results — Kaggle benchmark ---------------------------------------
 \begin{card}
 \cardtitle{3\sep Results --- Kaggle benchmark}
-\notepar{All submissions scored on the real leaderboard (late submission);
-  verdicts adjudicated by a paired test built from Kaggle's own
-  public/private split.}
+\notepar{Benchmark lanes scored on the real leaderboard (late submission);
+  the mid-complexity three-way is offline-graded on the held-out private
+  split (late submission structurally unavailable there).}
 \cardsub{Benchmark standing (scored 2026-08-18, 16 of 20 lanes)}
 All 20 competitions run under the frozen Stage-0.5 architecture in
 credential-free sandboxes with a per-lane transcript audit. The 16 completed
 lanes are scored on the real leaderboard, each duel adjudicated by a paired
 test built from Kaggle's own public/private split: \kb{my-agent leads the
 standing --- 15 wins / 5 losses (75\% excl.\ ties)} vs.\ AIDE 42\% and NVIDIA
-38\% --- and takes the \kb{best private score on 10 of 16}. One lane running
-(s6e2), three queued ({\bfseries\color{tbdcol}TBD}).\par
+38\% --- takes the \kb{best private score on 10 of 16}, and beats its own
+development-lane score on 11 of 16. One lane running (s6e2), three queued
+({\bfseries\color{tbdcol}TBD}).\par
 \cardsub{Injection-layer ablation (s3e19, private SMAPE $\downarrow$)}
 % Bar lengths proportional to margin over 52: (52 - SMAPE)/5 of the track.
 \smapebar{\kb{with layer}}{barme}{0.7514}{48.243}
@@ -263,8 +260,9 @@ standing --- 15 wins / 5 losses (75\% excl.\ ties)} vs.\ AIDE 42\% and NVIDIA
     undecidable; a paired error model became mandatory.
   \item \kb{Expected:} the agent follows the rules by default.
     \kb{Experienced:} a transcript audit caught one lane reading its own
-    competition's recorded findings --- and the clean re-run scored
-    \emph{worse}, proving the contamination advantage was real.
+    competition's recorded findings --- and the clean re-run's local
+    validation scored \emph{worse}, consistent with the contamination
+    advantage being real.
   \item Fairness is expensive: isolated data roots, credential-free
     sandboxes, and per-lane transcript audits cost real engineering time ---
     but without them the numbers are not comparable.

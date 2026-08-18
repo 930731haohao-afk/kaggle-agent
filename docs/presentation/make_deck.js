@@ -22,7 +22,7 @@ function head(slide, num, title) {
     x: 0.8, y: 1.9, w: 11.7, h: 2.2, fontFace: "Cambria", fontSize: 44, bold: true, color: WHITE, margin: 0 });
   s.addText("An end-to-end LLM agent, benchmarked against two frozen yardsticks on 20 Kaggle competitions", {
     x: 0.8, y: 4.15, w: 11.0, h: 0.7, fontFace: "Calibri", fontSize: 20, color: ICE, margin: 0 });
-  s.addText("Wei-Hao Huang  ·  Academia Sinica ISS Summer Internship 2026  ·  Report v4 (2026-08-17)", {
+  s.addText("Wei-Hao Huang  ·  Academia Sinica ISS Summer Internship 2026  ·  Report v6 (2026-08-18)", {
     x: 0.8, y: 6.3, w: 11.0, h: 0.5, fontFace: "Calibri", fontSize: 14, color: PALE, margin: 0 });
   s.addNotes("Four minutes: what I built, how it works, what it scored, what surprised me, and what I would tell the next person. (10s)");
 }
@@ -35,7 +35,7 @@ function head(slide, num, title) {
   s.addText([
     { text: "Kaggle demands the full expert loop — validation design, features, model selection, ensembling.", options: { bullet: true, breakLine: true } },
     { text: "Top entries differ at the 4th–5th decimal of the metric; intuition cannot rank them.", options: { bullet: true, breakLine: true } },
-    { text: "Local cross-validation misleads: it contradicts the real leaderboard in 9 of 13 competitions we measured.", options: { bullet: true, breakLine: true } },
+    { text: "Local cross-validation misleads: one competition scored 6.71 out-of-fold yet 49.41 on the real leaderboard.", options: { bullet: true, breakLine: true } },
     { text: "EDA and diagnostic visualization are essential but repetitive for every new dataset.", options: { bullet: true } },
   ], { x: 0.55, y: 1.65, w: 5.9, h: 3.6, fontFace: "Calibri", fontSize: 15, color: INK, paraSpaceAfter: 10, margin: 0 });
 
@@ -48,32 +48,32 @@ function head(slide, num, title) {
 
   s.addShape(pres.ShapeType.roundRect, { x: 6.9, y: 5.0, w: 5.9, h: 1.7, fill: { color: LT }, line: { color: PALE, width: 1 }, rectRadius: 0.08 });
   s.addText([
-    { text: "9 / 13", options: { fontSize: 40, bold: true, color: BLUE, breakLine: true } },
-    { text: "competitions where local CV and the real leaderboard disagree — the core reason honest measurement needs apparatus", options: { fontSize: 12.5, color: MUT } },
+    { text: "6.71 → 49.41", options: { fontSize: 40, bold: true, color: BLUE, breakLine: true } },
+    { text: "s3e19: out-of-fold SMAPE vs. realized leaderboard score — the core reason honest measurement needs apparatus", options: { fontSize: 12.5, color: MUT } },
   ], { x: 7.15, y: 5.15, w: 5.4, h: 1.45, fontFace: "Calibri", align: "left", margin: 0 });
-  s.addNotes("Kaggle is the full expert loop, and the margins are at the fourth decimal. The obvious compass — your own cross-validation — points the wrong way in 9 of 13 cases we measured. An agent fits because it is tireless, holds one protocol across 20 competitions, and documents everything it does. (35s)");
+  s.addNotes("Kaggle is the full expert loop, and the margins are at the fourth decimal. The obvious compass — your own cross-validation — can be off by an order of magnitude: 6.71 out-of-fold became 49.41 on the real leaderboard. An agent fits because it is tireless, holds one protocol across 20 competitions, and documents everything it does. (35s)");
 }
 
 // ---------- 3 · Workflow ----------
 {
   const s = pres.addSlide();
   head(s, "3", "Workflow — an LLM reasons at every stage");
-  s.addImage({ path: "fig1_architecture.png", x: 0.55, y: 1.35, w: 7.6, h: 3.84 });
-  s.addText("Six-stage pipeline: problem dossier → EDA → feature engineering → modeling → evaluation → submission.", {
-    x: 0.55, y: 5.35, w: 7.6, h: 0.6, fontFace: "Calibri", fontSize: 12.5, italic: true, color: MUT, margin: 0 });
+  s.addImage({ path: "fig1_report-1.png", x: 0.55, y: 1.3, w: 5.2, h: 4.76 });
+  s.addText("Pipeline: dossier → EDA → features → modeling → evaluation → submission → real leaderboard.", {
+    x: 0.55, y: 6.2, w: 5.4, h: 0.6, fontFace: "Calibri", fontSize: 12.5, italic: true, color: MUT, margin: 0 });
   s.addText([
     { text: "LLM decides at every stage; Auto-ML tools (LightGBM / XGBoost / CatBoost / Optuna) do the heavy lifting via the shell.", options: { bullet: true, breakLine: true } },
     { text: "Experience library: cross-competition priors, every entry evidence-backed, written back after each run.", options: { bullet: true, breakLine: true } },
     { text: "Tree search over candidate configurations is the optimisation loop — ensembles are first-class nodes with OOF caching.", options: { bullet: true, breakLine: true } },
-    { text: "v5 layer: a problem dossier classifies the task and injects external data upstream, before any modeling.", options: { bullet: true } },
-  ], { x: 8.5, y: 1.45, w: 4.3, h: 5.0, fontFace: "Calibri", fontSize: 14, color: INK, paraSpaceAfter: 12, margin: 0 });
+    { text: "Stage-0.5 dossier (injection layer): classifies the task and injects external data upstream, before any modeling.", options: { bullet: true } },
+  ], { x: 6.15, y: 1.45, w: 6.6, h: 5.0, fontFace: "Calibri", fontSize: 14, color: INK, paraSpaceAfter: 12, margin: 0 });
   s.addNotes("The workflow: data ingestion, a problem dossier, EDA, features, modeling, evaluation, submission. The LLM reasons at every stage and drives Auto-ML tools through the shell. Two things make it more than a script: an evidence-backed experience library shared across competitions, and a tree search where ensembles are first-class nodes. (40s)");
 }
 
 // ---------- 4 · Results: Kaggle ----------
 {
   const s = pres.addSlide();
-  head(s, "4", "Results — three agents, real leaderboards");
+  head(s, "4", "Results — my-agent on real leaderboards");
   s.addChart(pres.ChartType.bar, [{
     name: "s3e19 private SMAPE",
     labels: ["with layer", "NVIDIA", "AIDE", "no layer"],
@@ -88,10 +88,10 @@ function head(slide, num, title) {
     valAxisLabelColor: MUT, valAxisLabelFontSize: 10, valAxisMaxVal: 51, valAxisMinVal: 47, valAxisLabelFormatCode: "0.0",
     valGridLine: { color: "E4E9F0", size: 0.5 }, catGridLine: { style: "none" },
   });
-  s.addText("All 20 competitions ran under the frozen Stage-0.5 architecture; my-agent's leaderboard standing is TBD until the credentialed scoring step, then adjudicated by a paired test on Kaggle's public/private split. Scored today: the dossier layer's external-data injection turns the canonical failure into a numerical first, and all 6 of 6 controlled arms beat their matched baselines.", {
+  s.addText("16 of 20 lanes are scored on the real leaderboard, adjudicated by a paired test on Kaggle's public/private split: my-agent stands 15 W / 5 L (75% excl. ties) with the best private score on 10 of 16. The dossier layer's external-data injection turns the canonical failure into a numerical first, and all 6 of 6 controlled arms beat their matched baselines.", {
     x: 0.55, y: 4.6, w: 5.7, h: 1.5, fontFace: "Calibri", fontSize: 12.5, color: MUT, margin: 0 });
 
-  s.addText("Mid-complexity three-way — my-agent sweeps all three", { x: 6.9, y: 1.35, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 16, bold: true, color: NAVY, margin: 0 });
+  s.addText("Beyond tabular — my-agent beats both yardsticks on all three", { x: 6.9, y: 1.35, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 16, bold: true, color: NAVY, margin: 0 });
   s.addTable([
     [{ text: "Competition", options: { bold: true, color: NAVY } }, { text: "Metric", options: { bold: true, color: NAVY } },
      { text: "my-agent", options: { bold: true, color: NAVY } }, { text: "NVIDIA", options: { bold: true, color: NAVY } }, { text: "AIDE", options: { bold: true, color: NAVY } }],
@@ -102,11 +102,11 @@ function head(slide, num, title) {
        border: { type: "solid", color: "DFE5EC", pt: 0.5 }, fill: { color: WHITE }, rowH: 0.34, valign: "middle", margin: 0.04 });
   s.addShape(pres.ShapeType.roundRect, { x: 6.9, y: 4.15, w: 5.9, h: 2.35, fill: { color: LT }, line: { color: PALE, width: 1 }, rectRadius: 0.08 });
   s.addText([
-    { text: "Final-architecture re-run — in progress", options: { fontSize: 15, bold: true, color: NAVY, breakLine: true } },
-    { text: "All 20 competitions re-run under one frozen architecture, in credential-free sandboxes with per-lane transcript audits. 16/20 lanes run (one pending audit review), 1 running, 3 queued.", options: { fontSize: 12.5, color: INK, breakLine: true } },
-    { text: "Leaderboard scores: TBD until the credentialed scoring step.", options: { fontSize: 12.5, bold: true, color: "8A6D1A" } },
+    { text: "Final-architecture re-run — 16/20 scored", options: { fontSize: 15, bold: true, color: NAVY, breakLine: true } },
+    { text: "All 20 competitions re-run under one frozen architecture, in credential-free sandboxes with per-lane transcript audits. 16/20 lanes scored, 1 running (s6e2), 3 queued; beats its own development-lane score on 11 of 16.", options: { fontSize: 12.5, color: INK, breakLine: true } },
+    { text: "Standing: my-agent 15 W / 5 L (75%) vs AIDE 42% · NVIDIA 38%.", options: { fontSize: 12.5, bold: true, color: "8A6D1A" } },
   ], { x: 7.15, y: 4.3, w: 5.4, h: 2.05, fontFace: "Calibri", paraSpaceAfter: 8, margin: 0 });
-  s.addNotes("All 20 competitions ran under the frozen architecture with Stage 0.5 in every lane; the leaderboard standing is TBD until the scoring step, and a paired significance test then decides which gaps are real. What is already scored: the injection layer turns our worst competition into a numerical first among the three agents, six of six controlled arms beat their baselines, and on the three harder competitions outside tabular data my agent takes the best score on all three. (45s)");
+  s.addNotes("Sixteen of twenty lanes are scored on the real leaderboard under the frozen architecture: fifteen wins, five losses — seventy-five percent — against forty-two percent for AIDE and thirty-eight for NVIDIA, with the best private score on ten of sixteen. The injection layer turns our worst competition into a numerical first among the three agents, six of six controlled arms beat their baselines, and on the three harder competitions outside tabular data my agent takes the best score on all three. (45s)");
 }
 
 // ---------- 5 · Results: visualization output ----------
@@ -125,9 +125,9 @@ function head(slide, num, title) {
   const s = pres.addSlide();
   head(s, "6", "What I expected vs. what I experienced");
   const rows = [
-    ["The agent would quickly beat most humans.", "Development runs landed above average (median percentile 72.3); wins concentrate where no mature public solutions exist. Frozen-architecture standing: TBD until scoring."],
-    ["One run and one score decide a winner.", "Score noise + run variance leave 27% of duels undecidable; a paired error model became mandatory."],
-    ["The agent follows the rules by default.", "A transcript audit caught a lane reading its own competition's recorded findings — the clean re-run scored worse, so the advantage was real."],
+    ["The agent would quickly beat most humans.", "Scored frozen-architecture runs stand 15 W / 5 L (75%) with the best private score on 10 of 16 lanes; wins concentrate where no mature public solutions exist."],
+    ["One run and one score decide a winner.", "Score noise + run variance leave close duels undecidable on a single score; a paired error model became mandatory."],
+    ["The agent follows the rules by default.", "A transcript audit caught a lane reading its own competition's recorded findings — the clean re-run's local validation scored worse, consistent with a real contamination advantage."],
     ["Fairness is mostly a mindset.", "It is infrastructure: isolated data roots, credential-free sandboxes, per-lane audits — expensive, but without them numbers aren't comparable."],
   ];
   s.addText("Expected", { x: 0.55, y: 1.2, w: 5.6, h: 0.4, fontFace: "Calibri", fontSize: 17, bold: true, color: MUT, margin: 0 });
@@ -140,7 +140,7 @@ function head(slide, num, title) {
     s.addText(b, { x: 6.8, y: y + 0.08, w: 5.75, h: 1.06, fontFace: "Calibri", fontSize: 13, color: INK, margin: 0, valign: "middle" });
     y += 1.38;
   }
-  s.addNotes("What surprised me. I expected the agent to beat most humans quickly — it lands above average, and its edge concentrates where no public solutions exist. I expected one score to decide a winner — a quarter of duels are actually undecidable. And I expected rule-following by default — the transcript audit proved otherwise once, and proved itself once by a false positive. (40s)");
+  s.addNotes("What surprised me. I expected the agent to beat most humans quickly — it wins fifteen of twenty scored head-to-heads, and its edge concentrates where no public solutions exist. I expected one score to decide a winner — close duels are undecidable without a paired error model. And I expected rule-following by default — the transcript audit proved otherwise once, and proved itself once by a false positive. (40s)");
 }
 
 // ---------- 7 · Discussion ----------
@@ -149,15 +149,15 @@ function head(slide, num, title) {
   s.background = { color: NAVY };
   s.addText("Advice — if you use an AI agent for this", { x: 0.8, y: 0.55, w: 11.7, h: 0.8, fontFace: "Cambria", fontSize: 30, bold: true, color: WHITE, margin: 0 });
   s.addText([
-    { text: "State the error model with every claim. Without an error scale a ranking is noise: 27% of our duels are undecidable, and the winner flips when the evaluation set changes.", options: { bullet: true, breakLine: true } },
+    { text: "State the error model with every claim. Without an error scale a ranking is noise: close duels are undecidable, and the winner flips when the evaluation set changes.", options: { bullet: true, breakLine: true } },
     { text: "Never trust local CV for between-agent claims — score on the real leaderboard.", options: { bullet: true, breakLine: true } },
     { text: "Freeze your yardsticks. Improving a baseline mid-study turns the benchmark into an optimisation of the baseline.", options: { bullet: true, breakLine: true } },
     { text: "Isolate mechanically, then audit the transcript — reading what the agent actually did catches the leaks you didn't anticipate, in both directions.", options: { bullet: true, breakLine: true } },
     { text: "Put knowledge injection upstream: at the blend stage it was worth ~10⁻⁵; moved into problem identification it lifted the canonical failure case from last to first.", options: { bullet: true } },
   ], { x: 0.8, y: 1.7, w: 11.7, h: 3.9, fontFace: "Calibri", fontSize: 16.5, color: ICE, paraSpaceAfter: 14, margin: 0 });
-  s.addText("Report v4 · Engineering Log · Case Studies · 22 ML-spec reports  —  github.com/930731haohao-afk/kaggle-agent", {
+  s.addText("Report v6 · Engineering Log · Case Studies · 22 ML-spec reports  —  github.com/930731haohao-afk/kaggle-agent", {
     x: 0.8, y: 6.45, w: 11.7, h: 0.5, fontFace: "Calibri", fontSize: 13, color: PALE, margin: 0 });
-  s.addNotes("If you do this yourself: state an error model with every claim, never trust local CV between agents, freeze your yardsticks, isolate mechanically and then read the transcript, and put knowledge injection upstream. Everything is in report v4 and the repository. Thank you. (25s)");
+  s.addNotes("If you do this yourself: state an error model with every claim, never trust local CV between agents, freeze your yardsticks, isolate mechanically and then read the transcript, and put knowledge injection upstream. Everything is in report v6 and the repository. Thank you. (25s)");
 }
 
 pres.writeFile({ fileName: "slides_4min.pptx" }).then(() => console.log("written"));

@@ -16,7 +16,7 @@
 \usepackage[colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue!50!black]{hyperref}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,calc,decorations.pathreplacing}
+\usetikzlibrary{positioning,arrows.meta,calc,decorations.pathreplacing,shapes.geometric,fit}
 
 \emergencystretch=1.5em
 
@@ -87,7 +87,7 @@ Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms c
 \begin{tikzpicture}[
   font=\footnotesize,
   stage/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=3pt,
-                fill=gray!8, minimum height=8.5mm, minimum width=46mm},
+                fill=gray!8, minimum height=8.5mm, minimum width=50mm},
   supp/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=4pt,
                fill=gray!3, text width=37mm},
   injbox/.style={supp, fill=blue!7, draw=blue!50},
@@ -99,34 +99,55 @@ Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms c
 ]
 % ----- main pipeline (top -> bottom) -----
 \node[stage]              (s1)  at (0,0)     {Data ingestion};
-\node[stage, fill=blue!8] (s05) at (0,-1.6)  {\textbf{0.5} Problem dossier};
-\node[stage]              (s2)  at (0,-3.2)  {EDA};
-\node[stage]              (s3)  at (0,-4.8)  {Feature eng.};
-\node[stage]              (s4)  at (0,-6.4)  {Modeling};
-\node[stage]              (s5)  at (0,-8.4)  {Evaluation};
-\node[stage]              (s6)  at (0,-10.0) {Submission};
+\node[stage, fill=blue!8, text width=48mm] (s05) at (0,-1.75)
+  {\textbf{0.5 Problem dossier}\\[-1pt]
+   {\scriptsize task family $\cdot$ train--test window $\cdot$ split policy $\cdot$ external-data need}\\[-1pt]
+   {\scriptsize from problem statement + task-type priors only (no kernels)}};
+\node[stage]              (s2)  at (0,-3.75)  {EDA\\[-2pt]{\scriptsize verify dossier hypotheses, record verdict}};
+\node[stage]              (s3)  at (0,-5.25)  {Feature eng.};
+\node[stage]              (s4)  at (0,-6.75)  {Modeling};
+\node[stage]              (s5)  at (0,-8.75)  {Evaluation};
+\node[stage]              (s6)  at (0,-10.35) {Submission};
 \foreach \a/\b in {s1/s05, s05/s2, s2/s3, s3/s4, s4/s5, s5/s6}{\draw[arr] (\a) -- (\b);}
+% ----- EDA verdict back to the dossier -----
+\draw[darr] ([xshift=15mm]s2.north) -- node[lab, right]{verdict} ([xshift=15mm]s05.south);
+% ----- pipeline endpoint: the real leaderboard -----
+\node[stage, densely dashed, fill=white] (lb) at (0,-11.95)
+  {Real Kaggle leaderboard\\[-2pt]{\scriptsize public + private scoring}};
+\draw[darr] (s6) -- node[lab, anchor=west, xshift=1mm, align=left]
+  {scored post-run;\\no LB access during search} (lb);
 % ----- LLM annotation: vertical brace spanning all stages -----
 \draw[decorate, decoration={brace, amplitude=2mm}]
   ([xshift=-4mm]s6.south west) -- ([xshift=-4mm]s1.north west)
   node[midway, xshift=-4mm, rotate=90, anchor=south]
   {\textbf{Claude Code (LLM)} --- reasons and decides at every stage};
 % ----- tree-search loop (Evaluation -> Modeling), arc in the corridor -----
-\draw[arr] ([yshift=2.5mm]s5.east) to[out=35, in=-35] ([yshift=-3.5mm]s4.east);
-\node[lab, anchor=north west, align=left] at (3.4,-7.22)
-  {tree search: expand best /\\backtrack (22--80 nodes)};
+\draw[arr] ([yshift=2.5mm]s5.east) to[out=30, in=-30] ([yshift=-3.5mm]s4.east);
+\node[lab, anchor=north west, align=left] at (3.7,-7.9)
+  {tree search: expand best / backtrack\\(22--80 nodes; after linear-protocol baseline)};
 % ----- right rail -----
-\node[supp]    (lib)   at (7.3,0)     {\textbf{Experience library}\\cross-competition priors, every entry evidence-backed};
-\node[injbox]  (ext)   at (7.3,-2.35) {\textbf{External-data layer}\\whitelisted sources,\\leakage-guarded joins,\\coverage ledger};
-\node[toolbox] (tools) at (7.3,-6.4)  {LightGBM / XGBoost /\\CatBoost / Optuna\\(invoked via shell)};
-\node[supp]    (rec)   at (7.3,-9.7)  {\textbf{Experiment records}\\every run logged (params, split, scores)};
+\node[supp]    (lib)   at (7.3,-0.2)  {\textbf{Experience library}\\[-1pt]
+  {\scriptsize entry = insight + evidence (comp, exp \#N, score A$\,\to\,$B); no score delta $\Rightarrow$ rejected}};
+\node[injbox]  (ext)   at (7.3,-3.0)  {\textbf{External-data layer}\\[-1pt]
+  {\scriptsize whitelist: World Bank, ECB FX, OWID, holidays, ISO}\\[-1pt]
+  {\scriptsize as-of joins: future-dated value $\Rightarrow$ error}\\[-1pt]
+  {\scriptsize coverage ledger: proposed / realized / unrealized}};
+\node[toolbox] (tools) at (7.3,-6.75) {LightGBM / XGBoost /\\CatBoost / Optuna\\(invoked via shell)};
+\node[supp]    (rec)   at (7.3,-10.05) {\textbf{Experiment records}\\[-1pt]
+  {\scriptsize every run logged (params, features, split, scores)}};
 % ----- rail / pipeline connections -----
-\draw[arr]  (lib.west) -- node[lab, above]{priors} (s1.east);
+\draw[arr]  (lib.west) -- node[lab, above, align=center]{priors (queried before\\EDA \& modeling)} (s1.east);
 \draw[barr] (lib.south) -- node[lab, anchor=east, xshift=-0.5mm]{task priors} (ext.north);
-\draw[barr] (s05.east) -- node[lab, above]{typed ops} (ext.west |- s05.east);
-\draw[barr] (ext.south) -- node[lab, anchor=east, xshift=-0.5mm]{data-level arms} (tools.north);
+\draw[barr] ([yshift=1.5mm]s05.east) -- node[lab, above]{data-level operators}
+  ([yshift=1.5mm]ext.west |- s05.east);
+% ----- model-level operators: dossier seeds the search directly -----
+\draw[barr] ([yshift=-2.5mm]s05.east) -- ++(4mm,0) |- ([yshift=3mm]s4.east);
+\node[lab, rotate=90, anchor=south, blue!60!black] at (2.95,-4.55)
+  {model-level ops: seed lineages};
+\draw[barr] (ext.south) -- node[lab, anchor=west, xshift=0.8mm, align=left]
+  {data-level arms:\\raced vs. no-external\\baseline; winner\\takes full budget} (tools.north);
 \draw[arr, {Stealth[length=2.4mm]}-{Stealth[length=2.4mm]}] (s4.east) -- (tools.west);
-\draw[arr]  (s5.east) -- node[lab, above, pos=0.35]{log} (rec.north |- s5.east) -- (rec.north);
+\draw[arr]  (s5.east) -- node[lab, above, pos=0.78]{log} (rec.north |- s5.east) -- (rec.north);
 % ----- dashed write-back, up the far right -----
 \draw[darr] (rec.east) -- ++(6mm,0) |- (lib.east);
 \node[lab, rotate=90, anchor=north] at (10.0,-4.85)
@@ -135,8 +156,11 @@ Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms c
 \caption{Architecture of my-agent. The LLM drives every stage; modeling and evaluation iterate
 via tree search, invoking Auto-ML tools through the shell, while the experience library and
 experiment records close the evidence loop. Blue: the injection layer
-(Section~\ref{sec:v5}) --- the Stage 0.5 dossier emits typed operators that drive the
-external-data layer, whose data-level arms race against the no-external baseline.}
+(Section~\ref{sec:v5}) --- the Stage 0.5 dossier emits data-level operators that drive the
+external-data layer (whose arms race against the no-external baseline) and model-level
+operators that seed search lineages directly. The dossier is a prior, not a conclusion: EDA
+verifies its hypotheses and records a verdict. The leaderboard is external to the agent ---
+lanes hold no credentials, and submissions are scored only after the run.}
 \label{fig:arch}
 \end{figure}
 
@@ -149,7 +173,7 @@ external-data layer, whose data-level arms race against the no-external baseline
   sbox/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=5pt,
                fill=gray!8, text width=60mm},
   sidebox/.style={draw=black!75, rounded corners=2pt, align=center, inner sep=4pt,
-                  fill=gray!3, text width=40mm},
+                  fill=gray!3, text width=38mm},
   injside/.style={sidebox, fill=blue!7, draw=blue!50},
   arr/.style={-{Stealth[length=2.4mm]}, semithick},
   barr/.style={arr, blue!55},
@@ -158,34 +182,61 @@ external-data layer, whose data-level arms race against the no-external baseline
   node distance=5mm
 ]
 % ----- main loop column -----
-\node[sbox] (phase) {\textbf{budget phase machine}:\\exploit $\to$ explore-burst $\to$ stop\\(hard cap 60 evaluated nodes;\\patience 20 evals without improvement)};
+\node[sbox] (phase) {\textbf{budget phase machine}:\\exploit until every lineage plateaus\\$\to$ explore-burst: inject 5--8 fresh long-shot drafts\\$\to$ stop (hard cap 60 evaluated nodes; patience\\20 evals after the burst without a new global best)};
 \node[sbox, below=of phase] (select) {\textbf{select parent lineage}\\(backtrack when a lineage plateaus: 3 children without improvement)};
-\node[sbox, below=of select] (propose) {\textbf{propose mutation}:\\seed / hyperparameters / blend weights / boundary push};
-\node[sbox, below=of propose] (dedup) {\textbf{duplicate gate} (config hash; a repeated proposal burns budget instead of looping)};
-\node[sbox, below=of dedup] (eval) {\textbf{evaluate in child process}\\(CV score; hard timeout; blend cost guard)};
+\node[sbox, below=of select] (propose) {\textbf{propose mutation}:\\solo moves: seed / hyperparameters / boundary push\\blend moves: member set + weight search\\(blends are first-class nodes over cached OOF predictions)};
+\node[sbox, below=of propose] (dedup) {\textbf{duplicate gate}\\(SHA-256 over the canonicalized config --- params, features, seed, blend members; a repeat burns budget, never re-evaluates)};
+\node[sbox, below=of dedup] (eval) {\textbf{evaluate in sandboxed child process}\\(CV score; hang or crash $\to$ SIGKILL of the process group, node marked failed, search continues; blend cost guard)};
 \node[sbox, below=of eval] (add) {\textbf{add node, update global best}\\(a solo breakthrough reopens plateaued blend lineages)};
 \foreach \a/\b in {phase/select, select/propose, propose/dedup, dedup/eval, eval/add}{\draw[arr] (\a) -- (\b);}
 % ----- loop back, right side -----
-\draw[arr] (add.east) -- ++(10mm,0) |- node[lab, pos=0.25, right]{loop} ([yshift=-4.5mm]phase.east);
+\draw[arr] (add.east) -- ++(10mm,0) |- node[lab, pos=0.25, left]{loop} ([yshift=-4.5mm]phase.east);
 % ----- exit, top right -----
 \node[sidebox, text width=26mm, anchor=west] (out) at ([xshift=13mm, yshift=4.5mm]phase.east)
   {on stop:\\best node $\to$ submission};
 \draw[arr] ([yshift=4.5mm]phase.east) -- (out.west);
+% ----- inset: example lineage (schematic) -----
+\begin{scope}[shift={(5.35,-3.1)},
+  tn/.style={circle, draw=black!75, fill=gray!12, inner sep=0pt, minimum size=3.2mm},
+  pl/.style={tn, draw=black!35, fill=gray!4, text=black!40},
+  bl/.style={tn, diamond, fill=gray!12, minimum size=4.2mm, inner sep=0pt},
+  te/.style={-{Stealth[length=1.6mm]}, thin, black!60}]
+  \node[draw=black!60, rounded corners=2pt, fit={(-0.65,0.35) (2.35,-4.75)},
+        inner sep=2.5pt] (insetframe) {};
+  \node[font=\scriptsize\bfseries, anchor=north west] at (-0.6,0.32) {example lineage};
+  \node[tn] (r)  at (0.85,-0.55) {};
+  \node[tn] (A)  at (0.25,-1.25) {};
+  \node[tn] (B)  at (1.45,-1.25) {};
+  \node[tn] (B1) at (1.45,-1.95) {};
+  \node[tn] (B2) at (1.45,-2.65) {};
+  \node[pl] (c1) at (0.95,-3.35) {};
+  \node[pl] (c2) at (1.45,-3.35) {};
+  \node[pl] (c3) at (1.95,-3.35) {};
+  \node[tn] (A1) at (0.25,-1.95) {};
+  \node[bl, double, double distance=0.5pt] (bd) at (0.85,-2.85) {};
+  \foreach \a/\b in {r/A, r/B, B/B1, B1/B2, B2/c1, B2/c2, B2/c3, A/A1}{\draw[te] (\a) -- (\b);}
+  \draw[te] (B1) -- (bd); \draw[te] (A1) -- (bd);
+  \draw[te, dashed] (B2) to[out=200, in=-90] (A);
+  \node[font=\tiny, anchor=north west, align=left] at (-0.6,-3.75)
+    {gray = plateaued lineage (3 misses)\\dashed = backtrack after plateau\\$\diamond$ = blend node (two parents)\\double border = global best};
+\end{scope}
 % ----- side inputs, left column -----
-\node[injside, left=8mm of phase] (injcfg)
+\node[injside, left=7mm of phase] (injcfg)
   {\textcolor{blue!60!black}{\textbf{model-level operators}}\\seeded as starting nodes\\(objective, blend member)};
 \draw[barr] (injcfg) -- (phase);
-\node[sidebox, densely dashed, left=8mm of propose] (prior)
+\node[sidebox, densely dashed, left=7mm of propose] (prior)
   {priors from\\experience library};
 \draw[darr] (prior) -- (propose);
-\node[injside, left=8mm of eval] (injdata)
+\node[injside, left=7mm of eval] (injdata)
   {\textcolor{blue!60!black}{\textbf{data-level operators}}\\each gets its own arm; arms race, the winner takes the full budget};
 \draw[barr] (injdata) -- (eval);
 \end{tikzpicture}
 \caption{The tree-search loop used in all my-agent runs of this report (22--80 nodes per
-competition). Each node is a complete, executable solution scored by local cross-validation;
-lineages are abandoned on plateau, and the budget phase machine forces one exploration burst
-before stopping. Blue: the injection layer's operator entry points (Section~\ref{sec:v5}) ---
+competition; per-competition counts in Table~\ref{tab:nodes}). Each node is a complete,
+executable solution scored by local cross-validation; lineages are abandoned on plateau, and
+the budget phase machine forces one exploration burst before stopping. Inset: a schematic
+lineage --- a plateaued branch is abandoned by backtracking, and a blend node joins two
+lineages. Blue: the injection layer's operator entry points (Section~\ref{sec:v5}) ---
 model-level operators seed starting nodes; data-level operators build separately raced arms.}
 \label{fig:tree}
 \end{figure}
@@ -610,7 +661,7 @@ External data & Injection layer (typed operators, whitelisted sources) & Never c
 \end{tabular}
 \end{table}
 
-NVIDIA wins where a mature, high-quality public solution exists --- sep-2022's 277-vote Ridge baseline, which reproduction inherited for its cleanest development-run win, is the textbook case --- and loses where public kernels are stale or tutorial-grade or where its vote signal misleads (Section~\ref{sec:votes}). AIDE wins on search depth with no external knowledge at all, and loses where a diagnosis needs to veto a score: it can produce a correct diagnosis and still select the optimistic node (Section~\ref{sec:exp4}). my-agent's edge is validation rigor and accumulated knowledge --- it quarantined the same shuffled split AIDE submitted --- while its measured bottleneck was judgment at the problem-identification level: exactly the gap the injection layer was built to close, and the reason the controlled experiments of Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} carry the report's thesis. What remains open within that layer is form selection (0-for-3) and the unmeasured value of the dossier on competitions where it stays silent. The shared limitation: on s3e19 all three development runs landed in the lower mode of a bimodal leaderboard, none recognizing the need for GDP data --- a join worth $6.0$ SMAPE, while the dominant shortfall is a one-year extrapolation no method in the comparison addresses.
+The yardsticks' wins track their knowledge source --- reproduction where a mature public solution exists, search depth where none does (mechanism in Section~\ref{sec:reversal}). my-agent's edge is validation rigor and accumulated knowledge --- it quarantined the same shuffled split AIDE submitted --- while its measured bottleneck was judgment at the problem-identification level: exactly the gap the injection layer was built to close, and the reason the controlled experiments of Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} carry the report's thesis. What remains open within that layer is form selection (0-for-3) and the unmeasured value of the dossier on competitions where it stays silent. The shared limitation: on s3e19 all three development runs landed in the lower mode of a bimodal leaderboard, none recognizing the need for GDP data --- a join worth $6.0$ SMAPE, while the dominant shortfall is a one-year extrapolation no method in the comparison addresses.
 
 \subsection{A Ranking Is Not a Property of the Method, but of Method $\times$ Evaluation Set}
 \label{sec:reversal}
@@ -786,7 +837,7 @@ the log is the evidence behind it.
 
 \begin{table}[H]
 \centering\small
-\caption{Tree-search node counts per competition (my-agent). The budget machine's default cap is 60 with per-competition overrides (afsis 80); plateaus stop several runs below 25. tps-sep-2022's lane finished on the linear protocol without entering tree search.}
+\caption{Tree-search node counts per competition (my-agent), for the 16 completed benchmark lanes. The budget machine's default cap is 60 with per-competition overrides (afsis 80); plateaus stop several runs below 25. The four unfinished lanes (s6e2 running; tps-aug-2022, tps-jan-2022, tps-sep-2022 queued) will be added when their runs complete.}
 \label{tab:nodes}
 \begin{tabular}{@{}lr@{\hspace{2em}}lr@{\hspace{2em}}lr@{}}
 \toprule
@@ -794,11 +845,10 @@ the log is the evidence behind it.
 \midrule
 s3e1 & 22 & s3e14 & 62 & s5e10 & 50 \\
 s3e3 & 22 & s3e16 & 24 & s6e1 & 48 \\
-s3e5 & 23 & s3e19 & 22 & s6e2 & 60 \\
-s3e7 & 63 & s4e11 & 60 & afsis & 80 \\
-s3e9 & 26 & cat-in-the-dat & 65 & conway & 25 \\
-s3e11 & 24 & s5e1 & 60 & tps-sep-2022 & --- \\
-tps-aug-2022 & 60 & tps-jan-2022 & 60 & & \\
+s3e5 & 23 & s3e19 & 22 & afsis & 80 \\
+s3e7 & 63 & s4e11 & 60 & conway & 25 \\
+s3e9 & 26 & cat-in-the-dat & 65 & & \\
+s3e11 & 24 & s5e1 & 60 & & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -928,7 +978,7 @@ KAGGLE_API_TOKEN=$(cat ~/.kaggle/huang_token) \
 Environment: ARM64 Linux (Ubuntu 24.04), NVIDIA GB10 GPU, uv-managed Python 3.13, versions frozen in \texttt{uv.lock}.
 
 \vspace{1em}
-\noindent\emph{Every number in this report is traceable to the structured records listed above. This report will be updated when the leaderboard scoring step runs and as the items in Section~\ref{sec:future} complete.}
+\noindent\emph{Every number in this report is traceable to the structured records listed above. This report will be updated when the four remaining lanes (s6e2 running; tps-aug-2022, tps-jan-2022, tps-sep-2022 queued) finish and are scored, and as the items in Section~\ref{sec:future} complete.}
 
 
 \begin{thebibliography}{9}
