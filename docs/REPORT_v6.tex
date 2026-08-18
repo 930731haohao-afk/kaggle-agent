@@ -165,7 +165,9 @@ baseline with the winner taking the full budget, while model-level operators see
 lineages directly. \textbf{Green --- the evidence loop}: the experience library (every entry
 carries score-delta evidence; queried before EDA and modeling) and the experiment records
 that log every run's params, features, split, and scores, with validated insights written
-back. \textbf{Gray --- Auto-ML tools} invoked via the shell. The leaderboard is external to
+back. \textbf{Gray --- Auto-ML tools} invoked via the shell. Solid arrows: the forward
+execution flow; dashed arrows: feedback, advisory, or post-run steps outside it (the
+verdict, the write-back, leaderboard scoring). The leaderboard is external to
 the agent: lanes hold no credentials, and submissions are scored only after the run.}
 \label{fig:arch}
 \end{figure}
@@ -262,7 +264,7 @@ is abandoned by backtracking; a blend node joins lineages $a$ and $b$ and become
 best; the explore-burst injects fresh drafts ($e$) as new roots. Purple: the injection
 layer's operator entry points (Section~\ref{sec:v5}) --- model-level operators seed starting
 nodes; data-level operators build separately raced arms. Green: priors from the experience
-library.}
+library. Solid arrows: the loop's execution flow; dashed: advisory input and backtracking.}
 \label{fig:tree}
 \end{figure}
 

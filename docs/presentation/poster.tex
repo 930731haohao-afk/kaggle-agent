@@ -6,8 +6,7 @@
 % white page, plain two-column body, ONE navy band for the header and one
 % navy bar per section title (white text), a single orange accent, black ink.
 %
-% Compile with pdfLaTeX (Overleaf default). The only non-standard need is
-% the CJK bsmi font (arphic) for the two Chinese names in the top band.
+% Compile with pdfLaTeX (Overleaf default). Pure English --- no CJK needed.
 % ============================================================================
 \documentclass{article}
 
@@ -25,7 +24,6 @@
 \usepackage[skins]{tcolorbox}          % used only for the flat header band
 \usepackage{enumitem}
 \usepackage{textcomp}
-\usepackage{CJKutf8}                   % for the two Chinese names only
 
 % ---- Palette (sciposter-style: navy + one orange accent) -------------------
 \definecolor{navy}{RGB}{0,60,100}      % template BoxCol
@@ -61,7 +59,7 @@
 
 % ---- Helper macros ---------------------------------------------------------
 % Bold emphasis in body text
-\newcommand{\kb}[1]{\textbf{\textcolor{navy}{#1}}}
+\newcommand{\kb}[1]{\textbf{#1}}
 % Separator dot
 \newcommand{\sep}{\ \textperiodcentered\ }
 
@@ -82,8 +80,7 @@
 
 % Sub-heading: navy bold with a short orange underline accent
 \newcommand{\cardsub}[1]{%
-  \vspace{5mm}{\subheadsize\bfseries\color{navy}#1\par}%
-  \vspace{1.8mm}{\color{accent}\rule{42mm}{1.4mm}}\par\vspace{3.6mm}}
+  \vspace{5mm}{\subheadsize\bfseries #1\par}\vspace{3.6mm}}
 
 % Figure caption / note paragraph
 \newcommand{\figcap}[1]{\vspace{2mm}{\notesize\color{notegray}#1\par}}
@@ -91,7 +88,7 @@
 
 % Bullet list defaults
 \setlist[itemize]{leftmargin=11mm, itemsep=4.2mm, parsep=0pt, topsep=1.5mm,
-                  label=\textcolor{navy}{\textbullet}}
+                  label=\textbullet}
 
 % ---- Horizontal bar row: best-private count across the scored benchmark ----
 % #1 = label, #2 = bar color, #3 = fraction of track (0..1), #4 = value text
@@ -122,14 +119,12 @@
     make the comparison honest\par}
   \vspace{4.3mm}
   {\metasize\color{white}%
-    {\bfseries\color{accent}Author:} Wei-Hao Huang
-    (\begin{CJK}{UTF8}{bsmi}黃威昊\end{CJK})\sep
-    {\bfseries\color{accent}School:} National Chengchi University,
+    {\bfseries Author:} Wei-Hao Huang\sep
+    {\bfseries School:} National Chengchi University,
     Department of Economics\par}
   \vspace{2.5mm}
   {\metasize\color{white}%
-    {\bfseries\color{accent}Advisor:} Dr.\ Tso-Jung Yen
-    (\begin{CJK}{UTF8}{bsmi}顏佐榕\end{CJK}),
+    {\bfseries Advisor:} Dr.\ Tso-Jung Yen,
     Institute of Statistical Science, Academia Sinica\sep
     Summer Internship 2026\par}
 \end{tcolorbox}
@@ -176,7 +171,8 @@
   injects external data \emph{upstream}, before any modeling; submissions
   are scored post-run on the real leaderboard. Colour = role: blue LLM
   pipeline $\cdot$ purple injection layer $\cdot$ green evidence loop
-  $\cdot$ gray Auto-ML tools.}
+  $\cdot$ gray Auto-ML tools. Solid arrows = execution flow; dashed =
+  feedback, advisory, or post-run steps.}
 \vspace{4mm}
 \centerline{\includegraphics[width=216mm]{fig2_tree_poster.pdf}}
 \figcap{Tree-search loop: ensembles are first-class nodes with OOF caching
@@ -205,7 +201,7 @@ test built from Kaggle's own public/private split: \kb{my-agent leads the
 standing --- 15 wins / 5 losses (75\% excl.\ ties)} vs.\ AIDE 42\% and NVIDIA
 38\% --- takes the \kb{best private score on 10 of 16}, and beats its own
 development-lane score on 11 of 16. One lane running (s6e2), three queued
-({\bfseries\color{accent}TBD}).\par
+(\textbf{TBD}).\par
 \cardsub{Best private score across the 16 scored competitions}
 % fraction = count / 16
 \countbar{\kb{my-agent}}{navy}{0.625}{10 / 16}
