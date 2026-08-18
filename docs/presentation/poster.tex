@@ -272,29 +272,33 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 % ---- 4 · Advantages & Difficulties ----------------------------------------
 \begin{secblock}
 \blocktitle{4\sep Advantages \& Difficulties}
-\cardsub{Expected $\to$ experienced}
 {\setlength{\tabcolsep}{0pt}%
 \renewcommand{\arraystretch}{1.0}%
-\begin{tabular}{@{}p{0.31\linewidth}@{\hspace{7mm}}p{0.66\linewidth}@{}}
-{\itshape\color{notegray} The agent would quickly beat most humans.} &
+\setlength{\heavyrulewidth}{0.9mm}\setlength{\lightrulewidth}{0.45mm}%
+\begin{tabular}{@{}>{\strut}p{0.315\linewidth}@{\hspace{7mm}}>{\strut}p{0.655\linewidth}@{}}
+\toprule
+\textbf{Expected} & \textbf{Experienced}\\
+\midrule\noalign{\vskip 3.5mm}
+{\itshape\color{notegray}The agent would quickly beat most humans.} &
   Development runs landed above average, with wins concentrated where no
   mature public solutions exist; the frozen-architecture re-run now
   \kb{leads the paired standing} on the 19 scored lanes.\\[3.5mm]
 \arrayrulecolor{ruleline}\hline\noalign{\vskip 3.5mm}
-{\itshape\color{notegray} One run and one score decide a winner.} &
+{\itshape\color{notegray}One run and one score decide a winner.} &
   Score noise and run-to-run variance leave \kb{many duels undecidable};
   a paired error model became mandatory.\\[3.5mm]
 \hline\noalign{\vskip 3.5mm}
-{\itshape\color{notegray} The agent follows the rules by default.} &
+{\itshape\color{notegray}The agent follows the rules by default.} &
   A transcript audit caught one lane reading its own competition's recorded
   findings --- the clean re-run's local validation scored \emph{worse},
   consistent with the advantage being real --- and later caught a lane whose
   write-back polluted the next lane's priors.\\[3.5mm]
 \hline\noalign{\vskip 3.5mm}
-{\itshape\color{notegray} Fairness is mostly a mindset.} &
+{\itshape\color{notegray}Fairness is mostly a mindset.} &
   It is \kb{infrastructure}: isolated data roots, credential-free sandboxes,
   and per-lane transcript audits cost real engineering time --- but without
   them the numbers are not comparable.\\
+\arrayrulecolor{black}
 \end{tabular}\par}
 
 \end{secblock}
@@ -314,20 +318,16 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
     leaks you anticipated; reading what the agent actually did catches the
     ones you didn't --- in both directions (two real contaminations, one
     auditor false positive).
-  \item \kb{Put knowledge injection upstream.} Injected at the blend stage
-    it was worth ${\sim}10^{-5}$; moved into problem identification it
-    lifted the canonical failure case from last to first in the controlled
-    ablation.
-\end{itemize}
-\cardsub{Where knowledge enters}
-\begin{itemize}
-  \item Downstream (blend stage): measured gain ${\sim}10^{-5}$ ---
-    abandoned.
-  \item Upstream (problem dossier): fires on exactly the \kb{2/18}
-    competitions that need external data; all \kb{6 of 6} controlled
-    external-data arms beat their matched baselines.
-  \item But no local signal can select the \emph{form} of injection --- the
-    one surviving selector died on its first pre-registered prediction.
+  \item \kb{Put knowledge injection upstream.} At the blend stage it was
+    worth ${\sim}10^{-5}$ and was abandoned; moved into problem
+    identification it fires on exactly the \kb{2/18} competitions that need
+    external data, lifts the canonical failure case from last to first in
+    the controlled ablation, and all \kb{6 of 6} external-data arms beat
+    their matched baselines.
+  \item \kb{No local signal selects the \emph{form} of injection.} The one
+    surviving selector died on its first pre-registered prediction: the
+    dossier can decide \emph{whether} to inject, but a human still decides
+    \emph{how}.
 \end{itemize}
 \end{secblock}
 
