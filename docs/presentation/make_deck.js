@@ -75,22 +75,21 @@ function head(slide, num, title) {
   const s = pres.addSlide();
   head(s, "4", "Results — three agents, real leaderboards");
   s.addChart(pres.ChartType.bar, [{
-    name: "Decidable-duel win rate",
-    labels: ["my-agent", "NVIDIA", "AIDE"],
-    values: [57, 48, 44],
+    name: "s3e19 private SMAPE",
+    labels: ["with layer", "NVIDIA", "AIDE", "no layer"],
+    values: [48.243, 48.26558, 48.34131, 50.455],
   }], {
     x: 0.55, y: 1.35, w: 5.7, h: 3.1, barDir: "bar",
-    chartColors: [BLUE, PALE, PALE],
-    showTitle: true, title: "Decidable-duel win rate, 20 comps, pre-v5 baseline (%)",
+    chartColors: [BLUE, PALE, PALE, PALE],
+    showTitle: true, title: "Injection-layer ablation, s3e19 private SMAPE (lower = better)",
     titleFontSize: 13, titleColor: NAVY, titleFontFace: "Calibri",
-    showValue: true, dataLabelPosition: "outEnd", dataLabelColor: INK, dataLabelFontSize: 12, dataLabelFontFace: "Calibri",
+    showValue: true, dataLabelPosition: "outEnd", dataLabelColor: INK, dataLabelFontSize: 11, dataLabelFontFace: "Calibri", dataLabelFormatCode: "0.000",
     showLegend: false, catAxisLabelColor: INK, catAxisLabelFontSize: 12, catAxisLabelFontFace: "Calibri",
-    valAxisLabelColor: MUT, valAxisLabelFontSize: 10, valAxisMaxVal: 70, valAxisMinVal: 0,
+    valAxisLabelColor: MUT, valAxisLabelFontSize: 10, valAxisMaxVal: 51, valAxisMinVal: 47, valAxisLabelFormatCode: "0.0",
     valGridLine: { color: "E4E9F0", size: 0.5 }, catGridLine: { style: "none" },
-    chartColorsOpacity: 100,
   });
-  s.addText("27% of all duels are undecidable at the measurable error scale; verdicts come from a paired test built on Kaggle's own public/private split. Median percentile rank: my-agent 72.3, NVIDIA 68.0, AIDE 68.7. Standings are the pre-v5 baseline lanes; the Stage-0.5 re-run replaces them once scored.", {
-    x: 0.55, y: 4.6, w: 5.7, h: 1.1, fontFace: "Calibri", fontSize: 12.5, color: MUT, margin: 0 });
+  s.addText("All 20 competitions ran under the frozen Stage-0.5 architecture; my-agent's leaderboard standing is TBD until the credentialed scoring step, then adjudicated by a paired test on Kaggle's public/private split. Scored today: the dossier layer's external-data injection turns the canonical failure into a numerical first, and all 6 of 6 controlled arms beat their matched baselines.", {
+    x: 0.55, y: 4.6, w: 5.7, h: 1.5, fontFace: "Calibri", fontSize: 12.5, color: MUT, margin: 0 });
 
   s.addText("Mid-complexity three-way — my-agent sweeps all three", { x: 6.9, y: 1.35, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 16, bold: true, color: NAVY, margin: 0 });
   s.addTable([
@@ -107,7 +106,7 @@ function head(slide, num, title) {
     { text: "All 20 competitions re-run under one frozen architecture, in credential-free sandboxes with per-lane transcript audits. 16/20 lanes run (one pending audit review), 1 running, 3 queued.", options: { fontSize: 12.5, color: INK, breakLine: true } },
     { text: "Leaderboard scores: TBD until the credentialed scoring step.", options: { fontSize: 12.5, bold: true, color: "8A6D1A" } },
   ], { x: 7.15, y: 4.3, w: 5.4, h: 2.05, fontFace: "Calibri", paraSpaceAfter: 8, margin: 0 });
-  s.addNotes("Everything is scored on the real leaderboard, and a paired significance test decides which gaps are real. My agent wins 57 percent of decidable duels; 27 percent cannot be decided at all. On the three harder competitions outside tabular data, it takes the best score on all three. Right now all 20 competitions are re-running under the frozen final architecture with transcript audits; those leaderboard numbers are still TBD. (45s)");
+  s.addNotes("All 20 competitions ran under the frozen architecture with Stage 0.5 in every lane; the leaderboard standing is TBD until the scoring step, and a paired significance test then decides which gaps are real. What is already scored: the injection layer turns our worst competition into a numerical first among the three agents, six of six controlled arms beat their baselines, and on the three harder competitions outside tabular data my agent takes the best score on all three. (45s)");
 }
 
 // ---------- 5 · Results: visualization output ----------
@@ -126,7 +125,7 @@ function head(slide, num, title) {
   const s = pres.addSlide();
   head(s, "6", "What I expected vs. what I experienced");
   const rows = [
-    ["The agent would quickly beat most humans.", "Median percentile 72.3 — above average; wins concentrate where no mature public solutions exist."],
+    ["The agent would quickly beat most humans.", "Development runs landed above average (median percentile 72.3); wins concentrate where no mature public solutions exist. Frozen-architecture standing: TBD until scoring."],
     ["One run and one score decide a winner.", "Score noise + run variance leave 27% of duels undecidable; a paired error model became mandatory."],
     ["The agent follows the rules by default.", "A transcript audit caught a lane reading its own competition's recorded findings — the clean re-run scored worse, so the advantage was real."],
     ["Fairness is mostly a mindset.", "It is infrastructure: isolated data roots, credential-free sandboxes, per-lane audits — expensive, but without them numbers aren't comparable."],
