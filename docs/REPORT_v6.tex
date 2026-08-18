@@ -405,41 +405,43 @@ variance term remains unmeasured (Section~\ref{sec:future}).
 
 \begin{table}[htbp]
 \centering\footnotesize
-\setlength{\tabcolsep}{4pt}
-\caption{The 20-competition benchmark, state as of 2026-08-18. my-agent's local CV
-(OOF) is each lane's own honest out-of-fold estimate, not leaderboard-validated;
-its LB column is the real public/private leaderboard score of the lane's frozen submission,
-obtained in the credentialed operator scoring step of 2026-08-18 (my-agent percentile ranks
-await a leaderboard-snapshot pull). NVIDIA and AIDE columns are frozen private-leaderboard
-scores with percentile rank (PR) in parentheses. 16 of 20 lanes are complete and scored
-(${\sim}19$ hours of lane time), one is running, three are queued.}
+\setlength{\tabcolsep}{3pt}
+\caption{The 20-competition benchmark, state as of 2026-08-18. All leaderboard cells are
+public/private scores; \textbf{bold} marks the best \emph{private} score of the three
+(raw, direction-aware; the paired-test verdicts, which this raw reading does not replace,
+are in Table~\ref{tab:winrates}). my-agent's local CV (OOF) is each lane's own honest
+out-of-fold estimate, not leaderboard-validated; its LB column comes from the credentialed
+operator scoring step of 2026-08-18, and its percentile ranks await a leaderboard-snapshot
+pull. NVIDIA and AIDE cells are frozen leaderboard scores with percentile rank (PR) in
+parentheses. Lane status: 16 of 20 lanes complete and scored (${\sim}19$ hours of lane
+time); s6e2 running; tps-aug/jan/sep-2022 queued (TBD rows, not bolded).}
 \label{tab:bench}
-\begin{tabular}{@{}rllrcrrl@{}}
+\begin{tabular}{@{}rllrrrr@{}}
 \toprule
-\# & \textbf{Competition} & \textbf{Metric} & \textbf{Local CV (OOF)} & \textbf{LB (pub/priv)} & \textbf{NVIDIA (PR)} & \textbf{AIDE (PR)} & \textbf{Lane status} \\
+\# & \textbf{Competition} & \textbf{Metric} & \textbf{Local CV (OOF)} & \textbf{my-agent LB (pub/priv)} & \textbf{NVIDIA LB (PR)} & \textbf{AIDE LB (PR)} \\
 \midrule
-1 & s3e1 & RMSE \dn & 0.548862 & 0.55715/0.55275 & 0.55550 (93.2) & 0.55552 (81.0) & done \\
-2 & s3e3 & ROC-AUC \up & 0.841605 & 0.89449/0.87157 & 0.89537 (66.8) & 0.86863 (26.4) & done \\
-3 & s3e5 & QWK \up & 0.571980 & 0.57041/0.57223 & 0.56974 (75.7) & 0.58138 (79.8) & done \\
-4 & s3e7 & ROC-AUC \up & 0.901769 & 0.91127/0.90441 & 0.90458 (78.1) & 0.90109 (67.1) & done \\
-5 & s3e9 & RMSE \dn & 12.082282 & 11.84750/12.33192 & 12.22913 (59.1) & 12.30667 (44.5) & done \\
-6 & s3e11 & RMSLE \dn & 0.292886 & 0.29309/0.29368 & 0.29624 (66.6) & 0.29445 (73.3) & done$^{a}$ \\
-7 & s3e14 & MAE \dn & 340.95936 & 343.43434/333.18611 & 330.71616 (89.2) & 332.31556 (71.2) & done \\
-8 & s3e16 & MAE \dn & 1.334958 & 1.33738/1.33822 & 1.34001 (96.4) & 1.34224 (91.4) & done \\
-9 & s3e19 & SMAPE \dn & 6.70585 & 49.11872/49.40878 & 48.26558 (41.4) & 48.34131 (40.1) & done$^{b}$ \\
-10 & s4e11 & Accuracy \up & 0.940810 & 0.94195/0.94107 & 0.94076 (52.8) & 0.94056 (62.1) & done \\
-11 & s5e10 & RMSE \dn & 0.055971 & 0.05554/0.05576 & 0.05588 (59.4) & 0.05579 (78.9) & done$^{c}$ \\
-12 & s6e1 & Error \dn & 0.787400$^{d}$ & 8.68844/8.71516 & 8.73239 (69.5) & 8.72191 (74.8) & done$^{d}$ \\
-13 & s6e2 & ROC-AUC \up & TBD & TBD & 0.95508 (63.0) & 0.95516 (76.5) & running$^{e}$ \\
-14 & afsis & MCRMSE \dn & 0.470503 & 0.41902/0.48917 & 0.69855 (18.8) & 0.49861 (45.6) & done \\
-15 & cat-in-the-dat & ROC-AUC \up & 0.803272 & 0.80800/0.80243 & 0.77084 (32.6) & 0.80217 (70.3) & done \\
-16 & conway & MAE \dn & 0.106688 & 0.10313/0.10414 & 0.11189 (96.5) & 0.11065 (97.9) & done$^{g}$ \\
-17 & tps-aug-2022 & ROC-AUC \up & TBD & TBD & 0.58730 (43.0) & 0.59106 (60.5) & queued \\
-18 & tps-jan-2022 & SMAPE \dn & TBD & TBD & 4.63651 (76.4) & 10.66638 (28.9) & queued \\
-19 & s5e1 & MAPE \dn & 5.84\%$^{f}$ & 0.09076/0.08401 & 0.14594 (69.3) & 0.17917 (48.1) & done \\
-20 & tps-sep-2022 & SMAPE \dn & TBD & TBD & 5.48351 (80.3) & 9.72095 (48.3) & queued \\
+1 & s3e1 & RMSE \dn & 0.548862 & 0.55715/\textbf{0.55275} & 0.55332/0.55550 (93.2) & 0.55899/0.55552 (81.0) \\
+2 & s3e3 & ROC-AUC \up & 0.841605 & 0.89449/0.87157 & 0.93526/\textbf{0.89537} (66.8) & 0.88484/0.86863 (26.4) \\
+3 & s3e5 & QWK \up & 0.571980 & 0.57041/0.57223 & 0.57515/0.56974 (75.7) & 0.59362/\textbf{0.58138} (79.8) \\
+4 & s3e7 & ROC-AUC \up & 0.901769 & 0.91127/0.90441 & 0.91230/\textbf{0.90458} (78.1) & 0.90934/0.90109 (67.1) \\
+5 & s3e9 & RMSE \dn & 12.082282 & 11.84750/12.33192 & 11.83399/\textbf{12.22913} (59.1) & 11.86657/12.30667 (44.5) \\
+6 & s3e11$^{a}$ & RMSLE \dn & 0.292886 & 0.29309/\textbf{0.29368} & 0.29559/0.29624 (66.6) & 0.29389/0.29445 (73.3) \\
+7 & s3e14 & MAE \dn & 340.95936 & 343.43434/333.18611 & 338.36524/\textbf{330.71616} (89.2) & 342.44918/332.31556 (71.2) \\
+8 & s3e16 & MAE \dn & 1.334958 & 1.33738/\textbf{1.33822} & 1.33566/1.34001 (96.4) & 1.33920/1.34224 (91.4) \\
+9 & s3e19$^{b}$ & SMAPE \dn & 6.70585 & 49.11872/49.40878 & 47.52145/\textbf{48.26558} (41.4) & 48.39715/48.34131 (40.1) \\
+10 & s4e11 & Accuracy \up & 0.940810 & 0.94195/\textbf{0.94107} & 0.94136/0.94076 (52.8) & 0.94184/0.94056 (62.1) \\
+11 & s5e10$^{c}$ & RMSE \dn & 0.055971 & 0.05554/\textbf{0.05576} & 0.05562/0.05588 (59.4) & 0.05555/0.05579 (78.9) \\
+12 & s6e1$^{d}$ & Error \dn & 0.787400$^{d}$ & 8.68844/\textbf{8.71516} & 8.70480/8.73239 (69.5) & 8.69449/8.72191 (74.8) \\
+13 & s6e2$^{e}$ & ROC-AUC \up & TBD & TBD & 0.95348/0.95508 (63.0) & 0.95364/0.95516 (76.5) \\
+14 & afsis & MCRMSE \dn & 0.470503 & 0.41902/\textbf{0.48917} & 0.61276/0.69855 (18.8) & 0.45636/0.49861 (45.6) \\
+15 & cat-in-the-dat & ROC-AUC \up & 0.803272 & 0.80800/\textbf{0.80243} & 0.77641/0.77084 (32.6) & 0.80790/0.80217 (70.3) \\
+16 & conway$^{g}$ & MAE \dn & 0.106688 & 0.10313/\textbf{0.10414} & 0.11094/0.11189 (96.5) & 0.10960/0.11065 (97.9) \\
+17 & tps-aug-2022 & ROC-AUC \up & TBD & TBD & 0.57920/0.58730 (43.0) & 0.58479/0.59106 (60.5) \\
+18 & tps-jan-2022 & SMAPE \dn & TBD & TBD & 4.43958/4.63651 (76.4) & 10.11598/10.66638 (28.9) \\
+19 & s5e1 & MAPE \dn & 5.84\%$^{f}$ & 0.09076/\textbf{0.08401} & 0.05726/0.14594 (69.3) & 0.12573/0.17917 (48.1) \\
+20 & tps-sep-2022 & SMAPE \dn & TBD & TBD & 4.77458/5.48351 (80.3) & 5.78998/9.72095 (48.3) \\
 \midrule
-\multicolumn{3}{@{}l}{Median PR (range)} & --- & pending snapshot & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) & \\
+\multicolumn{4}{@{}l}{Median PR (range)} & pending snapshot & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) \\
 \bottomrule
 \end{tabular}
 
@@ -916,7 +918,8 @@ AIDE_COMP_ROOT=<data-root> \
     python benchmark_infra/run_comp.py <comp> --shim --steps 20
 
 # 4) NVIDIA, one competition
-python benchmark_infra/run_ready_reproductions.py   # generates+runs per-comp reproduce scripts
+# (generates and runs per-competition reproduce scripts)
+python benchmark_infra/run_ready_reproductions.py
 
 # 5) Submit and retrieve public/private scores
 KAGGLE_API_TOKEN=$(cat ~/.kaggle/huang_token) \
