@@ -63,14 +63,15 @@
 % Separator dot
 \newcommand{\sep}{\ \textperiodcentered\ }
 
-% Section title: plain bold, thin rule underneath
-\newcommand{\secbar}[1]{%
-  \par\vspace{10mm}%
+% Section block: bordered card, plain-bold title with a hairline rule inside
+\newtcolorbox{secblock}{%
+  enhanced, sharp corners=all, arc=3mm, rounded corners=all,
+  colback=white, colframe=ruleline, boxrule=0.7mm,
+  left=10mm, right=10mm, top=9mm, bottom=10mm, boxsep=0pt,
+  before skip=0pt, after skip=10mm}
+\newcommand{\blocktitle}[1]{%
   {\cardtitlesize\bfseries #1\par}%
-  \vspace{2.5mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{6mm}}
-\newcommand{\firstsecbar}[1]{%
-  {\cardtitlesize\bfseries #1\par}%
-  \vspace{2.5mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{6mm}}
+  \vspace{2.5mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{5mm}}
 
 % Sub-heading: navy bold with a short orange underline accent
 \newcommand{\cardsub}[1]{%
@@ -132,7 +133,8 @@
 \vspace{0pt}
 
 % ---- 1 · Motivation --------------------------------------------------------
-\firstsecbar{1\sep Motivation}
+\begin{secblock}
+\blocktitle{1\sep Motivation}
 \cardsub{Why these tasks are hard}
 \begin{itemize}
   \item \kb{Kaggle competitions} demand the full expert loop --- validation
@@ -157,7 +159,9 @@
 \end{itemize}
 
 % ---- 2 · Workflow ----------------------------------------------------------
-\secbar{2\sep Workflow}
+\end{secblock}
+\begin{secblock}
+\blocktitle{2\sep Workflow}
 \centerline{\includegraphics[width=228mm]{fig1_arch_poster.pdf}}
 \figcap{The pipeline, read top to bottom: the LLM reasons at every stage;
   the \kb{Stage-0.5 dossier} (injection layer) classifies the task and
@@ -173,6 +177,7 @@
   burst; the loop terminates at the best-node submission. Purple = the
   injection layer's operator entry points; green = experience-library
   priors.}
+\end{secblock}
 
 \end{minipage}%
 \hspace{\colgap}%
@@ -182,7 +187,8 @@
 \vspace{0pt}
 
 % ---- 3 · Results — Kaggle benchmark ---------------------------------------
-\firstsecbar{3\sep Results --- Kaggle benchmark}
+\begin{secblock}
+\blocktitle{3\sep Results --- Kaggle benchmark}
 \notepar{Benchmark lanes scored on the real leaderboard (late submission);
   the mid-complexity three-way is offline-graded on the held-out private
   split (late submission structurally unavailable there).}
@@ -222,7 +228,9 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 \end{tabular}\par}
 
 % ---- 4 · Advantages & Difficulties ----------------------------------------
-\secbar{4\sep Advantages \& Difficulties}
+\end{secblock}
+\begin{secblock}
+\blocktitle{4\sep Advantages \& Difficulties}
 \cardsub{Expected $\to$ experienced}
 \begin{itemize}
   \item \kb{Expected:} the agent would quickly beat most humans.
@@ -244,7 +252,9 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 \end{itemize}
 
 % ---- 5 · Discussion — advice ----------------------------------------------
-\secbar{5\sep Discussion --- advice}
+\end{secblock}
+\begin{secblock}
+\blocktitle{5\sep Discussion --- advice}
 \begin{itemize}
   \item \kb{State the error model with every claim.} A ranking without an
     error scale is noise: many of our duels are undecidable, and the winner
@@ -274,6 +284,7 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 \vspace{3mm}
 \notepar{Companion documents: Report v6 (Overleaf, main document)\sep
   Engineering Log\sep Case Studies\sep 22 per-competition ML-spec reports.}
+\end{secblock}
 
 \end{minipage}
 
