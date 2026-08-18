@@ -1,0 +1,39 @@
+# my-agent isolated rerun — three-lane comparison
+
+Generated from:
+
+- rerun scores: `/home/tjyen/benchruns/myagent-rerun.scores.csv`
+- frozen base: `/home/tjyen/ai_agents/kaggle/benchmark_results/three_way_scores.csv`
+- frozen overlay: `/home/tjyen/ai_agents/aideml-runs/three_way_scores.csv`
+
+AIDE/NVIDIA columns and mine_prev_* are copied from the frozen facts; mine_rerun_* are copied from the scoring step; winner_priv is the only computed cell and blanks mean the input was blank.
+
+| comp | metric | direction | aide_pub | aide_priv | aide_pr | aide_rank | nvidia_pub | nvidia_priv | nvidia_pr | nvidia_rank | mine_prev_pub | mine_prev_priv | mine_rerun_pub | mine_rerun_priv | winner_priv | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| afsis-soil-properties | MCRMSE | min | 0.45636 | 0.49861 | 45.6 | 672/1233 | 0.61276 | 0.69855 | 18.8 | 1002/1233 | 0.45207 | 0.49517 | 0.41902 | 0.48917 | mine |  |
+| cat-in-the-dat | AUC | max | 0.80790 | 0.80217 | 70.3 | 399/1341 | 0.77641 | 0.77084 | 32.6 | 905/1341 | 0.80801 | 0.80241 | 0.80800 | 0.80243 | mine |  |
+| conway-s-reverse-game-of-life | MAE | min | 0.10960 | 0.11065 | 97.9 | 4/144 | 0.11094 | 0.11189 | 96.5 | 6/144 | 0.10771 | 0.10875 | 0.10313 | 0.10414 | mine |  |
+| playground-series-s3e1 | RMSE | min | 0.55899 | 0.55552 | 81.0 |  | 0.55332 | 0.5555 | 93.2 | 48/690 | 0.56083 | 0.55987 | 0.55715 | 0.55275 | mine |  |
+| playground-series-s3e11 | RMSLE | min | 0.29389 | 0.29445 | 73.3 | 256/954 | 0.29559 | 0.29624 | 66.6 | 320/954 | 0.29534 | 0.29597 | 0.29309 | 0.29368 | mine |  |
+| playground-series-s3e14 | MAE | min | 342.44918 | 332.31556 | 71.2 | 541/1877 | 338.36524 | 330.71616 | 89.2 | 204/1877 | 341.26711 | 332.4356 | 343.43434 | 333.18611 | nvidia |  |
+| playground-series-s3e16 | MAE | min | 1.3392 | 1.34224 | 91.4 | 124/1431 | 1.33566 | 1.34001 | 96.4 | 52/1431 | 1.34315 | 1.33859 | 1.33738 | 1.33822 | mine |  |
+| playground-series-s3e19 | SMAPE | min | 48.39715 | 48.34131 | 40.1 |  | 47.52145 | 48.26558 | 41.4 | 689/1174 | 50.22497 | 50.45537 | 49.11872 | 49.40878 | nvidia |  |
+| playground-series-s3e3 | AUC | max | 0.88484 | 0.86863 | 26.4 | 491/666 | 0.93526 | 0.89537 | 66.8 | 222/666 | 0.89262 | 0.87303 | 0.89449 | 0.87157 | nvidia |  |
+| playground-series-s3e5 | QWK | max | 0.59362 | 0.58138 | 79.8 |  | 0.57515 | 0.56974 | 75.7 | 220/903 | 0.57921 | 0.59743 | 0.57041 | 0.57223 | aide |  |
+| playground-series-s3e7 | AUC | max | 0.90934 | 0.90109 | 67.1 | 225/680 | 0.9123 | 0.90458 | 78.1 | 150/680 | 0.91116 | 0.90257 | 0.91127 | 0.90441 | nvidia |  |
+| playground-series-s3e9 | RMSE | min | 11.86657 | 12.30667 | 44.5 | 427/767 | 11.83399 | 12.22913 | 59.1 | 315/767 | 11.84951 | 12.29871 | 11.84750 | 12.33192 | nvidia |  |
+| playground-series-s4e11 | Accuracy | max | 0.94184 | 0.94056 | 62.1 | 1020/2687 | 0.94136 | 0.94076 | 52.8 | 1269/2687 | 0.94125 | 0.94043 | 0.94195 | 0.94107 | mine |  |
+| playground-series-s5e1 | MAPE | min | 0.12573 | 0.17917 | 48.1 | 1413/2723 | 0.05726 | 0.14594 | 69.3 | 836/2723 | 0.10236 | 0.12752 | 0.09076 | 0.08401 | mine |  |
+| playground-series-s5e10 | RMSE | min | 0.05555 | 0.05579 | 78.9 | 862/4083 | 0.05562 | 0.05588 | 59.4 | 1659/4083 | 0.05551 | 0.05576 | 0.05554 | 0.05576 | mine |  |
+| playground-series-s6e1 | R2 | max | 8.69449 | 8.72191 | 74.8 | 1088/4319 | 8.7048 | 8.73239 | 69.5 | 1318/4319 | 8.69338 | 8.71733 | 8.68844 | 8.71516 | mine | winner uses LB direction min (local metric is max) |
+| playground-series-s6e2 | AUC | max | 0.95364 | 0.95516 | 76.5 | 1027/4371 | 0.95348 | 0.95508 | 63.0 | 1618/4371 | 0.95367 | 0.95516 |  |  |  | missing; incomplete |
+| tabular-playground-series-aug-2022 | AUC | max | 0.58479 | 0.59106 | 60.5 | 747/1889 | 0.57920 | 0.58730 | 43.0 | 1078/1889 | 0.58559 | 0.59055 |  |  |  | missing; incomplete |
+| tabular-playground-series-jan-2022 | SMAPE | min | 10.11598 | 10.66638 | 28.9 | 1133/1592 | 4.43958 | 4.63651 | 76.4 | 377/1592 | 4.90883 | 6.46156 |  |  |  | missing; incomplete |
+| tabular-playground-series-sep-2022 | SMAPE | min | 5.78998 | 9.72095 | 48.3 | 715/1383 | 4.77458 | 5.48351 | 80.3 | 272/1383 | 28.32738 | 28.54859 |  |  |  | missing; incomplete |
+
+## Caveats
+
+- AIDE and NVIDIA numbers are frozen from the original benchmark runs and were not re-run alongside this rerun.
+- The experience library serves my-agent's own recorded percentile ranks for OTHER competitions — a designed channel, self-filtered for the lane's own competition — and the reference lanes have no equivalent.
+- The conway-s-reverse-game-of-life AIDE result hit the step timeout at 16/20 nodes (aide_nodes column of the frozen CSV).
+- s6e1's leaderboard metric direction differs from the local metric (local R2 max, LB RMSE-like min).

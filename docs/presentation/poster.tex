@@ -209,16 +209,15 @@ loop.\par
 \notepar{All submissions scored on the real leaderboard (late submission);
   verdicts adjudicated by a paired test built from Kaggle's own
   public/private split.}
-\cardsub{Benchmark standing: TBD until scoring}
+\cardsub{Benchmark standing (scored 2026-08-18, 16 of 20 lanes)}
 All 20 competitions run under the frozen Stage-0.5 architecture in
-credential-free sandboxes with a per-lane transcript audit: \kb{16/20 lanes
-done}, 1 running (s6e2), 3 queued as of 2026-08-18. The completed lanes'
-frozen submissions await the separate credentialed scoring step
-({\bfseries\color{tbdcol}TBD}); every
-verdict is then adjudicated by a paired test built from Kaggle's own
-public/private split.\par
-\cardsub{Scored today: the injection-layer ablation (s3e19, private SMAPE
-  $\downarrow$)}
+credential-free sandboxes with a per-lane transcript audit. The 16 completed
+lanes are scored on the real leaderboard, each duel adjudicated by a paired
+test built from Kaggle's own public/private split: \kb{my-agent leads the
+standing --- 15 wins / 5 losses (75\% excl.\ ties)} vs.\ AIDE 42\% and NVIDIA
+38\% --- and takes the \kb{best private score on 10 of 16}. One lane running
+(s6e2), three queued ({\bfseries\color{tbdcol}TBD}).\par
+\cardsub{Injection-layer ablation (s3e19, private SMAPE $\downarrow$)}
 % Bar lengths proportional to margin over 52: (52 - SMAPE)/5 of the track.
 \smapebar{\kb{with layer}}{barme}{0.7514}{48.243}
 \smapebar{NVIDIA}{barother}{0.7469}{48.26558}
@@ -257,7 +256,8 @@ public/private split.\par
   \item \kb{Expected:} the agent would quickly beat most humans.
     \kb{Experienced:} development runs landed above average, with wins
     concentrated where no mature public solutions exist; the
-    frozen-architecture benchmark standing is TBD until scoring.
+    frozen-architecture re-run now leads the paired standing on the 16
+    scored lanes.
   \item \kb{Expected:} one run and one score decide a winner.
     \kb{Experienced:} score noise and run-to-run variance leave many duels
     undecidable; a paired error model became mandatory.
@@ -312,8 +312,8 @@ public/private split.\par
 \noindent\hspace*{\pagepad}%
 \begin{minipage}{798.5mm}
   {\footersize\color{footergray}%
-    All numbers are real measurements as of 2026-08-18\sep re-run
-    leaderboard cells TBD pending the credentialed scoring step\sep
+    All numbers are real measurements as of 2026-08-18 (16 of 20 re-run
+    lanes scored on the real leaderboard; four lanes still to finish)\sep
     AIDE = LLM tree search; NVIDIA = highest-voted-kernel reproduction,
     both frozen.\par}
 \end{minipage}

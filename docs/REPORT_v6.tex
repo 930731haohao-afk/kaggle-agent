@@ -33,7 +33,7 @@
 \title{\textbf{An End-to-End Agent for Kaggle Competitions}\\
 \large Benchmarked against two frozen yardsticks on 20 competitions\\
 Report v6 (August 2026)\\
-\normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-08-18; TBD = awaiting the leaderboard scoring step.}}
+\normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-08-18; TBD marks the four lanes still to finish and score.}}
 \author{Wei-Hao Huang}
 \date{Draft compiled August 18, 2026}
 
@@ -41,7 +41,7 @@ Report v6 (August 2026)\\
 \maketitle
 
 \begin{center}\textbf{\large Abstract}\end{center}
-\noindent We present \textbf{my-agent}, an end-to-end agent for machine-learning competitions, and the design decision at its centre: \emph{where external knowledge enters the pipeline}. The agent runs the full loop --- problem identification, EDA, feature engineering, modelling, evaluation, submission --- with an LLM reasoning at every stage, Auto-ML tools invoked through the shell, a cross-competition experience library, and tree search as the optimisation loop. Measuring our own first design showed knowledge injected downstream at the blending stage worth only ${\sim}10^{-5}$; the architecture therefore injects it upstream through a \emph{problem-identification layer} that classifies task family, train--test window relation, split policy, and external-data need before any modelling, emitting typed operators into a whitelisted, leakage-guarded external-data module. Local validation repeatedly proved unreliable for between-agent claims in development, so every verdict is scored on the real leaderboard. Under that discipline the layer separates cleanly --- firing on exactly the 2 of 18 baseline competitions that need external data, silent on the other 16; all six external-data arms across three firing-class competitions beat their baselines with paired significance; a with-layer/without-layer ablation passes the paired test on the benchmark's canonical failure; and no local signal we tested selects the \emph{form} the injection should take --- the one selector surviving hindsight was killed by its first pre-registered prediction. We benchmark the agent against two frozen, methodologically distinct yardsticks --- \textbf{AIDE} (LLM tree search) and the \textbf{NVIDIA Kaggle Agent} (kernel reproduction) --- on 20 Kaggle competitions under a mechanically enforced fairness protocol, the my-agent lanes credential-free and transcript-audited, plus three mid-complexity competitions (NLP, physiological time series, medical imaging) where my-agent takes the three-way best on all three. The completed lanes' submissions (16 of 20 as this draft compiles; one running, three queued) await the separate credentialed scoring step, so my-agent's standings are TBD, each duel then adjudicated by the error model of Section~\ref{sec:apparatus}.
+\noindent We present \textbf{my-agent}, an end-to-end agent for machine-learning competitions, and the design decision at its centre: \emph{where external knowledge enters the pipeline}. The agent runs the full loop --- problem identification, EDA, feature engineering, modelling, evaluation, submission --- with an LLM reasoning at every stage, Auto-ML tools invoked through the shell, a cross-competition experience library, and tree search as the optimisation loop. Measuring our own first design showed knowledge injected downstream at the blending stage worth only ${\sim}10^{-5}$; the architecture therefore injects it upstream through a \emph{problem-identification layer} that classifies task family, train--test window relation, split policy, and external-data need before any modelling, emitting typed operators into a whitelisted, leakage-guarded external-data module. Local validation repeatedly proved unreliable for between-agent claims in development, so every verdict is scored on the real leaderboard. Under that discipline the layer separates cleanly --- firing on exactly the 2 of 18 baseline competitions that need external data, silent on the other 16; all six external-data arms across three firing-class competitions beat their baselines with paired significance; a with-layer/without-layer ablation passes the paired test on the benchmark's canonical failure; and no local signal we tested selects the \emph{form} the injection should take --- the one selector surviving hindsight was killed by its first pre-registered prediction. We benchmark the agent against two frozen, methodologically distinct yardsticks --- \textbf{AIDE} (LLM tree search) and the \textbf{NVIDIA Kaggle Agent} (kernel reproduction) --- on 20 Kaggle competitions under a mechanically enforced fairness protocol, the my-agent lanes credential-free and transcript-audited, plus three mid-complexity competitions (NLP, physiological time series, medical imaging) where my-agent takes the three-way best on all three. The 16 completed lanes (one running, three queued as this draft compiles) were scored on the real leaderboard by the separate credentialed operator step on 2026-08-18: under the paired error model of Section~\ref{sec:apparatus}, my-agent leads the standing with 15 wins and 5 losses in its decided duels ($75\%$ excluding ties, against $42\%$ for AIDE and $38\%$ for NVIDIA), taking the best private score on 10 of the 16; the remaining duels await the four unfinished lanes.
 
 \vspace{0.5em}
 
@@ -53,7 +53,7 @@ This report is about one such agent, \textbf{my-agent}, built over the course of
 
 The design question we ended up caring most about is \emph{where external knowledge should enter the pipeline}. Our first answer was the conventional one --- inject it downstream, among the candidates being blended --- and measuring our own implementation showed that answer to be worth about ${\sim}10^{-5}$. A failure-mode reading of all three agents studied here located their shared gap upstream, at problem-level judgment --- ``does this task need external data?'', ``is the test set a future time window?'' (summarized in Section~\ref{sec:v5}). The architecture therefore injects knowledge upstream, through a \emph{problem-identification layer}: a dossier stage that runs before EDA, classifies the task, and emits typed operators into a whitelisted, leakage-guarded external-data module (Section~\ref{sec:v5}). That layer is evaluated under real-leaderboard discipline in Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} --- the scored evidence at the centre of this report.
 
-Testing an architectural claim of this kind requires reference points we did not build and cannot tune, so all results are stated against two frozen, methodologically distinct yardsticks: \textbf{AIDE}, LLM tree search with no cross-competition memory, and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel. All three run on 20 Kaggle competitions plus three mid-complexity competitions; because local estimates cannot be trusted to arbitrate between agents, every yardstick verdict is scored on the real leaderboard via late submission. my-agent's benchmark lanes run under the frozen architecture in credential-free sandboxes (Section~\ref{sec:fairness}); 16 of 20 are complete with frozen submissions as this draft compiles (one running, three queued), and the scoring step is a separate credentialed operator step that has not yet run, so every my-agent leaderboard cell and paired verdict in the benchmark tables is TBD (Section~\ref{sec:exp1}).
+Testing an architectural claim of this kind requires reference points we did not build and cannot tune, so all results are stated against two frozen, methodologically distinct yardsticks: \textbf{AIDE}, LLM tree search with no cross-competition memory, and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel. All three run on 20 Kaggle competitions plus three mid-complexity competitions; because local estimates cannot be trusted to arbitrate between agents, every yardstick verdict is scored on the real leaderboard via late submission. my-agent's benchmark lanes run under the frozen architecture in credential-free sandboxes (Section~\ref{sec:fairness}); 16 of 20 are complete as this draft compiles (one running, three queued), and the separate credentialed operator step scored those 16 on 2026-08-18, so the benchmark tables carry real my-agent leaderboard scores and paired verdicts for them, with the four unfinished lanes TBD (Sections~\ref{sec:exp1} and~\ref{sec:winrates}).
 
 Reading such comparisons at all requires an error model --- top-two leaderboard gaps often sit at the fourth or fifth decimal place, and agent execution is itself stochastic --- so every verdict in this report is adjudicated under the measurement methodology of Section~\ref{sec:apparatus}.
 
@@ -310,7 +310,7 @@ reporting its own noise back to itself.
 \begin{equation}
 P_{\mathrm{FP}}(k) \;=\; \frac{1}{2} - \frac{\arctan(k/2)}{\pi},
 \end{equation}
-which gives $35.2\%$ for equal variances ($k=1$) and $25.0\%$ for the $20\%/80\%$ public/private splits common in these competitions (variance scales inversely with subset size, so $k \approx 2$); condition~\eqref{eq:sign} alone caps it at $50\%$ distribution-free. This is the rule that adjudicates every leaderboard verdict in this report, including the benchmark's TBD duels once the scoring step runs.
+which gives $35.2\%$ for equal variances ($k=1$) and $25.0\%$ for the $20\%/80\%$ public/private splits common in these competitions (variance scales inversely with subset size, so $k \approx 2$); condition~\eqref{eq:sign} alone caps it at $50\%$ distribution-free. This is the rule that adjudicates every leaderboard verdict in this report, including the benchmark duels of Section~\ref{sec:winrates}.
 
 \begin{table}[htbp]
 \centering\small
@@ -353,7 +353,7 @@ agent --- both agents agree s3e16 is the noisy competition by an order of magnit
 error bars must be per-competition, not one global number. Several fourth-decimal
 development-lane gaps sit at or below a measured wobble (s5e10's $0.00003$ gap exactly equals
 AIDE's wobble there), so the combined error model treats gaps at that scale as undecidable ---
-a revision the TBD benchmark verdicts will inherit. And the pipeline's endpoint is far more
+a floor the benchmark verdicts of Section~\ref{sec:winrates} apply. And the pipeline's endpoint is far more
 stable than its route: my-agent's two runs took visibly different paths on every competition
 yet landed within $0.0002$ everywhere except the task both agents find noisy. NVIDIA's
 variance term remains unmeasured (Section~\ref{sec:future}).
@@ -369,7 +369,7 @@ variance term remains unmeasured (Section~\ref{sec:future}).
 \subsection{Three-Way Capability Comparison (Raw Scores)}
 \label{sec:exp1}
 
-\paragraph{Goal and procedure.} Measure the absolute performance of the three methods on the same set of competitions. Each side independently produces a submission, scored on Kaggle via late submission for public and private scores and a percentile rank (PR). The AIDE and NVIDIA columns of Table~\ref{tab:bench} are those frozen leaderboard scores. my-agent's lanes hold no credentials, so \emph{nothing in its column has touched the leaderboard yet}: each lane's frozen \path{submission.csv} exists, and scoring is a separate credentialed operator step (\path{score_lane_submissions.py}; dry-run by default, real submission behind an explicit flag), after which \path{build_rerun_three_way.py} places the my-agent column against the yardsticks under the paired test of Section~\ref{sec:exp2}. Until then, every my-agent leaderboard cell, percentile rank, and paired verdict is TBD; the local CV column reports each lane's own honest out-of-fold estimate, which must not be read as a leaderboard proxy (s3e19's pooled OOF SMAPE of 6.71 sits against yardstick leaderboard SMAPEs near 48). Per-competition specifications for every agent are attached (Appendix~\ref{app:specs}).
+\paragraph{Goal and procedure.} Measure the absolute performance of the three methods on the same set of competitions. Each side independently produces a submission, scored on Kaggle via late submission for public and private scores and a percentile rank (PR). The AIDE and NVIDIA columns of Table~\ref{tab:bench} are those frozen leaderboard scores. my-agent's lanes hold no credentials, so nothing in a lane ever touches the leaderboard: each lane freezes a \path{submission.csv}, and scoring is a separate credentialed operator step (\path{score_lane_submissions.py}; dry-run by default, real submission behind an explicit flag), after which \path{build_rerun_three_way.py} places the my-agent column against the yardsticks under the paired test of Section~\ref{sec:exp2}. That operator step ran on 2026-08-18 for the 16 completed lanes, and their real public/private scores fill the LB column of Table~\ref{tab:bench}; the four unfinished lanes and all my-agent percentile ranks (which require a leaderboard-snapshot pull) remain TBD. The local CV column reports each lane's own honest out-of-fold estimate, which must not be read as a leaderboard proxy (s3e19's pooled OOF SMAPE of 6.71 sits against a realized lane score of 49.41). Per-competition specifications for every agent are attached (Appendix~\ref{app:specs}).
 
 \begin{table}[htbp]
 \centering\small
@@ -408,37 +408,38 @@ variance term remains unmeasured (Section~\ref{sec:future}).
 \setlength{\tabcolsep}{4pt}
 \caption{The 20-competition benchmark, state as of 2026-08-18. my-agent's local CV
 (OOF) is each lane's own honest out-of-fold estimate, not leaderboard-validated;
-its public/private leaderboard cells are TBD pending the scoring
-step. NVIDIA and AIDE columns are frozen private-leaderboard scores with percentile rank (PR)
-in parentheses. 16 of 20 lanes are complete (${\sim}19$ hours of lane time), one is running,
-three are queued.}
+its LB column is the real public/private leaderboard score of the lane's frozen submission,
+obtained in the credentialed operator scoring step of 2026-08-18 (my-agent percentile ranks
+await a leaderboard-snapshot pull). NVIDIA and AIDE columns are frozen private-leaderboard
+scores with percentile rank (PR) in parentheses. 16 of 20 lanes are complete and scored
+(${\sim}19$ hours of lane time), one is running, three are queued.}
 \label{tab:bench}
 \begin{tabular}{@{}rllrcrrl@{}}
 \toprule
 \# & \textbf{Competition} & \textbf{Metric} & \textbf{Local CV (OOF)} & \textbf{LB (pub/priv)} & \textbf{NVIDIA (PR)} & \textbf{AIDE (PR)} & \textbf{Lane status} \\
 \midrule
-1 & s3e1 & RMSE \dn & 0.548862 & TBD & 0.55550 (93.2) & 0.55552 (81.0) & done \\
-2 & s3e3 & ROC-AUC \up & 0.841605 & TBD & 0.89537 (66.8) & 0.86863 (26.4) & done \\
-3 & s3e5 & QWK \up & 0.571980 & TBD & 0.56974 (75.7) & 0.58138 (79.8) & done \\
-4 & s3e7 & ROC-AUC \up & 0.901769 & TBD & 0.90458 (78.1) & 0.90109 (67.1) & done \\
-5 & s3e9 & RMSE \dn & 12.082282 & TBD & 12.22913 (59.1) & 12.30667 (44.5) & done \\
-6 & s3e11 & RMSLE \dn & 0.292886 & TBD & 0.29624 (66.6) & 0.29445 (73.3) & done$^{a}$ \\
-7 & s3e14 & MAE \dn & 340.95936 & TBD & 330.71616 (89.2) & 332.31556 (71.2) & done \\
-8 & s3e16 & MAE \dn & 1.334958 & TBD & 1.34001 (96.4) & 1.34224 (91.4) & done \\
-9 & s3e19 & SMAPE \dn & 6.70585 & TBD & 48.26558 (41.4) & 48.34131 (40.1) & done$^{b}$ \\
-10 & s4e11 & Accuracy \up & 0.940810 & TBD & 0.94076 (52.8) & 0.94056 (62.1) & done \\
-11 & s5e10 & RMSE \dn & 0.055971 & TBD & 0.05588 (59.4) & 0.05579 (78.9) & done$^{c}$ \\
-12 & s6e1 & Error \dn & 0.787400$^{d}$ & TBD & 8.73239 (69.5) & 8.72191 (74.8) & done$^{d}$ \\
+1 & s3e1 & RMSE \dn & 0.548862 & 0.55715/0.55275 & 0.55550 (93.2) & 0.55552 (81.0) & done \\
+2 & s3e3 & ROC-AUC \up & 0.841605 & 0.89449/0.87157 & 0.89537 (66.8) & 0.86863 (26.4) & done \\
+3 & s3e5 & QWK \up & 0.571980 & 0.57041/0.57223 & 0.56974 (75.7) & 0.58138 (79.8) & done \\
+4 & s3e7 & ROC-AUC \up & 0.901769 & 0.91127/0.90441 & 0.90458 (78.1) & 0.90109 (67.1) & done \\
+5 & s3e9 & RMSE \dn & 12.082282 & 11.84750/12.33192 & 12.22913 (59.1) & 12.30667 (44.5) & done \\
+6 & s3e11 & RMSLE \dn & 0.292886 & 0.29309/0.29368 & 0.29624 (66.6) & 0.29445 (73.3) & done$^{a}$ \\
+7 & s3e14 & MAE \dn & 340.95936 & 343.43434/333.18611 & 330.71616 (89.2) & 332.31556 (71.2) & done \\
+8 & s3e16 & MAE \dn & 1.334958 & 1.33738/1.33822 & 1.34001 (96.4) & 1.34224 (91.4) & done \\
+9 & s3e19 & SMAPE \dn & 6.70585 & 49.11872/49.40878 & 48.26558 (41.4) & 48.34131 (40.1) & done$^{b}$ \\
+10 & s4e11 & Accuracy \up & 0.940810 & 0.94195/0.94107 & 0.94076 (52.8) & 0.94056 (62.1) & done \\
+11 & s5e10 & RMSE \dn & 0.055971 & 0.05554/0.05576 & 0.05588 (59.4) & 0.05579 (78.9) & done$^{c}$ \\
+12 & s6e1 & Error \dn & 0.787400$^{d}$ & 8.68844/8.71516 & 8.73239 (69.5) & 8.72191 (74.8) & done$^{d}$ \\
 13 & s6e2 & ROC-AUC \up & TBD & TBD & 0.95508 (63.0) & 0.95516 (76.5) & running$^{e}$ \\
-14 & afsis & MCRMSE \dn & 0.470503 & TBD & 0.69855 (18.8) & 0.49861 (45.6) & done \\
-15 & cat-in-the-dat & ROC-AUC \up & 0.803272 & TBD & 0.77084 (32.6) & 0.80217 (70.3) & done \\
-16 & conway & MAE \dn & 0.106688 & TBD & 0.11189 (96.5) & 0.11065 (97.9) & done \\
+14 & afsis & MCRMSE \dn & 0.470503 & 0.41902/0.48917 & 0.69855 (18.8) & 0.49861 (45.6) & done \\
+15 & cat-in-the-dat & ROC-AUC \up & 0.803272 & 0.80800/0.80243 & 0.77084 (32.6) & 0.80217 (70.3) & done \\
+16 & conway & MAE \dn & 0.106688 & 0.10313/0.10414 & 0.11189 (96.5) & 0.11065 (97.9) & done$^{g}$ \\
 17 & tps-aug-2022 & ROC-AUC \up & TBD & TBD & 0.58730 (43.0) & 0.59106 (60.5) & queued \\
 18 & tps-jan-2022 & SMAPE \dn & TBD & TBD & 4.63651 (76.4) & 10.66638 (28.9) & queued \\
-19 & s5e1 & MAPE \dn & 5.84\%$^{f}$ & TBD & 0.14594 (69.3) & 0.17917 (48.1) & done \\
+19 & s5e1 & MAPE \dn & 5.84\%$^{f}$ & 0.09076/0.08401 & 0.14594 (69.3) & 0.17917 (48.1) & done \\
 20 & tps-sep-2022 & SMAPE \dn & TBD & TBD & 5.48351 (80.3) & 9.72095 (48.3) & queued \\
 \midrule
-\multicolumn{3}{@{}l}{Median PR (range)} & --- & TBD & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) & \\
+\multicolumn{3}{@{}l}{Median PR (range)} & --- & pending snapshot & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) & \\
 \bottomrule
 \end{tabular}
 
@@ -449,7 +450,8 @@ $^{b}$~Clean re-run 08-17; first attempt discarded by the transcript audit (Sect
 $^{c}$~Audit incident resolved, score accepted (Section~\ref{sec:rerun}).\quad
 $^{d}$~Completed and audit-accepted 08-17. The lane's local metric is $R^2$ (maximize; pooled OOF 0.787400), not the leaderboard's error metric, so this cell is not comparable in scale or direction to the LB columns.\quad
 $^{e}$~Second attempt, launched 08-18; the first attempt exited without a submission.\quad
-$^{f}$~The lane's cross-arm blend weights and global scale are fitted on the same OOF rows they are scored on, so its 5.84\% is optimistic relative to a held-out estimate --- the lane's own summary records this caveat.
+$^{f}$~The lane's cross-arm blend weights and global scale are fitted on the same OOF rows they are scored on, so its 5.84\% is optimistic relative to a held-out estimate --- the lane's own summary records this caveat.\quad
+$^{g}$~The scoring tool's structural validator false-blocked conway's file (sample-file naming); the operator submitted the identical file (same SHA-256) manually via the Kaggle CLI.
 \end{table}
 
 PR is the share of that competition's final private standings the submission would beat (a would-be rank $r$ among $N$ teams gives $\mathrm{PR}=100\,(N-r)/N$, against the frozen final leaderboard) --- an \emph{absolute} capability reference (``where would this agent have placed had it entered?''), separate from the relative ordering among the three.
@@ -457,24 +459,26 @@ PR is the share of that competition's final private standings the submission wou
 \subsection{Execution and Audit of the Benchmark Run}
 \label{sec:rerun}
 
-The queue ran 2026-08-14 through 08-18 under operator approval, halting three times --- twice on environment faults at lane boundaries (which the launcher distinguishes from a lane result by exit timing) and once on its two-consecutive-audit-failures rule --- with 16 of 20 lanes complete and audit-accepted, one (s6e2) running on its second attempt, and three queued as this draft compiles. The audit gate was exercised in both directions, most sharply on \textbf{s3e19}: the 08-14 lane opened the raw knowledge library four times and issued a genuine socket-opening command, and the audit discarded it. The clean 08-17 re-run scores \emph{worse} on local CV --- pooled OOF SMAPE 6.706 against the tainted attempt's 5.740 --- consistent with the contamination advantage being real and the audit pricing it correctly; a benchmark that discards a better-looking number and keeps the honest one has evidence its audit does something. The other two incidents were resolved by reading transcripts rather than trusting either the lane or the auditor: the network detector fired on an \texttt{ls} of a directory named \path{kaggle-safe-submit} (a manual scan of all 118 tool calls found zero network commands; accepted under a recorded operator waiver), and on s5e10 the flagged raw library opens all occurred strictly \emph{after} the submission was written and validated, so the score stands --- the genuine violation there, a hand-edit of the shared knowledge library after finalisation, was surgically reverted before any later lane ran.
+The queue ran 2026-08-14 through 08-18 under operator approval, halting three times --- twice on environment faults at lane boundaries (which the launcher distinguishes from a lane result by exit timing) and once on its two-consecutive-audit-failures rule --- with 16 of 20 lanes complete and audit-accepted, one (s6e2) running on its second attempt, and three queued as this draft compiles. The audit gate was exercised in both directions, most sharply on \textbf{s3e19}: the 08-14 lane opened the raw knowledge library four times and issued a genuine socket-opening command, and the audit discarded it. The clean 08-17 re-run scores \emph{worse} on local CV --- pooled OOF SMAPE 6.706 against the tainted attempt's 5.740 --- consistent with the contamination advantage being real and the audit pricing it correctly; a benchmark that discards a better-looking number and keeps the honest one has evidence its audit does something. The other two incidents were resolved by reading transcripts rather than trusting either the lane or the auditor: the network detector fired on an \texttt{ls} of a directory named \path{kaggle-safe-submit} (a manual scan of all 118 tool calls found zero network commands; accepted under a recorded operator waiver), and on s5e10 the flagged raw library opens all occurred strictly \emph{after} the submission was written and validated, so the score stands --- the genuine violation there, a hand-edit of the shared knowledge library after finalisation, was surgically reverted before any later lane ran. After the audit, the credentialed operator step submitted the 16 frozen submissions on 2026-08-18; their scores enter Table~\ref{tab:bench} and Section~\ref{sec:winrates}.
 
 \subsection{Standing of the Three Agents Under the Paired Test}
 \label{sec:winrates}
 
-The benchmark's headline reading is the full duel matrix: 20 competitions $\times$ 3 pairings $=$ 60 duels, each adjudicated by the rule of Section~\ref{sec:exp2}. Two of every three duels involve my-agent, whose leaderboard scores are TBD, and the yardsticks' aggregate win rates fold their my-agent duels in --- so no row of Table~\ref{tab:winrates} can be printed before the scoring step runs; \path{build_rerun_three_way.py} recomputes every verdict at that point.
+The benchmark's headline reading is the full duel matrix: 20 competitions $\times$ 3 pairings $=$ 60 duels, each adjudicated by the rule of Section~\ref{sec:exp2} plus the per-competition variance floors. With the 16 completed lanes scored, 52 of the 60 duels are adjudicated (the yardstick-vs-yardstick duels need no my-agent score); the 8 my-agent duels on the four unfinished lanes are pending. Of the 52, 34 produce a verdict and 18 are undecidable --- the class the error model exists to catch, including a live replication of the development-lane s5e1 case (the public half of that test split favours NVIDIA, the private half favours my-agent, so the duel is a tie by construction) and two duels killed by the variance floors, both wins my-agent would otherwise have claimed: s3e16, and s5e10, where the private gap of $0.00003$ exactly equals AIDE's measured wobble --- the case Section~\ref{sec:exp2} flagged in advance. Table~\ref{tab:winrates} gives the standing. my-agent leads outright: it wins 15 of its 20 decided duels ($75\%$ excluding ties), takes the best private score on 10 of the 16 scored competitions, and its rerun submission beats its own development-lane private score on 11 of 16.
 
 \begin{table}[htbp]
 \centering\small
-\caption{Standing under the paired test: 60 duels, recomputed once the leaderboard scoring step runs. All cells await that step; the yardsticks' rows are also TBD because their win rates aggregate over duels against my-agent.}
+\caption{Standing under the paired test with per-competition variance floors, as of the
+2026-08-18 scoring step: 52 of 60 duels adjudicated (34 decided, 18 undecidable), 8 pending
+the four unfinished lanes. Win rate excludes ties.}
 \label{tab:winrates}
 \begin{tabular}{@{}lrrr@{}}
 \toprule
 \textbf{Method} & \textbf{Wins} & \textbf{Losses} & \textbf{Win rate (excl.\ ties)} \\
 \midrule
-my-agent & TBD & TBD & TBD \\
-NVIDIA   & TBD & TBD & TBD \\
-AIDE     & TBD & TBD & TBD \\
+my-agent & 15 & 5 & 75\% \\
+AIDE     & 10 & 14 & 42\% \\
+NVIDIA   & 9 & 15 & 38\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -518,7 +522,7 @@ no external data & 10.148 & 52.492 & 54.506 & --- & \textbf{11.348} & 23.828 & 2
 \end{tabular}
 \end{table}
 
-Against the baseline: on s3e19 the feature join gains $6.01$ private SMAPE and the ratio target $2.43$; on sep-2022, $2.09$ and $1.39$. The paired movements are small relative to the gaps ($0.55$, $0.79$, $0.23$, $1.23$ respectively), so all four survive. A with-layer versus without-layer ablation --- the full pipeline with the injection layer active, against the frozen pre-injection lane's searched champion --- also passes the paired test (with-layer private 48.243 vs.\ 50.455 without; $d_{\mathrm{pub}}{+}3.389$, $d_{\mathrm{priv}}{+}2.212$, movement $1.177$), and places the with-layer champion numerically ahead of both frozen yardsticks on s3e19 (48.26558 and 48.34131, Table~\ref{tab:bench}).
+Against the baseline: on s3e19 the feature join gains $6.01$ private SMAPE and the ratio target $2.43$; on sep-2022, $2.09$ and $1.39$. The paired movements are small relative to the gaps ($0.55$, $0.79$, $0.23$, $1.23$ respectively), so all four survive. A with-layer versus without-layer ablation --- the full pipeline against a searched champion from the identical pipeline with the layer disabled --- also passes the paired test (with-layer private 48.243 vs.\ 50.455 without; $d_{\mathrm{pub}}{+}3.389$, $d_{\mathrm{priv}}{+}2.212$, movement $1.177$), and places the with-layer champion numerically ahead of both frozen yardsticks on s3e19 (48.26558 and 48.34131, Table~\ref{tab:bench}).
 
 \paragraph{Result 1b: the ordering survives a real search budget, and search does not rescue the weaker form.} At an equal 46-node budget per arm on tps-sep-2022, the no-external arm reaches CV $11.347$ / private $25.472$; \texttt{ratio\_target} $10.829$ / $23.774$; the gated variant (ratio paired with \texttt{sample\_weight} on 2020) $10.922$ / $23.973$. Both external arms beat the searched baseline and pass the paired test (movements $0.499$ and $0.577$ against gaps of $1.698$ and $1.499$). The informative comparison is across protocols: 46 nodes of search on the \emph{weaker} operator form ($23.774$) still lose to a \emph{single unsearched configuration} of the stronger one ($23.390$; a cross-protocol comparison, not a paired verdict) --- the choice of injection form is worth more than the entire search budget.
 
@@ -563,7 +567,8 @@ to the last commit before any information about that lane's own competition ente
 and NVIDIA frozen exactly as in the main benchmark --- and every submission scored on the real
 leaderboard. These are the injection study's own scored lanes; the my-agent column of
 Table~\ref{tab:bench} is the separate frozen-architecture benchmark lane for the same
-competitions, TBD pending scoring.
+competitions (s5e1 scored 2026-08-18 at 0.09076/0.08401 --- ahead of every arm in this
+study --- tps-sep-2022 still queued).
 
 \begin{table}[H]
 \centering\small
@@ -649,11 +654,12 @@ my-agent takes the three-way best on all three and the only above-median score o
   surviving hindsight killed by its own pre-registered falsifier.
 
   \item \textbf{The agent's placement against two frozen, methodologically distinct
-  yardsticks, with the adjudication rule committed before the scores exist.} 16 of the 20
-  benchmark lanes are complete with frozen submissions (one running, three queued as this
-  draft compiles), all standings TBD pending the credentialed scoring step
-  (Section~\ref{sec:exp1}); already scored are the mid-complexity sweep (three-way best on
-  all three) and the firing-class three-way of Result 2c.
+  yardsticks, with the adjudication rule committed before the scores existed.} 16 of the 20
+  benchmark lanes are complete and scored on the real leaderboard (2026-08-18 operator
+  step): my-agent leads the paired standing --- 15 wins, 5 losses, $75\%$ excluding ties
+  (Section~\ref{sec:winrates}) --- with 8 duels pending the four unfinished lanes; also
+  scored are the mid-complexity sweep (three-way best on all three) and the firing-class
+  three-way of Result 2c.
 
   \item \textbf{A caution that constrains how any such claim may be stated.} A ranking is a
   property of method $\times$ evaluation set --- in development runs the winner flipped between
@@ -753,7 +759,7 @@ public text corpora), and a direct ablation of the experience library.
 
 \section{Conclusion}
 
-This study set out to build an end-to-end competition agent and to find out honestly what its architecture is worth. The architectural answer is placement: downstream injection measured near-null, so knowledge enters at problem identification, and the layer's controlled, leaderboard-scored evidence carries the claim (Section~\ref{sec:exp6v5}) --- together with the negative result that no local signal selects the injection's form, a failure we count as the method working, since a benchmark that can kill its own hypotheses is the thing this study set out to build. The benchmark verdict is deliberately unfinished: 16 of 20 frozen, transcript-audited lanes are complete, their submissions frozen, standings TBD until the credentialed scoring step, at which point every duel is adjudicated by the error model committed in advance (Section~\ref{sec:apparatus}) --- restraint the development runs earned, where the winner flipped with the evaluation set and the audit discarded a contaminated lane whose tainted score looked better than its clean replacement's. The arc of the internship is a single loop closed: build the agent, benchmark it honestly, read its failures, fix the layer they identify, and re-verify under the same discipline that found the gap.
+This study set out to build an end-to-end competition agent and to find out honestly what its architecture is worth. The architectural answer is placement: downstream injection measured near-null, so knowledge enters at problem identification, and the layer's controlled, leaderboard-scored evidence carries the claim (Section~\ref{sec:exp6v5}) --- together with the negative result that no local signal selects the injection's form, a failure we count as the method working, since a benchmark that can kill its own hypotheses is the thing this study set out to build. The benchmark verdict is partial but real: the 16 completed, transcript-audited lanes were scored on the real leaderboard on 2026-08-18 and adjudicated by the error model committed in advance (Section~\ref{sec:apparatus}) --- my-agent leads with 15 wins to 5 losses ($75\%$ excluding ties), 18 duels undecidable at the measured noise scale, 8 pending the four unfinished lanes --- discipline the development runs earned, where the winner flipped with the evaluation set and the audit discarded a contaminated lane whose tainted score looked better than its clean replacement's. The arc of the internship is a single loop closed: build the agent, benchmark it honestly, read its failures, fix the layer they identify, and re-verify under the same discipline that found the gap.
 
 \appendix
 
