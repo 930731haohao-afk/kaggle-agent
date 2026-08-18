@@ -28,7 +28,7 @@
 \node[stage]              (s1)  at (0,0)     {Data ingestion};
 \node[inj, text width=40mm] (s05) at (0,-1.8)
   {\textbf{0.5 Problem dossier}\\[-1pt]
-   {\scriptsize task family $\cdot$ window $\cdot$ split $\cdot$ external need}};
+   {\scriptsize task family $\cdot$ window\\[-2pt]split $\cdot$ external need}};
 \node[stage]              (s2)  at (0,-3.6) {EDA\\[-2pt]{\scriptsize verify dossier hypotheses}};
 \node[stage]              (s3)  at (0,-5.3) {Feature eng.};
 \node[stage]              (s4)  at (0,-7.0) {Modeling};
@@ -50,18 +50,18 @@
 \node[lab, anchor=north west, align=left] at (2.75,-8.5)
   {tree search\\(22--80 nodes)};
 % ----- right rail (narrow) -----
-\node[supp]    (lib)   at (4.7,-0.3)
-  {\textbf{Experience library}\\[-1pt] evidence-backed priors};
-\node[injbox]  (ext)   at (4.7,-3.3)
-  {\textbf{External-data layer}\\[-1pt] whitelist $\cdot$ as-of guard $\cdot$ ledger};
-\node[toolbox] (tools) at (4.7,-7.0)
-  {LightGBM / XGBoost / CatBoost / Optuna\\ (via shell)};
-\node[supp]    (rec)   at (4.7,-10.6)
-  {\textbf{Experiment records}\\[-1pt] params $\cdot$ features $\cdot$ split $\cdot$ scores};
+\node[supp]    (lib)   at (5.0,-0.3)
+  {\textbf{Experience library}\\[-1pt] evidence-backed\\priors};
+\node[injbox, text width=30mm]  (ext)   at (5.0,-3.3)
+  {\textbf{External-data layer}\\[-1pt] whitelist $\cdot$ as-of\\guard $\cdot$ ledger};
+\node[toolbox, text width=30mm] (tools) at (5.0,-7.0)
+  {LightGBM / XGBoost\\CatBoost / Optuna\\(via shell)};
+\node[supp]    (rec)   at (5.0,-10.6)
+  {\textbf{Experiment records}\\[-1pt] params $\cdot$ features\\split $\cdot$ scores};
 % ----- connections -----
 \draw[garr] (lib.west) -- node[lab, above, pos=0.45]{priors} (s1.east);
 \draw[garr] (lib.south) -- node[lab, anchor=east, xshift=-0.5mm]{task priors} (ext.north);
-\draw[parr] ([yshift=1.5mm]s05.east) -- node[lab, above, pos=0.55, align=center]{data-level\\ops}
+\draw[parr] ([yshift=1.5mm]s05.east) -- node[lab, above, pos=0.68]{data-level ops}
   ([yshift=1.5mm]ext.west |- s05.east);
 \draw[parr] ([yshift=-2.5mm]s05.east) -- ++(4mm,0) |- ([yshift=3mm]s4.east);
 \node[lab, rotate=90, anchor=south, flowpurpleline!60!black] at (2.42,-4.9)
@@ -71,7 +71,7 @@
 \draw[garr] (s5.east) -- node[lab, below, pos=0.85]{log} (rec.north |- s5.east) -- (rec.north);
 % ----- dashed write-back, far right -----
 \draw[darr, flowgreenline] (rec.east) -- ++(6mm,0) |- (lib.east);
-\node[lab, rotate=90, anchor=north] at (6.9,-5.5)
+\node[lab, rotate=90, anchor=north] at (7.25,-5.5)
   {validated insights written back};
 \end{tikzpicture}
 \end{document}

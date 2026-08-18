@@ -22,7 +22,7 @@
 % ----- main loop column -----
 \node[sbox] (phase) {\textbf{budget phase machine}:\\exploit until every lineage plateaus\\$\to$ explore-burst: inject 5--8 fresh long-shot drafts\\$\to$ stop (hard cap 60 evaluated nodes; patience\\20 evals after the burst without a new global best)};
 \node[sbox, below=of phase] (select) {\textbf{select parent lineage}\\(backtrack when a lineage plateaus: 3 children without improvement)};
-\node[sbox, below=of select] (propose) {\textbf{propose mutation}:\\solo moves: seed / hyperparameters / boundary push\\blend moves: member set + weight search\\(blends are first-class nodes over cached OOF predictions)};
+\node[sbox, below=of select] (propose) {\textbf{propose mutation}:\\solo moves: seed / hyperparameters /\\boundary push\\blend moves: member set + weight search\\(blends are first-class nodes over cached OOF predictions)};
 \node[sbox, below=of propose] (dedup) {\textbf{duplicate gate}\\(SHA-256 over the canonicalized config --- params, features, seed, blend members; a repeat burns budget, never re-evaluates)};
 \node[sbox, below=of dedup] (eval) {\textbf{evaluate in sandboxed child process}\\(CV score; hang or crash $\to$ SIGKILL of the process group, node marked failed, search continues; blend cost guard)};
 \node[sbox, below=of eval] (add) {\textbf{add node, update global best}\\(a solo breakthrough reopens plateaued blend lineages)};
@@ -62,20 +62,20 @@
   \node[lab, anchor=north, font=\tiny, align=center] (elab) at (2.9,-1.72) {burst\\draft};
   \foreach \a/\b in {r/A, r/B, A/A1, B/B1, B1/B2, B2/c1, B2/c2, B2/c3, e/e1}{\draw[te] (\a) -- (\b);}
   \draw[te] (B1) -- (bd); \draw[te] (A1) -- (bd);
-  \draw[te, dashed] (B2) to[out=200, in=-90] (A);
-  \node[lab, font=\tiny, anchor=east] (klab) at (0.55,-2.75) {backtrack};
+  \draw[te, dashed] (B2.west) -- ++(-0.15,0.1) -- (-0.45,-3.05) -- (-0.45,-1.45) -- (A.west);
+  \node[lab, font=\tiny, rotate=90, anchor=south] (klab) at (-0.58,-2.6) {backtrack};
   % exit to submission
   \draw[te] (bd) -- ++(243:1.2);
   \node[lab, font=\tiny, anchor=north] (slab) at (0.15,-4.62) {best $\to$ submission};
   % legend
   \node[font=\tiny, anchor=north west, align=left, text width=34mm] (lgd) at (-0.6,-5.15)
     {gray = plateaued (3 misses)\\dashed = backtrack\\$\diamond$ = blend $\cdot$ double = best\\purple = explore-burst draft};
-  \node[draw=black!55, rounded corners=2pt, fit={(ttl)(lgd)(plab)(slab)(r)(e)(c3)(bd)(elab)},
+  \node[draw=black!55, rounded corners=2pt, fit={(ttl)(lgd)(plab)(slab)(klab)(r)(e)(c3)(bd)(elab)},
         inner sep=3.5pt] (insetframe) {};
 \end{scope}
 % ----- side inputs, left column -----
 \node[injside, left=5mm of phase] (injcfg)
-  {\textcolor{flowpurpleline!60!black}{\textbf{model-level operators}}\\seeded as starting nodes\\(objective, blend member)};
+  {\textcolor{flowpurpleline!60!black}{\textbf{model-level operators}}\\seeded as\\starting nodes};
 \draw[parr] (injcfg) -- (phase);
 \node[priorbox, left=5mm of propose] (prior)
   {priors from\\experience library};

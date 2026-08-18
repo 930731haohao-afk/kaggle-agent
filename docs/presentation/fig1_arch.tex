@@ -24,7 +24,7 @@
 \node[stage]              (s1)  at (0,0)     {Data ingestion};
 \node[inj, text width=48mm] (s05) at (0,-1.7)
   {\textbf{0.5 Problem dossier}\\[-1pt]
-   {\scriptsize task family $\cdot$ window $\cdot$ split policy $\cdot$ external-data need}};
+   {\scriptsize task family $\cdot$ window $\cdot$ split policy\\[-2pt]external-data need}};
 \node[stage]              (s2)  at (0,-3.5)  {EDA\\[-2pt]{\scriptsize verify dossier hypotheses}};
 \node[stage]              (s3)  at (0,-5.0)  {Feature eng.};
 \node[stage]              (s4)  at (0,-6.5)  {Modeling};
@@ -44,7 +44,7 @@
   {\textbf{Claude Code (LLM)} --- reasons and decides at every stage};
 % ----- tree-search loop (Evaluation -> Modeling), arc in the corridor -----
 \draw[arr] ([yshift=2.5mm]s5.east) to[out=30, in=-30] ([yshift=-3.5mm]s4.east);
-\node[lab, anchor=west] at (3.6,-7.7) {tree search (22--80 nodes)};
+\node[lab, anchor=west] at (3.45,-7.65) {tree search (22--80 nodes)};
 % ----- right rail -----
 \node[supp]    (lib)   at (7.3,-0.2)  {\textbf{Experience library}\\[-1pt]
   {\scriptsize evidence-backed priors}};

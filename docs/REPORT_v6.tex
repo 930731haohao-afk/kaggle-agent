@@ -54,7 +54,7 @@ Report v6 (August 2026)\\
 
 Machine-learning competitions are \emph{scorable tasks}: a submission receives a single measurable quality score on a hidden test set, and a public leaderboard records how it compares against thousands of human teams. Solving them end-to-end --- data understanding, validation design, feature engineering, model selection, ensembling --- has traditionally demanded expert labor and extensive trial and error. LLM-driven coding agents have recently begun to automate this loop: AIDE performs LLM-guided tree search over candidate solutions~\cite{aide2025}; ERA couples an LLM rewriter with tree search and externally injected research ideas, outperforming strong baselines across 16 Kaggle Playground competitions~\cite{aygun2026}; and industrial agents skip search altogether by reproducing the strongest public solution to a given competition~\cite{nvidia2026}.
 
-This report is about one such agent, \textbf{my-agent}, built over the course of this internship: a hybrid design in which an LLM reasons at every stage of the competition pipeline, Auto-ML libraries are invoked through the shell for what they do best, a cross-competition experience library supplies evidence-backed priors, and a tree search over candidate configurations serves as the optimisation loop (Figures~\ref{fig:arch} and~\ref{fig:tree}).
+This report is about one such agent, \textbf{my-agent}, built over the course of this internship: a hybrid design in which an LLM reasons at every stage of the competition pipeline, Auto-ML libraries are invoked through the shell for what they do best, a cross-competition experience library supplies evidence-backed priors, and a tree search over candidate configurations serves as the optimisation loop (Figures~\ref{fig:arch} and~\ref{fig:tree}). The agent also documents itself: every lane emits its own EDA figures and structured experiment records, and a reporting layer renders each competition's artifacts into a five-section ML specification report --- 22 such reports for my-agent and 17 re-documenting the AIDE runs are attached (Appendix~\ref{app:specs}).
 
 The design question we ended up caring most about is \emph{where external knowledge should enter the pipeline}. Our first answer was the conventional one --- inject it downstream, among the candidates being blended --- and measuring our own implementation showed that answer to be worth about ${\sim}10^{-5}$. A failure-mode reading of all three agents studied here located their shared gap upstream, at problem-level judgment --- ``does this task need external data?'', ``is the test set a future time window?'' (summarized in Section~\ref{sec:v5}). The architecture therefore injects knowledge upstream, through a \emph{problem-identification layer}: a dossier stage that runs before EDA, classifies the task, and emits typed operators into a whitelisted, leakage-guarded external-data module (Section~\ref{sec:v5}). That layer is evaluated under real-leaderboard discipline in Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} --- the scored evidence at the centre of this report.
 
@@ -85,6 +85,8 @@ Three cross-cutting mechanisms support the pipeline:
 
 \paragraph{External-data layer}: realizes the dossier's typed operators as whitelisted, leakage-guarded external joins, each raced against the no-external baseline inside the search (Section~\ref{sec:v5}).
 
+\paragraph{Automated reporting and visualization.} The pipeline documents its own work: each lane generates EDA figures (distributions, drift, correlation) before modelling, and a reporting layer of the same skill renders the lane's recorded artifacts --- dossier, EDA output, experiment records --- into a per-competition ML specification report following the five-section framework of Appendix~\ref{app:specs}, with every printed number required to trace to a logged experiment. The 22 my-agent reports and 17 reports re-documenting the AIDE runs under the same framework are attached companion documents.
+
 Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms connect to the search loop.
 
 \begin{figure}[htbp]
@@ -108,7 +110,7 @@ Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms c
 \node[stage]              (s1)  at (0,0)     {Data ingestion};
 \node[inj, text width=48mm] (s05) at (0,-1.7)
   {\textbf{0.5 Problem dossier}\\[-1pt]
-   {\scriptsize task family $\cdot$ window $\cdot$ split policy $\cdot$ external-data need}};
+   {\scriptsize task family $\cdot$ window $\cdot$ split policy\\[-2pt]external-data need}};
 \node[stage]              (s2)  at (0,-3.5)  {EDA\\[-2pt]{\scriptsize verify dossier hypotheses}};
 \node[stage]              (s3)  at (0,-5.0)  {Feature eng.};
 \node[stage]              (s4)  at (0,-6.5)  {Modeling};
@@ -128,7 +130,7 @@ Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms c
   {\textbf{Claude Code (LLM)} --- reasons and decides at every stage};
 % ----- tree-search loop (Evaluation -> Modeling), arc in the corridor -----
 \draw[arr] ([yshift=2.5mm]s5.east) to[out=30, in=-30] ([yshift=-3.5mm]s4.east);
-\node[lab, anchor=west] at (3.6,-7.7) {tree search (22--80 nodes, Fig.~\ref{fig:tree})};
+\node[lab, anchor=west] at (3.45,-7.65) {tree search (22--80 nodes, Fig.~\ref{fig:tree})};
 % ----- right rail -----
 \node[supp]    (lib)   at (7.3,-0.2)  {\textbf{Experience library}\\[-1pt]
   {\scriptsize evidence-backed priors}};
@@ -193,7 +195,7 @@ the agent: lanes hold no credentials, and submissions are scored only after the 
 % ----- main loop column -----
 \node[sbox] (phase) {\textbf{budget phase machine}:\\exploit until every lineage plateaus\\$\to$ explore-burst: inject 5--8 fresh long-shot drafts\\$\to$ stop (hard cap 60 evaluated nodes; patience\\20 evals after the burst without a new global best)};
 \node[sbox, below=of phase] (select) {\textbf{select parent lineage}\\(backtrack when a lineage plateaus: 3 children without improvement)};
-\node[sbox, below=of select] (propose) {\textbf{propose mutation}:\\solo moves: seed / hyperparameters / boundary push\\blend moves: member set + weight search\\(blends are first-class nodes over cached OOF predictions)};
+\node[sbox, below=of select] (propose) {\textbf{propose mutation}:\\solo moves: seed / hyperparameters /\\boundary push\\blend moves: member set + weight search\\(blends are first-class nodes over cached OOF predictions)};
 \node[sbox, below=of propose] (dedup) {\textbf{duplicate gate}\\(SHA-256 over the canonicalized config --- params, features, seed, blend members; a repeat burns budget, never re-evaluates)};
 \node[sbox, below=of dedup] (eval) {\textbf{evaluate in sandboxed child process}\\(CV score; hang or crash $\to$ SIGKILL of the process group, node marked failed, search continues; blend cost guard)};
 \node[sbox, below=of eval] (add) {\textbf{add node, update global best}\\(a solo breakthrough reopens plateaued blend lineages)};
@@ -233,20 +235,20 @@ the agent: lanes hold no credentials, and submissions are scored only after the 
   \node[lab, anchor=north, font=\tiny, align=center] (elab) at (2.9,-1.72) {burst\\draft};
   \foreach \a/\b in {r/A, r/B, A/A1, B/B1, B1/B2, B2/c1, B2/c2, B2/c3, e/e1}{\draw[te] (\a) -- (\b);}
   \draw[te] (B1) -- (bd); \draw[te] (A1) -- (bd);
-  \draw[te, dashed] (B2) to[out=200, in=-90] (A);
-  \node[lab, font=\tiny, anchor=east] (klab) at (0.55,-2.75) {backtrack};
+  \draw[te, dashed] (B2.west) -- ++(-0.15,0.1) -- (-0.45,-3.05) -- (-0.45,-1.45) -- (A.west);
+  \node[lab, font=\tiny, rotate=90, anchor=south] (klab) at (-0.58,-2.6) {backtrack};
   % exit to submission
   \draw[te] (bd) -- ++(243:1.2);
   \node[lab, font=\tiny, anchor=north] (slab) at (0.15,-4.62) {best $\to$ submission};
   % legend
   \node[font=\tiny, anchor=north west, align=left, text width=34mm] (lgd) at (-0.6,-5.15)
     {gray = plateaued (3 misses)\\dashed = backtrack\\$\diamond$ = blend $\cdot$ double = best\\purple = explore-burst draft};
-  \node[draw=black!55, rounded corners=2pt, fit={(ttl)(lgd)(plab)(slab)(r)(e)(c3)(bd)(elab)},
+  \node[draw=black!55, rounded corners=2pt, fit={(ttl)(lgd)(plab)(slab)(klab)(r)(e)(c3)(bd)(elab)},
         inner sep=3.5pt] (insetframe) {};
 \end{scope}
 % ----- side inputs, left column -----
 \node[injside, left=5mm of phase] (injcfg)
-  {\textcolor{flowpurpleline!60!black}{\textbf{model-level operators}}\\seeded as starting nodes\\(objective, blend member)};
+  {\textcolor{flowpurpleline!60!black}{\textbf{model-level operators}}\\seeded as\\starting nodes};
 \draw[parr] (injcfg) -- (phase);
 \node[priorbox, left=5mm of propose] (prior)
   {priors from\\experience library};
@@ -765,7 +767,7 @@ This study set out to build an end-to-end competition agent and to find out hone
 
 \subsection{Per-Competition ML Specification Reports (Attached)}
 
-Full specifications for every agent on every competition, written to the five sections of Tso-Jung Yen's ML specification framework (\path{ml_pipeline_modules}) --- Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking --- per competition: 15 reports for my-agent (\href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{kaggle/docs/ml_specs/}}, MD + PDF) and 17 for AIDE (\href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results/ml_specs_aide}{\path{aideml-runs/docs/ml_specs_aide/}}, MD + PDF).
+Full specifications for every agent on every competition, written to the five sections of Tso-Jung Yen's ML specification framework (\path{ml_pipeline_modules}) --- Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking --- per competition: 22 reports for my-agent (\href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{kaggle/docs/ml_specs/}}, MD + PDF) and 17 for AIDE (\href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results/ml_specs_aide}{\path{aideml-runs/docs/ml_specs_aide/}}, MD + PDF).
 
 Every number in these reports is extracted deterministically by \texttt{collect.py} / \path{collect_aide_facts.py} from that competition's structured records (\texttt{facts.json}, \path{eda_summary.json}, \path{experiments_tree_v3.json}, \path{journal.json}), never generated by an LLM; unavailable fields are marked ``not recorded'' rather than left blank or estimated. The my-agent report set additionally ships \texttt{RUBRIC.md}, an 8-item plan-alignment checklist verified per competition (all 15 pass 8/8). The reports are CV-only by construction; their conclusions must not be mixed with leaderboard verdicts.
 
@@ -936,7 +938,7 @@ All my-agent code and benchmark artifacts are archived in the project repository
 Three-way score master table & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/three_way_scores.csv}{\path{ai_agents/aideml-runs/three_way_scores.csv}} \\
 Full three-way comparison report & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/THREE_WAY_REPORT.md}{\path{ai_agents/aideml-runs/THREE_WAY_REPORT.md}} (with PDF) \\
 AIDE per-competition ML spec reports (17) & \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results/ml_specs_aide}{\path{ai_agents/aideml-runs/docs/ml_specs_aide/}} \\
-my-agent per-competition ML spec reports (15) & \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{ai_agents/kaggle/docs/ml_specs/}} \\
+my-agent per-competition ML spec reports (22) & \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{ai_agents/kaggle/docs/ml_specs/}} \\
 Coverage status table & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/BENCHMARK_COVERAGE.md}{\path{ai_agents/BENCHMARK_COVERAGE.md}} \\
 Benchmark-run manifest & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/docs/rerun_manifest.json}{\path{kaggle/docs/rerun_manifest.json}} \\
 Firing-class lane log (injection-study three-way runs) & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/FIRING_CLASS_LANES.md}{\path{benchmark_results/FIRING_CLASS_LANES.md}} \\

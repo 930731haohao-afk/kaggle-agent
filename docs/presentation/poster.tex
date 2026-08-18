@@ -63,20 +63,14 @@
 % Separator dot
 \newcommand{\sep}{\ \textperiodcentered\ }
 
-% Section title: white text on a navy bar spanning the column
+% Section title: plain bold, thin rule underneath
 \newcommand{\secbar}[1]{%
-  \par\vspace{9mm}%
-  \noindent\begin{tikzpicture}
-    \node[fill=navy, text=white, font=\cardtitlesize\bfseries,
-          inner xsep=8mm, inner ysep=4.5mm, minimum width=\linewidth,
-          align=left, anchor=west] at (0,0) {\makebox[\dimexpr\linewidth-16mm][l]{#1}};
-  \end{tikzpicture}\par\vspace{6.5mm}}
+  \par\vspace{10mm}%
+  {\cardtitlesize\bfseries #1\par}%
+  \vspace{2.5mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{6mm}}
 \newcommand{\firstsecbar}[1]{%
-  \noindent\begin{tikzpicture}
-    \node[fill=navy, text=white, font=\cardtitlesize\bfseries,
-          inner xsep=8mm, inner ysep=4.5mm, minimum width=\linewidth,
-          align=left, anchor=west] at (0,0) {\makebox[\dimexpr\linewidth-16mm][l]{#1}};
-  \end{tikzpicture}\par\vspace{6.5mm}}
+  {\cardtitlesize\bfseries #1\par}%
+  \vspace{2.5mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{6mm}}
 
 % Sub-heading: navy bold with a short orange underline accent
 \newcommand{\cardsub}[1]{%
@@ -111,12 +105,11 @@
     left=\pagepad, right=\pagepad, top=17mm, bottom=15mm, boxsep=0pt,
     before skip=0pt, after skip=0pt]
   {\titlesize\bfseries\color{white}%
-    AI Agents for Data Visualization and Kaggle Competitions\par}
+    AI Agents for Kaggle Competitions\par}
   \vspace{5.3mm}
   {\subsize\color{white}%
-    An end-to-end LLM agent (my-agent) benchmarked against two frozen
-    yardsticks on 20 Kaggle competitions --- with the apparatus needed to
-    make the comparison honest\par}
+    An end-to-end LLM agent benchmarked against two frozen yardsticks
+    on 20 Kaggle competitions\par}
   \vspace{4.3mm}
   {\metasize\color{white}%
     {\bfseries Author:} Wei-Hao Huang\sep
@@ -215,21 +208,17 @@ development-lane score on 11 of 16. One lane running (s6e2), three queued
   controlled external-data arms beat their matched baselines.}
 \cardsub{Mid-complexity three-way (offline-graded, private split)}
 {\tablesize
-\renewcommand{\arraystretch}{1.55}%
+\renewcommand{\arraystretch}{1.45}%
 \setlength{\tabcolsep}{2.6mm}%
-\begin{tabular}{@{}l l r r r@{}}
-  \arrayrulecolor{navy}%
-  {\color{notegray}Competition} & {\color{notegray}Metric} &
-    {\color{notegray}my-agent} & {\color{notegray}NVIDIA} &
-    {\color{notegray}AIDE}\\
-  \specialrule{0.74mm}{1mm}{1mm}%
-  \arrayrulecolor{ruleline}%
-  us-patent (NLP) & Pearson $r$ $\uparrow$ &
-    \kb{0.86658} & 0.86160 & 0.65821\\ \specialrule{0.37mm}{0.8mm}{0.8mm}
-  ventilator (time series) & MAE $\downarrow$ &
-    \kb{0.16525} & 0.40093 & 0.34591\\ \specialrule{0.37mm}{0.8mm}{0.8mm}
-  SIIM-ISIC (imaging) & AUC $\uparrow$ &
-    \kb{0.93529} & 0.89822 & 0.88579\\ \specialrule{0.37mm}{0.8mm}{0.8mm}
+\setlength{\heavyrulewidth}{1.1mm}\setlength{\lightrulewidth}{0.55mm}%
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+\textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
+\midrule
+us-patent (NLP) & Pearson $r$ $\uparrow$ & \kb{0.86658} & 0.86160 & 0.65821\\
+ventilator (time series) & MAE $\downarrow$ & \kb{0.16525} & 0.40093 & 0.34591\\
+SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
+\bottomrule
 \end{tabular}\par}
 
 % ---- 4 · Advantages & Difficulties ----------------------------------------
