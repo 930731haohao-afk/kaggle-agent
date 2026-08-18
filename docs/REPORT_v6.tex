@@ -369,7 +369,7 @@ variance term remains unmeasured (Section~\ref{sec:future}).
 \subsection{Three-Way Capability Comparison (Raw Scores)}
 \label{sec:exp1}
 
-\paragraph{Goal and procedure.} Measure the absolute performance of the three methods on the same set of competitions. Each side independently produces a submission, scored on Kaggle via late submission for public and private scores and a percentile rank (PR). The AIDE and NVIDIA columns of Table~\ref{tab:bench} are those frozen leaderboard scores. my-agent's lanes hold no credentials, so nothing in a lane ever touches the leaderboard: each lane freezes a \path{submission.csv}, and scoring is a separate credentialed operator step (\path{score_lane_submissions.py}; dry-run by default, real submission behind an explicit flag), after which \path{build_rerun_three_way.py} places the my-agent column against the yardsticks under the paired test of Section~\ref{sec:exp2}. That operator step ran on 2026-08-18 for the 16 completed lanes, and their real public/private scores fill the LB column of Table~\ref{tab:bench}; the four unfinished lanes and all my-agent percentile ranks (which require a leaderboard-snapshot pull) remain TBD. The local CV column reports each lane's own honest out-of-fold estimate, which must not be read as a leaderboard proxy (s3e19's pooled OOF SMAPE of 6.71 sits against a realized lane score of 49.41). Per-competition specifications for every agent are attached (Appendix~\ref{app:specs}).
+\paragraph{Goal and procedure.} Measure the absolute performance of the three methods on the same set of competitions. Each side independently produces a submission, scored on Kaggle via late submission for public and private scores and a percentile rank (PR). The AIDE and NVIDIA columns of Table~\ref{tab:bench} are those frozen leaderboard scores. my-agent's lanes hold no credentials, so nothing in a lane ever touches the leaderboard: each lane freezes a \path{submission.csv}, and scoring is a separate credentialed operator step (\path{score_lane_submissions.py}; dry-run by default, real submission behind an explicit flag), after which \path{build_rerun_three_way.py} places the my-agent column against the yardsticks under the paired test of Section~\ref{sec:exp2}. That operator step ran on 2026-08-18 for the 16 completed lanes, and their real public/private scores fill the LB column of Table~\ref{tab:bench}; the four unfinished lanes and all my-agent percentile ranks (which require a leaderboard-snapshot pull) remain TBD. Each lane's own out-of-fold estimate is quoted separately in Table~\ref{tab:cv}, and must not be read as a leaderboard proxy (s3e19's pooled OOF SMAPE of 6.71 sits against a realized lane score of 49.41). Per-competition specifications for every agent are attached (Appendix~\ref{app:specs}).
 
 \begin{table}[htbp]
 \centering\small
@@ -406,42 +406,42 @@ variance term remains unmeasured (Section~\ref{sec:future}).
 \begin{table}[htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{3pt}
-\caption{The 20-competition benchmark, state as of 2026-08-18. All leaderboard cells are
-public/private scores; \textbf{bold} marks the best \emph{private} score of the three
-(raw, direction-aware; the paired-test verdicts, which this raw reading does not replace,
-are in Table~\ref{tab:winrates}). my-agent's local CV (OOF) is each lane's own honest
-out-of-fold estimate, not leaderboard-validated; its LB column comes from the credentialed
-operator scoring step of 2026-08-18, and its percentile ranks await a leaderboard-snapshot
+\caption{The 20-competition benchmark, state as of 2026-08-18. All cells are
+public/private leaderboard scores; \textbf{bold} marks the best \emph{private} score of the
+three (raw, direction-aware; the paired-test verdicts, which this raw reading does not
+replace, are in Table~\ref{tab:winrates}). my-agent's column comes from the credentialed
+operator scoring step of 2026-08-18; its percentile ranks await a leaderboard-snapshot
 pull. NVIDIA and AIDE cells are frozen leaderboard scores with percentile rank (PR) in
 parentheses. Lane status: 16 of 20 lanes complete and scored (${\sim}19$ hours of lane
-time); s6e2 running; tps-aug/jan/sep-2022 queued (TBD rows, not bolded).}
+time); s6e2 running; tps-aug/jan/sep-2022 queued (TBD rows, not bolded). Each lane's own
+local CV estimate is quoted separately in Table~\ref{tab:cv}.}
 \label{tab:bench}
-\begin{tabular}{@{}rllrrrr@{}}
+\begin{tabular}{@{}rllrrr@{}}
 \toprule
-\# & \textbf{Competition} & \textbf{Metric} & \textbf{Local CV (OOF)} & \textbf{my-agent LB (pub/priv)} & \textbf{NVIDIA LB (PR)} & \textbf{AIDE LB (PR)} \\
+\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent LB (pub/priv)} & \textbf{NVIDIA LB (PR)} & \textbf{AIDE LB (PR)} \\
 \midrule
-1 & s3e1 & RMSE \dn & 0.548862 & 0.55715/\textbf{0.55275} & 0.55332/0.55550 (93.2) & 0.55899/0.55552 (81.0) \\
-2 & s3e3 & ROC-AUC \up & 0.841605 & 0.89449/0.87157 & 0.93526/\textbf{0.89537} (66.8) & 0.88484/0.86863 (26.4) \\
-3 & s3e5 & QWK \up & 0.571980 & 0.57041/0.57223 & 0.57515/0.56974 (75.7) & 0.59362/\textbf{0.58138} (79.8) \\
-4 & s3e7 & ROC-AUC \up & 0.901769 & 0.91127/0.90441 & 0.91230/\textbf{0.90458} (78.1) & 0.90934/0.90109 (67.1) \\
-5 & s3e9 & RMSE \dn & 12.082282 & 11.84750/12.33192 & 11.83399/\textbf{12.22913} (59.1) & 11.86657/12.30667 (44.5) \\
-6 & s3e11$^{a}$ & RMSLE \dn & 0.292886 & 0.29309/\textbf{0.29368} & 0.29559/0.29624 (66.6) & 0.29389/0.29445 (73.3) \\
-7 & s3e14 & MAE \dn & 340.95936 & 343.43434/333.18611 & 338.36524/\textbf{330.71616} (89.2) & 342.44918/332.31556 (71.2) \\
-8 & s3e16 & MAE \dn & 1.334958 & 1.33738/\textbf{1.33822} & 1.33566/1.34001 (96.4) & 1.33920/1.34224 (91.4) \\
-9 & s3e19$^{b}$ & SMAPE \dn & 6.70585 & 49.11872/49.40878 & 47.52145/\textbf{48.26558} (41.4) & 48.39715/48.34131 (40.1) \\
-10 & s4e11 & Accuracy \up & 0.940810 & 0.94195/\textbf{0.94107} & 0.94136/0.94076 (52.8) & 0.94184/0.94056 (62.1) \\
-11 & s5e10$^{c}$ & RMSE \dn & 0.055971 & 0.05554/\textbf{0.05576} & 0.05562/0.05588 (59.4) & 0.05555/0.05579 (78.9) \\
-12 & s6e1$^{d}$ & Error \dn & 0.787400$^{d}$ & 8.68844/\textbf{8.71516} & 8.70480/8.73239 (69.5) & 8.69449/8.72191 (74.8) \\
-13 & s6e2$^{e}$ & ROC-AUC \up & TBD & TBD & 0.95348/0.95508 (63.0) & 0.95364/0.95516 (76.5) \\
-14 & afsis & MCRMSE \dn & 0.470503 & 0.41902/\textbf{0.48917} & 0.61276/0.69855 (18.8) & 0.45636/0.49861 (45.6) \\
-15 & cat-in-the-dat & ROC-AUC \up & 0.803272 & 0.80800/\textbf{0.80243} & 0.77641/0.77084 (32.6) & 0.80790/0.80217 (70.3) \\
-16 & conway$^{g}$ & MAE \dn & 0.106688 & 0.10313/\textbf{0.10414} & 0.11094/0.11189 (96.5) & 0.10960/0.11065 (97.9) \\
-17 & tps-aug-2022 & ROC-AUC \up & TBD & TBD & 0.57920/0.58730 (43.0) & 0.58479/0.59106 (60.5) \\
-18 & tps-jan-2022 & SMAPE \dn & TBD & TBD & 4.43958/4.63651 (76.4) & 10.11598/10.66638 (28.9) \\
-19 & s5e1 & MAPE \dn & 5.84\%$^{f}$ & 0.09076/\textbf{0.08401} & 0.05726/0.14594 (69.3) & 0.12573/0.17917 (48.1) \\
-20 & tps-sep-2022 & SMAPE \dn & TBD & TBD & 4.77458/5.48351 (80.3) & 5.78998/9.72095 (48.3) \\
+1 & s3e1 & RMSE \dn & 0.55715/\textbf{0.55275} & 0.55332/0.55550 (93.2) & 0.55899/0.55552 (81.0) \\
+2 & s3e3 & ROC-AUC \up & 0.89449/0.87157 & 0.93526/\textbf{0.89537} (66.8) & 0.88484/0.86863 (26.4) \\
+3 & s3e5 & QWK \up & 0.57041/0.57223 & 0.57515/0.56974 (75.7) & 0.59362/\textbf{0.58138} (79.8) \\
+4 & s3e7 & ROC-AUC \up & 0.91127/0.90441 & 0.91230/\textbf{0.90458} (78.1) & 0.90934/0.90109 (67.1) \\
+5 & s3e9 & RMSE \dn & 11.84750/12.33192 & 11.83399/\textbf{12.22913} (59.1) & 11.86657/12.30667 (44.5) \\
+6 & s3e11$^{a}$ & RMSLE \dn & 0.29309/\textbf{0.29368} & 0.29559/0.29624 (66.6) & 0.29389/0.29445 (73.3) \\
+7 & s3e14 & MAE \dn & 343.43434/333.18611 & 338.36524/\textbf{330.71616} (89.2) & 342.44918/332.31556 (71.2) \\
+8 & s3e16 & MAE \dn & 1.33738/\textbf{1.33822} & 1.33566/1.34001 (96.4) & 1.33920/1.34224 (91.4) \\
+9 & s3e19$^{b}$ & SMAPE \dn & 49.11872/49.40878 & 47.52145/\textbf{48.26558} (41.4) & 48.39715/48.34131 (40.1) \\
+10 & s4e11 & Accuracy \up & 0.94195/\textbf{0.94107} & 0.94136/0.94076 (52.8) & 0.94184/0.94056 (62.1) \\
+11 & s5e10$^{c}$ & RMSE \dn & 0.05554/\textbf{0.05576} & 0.05562/0.05588 (59.4) & 0.05555/0.05579 (78.9) \\
+12 & s6e1$^{d}$ & Error \dn & 8.68844/\textbf{8.71516} & 8.70480/8.73239 (69.5) & 8.69449/8.72191 (74.8) \\
+13 & s6e2$^{e}$ & ROC-AUC \up & TBD & 0.95348/0.95508 (63.0) & 0.95364/0.95516 (76.5) \\
+14 & afsis & MCRMSE \dn & 0.41902/\textbf{0.48917} & 0.61276/0.69855 (18.8) & 0.45636/0.49861 (45.6) \\
+15 & cat-in-the-dat & ROC-AUC \up & 0.80800/\textbf{0.80243} & 0.77641/0.77084 (32.6) & 0.80790/0.80217 (70.3) \\
+16 & conway$^{f}$ & MAE \dn & 0.10313/\textbf{0.10414} & 0.11094/0.11189 (96.5) & 0.10960/0.11065 (97.9) \\
+17 & tps-aug-2022 & ROC-AUC \up & TBD & 0.57920/0.58730 (43.0) & 0.58479/0.59106 (60.5) \\
+18 & tps-jan-2022 & SMAPE \dn & TBD & 4.43958/4.63651 (76.4) & 10.11598/10.66638 (28.9) \\
+19 & s5e1 & MAPE \dn & 0.09076/\textbf{0.08401} & 0.05726/0.14594 (69.3) & 0.12573/0.17917 (48.1) \\
+20 & tps-sep-2022 & SMAPE \dn & TBD & 4.77458/5.48351 (80.3) & 5.78998/9.72095 (48.3) \\
 \midrule
-\multicolumn{4}{@{}l}{Median PR (range)} & pending snapshot & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) \\
+\multicolumn{3}{@{}l}{Median PR (range)} & pending snapshot & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) \\
 \bottomrule
 \end{tabular}
 
@@ -450,10 +450,40 @@ time); s6e2 running; tps-aug/jan/sep-2022 queued (TBD rows, not bolded).}
 $^{a}$~First attempt exited without a submission; completed 08-17.\quad
 $^{b}$~Clean re-run 08-17; first attempt discarded by the transcript audit (Section~\ref{sec:rerun}).\quad
 $^{c}$~Audit incident resolved, score accepted (Section~\ref{sec:rerun}).\quad
-$^{d}$~Completed and audit-accepted 08-17. The lane's local metric is $R^2$ (maximize; pooled OOF 0.787400), not the leaderboard's error metric, so this cell is not comparable in scale or direction to the LB columns.\quad
+$^{d}$~Completed and audit-accepted 08-17.\quad
 $^{e}$~Second attempt, launched 08-18; the first attempt exited without a submission.\quad
-$^{f}$~The lane's cross-arm blend weights and global scale are fitted on the same OOF rows they are scored on, so its 5.84\% is optimistic relative to a held-out estimate --- the lane's own summary records this caveat.\quad
-$^{g}$~The scoring tool's structural validator false-blocked conway's file (sample-file naming); the operator submitted the identical file (same SHA-256) manually via the Kaggle CLI.
+$^{f}$~The scoring tool's structural validator false-blocked conway's file (sample-file naming); the operator submitted the identical file (same SHA-256) manually via the Kaggle CLI.
+\end{table}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Each benchmark lane's own local CV (OOF) estimate --- the lane's \emph{internal}
+progress signal only. These numbers are never comparable across agents or to
+Table~\ref{tab:bench}'s leaderboard scores (each lane chooses its own split scheme, and two
+lanes score on different metrics than their leaderboard); they are quoted so every lane's
+self-assessment is on record.}
+\label{tab:cv}
+\begin{tabular}{@{}lr@{\hspace{2.2em}}lr@{\hspace{2.2em}}lr@{}}
+\toprule
+\textbf{Comp.} & \textbf{Local CV} & \textbf{Comp.} & \textbf{Local CV} & \textbf{Comp.} & \textbf{Local CV} \\
+\midrule
+s3e1 & 0.548862 & s3e14 & 340.95936 & afsis & 0.470503 \\
+s3e3 & 0.841605 & s3e16 & 1.334958 & cat-in-the-dat & 0.803272 \\
+s3e5 & 0.571980 & s3e19 & 6.70585 & conway & 0.106688 \\
+s3e7 & 0.901769 & s4e11 & 0.940810 & tps-aug-2022 & TBD \\
+s3e9 & 12.082282 & s5e10 & 0.055971 & tps-jan-2022 & TBD \\
+s3e11 & 0.292886 & s6e1 & 0.787400$^{a}$ & s5e1 & 5.84\%$^{b}$ \\
+s6e2 & TBD & tps-sep-2022 & TBD & & \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\raggedright\footnotesize
+$^{a}$~The lane's local metric is $R^2$ (maximize), not the leaderboard's RMSE, so this value
+is not comparable in scale or direction to its leaderboard score.\quad
+$^{b}$~The lane's cross-arm blend weights and global scale are fitted on the same OOF rows
+they are scored on, so its 5.84\% is optimistic relative to a held-out estimate --- the
+lane's own summary records this caveat.
 \end{table}
 
 PR is the share of that competition's final private standings the submission would beat (a would-be rank $r$ among $N$ teams gives $\mathrm{PR}=100\,(N-r)/N$, against the frozen final leaderboard) --- an \emph{absolute} capability reference (``where would this agent have placed had it entered?''), separate from the relative ordering among the three.
