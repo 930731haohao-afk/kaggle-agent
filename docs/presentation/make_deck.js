@@ -295,7 +295,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
 // ================================================= 5 WHERE IT FALLS SHORT ---
 {
   const s = pres.addSlide();
-  head(s, "5 · AI's blind spots");
+  head(s, "5 · Weaknesses of AI-heavy research");
 
   const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
 
