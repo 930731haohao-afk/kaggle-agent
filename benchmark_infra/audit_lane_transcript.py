@@ -54,12 +54,31 @@ REPO = os.path.dirname(HERE)
 # run needs package resolution (the lint gate is `uv run --with ruff`), and PyPI cannot answer
 # "what did this competition score". Everything else that opens a socket is reported.
 NET_TOOLS = {"WebFetch", "WebSearch"}
+# `(?![\w-])` not `\b`: the skill's submission reference tells every lane to `ls` for
+# `.claude/skills/kaggle-safe-submit/`, and `\b` treats the hyphen as a boundary — so the
+# path name read as an invocation of the kaggle CLI. Four lanes (s3e19 rerun, s6e1, ...)
+# were blocked on that string alone, each costing an operator transcript scan to clear.
+# A hyphen or word character after the tool name means it is a different token.
 NET_CMD = re.compile(
     r"(?:^|[\s;|&(])(curl|wget|nc|ncat|telnet|ssh|scp|rsync|git\s+clone|git\s+fetch|"
-    r"git\s+pull|kaggle)\b")
+    r"git\s+pull|kaggle)(?![\w-])")
 NET_PY = re.compile(r"\b(requests\.(get|post)|urllib\.request|urlopen|httpx\.|aiohttp)\b")
-# `uv`/`pip` lines are dropped before NET_CMD runs; this is the exception list.
-NET_EXEMPT = re.compile(r"^\s*(uv|uvx|pip|pip3|python[0-9.]*\s+-m\s+pip)\b")
+# Package-management lines are dropped before NET_CMD runs; this is the exception list.
+#
+# It used to exempt any line starting with `uv`, which every lane's commands do — `uv run`
+# is how the run root executes Python at all. That exempted the payload as well as the
+# resolver: `uv run kaggle competitions leaderboard -c <comp>` starts with `uv`, so the whole
+# line was dropped and the one command the detector exists to catch was never examined.
+# Now only the resolver verbs are dropped; `uv run` keeps its line, minus the runner prefix.
+NET_EXEMPT = re.compile(
+    r"^\s*(uv\s+(add|remove|sync|lock|export|tree|venv|python|pip)|pip3?\s|"
+    r"python[0-9.]*\s+-m\s+pip)\b")
+# Stripped so the command being RUN is what NET_CMD sees: `uv run --with ruff==0.16.1 ruff`
+# must present as `ruff`, and `uv run kaggle ...` must present as `kaggle ...`. `uvx` is a
+# runner too — `uvx kaggle competitions leaderboard` fetches the CLI from PyPI and then runs
+# it against Kaggle, so it is unwrapped rather than exempted.
+UV_RUN_PREFIX = re.compile(
+    r"^\s*(?:uv\s+run|uvx)\s+(?:--with[= ]\S+\s+|--python[= ]\S+\s+|--from[= ]\S+\s+|-\S+\s+)*")
 
 # The library's raw files.
 #
@@ -180,8 +199,13 @@ def spans(path: str) -> tuple[list[dict], dict]:
 
 
 def _strip_exempt_cmds(text: str) -> str:
-    """Drop uv/pip lines before looking for network commands."""
-    return "\n".join(ln for ln in text.splitlines() if not NET_EXEMPT.match(ln))
+    """Drop package-resolution lines, and unwrap `uv run` so the wrapped command is seen."""
+    out = []
+    for ln in text.splitlines():
+        if NET_EXEMPT.match(ln):
+            continue
+        out.append(UV_RUN_PREFIX.sub("", ln))
+    return "\n".join(out)
 
 
 def audit_one(path: str, comp: str, root: str, slugs: list[str]) -> dict:

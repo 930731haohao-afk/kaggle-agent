@@ -162,6 +162,28 @@ print(' '.join(q.cache_dirs_for('$RUN_ROOT', '$LANE_COMP')))" 2>/dev/null)
   done
 fi
 
+# THE EXPERIENCE LIBRARY IS READ-ONLY TO A LANE, ENFORCED BY THE KERNEL.
+#
+# The whole run root is --bind (writable) because a lane must write its own workspace, so
+# knowledge/ was writable too, and the skill tells every lane to "write validated new
+# insights back through the library tools". No such write tool exists in this root, so lanes
+# wrote their own: four of the 20 (s5e10, aug-2022, sep-2022, jan-2022) generated a
+# library_writeback.py that edited knowledge/knowledge_base.json directly, appending their
+# OWN competition's scores as evidence items. That is the poison-the-next-lane channel in its
+# purest form, and on 08-18 it fired: aug-2022 wrote at 15:57, jan-2022 started at 15:59 and
+# its Stage 0.5 read served the new entries back. Detection is after the fact -- the audit
+# reports it, but the next lane has already read it -- so the fix is prevention.
+#
+# --ro-bind over the writable root: bwrap applies mounts left to right, so this one wins.
+# A lane can still READ the library through query_library.py (which filters self-citations);
+# it simply cannot modify what the next lane will read. Insights go to the workspace as
+# insights_for_library.json, which is the route afsis took unprompted and the operator
+# reviews outside the run.
+library_ro=()
+if [ -d "$RUN_ROOT/knowledge" ]; then
+  library_ro=(--ro-bind "$RUN_ROOT/knowledge" "$RUN_ROOT/knowledge")
+fi
+
 # $HOME IS AN ALLOWLIST, NOT A DENY LIST.
 #
 # It used to be four named directories blanked under a blanket --ro-bind / /: ~/.kaggle,
@@ -241,6 +263,7 @@ exec bwrap \
   --ro-bind "$HOME/.claude/.credentials.json" "$HOME/.claude/.credentials.json" \
   --bind "$RUN_ROOT" "$RUN_ROOT" \
   "${comp_isolation[@]}" \
+  "${library_ro[@]}" \
   --bind "$LANE_TRANSCRIPTS" "$HOME/.claude/projects" \
   --setenv MPLCONFIGDIR "$RUN_ROOT/.mplconfig" \
   --setenv UV_NO_SYNC 1 \

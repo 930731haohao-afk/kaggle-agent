@@ -169,6 +169,25 @@ def _match(rows: list[dict], prefix: str) -> dict | None:
     return None
 
 
+def _sample_path(root: str, comp: str) -> str:
+    """The competition's sample submission, whatever Kaggle happened to call it.
+
+    `sample_submission.csv` is the modern name; competitions from the 2010s ship
+    `sampleSubmission.csv` (conway-s-reverse-game-of-life does). Hardcoding the modern
+    name made the validator raise FileNotFoundError, which the caller books as
+    "BLOCKED — structural" — a scored, valid submission reported as a broken one, and the
+    only signal distinguishing that from a real structural failure is a traceback the
+    caller prints but does not read. Returns the modern name when neither exists so the
+    error message names the file the operator expects.
+    """
+    data = os.path.join(root, "competitions", comp, "data")
+    for name in ("sample_submission.csv", "sampleSubmission.csv", "sample_submission.csv.zip"):
+        p = os.path.join(data, name)
+        if os.path.isfile(p):
+            return p
+    return os.path.join(data, "sample_submission.csv")
+
+
 def _validate(sub_path: str, sample_path: str, allow_suspicious: str | None) -> tuple[int, str]:
     """Run the skill's validator exactly as the skill does: rc 0 pass, rc 1 structural
     (never overridable), rc 2 suspicious (waivable only by the operator's own written
@@ -259,7 +278,7 @@ def main(argv: list[str]) -> int:
         n_would, n_missing, n_blocked = 0, 0, 0
         for comp in comps:
             sub = os.path.join(root, "competitions", comp, "submission.csv")
-            sample = os.path.join(root, "competitions", comp, "data", "sample_submission.csv")
+            sample = _sample_path(root, comp)
             if not os.path.isfile(sub):
                 n_missing += 1
                 print(f"{comp}: MISSING — no submission.csv at {sub}")
@@ -318,7 +337,7 @@ def main(argv: list[str]) -> int:
         prefix = f"{MSG_PREFIX} {comp}"
         message = f"{prefix}, {today}"
         sub = os.path.join(root, "competitions", comp, "submission.csv")
-        sample = os.path.join(root, "competitions", comp, "data", "sample_submission.csv")
+        sample = _sample_path(root, comp)
         base = {"comp": comp, "file": sub, "sha256": "", "message": message,
                 "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "status": "", "public": "", "private": "", "note": ""}
