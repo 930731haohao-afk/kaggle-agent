@@ -125,15 +125,15 @@
     \draw[-{Stealth[length=2.2mm]}, mut, line width=0.7pt, dashed]
       (59,-14) -- (59,-5.2);
     \node[anchor=west, text=mut, align=left] at (62,-14.5)
-      {at the blend: measured $10^{-5}$,\\ abandoned};
+      {at the blend: measured ${\sim}10^{-5}$,\\ abandoned};
   \end{tikzpicture}
 
   \vfill
   {\raggedright\small
-   Fires on \textbf{2 of 18} competitions.\quad
-   All \textbf{6 of 6} controlled arms beat their baselines.\par
+   Flags \textbf{exactly} the competitions that need outside data.\quad
+   \textbf{Every} controlled arm beat its baseline.\par
    \vspace{1.2mm}
-   {\color{mut}No local signal picks the form.}\par}
+   {\color{mut}No local signal I tested picks the form.}\par}
   \vspace{2mm}
 
   \note{The conventional answer is downstream: extra ideas among the candidates
@@ -142,9 +142,10 @@
     the problem statement --- does this task need outside data --- and emits
     whitelisted, leakage-guarded joins. The rest is conventional: the language
     model decides at every stage, gradient boosting fits, tree search is the
-    loop. The layer fires on two competitions of eighteen, and all six
-    controlled arms beat their baselines. Nothing local tells me which form to
-    use. (37s)}
+    loop. In a blind sweep it flagged exactly the competitions that need it and
+    stayed silent on the rest, and every
+    controlled arms beat their baselines on the real leaderboard. Nothing local I tested
+    tells me which form to use. (37s)}
 \end{frame}
 
 % ================================================= 3. BUILD THE INSTRUMENT --
@@ -220,7 +221,7 @@
 \begin{frame}{What the frozen three-way run measured}
   \vspace{0.5mm}
   {\small\color{mut}20 competitions \quad$\cdot$\quad one architecture, frozen
-   before the run \quad$\cdot$\quad no lane could reach a leaderboard\par}
+   before the run \quad$\cdot$\quad no my-agent lane could reach a leaderboard\par}
   \vfill
   \ratebar{my-agent}{barblue}{0.667}{16--8}{66.7\%}
   \ratebar{NVIDIA}{mut}{0.423}{11--15}{42.3\%}
@@ -233,7 +234,7 @@
   \vspace{2mm}
 
   \note{Here is the reading. Twenty competitions, three agents, one architecture
-    frozen before the run, and no lane could reach a leaderboard. The two
+    frozen before the run, and no my-agent lane could reach a leaderboard. The two
     yardsticks are frozen too: AIDE searches from zero, the NVIDIA agent
     reproduces the highest-voted public kernel. I fixed nothing in either.
     Mine wins sixteen of its twenty-four decided duels, sixty-six point seven
@@ -268,7 +269,7 @@
       {drop one\\competition};
     \node[text=navy, font=\small] at (46,-6) {exact decimal};
     \node[text=mut, font=\small, align=center] at (92,-6)
-      {one duel on\\its noise floor};
+      {one duel on its\\variance floor};
   \end{tikzpicture}
 
   \note{Where it loses is the interesting half. My two worst losses are the

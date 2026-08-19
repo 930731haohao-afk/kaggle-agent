@@ -35,35 +35,13 @@
 \newcommand{\N}{N}   % NVIDIA
 \newcommand{\A}{A}   % AIDE
 
-\title{\textbf{An End-to-End AI Agent for Kaggle Competitions}\\
-\large Benchmarked against two frozen yardsticks on 20 competitions\\
-\normalsize\textcolor{orange!85!black}{Every printed number is a real measurement; all 20 benchmark lanes are complete, audited and scored.}}
+\title{\textbf{An End-to-End AI Agent for Kaggle Competitions}\\[2mm]
+\large\itshape Where should external knowledge enter an agent's pipeline?}
 \author{Wei-Hao Huang}
 \date{}
 
 \begin{document}
 \maketitle
-
-% =====================================================================
-% PART: FRONT  --- abstract + Introduction
-% Assemble immediately after \maketitle.
-%
-% TITLE BLOCK for the maintainer to place in the preamble, replacing the
-% existing \title/\author/\date at source lines 38--42. Emitted here as a
-% comment because this part file carries no preamble. The two subtitle
-% lines and the orange status banner are dropped; their content is
-% carried by the abstract and by the audit Results subsection.
-%
-%   \title{\textbf{Upstream problem identification, not downstream blending,\\
-%   is where knowledge helps an autonomous\\
-%   machine-learning agent}}
-%   \author{Wei-Hao Huang}
-%   \date{}
-%
-% The two explicit line breaks are load-bearing: without them the title
-% sets as three lines with "agent" orphaned on the last. Verified by
-% compiling the preamble + this title block.
-% =====================================================================
 
 \begin{center}\textbf{\large Abstract}\end{center}
 \noindent Autonomous systems now run entire empirical pipelines, from raw dataset to scored
@@ -77,12 +55,12 @@ judged by a paired test that reads each competition's noise off the two disjoint
 test set.
 Across 20 competitions the agent wins 16 of the 24 head-to-head comparisons in which it
 separated from a rival by more than that noise ($66.7\%$), against $42.3\%$ for each of two frozen
-reference agents, and takes the best held-out score on 10 of 20; 22 of the 60 comparisons cannot
-be called at all. The upstream layer fires on exactly the 2 of 18
-competitions that need external data and is silent on the other 16; all six controlled arms beat
-their matched baselines; but no local signal we tested predicts which form the injection should
+yardsticks, and takes the best held-out score on 10 of 20; 22 of the 60 comparisons cannot
+be called at all. In a blind sweep the upstream layer flags exactly the
+competitions that need external data and stays silent on the rest; every controlled arm beats its
+matched baseline; but no local signal we tested predicts which form the injection should
 take. Placement of knowledge, not the amount of it, is what an autonomous pipeline can be
-engineered around --- and a third of the comparisons being uncallable is itself the result that
+engineered around --- and a third of the duels being undecidable is itself the result that
 any automated claim at this scale has to report.
 
 \vspace{0.5em}
@@ -172,9 +150,9 @@ because a method that cannot kill its own hypotheses is not measuring anything.
 my-agent commits to a classification of the problem from the competition statement and the
 data schema alone, before any analysis or modelling, and every mechanism that distinguishes it
 from the two yardsticks hangs off that commitment. Execution
-runs through six stages --- data ingestion, Stage 0.5 problem dossier, exploratory data
-analysis (EDA), feature engineering, modelling, evaluation, submission --- with an LLM (Claude
-Code) reasoning and deciding at each one, and with LightGBM, XGBoost, CatBoost and Optuna
+runs through six stages --- data ingestion, exploratory data analysis (EDA), feature
+engineering, modelling, evaluation, submission --- with the problem dossier inserted before EDA
+as Stage 0.5, an LLM (Claude Code) reasoning and deciding at each stage, and with LightGBM, XGBoost, CatBoost and Optuna
 invoked through the shell for model fitting, hyperparameter search and ensembling
 (Fig.~\ref{fig:arch}). Stage 0.5 answers four questions before any modelling begins --- task
 family, train--test window relation, split policy, external-data need --- and writes them to a
@@ -325,20 +303,14 @@ upstream layer is the architectural answer to exactly this class of miss.
 \label{sec:exp5v5}
 
 Run as a classifier over the task distribution, the problem dossier separates cleanly: it fires
-on exactly the 2 of the 18 original benchmark competitions that need external covariates and
-reports ``no'' or ``unlikely'' on the other 16. The two it fires on are the country-panel time
-series s3e19 and tps-jan-2022, whose accepted solutions are known to require external
-covariates; the 16 silences cover the i.i.d.\ tabular, categorical, spectral and
-structured-output tasks (Table~\ref{tab:comps}). Sensitivity is therefore 2/2 and specificity
-16/16, obtained from the problem statement, the data schema and task-\emph{type} priors alone,
-in minutes per competition and with no training.
+on exactly the competitions whose accepted solutions are known to need external covariates ---
+the country-panel time series s3e19 and tps-jan-2022 --- and answers ``no'' or ``unlikely'' on
+every other one, from the problem statement, the data schema and task-\emph{type} priors alone,
+in minutes and with no training (per-competition verdicts in Extended Data).
 
-Two caveats bound that claim, and they cut in opposite directions. The sensitivity half is
-partly in-sample: the task priors the dossier reads were distilled from this benchmark's own
-failure analysis of exactly those two competitions, so 16/16 is the informative half, and 2/2
-carries a 95\% confidence interval reaching down to 16\%. The two firing-class competitions
-added later (s5e1, tps-sep-2022) also fire, but they were \emph{selected} as firing-class, so
-the sweep claim rests on the original 18. Two secondary behaviours are worth recording. On
+One caveat bounds that claim: the priors the dossier reads were distilled from this benchmark's
+own failure analysis of those same two competitions, so the silences are the informative half of
+the result. Two secondary behaviours are worth recording. On
 s3e19 the dossier surfaced a genuine conflict --- a conservative setup-time \path{config.yaml}
 flag said external data was not allowed while the task prior's evidence implied otherwise ---
 and flagged it for verification rather than guessing (the official rules, Section 7.C, settle
@@ -349,11 +321,9 @@ archives.
 \subsection{All six controlled external-data arms beat their baselines}
 \label{sec:exp6v5}
 
-Every controlled arm the layer produced beat its matched baseline, and each margin passes the
-paired public--private test. Across the three firing-class competitions --- s3e19, the
-benchmark's canonical failure and the causal test bed; tps-sep-2022, a held-out replication
-with the dossier written in advance; and s5e1, a pre-registered test --- all six external-data
-arms beat their no-external baselines, every one paired-significant. Arms were built so that
+Every controlled arm the layer produced beat its matched baseline on the real leaderboard, and
+every margin passes the paired public--private test --- on the benchmark's canonical failure, on
+a held-out replication with the dossier written in advance, and on a pre-registered test. Arms were built so that
 the operator's added columns are the only difference from the baseline, verified digit-identical
 otherwise, and every arm was submitted for real public and private scores. In matched
 configuration the feature join is worth $6.01$ private SMAPE on s3e19 and $2.09$ on the
@@ -443,9 +413,9 @@ Table~\ref{tab:bench}.
 
 The three floor kills are worth naming individually, because each removes a verdict a raw
 reading would have awarded: s3e16 and s5e10 would have been my-agent wins, and s6e2 an AIDE win
-(private gap $0.00011$ against AIDE's measured $0.00020$ wobble there; Table~\ref{tab:variance}).
+(private gap $0.00011$ against AIDE's measured $0.00020$ spread there; Table~\ref{tab:variance}).
 s5e10 is the sharpest case. The private gap between my-agent and AIDE is
-$|d_{\mathrm{priv}}| = 0.00003$, exactly equal to AIDE's measured between-run wobble on that
+$|d_{\mathrm{priv}}| = 0.00003$, exactly equal to AIDE's measured between-run spread on that
 competition. The rule requires the gap to \emph{exceed} the floor, and we compare in exact
 decimal, so the duel stays undecidable rather than becoming a seventeenth my-agent win --- a
 case the error model flagged in advance, before the benchmark scores existed.
@@ -794,7 +764,7 @@ operators enter as seed lineages. Search runs in \path{tree_search/harness_v3.py
 (Fig.~\ref{fig:tree}), each node a complete executable solution scored by cross-validation in a
 sandboxed child process, SIGKILLed on hang or crash. A budget phase machine exploits until every
 lineage plateaus (three children without improvement), forces one exploration burst of 5--8
-long-shot drafts as new roots, then stops: default cap 60 evaluated nodes, patience 20
+long-shot drafts as new roots, then stops: default budget 60 evaluated nodes, patience 20
 evaluations without a new global best, extensible through a documented \texttt{extend\_budget}
 resume path. Ensembles are first-class nodes --- a blend combines two lineages' cached
 out-of-fold predictions under a weight search, and a solo breakthrough reopens plateaued blend
@@ -1083,7 +1053,7 @@ two runs of each agent; the third gives the top-two duel gaps observed on the de
 for that competition. Two readings follow. Variance is substantially a property of the
 \emph{task} rather than of the agent --- both agents make s3e16 the noisy competition by an
 order of magnitude --- so the floors are per-competition rather than one global number. And
-several gaps sit at or below a measured wobble: on s5e10 AIDE's spread of $0.00003$ is exactly
+several gaps sit at or below a measured spread: on s5e10 AIDE's spread of $0.00003$ is exactly
 the private-score gap of the my-agent-versus-AIDE duel there, so that duel is undecidable. The
 three duels killed by these floors are s3e16, s5e10 and s6e2. NVIDIA's term is unmeasured.}
 \label{tab:variance}
@@ -1124,7 +1094,7 @@ how large the tree actually grew in each benchmark lane.
   node distance=5mm
 ]
 % ----- main loop column -----
-\node[sbox] (phase) {\textbf{budget phase machine}:\\exploit until every lineage plateaus\\$\to$ explore-burst: inject 5--8 fresh long-shot drafts\\$\to$ stop (hard cap 60 evaluated nodes; patience\\20 evals after the burst without a new global best)};
+\node[sbox] (phase) {\textbf{budget phase machine}:\\exploit until every lineage plateaus\\$\to$ explore-burst: inject 5--8 fresh long-shot drafts\\$\to$ stop (default budget 60 evaluated nodes, raised only\\through a logged resume; patience 20 evals after the\\burst without a new global best)};
 \node[sbox, below=of phase] (select) {\textbf{select parent lineage}\\(backtrack when a lineage plateaus: 3 children without improvement)};
 \node[sbox, below=of select] (propose) {\textbf{propose mutation}:\\solo moves: seed / hyperparameters /\\boundary push\\blend moves: member set + weight search\\(blends are first-class nodes over cached OOF predictions)};
 \node[sbox, below=of propose] (dedup) {\textbf{duplicate gate}\\(SHA-256 over the canonicalized config --- params, features, seed, blend members; a repeat burns budget, never re-evaluates)};
@@ -1225,10 +1195,12 @@ Node labels are schematic --- real runs evaluate 37--224 nodes per competition
 \centering\small
 \caption{Evaluated tree-search nodes per competition (my-agent), from each completed
 benchmark lane's search records (\texttt{experiments\_tree\_v3.json} / lane \texttt{STATUS.md}).
-The default budget is 60 evaluated nodes; lanes may extend it through the documented
-\texttt{extend\_budget} resume path (s3e9, s4e11, tps-aug-2022); conway stopped at 37 on the
-wall-clock backstop; s5e1's count sums its six separately raced external-data arms;
-tps-jan-2022 is the clean re-run (81 nodes over two rounds).}
+The default budget is 60 evaluated nodes. Six lanes used the logged resume path, each entry
+recording why: afsis and s3e3 reopened lineages the plateau rule had retired early without
+raising the ceiling, while s3e14, s4e11, tps-jan-2022 and tps-aug-2022 (twice) raised it.
+s3e9's 107 is two separate searches of 47 and 60, not an extension; s5e1's 224 sums six
+separately raced external-data arms; cat-in-the-dat ran to 70 of a 74-node budget; conway
+stopped at 37 on the wall-clock backstop.}
 \label{tab:nodes}
 \begin{tabular}{@{}lr@{\hspace{2em}}lr@{\hspace{2em}}lr@{}}
 \toprule

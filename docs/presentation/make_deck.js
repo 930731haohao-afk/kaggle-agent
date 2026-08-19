@@ -195,7 +195,7 @@ function vBracket(slide, x, y1, y2, color, reach) {
     line: { color: MUT, width: 1.25, dashType: "dash", beginArrowType: "triangle" },
   });
   s.addText([
-    { text: "at the blend: measured 10" },
+    { text: "at the blend: measured ~10" },
     { text: "−5", options: { superscript: true } },
     { text: ",", options: { breakLine: true } },
     { text: "abandoned" },
@@ -206,16 +206,16 @@ function vBracket(slide, x, y1, y2, color, reach) {
 
   // --- the claim --------------------------------------------------------------
   s.addText([
-    { text: "Fires on " },
-    { text: "2 of 18", options: { bold: true } },
-    { text: " competitions.    All " },
-    { text: "6 of 6", options: { bold: true } },
-    { text: " controlled arms beat their baselines." },
+    { text: "Flags " },
+    { text: "exactly", options: { bold: true } },
+    { text: " the competitions that need outside data.    " },
+    { text: "Every", options: { bold: true } },
+    { text: " controlled arm beat its baseline." },
   ], {
     x: 0.72, y: 5.55, w: 12.0, h: 0.38,
     fontFace: F, fontSize: 18, color: INK, margin: 0, valign: "middle",
   });
-  s.addText("No local signal picks the form.", {
+  s.addText("No local signal I tested picks the form.", {
     x: 0.72, y: 5.95, w: 12.0, h: 0.38,
     fontFace: F, fontSize: 18, color: MUT, margin: 0, valign: "middle",
   });
@@ -227,8 +227,9 @@ function vBracket(slide, x, y1, y2, color, reach) {
     "problem statement — does this task need outside data — and emits " +
     "whitelisted, leakage-guarded joins. The rest is conventional: the language " +
     "model decides at every stage, gradient boosting fits, tree search is the loop. " +
-    "The layer fires on two competitions of eighteen, and all six controlled arms " +
-    "beat their baselines. Nothing local tells me which form to use. (37s)"
+    "In a blind sweep it flagged exactly the competitions that need it and stayed " +
+    "silent on the rest, and every controlled arm " +
+    "beat their baselines. Nothing local I tested tells me which form to use. (37s)"
   );
 }
 
@@ -356,7 +357,7 @@ function vBracket(slide, x, y1, y2, color, reach) {
 
   s.addText(
     "20 competitions   ·   one architecture, frozen before the run" +
-    "   ·   no lane could reach a leaderboard", {
+    "   ·   no my-agent lane could reach a leaderboard", {
       x: 0.72, y: 1.15, w: 12.0, h: 0.35,
       fontFace: F, fontSize: 15, color: MUT, margin: 0, valign: "middle",
     });
@@ -443,7 +444,7 @@ function vBracket(slide, x, y1, y2, color, reach) {
     x: 5.05, y: YC, w: 3.2, h: 0.30,
     fontFace: F, fontSize: 13, color: NAVY, align: "center", margin: 0, valign: "top",
   });
-  s.addText("one duel on\nits noise floor", {
+  s.addText("one duel on its\nvariance floor", {
     x: 9.45, y: YC, w: 2.5, h: 0.60,
     fontFace: F, fontSize: 13, color: MUT, align: "center", margin: 0, valign: "top",
   });

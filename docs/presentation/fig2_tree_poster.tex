@@ -24,7 +24,7 @@
   node distance=6mm
 ]
 % ----- main loop spine (top -> bottom) -----
-\node[sbox] (phase) {\textbf{budget phase machine}\\exploit until every lineage plateaus\\$\to$ explore-burst: 5--8 fresh drafts\\$\to$ stop (cap 60 nodes; patience 20 after burst)};
+\node[sbox] (phase) {\textbf{budget phase machine}\\exploit until every lineage plateaus\\$\to$ explore-burst: 5--8 fresh drafts\\$\to$ stop (default budget 60 nodes, raised only through a\\logged resume; patience 20 after burst)};
 \node[sbox, below=of phase] (select) {\textbf{select parent lineage}\\backtrack when a lineage plateaus\\(3 children without improvement)};
 \node[sbox, below=of select] (propose) {\textbf{propose mutation}\\solo: seed / hyperparams /\\boundary push\\blend: members + weight search\\(first-class nodes over cached OOF)};
 \node[sbox, below=of propose] (dedup) {\textbf{duplicate gate}\\SHA-256 config hash;\\a repeat burns budget,\\never re-evaluates};

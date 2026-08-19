@@ -1,0 +1,146 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand*\HyPL@Entry[1]{}
+\citation{aide2025}
+\citation{aygun2026}
+\citation{nvidia2026}
+\HyPL@Entry{0<</S/D>>}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Methods}{2}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}my-agent: A Hybrid Kaggle Agent}{2}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Cross-competition experience library}{3}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Experiment records.}{3}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{External-data layer}{3}{section*.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Architecture of my-agent. The LLM drives every stage; modeling and evaluation iterate via tree search, invoking Auto-ML tools through the shell, while the experience library and experiment records close the evidence loop. Blue: the injection layer (Section\nobreakspace  {}\ref  {sec:v5}) --- the Stage 0.5 dossier emits typed operators that drive the external-data layer, whose data-level arms race against the no-external baseline.\relax }}{3}{figure.caption.4}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:arch}{{1}{3}{Architecture of my-agent. The LLM drives every stage; modeling and evaluation iterate via tree search, invoking Auto-ML tools through the shell, while the experience library and experiment records close the evidence loop. Blue: the injection layer (Section~\ref {sec:v5}) --- the Stage 0.5 dossier emits typed operators that drive the external-data layer, whose data-level arms race against the no-external baseline.\relax }{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Tree-search protocol.}{3}{section*.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The tree-search loop used in all my-agent runs of this report (22--80 nodes per competition). Each node is a complete, executable solution scored by local cross-validation; lineages are abandoned on plateau, and the budget phase machine forces one exploration burst before stopping. Blue: the injection layer's operator entry points (Section\nobreakspace  {}\ref  {sec:v5}) --- model-level operators seed starting nodes; data-level operators build separately raced arms.\relax }}{4}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:tree}{{2}{4}{The tree-search loop used in all my-agent runs of this report (22--80 nodes per competition). Each node is a complete, executable solution scored by local cross-validation; lineages are abandoned on plateau, and the budget phase machine forces one exploration burst before stopping. Blue: the injection layer's operator entry points (Section~\ref {sec:v5}) --- model-level operators seed starting nodes; data-level operators build separately raced arms.\relax }{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}The Injection Layer: Dossier, External Data, and the Typed Contract}{5}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:v5}{{2.2}{5}{The Injection Layer: Dossier, External Data, and the Typed Contract}{subsection.2.2}{}}
+\newlabel{sec:exp4}{{2.2}{5}{The failure-mode reading that motivated the layer}{section*.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{The failure-mode reading that motivated the layer.}{5}{section*.7}\protected@file@percent }
+\newlabel{sec:votes}{{2.2}{5}{The failure-mode reading that motivated the layer}{section*.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{Stage 0.5 --- problem dossier.}{5}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{External-data module.}{5}{section*.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Search integration.}{5}{section*.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{A typed contract between the two layers.}{5}{section*.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Two Reference Methods (Yardsticks)}{6}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Measurement Methodology}{6}{section.3}\protected@file@percent }
+\newlabel{sec:apparatus}{{3}{6}{Measurement Methodology}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Fairness Protocol and Execution Discipline}{6}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:fairness}{{3.1}{6}{Fairness Protocol and Execution Discipline}{subsection.3.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The four isolation conditions and what enforces each.\relax }}{6}{table.caption.12}\protected@file@percent }
+\newlabel{tab:fairness}{{1}{6}{The four isolation conditions and what enforces each.\relax }{table.caption.12}{}}
+\@writefile{toc}{\contentsline {paragraph}{Benchmark execution discipline.}{7}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}The Paired Significance Test}{7}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:exp2}{{3.2}{7}{The Paired Significance Test}{subsection.3.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Why an error model is needed at all.}{7}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{How --- the error scale comes from the data itself, not from assumptions.}{7}{section*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{A failed first attempt, worth recording.}{7}{section*.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The correct construction.}{7}{section*.17}\protected@file@percent }
+\newlabel{eq:sign}{{1}{7}{The correct construction}{equation.3.1}{}}
+\newlabel{eq:gap}{{2}{7}{The correct construction}{equation.3.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Statistical properties of the decision rule.}{7}{section*.18}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Empirical evidence for common drift (excerpt; development-lane submissions). Drift = private minus public score of the same submission. In seven competitions the mutual scatter is less than half the common shift.\relax }}{8}{table.caption.19}\protected@file@percent }
+\newlabel{tab:drift}{{2}{8}{Empirical evidence for common drift (excerpt; development-lane submissions). Drift = private minus public score of the same submission. In seven competitions the mutual scatter is less than half the common shift.\relax }{table.caption.19}{}}
+\@writefile{toc}{\contentsline {paragraph}{The second error term: between-run agent variance.}{8}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}The Three-Way Benchmark}{8}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Overview of Experimental Design}{8}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Evaluation set.}{8}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Execution conditions.}{8}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Three-Way Capability Comparison (Raw Scores)}{9}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:exp1}{{4.2}{9}{Three-Way Capability Comparison (Raw Scores)}{subsection.4.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Goal and procedure.}{9}{section*.23}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Competition descriptions. Tasks fall into two families: classification (binary, ordinal; 7 competitions) and prediction/regression (incl.\ time series and multi-target; 13 competitions).\relax }}{9}{table.caption.24}\protected@file@percent }
+\newlabel{tab:comps}{{3}{9}{Competition descriptions. Tasks fall into two families: classification (binary, ordinal; 7 competitions) and prediction/regression (incl.\ time series and multi-target; 13 competitions).\relax }{table.caption.24}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Execution and Audit of the Benchmark Run}{9}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:rerun}{{4.3}{9}{Execution and Audit of the Benchmark Run}{subsection.4.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces The 20-competition benchmark, state as of 2026-08-18. All cells are public/private leaderboard scores; \textbf  {bold} marks the best \emph  {private} score of the three (raw, direction-aware; the paired-test verdicts, which this raw reading does not replace, are in Table\nobreakspace  {}\ref  {tab:winrates}). my-agent's column comes from the credentialed operator scoring step of 2026-08-18; its percentile ranks await a leaderboard-snapshot pull. NVIDIA and AIDE cells are frozen leaderboard scores with percentile rank (PR) in parentheses. Lane status: 16 of 20 lanes complete and scored (${\sim }19$ hours of lane time); s6e2 running; tps-aug/jan/sep-2022 queued (TBD rows, not bolded). Right of the vertical rule, separated because it is \emph  {not comparable} to the leaderboard columns: each lane's own local CV (OOF) estimate, the lane's internal progress signal only (each lane chooses its own split scheme, and two lanes score on different metrics than their leaderboard).\relax }}{10}{table.caption.25}\protected@file@percent }
+\newlabel{tab:bench}{{4}{10}{The 20-competition benchmark, state as of 2026-08-18. All cells are public/private leaderboard scores; \textbf {bold} marks the best \emph {private} score of the three (raw, direction-aware; the paired-test verdicts, which this raw reading does not replace, are in Table~\ref {tab:winrates}). my-agent's column comes from the credentialed operator scoring step of 2026-08-18; its percentile ranks await a leaderboard-snapshot pull. NVIDIA and AIDE cells are frozen leaderboard scores with percentile rank (PR) in parentheses. Lane status: 16 of 20 lanes complete and scored (${\sim }19$ hours of lane time); s6e2 running; tps-aug/jan/sep-2022 queued (TBD rows, not bolded). Right of the vertical rule, separated because it is \emph {not comparable} to the leaderboard columns: each lane's own local CV (OOF) estimate, the lane's internal progress signal only (each lane chooses its own split scheme, and two lanes score on different metrics than their leaderboard).\relax }{table.caption.25}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Standing of the Three Agents Under the Paired Test}{11}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:winrates}{{4.4}{11}{Standing of the Three Agents Under the Paired Test}{subsection.4.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Standing under the paired test with per-competition variance floors, as of the 2026-08-18 scoring step: 52 of 60 duels adjudicated (34 decided, 18 undecidable), 8 pending the four unfinished lanes. Win rate excludes ties.\relax }}{11}{table.caption.26}\protected@file@percent }
+\newlabel{tab:winrates}{{5}{11}{Standing under the paired test with per-competition variance floors, as of the 2026-08-18 scoring step: 52 of 60 duels adjudicated (34 decided, 18 undecidable), 8 pending the four unfinished lanes. Win rate excludes ties.\relax }{table.caption.26}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}The Injection Layer: Controlled Experiments}{11}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Problem-Identification Sweep (Dossier Layer)}{11}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:exp5v5}{{5.1}{11}{Problem-Identification Sweep (Dossier Layer)}{subsection.5.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Design.}{11}{section*.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Result: perfect separation.}{12}{section*.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}What the Layer Delivers on the Real Leaderboard}{12}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:exp6v5}{{5.2}{12}{What the Layer Delivers on the Real Leaderboard}{subsection.5.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Design.}{12}{section*.29}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Effect.}{12}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The operating rule the experiments imposed.}{12}{section*.31}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{What the judgment layer proposes, and what actually consumes it.}{12}{section*.32}\protected@file@percent }
+\citation{mlebench}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Generalization: Mid-Complexity Three-Way}{13}{section.6}\protected@file@percent }
+\newlabel{sec:exp7run2}{{6}{13}{Generalization: Mid-Complexity Three-Way}{section.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{Design.}{13}{section*.33}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Scoring.}{13}{section*.34}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Mid-complexity three-way, offline-graded against the held-out private split. Bold = three-way best; $\dagger $ = above the frozen leaderboard's median.\relax }}{13}{table.caption.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Results.}{13}{table.caption.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Discussion}{13}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Contributions}{13}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Comparing the Three Methods}{14}{subsection.7.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Design comparison of the three methods.\relax }}{14}{table.caption.37}\protected@file@percent }
+\newlabel{tab:threeway}{{7}{14}{Design comparison of the three methods.\relax }{table.caption.37}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}A Ranking Is Not a Property of the Method, but of Method $\times $ Evaluation Set}{14}{subsection.7.3}\protected@file@percent }
+\newlabel{sec:reversal}{{7.3}{14}{A Ranking Is Not a Property of the Method, but of Method $\times $ Evaluation Set}{subsection.7.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Limitations of the Experimental Design}{15}{subsection.7.4}\protected@file@percent }
+\newlabel{sec:limitations}{{7.4}{15}{Limitations of the Experimental Design}{subsection.7.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5}Open Problems}{15}{subsection.7.5}\protected@file@percent }
+\newlabel{sec:future}{{7.5}{15}{Open Problems}{subsection.7.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Operator form cannot be selected from any local signal we have tested --- 0-for-3, with one selector killed by pre-registration.}{15}{section*.38}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The firing class is small.}{15}{section*.39}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The experience library's residual weak link is retrieval quality.}{15}{section*.40}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Smaller items.}{16}{section*.41}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Conclusion}{16}{section.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A}Experimental Procedure and Per-Competition Specification Reports}{16}{appendix.A}\protected@file@percent }
+\newlabel{app:specs}{{A}{16}{Experimental Procedure and Per-Competition Specification Reports}{appendix.A}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Per-Competition ML Specification Reports (Attached)}{16}{subsection.A.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Cross-Competition Rule: Split Strategy Is Determined by Task Type}{16}{subsection.A.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Validation-split policy by task type.\relax }}{17}{table.caption.42}\protected@file@percent }
+\newlabel{tab:splits}{{8}{17}{Validation-split policy by task type.\relax }{table.caption.42}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Cross-Competition Rule: DL-to-GBDT Field Mapping}{17}{subsection.A.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Mapping of deep-learning framework fields to their GBDT counterparts.\relax }}{17}{table.caption.43}\protected@file@percent }
+\newlabel{tab:dlgbdt}{{9}{17}{Mapping of deep-learning framework fields to their GBDT counterparts.\relax }{table.caption.43}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Execution Environment and Reproducibility}{17}{subsection.A.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Execution environment.\relax }}{17}{table.caption.44}\protected@file@percent }
+\newlabel{tab:env}{{10}{17}{Execution environment.\relax }{table.caption.44}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.5}Companion Documents}{18}{subsection.A.5}\protected@file@percent }
+\newlabel{app:coverage}{{A.5}{18}{Companion Documents}{subsection.A.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.6}Tree-Search Size per Competition (my-agent)}{18}{subsection.A.6}\protected@file@percent }
+\newlabel{app:treesize}{{A.6}{18}{Tree-Search Size per Competition (my-agent)}{subsection.A.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Tree-search node counts per competition (my-agent). The budget machine's default cap is 60 with per-competition overrides (afsis 80); plateaus stop several runs below 25. tps-sep-2022's lane finished on the linear protocol without entering tree search.\relax }}{18}{table.caption.45}\protected@file@percent }
+\newlabel{tab:nodes}{{11}{18}{Tree-search node counts per competition (my-agent). The budget machine's default cap is 60 with per-competition overrides (afsis 80); plateaus stop several runs below 25. tps-sep-2022's lane finished on the linear protocol without entering tree search.\relax }{table.caption.45}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Code and Skill Packaging}{18}{appendix.B}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}my-agent Skill Definition}{19}{subsection.B.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Skill definition files.\relax }}{19}{table.caption.46}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.2}Experiment Execution Scripts}{19}{subsection.B.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces Experiment execution scripts.\relax }}{19}{table.caption.47}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Data and Results}{20}{subsection.B.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces Data and result artifacts.\relax }}{20}{table.caption.48}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.4}Injection-Layer Components}{21}{subsection.B.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces Injection-layer components (all in the project repository).\relax }}{21}{table.caption.49}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.5}Minimal Steps to Reproduce This Study}{21}{subsection.B.5}\protected@file@percent }
+\bibcite{aygun2026}{1}
+\bibcite{aide2025}{2}
+\bibcite{nvidia2026}{3}
+\bibcite{mlebench}{4}
+\gdef \@abspage@last{22}
