@@ -248,63 +248,17 @@ function countbar(slide, y, label, color, frac, value, bold) {
   );
 }
 
-// =========================================== 4 ADVANTAGES & DIFFICULTIES -----
+// ============================================================== 4 LESSONS ---
 {
   const s = pres.addSlide();
-  head(s, "4 · Advantages & Difficulties");
-
-  const cell = { fontFace: F, fontSize: 15, color: INK, valign: "top", margin: [6, 6, 6, 6] };
-  const exp  = { fontFace: F, fontSize: 15, color: MUT, italic: true, valign: "top",
-                 margin: [6, 6, 6, 6] };
-
-  s.addTable([
-    [{ text: "Expected", options: { ...cell, bold: true, color: INK } },
-     { text: "Experienced", options: { ...cell, bold: true, color: INK } }],
-    [{ text: "The agent would quickly beat most humans.", options: { ...exp } },
-     { text: "It leads the standing on all 20 scored lanes, but its wins " +
-             "concentrate where no mature public solution exists.",
-       options: { ...cell } }],
-    [{ text: "One run and one score decide a winner.", options: { ...exp } },
-     { text: "Score noise leaves 22 of 60 duels undecidable; an explicit error " +
-             "model became mandatory.", options: { ...cell } }],
-    [{ text: "A shared experience library only ever helps.", options: { ...exp } },
-     { text: "One lane wrote its findings back two minutes before the next lane " +
-             "started; that lane read its neighbour's entries and was re-run clean.",
-       options: { ...cell } }],
-  ], {
-    x: 0.72, y: 1.20, w: 11.9, colW: [3.70, 8.20],
-    border: [{ type: "none" },
-             { type: "none" },
-             { type: "solid", color: "DDE1E6", pt: 1 },
-             { type: "none" }],
-    rowH: [0.45, 1.15, 1.00, 1.15],
-  });
-
-  s.addNotes(
-    "Three things I expected, and what actually happened. I expected the " +
-    "agent to beat most humans quickly: it does lead the standing, but its " +
-    "wins concentrate where no mature public solution exists — where one " +
-    "does, the reproduction agent beats it. I expected one run and one score " +
-    "to decide a winner: score noise leaves twenty-two of sixty duels " +
-    "uncallable, which is why the error model exists. And I expected a shared " +
-    "experience library to only ever help: one lane wrote its findings back two " +
-    "minutes before the next lane started, that lane read its neighbour's " +
-    "entries, and it had to be re-run clean. (43s)"
-  );
-}
-
-// ============================================================ 5 DISCUSSION ---
-{
-  const s = pres.addSlide();
-  head(s, "5 · Discussion");
+  head(s, "4 · Lessons from building it");
 
   const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
 
   s.addText(item([
     { text: "Put knowledge injection upstream.", options: { bold: true } },
-    { text: " At the blend stage it measured near-nothing and was abandoned; " +
-            "moved into problem identification it flags exactly the competitions " +
-            "that need external data." },
+    { text: " At the blend stage it measured near-nothing; moved into problem " +
+            "identification it flags exactly the competitions that need external data." },
   ]), { ...B, y: 1.20, h: 0.85 });
 
   s.addText(item([
@@ -319,13 +273,58 @@ function countbar(slide, y, label, color, frac, value, bold) {
     { text: " An architecture change invalidates every competition that ran " +
             "before it — start the benchmark over rather than mixing versions " +
             "in one table." },
-  ]), { ...B, y: 3.05, h: 0.85 });
+  ]), { ...B, y: 3.20, h: 0.85 });
 
   s.addText(item([
     { text: "Isolate mechanically, then audit the transcript", options: { bold: true } },
     { text: " — and audit the auditor: ours exempted every command starting " +
             "with uv, so the one command it existed to catch was never examined." },
-  ]), { ...B, y: 4.05, h: 0.85 });
+  ]), { ...B, y: 4.20, h: 0.85 });
+
+  s.addNotes(
+    "Four things I would tell anyone doing this. Put knowledge injection " +
+    "upstream — at the blend stage it bought nothing. While you iterate, local " +
+    "cross-validation is the only feedback you get, and it can look healthy " +
+    "while the leaderboard says otherwise. Version the agent, not just the " +
+    "code: an architecture change invalidates every run before it. And isolate " +
+    "mechanically, then read the transcripts — including your auditor's: mine " +
+    "was exempting the commands every lane actually issues, so the one command " +
+    "it existed to catch was never examined. (43s)"
+  );
+}
+
+// ================================================= 5 WHERE IT FALLS SHORT ---
+{
+  const s = pres.addSlide();
+  head(s, "5 · Where AI-heavy work still falls short");
+
+  const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
+
+  s.addText(item([
+    { text: "Engineering judgment is the gap, not technique.", options: { bold: true } },
+    { text: " Nothing in the loop can tell at design time whether an " +
+            "architecture will hold; the flaws surface once it runs, and the " +
+            "debt grows with every competition added." },
+  ]), { ...B, y: 1.20, h: 0.85 });
+
+  s.addText(item([
+    { text: "A pipeline will log success for work nothing performed.", options: { bold: true } },
+    { text: " Our dossier emitted operators the evaluator had never " +
+            "implemented — no warning, and the ledger recorded it as handled." },
+  ]), { ...B, y: 2.20, h: 0.85 });
+
+  s.addText(item([
+    { text: "Documents can agree with each other and all be wrong.", options: { bold: true } },
+    { text: " One claim was copied into report, poster and slides, and read as " +
+            "verified because it was consistent everywhere. Only the source " +
+            "code disagreed." },
+  ]), { ...B, y: 3.20, h: 0.85 });
+
+  s.addText(item([
+    { text: "AI writing habits survive review", options: { bold: true } },
+    { text: " — redundant suffixes, invented terminology, detail in place of " +
+            "the question the reader came for." },
+  ]), { ...B, y: 4.20, h: 0.85 });
 
   s.addText("github.com/930731haohao-afk/kaggle-agent", {
     x: 0.95, y: 6.40, w: 11.6, h: 0.40,
@@ -333,14 +332,16 @@ function countbar(slide, y, label, color, frac, value, bold) {
   });
 
   s.addNotes(
-    "Four things I would tell anyone doing this. Put knowledge injection " +
-    "upstream — at the blend stage it bought nothing. While you iterate, local " +
-    "cross-validation is the only feedback you get, and it can look healthy " +
-    "while the leaderboard says otherwise. Version the agent, not just " +
-    "the code: an architecture change invalidates every run before it. And " +
-    "isolate mechanically, then read the transcripts — including your " +
-    "auditor's: mine was exempting the commands every lane actually issues, so " +
-    "the one command it existed to catch was never examined. Thank you. (30s)"
+    "Where working this way still falls short. Engineering judgment is the " +
+    "gap, not technique: nothing in the loop can tell at design time whether " +
+    "an architecture will hold, and by the time the flaws surface the debt is " +
+    "already there. A pipeline will happily log success for work nothing " +
+    "performed — ours emitted instructions the evaluator had never " +
+    "implemented, and the ledger recorded them as handled. Documents can agree " +
+    "with each other and all be wrong: one claim was consistent across all " +
+    "three of these, and only the source code disagreed. And AI writing habits " +
+    "survive review — redundant suffixes, invented terminology, and detail in " +
+    "place of the question you actually came for. Thank you. (37s)"
   );
 }
 

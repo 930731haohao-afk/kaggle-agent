@@ -153,45 +153,13 @@
     tabular data it takes the best of the three every time. (45s)}
 \end{frame}
 
-% =========================================== 4 ADVANTAGES & DIFFICULTIES -----
-\begin{frame}{4 $\cdot$ Advantages \& Difficulties}
-  \vspace{1mm}
-  {\small
-  \renewcommand{\arraystretch}{1.25}
-  \begin{tabular}{@{}p{0.30\textwidth}p{0.63\textwidth}@{}}
-  \toprule
-  \textbf{Expected} & \textbf{Experienced}\\
-  \midrule
-  {\itshape\color{mut}The agent would quickly beat most humans.} &
-    It leads the standing on all 20 scored lanes, but its wins
-    concentrate where no mature public solution exists.\\
-  {\itshape\color{mut}One run and one score decide a winner.} &
-    Score noise leaves \kb{22 of 60 duels undecidable}; an explicit error model
-    became mandatory.\\
-  {\itshape\color{mut}A shared experience library only ever helps.} &
-    One lane wrote its findings back two minutes before the next lane started;
-    that lane read its neighbour's entries and was re-run clean.\\
-  \bottomrule
-  \end{tabular}\par}
-
-  \note{Three things I expected, and what actually happened. I expected the
-    agent to beat most humans quickly: it does lead the standing, but its wins
-    concentrate where no mature public solution exists --- where one does, the
-    reproduction agent beats it. I expected one run and one score to decide a
-    winner: score noise leaves twenty-two of sixty duels uncallable, which is
-    why the error model exists. And I expected a shared experience library to
-    only ever help: one lane wrote its findings back two minutes before the
-    next lane started, that lane read its neighbour's entries, and it had to be
-    re-run clean. (43s)}
-\end{frame}
-
-% ============================================================ 5 DISCUSSION ---
-\begin{frame}{5 $\cdot$ Discussion}
+% ============================================================== 4 LESSONS ---
+\begin{frame}{4 $\cdot$ Lessons from building it}
   \vspace{1mm}
   {\small
    $\cdot$ \kb{Put knowledge injection upstream.} At the blend stage it
-   measured near-nothing and was abandoned; moved into problem identification
-   it flags exactly the competitions that need external data.\par\vspace{2mm}
+   measured near-nothing; moved into problem identification it flags exactly
+   the competitions that need external data.\par\vspace{2mm}
    $\cdot$ \kb{Local CV is the only feedback while you iterate.} A competition
    returns no score until submission, so an error in problem-level judgment
    leaves CV looking healthy while the leaderboard says otherwise.\par\vspace{2mm}
@@ -201,18 +169,47 @@
    $\cdot$ \kb{Isolate mechanically, then audit the transcript} --- and audit
    the auditor: ours exempted every command starting with \texttt{uv}, so the
    one command it existed to catch was never examined.\par}
+
+  \note{Four things I would tell anyone doing this. Put knowledge injection
+    upstream --- at the blend stage it bought nothing. While you iterate, local
+    cross-validation is the only feedback you get, and it can look healthy
+    while the leaderboard says otherwise. Version the agent, not just the code:
+    an architecture change invalidates every run before it. And isolate
+    mechanically, then read the transcripts --- including your auditor's: mine
+    was exempting the commands every lane actually issues, so the one command
+    it existed to catch was never examined. (43s)}
+\end{frame}
+
+% ================================================= 5 WHERE IT FALLS SHORT ---
+\begin{frame}{5 $\cdot$ Where AI-heavy work still falls short}
+  \vspace{1mm}
+  {\small
+   $\cdot$ \kb{Engineering judgment is the gap, not technique.} Nothing in the
+   loop can tell at design time whether an architecture will hold; the flaws
+   surface once it runs, and the debt grows with every competition added.\par\vspace{2mm}
+   $\cdot$ \kb{A pipeline will log success for work nothing performed.} Our
+   dossier emitted operators the evaluator had never implemented --- no warning,
+   and the ledger recorded it as handled.\par\vspace{2mm}
+   $\cdot$ \kb{Documents can agree with each other and all be wrong.} One claim
+   was copied into report, poster and slides, and read as verified because it
+   was consistent everywhere. Only the source code disagreed.\par\vspace{2mm}
+   $\cdot$ \kb{AI writing habits survive review} --- redundant suffixes,
+   invented terminology, detail in place of the question the reader came
+   for.\par}
   \vfill
   {\color{mut}\scriptsize github.com/930731haohao-afk/kaggle-agent\par}
   \vspace{1mm}
 
-  \note{Four things I would tell anyone doing this. Put knowledge injection
-    upstream --- at the blend stage it bought nothing. While you iterate,
-    local cross-validation is the only feedback you get, and it can look
-    healthy while the leaderboard says otherwise. Version the agent, not just
-    the code: an architecture change invalidates every run before it. And
-    isolate mechanically, then read the transcripts --- including your
-    auditor's: mine was exempting the commands every lane actually issues, so
-    the one command it existed to catch was never examined. Thank you. (30s)}
+  \note{Where working this way still falls short. Engineering judgment is the
+    gap, not technique: nothing in the loop can tell at design time whether an
+    architecture will hold, and by the time the flaws surface the debt is
+    already there. A pipeline will happily log success for work nothing
+    performed --- ours emitted instructions the evaluator had never
+    implemented, and the ledger recorded them as handled. Documents can agree
+    with each other and all be wrong: one claim was consistent across all three
+    of these, and only the source code disagreed. And AI writing habits survive
+    review --- redundant suffixes, invented terminology, and detail in place of
+    the question you actually came for. Thank you. (37s)}
 \end{frame}
 
 \end{document}
