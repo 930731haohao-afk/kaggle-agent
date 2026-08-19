@@ -314,17 +314,10 @@ function countbar(slide, y, label, color, frac, value, bold) {
   ]), { ...B, y: 2.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Consistent documents can still be wrong.", options: { bold: true } },
-    { text: " One claim was copied into report, poster and slides, and read as " +
-            "verified because it was consistent everywhere. Only the source " +
-            "code disagreed." },
-  ]), { ...B, y: 3.20, h: 0.85 });
-
-  s.addText(item([
     { text: "AI writing habits survive review", options: { bold: true } },
     { text: " — redundant suffixes, invented terminology, detail in place of " +
             "the question the reader came for." },
-  ]), { ...B, y: 4.20, h: 0.85 });
+  ]), { ...B, y: 3.20, h: 0.85 });
 
   s.addText("github.com/930731haohao-afk/kaggle-agent", {
     x: 0.95, y: 6.40, w: 11.6, h: 0.40,
@@ -337,9 +330,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
     "an architecture will hold, and by the time the flaws surface the debt is " +
     "already there. A pipeline will happily log success for work nothing " +
     "performed — ours emitted instructions the evaluator had never " +
-    "implemented, and the ledger recorded them as handled. Documents can agree " +
-    "with each other and all be wrong: one claim was consistent across all " +
-    "three of these, and only the source code disagreed. And AI writing habits " +
+    "implemented, and the ledger recorded them as handled. And AI writing habits " +
     "survive review — redundant suffixes, invented terminology, and detail in " +
     "place of the question you actually came for. Thank you. (37s)"
   );
