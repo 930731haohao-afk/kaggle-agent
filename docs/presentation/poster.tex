@@ -75,7 +75,7 @@
 
 % Sub-heading: navy bold with a short orange underline accent
 \newcommand{\cardsub}[1]{%
-  \vspace{4mm}{\subheadsize\bfseries #1\par}\vspace{3mm}}
+  \vspace{4mm}{\subheadsize\bfseries #1\par}\vspace{5mm}}
 
 % Figure caption / note paragraph
 \newcommand{\figcap}[1]{\vspace{2mm}{\notesize\color{notegray}#1\par}}
@@ -206,7 +206,7 @@ beats its own development-lane score on 13 of 20.\par
 \renewcommand{\arraystretch}{1.06}%
 \setlength{\tabcolsep}{6.5mm}%
 \setlength{\heavyrulewidth}{1mm}\setlength{\lightrulewidth}{0.5mm}%
-\centerline{\begin{tabular}{@{}llrrr@{}}
+\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llrrr@{}}
 \toprule
 \textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
 \midrule
@@ -231,7 +231,7 @@ tps-aug-2022 & AUC $\uparrow$ & 0.58930 & 0.58730 & \textbf{0.59106}\\
 tps-jan-2022 & SMAPE $\downarrow$ & 6.29895 & \textbf{4.63651} & 10.6664\\
 tps-sep-2022 & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \bottomrule
-\end{tabular}}\par}
+\end{tabular*}\par}
 \vspace{3mm}
 \notepar{Private-leaderboard score of each submission; \textbf{bold} = best
   of the three.}
@@ -240,7 +240,7 @@ tps-sep-2022 & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \renewcommand{\arraystretch}{1.3}%
 \setlength{\tabcolsep}{2.6mm}%
 \setlength{\heavyrulewidth}{1.1mm}\setlength{\lightrulewidth}{0.55mm}%
-\begin{tabular}{@{}llrrr@{}}
+\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llrrr@{}}
 \toprule
 \textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
 \midrule
@@ -248,7 +248,7 @@ us-patent (NLP) & Pearson $r$ $\uparrow$ & \kb{0.86658} & 0.86160 & 0.65821\\
 ventilator (time series) & MAE $\downarrow$ & \kb{0.16525} & 0.40093 & 0.34591\\
 SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 \bottomrule
-\end{tabular}\par}
+\end{tabular*}\par}
 
 \end{secblock}
 
