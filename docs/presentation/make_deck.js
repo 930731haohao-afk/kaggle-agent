@@ -1,163 +1,510 @@
+// ============================================================================
+// An End-to-End AI Agent for Kaggle Competitions --- 3.5-minute conference talk.
+// PPTX generator, kept in lockstep with slides_4min.tex (beamer).
+//
+// Same six slides, same order, same on-screen text, same numbers, same figures,
+// same speaker notes. The beamer figures are drawn in TikZ, so they are
+// reproduced here with native pptx shapes rather than rasters -- every label
+// stays legible from a seat and the file has no external image dependency.
+//
+// Budgeted seconds live at the end of every note and sum to 207.
+// ============================================================================
 const pptxgen = require("pptxgenjs");
+
 const pres = new pptxgen();
-pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
+pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 in -- set before any addSlide()
 
-const NAVY = "0F2A4A", INK = "1C1E21", MUT = "5A6472", ICE = "CADCFC", GOLD = "E2B13C",
-      BLUE = "2B6CB0", LT = "F4F7FB", WHITE = "FFFFFF", PALE = "A8BDD4";
-const W = 13.33, H = 7.5;
+// ---- Palette (identical RGB to the beamer preamble) ------------------------
+const NAVY  = "0F2A4A"; // navy   RGB(15,42,74)
+const INK   = "1C1E21"; // ink    RGB(28,30,33)
+const MUT   = "5A6472"; // mut    RGB(90,100,114)
+const ICE   = "CADCFC"; // ice    RGB(202,220,252)
+const BLUE  = "2B6CB0"; // barblue RGB(43,108,176)
+const PALE  = "A8BDD4"; // pale   RGB(168,189,212)
+const LT    = "F4F7FB"; // lt     RGB(244,247,251)
+const GOLD  = "8A6D1A"; // gold   RGB(138,109,26)
+const PLUM  = "7C4F96"; // plum   RGB(124,79,150)
+const PLUMF = "F1EBF5"; // plum!12 fill
+const WHITE = "FFFFFF";
 
-function head(slide, num, title) {
+const F = "Arial"; // matches the deck's \usepackage{helvet}
+
+// ---- Frame title: navy, bold, flush left, no page number (as in beamer) ----
+function head(slide, title) {
   slide.background = { color: WHITE };
-  slide.addText(title, { x: 0.55, y: 0.28, w: 11.5, h: 0.75, fontFace: "Cambria",
-    fontSize: 30, bold: true, color: NAVY, margin: 0 });
-  slide.addText(num, { x: 12.35, y: 0.28, w: 0.6, h: 0.75, fontFace: "Calibri",
-    fontSize: 16, color: PALE, align: "right", margin: 0 });
-}
-
-// ---------- 1 · Title ----------
-{
-  const s = pres.addSlide();
-  s.background = { color: NAVY };
-  s.addText("AI Agents for Data Visualization\nand Kaggle Competitions", {
-    x: 0.8, y: 1.9, w: 11.7, h: 2.2, fontFace: "Cambria", fontSize: 44, bold: true, color: WHITE, margin: 0 });
-  s.addText("An end-to-end LLM agent, benchmarked against two frozen yardsticks on 20 Kaggle competitions", {
-    x: 0.8, y: 4.15, w: 11.0, h: 0.7, fontFace: "Calibri", fontSize: 20, color: ICE, margin: 0 });
-  s.addText("Wei-Hao Huang  ·  Academia Sinica ISS Summer Internship 2026  ·  Report v6 (2026-08-18)", {
-    x: 0.8, y: 6.3, w: 11.0, h: 0.5, fontFace: "Calibri", fontSize: 14, color: PALE, margin: 0 });
-  s.addNotes("Four minutes: what I built, how it works, what it scored, what surprised me, and what I would tell the next person. (10s)");
-}
-
-// ---------- 2 · Motivation ----------
-{
-  const s = pres.addSlide();
-  head(s, "2", "Motivation — why these tasks, why an agent");
-  s.addText("The challenge", { x: 0.55, y: 1.2, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 18, bold: true, color: NAVY, margin: 0 });
-  s.addText([
-    { text: "Kaggle demands the full expert loop — validation design, features, model selection, ensembling.", options: { bullet: true, breakLine: true } },
-    { text: "Top entries differ at the 4th–5th decimal of the metric; intuition cannot rank them.", options: { bullet: true, breakLine: true } },
-    { text: "Local cross-validation misleads: one competition scored 6.71 out-of-fold yet 49.41 on the real leaderboard.", options: { bullet: true, breakLine: true } },
-    { text: "EDA and diagnostic visualization are essential but repetitive for every new dataset.", options: { bullet: true } },
-  ], { x: 0.55, y: 1.65, w: 5.9, h: 3.6, fontFace: "Calibri", fontSize: 15, color: INK, paraSpaceAfter: 10, margin: 0 });
-
-  s.addText("Why an AI agent fits", { x: 6.9, y: 1.2, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 18, bold: true, color: NAVY, margin: 0 });
-  s.addText([
-    { text: "Tireless systematic search: 37–224 candidate configurations per competition, all logged.", options: { bullet: true, breakLine: true } },
-    { text: "Holds one disciplined protocol across 20 competitions — humans drift, agents don't.", options: { bullet: true, breakLine: true } },
-    { text: "Emits EDA figures and per-competition reports automatically; every claim traces to an artifact.", options: { bullet: true } },
-  ], { x: 6.9, y: 1.65, w: 5.9, h: 3.0, fontFace: "Calibri", fontSize: 15, color: INK, paraSpaceAfter: 10, margin: 0 });
-
-  s.addShape(pres.ShapeType.roundRect, { x: 6.9, y: 5.0, w: 5.9, h: 1.7, fill: { color: LT }, line: { color: PALE, width: 1 }, rectRadius: 0.08 });
-  s.addText([
-    { text: "6.71 → 49.41", options: { fontSize: 40, bold: true, color: BLUE, breakLine: true } },
-    { text: "s3e19: out-of-fold SMAPE vs. realized leaderboard score — the core reason honest measurement needs apparatus", options: { fontSize: 12.5, color: MUT } },
-  ], { x: 7.15, y: 5.15, w: 5.4, h: 1.45, fontFace: "Calibri", align: "left", margin: 0 });
-  s.addNotes("Kaggle is the full expert loop, and the margins are at the fourth decimal. The obvious compass — your own cross-validation — can be off by an order of magnitude: 6.71 out-of-fold became 49.41 on the real leaderboard. An agent fits because it is tireless, holds one protocol across 20 competitions, and documents everything it does. (35s)");
-}
-
-// ---------- 3 · Workflow ----------
-{
-  const s = pres.addSlide();
-  head(s, "3", "Workflow — an LLM reasons at every stage");
-  s.addImage({ path: "fig1_report-1.png", x: 0.55, y: 1.3, w: 5.2, h: 4.76 });
-  s.addText("Pipeline: dossier → EDA → features → modeling → evaluation → submission → real leaderboard.", {
-    x: 0.55, y: 6.2, w: 5.4, h: 0.6, fontFace: "Calibri", fontSize: 12.5, italic: true, color: MUT, margin: 0 });
-  s.addText([
-    { text: "LLM decides at every stage; Auto-ML tools (LightGBM / XGBoost / CatBoost / Optuna) do the heavy lifting via the shell.", options: { bullet: true, breakLine: true } },
-    { text: "Experience library: cross-competition priors, every entry evidence-backed, written back after each run.", options: { bullet: true, breakLine: true } },
-    { text: "Tree search over candidate configurations is the optimisation loop — ensembles are first-class nodes with OOF caching.", options: { bullet: true, breakLine: true } },
-    { text: "Stage-0.5 dossier (injection layer): classifies the task and injects external data upstream, before any modeling.", options: { bullet: true } },
-  ], { x: 6.15, y: 1.45, w: 6.6, h: 5.0, fontFace: "Calibri", fontSize: 14, color: INK, paraSpaceAfter: 12, margin: 0 });
-  s.addNotes("The workflow: data ingestion, a problem dossier, EDA, features, modeling, evaluation, submission. The LLM reasons at every stage and drives Auto-ML tools through the shell. Two things make it more than a script: an evidence-backed experience library shared across competitions, and a tree search where ensembles are first-class nodes. (40s)");
-}
-
-// ---------- 4 · Results: Kaggle ----------
-{
-  const s = pres.addSlide();
-  head(s, "4", "Results — my-agent on real leaderboards");
-  s.addChart(pres.ChartType.bar, [{
-    name: "s3e19 private SMAPE",
-    labels: ["with layer", "NVIDIA", "AIDE", "no layer"],
-    values: [48.243, 48.26558, 48.34131, 50.455],
-  }], {
-    x: 0.55, y: 1.35, w: 5.7, h: 3.1, barDir: "bar",
-    chartColors: [BLUE, PALE, PALE, PALE],
-    showTitle: true, title: "Injection-layer ablation, s3e19 private SMAPE (lower = better)",
-    titleFontSize: 13, titleColor: NAVY, titleFontFace: "Calibri",
-    showValue: true, dataLabelPosition: "outEnd", dataLabelColor: INK, dataLabelFontSize: 11, dataLabelFontFace: "Calibri", dataLabelFormatCode: "0.000",
-    showLegend: false, catAxisLabelColor: INK, catAxisLabelFontSize: 12, catAxisLabelFontFace: "Calibri",
-    valAxisLabelColor: MUT, valAxisLabelFontSize: 10, valAxisMaxVal: 51, valAxisMinVal: 47, valAxisLabelFormatCode: "0.0",
-    valGridLine: { color: "E4E9F0", size: 0.5 }, catGridLine: { style: "none" },
+  slide.addText(title, {
+    x: 0.72, y: 0.30, w: 12.0, h: 0.60,
+    fontFace: F, fontSize: 26, bold: true, color: NAVY, margin: 0, valign: "middle",
   });
-  s.addText("19 of 20 lanes are scored on the real leaderboard, adjudicated by a paired test on Kaggle's public/private split: my-agent stands 15 W / 7 L (68% excl. ties) with the best private score on 10 of 19. On s3e19 the controlled with/without-layer ablation scores 48.243 against 50.455 without the layer, and all 6 of 6 controlled arms beat their matched baselines.", {
-    x: 0.55, y: 4.6, w: 5.7, h: 1.5, fontFace: "Calibri", fontSize: 12.5, color: MUT, margin: 0 });
-
-  s.addText("Beyond tabular — my-agent beats both yardsticks on all three", { x: 6.9, y: 1.35, w: 5.9, h: 0.4, fontFace: "Calibri", fontSize: 16, bold: true, color: NAVY, margin: 0 });
-  s.addTable([
-    [{ text: "Competition", options: { bold: true, color: NAVY } }, { text: "Metric", options: { bold: true, color: NAVY } },
-     { text: "my-agent", options: { bold: true, color: NAVY } }, { text: "NVIDIA", options: { bold: true, color: NAVY } }, { text: "AIDE", options: { bold: true, color: NAVY } }],
-    ["us-patent (NLP)", "Pearson r ↑", { text: "0.86658", options: { bold: true, color: BLUE } }, "0.86160", "0.65821"],
-    ["ventilator (time series)", "MAE ↓", { text: "0.16525", options: { bold: true, color: BLUE } }, "0.40093", "0.34591"],
-    ["SIIM-ISIC (imaging)", "AUC ↑", { text: "0.93529", options: { bold: true, color: BLUE } }, "0.89822", "0.88579"],
-  ], { x: 6.9, y: 1.85, w: 5.9, colW: [1.9, 1.3, 1.0, 0.9, 0.9], fontFace: "Calibri", fontSize: 11.5, color: INK,
-       border: { type: "solid", color: "DFE5EC", pt: 0.5 }, fill: { color: WHITE }, rowH: 0.34, valign: "middle", margin: 0.04 });
-  s.addShape(pres.ShapeType.roundRect, { x: 6.9, y: 4.15, w: 5.9, h: 2.35, fill: { color: LT }, line: { color: PALE, width: 1 }, rectRadius: 0.08 });
-  s.addText([
-    { text: "Final-architecture re-run — 19/20 scored", options: { fontSize: 15, bold: true, color: NAVY, breakLine: true } },
-    { text: "All 20 competitions re-run under one frozen architecture, in credential-free sandboxes with per-lane transcript audits. 19/20 lanes scored, the final lane re-running clean; beats its own development-lane score on 12 of 19.", options: { fontSize: 12.5, color: INK, breakLine: true } },
-    { text: "Standing: my-agent 15 W / 7 L (68%) vs AIDE 44% · NVIDIA 40%.", options: { fontSize: 12.5, bold: true, color: "8A6D1A" } },
-  ], { x: 7.15, y: 4.3, w: 5.4, h: 2.05, fontFace: "Calibri", paraSpaceAfter: 8, margin: 0 });
-  s.addNotes("Nineteen of twenty lanes are scored on the real leaderboard under the frozen architecture: fifteen wins, seven losses — sixty-eight percent — against forty-four percent for AIDE and forty for NVIDIA, with the best private score on ten of nineteen. The injection layer turns our worst competition into a numerical first among the three agents, six of six controlled arms beat their baselines, and on the three harder competitions outside tabular data my agent takes the best score on all three. (45s)");
 }
 
-// ---------- 5 · Results: visualization output ----------
-{
-  const s = pres.addSlide();
-  head(s, "5", "Results — the agent's visualization output");
-  s.addImage({ path: "eda_target.png", x: 0.55, y: 1.45, w: 5.95, h: 4.25 });
-  s.addImage({ path: "eda_temporal.png", x: 6.85, y: 1.45, w: 5.95, h: 4.25 });
-  s.addText("Agent-generated EDA, produced automatically before modeling (energy-prosumer example): target distributions by segment (left) and temporal consumption/production patterns (right). The same pipeline emits 22 per-competition ML-spec reports and its own architecture flowcharts.", {
-    x: 0.55, y: 5.9, w: 12.25, h: 0.9, fontFace: "Calibri", fontSize: 13, color: MUT, margin: 0 });
-  s.addNotes("The visualization half: before any modeling, the agent draws its own diagnostics — distributions, temporal patterns, drift checks — and it writes 22 per-competition specification reports. Every figure you see in the report and the poster was produced by the pipeline itself. (25s)");
+// ---- Win-rate bar (beamer \ratebar) ----------------------------------------
+// label | 62mm track with a coloured fill and white inset text | value
+function ratebar(slide, y, label, color, frac, inside, value) {
+  slide.addText(label, {
+    x: 0.72, y: y, w: 1.55, h: 0.52,
+    fontFace: F, fontSize: 18, color: INK, margin: 0, valign: "middle",
+  });
+  slide.addShape(pres.ShapeType.rect, {
+    x: 2.40, y: y, w: 5.40, h: 0.52,
+    fill: { color: LT }, line: { color: LT, width: 0 },
+  });
+  slide.addShape(pres.ShapeType.rect, {
+    x: 2.40, y: y, w: 5.40 * frac, h: 0.52,
+    fill: { color: color }, line: { color: color, width: 0 },
+  });
+  slide.addText(inside, {
+    x: 2.55, y: y, w: 5.40 * frac - 0.20, h: 0.52,
+    fontFace: F, fontSize: 13, bold: true, color: WHITE, margin: 0, valign: "middle",
+  });
+  slide.addText(value, {
+    x: 8.05, y: y - 0.03, w: 1.8, h: 0.58,
+    fontFace: F, fontSize: 24, bold: true, color: NAVY, margin: 0, valign: "middle",
+  });
 }
 
-// ---------- 6 · Advantages & difficulties ----------
-{
-  const s = pres.addSlide();
-  head(s, "6", "What I expected vs. what I experienced");
-  const rows = [
-    ["The agent would quickly beat most humans.", "Scored frozen-architecture runs stand 15 W / 7 L (68%) with the best private score on 10 of 19 lanes; wins concentrate where no mature public solutions exist."],
-    ["One run and one score decide a winner.", "Score noise + run variance leave close duels undecidable on a single score; a paired error model became mandatory."],
-    ["The agent follows the rules by default.", "A transcript audit caught a lane reading its own competition's recorded findings — the clean re-run's local validation scored worse, consistent with a real contamination advantage."],
-    ["Fairness is mostly a mindset.", "It is infrastructure: isolated data roots, credential-free sandboxes, per-lane audits — expensive, but without them numbers aren't comparable."],
-  ];
-  s.addText("Expected", { x: 0.55, y: 1.2, w: 5.6, h: 0.4, fontFace: "Calibri", fontSize: 17, bold: true, color: MUT, margin: 0 });
-  s.addText("Experienced", { x: 6.6, y: 1.2, w: 6.1, h: 0.4, fontFace: "Calibri", fontSize: 17, bold: true, color: NAVY, margin: 0 });
-  let y = 1.7;
-  for (const [a, b] of rows) {
-    s.addShape(pres.ShapeType.roundRect, { x: 0.55, y, w: 5.6, h: 1.22, fill: { color: LT }, line: { color: "E4E9F0", width: 0.75 }, rectRadius: 0.06 });
-    s.addText(a, { x: 0.75, y: y + 0.08, w: 5.2, h: 1.06, fontFace: "Calibri", fontSize: 13, color: MUT, italic: true, margin: 0, valign: "middle" });
-    s.addShape(pres.ShapeType.roundRect, { x: 6.6, y, w: 6.15, h: 1.22, fill: { color: WHITE }, line: { color: PALE, width: 1 }, rectRadius: 0.06 });
-    s.addText(b, { x: 6.8, y: y + 0.08, w: 5.75, h: 1.06, fontFace: "Calibri", fontSize: 13, color: INK, margin: 0, valign: "middle" });
-    y += 1.38;
-  }
-  s.addNotes("What surprised me. I expected the agent to beat most humans quickly — it wins fifteen of its twenty-two decided duels, and its edge concentrates where no mature public solutions exist. I expected one score to decide a winner — close duels are undecidable without a paired error model. And I expected rule-following by default — the transcript audit proved otherwise once, and proved itself once by a false positive. (40s)");
+// ---- Score bar (beamer \scorebar) ------------------------------------------
+function scorebar(slide, y, label, color, frac, value) {
+  slide.addText(label, {
+    x: 0.72, y: y, w: 1.55, h: 0.50,
+    fontFace: F, fontSize: 18, color: INK, margin: 0, valign: "middle",
+  });
+  slide.addShape(pres.ShapeType.rect, {
+    x: 2.40, y: y, w: 4.60, h: 0.50,
+    fill: { color: LT }, line: { color: LT, width: 0 },
+  });
+  slide.addShape(pres.ShapeType.rect, {
+    x: 2.40, y: y, w: 4.60 * frac, h: 0.50,
+    fill: { color: color }, line: { color: color, width: 0 },
+  });
+  slide.addText(value, {
+    x: 7.20, y: y, w: 2.0, h: 0.50,
+    fontFace: F, fontSize: 17, bold: true, color: NAVY, margin: 0, valign: "middle",
+  });
 }
 
-// ---------- 7 · Discussion ----------
+// ---- A square bracket standing in for TikZ's \decorate brace ---------------
+// side: "down" draws the ticks downward (bracket sits above its caption).
+function hBracket(slide, x1, x2, y, color, depth) {
+  slide.addShape(pres.ShapeType.line, {
+    x: x1, y: y, w: x2 - x1, h: 0, line: { color: color, width: 1 },
+  });
+  slide.addShape(pres.ShapeType.line, {
+    x: x1, y: y, w: 0, h: depth, line: { color: color, width: 1 },
+  });
+  slide.addShape(pres.ShapeType.line, {
+    x: x2, y: y, w: 0, h: depth, line: { color: color, width: 1 },
+  });
+}
+
+// reach > 0 opens the bracket to the right, reach < 0 to the left. Widths are
+// always emitted positive -- a negative cx is invalid OOXML.
+function vBracket(slide, x, y1, y2, color, reach) {
+  const tx = reach < 0 ? x + reach : x;
+  const tw = Math.abs(reach);
+  slide.addShape(pres.ShapeType.line, {
+    x: x, y: y1, w: 0, h: y2 - y1, line: { color: color, width: 1 },
+  });
+  slide.addShape(pres.ShapeType.line, {
+    x: tx, y: y1, w: tw, h: 0, line: { color: color, width: 1 },
+  });
+  slide.addShape(pres.ShapeType.line, {
+    x: tx, y: y2, w: tw, h: 0, line: { color: color, width: 1 },
+  });
+}
+
+// ============================================================ 1. THE QUESTION
 {
   const s = pres.addSlide();
   s.background = { color: NAVY };
-  s.addText("Advice — if you use an AI agent for this", { x: 0.8, y: 0.55, w: 11.7, h: 0.8, fontFace: "Cambria", fontSize: 30, bold: true, color: WHITE, margin: 0 });
-  s.addText([
-    { text: "State the error model with every claim. Without an error scale a ranking is noise: close duels are undecidable, and the winner flips when the evaluation set changes.", options: { bullet: true, breakLine: true } },
-    { text: "Never trust local CV for between-agent claims — score on the real leaderboard.", options: { bullet: true, breakLine: true } },
-    { text: "Freeze your yardsticks. Improving a baseline mid-study turns the benchmark into an optimisation of the baseline.", options: { bullet: true, breakLine: true } },
-    { text: "Isolate mechanically, then audit the transcript — reading what the agent actually did catches the leaks you didn't anticipate, in both directions.", options: { bullet: true, breakLine: true } },
-    { text: "Put knowledge injection upstream: at the blend stage it was worth ~10⁻⁵; moved into problem identification it lifted the canonical failure case from last to first.", options: { bullet: true } },
-  ], { x: 0.8, y: 1.7, w: 11.7, h: 3.9, fontFace: "Calibri", fontSize: 16.5, color: ICE, paraSpaceAfter: 14, margin: 0 });
-  s.addText("Report v6 · Engineering Log · Case Studies · 22 ML-spec reports  —  github.com/930731haohao-afk/kaggle-agent", {
-    x: 0.8, y: 6.45, w: 11.7, h: 0.5, fontFace: "Calibri", fontSize: 13, color: PALE, margin: 0 });
-  s.addNotes("If you do this yourself: state an error model with every claim, never trust local CV between agents, freeze your yardsticks, isolate mechanically and then read the transcript, and put knowledge injection upstream. Everything is in report v6 and the repository. Thank you. (25s)");
+  s.addText("An End-to-End AI Agent\nfor Kaggle Competitions", {
+    x: 0.85, y: 1.35, w: 11.8, h: 2.15,
+    fontFace: F, fontSize: 44, bold: true, color: WHITE, lineSpacingMultiple: 1.25, margin: 0,
+  });
+  s.addText("Where should external knowledge enter an agent’s pipeline?", {
+    x: 0.85, y: 3.85, w: 11.8, h: 0.65,
+    fontFace: F, fontSize: 28, italic: true, color: ICE, margin: 0,
+  });
+  s.addText("Wei-Hao Huang   ·   Institute of Statistical Science, Academia Sinica", {
+    x: 0.85, y: 5.55, w: 11.8, h: 0.45,
+    fontFace: F, fontSize: 17, color: PALE, margin: 0,
+  });
+  s.addNotes(
+    "A Kaggle competition is a scorable task: one submission, one hidden score. " +
+    "The judgment calls come before the modelling, which makes it a sharp test of " +
+    "machine judgment. One design question dominated the build — where should " +
+    "external knowledge enter the pipeline? (17s)"
+  );
 }
 
-pres.writeFile({ fileName: "slides_4min.pptx" }).then(() => console.log("written"));
+// ====================================================== 2. THE ONE DECISION --
+{
+  const s = pres.addSlide();
+  head(s, "The design decision: knowledge enters upstream");
+
+  const CHIPS = ["Dossier", "EDA", "Features", "Models", "Evaluation", "Submission"];
+  const CW = 1.55, CH = 0.62, PITCH = 1.98, CX0 = 0.72, CY = 3.05;
+
+  CHIPS.forEach((name, i) => {
+    const x = CX0 + i * PITCH;
+    const isInj = i === 0;
+    s.addShape(pres.ShapeType.roundRect, {
+      x: x, y: CY, w: CW, h: CH, rectRadius: 0.06,
+      fill: { color: isInj ? PLUMF : LT },
+      line: { color: isInj ? PLUM : PALE, width: isInj ? 1.5 : 1 },
+    });
+    s.addText(name, {
+      x: x, y: CY, w: CW, h: CH,
+      fontFace: F, fontSize: 15, color: INK, align: "center", valign: "middle", margin: 0,
+    });
+    if (i < CHIPS.length - 1) {
+      s.addShape(pres.ShapeType.line, {
+        x: x + CW, y: CY + CH / 2, w: PITCH - CW, h: 0,
+        line: { color: MUT, width: 1, endArrowType: "triangle" },
+      });
+    }
+  });
+
+  // --- upstream injection (the decision) ------------------------------------
+  s.addShape(pres.ShapeType.line, {
+    x: CX0 + CW / 2, y: 2.22, w: 0, h: 0.78,
+    line: { color: PLUM, width: 2.25, endArrowType: "triangle" },
+  });
+  s.addText([
+    { text: "Upstream:", options: { bold: true } },
+    { text: " outside data enters here" },
+  ], {
+    x: 1.75, y: 1.88, w: 6.0, h: 0.35,
+    fontFace: F, fontSize: 16, color: PLUM, margin: 0, valign: "middle",
+  });
+
+  // --- the judgment bracket --------------------------------------------------
+  hBracket(s, CX0, CX0 + PITCH + CW, 3.92, GOLD, 0.08);
+  s.addText([
+    { text: "decisions taken " },
+    { text: "before", options: { italic: true } },
+    { text: " any model is fit" },
+  ], {
+    x: CX0, y: 4.06, w: 5.2, h: 0.35,
+    fontFace: F, fontSize: 16, color: GOLD, margin: 0, valign: "middle",
+  });
+
+  // --- downstream injection (the abandoned option) --------------------------
+  s.addShape(pres.ShapeType.line, {
+    x: CX0 + 3 * PITCH + CW / 2, y: 3.72, w: 0, h: 0.62,
+    line: { color: MUT, width: 1.25, dashType: "dash", beginArrowType: "triangle" },
+  });
+  s.addText([
+    { text: "at the blend: measured 10" },
+    { text: "−5", options: { superscript: true } },
+    { text: ",", options: { breakLine: true } },
+    { text: "abandoned" },
+  ], {
+    x: 7.95, y: 4.18, w: 5.0, h: 0.70,
+    fontFace: F, fontSize: 16, color: MUT, margin: 0, valign: "top",
+  });
+
+  // --- the claim --------------------------------------------------------------
+  s.addText([
+    { text: "Fires on " },
+    { text: "2 of 18", options: { bold: true } },
+    { text: " competitions.    All " },
+    { text: "6 of 6", options: { bold: true } },
+    { text: " controlled arms beat their baselines." },
+  ], {
+    x: 0.72, y: 5.55, w: 12.0, h: 0.38,
+    fontFace: F, fontSize: 18, color: INK, margin: 0, valign: "middle",
+  });
+  s.addText("No local signal picks the form.", {
+    x: 0.72, y: 5.95, w: 12.0, h: 0.38,
+    fontFace: F, fontSize: 18, color: MUT, margin: 0, valign: "middle",
+  });
+
+  s.addNotes(
+    "The conventional answer is downstream: extra ideas among the candidates you " +
+    "blend. I built that, measured it: worth about ten to the minus five. So this " +
+    "architecture injects upstream. Before any modelling, a dossier reads the " +
+    "problem statement — does this task need outside data — and emits " +
+    "whitelisted, leakage-guarded joins. The rest is conventional: the language " +
+    "model decides at every stage, gradient boosting fits, tree search is the loop. " +
+    "The layer fires on two competitions of eighteen, and all six controlled arms " +
+    "beat their baselines. Nothing local tells me which form to use. (37s)"
+  );
+}
+
+// ================================================= 3. BUILD THE INSTRUMENT --
+{
+  const s = pres.addSlide();
+  head(s, "Local validation cannot arbitrate — so build the instrument");
+
+  s.addText([
+    { text: "One lane: out-of-fold SMAPE " },
+    { text: "6.706", options: { bold: true } },
+    { text: " → real leaderboard " },
+    { text: "49.40878", options: { bold: true, color: BLUE } },
+  ], {
+    x: 0.72, y: 1.10, w: 12.0, h: 0.40,
+    fontFace: F, fontSize: 18, color: INK, margin: 0, valign: "middle",
+  });
+
+  // ---- left panel: the shared drift, and the gap that survives it ----------
+  const XP = 1.95, XV = 4.95;               // public half / private half
+  const yA1 = 2.70, yA2 = 3.32;             // upper (barblue) series
+  const yB1 = 3.16, yB2 = 3.73;             // lower (mut) series
+
+  s.addText("both agents drift the same way", {
+    x: 0.90, y: 1.92, w: 5.1, h: 0.32,
+    fontFace: F, fontSize: 13, color: GOLD, align: "center", margin: 0, valign: "middle",
+  });
+
+  [XP, XV].forEach((x) => {
+    s.addShape(pres.ShapeType.line, {
+      x: x, y: 2.42, w: 0, h: 1.95, line: { color: PALE, width: 1 },
+    });
+  });
+
+  s.addShape(pres.ShapeType.line, {
+    x: XP, y: yA1, w: XV - XP, h: yA2 - yA1, line: { color: BLUE, width: 1.75 },
+  });
+  s.addShape(pres.ShapeType.line, {
+    x: XP, y: yB1, w: XV - XP, h: yB2 - yB1, line: { color: MUT, width: 1.75 },
+  });
+  [[XP, yA1, BLUE], [XV, yA2, BLUE], [XP, yB1, MUT], [XV, yB2, MUT]].forEach(([x, y, c]) => {
+    s.addShape(pres.ShapeType.ellipse, {
+      x: x - 0.055, y: y - 0.055, w: 0.11, h: 0.11,
+      fill: { color: c }, line: { color: c, width: 0 },
+    });
+  });
+
+  vBracket(s, XP - 0.13, yA1, yB1, NAVY, -0.07);
+  s.addText("gap", {
+    x: 1.00, y: (yA1 + yB1) / 2 - 0.15, w: 0.68, h: 0.30,
+    fontFace: F, fontSize: 13, color: NAVY, align: "right", margin: 0, valign: "middle",
+  });
+  vBracket(s, XV + 0.13, yA2, yB2, NAVY, 0.07);
+  s.addText("gap", {
+    x: 5.25, y: (yA2 + yB2) / 2 - 0.15, w: 0.60, h: 0.30,
+    fontFace: F, fontSize: 13, color: NAVY, margin: 0, valign: "middle",
+  });
+
+  s.addText("public half", {
+    x: XP - 0.80, y: 4.40, w: 1.60, h: 0.28,
+    fontFace: F, fontSize: 13, color: MUT, align: "center", margin: 0, valign: "middle",
+  });
+  s.addText("private half", {
+    x: XV - 0.80, y: 4.40, w: 1.60, h: 0.28,
+    fontFace: F, fontSize: 13, color: MUT, align: "center", margin: 0, valign: "middle",
+  });
+  s.addText("The shift cancels. The gap does not.", {
+    x: 0.72, y: 4.86, w: 5.5, h: 0.32,
+    fontFace: F, fontSize: 15, color: INK, align: "center", margin: 0, valign: "middle",
+  });
+
+  // ---- right panel: 60 duels, 38 decided ----------------------------------
+  const GX = 8.05, GY = 2.32, CELL = 0.36, SQ = 0.30;
+  for (let i = 0; i < 60; i++) {
+    const r = Math.floor(i / 10), c = i % 10;
+    const x = GX + c * CELL, y = GY + r * CELL;
+    if (i < 38) {
+      s.addShape(pres.ShapeType.roundRect, {
+        x: x, y: y, w: SQ, h: SQ, rectRadius: 0.02,
+        fill: { color: BLUE }, line: { color: BLUE, width: 0 },
+      });
+    } else {
+      s.addShape(pres.ShapeType.roundRect, {
+        x: x, y: y, w: SQ, h: SQ, rectRadius: 0.02,
+        fill: { color: WHITE }, line: { color: PALE, width: 1 },
+      });
+    }
+  }
+  s.addText([
+    { text: "60 duels: " },
+    { text: "38 decided", options: { bold: true, color: BLUE } },
+    { text: ", 22 undecidable — not ties." },
+  ], {
+    x: 6.90, y: 4.86, w: 5.9, h: 0.32,
+    fontFace: F, fontSize: 15, color: INK, align: "center", margin: 0, valign: "middle",
+  });
+
+  s.addText([
+    { text: "Verdict: the ordering replicates on both halves, " },
+    { text: "and", options: { italic: true } },
+    { text: " the gap exceeds its own movement." },
+  ], {
+    x: 0.72, y: 5.72, w: 12.0, h: 0.38,
+    fontFace: F, fontSize: 17, color: MUT, margin: 0, valign: "middle",
+  });
+
+  s.addNotes(
+    "Those are my own numbers, and between agents local validation cannot " +
+    "arbitrate: one lane scored six point seven out of fold, forty-nine on the " +
+    "leaderboard. So every verdict is a real submission. Kaggle scores each " +
+    "submission on two halves of the test set. My first threshold used one " +
+    "agent’s drift between halves and called most duels undecidable — but " +
+    "that drift is shared: it moves all three agents together. Take the gap between " +
+    "two agents on both halves and the common drift cancels. A verdict needs both " +
+    "halves to agree, and the gap to beat its own movement. Sixty duels: " +
+    "thirty-eight decided; twenty-two are not ties, but readings the test refuses " +
+    "to make. (45s)"
+  );
+}
+
+// ============================================================= 4. THE READING
+{
+  const s = pres.addSlide();
+  head(s, "What the frozen three-way run measured");
+
+  s.addText(
+    "20 competitions   ·   one architecture, frozen before the run" +
+    "   ·   no lane could reach a leaderboard", {
+      x: 0.72, y: 1.15, w: 12.0, h: 0.35,
+      fontFace: F, fontSize: 15, color: MUT, margin: 0, valign: "middle",
+    });
+
+  ratebar(s, 2.20, "my-agent", BLUE, 0.667, "16–8",  "66.7%");
+  ratebar(s, 3.05, "NVIDIA",   MUT,  0.423, "11–15", "42.3%");
+  ratebar(s, 3.90, "AIDE",     MUT,  0.423, "11–15", "42.3%");
+
+  s.addText("Wins–losses over each agent's own decided duels: 24 for my-agent, 26 for each yardstick (38 decided duels = 76 agent-side outcomes).", {
+    x: 0.72, y: 5.10, w: 12.0, h: 0.38,
+    fontFace: F, fontSize: 18, color: INK, margin: 0, valign: "middle",
+  });
+  s.addText([
+    { text: "Best private score: " },
+    { text: "10 of 20", options: { bold: true } },
+    { text: " (NVIDIA 7, AIDE 3)." },
+  ], {
+    x: 0.72, y: 5.55, w: 12.0, h: 0.38,
+    fontFace: F, fontSize: 18, color: INK, margin: 0, valign: "middle",
+  });
+
+  s.addNotes(
+    "Here is the reading. Twenty competitions, three agents, one architecture " +
+    "frozen before the run, and no lane could reach a leaderboard. The two " +
+    "yardsticks are frozen too: AIDE searches from zero, the NVIDIA agent " +
+    "reproduces the highest-voted public kernel. I fixed nothing in either. " +
+    "Mine wins sixteen of its twenty-four decided duels, sixty-six point seven " +
+    "percent, against forty-two point three for each. That number measures the " +
+    "whole architecture; the injection decision is measured separately, by the " +
+    "controlled arms. (38s)"
+  );
+}
+
+// ====================================================== 5. WHERE IT LOSES ---
+{
+  const s = pres.addSlide();
+  head(s, "Where it loses is where the design predicts");
+
+  s.addText("Worst loss — SMAPE, lower is better. Bars show how far behind the best score each agent is.", {
+    x: 0.72, y: 1.15, w: 12.0, h: 0.35,
+    fontFace: F, fontSize: 15, color: MUT, margin: 0, valign: "middle",
+  });
+
+  scorebar(s, 1.70, "NVIDIA",   BLUE, 0.000, "5.48351");
+  scorebar(s, 2.48, "AIDE",     MUT,  0.184, "9.72095");
+  scorebar(s, 3.26, "my-agent", GOLD, 1.000, "28.49605");
+
+  s.addText("My two worst losses are the only competitions here with a mature public solution.", {
+    x: 0.72, y: 4.10, w: 12.0, h: 0.38,
+    fontFace: F, fontSize: 18, color: INK, margin: 0, valign: "middle",
+  });
+  s.addText("Reproduction dominates there; search wins the rest.", {
+    x: 0.72, y: 4.50, w: 12.0, h: 0.38,
+    fontFace: F, fontSize: 17, color: MUT, margin: 0, valign: "middle",
+  });
+
+  // ---- the standing is fragile --------------------------------------------
+  const YB = 5.30, YC = 5.95;
+  s.addText("72.7%", {
+    x: 1.35, y: YB, w: 2.5, h: 0.55,
+    fontFace: F, fontSize: 22, color: MUT, align: "center", margin: 0, valign: "middle",
+  });
+  s.addText("66.7%", {
+    x: 5.05, y: YB - 0.10, w: 3.2, h: 0.75,
+    fontFace: F, fontSize: 42, bold: true, color: NAVY, align: "center", margin: 0, valign: "middle",
+  });
+  s.addText("68.0%", {
+    x: 9.45, y: YB, w: 2.5, h: 0.55,
+    fontFace: F, fontSize: 22, color: MUT, align: "center", margin: 0, valign: "middle",
+  });
+  s.addShape(pres.ShapeType.line, {
+    x: 4.05, y: YB + 0.28, w: 0.85, h: 0,
+    line: { color: MUT, width: 1, beginArrowType: "triangle" },
+  });
+  s.addShape(pres.ShapeType.line, {
+    x: 8.40, y: YB + 0.28, w: 0.85, h: 0,
+    line: { color: MUT, width: 1, endArrowType: "triangle" },
+  });
+  s.addText("drop one\ncompetition", {
+    x: 1.35, y: YC, w: 2.5, h: 0.60,
+    fontFace: F, fontSize: 13, color: MUT, align: "center", margin: 0, valign: "top",
+  });
+  s.addText("exact decimal", {
+    x: 5.05, y: YC, w: 3.2, h: 0.30,
+    fontFace: F, fontSize: 13, color: NAVY, align: "center", margin: 0, valign: "top",
+  });
+  s.addText("one duel on\nits noise floor", {
+    x: 9.45, y: YC, w: 2.5, h: 0.60,
+    fontFace: F, fontSize: 13, color: MUT, align: "center", margin: 0, valign: "top",
+  });
+
+  s.addNotes(
+    "Where it loses is the interesting half. My two worst losses are the only two " +
+    "competitions with a mature public solution, and there the reproduction agent " +
+    "beats me decisively — twenty-eight against five and nine. That is the " +
+    "mechanism the design predicts: reproduction wins where a strong public solution " +
+    "exists, search wins where none does. The standing is also fragile: drop one " +
+    "competition and it reads seventy-two point seven, and one duel sits exactly " +
+    "on its noise floor. A ranking belongs to the method and the " +
+    "evaluation set together — mine included. (37s)"
+  );
+}
+
+// ============================================================== 6. TAKE AWAY
+{
+  const s = pres.addSlide();
+  head(s, "Take away");
+
+  const LINES = [
+    "State the error model, or the ranking is your own noise.",
+    "Freeze the yardsticks. Then read the transcripts, not just the scores.",
+  ];
+  LINES.forEach((line, i) => {
+    const y = 2.20 + i * 0.95;
+    s.addShape(pres.ShapeType.rect, {
+      x: 0.80, y: y + 0.10, w: 0.15, h: 0.20,
+      fill: { color: GOLD }, line: { color: GOLD, width: 0 },
+    });
+    s.addText(line, {
+      x: 1.15, y: y, w: 11.5, h: 0.42,
+      fontFace: F, fontSize: 22, color: INK, margin: 0, valign: "middle",
+    });
+  });
+
+  s.addShape(pres.ShapeType.rect, {
+    x: 0.80, y: 4.25, w: 11.75, h: 1.15,
+    fill: { color: NAVY }, line: { color: NAVY, width: 0 },
+  });
+  s.addText(
+    "Where knowledge enters is an architectural choice — and the controlled arms measure which placement wins.", {
+      x: 1.05, y: 4.25, w: 11.25, h: 1.15,
+      fontFace: F, fontSize: 22, color: WHITE, margin: 0, valign: "middle",
+      lineSpacingMultiple: 1.18,
+    });
+
+  s.addText("github.com/930731haohao-afk/kaggle-agent", {
+    x: 0.80, y: 5.62, w: 11.75, h: 0.30,
+    fontFace: F, fontSize: 12, color: MUT, margin: 0, valign: "middle",
+  });
+
+  s.addNotes(
+    "Where knowledge enters is an architectural choice with a measurable answer. " +
+    "State an error model, or a ranking is your own noise. And freeze your " +
+    "yardsticks, then read the transcripts — mine caught a blind spot in my own " +
+    "auditor, which was skipping the exact command it existed to catch. Corrected, a " +
+    "re-run over all twenty transcripts finds no network access. Thank you. (25s)"
+  );
+}
+
+pres.writeFile({ fileName: "slides_4min.pptx" })
+  .then((f) => console.log("written: " + f));

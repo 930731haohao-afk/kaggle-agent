@@ -28,7 +28,7 @@ AIDE/NVIDIA columns and mine_prev_* are copied from the frozen facts; mine_rerun
 | playground-series-s6e1 | R2 | max | 8.69449 | 8.72191 | 74.8 | 1088/4319 | 8.7048 | 8.73239 | 69.5 | 1318/4319 | 8.69338 | 8.71733 | 8.68844 | 8.71516 | mine | winner uses LB direction min (local metric is max) |
 | playground-series-s6e2 | AUC | max | 0.95364 | 0.95516 | 76.5 | 1027/4371 | 0.95348 | 0.95508 | 63.0 | 1618/4371 | 0.95367 | 0.95516 | 0.95354 | 0.95505 | aide |  |
 | tabular-playground-series-aug-2022 | AUC | max | 0.58479 | 0.59106 | 60.5 | 747/1889 | 0.57920 | 0.58730 | 43.0 | 1078/1889 | 0.58559 | 0.59055 | 0.58534 | 0.58930 | aide |  |
-| tabular-playground-series-jan-2022 | SMAPE | min | 10.11598 | 10.66638 | 28.9 | 1133/1592 | 4.43958 | 4.63651 | 76.4 | 377/1592 | 4.90883 | 6.46156 |  |  |  | missing; incomplete |
+| tabular-playground-series-jan-2022 | SMAPE | min | 10.11598 | 10.66638 | 28.9 | 1133/1592 | 4.43958 | 4.63651 | 76.4 | 377/1592 | 4.90883 | 6.46156 | 4.58859 | 6.29895 | nvidia |  |
 | tabular-playground-series-sep-2022 | SMAPE | min | 5.78998 | 9.72095 | 48.3 | 715/1383 | 4.77458 | 5.48351 | 80.3 | 272/1383 | 28.32738 | 28.54859 | 28.45070 | 28.49605 | nvidia |  |
 
 ## Caveats

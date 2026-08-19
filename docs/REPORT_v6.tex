@@ -1,4 +1,4 @@
-% Report v6 -- AI Agents for Kaggle Competitions
+% An End-to-End AI Agent for Kaggle Competitions
 % Compile with pdfLaTeX (Overleaf default). No external assets required.
 \documentclass[11pt,a4paper]{article}
 
@@ -35,59 +35,179 @@
 \newcommand{\N}{N}   % NVIDIA
 \newcommand{\A}{A}   % AIDE
 
-\title{\textbf{An End-to-End Agent for Kaggle Competitions}\\
+\title{\textbf{An End-to-End AI Agent for Kaggle Competitions}\\
 \large Benchmarked against two frozen yardsticks on 20 competitions\\
-Report v6 (August 2026)\\
-\normalsize\textcolor{orange!85!black}{All printed numbers are real measurements as of 2026-08-18; TBD marks the final lane still to finish and score.}}
+\normalsize\textcolor{orange!85!black}{Every printed number is a real measurement; all 20 benchmark lanes are complete, audited and scored.}}
 \author{Wei-Hao Huang}
-\date{Draft compiled August 18, 2026}
+\date{}
 
 \begin{document}
 \maketitle
 
+% =====================================================================
+% PART: FRONT  --- abstract + Introduction
+% Assemble immediately after \maketitle.
+%
+% TITLE BLOCK for the maintainer to place in the preamble, replacing the
+% existing \title/\author/\date at source lines 38--42. Emitted here as a
+% comment because this part file carries no preamble. The two subtitle
+% lines and the orange status banner are dropped; their content is
+% carried by the abstract and by the audit Results subsection.
+%
+%   \title{\textbf{Upstream problem identification, not downstream blending,\\
+%   is where knowledge helps an autonomous\\
+%   machine-learning agent}}
+%   \author{Wei-Hao Huang}
+%   \date{}
+%
+% The two explicit line breaks are load-bearing: without them the title
+% sets as three lines with "agent" orphaned on the last. Verified by
+% compiling the preamble + this title block.
+% =====================================================================
+
 \begin{center}\textbf{\large Abstract}\end{center}
-\noindent We present \textbf{my-agent}, an end-to-end agent for machine-learning competitions, and the design decision at its centre: \emph{where external knowledge enters the pipeline}. The agent runs the full loop --- problem identification, EDA, feature engineering, modelling, evaluation, submission --- with an LLM reasoning at every stage, Auto-ML tools invoked through the shell, a cross-competition experience library, and tree search as the optimisation loop. Measuring our own first design showed knowledge injected downstream at the blending stage worth only ${\sim}10^{-5}$; the architecture therefore injects it upstream through a \emph{problem-identification layer} that classifies task family, train--test window relation, split policy, and external-data need before any modelling, emitting typed operators into a whitelisted, leakage-guarded external-data module. Local validation repeatedly proved unreliable for between-agent claims in development, so every verdict is scored on the real leaderboard. Under that discipline the layer separates cleanly --- firing on exactly the 2 of 18 baseline competitions that need external data, silent on the other 16; all six external-data arms across three firing-class competitions beat their baselines with paired significance; a with-layer/without-layer ablation passes the paired test on the benchmark's canonical failure; and no local signal we tested selects the \emph{form} the injection should take --- the one selector surviving hindsight was killed by its first pre-registered prediction. We benchmark the agent against two frozen, methodologically distinct yardsticks --- \textbf{AIDE} (LLM tree search) and the \textbf{NVIDIA Kaggle Agent} (kernel reproduction) --- on 20 Kaggle competitions under a mechanically enforced fairness protocol, the my-agent lanes credential-free and transcript-audited, plus three mid-complexity competitions (NLP, physiological time series, medical imaging) where my-agent takes the three-way best on all three. The 19 completed lanes (the last, tps-jan-2022, re-running clean as this draft compiles) were scored on the real leaderboard by the separate credentialed operator step on 2026-08-18: under the paired error model of Section~\ref{sec:apparatus}, my-agent leads the standing with 15 wins and 7 losses in its decided duels ($68\%$ excluding ties, against $44\%$ for AIDE and $40\%$ for NVIDIA), taking the best private score on 10 of the 19; the remaining duels await the final lane.
+\noindent Autonomous systems now run entire empirical pipelines, from raw dataset to scored
+prediction, with no person in the loop. Where should external knowledge enter such a system? We
+built one for machine-learning competitions and measured the answer. Downstream injection, among
+the models being combined, moved scores by ${\sim}10^{-5}$ in our own implementation.
+The agent therefore injects upstream, at problem identification: before any modelling it
+classifies the task, how training and test periods relate, the validation split, and whether the
+task needs data from outside the competition. Every verdict is scored on a real leaderboard,
+judged by a paired test that reads each competition's noise off the two disjoint parts of its
+test set.
+Across 20 competitions the agent wins 16 of the 24 head-to-head comparisons in which it
+separated from a rival by more than that noise ($66.7\%$), against $42.3\%$ for each of two frozen
+reference agents, and takes the best held-out score on 10 of 20; 22 of the 60 comparisons cannot
+be called at all. The upstream layer fires on exactly the 2 of 18
+competitions that need external data and is silent on the other 16; all six controlled arms beat
+their matched baselines; but no local signal we tested predicts which form the injection should
+take. Placement of knowledge, not the amount of it, is what an autonomous pipeline can be
+engineered around --- and a third of the comparisons being uncallable is itself the result that
+any automated claim at this scale has to report.
 
 \vspace{0.5em}
 
 \section{Introduction}
 
-Machine-learning competitions are \emph{scorable tasks}: a submission receives a single measurable quality score on a hidden test set, and a public leaderboard records how it compares against thousands of human teams. Solving them end-to-end --- data understanding, validation design, feature engineering, model selection, ensembling --- has traditionally demanded expert labor and extensive trial and error. LLM-driven coding agents have recently begun to automate this loop: AIDE performs LLM-guided tree search over candidate solutions~\cite{aide2025}; ERA couples an LLM rewriter with tree search and externally injected research ideas, outperforming strong baselines across 16 Kaggle Playground competitions~\cite{aygun2026}; and industrial agents skip search altogether by reproducing the strongest public solution to a given competition~\cite{nvidia2026}.
+Automated systems increasingly run a whole empirical study rather than one step of it: from a
+raw dataset, through the choice of how to validate, to a result that will be judged. Three
+things a human investigator normally supplies then pass to the machine. The first is judgment
+about the problem: deciding what kind of task this is and what it needs, before any tuning
+begins. The second is measurement: knowing whether a claimed improvement exceeds the noise of
+the instrument that produced it. The third is the honesty of the claim: whether the system's own
+checks can catch its own contamination, and whether those checks can themselves be caught being
+wrong. Machine-learning competitions are one of the few settings in which all three are
+externally scorable: a hidden test set held by a third party, a single scalar score, and
+thousands of human teams fixing the scale of what counts as good.
 
-This report is about one such agent, \textbf{my-agent}, built over the course of this internship: a hybrid design in which an LLM reasons at every stage of the competition pipeline, Auto-ML libraries are invoked through the shell for what they do best, a cross-competition experience library supplies evidence-backed priors, and a tree search over candidate configurations serves as the optimisation loop (Figures~\ref{fig:arch} and~\ref{fig:tree}). The agent also documents itself: every lane emits its own EDA figures and structured experiment records, and a reporting layer renders each competition's artifacts into a five-section ML specification report --- 22 such reports for my-agent and 17 re-documenting the AIDE runs are attached (Appendix~\ref{app:specs}).
+Recent agents exploit that property. AIDE searches a tree of complete candidate solutions,
+mutating each on the error or score it returns~\cite{aide2025}. ERA couples a language-model
+rewriter with tree search and externally injected research ideas, outperforming strong baselines
+across 16 Kaggle Playground competitions~\cite{aygun2026}. Industrial agents skip search
+altogether and reproduce the strongest public solution to the competition at
+hand~\cite{nvidia2026}. Each embodies a different answer to where knowledge should enter the
+pipeline; none tests its answer against the alternatives.
 
-The design question we ended up caring most about is \emph{where external knowledge should enter the pipeline}. Our first answer was the conventional one --- inject it downstream, among the candidates being blended --- and measuring our own implementation showed that answer to be worth about ${\sim}10^{-5}$. A failure-mode reading of all three agents studied here located their shared gap upstream, at problem-level judgment --- ``does this task need external data?'', ``is the test set a future time window?'' (summarized in Section~\ref{sec:v5}). The architecture therefore injects knowledge upstream, through a \emph{problem-identification layer}: a dossier stage that runs before EDA, classifies the task, and emits typed operators into a whitelisted, leakage-guarded external-data module (Section~\ref{sec:v5}). That layer is evaluated under real-leaderboard discipline in Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} --- the scored evidence at the centre of this report.
+An agent's own cross-validation cannot arbitrate between agents. It is not a leaderboard proxy
+--- on one competition here a pooled out-of-fold SMAPE of $6.706$ sat against a realized
+leaderboard score of $49.40878$ --- and it is computed on a split the agent itself chose, which is
+part of what is under test. External scores are not self-interpreting either: in the development
+runs behind this study the top-two private gaps sat at the fourth and fifth decimal place
+($0.00003$; $0.00000$), and rerunning an agent unchanged moves its score by a comparable amount.
+We therefore score every verdict on the real leaderboard and adjudicate it with an error model
+taken from the data: Kaggle splits each test set into two disjoint subsets, public and private,
+and one submission receives a score on each, so how far a between-agent gap moves across the two
+subsets measures that competition's own noise.
 
-Testing an architectural claim of this kind requires reference points we did not build and cannot tune, so all results are stated against two frozen, methodologically distinct yardsticks: \textbf{AIDE}, LLM tree search with no cross-competition memory, and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel. All three run on 20 Kaggle competitions plus three mid-complexity competitions; because local estimates cannot be trusted to arbitrate between agents, every yardstick verdict is scored on the real leaderboard via late submission. my-agent's benchmark lanes run under the frozen architecture in credential-free sandboxes (Section~\ref{sec:fairness}); 19 of 20 are complete as this draft compiles (the last re-running clean after an audit discard), and the separate credentialed operator step scored those 19 on 2026-08-18, so the benchmark tables carry real my-agent leaderboard scores and paired verdicts for them, with the final lane TBD (Sections~\ref{sec:exp1} and~\ref{sec:winrates}).
+\textbf{my-agent} runs the full loop --- problem identification, exploratory analysis, feature
+engineering, modelling, evaluation, submission --- with a language model reasoning at every stage
+and gradient-boosting libraries invoked through the shell. Three mechanisms distinguish it: a
+cross-competition experience library in which every stored insight must carry a score delta as
+its evidence; a tree search in which ensembles are first-class nodes over cached out-of-fold
+predictions (37--224 evaluated nodes per competition); and a stage that identifies the problem
+from the competition statement and data schema, before any analysis. That stage carries the design decision. Our first answer was the
+conventional one --- inject downstream, among the candidates being blended --- and measuring our
+own implementation showed it worth ${\sim}10^{-5}$. Knowledge therefore enters upstream:
+the stage writes a structured dossier of task family, train--test window relation, split policy
+and external-data need, and emits typed operators into a whitelisted, leakage-guarded
+external-data module.
 
-Reading such comparisons at all requires an error model --- top-two leaderboard gaps often sit at the fourth or fifth decimal place, and agent execution is itself stochastic --- so every verdict in this report is adjudicated under the measurement methodology of Section~\ref{sec:apparatus}.
+An architectural claim needs reference points we did not build and cannot tune. We froze two
+methodologically distinct yardsticks --- \textbf{AIDE}, tree search with no cross-competition
+memory, and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel
+--- and improved neither, even where we found weaknesses. All three ran on 20 tabular
+competitions, and on three further competitions spanning language pairing, physiological time
+series and dermoscopic imaging, one lane at a time on one machine under mechanically enforced
+isolation. my-agent's benchmark lanes held no credentials, so no lane could consult a
+leaderboard or submit; a separate operator step scored the frozen submissions, and every lane's
+tool-call transcript was audited before its score was accepted.
 
-What the report contains: the architecture and its injection layer (Section~\ref{sec:v5}); the measurement methodology (Section~\ref{sec:apparatus}); the 20-competition benchmark with my-agent's local numbers and the yardsticks' frozen leaderboard scores (Section~\ref{sec:exp1}); the injection layer's controlled, leaderboard-scored experiments (Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5}); and a mid-complexity three-way across NLP, physiological time series, and medical imaging where my-agent takes the best score on all three (Section~\ref{sec:exp7run2}).
+my-agent leads the resulting standing under an adjudication rule fixed before any score
+existed, and the upstream layer separates cleanly across the task distribution while winning
+every controlled arm we ran. Both results come with a boundary the same measurement draws: a
+third of the comparisons cannot be called at the noise scale of the leaderboards themselves, and
+where the agent loses it loses to faithful reproduction of an existing public solution rather
+than to a better search. The hypothesis we cared about most failed outright --- no local signal
+we tested selects which form an injection should take --- and we report it here as a result,
+because a method that cannot kill its own hypotheses is not measuring anything.
 
-\section{Methods}
 
-\subsection{my-agent: A Hybrid Kaggle Agent}
+% ============================================================================
+%  PART: RESULTS  (Nature-style rewrite of REPORT_v6.tex)
+%  Assembled between the Introduction and the Discussion.
+%  Main-text display items defined here: Fig. 1 (fig:arch),
+%  Table 1 (tab:injection), Table 2 (tab:winrates), Table 3 (tab:midcx).
+%  Labels defined here: sec:exp4, sec:votes, sec:exp5v5, sec:exp6v5,
+%  sec:winrates, sec:reversal, sec:rerun, sec:exp7run2.
+%  Labels referenced from elsewhere: sec:v5, sec:apparatus, sec:exp2,
+%  sec:fairness, sec:exp1, sec:limitations, sec:future, fig:tree, tab:bench,
+%  tab:comps, tab:nodes, tab:drift, tab:variance, tab:splits, tab:threeway,
+%  app:specs, app:coverage.
+% ============================================================================
 
-The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}). Its core design is a division of labor between LLM reasoning and Auto-ML tools: the LLM (Claude Code) handles problem understanding, validation-strategy design, creative feature engineering, result interpretation, and deciding the next step; LightGBM / XGBoost / CatBoost / Optuna --- invoked by the LLM via the shell --- handle model selection, hyperparameter optimization, and stacking/ensembling.
+\section{Results}
 
-Execution proceeds through the pipeline of Figure~\ref{fig:arch}: data ingestion $\to$ \textbf{Stage 0.5} problem dossier $\to$ EDA $\to$ feature engineering $\to$ modeling $\to$ evaluation $\to$ submission. The dossier stage decides what kind of problem the task is before any modeling (Section~\ref{sec:v5}); it is evaluated in its own right, under the same paired-test discipline as everything else, in Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5}. Modeling and evaluation run in one of two optimization modes:
+\subsection{An agent that classifies the problem before it models it}
 
-\begin{itemize}[leftmargin=*]
-  \item \textbf{Linear iteration protocol}: propose a hypothesis, run the experiment, record the result --- used for the first pass and for small competitions.
-  \item \textbf{Tree search (preferred)}: once the linear protocol has produced a baseline single model and at least one blend, the agent switches to tree search. Internal evaluation shows tree search winning 9 of 10 competitions with 1 tie and 0 losses.
-\end{itemize}
+my-agent commits to a classification of the problem from the competition statement and the
+data schema alone, before any analysis or modelling, and every mechanism that distinguishes it
+from the two yardsticks hangs off that commitment. Execution
+runs through six stages --- data ingestion, Stage 0.5 problem dossier, exploratory data
+analysis (EDA), feature engineering, modelling, evaluation, submission --- with an LLM (Claude
+Code) reasoning and deciding at each one, and with LightGBM, XGBoost, CatBoost and Optuna
+invoked through the shell for model fitting, hyperparameter search and ensembling
+(Fig.~\ref{fig:arch}). Stage 0.5 answers four questions before any modelling begins --- task
+family, train--test window relation, split policy, external-data need --- and writes them to a
+structured dossier. The dossier is a prior, not a conclusion: EDA must test its hypotheses and
+record a verdict against it.
 
-Three cross-cutting mechanisms support the pipeline:
+Three mechanisms hang off that stage. A cross-competition experience library supplies priors
+and is gated on evidence: every entry must carry a competition, an experiment number and a
+score delta, and entries without one are rejected. Neither reference method carries
+cross-competition memory, and this study does not measure what the library itself contributes:
+no ablation of it was run, so the standing below cannot be attributed to it. An external-data layer
+realises the dossier's data-level operators as whitelisted, leakage-guarded joins, each raced
+against a no-external baseline inside the search. And a tree search over candidate solutions is
+the optimisation loop: each node is a complete, executable solution scored by local
+cross-validation, lineages are abandoned on plateau, and ensembles are first-class node kinds
+built over cached out-of-fold predictions with weight search, so blend nodes compete with solo
+nodes for the global best rather than being assembled once at the end (Extended Data
+Fig.~\ref{fig:treeex}). Lanes evaluate 37--224 nodes per
+competition against a default budget of 60, extended through a documented resume path
+(Table~\ref{tab:nodes}). The agent takes one linear pass to a validated single model and a
+first blend before switching to search; internal development evaluation had tree search winning
+9 of 10 competitions with 1 tie and 0 losses against that linear protocol, and every benchmark
+lane used it.
 
-\paragraph{Cross-competition experience library} (\path{knowledge/experience.md}): every insight must carry an evidence field (\texttt{competition, exp \#N, score A $\to$ score B}); entries without a score delta are rejected. The agent queries the library before EDA and before modeling, and writes validated new insights back after experiments. This is the most fundamental design difference between my-agent and the two reference methods.
-
-\paragraph{Experiment records.} Every experiment's parameters, features, split scheme, and scores are logged in structured form (\path{experiments.json}, \path{experiments_tree_v3.json}), making every number in this report traceable.
-
-\paragraph{External-data layer}: realizes the dossier's typed operators as whitelisted, leakage-guarded external joins, each raced against the no-external baseline inside the search (Section~\ref{sec:v5}).
-
-\paragraph{Automated reporting and visualization.} The pipeline documents its own work: each lane generates EDA figures (distributions, drift, correlation) before modelling, and a reporting layer of the same skill renders the lane's recorded artifacts --- dossier, EDA output, experiment records --- into a per-competition ML specification report following the five-section framework of Appendix~\ref{app:specs}, with every printed number required to trace to a logged experiment. The 22 my-agent reports and 17 reports re-documenting the AIDE runs under the same framework are attached companion documents.
-
-Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms connect to the search loop.
+The pipeline also documents itself. Each lane records a structured EDA pass --- distributions,
+drift, correlation --- into machine-readable records and emits no image files; every
+experiment's parameters, features, split scheme and scores are logged in structured form, so
+every number in this paper traces to a logged run; and a reporting layer renders those records
+into a five-section per-competition specification report, 22 for my-agent and 17 re-documenting
+the AIDE runs under the same framework (Appendix~\ref{app:specs}). A benchmark lane holds no
+Kaggle credentials, runs alone on the machine, reads only its own validated data root, freezes
+a submission file, and has every tool call it made read afterwards by a transcript audit;
+scoring is a separate credentialed operator step (Section~\ref{sec:apparatus}).
 
 \begin{figure}[htbp]
 \centering
@@ -130,7 +250,7 @@ Figure~\ref{fig:arch} summarizes the architecture and how the three mechanisms c
   {\textbf{Claude Code (LLM)} --- reasons and decides at every stage};
 % ----- tree-search loop (Evaluation -> Modeling), arc in the corridor -----
 \draw[arr] ([yshift=2.5mm]s5.east) to[out=30, in=-30] ([yshift=-3.5mm]s4.east);
-\node[lab, anchor=west] at (3.45,-7.65) {tree search (37--126 nodes, Fig.~\ref{fig:tree})};
+\node[lab, anchor=west] at (3.45,-7.65) {tree search (37--224 nodes, Fig.~\ref{fig:tree})};
 % ----- right rail -----
 \node[supp]    (lib)   at (7.3,-0.2)  {\textbf{Experience library}\\[-1pt]
   {\scriptsize evidence-backed priors}};
@@ -174,7 +294,818 @@ the agent: lanes hold no credentials, and submissions are scored only after the 
 \label{fig:arch}
 \end{figure}
 
-\paragraph{Tree-search protocol.} Every run in this report uses the tree-search harness of Figure~\ref{fig:tree} (\path{tree_search/harness_v3.py}): ensembles are first-class node kinds with out-of-fold caching and weight search, and a budget phase machine exploits until all lineages plateau, then forces one exploration burst, then stops. An earlier downstream variant of the harness injected external ideas at the blend stage; no benchmark submission here used it, and its measured near-null effect is what motivated the upstream layer (Section~\ref{sec:v5}).
+
+\subsection{Downstream injection is worth about $10^{-5}$; the gap all three agents share is upstream}
+\label{sec:exp4}
+
+Our first design put external knowledge downstream, among the candidates being blended, and
+measuring it showed that placement to be worth almost nothing. Reweighting never displaced the
+convex-optimum champion in 8 of 8 rigorous competitions, and expanding the candidate pool
+helped 2 of 8 by about $10^{-5}$. We abandoned that placement; no benchmark submission in this
+paper uses it.
+
+Reading the three agents' development-run execution logs and champion code relocated the gap
+upstream, to problem-level judgment rather than tuning skill. AIDE can diagnose a problem but
+has no mechanism that lets a diagnosis veto a score: on s3e19 it accidentally swapped its
+time-based validation for shuffled KFold mid-run, its metric instantly ``improved'' from
+$18.42$ to $4.41$ --- an optimism a controlled split-only experiment measures at $4.5\times$
+(Table~\ref{tab:splits}) --- and it tuned against the leaked number to the end, while my-agent
+quarantined the same split as diagnostic only.
+\label{sec:votes}%
+The NVIDIA agent reproduced its source kernel's skeleton on the same competition but missed the
+step that decides the outcome, and its selection signal --- the vote count of a public kernel
+--- measures popularity rather than quality, with nothing in the method checking the reproduced
+score against the source's claimed rank. All three agents missed the same thing on s3e19: the
+task needs external data. At matched budget the per-country GDP join used by the leaderboard's
+better half is worth about $6$ SMAPE of a ${\sim}44$-point gap, the remainder being a
+full-future-year extrapolation that defeats every method in the comparison equally. The
+upstream layer is the architectural answer to exactly this class of miss.
+
+\subsection{The dossier fires on the tasks that need external data and is silent on the rest}
+\label{sec:exp5v5}
+
+Run as a classifier over the task distribution, the problem dossier separates cleanly: it fires
+on exactly the 2 of the 18 original benchmark competitions that need external covariates and
+reports ``no'' or ``unlikely'' on the other 16. The two it fires on are the country-panel time
+series s3e19 and tps-jan-2022, whose accepted solutions are known to require external
+covariates; the 16 silences cover the i.i.d.\ tabular, categorical, spectral and
+structured-output tasks (Table~\ref{tab:comps}). Sensitivity is therefore 2/2 and specificity
+16/16, obtained from the problem statement, the data schema and task-\emph{type} priors alone,
+in minutes per competition and with no training.
+
+Two caveats bound that claim, and they cut in opposite directions. The sensitivity half is
+partly in-sample: the task priors the dossier reads were distilled from this benchmark's own
+failure analysis of exactly those two competitions, so 16/16 is the informative half, and 2/2
+carries a 95\% confidence interval reaching down to 16\%. The two firing-class competitions
+added later (s5e1, tps-sep-2022) also fire, but they were \emph{selected} as firing-class, so
+the sweep claim rests on the original 18. Two secondary behaviours are worth recording. On
+s3e19 the dossier surfaced a genuine conflict --- a conservative setup-time \path{config.yaml}
+flag said external data was not allowed while the task prior's evidence implied otherwise ---
+and flagged it for verification rather than guessing (the official rules, Section 7.C, settle
+it in favour of permission). On the out-of-scope SIIM imaging task it answers ``no'', which is
+correct within the current source whitelist, whose classes do not yet include prior-competition
+archives.
+
+\subsection{All six controlled external-data arms beat their baselines}
+\label{sec:exp6v5}
+
+Every controlled arm the layer produced beat its matched baseline, and each margin passes the
+paired public--private test. Across the three firing-class competitions --- s3e19, the
+benchmark's canonical failure and the causal test bed; tps-sep-2022, a held-out replication
+with the dossier written in advance; and s5e1, a pre-registered test --- all six external-data
+arms beat their no-external baselines, every one paired-significant. Arms were built so that
+the operator's added columns are the only difference from the baseline, verified digit-identical
+otherwise, and every arm was submitted for real public and private scores. In matched
+configuration the feature join is worth $6.01$ private SMAPE on s3e19 and $2.09$ on the
+held-out tps-sep-2022; at a full 46-node search budget per arm both external arms still beat
+the searched baseline, so the effect is not an artefact of a starved control; and on s5e1 the
+winning form takes a $20\%$ relative private-MAPE margin ($0.12417$ against $0.15751$), the
+largest effect in the class.
+
+On the canonical failure itself, a with-layer/without-layer ablation --- the full pipeline
+against a searched champion from the identical pipeline with the layer disabled --- passes the
+paired test: private $48.243$ against $50.455$, with $d_{\mathrm{pub}}=+3.389$,
+$d_{\mathrm{priv}}=+2.212$ and a gap movement of $1.177$, so the gap comfortably exceeds its
+own movement across the two test subsets. That with-layer champion sits numerically ahead of
+both frozen yardsticks on s3e19 ($48.26558$ and $48.34131$). It is a controlled arm and not the
+benchmark s3e19 lane, which ran without the layer and scored $49.40878$; we make the comparison
+in Table~\ref{tab:injection} rather than in the benchmark table for that reason.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\caption{What the upstream injection layer fires on and what it delivers. Every row is a
+measurement on real competition data. Controlled arms differ from their baseline only in the
+operator's added columns, verified digit-identical otherwise, and each was submitted for real
+public and private scores; ``paired-significant'' means the gap replicates in sign across the
+public and private test subsets and exceeds its own movement between them. Lower is better for
+SMAPE and MAPE. $^{\ast}$The ablation figures are controlled arms, \emph{not} the benchmark
+s3e19 lane, which ran without the layer and scored $49.40878$ (Table~\ref{tab:bench}).}
+\label{tab:injection}
+\begin{tabular}{@{}L{4.0cm}L{4.7cm}L{5.9cm}@{}}
+\toprule
+\textbf{Measurement} & \textbf{Setting} & \textbf{Result} \\
+\midrule
+Dossier sensitivity & 18 original benchmark competitions; problem statement, schema and task-type priors only; no training & Fires on 2/2 competitions needing external data \\
+Dossier specificity & same 18 competitions & Silent on 16/16 competitions not needing it \\
+\addlinespace[2pt]
+External-data arms & 3 firing-class competitions, matched configuration, real submissions & \textbf{6 of 6} beat their baseline; every one paired-significant \\
+Matched join, s3e19 & operator columns the only difference & $6.01$ private SMAPE \\
+Matched join, tps-sep-2022 & held-out replication, dossier written in advance & $2.09$ private SMAPE \\
+Winning form, s5e1 & pre-registered test & $0.12417$ vs.\ $0.15751$ private MAPE ($20\%$ relative) \\
+\addlinespace[2pt]
+With-layer vs.\ without-layer ablation, s3e19$^{\ast}$ & full pipeline vs.\ searched champion of the identical pipeline, layer disabled & private $48.243$ vs.\ $50.455$; $d_{\mathrm{pub}}\,{+}3.389$, $d_{\mathrm{priv}}\,{+}2.212$, movement $1.177$ \\
+\addlinespace[2pt]
+Form selection (negative) & cross-validation, held-out-year protocol, proportionality diagnostic & \textbf{0 of 3} rank the form verdict correctly; the survivor's pre-registered falsifier fired \\
+Consumer trace (negative) & 241 ideas proposed across 20 dossiers & $73\%$ expressible as an operator; $5\%$ actually consumed at first measurement, $27\%$ after wiring a consumer \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Two things the layer cannot do, measured}
+
+No local signal we tested selects which \emph{form} the injection should take. Cross-validation,
+a held-out-year protocol and a proportionality diagnostic each misrank the form verdict, 0 for
+3. The proportionality diagnostic was the one selector that survived hindsight, so we put it to
+a pre-registered test on s5e1, committing its prediction to version control before any model
+was fitted; its named falsifier fired. The layer therefore races both forms inside the search,
+always, rather than choosing between them, and the one surviving post-hoc candidate --- horizon
+length --- is committed as a pre-registration binding the next firing-class competition before
+its leaderboard is consulted (Section~\ref{sec:future}). This is a negative result with a price
+attached: the form choice was worth more than the entire search budget on one competition and a
+$20\%$ relative margin on another.
+
+The second limit is that proposing an idea is not the same as using it, and our own accounting
+initially could not tell the difference. Across the 20 dossiers the layer proposes 241 ideas.
+Counting those whose operator family exists gives $73\%$; tracing which are actually
+\emph{consumed} by a search driver gave only $5\%$ at first measurement, because the three
+operators supplying most of the higher figure were emitted into a key that no search driver
+read, while the dispatcher recorded them as realized. Wiring a consumer and moving the
+target-free encodings into the data layer raised the traced figure to $27\%$. A produced
+artifact with no consumer is indistinguishable from a working one in every log, score table and
+coverage metric --- and this instance occurred inside the very mechanism built to prevent
+silent truncation. An architecture claim needs a consumer trace, not a vocabulary count
+(Appendix~\ref{app:coverage}).
+
+\subsection{my-agent leads the three-agent standing, and a third of the duels are undecidable}
+\label{sec:winrates}
+
+Under the paired error model, my-agent wins 16 and loses 8 of its 24 decided duels ($66.7\%$),
+against $42.3\%$ for each of the two frozen yardsticks, which win 11 and lose 15 of their own
+26. The evaluation set gives 20 competitions $\times$ 3 pairings $=$ 60 duels, and with all 20
+lanes scored every one of them is adjudicated: 38 produce a verdict and 22 do not. The 22 are
+not ties. Nineteen fail the requirement that the ordering replicate in sign across the public
+and private test subsets, or that the gap exceed its own movement between them; three die on a
+per-competition between-run variance floor. The win-rate denominators differ between agents
+(24 for my-agent, 26 for each yardstick) because a duel is decided or not independently for
+each pair. Table~\ref{tab:winrates} gives the standing; per-competition scores are in
+Table~\ref{tab:bench}.
+
+The three floor kills are worth naming individually, because each removes a verdict a raw
+reading would have awarded: s3e16 and s5e10 would have been my-agent wins, and s6e2 an AIDE win
+(private gap $0.00011$ against AIDE's measured $0.00020$ wobble there; Table~\ref{tab:variance}).
+s5e10 is the sharpest case. The private gap between my-agent and AIDE is
+$|d_{\mathrm{priv}}| = 0.00003$, exactly equal to AIDE's measured between-run wobble on that
+competition. The rule requires the gap to \emph{exceed} the floor, and we compare in exact
+decimal, so the duel stays undecidable rather than becoming a seventeenth my-agent win --- a
+case the error model flagged in advance, before the benchmark scores existed.
+
+Two readings that the paired test does not replace sit alongside it. On the raw,
+direction-aware comparison of private scores, my-agent takes the best of the three on 10 of the
+20 competitions, NVIDIA on 7 and AIDE on 3, with no ties anywhere; and my-agent's benchmark
+submission beats its own development-lane private score on 13 of 20, so the frozen, audited,
+credential-free rerun is not a weakened version of the development runs. As an absolute
+reference, NVIDIA's median percentile rank against the frozen final leaderboards is 68.0 (range
+$18.8$--$96.5$) and AIDE's is 68.7 ($26.4$--$97.9$); my-agent's percentile ranks require a
+leaderboard-snapshot pull and are not reported here.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Standing of the three agents on the 20-competition benchmark. Each competition
+contributes three duels, one per pair of agents, giving 60 duels, all adjudicated: 38 decided
+and 22 undecidable. The 22 undecidable duels are \emph{not} ties --- 19 fail the
+sign-agreement or gap-stability condition of the paired public--private test, and 3 fall below
+a per-competition between-run variance floor. Win rate is over each agent's own decided duels
+(my-agent 24, each yardstick 26), which is why the denominators differ. ``Best private score''
+counts competitions on which that agent's private leaderboard score is the best of the three on
+a raw, direction-aware reading; there are no ties. Percentile rank (PR) is the share of a
+competition's final private standings the submission would beat, a would-be rank $r$ among $N$
+teams giving $\mathrm{PR}=100\,(N-r)/N$ against the frozen final leaderboard.}
+\label{tab:winrates}
+\begin{tabular}{@{}lrrrrl@{}}
+\toprule
+\textbf{Method} & \textbf{Wins} & \textbf{Losses} & \textbf{Win rate (decided duels)} &
+\textbf{Best private score} & \textbf{Median PR (range)} \\
+\midrule
+my-agent & 16 & 8  & 66.7\% & 10 of 20 & not available$^{\ast}$ \\
+NVIDIA   & 11 & 15 & 42.3\% & 7 of 20  & 68.0 (18.8--96.5) \\
+AIDE     & 11 & 15 & 42.3\% & 3 of 20  & 68.7 (26.4--97.9) \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\raggedright\footnotesize
+$^{\ast}$~my-agent's percentile ranks require a leaderboard-snapshot pull and are not reported.
+\end{table}
+
+\subsection{my-agent's losses fall where a mature public solution already exists}
+\label{sec:reversal}
+
+my-agent's two sharpest losses are the two benchmark competitions that have a mature,
+high-quality public solution, which is where faithful reproduction beats autonomous search. On
+tps-sep-2022 it scores $28.49605$ SMAPE against $5.48351$ for NVIDIA and $9.72095$ for AIDE; on
+tps-jan-2022 it scores $6.29895$ against NVIDIA's reproduction of the known GDP-ratio solution
+at $4.63651$. Neither gap is anywhere near the measurement noise the error model absorbs:
+my-agent's own public and private scores on tps-sep-2022 are $28.45070$ and $28.49605$, so the
+sampling noise there sits in the second decimal place while the gap it loses by runs to whole
+SMAPE points. Search wins the rest of the set, which is dominated by obscure,
+build-your-own-pipeline tasks with no such solution to copy.
+
+The same reversal appears inside a single competition. On s5e1 the public half of the test
+split favours NVIDIA and the private half favours my-agent, so that duel fails the
+sign-agreement condition and is undecidable by construction rather than by any shortage of
+signal --- the development-lane case replicated live in the frozen run. The standing is
+correspondingly sensitive to which competitions are in the set: dropping s3e19 alone takes
+my-agent from $66.7\%$ to $72.7\%$, and dropping s3e3 takes NVIDIA from $42.3\%$ to $37.5\%$.
+
+\subsection{The audit gate fires in both directions, and our own auditor was blind at its target}
+\label{sec:rerun}
+
+An audit is evidence only if it can discard a result that flatters us and can itself be caught
+being wrong; ours did both. All 20 lanes completed, were transcript-audited and were scored,
+over roughly 26 hours of accepted lane attempts. The queue halted three times: twice on the
+same environment fault and once on the rule that stops the whole queue after two consecutive
+audit failures. That environment fault was ours rather than the method's --- the sandbox bound
+the session credential file read-only, so a lane whose access token expired mid-run could not
+write the refreshed token back and died with an authentication error, 39 and 75 minutes in. We
+fixed it after the benchmark with a writable bind and a budget-aware preflight that refuses to
+start a lane whose token cannot outlive it.
+
+The gate fired hardest on s3e19. Its first attempt opened the raw knowledge library four times,
+bypassing the query interface's self-citation exclusion, and the audit discarded it. The clean
+re-run scores \emph{worse} on local cross-validation --- pooled out-of-fold SMAPE $6.706$
+against the tainted attempt's $5.740$ --- consistent with the contamination advantage being
+real and the audit pricing it correctly. A benchmark that discards a better-looking number and
+keeps the honest one has evidence its audit does something. The same transcript also tripped
+the network detector; re-reading it showed the hit to be a Python variable named \texttt{nc}
+inside a diagnostic heredoc, so the four raw-library opens carry the discard on their own.
+
+The recurrence, not the individual incident, is the finding. Four of the twenty lanes wrote
+their own library write-back script, because the skill instructs every lane to write validated
+insights back through library tools this run root does not ship, and the root bound the shared
+library writable so that a lane could write its own workspace. That is a fault of the harness
+rather than of any lane, and only one instance of it crossed lanes: tps-aug-2022 wrote three
+insights back minutes after finalising its submission, tps-jan-2022 started two minutes later
+and its Stage 0.5 read served the polluted entries, so we killed that lane at one minute,
+reverted the library and relaunched it clean. Where a flagged library open occurred strictly
+\emph{after} the submission was written and validated, the score stands; we applied that
+ordering argument to s5e10, tps-aug-2022, tps-sep-2022 and the tps-jan-2022 re-run, verifying
+it for the re-run from transcript tool-call order --- submission written at call 97, validated
+at 102, raw opens from 106. tps-sep-2022 did not scan clean: nothing crossed into it, but its
+own transcript raised the same class of blocker after its submission had been validated. The
+shared knowledge directory is now mounted read-only over the writable run root, so prevention
+no longer depends on after-the-fact detection.
+
+Re-reading the transcripts also exposed two defects in the auditor itself. Its network detector
+matched the substring \texttt{kaggle} inside the path of the skill's own submission helper,
+blocking two lane audits on that string alone, each costing a manual scan and a recorded
+operator waiver. More seriously, its exemption list dropped every command beginning with
+\texttt{uv} --- which is every command a lane issues --- so \texttt{uv run kaggle competitions
+leaderboard}, the exact command the detector exists to catch, was never examined. We fixed
+both; the corrected auditor, re-run over all 20 transcripts, returns zero network findings and
+leaves the genuine library blockers unchanged. A detector blind at its own target is the kind
+of defect only a post-hoc re-read finds, which is why we report what the audit did rather than
+only that it ran.
+
+\subsection{The result holds on three task families outside tabular data}
+\label{sec:exp7run2}
+
+my-agent takes the three-way best on all three mid-complexity competitions and the only
+above-median score on the imaging task, across three unrelated task families
+(Table~\ref{tab:midcx}): Pearson $r$ $0.86658$ against $0.86160$ and $0.65821$ on
+us-patent-phrase-to-phrase-matching (natural-language pairing), MAE $0.16525$ against $0.40093$
+and $0.34591$ on ventilator-pressure-prediction (physiological time series), and AUC $0.93529$
+against $0.89822$ and $0.88579$ on SIIM-ISIC melanoma classification (dermoscopic imaging).
+Each agent ran under its own frozen method, one lane at a time on a fully dedicated machine,
+with 4--8\,h budgets and the same isolation protocol as the tabular benchmark.
+
+Three limits travel with that sweep. Offline grading yields one score per submission, so the
+paired public--private test does not reach these lanes: they are raw-score results, not paired
+verdicts. None of the three my-agent lanes ran the injection layer. And none ran tree search
+--- a node here is a full deep-learning fine-tune costing 30--90 minutes against seconds for a
+tabular gradient-boosting refit, so the prescribed budget of tens of nodes would have cost
+15--100$+$ GPU-hours against the 4--8\,h available --- so all three took the skill's documented
+fallback for this condition: one linear pass to a validated single model plus a blend, with the
+high-leverage moves (backbone choice, seed bagging, blend weights) taken directly. The sweep is
+therefore about pipeline discipline outside the tabular family, not about the mechanisms the
+rest of this paper measures.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Mid-complexity three-way across three unrelated task families. Each agent ran under
+its own frozen method on MLE-bench prepared splits, graded offline against the held-out private
+split, because us-patent is a code competition and the ventilator and SIIM live test sets
+differ from the prepared splits, so Kaggle late submission is structurally unavailable. One
+score per submission means the paired public--private test does not apply; these are raw
+scores. \up{} and \dn{} give the metric direction. Bold marks the three-way best; $\dagger$
+marks a score above the median of that competition's frozen final leaderboard, with the medal
+tier in parentheses where one is reached. None of the three my-agent lanes ran the injection
+layer or tree search.}
+\label{tab:midcx}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} \\
+\midrule
+us-patent & Pearson $r$ \up & \textbf{0.86658}$\dagger$ (silver) & 0.86160$\dagger$ (bronze) & 0.65821 \\
+ventilator & MAE \dn & \textbf{0.16525} & 0.40093 & 0.34591 \\
+SIIM-ISIC & AUC \up & \textbf{0.93529}$\dagger$ & 0.89822 & 0.88579 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Discussion}
+
+\subsection{What the architecture is worth}
+
+This study put three things a human investigator normally supplies under measurement, and each
+came back with an answer.
+
+Judgment about the problem turns out to be a placement question, and placement is empirical. Our
+own first design injected knowledge downstream, among the models being combined, where it moved
+scores by about $10^{-5}$; the same knowledge entering upstream separates cleanly across the task
+distribution and wins every controlled arm we ran (Sections~\ref{sec:exp5v5}
+and~\ref{sec:exp6v5}). What the layer cannot do is choose the \emph{form} of the injection: no
+local signal we tested predicts it, and the one candidate that survived hindsight was killed by
+its own pre-registered falsifier. An agent can therefore be engineered to ask the right question
+about a task before it models it, but not yet to answer that question unaided --- which is why
+the layer races both forms inside the search instead of selecting between them.
+
+Measurement came back with a boundary rather than a number. Under an adjudication rule fixed
+before any score existed, the agent leads both frozen yardsticks (Section~\ref{sec:winrates});
+under the same rule a third of the comparisons cannot be called at all, and the winner of a
+benchmark like this one depends on which competitions are in it. A ranking reported without that
+scale is not a weaker claim, it is an unmeasured one.
+
+Honesty came back the least comfortable. The audit caught a contaminated lane whose tainted score
+looked better than its clean replacement's, and then a re-read caught the auditor itself blind at
+its own target (Section~\ref{sec:rerun}). Mechanical isolation bounded what a lane could reach;
+only reading what it actually did bounded what the benchmark could claim.
+
+The three methods differ in where knowledge comes from and in what decides the next step, not in
+tuning skill (Table~\ref{tab:threeway}). AIDE starts from zero each time and lets the previous
+step's error or score choose the next; the NVIDIA agent reproduces the highest-voted public kernel
+faithfully, inheriting its split and whatever external data it used; my-agent carries an
+accumulating cross-competition experience library, chooses its split from the task type --- it
+quarantined the same shuffled split AIDE submitted --- and reaches external data only through the
+typed injection layer. Their wins track those sources: reproduction wins where a mature public
+solution exists, search wins where none does, and all three shared one blind spot on s3e19, where
+none recognised that the task needs an external covariate at all. Closing that blind spot is what
+the injection layer is for, and it is why the controlled experiments rather than the standing
+carry this paper's thesis.
+
+What the comparison licenses is narrower than a ranking of ideas. We froze both reference methods
+and improved neither --- including leaving disabled the score-based selection tool the NVIDIA
+skill ships --- because improving a yardstick mid-study makes earlier and later data incomparable.
+Neither is a research subject here: a loss to kernel reproduction is evidence about where
+reproduction is strong, not about which agent is the better system, and the same holds for every
+duel my-agent wins.
+
+\subsection{A ranking is a property of method $\times$ evaluation set}
+
+An agent benchmark's verdict is not a property of the methods alone. Reproduction dominates where
+a mature public solution already exists, autonomous search dominates on obscure,
+build-your-own-pipeline tasks, and a relative verdict binarises many near-equal gaps, so a paired
+win rate is far more sensitive to the composition of the evaluation set than an absolute position
+such as median percentile rank. In our development runs the winner flipped between two reasonable
+competition sets --- same agents, same test. The mechanism reappears inside a single competition:
+on s5e1 the public and private halves of one test split order two agents oppositely, which is why
+that duel is undecidable by construction (Section~\ref{sec:reversal}). A benchmark's conclusion
+must therefore be stated together with the composition of the set it was measured on, and should
+report an absolute metric alongside the relative one. That constrains our own headline first.
+
+\subsection{Limitations}
+\label{sec:limitations}
+
+The significance test covers test-set sampling noise only, not between-run agent variance. Each
+benchmark lane is a single run per method per competition; run-to-run variance was measured
+separately, on four competitions, for my-agent and AIDE, and enters the error model as a
+per-competition floor, while NVIDIA's term remains unmeasured. Widening that sample is the
+cheapest way to harden every verdict this benchmark produces.
+
+The duels are also not independent trials. Each competition contributes three duels computed from
+six shared scores, so the effective sample is nearer 20 competitions than 60 duels, and interval
+estimates require a competition-level cluster bootstrap. A further asymmetry touches every NVIDIA
+duel: reproduced kernels were tuned by their authors against the realised public leaderboard
+(degradation extreme $+155\%$, s5e1), so the exchangeability premise behind the paired test is
+weakest exactly where reproduction is strongest. Budgets are per-method conventions rather than
+compute-matched --- each method runs as shipped, so this compares methods-with-their-budgets, not
+methods at equal compute.
+
+The sample is small, the ranking is sensitive to its composition, and part of it was added post
+hoc. With 20 competitions and 24--26 decided duels per agent, removing one competition moves a win
+rate by several points: dropping s3e19 alone takes my-agent from $66.7\%$ to $72.7\%$, dropping
+s3e3 takes NVIDIA from $42.3\%$ to $37.5\%$. The two firing-class competitions joined the original
+18 after their leaderboards had been consulted for the injection experiments, and in the
+development runs that addition moved every rate; we disclose that composition rather than hide it.
+The experience-library asymmetry is likewise disclosed rather than eliminated:
+my-agent carries cross-competition memory, the other two cold-start on every task.
+
+Two gaps limit what can be read off the tables. my-agent's percentile ranks require a
+leaderboard-snapshot pull and are not reported, so the absolute reading of the standing is
+one-sided --- only the yardsticks carry a median percentile rank. And the mid-complexity lanes ran
+without the injection layer and without tree search, graded offline at one score per submission
+(Section~\ref{sec:exp7run2}); that sweep is a raw-score result outside the paired test's reach,
+and says nothing about the layer this paper is about.
+
+\subsection{Open problems}
+\label{sec:future}
+
+Four questions remain, ordered by how much each would change the conclusions above. Whether the
+form of an upstream injection can be selected before the leaderboard answers is the sharpest:
+cross-validation, a held-out-year protocol and a proportionality diagnostic each misranked the
+form verdict, and the one selector that survived hindsight was killed by its first pre-registered
+prediction, so the layer races both forms inside the search, always. It matters because on one
+competition the form choice was worth more than the entire search budget; the single remaining
+post-hoc candidate, horizon length, is committed as a binding pre-registration that fixes its
+prediction and its falsifier before the next firing-class competition's leaderboard is consulted.
+Second, the firing class is small --- the controlled evidence rests on two clean test points plus
+one held-out replication --- and enlarging it is worth more than re-running the 16 competitions
+where the layer stays silent, which would only re-roll 48 of the 60 duels at the measured
+run-to-run variance. Third is retrieval quality in the experience
+library: enforcement is closed, since an experiment record without a \texttt{library\_query} trace
+is invalid and the audit tool checks this mechanically, but a neighbouring entry over-claimed and
+had to be corrected against leaderboard evidence, and nothing yet scores a retrieved prior for
+applicability. Fourth and smallest, whitelisting further source classes --- prior-competition
+archives, public text corpora --- and a direct ablation of the experience library itself.
+
+The loop this study closed --- build the agent, benchmark it against frozen yardsticks, read the
+failures, fix the layer they identify, re-verify under the discipline that found the gap --- is
+what we expect to outlast any particular number in these tables. Two of its parts did work we did
+not design them for: the audit discarded a contaminated lane whose tainted score looked better
+than its clean replacement's, and the pre-registration killed the hypothesis we most wanted to
+keep. An instrument able to kill its own hypotheses is what we set out to build; the standing
+reported here is what it returned.
+
+
+\section{Methods}
+\label{sec:apparatus}
+% Methods is set one size down, as Nature does. Body-level only; the preamble is untouched.
+% Delete this \begingroup\small and the matching \par\endgroup at the end of the file to
+% revert to full size (costs ~0.55 page: 2.6 -> 3.2 compiled pages).
+\begingroup\small
+
+\subsection{Agent architecture}
+\label{sec:v5}
+
+my-agent is implemented as a Claude Code skill (\path{kaggle-agent}) driven by the Claude Code
+command-line agent, invoked without a model pin, so each lane ran on whichever model that release
+resolved to by default; exact replication therefore requires pinning a model, which we did not do.
+Each lane ran headless under a six-hour wall-clock cap with a thirty-minute stall timeout. An LLM
+decides at every stage --- problem understanding, validation design, feature engineering, interpretation, next
+move --- and invokes LightGBM, XGBoost, CatBoost and Optuna through the shell for fitting,
+tuning and stacking. Six stages run in order (ingestion, EDA, feature engineering, modelling,
+evaluation, submission), with the problem dossier inserted before EDA as Stage 0.5
+(Fig.~\ref{fig:arch}). A linear protocol --- hypothesis, experiment, record --- produces the
+first baseline and one blend; the agent then switches to tree search.
+
+\paragraph{Stage 0.5.} The dossier writes task family, train--test window relation, split policy
+and external-data need to \path{dossier.json}, grounded in \path{knowledge/task_priors.md}:
+task-\emph{type} priors, each with an evidence field distilled from this benchmark's own development runs (the
+shuffled-KFold $4.5\times$ optimism bias; the GDP-join cross-validation gap on jan-2022).
+Competition-specific discussions and kernels are forbidden inputs. The dossier is a prior, not a
+conclusion --- EDA must test its hypotheses and record a verdict against it.
+
+\paragraph{Typed operator contract.} The dossier may emit only operators from a closed
+vocabulary both layers read (\path{knowledge/injection_operators.md}): ten typed operators, each
+with a parameter schema, its evidence, and conditions under which it must \emph{not} be used;
+anything inexpressible in it goes to \texttt{not\_recorded}. The untyped version failed silently
+--- ``World Bank GDP as a country-level scale covariate'' reached an execution layer that could
+only append a column, and a gradient-boosted tree cannot extrapolate beyond its training range,
+so the operator's meaning was lost with nothing raising an error. The dispatcher
+(\path{external_data/apply.py}) writes a proposed/realized/unrealized-with-reason coverage
+ledger and runs two preconditions, proportionality and covariate volatility, guarding the
+level-covariate operators. Conformance is machine-checked on both sides:
+\path{external_data/validate_dossier.py} gates a run at emission, and
+\path{tree_search/seed_from_ledger.py} writes the consumer trace \path{injection_consumed.json}
+at execution.
+
+\paragraph{External data.} Data-level operators draw on a whitelist --- eleven World Bank
+indicators, ECB monthly foreign exchange, OWID COVID, holiday calendars, ISO tables --- fetched
+into recorded snapshots and joined by leakage-guarded as-of merges: a value may reach a
+prediction row only if dated at or before that row's period minus a declared lag; violations
+raise; numeric time columns must declare their unit; every join writes an audit log. Adversarial
+verification produced 21 reproduced findings, including silent-future-leak classes, all fixed
+with regression tests.
+
+\paragraph{Experience library.} \path{knowledge/experience.md} is queried before EDA and before
+modelling and written back after experiments. Every entry carries an evidence field
+(\texttt{competition, exp \#N, score A $\to$ score B}); entries without a score delta are
+rejected. The query interface withholds entries originating from the competition being run --- a
+self-citation exclusion --- and retrieval is binding: an experiment record without a
+\texttt{library\_query} trace is invalid, checked mechanically. Parameters, features, split and
+scores of every experiment are logged to \path{experiments.json} and
+\path{experiments_tree_v3.json}.
+
+\paragraph{Search.} Data-level operators do not enter the main tree: each spawns a variant
+workspace whose added columns are the only difference from the baseline, the arms race the
+no-external baseline at small budget, and the winner takes the full budget; model-level
+operators enter as seed lineages. Search runs in \path{tree_search/harness_v3.py}
+(Fig.~\ref{fig:tree}), each node a complete executable solution scored by cross-validation in a
+sandboxed child process, SIGKILLed on hang or crash. A budget phase machine exploits until every
+lineage plateaus (three children without improvement), forces one exploration burst of 5--8
+long-shot drafts as new roots, then stops: default cap 60 evaluated nodes, patience 20
+evaluations without a new global best, extensible through a documented \texttt{extend\_budget}
+resume path. Ensembles are first-class nodes --- a blend combines two lineages' cached
+out-of-fold predictions under a weight search, and a solo breakthrough reopens plateaued blend
+lineages. A SHA-256 duplicate gate over the canonicalized configuration (parameters, features,
+seed, blend members) burns budget on a repeat but never re-evaluates it. Benchmark lanes
+evaluated 37--224 nodes (Table~\ref{tab:nodes}).
+
+\subsection{Reference methods}
+
+AIDE~\cite{aide2025} performs LLM-driven tree search: each step writes a complete solution,
+executes it, reads the error or score, and mutates accordingly. It carries no cross-competition
+memory and ran its own default 20-step budget (conway stopped at 16 on the 4-hour wall-clock
+cap). The NVIDIA Kaggle Agent~\cite{nvidia2026} researches the competition context, selects the
+highest-\emph{voted} solution-type kernel, ports it faithfully and retrains it on the local
+data. Both are frozen --- no improvements of any kind, including the score-based
+kernel-selection tool the NVIDIA skill ships, which we left disabled --- because improving a
+yardstick mid-study makes earlier and later data incomparable.
+
+\subsection{Fairness protocol and execution discipline}
+\label{sec:fairness}
+
+The three agents share one machine, so four isolation conditions are mechanically enforced
+(Table~\ref{tab:fairness}): each side reads only its own data root, validated against the
+official Kaggle manifest by \path{build_isolated_roots.py}; the three output directories are
+fully separated and each side is scored independently; prompts carry environment facts and
+metric thresholds only, with no modelling recipes, no other side's scores and no workaround
+discovered by another side; and one lane runs at a time under the \path{lane_lock.sh} mutex. A
+fifth rule governs the experimenter: fix a defective environment rather than hint to the
+affected side, since hinting compensates one side and silently changes what is being compared.
+
+my-agent's 20 benchmark lanes run a tightened form of this protocol. A manifest
+(\path{docs/rerun_manifest.json}) fixes one workspace, one canonical evaluator and one search
+driver per competition, after a development audit found workspaces accumulating up to 13
+candidate evaluators. Lanes are credential-free --- the Kaggle token is stripped from the
+environment, so a lane can neither consult the leaderboard nor submit. A per-lane transcript
+audit reads every tool call a lane made, with three detector classes: network access; raw opens
+of the shared knowledge library that bypass the query interface's self-citation exclusion; and
+results of sibling benchmark competitions appearing without a sanctioned source. The launcher
+halts the whole queue after two consecutive audit failures, since two in a row indicts the
+pipeline rather than one lane.
+
+\subsection{Paired significance test and variance floors}
+\label{sec:exp2}
+
+An error model is needed because the gaps are small: development-lane top-two private gaps sat
+at $0.00003$ (s5e10) and $0.00000$ (s6e2). Its scale comes from the data.
+Kaggle splits each test set randomly into disjoint public and private subsets and
+scores one submission on each; these are two independent estimates of the same model, so their
+difference is that competition's metric sampling noise. A single agent's own public--private gap
+is the wrong scale, because the shift is largely shared --- which rows land in which subset
+moves every agent together, giving on s5e10 a common shift of $0.00025$ against a mutual scatter
+of $0.00002$ (Table~\ref{tab:drift}) --- and using it returned 8 ties in 10 competitions. The
+correct quantity is how much the gap \emph{between two agents} moves across the two subsets, in
+which the common drift cancels. Writing $d_{\mathrm{pub}}$ and $d_{\mathrm{priv}}$ for the
+between-agent score difference on the public and private subsets, a verdict requires both
+\begin{align}
+\operatorname{sign}(d_{\mathrm{priv}}) &= \operatorname{sign}(d_{\mathrm{pub}})
+  && \text{(the ordering replicates on disjoint samples)} \label{eq:sign} \\
+|d_{\mathrm{priv}}| &> |d_{\mathrm{priv}} - d_{\mathrm{pub}}|
+  && \text{(the gap exceeds its own movement)} \label{eq:gap}
+\end{align}
+
+Condition~\eqref{eq:gap} is algebraically equivalent to
+$d_{\mathrm{pub}}\,(2d_{\mathrm{priv}} - d_{\mathrm{pub}}) > 0$ and therefore implies
+condition~\eqref{eq:sign}; we state both because they diagnose different failures. The rule is a
+conservative screen, not a calibrated hypothesis test, but its false-verdict rate is computable:
+for two truly equivalent agents, with $d_{\mathrm{pub}}$ and $d_{\mathrm{priv}}$ independent
+zero-mean Gaussian and $\sigma_{\mathrm{pub}} = k\,\sigma_{\mathrm{priv}}$, a spurious verdict
+in either direction has probability
+$P_{\mathrm{FP}}(k) = \tfrac{1}{2} - \arctan(k/2)/\pi$ --- $35.2\%$ at $k=1$ and $25.0\%$ for
+the $20\%/80\%$ public/private splits common here, where variance scales inversely with subset
+size and $k \approx 2$. Condition~\eqref{eq:sign} alone caps it at $50\%$ distribution-free.
+
+That test covers test-set sampling noise only, so a second error term is measured separately. On
+the four competitions carrying the tightest development-lane duels, my-agent ran twice fresh
+under identical conditions --- fresh workspace, knowledge library pinned per competition to the
+last commit before any information about that competition entered it --- and AIDE's pinned
+re-run pairs against its frozen baseline (Table~\ref{tab:variance}). The spreads are
+substantially a property of the \emph{task} rather than of the agent: both agents agree by an
+order of magnitude on which competition is the noisy one. Floors are therefore per-competition,
+and a duel whose $|d_{\mathrm{priv}}|$ does not exceed its competition's floor is undecidable
+regardless of the two conditions above. NVIDIA's between-run term is unmeasured. Gaps and floors
+are compared in exact decimal arithmetic at the leaderboard's printed precision, not in binary
+floating point: the two disagree at the fifth decimal place, and a duel sitting exactly on its
+floor turns on that difference.
+
+\subsection{Evaluation set and scoring}
+\label{sec:exp1}
+
+The evaluation set is 20 tabular competitions: 14 from the Kaggle Playground Series plus
+afsis-soil-properties, conway-s-reverse-game-of-life, cat-in-the-dat, and tabular-playground
+aug-2022, jan-2022 and sep-2022 (Table~\ref{tab:comps}). The inclusion criterion is the one the
+significance test imposes --- both a public and a private test-subset score must exist. The
+three agents also ran 4 further competitions that yield no private score, late submission being
+closed or the leaderboard rolling; those are excluded. The set was frozen at 18 and grew to 20
+when the two firing-class competitions (s5e1, tps-sep-2022) joined after all three lanes had run
+them under benchmark conditions. Lanes ran serially under the mutex, each method at its own
+budget convention.
+
+Scoring is separated from execution. Each credential-free lane freezes a \path{submission.csv}
+and stops; a credentialed operator step (\path{score_lane_submissions.py}; dry-run by default,
+real submission behind an explicit flag) submits by late submission and retrieves public and
+private scores, after which \path{build_rerun_three_way.py} places the three columns against
+each other and applies the paired test. One file went by hand: the scoring tool's structural
+validator false-blocked conway's file on sample-file naming, and the operator submitted the
+byte-identical file, verified by SHA-256, through the Kaggle command-line client. Percentile
+rank is the share of a competition's final private standings a submission would beat, with a
+would-be rank $r$ among $N$ teams giving $\mathrm{PR}=100\,(N-r)/N$ against the frozen final
+leaderboard. Lanes log their own out-of-fold estimates, but no local cross-validation number is
+quoted in any table here, because it is never a leaderboard proxy: s3e19's pooled out-of-fold
+SMAPE of $6.706$ sat against a realized lane score of $49.40878$.
+
+The three mid-complexity competitions use MLE-bench~\cite{mlebench} prepared splits, graded
+offline against the held-out private split, because us-patent-phrase-to-phrase-matching is a
+code competition and the ventilator and SIIM-ISIC live test sets differ from the prepared
+splits; medal thresholds and the above-median flag come from the frozen leaderboard snapshot.
+Offline grading yields one score per submission, so the paired test does not reach them. Each
+lane had the machine to itself under a 4--8~h budget and the same isolation protocol, and none
+ran the injection layer or tree search: a node there is a deep-learning fine-tune of 30--90
+minutes rather than a gradient-boosting refit of seconds, so all three took the skill's
+documented fallback --- one linear pass to a validated single model plus a blend.
+
+\subsection{Data and code availability}
+
+All my-agent code and benchmark artifacts are archived in the project repository
+\href{https://github.com/930731haohao-afk/kaggle-agent}{\path{github.com/930731haohao-afk/kaggle-agent}}
+(private; access granted on request), with infrastructure scripts mirrored under
+\path{benchmark_infra/} and cross-agent result artifacts under \path{benchmark_results/}. It
+holds the per-competition experiment records (\path{experiments.json},
+\path{experiments_tree_v3.json}) and dossiers, the 22 my-agent and 17 AIDE specification
+reports, the benchmark manifest and the binding form-selector pre-registration; every number in
+this paper traces to one of them. The minimal command sequence reproducing the study, and the
+execution environment it assumes (Table~\ref{tab:env}), are given in Extended Data.
+\par\endgroup
+
+
+% =====================================================================
+% PART: APPENDIX (Extended Data)
+% Assembled after Methods. Body commands only --- the preamble is unchanged.
+% =====================================================================
+
+\appendix
+
+% Extended Data numbering: floats below are numbered ED\,1, ED\,2, ...
+\setcounter{figure}{0}\setcounter{table}{0}
+\renewcommand{\thefigure}{ED\,\arabic{figure}}
+\renewcommand{\thetable}{ED\,\arabic{table}}
+
+\section{Extended Data}
+
+The items below support the Results and Methods: the evaluation set and the complete
+per-competition benchmark, the two error terms the paired test is built on, the search loop and
+its size, the isolation protocol, the two cross-competition rules that govern every lane, the
+execution environment, the per-competition specification reports and companion documents, and
+the commands that reproduce a lane.
+
+\subsection{Evaluation set and complete benchmark}
+
+Table~\ref{tab:comps} describes the 20 competitions. Table~\ref{tab:bench} is the primary
+evidence table: every public and private leaderboard score behind the standing, with the lane
+status of each my-agent run recorded in its footnote.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Competition descriptions. Tasks fall into two families: classification (binary, ordinal; 7 competitions) and prediction/regression (incl.\ time series and multi-target; 13 competitions).}
+\label{tab:comps}
+\begin{tabular}{@{}rllr@{}}
+\toprule
+\# & \textbf{Competition} & \textbf{Task type} & \textbf{Train rows $\times$ cols} \\
+\midrule
+1 & s3e1 & Regression & $37{,}137 \times 10$ \\
+2 & s3e3 & Classification (binary) & $1{,}677 \times 35$ \\
+3 & s3e5 & Classification (ordinal) & $2{,}056 \times 13$ \\
+4 & s3e7 & Classification (binary) & $42{,}100 \times 19$ \\
+5 & s3e9 & Regression & $5{,}407 \times 10$ \\
+6 & s3e11 & Regression & $360{,}336 \times 17$ \\
+7 & s3e14 & Regression & $15{,}289 \times 18$ \\
+8 & s3e16 & Regression & $74{,}051 \times 10$ \\
+9 & s3e19 & Regression (time series) & $136{,}950 \times 6$ \\
+10 & s4e11 & Classification (binary) & $140{,}700 \times 20$ \\
+11 & s5e10 & Regression & $517{,}754 \times 14$ \\
+12 & s6e1 & Regression & $630{,}000 \times 13$ \\
+13 & s6e2 & Classification (binary) & $630{,}000 \times 15$ \\
+14 & afsis-soil-properties & Regression (multi-target) & $1{,}157 \times 3{,}600$ \\
+15 & cat-in-the-dat & Classification (binary) & $300{,}000 \times 25$ \\
+16 & conway-s-reverse-game-of-life & Structured multi-output & $50{,}000 \times 802$ \\
+17 & tps-aug-2022 & Classification (binary) & $26{,}570 \times 26$ \\
+18 & tps-jan-2022 & Regression (time series) & $26{,}298 \times 6$ \\
+19 & s5e1 & Regression (time series) & $230{,}130 \times 6$ \\
+20 & tps-sep-2022 & Regression (time series) & $70{,}128 \times 6$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{The complete 20-competition benchmark. All cells are
+public/private leaderboard scores; \textbf{bold} marks the best \emph{private} score of the
+three (raw, direction-aware; the paired-test verdicts, which this raw reading does not
+replace, are in Table~\ref{tab:winrates}). my-agent's column comes from the credentialed
+operator scoring step; its percentile ranks require a leaderboard-snapshot pull and are not
+reported (footnote $i$). NVIDIA and AIDE cells are frozen leaderboard scores with percentile rank (PR) in
+parentheses. PR is the share of that competition's final private standings the submission would
+beat: a would-be rank $r$ among $N$ teams gives $\mathrm{PR}=100\,(N-r)/N$ against the frozen
+final leaderboard. Lane status: all 20 lanes complete, audited and scored (${\sim}26$ hours of accepted
+lane attempts); tps-jan-2022 is the clean re-run after its first attempt was discarded by
+the audit (footnote $h$).}
+\label{tab:bench}
+\begin{tabular}{@{}rllrrr@{}}
+\toprule
+\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent LB (pub/priv)} & \textbf{NVIDIA LB (PR)} & \textbf{AIDE LB (PR)} \\
+\midrule
+1 & s3e1 & RMSE \dn & 0.55715/\textbf{0.55275} & 0.55332/0.55550 (93.2) & 0.55899/0.55552 (81.0) \\
+2 & s3e3 & ROC-AUC \up & 0.89449/0.87157 & 0.93526/\textbf{0.89537} (66.8) & 0.88484/0.86863 (26.4) \\
+3 & s3e5 & QWK \up & 0.57041/0.57223 & 0.57515/0.56974 (75.7) & 0.59362/\textbf{0.58138} (79.8) \\
+4 & s3e7 & ROC-AUC \up & 0.91127/0.90441 & 0.91230/\textbf{0.90458} (78.1) & 0.90934/0.90109 (67.1) \\
+5 & s3e9 & RMSE \dn & 11.84750/12.33192 & 11.83399/\textbf{12.22913} (59.1) & 11.86657/12.30667 (44.5) \\
+6 & s3e11$^{a}$ & RMSLE \dn & 0.29309/\textbf{0.29368} & 0.29559/0.29624 (66.6) & 0.29389/0.29445 (73.3) \\
+7 & s3e14 & MAE \dn & 343.43434/333.18611 & 338.36524/\textbf{330.71616} (89.2) & 342.44918/332.31556 (71.2) \\
+8 & s3e16 & MAE \dn & 1.33738/\textbf{1.33822} & 1.33566/1.34001 (96.4) & 1.33920/1.34224 (91.4) \\
+9 & s3e19$^{b}$ & SMAPE \dn & 49.11872/49.40878 & 47.52145/\textbf{48.26558} (41.4) & 48.39715/48.34131 (40.1) \\
+10 & s4e11 & Accuracy \up & 0.94195/\textbf{0.94107} & 0.94136/0.94076 (52.8) & 0.94184/0.94056 (62.1) \\
+11 & s5e10$^{c}$ & RMSE \dn & 0.05554/\textbf{0.05576} & 0.05562/0.05588 (59.4) & 0.05555/0.05579 (78.9) \\
+12 & s6e1$^{d}$ & Error \dn & 8.68844/\textbf{8.71516} & 8.70480/8.73239 (69.5) & 8.69449/8.72191 (74.8) \\
+13 & s6e2$^{e}$ & ROC-AUC \up & 0.95354/0.95505 & 0.95348/0.95508 (63.0) & 0.95364/\textbf{0.95516} (76.5) \\
+14 & afsis & MCRMSE \dn & 0.41902/\textbf{0.48917} & 0.61276/0.69855 (18.8) & 0.45636/0.49861 (45.6) \\
+15 & cat-in-the-dat & ROC-AUC \up & 0.80800/\textbf{0.80243} & 0.77641/0.77084 (32.6) & 0.80790/0.80217 (70.3) \\
+16 & conway$^{f}$ & MAE \dn & 0.10313/\textbf{0.10414} & 0.11094/0.11189 (96.5) & 0.10960/0.11065 (97.9) \\
+17 & tps-aug-2022$^{g}$ & ROC-AUC \up & 0.58534/0.58930 & 0.57920/0.58730 (43.0) & 0.58479/\textbf{0.59106} (60.5) \\
+18 & tps-jan-2022$^{h}$ & SMAPE \dn & 4.58859/6.29895 & 4.43958/\textbf{4.63651} (76.4) & 10.11598/10.66638 (28.9) \\
+19 & s5e1 & MAPE \dn & 0.09076/\textbf{0.08401} & 0.05726/0.14594 (69.3) & 0.12573/0.17917 (48.1) \\
+20 & tps-sep-2022 & SMAPE \dn & 28.45070/28.49605 & 4.77458/\textbf{5.48351} (80.3) & 5.78998/9.72095 (48.3) \\
+\midrule
+\multicolumn{3}{@{}l}{Median PR (range)} & ---$^{i}$ & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\raggedright\footnotesize
+$^{a}$~First attempt exited without a submission; completed on a second attempt.\quad
+$^{b}$~Clean re-run; first attempt discarded by the transcript audit (Section~\ref{sec:rerun}).\quad
+$^{c}$~Audit incident resolved, score accepted (Section~\ref{sec:rerun}).\quad
+$^{d}$~Completed and audit-accepted.\quad
+$^{e}$~Second attempt; the first exited without a submission.\quad
+$^{f}$~The scoring tool's structural validator false-blocked conway's file (sample-file naming); the operator submitted the identical file (same SHA-256) manually via the Kaggle CLI.\quad
+$^{g}$~Submission validated before the lane's post-submission library violations; accepted on that ordering (Section~\ref{sec:rerun}).\quad
+$^{h}$~Clean re-run after the first attempt was discarded for cross-lane contamination; its own post-submission library violations are accepted on the same ordering argument as $^{g}$ (Section~\ref{sec:rerun}).\quad
+$^{i}$~my-agent's percentile ranks require a leaderboard-snapshot pull against the frozen final leaderboards and are not reported.
+\end{table}
+
+\FloatBarrier
+
+\subsection{The two error terms}
+
+The paired test rests on two measured quantities. Table~\ref{tab:drift} shows that the
+public--private shift of a submission is mostly \emph{shared} across the three agents, which is
+why a single agent's own public--private gap is the wrong scale and the between-agent gap is the
+right one. Table~\ref{tab:variance} gives the second term, between-run agent variance, which
+enters the decision rule as a per-competition floor.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Empirical evidence for common drift (excerpt; development-lane submissions). Drift = private minus public score of the same submission. In seven competitions the mutual scatter is less than half the common shift.}
+\label{tab:drift}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+\textbf{Competition} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} & \textbf{Common shift} & \textbf{Mutual scatter} \\
+\midrule
+s5e10 & $+0.00025$ & $+0.00026$ & $+0.00024$ & $+0.00025$ & \textbf{0.00002} \\
+s6e2  & $+0.00149$ & $+0.00160$ & $+0.00152$ & $+0.00154$ & 0.00011 \\
+s3e11 & $+0.00063$ & $+0.00065$ & $+0.00056$ & $+0.00061$ & 0.00009 \\
+s3e7  & $-0.00859$ & $-0.00772$ & $-0.00825$ & $-0.00819$ & 0.00087 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Between-run agent variance on the four competitions with the benchmark's tightest
+development-lane duels, and the variance floors it defines. my-agent ran twice fresh under
+identical conditions --- fresh workspace, knowledge library pinned per competition to the last
+commit before any information about that competition entered it; AIDE's pinned re-run pairs
+against its frozen baseline. The first two columns are private-leaderboard spreads between the
+two runs of each agent; the third gives the top-two duel gaps observed on the development lanes
+for that competition. Two readings follow. Variance is substantially a property of the
+\emph{task} rather than of the agent --- both agents make s3e16 the noisy competition by an
+order of magnitude --- so the floors are per-competition rather than one global number. And
+several gaps sit at or below a measured wobble: on s5e10 AIDE's spread of $0.00003$ is exactly
+the private-score gap of the my-agent-versus-AIDE duel there, so that duel is undecidable. The
+three duels killed by these floors are s3e16, s5e10 and s6e2. NVIDIA's term is unmeasured.}
+\label{tab:variance}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{my-agent} & \textbf{AIDE} & \textbf{development-lane duel gaps} \\
+\midrule
+s4e11 & 0.00021 & 0.00027 & 0.00013--0.00033 \\
+s3e16 & 0.00460 & 0.00056 & 0.00142--0.00365 \\
+s5e10 & 0.00000 & 0.00003 & 0.00003--0.00012 \\
+s6e2  & 0.00000 & 0.00020 & 0.00000--0.00008 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+\subsection{The search loop and its size}
+\label{app:treesize}
+
+Figure~\ref{fig:tree} is the tree-search harness as an algorithm; Table~\ref{tab:nodes} records
+how large the tree actually grew in each benchmark lane.
 
 \begin{figure}[htbp]
 \centering
@@ -217,7 +1148,7 @@ the agent: lanes hold no credentials, and submissions are scored only after the 
   {\textcolor{flowpurpleline!60!black}{\textbf{data-level operators}}\\each gets its own arm; arms race, the winner takes the full budget};
 \draw[parr] (injdata) -- (eval);
 \end{tikzpicture}
-\caption{The tree-search loop used in all my-agent runs of this report (37--126 nodes per
+\caption{The tree-search loop used in all my-agent runs of this report (37--224 nodes per
 competition; per-competition counts in Table~\ref{tab:nodes}). Each node is a complete,
 executable solution scored by local cross-validation; lineages are abandoned on plateau, and
 the budget phase machine forces one exploration burst before stopping. Figure~\ref{fig:treeex} shows what the
@@ -279,75 +1210,53 @@ library. Solid arrows: the loop's execution flow; dashed: advisory input and bac
    \tikz\node[bn, minimum size=3.4mm]{};~explore-burst draft\\
    double border~$=$~global best \qquad dashed arrow~$=$~backtrack after plateau};
 \end{tikzpicture}
-\caption{What the loop of Figure~\ref{fig:tree} builds: one search tree, schematic. Two
-lineages grow from the linear-protocol baseline; lineage $b$ plateaus after three children
-fail to improve, so the search backtracks and abandons it; a blend node over the cached
-out-of-fold predictions of $a1$ and $b1$ becomes the global best and is what gets submitted;
-the forced explore-burst injects fresh long-shot drafts ($e$) as new roots. Node labels are
-schematic --- real runs evaluate 37--126 nodes per competition (Table~\ref{tab:nodes}).}
+\caption{What my-agent's tree search builds: one search tree, schematic (the search loop
+itself is Fig.~\ref{fig:tree}). Each node is a complete, executable solution scored by local
+cross-validation. Two lineages grow from the linear-protocol baseline; lineage $b$ plateaus
+after three children fail to improve, so the search backtracks and abandons it; a blend node
+over the cached out-of-fold predictions of $a1$ and $b1$ becomes the global best and is what
+gets submitted; the forced explore-burst injects fresh long-shot drafts ($e$) as new roots.
+Node labels are schematic --- real runs evaluate 37--224 nodes per competition
+(Table~\ref{tab:nodes}).}
 \label{fig:treeex}
 \end{figure}
 
-\subsection{The Injection Layer: Dossier, External Data, and the Typed Contract}
-\label{sec:v5}
+\begin{table}[htbp]
+\centering\small
+\caption{Evaluated tree-search nodes per competition (my-agent), from each completed
+benchmark lane's search records (\texttt{experiments\_tree\_v3.json} / lane \texttt{STATUS.md}).
+The default budget is 60 evaluated nodes; lanes may extend it through the documented
+\texttt{extend\_budget} resume path (s3e9, s4e11, tps-aug-2022); conway stopped at 37 on the
+wall-clock backstop; s5e1's count sums its six separately raced external-data arms;
+tps-jan-2022 is the clean re-run (81 nodes over two rounds).}
+\label{tab:nodes}
+\begin{tabular}{@{}lr@{\hspace{2em}}lr@{\hspace{2em}}lr@{}}
+\toprule
+\textbf{Competition} & \textbf{Nodes} & \textbf{Competition} & \textbf{Nodes} & \textbf{Competition} & \textbf{Nodes} \\
+\midrule
+s3e1 & 53 & s3e16 & 45 & s6e1 & 47 \\
+s3e3 & 60 & s3e19 & 60 & s6e2 & 57 \\
+s3e5 & 60 & s4e11 & 110 & afsis & 60 \\
+s3e7 & 49 & s5e1 & 224$^{\ast}$ & cat-in-the-dat & 70 \\
+s3e9 & 107 & s5e10 & 46 & conway & 37 \\
+s3e11 & 60 & & & tps-aug-2022 & 126 \\
+s3e14 & 70 & & & tps-jan-2022 & 81 \\
+      &    & & & tps-sep-2022 & 60 \\
+\bottomrule
+\end{tabular}
 
-The purple elements of Figures~\ref{fig:arch} and~\ref{fig:tree} form a single layer, and its placement carries the design argument. An earlier downstream variant had injected external ideas at the blend stage and measured a negligible effect (reweighting never displaced the convex-optimum champion in 8/8 rigorous competitions; pool expansion helped 2/8 by ${\sim}10^{-5}$); the architecture moves the injection point upstream to problem identification, where a failure-mode reading of the three agents' development runs locates their shared gap.
+\smallskip
+\raggedright\footnotesize $^{\ast}$~Six separately raced external-data arms
+($30+60+30+14+60+30$), the arms-race design of Section~\ref{sec:v5}.
+\end{table}
 
-\paragraph{The failure-mode reading that motivated the layer.}
-\label{sec:exp4}
-Reading the three agents' development-run execution logs and champion code located their shared gap at problem-level judgment rather than tuning skill. AIDE can diagnose but has no mechanism that lets a diagnosis veto a score: on s3e19 it accidentally swapped its time-based validation for shuffled KFold mid-run, its metric instantly ``improved'' from 18.42 to 4.41 --- an illusion a controlled split-only experiment measures at $4.5\times$ --- and it tuned against the leaked number to the end, while my-agent quarantined the same split as ``diagnostic only.''
-\label{sec:votes}%
-NVIDIA reproduced its source kernel's skeleton on the same competition but missed the step that decides the outcome, and its vote-based selection signal measures popularity rather than quality --- nothing in the method checks the reproduced score against the source's claimed rank. And all three agents missed s3e19's need for external data: at matched budget the per-country GDP join the leaderboard's better half used is worth about $6$ SMAPE of a ${\sim}44$-point gap (Section~\ref{sec:exp6v5}), the remainder a full-future-year extrapolation that defeats every method equally. The dossier layer below is the architectural answer to exactly this class of miss.
+\FloatBarrier
 
-\paragraph{Stage 0.5 --- problem dossier.} Before EDA, the agent answers ``what kind of problem is this?'': task family, train--test window relation, split policy, and external-data need, written to a structured \path{dossier.json}. Judgments are grounded in \path{knowledge/task_priors.md}, a library of task-level priors each carrying an evidence field from our own benchmark (e.g., the shuffled-KFold $4.5\times$ bias; the GDP-join CV gap on jan-2022). Reading competition-specific discussions or kernels is forbidden --- the dossier must derive from the problem statement plus task-\emph{type} knowledge only, keeping the method distinct from reproduction-based agents. The dossier is a prior, not a conclusion: EDA must verify its hypotheses and record a verdict.
+\subsection{Isolation protocol and design comparison}
 
-\paragraph{External-data module.} A whitelist of public sources (eleven World Bank indicators, ECB monthly FX, OWID COVID, holiday calendars, ISO tables), each fetched with recorded snapshots and joined through leakage-guarded as-of merges: an external value may reach a prediction row only if dated at or before the row's period minus a declared lag; violations raise an error; numeric time columns must declare their unit; every join writes an audit log. The module was adversarially verified (21 reproduced findings, including silent-future-leak classes, all fixed with regression tests).
-
-\paragraph{Search integration.} Data-level dossier ideas spawn their own variant workspaces raced at small tree-search budget; model-level ideas enter the main tree as seed lineages. The winning lane receives the full search budget.
-
-\paragraph{A typed contract between the two layers.} The first version of this stack failed
-instructively: the dossier correctly proposed World Bank GDP for s3e19 \emph{as a country-level
-scale covariate}, and the experience library already held the operational recipe, but the
-execution layer could express exactly one transformation --- appending a column to the feature
-list. Since a gradient-boosted tree cannot extrapolate a feature beyond its training range, the
-semantics of ``scale covariate'' evaporated between the layers with nothing raising an error.
-The fix is a closed vocabulary both layers read (\path{knowledge/injection_operators.md}): ten
-typed operators, each with a parameter schema, the evidence justifying it, and explicit
-conditions under which it must \emph{not} be used. The dossier may emit only these, each
-carrying its rationale and source prior; anything the vocabulary cannot express is written to
-\texttt{not\_recorded} rather than into prose the execution layer will ignore. The dispatcher
-writes a coverage ledger --- proposed, realized, unrealized-with-reason --- so an unimplemented
-capability leaves a trace instead of resembling success. Two automatic preconditions guard the
-level-covariate operators: proportionality and covariate volatility. Conformance is
-machine-checked on both sides (Appendix~\ref{app:coverage}).
-
-\subsection{Two Reference Methods (Yardsticks)}
-
-\textbf{AIDE} (open-source agent, gen-1) performs LLM-driven tree search: at each step it writes a complete solution, executes it, reads the error or score, and mutates accordingly. It carries no cross-competition memory --- every competition starts from zero.
-
-\textbf{NVIDIA Kaggle Agent} (skill) reproduces the strongest public kernel: it researches the competition context, selects the highest-\emph{voted} solution-type kernel, ports it faithfully, and retrains on local data.
-
-Both reference methods are frozen --- no improvements of any kind, even where we found weaknesses (Section~\ref{sec:votes}; the NVIDIA skill even ships a score-based selection tool we deliberately left disabled). Improving the yardsticks mid-study would make earlier and later data incomparable and would quietly turn the benchmark into an optimization of the reference methods.
-
-\section{Measurement Methodology}
-\label{sec:apparatus}
-
-Two pieces of apparatus are prerequisites for every three-agent comparison and every
-real-leaderboard verdict in this report, and neither is a finding in its own right: a fairness
-and execution-discipline protocol that makes a score attributable to a method rather than to an
-accident of the shared machine, and an error model that says which score differences are
-readable at all. We state both here, once, so that the experimental sections can report results
-without re-deriving the conditions under which they mean anything. The offline-graded
-mid-complexity competitions of Section~\ref{sec:exp7run2} are the one exception to the error
-model's reach, noted there.
-
-\subsection{Fairness Protocol and Execution Discipline}
-\label{sec:fairness}
-
-The three agents share one machine, so four isolation conditions are defined and mechanically
-enforced rather than left to convention (Table~\ref{tab:fairness}): if the agents could read each other's
-files, or run concurrently on a contended machine, no verdict below would be
-attributable to method. Implementation details and the failure record are in the companion engineering log.
+Table~\ref{tab:fairness} names the four isolation conditions of the fairness protocol together
+with what enforces each; the Methods state the conditions themselves.
+Table~\ref{tab:threeway} sets the three methods side by side on the axes that separate them.
 
 \begin{table}[htbp]
 \centering\small
@@ -365,333 +1274,6 @@ Resource & Only one lane executes at any moment & \path{lane_lock.sh} mutex \\
 \end{tabular}
 \end{table}
 
-A fifth rule governs the experimenter rather than the agents: when the environment is
-defective, fix the environment rather than hint to the affected side. Fixing removes the
-confound; hinting compensates one side and silently changes what is being compared.
-
-\paragraph{Benchmark execution discipline.} For my-agent's 20 benchmark lanes the protocol is
-tightened further. A benchmark manifest (\path{docs/rerun_manifest.json}) fixes exactly one
-workspace, one canonical evaluator, and one search driver per competition, after a development
-audit found workspaces accumulating up to 13 candidate evaluators. Each lane executes in an
-isolated root whose data files are validated against the official Kaggle manifest, holds
-\emph{no credentials} (the Kaggle token is stripped from the environment, so a lane can neither
-consult the leaderboard nor submit), and sees only its own workspace. A \emph{per-lane
-transcript audit} then reads every tool call the lane made --- detectors for network access,
-raw opens of the shared knowledge library that bypass the query interface's self-citation
-exclusion, and results of sibling benchmark competitions appearing without a sanctioned source
---- and the launcher halts the whole queue after two consecutive audit failures, on the
-reasoning that two in a row indicts the pipeline rather than one lane.
-Section~\ref{sec:rerun} reports the audit gate exercised in both directions on the actual run.
-
-\subsection{The Paired Significance Test}
-\label{sec:exp2}
-
-\paragraph{Why an error model is needed at all.} In the development-lane leaderboard
-measurements this apparatus was built on, several top-two gaps sat at the fourth or fifth
-decimal place (s5e10: $0.00003$; s6e2: $0.00000$). Do such gaps exceed measurement error? If
-not, the ``verdict'' is noise --- and a report that declares winners at that scale is
-reporting its own noise back to itself.
-
-\paragraph{How --- the error scale comes from the data itself, not from assumptions.} Kaggle randomly splits each test set into two disjoint subsets, public and private, and one submission receives one score on each. These are two independent estimates of the same model, so their difference is that competition's metric sampling noise.
-
-\paragraph{A failed first attempt, worth recording.} We initially used a single agent's own public--private gap as the threshold, and 8 of 10 competitions came out as ties. The reason is that this gap is mostly \emph{shared} across the three agents --- which rows land in which subset shifts everyone together. On s5e10 (Table~\ref{tab:drift}) the common shift is $0.00025$ against mutual scatter of only $0.00002$: using the common shift as the threshold inflates the true noise more than tenfold --- measuring a paired question with an unpaired scale.
-
-\paragraph{The correct construction.} Measure how much the \emph{gap between two agents} moves across the two subsets --- the common drift cancels in the subtraction. Writing $d_{\mathrm{pub}}$ and $d_{\mathrm{priv}}$ for the between-agent score difference on the public and private subsets, a verdict requires both:
-\begin{align}
-\operatorname{sign}(d_{\mathrm{priv}}) &= \operatorname{sign}(d_{\mathrm{pub}})
-  && \text{(the ordering replicates on disjoint samples)} \label{eq:sign} \\
-|d_{\mathrm{priv}}| &> |d_{\mathrm{priv}} - d_{\mathrm{pub}}|
-  && \text{(the gap exceeds its own movement)} \label{eq:gap}
-\end{align}
-
-\paragraph{Statistical properties of the decision rule.} Algebraically, condition~\eqref{eq:gap} is equivalent to $d_{\mathrm{pub}}\,(2d_{\mathrm{priv}} - d_{\mathrm{pub}}) > 0$ and therefore \emph{implies} condition~\eqref{eq:sign}; we state both because they diagnose different failures. The rule is a conservative screen rather than a calibrated hypothesis test, but its false-verdict rate under a null model is computable. Suppose two agents are truly equivalent on a competition, so that $d_{\mathrm{pub}}$ and $d_{\mathrm{priv}}$ are independent zero-mean Gaussian noise with $\sigma_{\mathrm{pub}} = k\,\sigma_{\mathrm{priv}}$. The probability of a spurious verdict (in either direction) is
-\begin{equation}
-P_{\mathrm{FP}}(k) \;=\; \frac{1}{2} - \frac{\arctan(k/2)}{\pi},
-\end{equation}
-which gives $35.2\%$ for equal variances ($k=1$) and $25.0\%$ for the $20\%/80\%$ public/private splits common in these competitions (variance scales inversely with subset size, so $k \approx 2$); condition~\eqref{eq:sign} alone caps it at $50\%$ distribution-free. This is the rule that adjudicates every leaderboard verdict in this report, including the benchmark duels of Section~\ref{sec:winrates}.
-
-\begin{table}[htbp]
-\centering\small
-\caption{Empirical evidence for common drift (excerpt; development-lane submissions). Drift = private minus public score of the same submission. In seven competitions the mutual scatter is less than half the common shift.}
-\label{tab:drift}
-\begin{tabular}{@{}lrrrrr@{}}
-\toprule
-\textbf{Competition} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} & \textbf{Common shift} & \textbf{Mutual scatter} \\
-\midrule
-s5e10 & $+0.00025$ & $+0.00026$ & $+0.00024$ & $+0.00025$ & \textbf{0.00002} \\
-s6e2  & $+0.00149$ & $+0.00160$ & $+0.00152$ & $+0.00154$ & 0.00011 \\
-s3e11 & $+0.00063$ & $+0.00065$ & $+0.00056$ & $+0.00061$ & 0.00009 \\
-s3e7  & $-0.00859$ & $-0.00772$ & $-0.00825$ & $-0.00819$ & 0.00087 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\paragraph{The second error term: between-run agent variance.} The paired test covers test-set
-sampling noise only; agent execution is itself stochastic. On the four competitions with the
-benchmark's tightest development-lane duels, my-agent ran twice fresh under identical
-conditions (fresh workspace, knowledge library pinned per competition to the last commit before
-any information about that competition entered it), and AIDE's pinned re-run pairs against its
-frozen baseline. Private-leaderboard spreads:
-
-\begin{center}\small
-\begin{tabular}{@{}lccc@{}}
-\toprule
- & \textbf{my-agent} & \textbf{AIDE} & \textbf{development-lane duel gaps} \\
-\midrule
-s4e11 & 0.00021 & 0.00027 & 0.00013--0.00033 \\
-s3e16 & 0.00460 & 0.00056 & 0.00142--0.00365 \\
-s5e10 & 0.00000 & 0.00003 & 0.00003--0.00012 \\
-s6e2  & 0.00000 & 0.00020 & 0.00000--0.00008 \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Three readings, condensed. The variance is substantially a property of the \emph{task}, not the
-agent --- both agents agree s3e16 is the noisy competition by an order of magnitude --- so
-error bars must be per-competition, not one global number. Several fourth-decimal
-development-lane gaps sit at or below a measured wobble (s5e10's $0.00003$ gap exactly equals
-AIDE's wobble there), so the combined error model treats gaps at that scale as undecidable ---
-a floor the benchmark verdicts of Section~\ref{sec:winrates} apply. And the pipeline's endpoint is far more
-stable than its route: my-agent's two runs took visibly different paths on every competition
-yet landed within $0.0002$ everywhere except the task both agents find noisy. NVIDIA's
-variance term remains unmeasured (Section~\ref{sec:future}).
-
-\section{The Three-Way Benchmark}
-
-\subsection{Overview of Experimental Design}
-
-\paragraph{Evaluation set.} 20 tabular competitions --- 14 from the Kaggle Playground Series, plus afsis-soil-properties (2014, spectral regression), conway-s-reverse-game-of-life (2014, structured multi-output), cat-in-the-dat (2019, purely categorical features), and tabular-playground aug-2022, jan-2022, and sep-2022 (Table~\ref{tab:comps}). Every competition provides both a public and a private test-subset score --- the inclusion criterion required by the significance test (Section~\ref{sec:exp2}). The three agents also ran 4 competitions for which private scores cannot be obtained (late submission closed, rolling leaderboards); these are excluded. The set grew from a frozen 18-competition baseline to 20 when the two firing-class competitions (s5e1, tps-sep-2022) joined on 2026-07-31 after all three lanes ran them under benchmark conditions --- a post-hoc expansion disclosed as a limitation (Section~\ref{sec:limitations}).
-
-\paragraph{Execution conditions.} The three agents ran serially under the mutex of Section~\ref{sec:fairness}. AIDE: 20 steps, its own default budget (conway stopped at 16 due to the 4-hour cap). NVIDIA: reproduced public kernels per its method. my-agent: the full six-stage pipeline including tree search (37--126 nodes per competition; Appendix~\ref{app:treesize}), each lane under the execution discipline of Section~\ref{sec:fairness}.
-
-\subsection{Three-Way Capability Comparison (Raw Scores)}
-\label{sec:exp1}
-
-\paragraph{Goal and procedure.} Measure the absolute performance of the three methods on the same set of competitions. Each side independently produces a submission, scored on Kaggle via late submission for public and private scores and a percentile rank (PR). The AIDE and NVIDIA columns of Table~\ref{tab:bench} are those frozen leaderboard scores. my-agent's lanes hold no credentials, so nothing in a lane ever touches the leaderboard: each lane freezes a \path{submission.csv}, and scoring is a separate credentialed operator step (\path{score_lane_submissions.py}; dry-run by default, real submission behind an explicit flag), after which \path{build_rerun_three_way.py} places the my-agent column against the yardsticks under the paired test of Section~\ref{sec:exp2}. That operator step ran on 2026-08-18 for the 19 completed lanes, and their real public/private scores fill the LB column of Table~\ref{tab:bench}; the final lane and all my-agent percentile ranks (which require a leaderboard-snapshot pull) remain TBD. Each lane logs its own out-of-fold estimate in its workspace records; no local CV is quoted in this report's tables, because it is never a leaderboard proxy (s3e19's pooled OOF SMAPE of 6.71 sat against a realized lane score of 49.41). Per-competition specifications for every agent are attached (Appendix~\ref{app:specs}).
-
-\begin{table}[htbp]
-\centering\small
-\caption{Competition descriptions. Tasks fall into two families: classification (binary, ordinal; 7 competitions) and prediction/regression (incl.\ time series and multi-target; 13 competitions).}
-\label{tab:comps}
-\begin{tabular}{@{}rllr@{}}
-\toprule
-\# & \textbf{Competition} & \textbf{Task type} & \textbf{Train rows $\times$ cols} \\
-\midrule
-1 & s3e1 & Regression & $37{,}137 \times 10$ \\
-2 & s3e3 & Classification (binary) & $1{,}677 \times 35$ \\
-3 & s3e5 & Classification (ordinal) & $2{,}056 \times 13$ \\
-4 & s3e7 & Classification (binary) & $42{,}100 \times 19$ \\
-5 & s3e9 & Regression & $5{,}407 \times 10$ \\
-6 & s3e11 & Regression & $360{,}336 \times 17$ \\
-7 & s3e14 & Regression & $15{,}289 \times 18$ \\
-8 & s3e16 & Regression & $74{,}051 \times 10$ \\
-9 & s3e19 & Regression (time series) & $136{,}950 \times 6$ \\
-10 & s4e11 & Classification (binary) & $140{,}700 \times 20$ \\
-11 & s5e10 & Regression & $517{,}754 \times 14$ \\
-12 & s6e1 & Regression & $630{,}000 \times 13$ \\
-13 & s6e2 & Classification (binary) & $630{,}000 \times 15$ \\
-14 & afsis-soil-properties & Regression (multi-target) & $1{,}157 \times 3{,}600$ \\
-15 & cat-in-the-dat & Classification (binary) & $300{,}000 \times 25$ \\
-16 & conway-s-reverse-game-of-life & Structured multi-output & $50{,}000 \times 802$ \\
-17 & tps-aug-2022 & Classification (binary) & $26{,}570 \times 26$ \\
-18 & tps-jan-2022 & Regression (time series) & $26{,}298 \times 6$ \\
-19 & s5e1 & Regression (time series) & $230{,}130 \times 6$ \\
-20 & tps-sep-2022 & Regression (time series) & $70{,}128 \times 6$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[htbp]
-\centering\footnotesize
-\setlength{\tabcolsep}{3pt}
-\caption{The 20-competition benchmark, state as of 2026-08-18. All cells are
-public/private leaderboard scores; \textbf{bold} marks the best \emph{private} score of the
-three (raw, direction-aware; the paired-test verdicts, which this raw reading does not
-replace, are in Table~\ref{tab:winrates}). my-agent's column comes from the credentialed
-operator scoring step of 2026-08-18; its percentile ranks await a leaderboard-snapshot
-pull. NVIDIA and AIDE cells are frozen leaderboard scores with percentile rank (PR) in
-parentheses. Lane status: 19 of 20 lanes complete and scored (${\sim}25$ hours of accepted
-lane attempts); tps-jan-2022 re-running clean after its first attempt was discarded by the
-audit (TBD row, not bolded).}
-\label{tab:bench}
-\begin{tabular}{@{}rllrrr@{}}
-\toprule
-\# & \textbf{Competition} & \textbf{Metric} & \textbf{my-agent LB (pub/priv)} & \textbf{NVIDIA LB (PR)} & \textbf{AIDE LB (PR)} \\
-\midrule
-1 & s3e1 & RMSE \dn & 0.55715/\textbf{0.55275} & 0.55332/0.55550 (93.2) & 0.55899/0.55552 (81.0) \\
-2 & s3e3 & ROC-AUC \up & 0.89449/0.87157 & 0.93526/\textbf{0.89537} (66.8) & 0.88484/0.86863 (26.4) \\
-3 & s3e5 & QWK \up & 0.57041/0.57223 & 0.57515/0.56974 (75.7) & 0.59362/\textbf{0.58138} (79.8) \\
-4 & s3e7 & ROC-AUC \up & 0.91127/0.90441 & 0.91230/\textbf{0.90458} (78.1) & 0.90934/0.90109 (67.1) \\
-5 & s3e9 & RMSE \dn & 11.84750/12.33192 & 11.83399/\textbf{12.22913} (59.1) & 11.86657/12.30667 (44.5) \\
-6 & s3e11$^{a}$ & RMSLE \dn & 0.29309/\textbf{0.29368} & 0.29559/0.29624 (66.6) & 0.29389/0.29445 (73.3) \\
-7 & s3e14 & MAE \dn & 343.43434/333.18611 & 338.36524/\textbf{330.71616} (89.2) & 342.44918/332.31556 (71.2) \\
-8 & s3e16 & MAE \dn & 1.33738/\textbf{1.33822} & 1.33566/1.34001 (96.4) & 1.33920/1.34224 (91.4) \\
-9 & s3e19$^{b}$ & SMAPE \dn & 49.11872/49.40878 & 47.52145/\textbf{48.26558} (41.4) & 48.39715/48.34131 (40.1) \\
-10 & s4e11 & Accuracy \up & 0.94195/\textbf{0.94107} & 0.94136/0.94076 (52.8) & 0.94184/0.94056 (62.1) \\
-11 & s5e10$^{c}$ & RMSE \dn & 0.05554/\textbf{0.05576} & 0.05562/0.05588 (59.4) & 0.05555/0.05579 (78.9) \\
-12 & s6e1$^{d}$ & Error \dn & 8.68844/\textbf{8.71516} & 8.70480/8.73239 (69.5) & 8.69449/8.72191 (74.8) \\
-13 & s6e2$^{e}$ & ROC-AUC \up & 0.95354/0.95505 & 0.95348/0.95508 (63.0) & 0.95364/\textbf{0.95516} (76.5) \\
-14 & afsis & MCRMSE \dn & 0.41902/\textbf{0.48917} & 0.61276/0.69855 (18.8) & 0.45636/0.49861 (45.6) \\
-15 & cat-in-the-dat & ROC-AUC \up & 0.80800/\textbf{0.80243} & 0.77641/0.77084 (32.6) & 0.80790/0.80217 (70.3) \\
-16 & conway$^{f}$ & MAE \dn & 0.10313/\textbf{0.10414} & 0.11094/0.11189 (96.5) & 0.10960/0.11065 (97.9) \\
-17 & tps-aug-2022$^{g}$ & ROC-AUC \up & 0.58534/0.58930 & 0.57920/0.58730 (43.0) & 0.58479/\textbf{0.59106} (60.5) \\
-18 & tps-jan-2022 & SMAPE \dn & TBD & 4.43958/4.63651 (76.4) & 10.11598/10.66638 (28.9) \\
-19 & s5e1 & MAPE \dn & 0.09076/\textbf{0.08401} & 0.05726/0.14594 (69.3) & 0.12573/0.17917 (48.1) \\
-20 & tps-sep-2022 & SMAPE \dn & 28.45070/28.49605 & 4.77458/\textbf{5.48351} (80.3) & 5.78998/9.72095 (48.3) \\
-\midrule
-\multicolumn{3}{@{}l}{Median PR (range)} & pending snapshot & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) \\
-\bottomrule
-\end{tabular}
-
-\smallskip
-\raggedright\footnotesize
-$^{a}$~First attempt exited without a submission; completed 08-17.\quad
-$^{b}$~Clean re-run 08-17; first attempt discarded by the transcript audit (Section~\ref{sec:rerun}).\quad
-$^{c}$~Audit incident resolved, score accepted (Section~\ref{sec:rerun}).\quad
-$^{d}$~Completed and audit-accepted 08-17.\quad
-$^{e}$~Second attempt, 08-18; the first attempt exited without a submission.\quad
-$^{f}$~The scoring tool's structural validator false-blocked conway's file (sample-file naming); the operator submitted the identical file (same SHA-256) manually via the Kaggle CLI.\quad
-$^{g}$~Submission validated before the lane's post-submission library violations; accepted on that ordering (Section~\ref{sec:rerun}).
-\end{table}
-
-PR is the share of that competition's final private standings the submission would beat (a would-be rank $r$ among $N$ teams gives $\mathrm{PR}=100\,(N-r)/N$, against the frozen final leaderboard) --- an \emph{absolute} capability reference (``where would this agent have placed had it entered?''), separate from the relative ordering among the three.
-
-\subsection{Execution and Audit of the Benchmark Run}
-\label{sec:rerun}
-
-The queue ran 2026-08-14 through 08-18 under operator approval, halting three times --- twice on environment faults at lane boundaries (which the launcher distinguishes from a lane result by exit timing) and once on its two-consecutive-audit-failures rule --- with 19 of 20 lanes complete and audit-accepted and the last (tps-jan-2022) re-running clean as this draft compiles. The audit gate was exercised in both directions, most sharply on \textbf{s3e19}: the 08-14 lane opened the raw knowledge library four times and issued a genuine socket-opening command, and the audit discarded it. The clean 08-17 re-run scores \emph{worse} on local CV --- pooled OOF SMAPE 6.706 against the tainted attempt's 5.740 --- consistent with the contamination advantage being real and the audit pricing it correctly; a benchmark that discards a better-looking number and keeps the honest one has evidence its audit does something. The other two incidents were resolved by reading transcripts rather than trusting either the lane or the auditor: the network detector fired on an \texttt{ls} of a directory named \path{kaggle-safe-submit} (a manual scan of all 118 tool calls found zero network commands; accepted under a recorded operator waiver), and on s5e10 the flagged raw library opens all occurred strictly \emph{after} the submission was written and validated, so the score stands --- the genuine violation there, a hand-edit of the shared knowledge library after finalisation, was surgically reverted before any later lane ran. The gate then fired a fourth time, on the pair that closed the queue: the tps-aug-2022 lane wrote three insights back into the shared knowledge library minutes after finishing, and the tps-jan-2022 lane, starting two minutes later, read that polluted library at its own Stage 0.5 --- this-run knowledge crossing lanes. The transcript ordering decided both outcomes independently: aug-2022's submission was validated \emph{before} any of its library violations, so its score stands (the same ordering argument as s5e10), while jan-2022's contamination entered at the earliest stage of its run, so the operator killed the lane at one minute, reverted the library, and relaunched it clean; tps-sep-2022, which started after the revert, scanned clean and completed. The recurrence --- a third lane implementing its own write-back because the run root gives it no write tool --- is a design fault of the skill rather than of any lane, and the fix (a staged-insights path plus a filesystem-level read-only library) is recorded in the engineering log. After the audit, the credentialed operator step submitted the 19 frozen submissions on 2026-08-18; their scores enter Table~\ref{tab:bench} and Section~\ref{sec:winrates}.
-
-\subsection{Standing of the Three Agents Under the Paired Test}
-\label{sec:winrates}
-
-The benchmark's headline reading is the full duel matrix: 20 competitions $\times$ 3 pairings $=$ 60 duels, each adjudicated by the rule of Section~\ref{sec:exp2} plus the per-competition variance floors. With the 19 completed lanes scored, 58 of the 60 duels are adjudicated (the yardstick-vs-yardstick duels need no my-agent score); the 2 my-agent duels on the final lane are pending. Of the 58, 36 produce a verdict and 22 are undecidable --- the class the error model exists to catch, including a live replication of the development-lane s5e1 case (the public half of that test split favours NVIDIA, the private half favours my-agent, so the duel is a tie by construction) and three duels killed by the variance floors --- two of them wins my-agent would otherwise have claimed (s3e16, and s5e10, where the private gap of $0.00003$ exactly equals AIDE's measured wobble --- the case Section~\ref{sec:exp2} flagged in advance) and one a would-be AIDE win (s6e2, gap $0.00011$ under AIDE's $0.00020$ floor). Table~\ref{tab:winrates} gives the standing. my-agent leads outright: it wins 15 of its 22 decided duels ($68\%$ excluding ties), takes the best private score on 10 of the 19 scored competitions (NVIDIA 6, AIDE 3), and its rerun submission beats its own development-lane private score on 12 of 19. Its sharpest losses are the two sep-2022 duels: the one benchmark competition with a mature, high-quality public baseline is exactly where both yardsticks beat my-agent decisively --- the composition mechanism of Section~\ref{sec:reversal} replicating live inside the frozen run.
-
-\begin{table}[htbp]
-\centering\small
-\caption{Standing under the paired test with per-competition variance floors, as of the
-2026-08-18 scoring step: 58 of 60 duels adjudicated (36 decided, 22 undecidable), 2 pending
-the final lane. Win rate excludes ties.}
-\label{tab:winrates}
-\begin{tabular}{@{}lrrr@{}}
-\toprule
-\textbf{Method} & \textbf{Wins} & \textbf{Losses} & \textbf{Win rate (excl.\ ties)} \\
-\midrule
-my-agent & 15 & 7 & 68\% \\
-AIDE     & 11 & 14 & 44\% \\
-NVIDIA   & 10 & 15 & 40\% \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{The Injection Layer: Controlled Experiments}
-
-Acting on the diagnosis of Section~\ref{sec:exp4} --- problem-level judgment is the shared gap
-of all three agents --- the experiments here evaluate the injection layer of
-Section~\ref{sec:v5} under the same leaderboard discipline as the benchmark: real submissions,
-judged by the paired test of Section~\ref{sec:exp2}.
-
-\subsection{Problem-Identification Sweep (Dossier Layer)}
-\label{sec:exp5v5}
-
-\paragraph{Design.} The dossier layer's generality claim is ``behaves correctly across the task distribution'': fire on tasks that genuinely need external data (sensitivity), stay silent on those that do not (specificity). We ran the dossier stage on all 18 original benchmark competitions --- LLM reasoning over the problem statement, data schema, and task priors only; minutes per competition; no training.
-
-\paragraph{Result: perfect separation.} The layer fires on exactly the two country-panel time-series competitions --- s3e19 and jan-2022, the two whose accepted solutions are known to require external covariates --- and reports ``no / unlikely'' on all 16 iid-tabular, categorical, spectral, and structured-output competitions: sensitivity 2/2, specificity 16/16. (Two caveats keep this honest. The sensitivity half is partly in-sample: the task priors the dossier reads were distilled from this benchmark's own failure analysis of exactly these two competitions, so the 16/16 silence is the informative half, and 2/2 carries a 95\% CI reaching down to 16\%. And the two firing-class competitions added to the baseline later also fire, but they were \emph{selected} as firing-class, so the sweep claim rests on the original 18.) Two secondary behaviors: on s3e19 the dossier surfaced a genuine conflict --- a conservative setup-time \texttt{config.yaml} flag said external data was not allowed while the task prior's evidence implied otherwise --- and flagged it for verification rather than guessing (the official rules, Section 7.C, settle it in favor of permission); on the out-of-scope SIIM imaging competition it answers ``no'', correct within the current whitelist, whose source classes do not yet include prior-competition archives.
-
-\subsection{What the Layer Delivers on the Real Leaderboard}
-\label{sec:exp6v5}
-
-\paragraph{Design.} s3e19 is the benchmark's canonical failure, so it is the causal test bed; tps-sep-2022 (held-out replication, dossier written in advance) and s5e1 (pre-registered test) complete the firing class. Arms are built so the operator's added columns are the \emph{only} difference from the baseline (verified digit-identical otherwise), and every arm is submitted for real public and private scores, judged by the paired test of Section~\ref{sec:exp2}. Full arm tables and probe-level detail are in the companion case-studies document.
-
-\paragraph{Effect.} Across the three competitions, \textbf{all six external-data arms beat
-their no-external baselines, every one paired-significant}. In matched configuration the
-feature join is worth $6.01$ private SMAPE on s3e19 and $2.09$ on the held-out sep-2022; at a
-full 46-node search budget per arm both external arms still beat the searched baseline; and
-on s5e1 the winning form takes a $20\%$ relative private-MAPE margin ($0.12417$ vs.\
-$0.15751$), the largest effect in the class. On the canonical failure itself, the
-with-layer/without-layer ablation --- the full pipeline against a searched champion from the
-identical pipeline with the layer disabled --- passes the paired test (private $48.243$ vs.\
-$50.455$; $d_{\mathrm{pub}}{+}3.389$, $d_{\mathrm{priv}}{+}2.212$, movement $1.177$) and
-places the with-layer champion numerically ahead of both frozen yardsticks
-(48.26558 and 48.34131, Table~\ref{tab:bench}).
-
-\paragraph{The operating rule the experiments imposed.} One negative result ships with the
-layer: no local signal we tested selects which \emph{form} the injection should take.
-Cross-validation, a held-out-year protocol, and a proportionality diagnostic each misrank the
-form verdict (0-for-3); the diagnostic --- the one selector that survived hindsight --- was
-put to a pre-registered test on s5e1, its prediction committed to version control before any
-model was fitted, and its named falsifier fired. The layer therefore \emph{races both forms
-inside the search, always}, and the one surviving post-hoc candidate (horizon length) is
-committed as the H-HORIZON pre-registration for the next firing-class competition
-(Section~\ref{sec:future}).
-
-\paragraph{What the judgment layer proposes, and what actually consumes it.} Across the 20
-dossiers the layer proposes 241 ideas. Counting those whose operator family exists gives 73\%;
-tracing which are actually \emph{consumed} gives only 5\% at first measurement, because the three operators supplying most of
-that headline were emitted into a key that no search driver read, while the dispatcher recorded them as
-realized (now 27\%, after wiring a consumer and moving the target-free encodings into the data
-layer). A produced artifact with no consumer is indistinguishable from a working one in every
-log, score table and coverage metric --- and this instance occurred inside the very mechanism
-built to prevent silent truncation. \textbf{An architecture claim needs a consumer trace, not a
-vocabulary count.} Per-regime tables and audit scripts are in Appendix~\ref{app:coverage}.
-
-\section{Generalization: Mid-Complexity Three-Way}
-\label{sec:exp7run2}
-
-\paragraph{Design.} The three agents run, each under its frozen method, on three competitions outside the tabular Playground family: us-patent-phrase-to-phrase-matching (NLP, text pairing), ventilator-pressure-prediction (physiological time series), and SIIM-ISIC melanoma (dermoscopic imaging) --- machine fully dedicated per lane, 4--8h budgets, same isolation protocol. None of the three my-agent lanes ran the injection layer (Section~\ref{sec:limitations}) or tree search: a node here is a full deep-learning fine-tune (30--90 minutes, versus seconds for a tabular GBDT refit), so the prescribed tree-search budget of tens of nodes would cost 15--100+ GPU-hours against the 4--8h available, and all three lanes took the skill's documented fallback for exactly this condition --- one linear pass to a validated single model plus a blend, with the high-leverage moves (backbone choice, seed bagging, blend weights) taken directly.
-
-\paragraph{Scoring.} The mid-complexity competitions use MLE-bench~\cite{mlebench} prepared splits and are graded offline against the held-out private split (us-patent is a code competition and ventilator/SIIM live test sets differ from the prepared splits, so Kaggle late submission is structurally unavailable); medal thresholds and the above-median flag come from the frozen leaderboard snapshot.
-
-\paragraph{Results.}
-\begin{table}[H]
-\centering\small
-\caption{Mid-complexity three-way, offline-graded against the held-out private split. Bold = three-way best; $\dagger$ = above the frozen leaderboard's median.}
-\begin{tabular}{@{}lllll@{}}
-\toprule
-\textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE} \\
-\midrule
-us-patent & Pearson $r$ \up & \textbf{0.86658}$\dagger$ (silver) & 0.86160$\dagger$ (bronze) & 0.65821 \\
-ventilator & MAE \dn & \textbf{0.16525} & 0.40093 & 0.34591 \\
-SIIM-ISIC & AUC \up & \textbf{0.93529}$\dagger$ & 0.89822 & 0.88579 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-my-agent takes the three-way best on all three and the only above-median score on SIIM --- a clean sweep across three unrelated task families, so the result is about pipeline discipline rather than tabular-specific tuning. Offline grading yields one score per submission, so the paired public/private test of Section~\ref{sec:exp2} does not apply here.
-
-\section{Discussion}
-
-\subsection{Contributions}
-
-\begin{enumerate}[leftmargin=*]
-  \item \textbf{An end-to-end competition agent whose knowledge enters at problem
-  identification rather than at blending.} The layer and its controlled, leaderboard-scored
-  evidence are Sections~\ref{sec:v5} and~\ref{sec:exp5v5}--\ref{sec:exp6v5}: clean 2-of-18
-  separation in the dossier sweep, six of six external-data arms paired-significant, the
-  with/without ablation significant on the benchmark's canonical failure --- and the sharp
-  negative result that no local signal selects the injection's \emph{form}, the one selector
-  surviving hindsight killed by its own pre-registered falsifier.
-
-  \item \textbf{The agent's placement against two frozen, methodologically distinct
-  yardsticks, with the adjudication rule committed before the scores existed.} 19 of the 20
-  benchmark lanes are complete and scored on the real leaderboard (2026-08-18 operator
-  step): my-agent leads the paired standing --- 15 wins, 7 losses, $68\%$ excluding ties
-  (Section~\ref{sec:winrates}) --- with 2 duels pending the final lane; also
-  scored are the mid-complexity sweep (three-way best on all three) and every controlled arm
-  of the injection study (Section~\ref{sec:exp6v5}).
-
-  \item \textbf{A caution that constrains how any such claim may be stated.} A ranking is a
-  property of method $\times$ evaluation set --- in development runs the winner flipped between
-  two reasonable competition sets, and on s5e1 between the two halves of a single test split
-  (Section~\ref{sec:reversal}). Demonstrated rather than asserted, it applies to our own
-  agent first.
-\end{enumerate}
-
-The measurement machinery itself --- the paired test, the variance measurement, and the audited, credential-free execution discipline of Section~\ref{sec:apparatus} --- is infrastructure rather than a contribution, and is packaged for reuse by other agent benchmarks.
-
-\subsection{Comparing the Three Methods}
-
-The differences lie not in tuning skill but in where knowledge comes from and how the next step is decided (Table~\ref{tab:threeway}).
-
 \begin{table}[htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{4pt}
@@ -702,7 +1284,7 @@ The differences lie not in tuning skill but in where knowledge comes from and ho
 \textbf{Aspect} & \textbf{my-agent} & \textbf{AIDE} & \textbf{NVIDIA} \\
 \midrule
 Knowledge source & Cross-competition experience library (accumulating) & None (from zero each time) & Public kernels fetched fresh each time \\
-Search strategy & Six-stage pipeline + tree search (37--126 nodes) & Tree-shaped trial and error, 20 steps & No search; faithful reproduction \\
+Search strategy & Six-stage pipeline + tree search (37--224 nodes) & Tree-shaped trial and error, 20 steps & No search; faithful reproduction \\
 Basis for next step & Experience-library priors + OOF diagnostics & Previous step's error or score & Highest-voted kernel \\
 Validation rigor & Split chosen by task type; diagnostics tagged and excluded & No concept of split legality & Inherits the kernel's split \\
 External data & Injection layer (typed operators, whitelisted sources) & Never considered & Inherited from the kernel \\
@@ -710,92 +1292,12 @@ External data & Injection layer (typed operators, whitelisted sources) & Never c
 \end{tabular}
 \end{table}
 
-The yardsticks' wins track their knowledge source --- reproduction where a mature public solution exists, search depth where none does (mechanism in Section~\ref{sec:reversal}). my-agent's edge is validation rigor and accumulated knowledge --- it quarantined the same shuffled split AIDE submitted --- while its measured bottleneck was judgment at the problem-identification level: exactly the gap the injection layer was built to close, and the reason the controlled experiments of Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} carry the report's thesis. What remains open within that layer is form selection (0-for-3) and the unmeasured value of the dossier on competitions where it stays silent. The shared limitation: on s3e19 all three development runs landed in the lower mode of a bimodal leaderboard, none recognizing the need for GDP data --- a join worth $6.0$ SMAPE, while the dominant shortfall is a one-year extrapolation no method in the comparison addresses.
+\FloatBarrier
 
-\subsection{A Ranking Is Not a Property of the Method, but of Method $\times$ Evaluation Set}
-\label{sec:reversal}
+\subsection{Cross-competition rule: split strategy is determined by task type}
 
-The most important methodological lesson of the development runs: same agents, same test --- swap the competition set and the paired-test winner flipped between the 14-competition Playground subset and the broader 20-competition set (those standings belong to superseded development lanes and are not reprinted here; the mechanism is a property of the methods and survives). The mechanism: reproduction dominates where a mature public solution exists, autonomous methods dominate on obscure, build-your-own-pipeline tasks, and relative verdicts binarize many near-tie gaps, so the paired win rate is highly sensitive to sample composition even while absolute position (median PR) stays stable. The s5e1 duel of Section~\ref{sec:winrates} reproduces the caution inside a single competition: the public and private halves of one test split order two agents oppositely. An agent benchmark's conclusion must therefore be stated together with the composition of its evaluation set, and should report both an absolute metric (PR) and a relative one (paired win rate).
-
-\subsection{Limitations of the Experimental Design}
-\label{sec:limitations}
-
-\begin{itemize}[leftmargin=*]
-  \item \textbf{The significance test covers only test-set sampling noise}, not between-run agent variance. That variance is measured for my-agent and AIDE on four competitions (Section~\ref{sec:exp2}) and enters the combined error model as a per-competition floor; NVIDIA's term remains unmeasured, and widening that sample is the cheapest way to harden every verdict the benchmark will produce.
-  \item \textbf{The duels are not independent trials.} Each competition contributes three
-  duels computed from six shared scores, so the effective sample size is closer to 20
-  competitions than to 60 duels and interval estimates must use competition-level cluster
-  bootstrap. A further asymmetry touches every NVIDIA duel: reproduced kernels were tuned by
-  their authors against the realized public leaderboard (degradation extreme $+155\%$, s5e1),
-  so the paired test's exchangeability premise is weakest exactly where the reproduction
-  method is strongest.
-  \item \textbf{Budgets are per-method conventions, not compute-matched.} AIDE runs its
-  default 20 steps, my-agent 37--126 evaluated nodes plus a linear pass, NVIDIA minutes of
-  reproduction; each method runs ``as shipped,'' so the comparison is methods-with-their-budgets,
-  not methods at equal compute.
-  \item \textbf{The sample is small, the ranking is sensitive to its composition, and part of
-  it was added post hoc.} With 20 competitions and 60 duels, adding or removing a single
-  competition can move any win rate by one to two percentage points
-  (Section~\ref{sec:reversal}); the two firing-class competitions joined after their
-  leaderboards had been consulted for the injection experiments, and in the development runs
-  that addition moved every rate --- so the 18-vs-20 composition is disclosed rather than
-  hidden.
-  \item \textbf{The experience-library asymmetry is disclosed, not eliminated}: my-agent carries cross-competition memory; the other two cold-start.
-  \item \textbf{The mid-complexity lanes ran without the injection layer and without tree search} (Section~\ref{sec:exp7run2}), and their offline grading yields one score per submission, outside the paired test's reach; their sweep is therefore a raw-score result, not a paired-verdict one.
-\end{itemize}
-
-\subsection{Open Problems}
-\label{sec:future}
-
-Ordered by how much they would change this report's conclusions.
-
-\paragraph{Operator form cannot be selected from any local signal we have tested --- 0-for-3,
-with one selector killed by pre-registration.} Section~\ref{sec:exp6v5} states the rule; the
-probe-level misrankings are in the companion case-studies document, and the split form
-verdict means no constant answer exists to fall back on. The one
-surviving candidate selector, horizon length, is post-hoc; testing it requires pre-registering
-it on the next firing-class competition before its leaderboard is consulted (the binding
-protocol is committed as the H-HORIZON pre-registration). This remains the sharpest open
-question here, because the form choice was worth more than the entire search budget on one
-competition and a 20\% relative margin on another.
-
-\paragraph{The firing class is small.} The dossier fires on 2 of 18 baseline competitions, so
-the controlled evidence rests on two clean test points plus one held-out replication.
-Extending the class is worth more than re-running the 16 competitions where the layer stays
-silent: a re-run there changes nothing the layer does and instead re-rolls 48 of the 60 duels
-with the run-to-run variance measured in Section~\ref{sec:exp2}.
-
-\paragraph{The experience library's residual weak link is retrieval quality.} The
-enforcement half is closed: the current architecture makes the library query binding --- an
-experiment record without a \texttt{library\_query} trace is invalid, and the audit tool
-checks this mechanically --- after a development episode in which we re-derived a result the
-library already held. What remains open is quality, not enforcement: a neighbouring entry
-over-claimed and had to be corrected against leaderboard evidence, and no mechanism yet scores
-retrieved priors for applicability.
-
-\paragraph{Smaller items.} Whitelisting further source classes (prior-competition archives,
-public text corpora), and a direct ablation of the experience library.
-
-\section{Conclusion}
-
-This study set out to build an end-to-end competition agent and to find out honestly what its architecture is worth. The architectural answer is placement: downstream injection measured near-null, so knowledge enters at problem identification, and the layer's controlled, leaderboard-scored evidence carries the claim (Section~\ref{sec:exp6v5}) --- together with the negative result that no local signal selects the injection's form, a failure we count as the method working, since a benchmark that can kill its own hypotheses is the thing this study set out to build. The benchmark verdict is nearly complete: the 19 completed, transcript-audited lanes were scored on the real leaderboard on 2026-08-18 and adjudicated by the error model committed in advance (Section~\ref{sec:apparatus}) --- my-agent leads with 15 wins to 7 losses ($68\%$ excluding ties), 22 duels undecidable at the measured noise scale, 2 pending the final lane --- discipline the development runs earned, where the winner flipped with the evaluation set and the audit discarded a contaminated lane whose tainted score looked better than its clean replacement's. The arc of the internship is a single loop closed: build the agent, benchmark it honestly, read its failures, fix the layer they identify, and re-verify under the same discipline that found the gap.
-
-\appendix
-
-\section{Experimental Procedure and Per-Competition Specification Reports}
-\label{app:specs}
-
-\subsection{Per-Competition ML Specification Reports (Attached)}
-
-Full specifications for every agent on every competition, written to the five sections of Tso-Jung Yen's ML specification framework (\path{ml_pipeline_modules}) --- Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking --- per competition: 22 reports for my-agent (\href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{kaggle/docs/ml_specs/}}, MD + PDF) and 17 for AIDE (\href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results/ml_specs_aide}{\path{aideml-runs/docs/ml_specs_aide/}}, MD + PDF).
-
-Every number in these reports is extracted deterministically by \texttt{collect.py} / \path{collect_aide_facts.py} from that competition's structured records (\texttt{facts.json}, \path{eda_summary.json}, \path{experiments_tree_v3.json}, \path{journal.json}), never generated by an LLM; unavailable fields are marked ``not recorded'' rather than left blank or estimated. The my-agent report set additionally ships \texttt{RUBRIC.md}, an 8-item plan-alignment checklist verified per competition (all 22 pass 8/8). The reports are CV-only by construction; their conclusions must not be mixed with leaderboard verdicts.
-
-This appendix does not repeat per-competition content; below are only the cross-competition rules and the execution environment that individual reports cannot cover.
-
-\subsection{Cross-Competition Rule: Split Strategy Is Determined by Task Type}
-
-This is the single highest-impact design item in the study, visible only through cross-competition comparison (Table~\ref{tab:splits}).
+Every lane chooses its validation split from the task type alone, by the rule of
+Table~\ref{tab:splits}, before any score is seen.
 
 \begin{table}[H]
 \centering\small
@@ -812,33 +1314,14 @@ Generic tabular (continuous i.i.d.\ target) & Shuffled KFold / StratifiedKFold &
 \end{tabular}
 \end{table}
 
-Shuffled KFold on time-series data is strictly forbidden: on s3e19 this one error cost AIDE a $4.5\times$ optimism bias, while my-agent quarantined the same split as diagnostic (Section~\ref{sec:exp4}).
+Shuffled KFold on time-series data is strictly forbidden: on s3e19 this one error cost AIDE a
+$4.5\times$ optimism bias, while my-agent quarantined the same split as diagnostic
+(Section~\ref{sec:exp4}).
 
-\subsection{Cross-Competition Rule: DL-to-GBDT Field Mapping}
+\subsection{Execution environment}
 
-The specification framework contains several deep-learning-specific fields; this study is GBDT-centric, and all per-competition reports follow the mapping in Table~\ref{tab:dlgbdt}.
-
-\begin{table}[H]
-\centering\small
-\caption{Mapping of deep-learning framework fields to their GBDT counterparts.}
-\label{tab:dlgbdt}
-\begin{tabular}{@{}L{4.6cm}L{9.8cm}@{}}
-\toprule
-\textbf{Framework field} & \textbf{GBDT counterpart} \\
-\midrule
-Learning Rate & Boosting shrinkage (\path{learning_rate}) \\
-Learning Rate Scheduler & N/A --- convergence governed by CV early stopping, not a schedule \\
-Batch Size & N/A --- full-dataset histogram boosting, not mini-batches \\
-Model Complexity & Expressed as ``number of trees $\times$ leaves,'' not dense parameter count \\
-Transfer Learning & N/A (no pretrained weights); analogue: prior injection from the experience library \\
-Data Augmentation & N/A (tabular); analogue: feature engineering and seed bagging \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Execution Environment and Reproducibility}
-
-Isolation and lane discipline are covered in Section~\ref{sec:fairness}; Table~\ref{tab:env} records only the environment items not stated there.
+Table~\ref{tab:env} records the environment items the fairness protocol
+(Section~\ref{sec:fairness}) does not state.
 
 \begin{table}[H]
 \centering\small
@@ -858,161 +1341,73 @@ Output isolation & my-agent \path{kaggle/competitions/}; AIDE \path{aideml-runs/
 \end{tabular}
 \end{table}
 
-\subsection{Companion Documents}
+\subsection{Cross-competition rule: deep-learning-to-GBDT field mapping}
+
+The specification framework of the companion per-competition reports carries several
+deep-learning-specific fields; this study is GBDT-centric, and every GBDT report maps them as in
+Table~\ref{tab:dlgbdt}.
+
+\begin{table}[H]
+\centering\small
+\caption{Mapping of deep-learning framework fields to their GBDT counterparts.}
+\label{tab:dlgbdt}
+\begin{tabular}{@{}L{4.6cm}L{9.8cm}@{}}
+\toprule
+\textbf{Framework field} & \textbf{GBDT counterpart} \\
+\midrule
+Learning Rate & Boosting shrinkage (\path{learning_rate}) \\
+Learning Rate Scheduler & N/A --- convergence governed by CV early stopping, not a schedule \\
+Batch Size & N/A --- full-dataset histogram boosting, not mini-batches \\
+Model Complexity & Expressed as ``number of trees $\times$ leaves,'' not dense parameter count \\
+Transfer Learning & N/A (no pretrained weights); analogue: prior injection from the experience library \\
+Data Augmentation & N/A (tabular); analogue: feature engineering and seed bagging \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\FloatBarrier
+
+\subsection{Per-competition specification reports}
+\label{app:specs}
+
+The pipeline documents its own work. Each competition receives a specification report written to
+the five sections of Tso-Jung Yen's ML specification framework (\path{ml_pipeline_modules}) ---
+Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking: 22 reports for
+my-agent, covering the 20 benchmark competitions plus two development-lane competitions
+(\path{docs/ml_specs/}, MD + PDF), and 17 re-documenting the AIDE runs under the same framework
+(\path{benchmark_results/ml_specs_aide/}, MD + PDF). Every number in them is extracted
+deterministically by \texttt{collect.py} and \path{collect_aide_facts.py} from that competition's
+structured records --- \texttt{facts.json}, \path{eda_summary.json},
+\path{experiments_tree_v3.json}, \path{journal.json} --- and never generated by an LLM; a field
+the records do not contain is printed as ``not recorded'' rather than left blank or estimated.
+The my-agent set ships \texttt{RUBRIC.md}, an 8-item plan-alignment checklist verified per
+competition, and all 22 reports pass 8/8. The structured EDA pass each lane records ---
+distributions, drift, correlation, written to \path{eda_summary.json} and
+\path{eda_output.txt}, with no image files emitted --- is one of the sources these reports read.
+The reports are CV-only by construction, so their conclusions must not be mixed with the
+leaderboard verdicts of the main text.
+
+\subsection{Companion documents}
 \label{app:coverage}
 
-Two companion documents carry material that answers different questions than this report does,
-each written for a different reader. \emph{Building the Injection Layer: An Engineering Log}
-asks what broke while building the machinery, for someone rebuilding a similar system.
-\emph{Per-Competition Case Studies} carries the single-competition forensic depth --- the
-CV--leaderboard reversal mechanics, AIDE's step-by-step split switch, the two experience-library
-entries behind the midterm correction, the s5e1 setting behind the pre-registered prediction,
-and the s3e19 residual decomposition in full --- for a reader who wants the evidence behind the
-condensed claims of Sections~\ref{sec:exp4} and~\ref{sec:exp6v5}.
+Two companion documents carry material that answers questions this paper does not.
+\emph{Building the Injection Layer: An Engineering Log} is written for someone rebuilding a
+similar system: it holds the per-regime coverage tables behind the consumer trace of
+Section~\ref{sec:exp6v5} together with the audit scripts that reproduce them; the record of every
+occasion one of the isolation mechanisms of Table~\ref{tab:fairness} failed, what it cost and how
+it was caught; the minute-by-minute reconstruction of the voided ventilator attempt; and the nine
+defects found in a single day's audit of the injection layer --- six from the audit itself, three
+from verifying the fixes for the first six. \emph{Per-Competition Case Studies} carries the
+single-competition forensic depth: the CV--leaderboard reversal mechanics, AIDE's step-by-step
+split switch, the two experience-library entries behind the midterm correction, the s5e1 setting
+behind the pre-registered prediction, and the s3e19 residual decomposition in full.
 
-The engineering log contains: the per-regime coverage tables behind the consumer-trace finding of
-Section~\ref{sec:exp6v5}, with the audit scripts that reproduce them; the isolation mechanisms
-summarised in Table~\ref{tab:fairness}, together with the record of every occasion one of them
-failed, what it cost, and how it was caught; the minute-by-minute reconstruction of the voided
-ventilator attempt; and the nine defects found in a single day's audit of the injection layer,
-six from the audit itself and three from verifying the fixes for the first six.
+\subsection{Minimal steps to reproduce a lane}
 
-They share a document because they share a failure shape: a produced artifact with no consumer
-is indistinguishable from a working one --- the transferable claim of Section~\ref{sec:exp6v5};
-the log is the evidence behind it.
-
-\subsection{Tree-Search Size per Competition (my-agent)}
-\label{app:treesize}
-
-\begin{table}[H]
-\centering\small
-\caption{Evaluated tree-search nodes per competition (my-agent), from each completed
-benchmark lane's search records (\texttt{experiments\_tree\_v3.json} / lane \texttt{STATUS.md}).
-The default budget is 60 evaluated nodes; lanes may extend it through the documented
-\texttt{extend\_budget} resume path (s3e9, s4e11, tps-aug-2022); conway stopped at 37 on the
-wall-clock backstop; s5e1's count sums its six separately raced external-data arms. The final
-lane (tps-jan-2022, re-running clean) will be added when it completes.}
-\label{tab:nodes}
-\begin{tabular}{@{}lr@{\hspace{2em}}lr@{\hspace{2em}}lr@{}}
-\toprule
-\textbf{Competition} & \textbf{Nodes} & \textbf{Competition} & \textbf{Nodes} & \textbf{Competition} & \textbf{Nodes} \\
-\midrule
-s3e1 & 53 & s3e16 & 45 & s6e1 & 47 \\
-s3e3 & 60 & s3e19 & 60 & s6e2 & 57 \\
-s3e5 & 60 & s4e11 & 110 & afsis & 60 \\
-s3e7 & 49 & s5e1 & 224$^{\ast}$ & cat-in-the-dat & 70 \\
-s3e9 & 107 & s5e10 & 46 & conway & 37 \\
-s3e11 & 60 & & & tps-aug-2022 & 126 \\
-s3e14 & 70 & & & tps-sep-2022 & 60 \\
-\bottomrule
-\end{tabular}
-
-\smallskip
-\raggedright\footnotesize $^{\ast}$~Six separately raced external-data arms
-($30+60+30+14+60+30$), the arms-race design of Section~\ref{sec:v5}.
-\end{table}
-
-\section{Code and Skill Packaging}
-
-All my-agent code and benchmark artifacts are archived in the project repository \href{https://github.com/930731haohao-afk/kaggle-agent}{\path{github.com/930731haohao-afk/kaggle-agent}} (private; access granted on request). File paths in the tables below link to the corresponding files in that repository; \texttt{ai\_agents/}-level infrastructure scripts are mirrored under \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_infra}{\path{benchmark_infra/}}, and cross-agent result artifacts under \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results}{\path{benchmark_results/}}.
-
-\subsection{my-agent Skill Definition}
-
-\begin{table}[H]
-\centering\small
-\caption{Skill definition files.}
-\begin{tabular}{@{}L{7.6cm}L{6.8cm}@{}}
-\toprule
-\textbf{File} & \textbf{Purpose} \\
-\midrule
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/.claude/skills/kaggle-agent/SKILL.md}{\path{kaggle/.claude/skills/kaggle-agent/SKILL.md}} & Main skill definition: six-stage pipeline, tree-search switching condition, experience-library query timing \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/.claude/skills/kaggle-agent/references/01_setup.md}{\path{.../references/01_setup.md}} -- \path{06_submission.md} & Detailed per-stage instructions \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/.claude/skills/kaggle-agent/references/07_tree_search.md}{\path{.../references/07_tree_search.md}} & Tree-search protocol (preferred optimization mode) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/harness_v3.py}{\path{kaggle/tree_search/harness_v3.py}} & Tree-search harness \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/knowledge/experience.md}{\path{kaggle/knowledge/experience.md}} & Cross-competition experience library (every entry carries an evidence field) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/knowledge/idea_bank.md}{\path{kaggle/knowledge/idea_bank.md}} & Pool of unvalidated ideas \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Experiment Execution Scripts}
-
-\begin{table}[H]
-\centering\small
-\caption{Experiment execution scripts.}
-\begin{tabular}{@{}L{7.6cm}L{6.8cm}@{}}
-\toprule
-\textbf{File} & \textbf{Purpose} \\
-\midrule
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_infra/build_isolated_roots.py}{\path{ai_agents/bench-comps/build_isolated_roots.py}} & Build manifest-validated isolated data roots; officialness judged via the Kaggle API, incl.\ members of official archives \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_infra/lane_lock.sh}{\path{ai_agents/lane_lock.sh}} & Lane mutex (atomic directory creation, reclamation on holder death, bounded waiting) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_infra/bench_watchdog.sh}{\path{ai_agents/bench_watchdog.sh}} & Dual-signal monitoring: machine level (alive + advancing) and per driver \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/run_myagent_headless.sh}{\path{ai_agents/kaggle/run_myagent_headless.sh}} & Unattended my-agent execution (one headless session per competition) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_infra/run_comp.py}{\path{ai_agents/aideml/run_comp.py}} & Single-competition AIDE run (supports \path{AIDE_COMP_ROOT}) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_infra/rerun_20steps.py}{\path{ai_agents/aideml/rerun_20steps.py}} & Batch AIDE runs (20-step budget) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_infra/collect_aide_facts.py}{\path{ai_agents/aideml/collect_aide_facts.py}} & Deterministic fact extraction from AIDE journals \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_infra/run_ready_reproductions.py}{\path{ai_agents/nvidia-kaggle-runs/run_ready_reproductions.py}} & NVIDIA reproduction runner (only scripts passing smoke tests) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Data and Results}
-
-\begin{table}[H]
-\centering\small
-\caption{Data and result artifacts.}
-\begin{tabular}{@{}L{6.4cm}L{8.0cm}@{}}
-\toprule
-\textbf{Item} & \textbf{Path} \\
-\midrule
-Three-way score master table & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/three_way_scores.csv}{\path{ai_agents/aideml-runs/three_way_scores.csv}} \\
-Full three-way comparison report & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/THREE_WAY_REPORT.md}{\path{ai_agents/aideml-runs/THREE_WAY_REPORT.md}} (with PDF) \\
-AIDE per-competition ML spec reports (17) & \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results/ml_specs_aide}{\path{ai_agents/aideml-runs/docs/ml_specs_aide/}} \\
-my-agent per-competition ML spec reports (22) & \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{ai_agents/kaggle/docs/ml_specs/}} \\
-Coverage status table & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/BENCHMARK_COVERAGE.md}{\path{ai_agents/BENCHMARK_COVERAGE.md}} \\
-Benchmark-run manifest & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/docs/rerun_manifest.json}{\path{kaggle/docs/rerun_manifest.json}} \\
-Firing-class lane log (injection-study three-way runs) & \href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/benchmark_results/FIRING_CLASS_LANES.md}{\path{benchmark_results/FIRING_CLASS_LANES.md}} \\
-Per-competition experiment logs & \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/competitions}{\path{kaggle/competitions/<comp>/experiments.json}}, \path{experiments_tree_v3.json} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Injection-Layer Components}
-
-\begin{table}[H]
-\centering\small
-\caption{Injection-layer components (all in the project repository).}
-\begin{tabular}{@{}L{7.4cm}L{7.0cm}@{}}
-\toprule
-\textbf{File} & \textbf{Purpose} \\
-\midrule
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/.claude/skills/kaggle-agent/references/00_problem_dossier.md}{\path{.../references/00_problem_dossier.md}} & Stage 0.5 instructions: dossier schema, typed-operator requirement, forbidden inputs, downstream consumption \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/knowledge/task_priors.md}{\path{knowledge/task_priors.md}} & Evidence-backed task-level priors ([TASK-*]) + external-data whitelist with leakage rules \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/knowledge/injection_operators.md}{\path{knowledge/injection_operators.md}} & \textbf{The contract between the judgment and execution layers}: 10 typed operators, parameter schemas, the evidence for each, and the conditions under which each must not be used \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/sources.py}{\path{external_data/sources.py}} & Whitelisted fetchers (11 World Bank indicators, ECB FX, OWID COVID, holidays, ISO), snapshot-recorded atomic caches \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/join.py}{\path{external_data/join.py}} & Leakage-guarded year/month/day joins; declared time units; row-order preservation; audit logs \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/apply.py}{\path{external_data/apply.py}} & Operator dispatcher: realizes data-level operators, emits config for config-only ones, writes the coverage ledger, runs the proportionality and covariate-volatility preconditions \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/validate_dossier.py}{\path{external_data/validate_dossier.py}} & Emission-side conformance check (schema, whitelist, provenance); non-zero exit gates a run \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/coverage_audit.py}{\path{external_data/coverage_audit.py}} & Computes the coverage split behind Section~\ref{sec:exp6v5} (tables in the engineering log) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/selftest.py}{\path{external_data/selftest.py}} & 14-section execution-side test suite incl.\ direct unit test of the leakage invariant \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/make_v5_arm.py}{\path{tree_search/make_v5_arm.py}} & Competition-agnostic arm builder: digit-exact variant workspaces + generated evaluators \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/run_arm_search.py}{\path{tree_search/run_arm_search.py}} & Variant-lane race driver (harness\_v3 budget machine) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/holdout_year_probe.py}{\path{tree_search/holdout_year_probe.py}} & Held-out-year form-selection probe (the negative result of Section~\ref{sec:exp6v5}) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/structural_probe.py}{\path{tree_search/structural_probe.py}} & Structural-decomposition probe: tests whether the s3e19 residual is a shape error a GBDT cannot express \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/eval_support.py}{\path{tree_search/eval_support.py}} & Per-fold target encoding, sparse-linear family, runtime-attestation writer (2026-07-31) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/tree_search/seed_from_ledger.py}{\path{tree_search/seed_from_ledger.py}} & Translates emitted node configs into real seed nodes; writes \path{injection_consumed.json} (the consumer trace) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/external_data/verify_advisory.py}{\path{external_data/verify_advisory.py}} & Advisory verification: static parameter check upgraded by runtime attestation (\path{evaluator_attestation.json}) \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/blob/main/docs/preregistrations/horizon_length_form_selector.md}{\path{docs/preregistrations/horizon_length_form_selector.md}} & H-HORIZON pre-registration: binding protocol on the next firing-class competition \\
-\href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/competitions}{\path{competitions/*/dossier.json}} & 20 dossiers from the sweep (Section~\ref{sec:exp5v5}) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Minimal Steps to Reproduce This Study}
+Paths are relative to the project repository named in Methods, in which infrastructure scripts
+that live above the agent directory are mirrored under \path{benchmark_infra/}.
 
 \begin{verbatim}
-# 0) All paths repo-relative (the ai_agents/-level originals map per the mirror
-#    note at the top of this section)
 # 1) Build isolated data roots (per official Kaggle manifest)
 python benchmark_infra/build_isolated_roots.py --write <comp>
 
@@ -1025,7 +1420,6 @@ AIDE_COMP_ROOT=<data-root> \
     python benchmark_infra/run_comp.py <comp> --shim --steps 20
 
 # 4) NVIDIA, one competition
-# (generates and runs per-competition reproduce scripts)
 python benchmark_infra/run_ready_reproductions.py
 
 # 5) Submit and retrieve public/private scores
@@ -1034,17 +1428,19 @@ KAGGLE_API_TOKEN=$(cat ~/.kaggle/huang_token) \
     -f submission.csv -m "<msg>"
 \end{verbatim}
 
-Environment: ARM64 Linux (Ubuntu 24.04), NVIDIA GB10 GPU, uv-managed Python 3.13, versions frozen in \texttt{uv.lock}.
+Environment: ARM64 Linux (Ubuntu 24.04), NVIDIA GB10 GPU, uv-managed Python 3.13, versions frozen
+in \texttt{uv.lock}.
 
-\vspace{1em}
-\noindent\emph{Every number in this report is traceable to the structured records listed above. This report will be updated when the final lane (tps-jan-2022, re-running clean) finishes and is scored, and as the items in Section~\ref{sec:future} complete.}
-
-
+% ---------------------------------------------------------------------
+% References (kept after the appendix, outside the counted body).
+% MAINTAINER: delete this block if the bibliography is supplied elsewhere.
+% ---------------------------------------------------------------------
 \begin{thebibliography}{9}
 \bibitem{aygun2026} Ayg\"un, E., et al. An AI system to help scientists write expert-level empirical software. \emph{Nature} (2026). \url{https://doi.org/10.1038/s41586-026-10658-6}
 \bibitem{aide2025} Jiang, Z., Schmidt, D., Srikanth, D., Xu, D., Kaplan, I., Jacenko, D., and Wu, Y. AIDE: AI-Driven Exploration in the Space of Code. arXiv:2502.13138 (2025).
 \bibitem{nvidia2026} NVIDIA. Kaggle Agent: kernel-reproduction agent skill (software), 2026.
 \bibitem{mlebench} Chan, J.\,S., et al. MLE-bench: Evaluating Machine Learning Agents on Machine Learning Engineering. arXiv:2410.07095 (2024).
 \end{thebibliography}
+
 
 \end{document}

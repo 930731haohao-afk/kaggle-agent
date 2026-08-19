@@ -106,7 +106,7 @@
     left=\pagepad, right=\pagepad, top=17mm, bottom=15mm, boxsep=0pt,
     before skip=0pt, after skip=0pt]
   {\titlesize\bfseries\color{white}%
-    AI Agents for Kaggle Competitions\par}
+    An End-to-End AI Agent for Kaggle Competitions\par}
   \vspace{5.3mm}
   {\subsize\color{white}%
     An end-to-end LLM agent benchmarked against two frozen yardsticks
@@ -154,8 +154,8 @@
     competition, every experiment logged and reproducible.
   \item Runs the same disciplined protocol on 20 competitions serially ---
     a human cannot hold this consistency.
-  \item Generates per-dataset EDA figures and per-competition reports
-    automatically, so every claim is grounded in an artifact.
+  \item Records a per-dataset EDA pass and writes a per-competition ML-spec
+    report automatically, so every claim is grounded in an artifact.
 \end{itemize}
 
 % ---- 2 · Workflow ----------------------------------------------------------
@@ -168,15 +168,16 @@
   injects external data \emph{upstream}, before any modeling; submissions
   are scored post-run on the real leaderboard. Colour = role: blue LLM
   pipeline $\cdot$ purple injection layer $\cdot$ green evidence loop
-  $\cdot$ gray Auto-ML tools. Solid arrows = execution flow; dashed =
-  feedback, advisory, or post-run steps.}
+  $\cdot$ gray Auto-ML tools $\cdot$ white dashed = the real leaderboard,
+  outside the agent. Solid arrows = execution flow; dashed = feedback,
+  advisory, or post-run steps.}
 \vspace{4mm}
 \centerline{\includegraphics[width=193mm]{fig2_tree_poster.pdf}}
 \figcap{Tree-search loop: ensembles are first-class nodes with OOF caching
   and weight search; exploit until plateau, then one forced exploration
   burst; the loop terminates at the best-node submission. Purple = the
-  injection layer's operator entry points; green = experience-library
-  priors.}
+  injection layer's operator entry points; green dashed = experience-library
+  priors; green solid = the terminal submission node.}
 \end{secblock}
 
 
@@ -184,25 +185,25 @@
 \end{minipage}%
 \hspace{\colgap}%
 %
-% ============================== RIGHT COLUMN (409.65mm) ====================
+% ============================== RIGHT COLUMN (404.65mm) ====================
 \begin{minipage}[t]{404.65mm}
 \vspace{0pt}
 
 % ---- 3 · Results — Kaggle benchmark ---------------------------------------
 \begin{secblock}
 \blocktitle{3\sep Results --- Kaggle benchmark}
-\cardsub{Benchmark standing (scored 2026-08-18, 19 of 20 lanes)}
-All 20 competitions run under the frozen Stage-0.5 architecture in
-credential-free sandboxes with a per-lane transcript audit; the 19 completed
-lanes are scored on the real leaderboard, each duel adjudicated by a paired
-test on Kaggle's own public/private split. \kb{my-agent leads the standing ---
-15 wins / 7 losses (68\% excl.\ ties)} vs.\ AIDE 44\% and NVIDIA 40\%, and
-beats its own development-lane score on 12 of 19. The final lane is re-running
-clean after an audit discard (\textbf{TBD}).\par
-\cardsub{Best private score --- head-to-head count (19 scored)}
-\countbar{\textbf{my-agent}}{navy}{0.526}{10 / 19}
-\countbar{NVIDIA}{barother}{0.316}{6 / 19}
-\countbar{AIDE}{barother}{0.158}{3 / 19}
+\cardsub{Benchmark standing --- all 20 lanes scored (2026-08-18)}
+All 20 competitions ran under the frozen Stage-0.5 architecture in
+credential-free sandboxes with a per-lane transcript audit, and all 20 are now
+scored on the real leaderboard --- each of the 60 duels adjudicated by a paired
+test on Kaggle's own public/private split (38 decided, 22 undecidable at the
+measured noise scale). \kb{my-agent leads the standing --- 16 wins / 8 losses
+(66.7\% excl.\ ties)} against 42.3\% for each yardstick, and beats its own
+development-lane score on 13 of 20.\par
+\cardsub{Best private score --- head-to-head count (20 competitions)}
+\countbar{\textbf{my-agent}}{navy}{0.50}{10 / 20}
+\countbar{NVIDIA}{barother}{0.35}{7 / 20}
+\countbar{AIDE}{barother}{0.15}{3 / 20}
 \vspace{1mm}
 
 \cardsub{Private-leaderboard scores, all 20 benchmark competitions}
@@ -213,7 +214,7 @@ clean after an audit discard (\textbf{TBD}).\par
 \begin{minipage}[t]{0.5\linewidth}
 \begin{tabular}{@{}llrrr@{}}
 \toprule
-\textbf{Comp.} & \textbf{Metric} & \textbf{mine} & \textbf{NV} & \textbf{AIDE}\\
+\textbf{Comp.} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
 \midrule
 s3e1 & RMSE $\downarrow$ & \textbf{0.55275} & 0.55550 & 0.55552\\
 s3e3 & AUC $\uparrow$ & 0.87157 & \textbf{0.89537} & 0.86863\\
@@ -231,7 +232,7 @@ s4e11 & Acc. $\uparrow$ & \textbf{0.94107} & 0.94076 & 0.94056\\
 \begin{minipage}[t]{0.48\linewidth}
 \begin{tabular}{@{}llrrr@{}}
 \toprule
-\textbf{Comp.} & \textbf{Metric} & \textbf{mine} & \textbf{NV} & \textbf{AIDE}\\
+\textbf{Comp.} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
 \midrule
 s5e1 & MAPE $\downarrow$ & \textbf{0.08401} & 0.14594 & 0.17917\\
 s5e10 & RMSE $\downarrow$ & \textbf{0.05576} & 0.05588 & 0.05579\\
@@ -241,17 +242,17 @@ cat-in-dat & AUC $\uparrow$ & \textbf{0.80243} & 0.77084 & 0.80217\\
 conway & MAE $\downarrow$ & \textbf{0.10414} & 0.11189 & 0.11065\\
 s6e2 & AUC $\uparrow$ & 0.95505 & 0.95508 & \textbf{0.95516}\\
 tps-aug & AUC $\uparrow$ & 0.58930 & 0.58730 & \textbf{0.59106}\\
-tps-jan & SMAPE $\downarrow$ & TBD & 4.63651 & 10.6664\\
+tps-jan & SMAPE $\downarrow$ & 6.29895 & \textbf{4.63651} & 10.6664\\
 tps-sep & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \bottomrule
 \end{tabular}
 \end{minipage}\par}
 \vspace{3mm}
 \notepar{Private-leaderboard score of each frozen submission; \textbf{bold} = best
-  of the three; TBD = the lane re-running clean. On s3e19, the canonical
-  failure case, the controlled with/without-layer ablation scores 48.243
-  against 50.455 without the layer, and all \kb{6 of 6} controlled
-  external-data arms beat their matched baselines.}
+  of the three. The s3e19 benchmark lane scored
+  49.4088 (table above); in a separate controlled ablation the with-layer
+  champion scores 48.243 against 50.455 for the frozen pre-injection lane, and
+  all \kb{6 of 6} controlled external-data arms beat their matched baselines.}
 \cardsub{Mid-complexity three-way (offline-graded, private split)}
 {\tablesize
 \renewcommand{\arraystretch}{1.3}%
@@ -275,14 +276,14 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 {\setlength{\tabcolsep}{0pt}%
 \renewcommand{\arraystretch}{1.0}%
 \setlength{\heavyrulewidth}{0.9mm}\setlength{\lightrulewidth}{0.45mm}%
-\begin{tabular}{@{}>{\strut}p{0.315\linewidth}@{\hspace{7mm}}>{\strut}p{0.655\linewidth}@{}}
+\begin{tabular}{@{}>{\strut\raggedright\arraybackslash}p{0.315\linewidth}@{\hspace{7mm}}>{\strut}p{0.655\linewidth}@{}}
 \toprule
 \textbf{Expected} & \textbf{Experienced}\\
 \midrule\noalign{\vskip 3.5mm}
 {\itshape\color{notegray}The agent would quickly beat most humans.} &
   Development runs landed above average, with wins concentrated where no
   mature public solutions exist; the frozen-architecture re-run now
-  \kb{leads the paired standing} on the 19 scored lanes.\\[3.5mm]
+  \kb{leads the paired standing} on all 20 scored lanes.\\[3.5mm]
 \arrayrulecolor{ruleline}\hline\noalign{\vskip 3.5mm}
 {\itshape\color{notegray}One run and one score decide a winner.} &
   Score noise and run-to-run variance leave \kb{many duels undecidable};
@@ -297,8 +298,8 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 {\itshape\color{notegray}Fairness is mostly a mindset.} &
   It is \kb{infrastructure}: isolated data roots, credential-free sandboxes,
   and per-lane transcript audits cost real engineering time --- but without
-  them the numbers are not comparable.\\
-\arrayrulecolor{black}
+  them the numbers are not comparable.\\[3.5mm]
+\arrayrulecolor{black}\bottomrule
 \end{tabular}\par}
 
 \end{secblock}
@@ -316,8 +317,9 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
     turns the benchmark into an optimisation of the baseline.
   \item \kb{Isolate mechanically, then audit the transcript.} Sandboxes stop
     leaks you anticipated; reading what the agent actually did catches the
-    ones you didn't --- in both directions (two real contaminations, one
-    auditor false positive).
+    ones you didn't --- and it catches the auditor too: ours exempted every
+    command starting with \texttt{uv}, so the one command it existed to catch
+    was never examined until a post-hoc re-read.
   \item \kb{Put knowledge injection upstream.} At the blend stage it was
     worth ${\sim}10^{-5}$ and was abandoned; moved into problem
     identification it fires on exactly the \kb{2/18} competitions that need
@@ -342,8 +344,8 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
         left=\pagepad, right=\pagepad, top=4.5mm, bottom=4.5mm, boxsep=0pt,
         before skip=0pt, after skip=0pt]
       {\footersize\color{white}%
-        All numbers are real measurements as of 2026-08-18 (19 of 20 re-run
-        lanes scored on the real leaderboard; the final lane still to finish)\sep
+        All numbers are real measurements as of 2026-08-18 (all 20 re-run lanes
+        complete, audited and scored on the real leaderboard)\sep
         AIDE = LLM tree search; NVIDIA = highest-voted-kernel reproduction,
         both frozen\sep Companion documents: Report v6, Engineering Log,
         Case Studies, 22 per-competition ML-spec reports.\par}
