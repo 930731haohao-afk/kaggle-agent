@@ -133,7 +133,7 @@
   {\small\kb{my-agent leads: 16 wins / 8 losses (66.7\% of its decided duels)}
    against 42.3\% for each frozen yardstick.\par}
   \vspace{3mm}
-  {\small\kb{Best private score --- head-to-head count (20 competitions)}\par}
+  {\small\kb{Head-to-head best private score}\par}
   \vspace{1.5mm}
   \countbar{\kb{my-agent}}{barblue}{0.50}{10 / 20}
   \countbar{NVIDIA}{barother}{0.35}{7 / 20}
@@ -154,19 +154,19 @@
 \end{frame}
 
 % ============================================================== 4 LESSONS ---
-\begin{frame}{4 $\cdot$ Lessons from building this AI agent}
+\begin{frame}{4 $\cdot$ Lessons learned}
   \vspace{1mm}
   {\small
    $\cdot$ \kb{Put knowledge injection upstream.} At the blend stage it
    measured near-nothing; moved into problem identification it flags exactly
    the competitions that need external data.\par\vspace{2mm}
-   $\cdot$ \kb{Local CV is the only feedback while you iterate.} A competition
+   $\cdot$ \kb{Local CV is your only feedback.} A competition
    returns no score until submission, so an error in problem-level judgment
    leaves CV looking healthy while the leaderboard says otherwise.\par\vspace{2mm}
-   $\cdot$ \kb{Version the agent, not just the code.} An architecture change
+   $\cdot$ \kb{Version the agent itself.} An architecture change
    invalidates every competition that ran before it --- start the benchmark
    over rather than mixing versions in one table.\par\vspace{2mm}
-   $\cdot$ \kb{Isolate mechanically, then audit the transcript} --- and audit
+   $\cdot$ \kb{Isolate mechanically then audit transcripts} --- and audit
    the auditor: ours exempted every command starting with \texttt{uv}, so the
    one command it existed to catch was never examined.\par}
 
@@ -181,16 +181,16 @@
 \end{frame}
 
 % ================================================= 5 WHERE IT FALLS SHORT ---
-\begin{frame}{5 $\cdot$ Where AI-heavy work still falls short}
+\begin{frame}{5 $\cdot$ AI's blind spots}
   \vspace{1mm}
   {\small
-   $\cdot$ \kb{Engineering judgment is the gap, not technique.} Nothing in the
+   $\cdot$ \kb{Engineering judgment is the gap.} Nothing in the
    loop can tell at design time whether an architecture will hold; the flaws
    surface once it runs, and the debt grows with every competition added.\par\vspace{2mm}
-   $\cdot$ \kb{A pipeline will log success for work nothing performed.} Our
+   $\cdot$ \kb{Pipelines log success for missing work.} Our
    dossier emitted operators the evaluator had never implemented --- no warning,
    and the ledger recorded it as handled.\par\vspace{2mm}
-   $\cdot$ \kb{Documents can agree with each other and all be wrong.} One claim
+   $\cdot$ \kb{Consistent documents can still be wrong.} One claim
    was copied into report, poster and slides, and read as verified because it
    was consistent everywhere. Only the source code disagreed.\par\vspace{2mm}
    $\cdot$ \kb{AI writing habits survive review} --- redundant suffixes,

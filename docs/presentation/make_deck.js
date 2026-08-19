@@ -219,7 +219,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
     fontFace: F, fontSize: 17, color: INK, margin: 0,
   });
 
-  s.addText("Best private score — head-to-head count (20 competitions)", {
+  s.addText("Head-to-head best private score", {
     x: 0.72, y: 2.85, w: 11.9, h: 0.40,
     fontFace: F, fontSize: 17, bold: true, color: INK, margin: 0, valign: "middle",
   });
@@ -251,7 +251,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
 // ============================================================== 4 LESSONS ---
 {
   const s = pres.addSlide();
-  head(s, "4 · Lessons from building this AI agent");
+  head(s, "4 · Lessons learned");
 
   const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
 
@@ -262,21 +262,21 @@ function countbar(slide, y, label, color, frac, value, bold) {
   ]), { ...B, y: 1.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Local CV is the only feedback while you iterate.", options: { bold: true } },
+    { text: "Local CV is your only feedback.", options: { bold: true } },
     { text: " A competition returns no score until submission, so an error in " +
             "problem-level judgment leaves CV looking healthy while the " +
             "leaderboard says otherwise." },
   ]), { ...B, y: 2.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Version the agent, not just the code.", options: { bold: true } },
+    { text: "Version the agent itself.", options: { bold: true } },
     { text: " An architecture change invalidates every competition that ran " +
             "before it — start the benchmark over rather than mixing versions " +
             "in one table." },
   ]), { ...B, y: 3.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Isolate mechanically, then audit the transcript", options: { bold: true } },
+    { text: "Isolate mechanically then audit transcripts", options: { bold: true } },
     { text: " — and audit the auditor: ours exempted every command starting " +
             "with uv, so the one command it existed to catch was never examined." },
   ]), { ...B, y: 4.20, h: 0.85 });
@@ -296,25 +296,25 @@ function countbar(slide, y, label, color, frac, value, bold) {
 // ================================================= 5 WHERE IT FALLS SHORT ---
 {
   const s = pres.addSlide();
-  head(s, "5 · Where AI-heavy work still falls short");
+  head(s, "5 · AI's blind spots");
 
   const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
 
   s.addText(item([
-    { text: "Engineering judgment is the gap, not technique.", options: { bold: true } },
+    { text: "Engineering judgment is the gap.", options: { bold: true } },
     { text: " Nothing in the loop can tell at design time whether an " +
             "architecture will hold; the flaws surface once it runs, and the " +
             "debt grows with every competition added." },
   ]), { ...B, y: 1.20, h: 0.85 });
 
   s.addText(item([
-    { text: "A pipeline will log success for work nothing performed.", options: { bold: true } },
+    { text: "Pipelines log success for missing work.", options: { bold: true } },
     { text: " Our dossier emitted operators the evaluator had never " +
             "implemented — no warning, and the ledger recorded it as handled." },
   ]), { ...B, y: 2.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Documents can agree with each other and all be wrong.", options: { bold: true } },
+    { text: "Consistent documents can still be wrong.", options: { bold: true } },
     { text: " One claim was copied into report, poster and slides, and read as " +
             "verified because it was consistent everywhere. Only the source " +
             "code disagreed." },

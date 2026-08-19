@@ -195,7 +195,7 @@ against the score noise measured on Kaggle's own public/private split: 38
 decided, 22 too close to call. \kb{my-agent leads the standing --- 16 wins /
 8 losses (66.7\% of its decided duels)} against 42.3\% for each yardstick, and
 beats its own development-lane score on 13 of 20.\par
-\cardsub{Best private score --- head-to-head count}
+\cardsub{Head-to-head best private score}
 \countbar{\textbf{my-agent}}{navy}{0.50}{10 / 20}
 \countbar{NVIDIA}{barother}{0.35}{7 / 20}
 \countbar{AIDE}{barother}{0.15}{3 / 20}
@@ -245,7 +245,7 @@ tps-sep & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \vspace{3mm}
 \notepar{Private-leaderboard score of each submission; \textbf{bold} = best
   of the three.}
-\cardsub{Beyond tabular --- three mid-complexity competitions}
+\cardsub{Three mid-complexity competitions}
 {\tablesize
 \renewcommand{\arraystretch}{1.3}%
 \setlength{\tabcolsep}{2.6mm}%
@@ -264,21 +264,21 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 
 % ---- 4 · Lessons ----------------------------------------------------------
 \begin{secblock}
-\blocktitle{4\sep Lessons from building this AI agent}
+\blocktitle{4\sep Lessons learned}
 \begin{itemize}
   \item \kb{Put knowledge injection upstream.} At the blend stage it measured
     near-nothing and was abandoned; moved into problem identification it flags
     exactly the competitions that need external data, and \kb{turns the
     canonical failure case around}.
-  \item \kb{Local CV is the only feedback while you iterate.} A competition
+  \item \kb{Local CV is your only feedback.} A competition
     returns no score until submission, unlike a task that can be graded on the
     spot, so an error in problem-level judgment leaves CV looking healthy while
     the leaderboard says otherwise.
-  \item \kb{Version the agent, not just the code.} An architecture change
+  \item \kb{Version the agent itself.} An architecture change
     invalidates every competition that ran before it: rebuild the run root,
     re-hash it, and start the benchmark over rather than mixing versions in
     one table.
-  \item \kb{Isolate mechanically, then audit the transcript.} Sandboxes stop
+  \item \kb{Isolate mechanically then audit transcripts.} Sandboxes stop
     leaks you anticipated; reading what the agent actually did catches the ones you didn't --- and it
     catches the auditor too: ours exempted every command starting with
     \texttt{uv}, so the one command it existed to catch was never examined.
@@ -287,19 +287,19 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 
 % ---- 5 · Where AI-heavy work falls short -----------------------------------
 \begin{secblock}
-\blocktitle{5\sep Where AI-heavy work still falls short}
+\blocktitle{5\sep AI's blind spots}
 \begin{itemize}
-  \item \kb{Engineering judgment is the gap, not technique.} The code is fast
+  \item \kb{Engineering judgment is the gap.} The code is fast
     and accurate, but nothing in the loop can tell at design time whether an
     architecture will hold. The flaws surface only once it runs --- and by then
     a weak structure has started accumulating debt that grows with every
     competition added to it.
-  \item \kb{A pipeline will log success for work nothing performed.} Our
+  \item \kb{Pipelines log success for missing work.} Our
     dossier emitted post-processing operators under names the evaluator had
     never implemented: the instruction went out, nothing ran, no warning was
     raised, and the ledger recorded it as handled. The numbers still looked
     right --- because the evaluator happened to hard-code something similar.
-  \item \kb{Documents can agree with each other and all be wrong.} A claim
+  \item \kb{Consistent documents can still be wrong.} A claim
     about the search budget was copied into report, poster and slides, and read
     as verified precisely because it was consistent everywhere. Only the source
     code disagreed.
