@@ -109,7 +109,7 @@
     An End-to-End AI Agent for Kaggle Competitions\par}
   \vspace{5.3mm}
   {\subsize\color{white}%
-    An end-to-end LLM agent benchmarked against two frozen yardsticks
+    An end-to-end LLM agent benchmarked against two frozen reference agents
     on 20 Kaggle competitions\par}
   \vspace{4.3mm}
   {\metasize\color{white}%
@@ -190,10 +190,10 @@
 \cardsub{Benchmark standing}
 All 20 competitions ran in sandboxes with a per-lane
 transcript audit, and all 20 are scored on the real leaderboard --- as were
-the two yardsticks. Each of the 60 head-to-head duels was judged
+the two reference agents. Each of the 60 head-to-head duels was judged
 against the score noise measured on Kaggle's own public/private split: 38
 decided, 22 too close to call. \kb{my-agent leads the standing --- 16 wins /
-8 losses (66.7\% of its decided duels)} against 42.3\% for each yardstick, and
+8 losses (66.7\% of its decided duels)} against 42.3\% for each reference agent, and
 beats its own development-lane score on 13 of 20.\par
 \cardsub{Head-to-head best private score}
 \countbar{\textbf{my-agent}}{navy}{0.50}{10 / 20}
@@ -270,14 +270,13 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
     near-nothing and was abandoned; moved into problem identification it flags
     exactly the competitions that need external data, and \kb{turns the
     canonical failure case around}.
-  \item \kb{Local CV is your only feedback.} A competition
-    returns no score until submission, unlike a task that can be graded on the
-    spot, so an error in problem-level judgment leaves CV looking healthy while
-    the leaderboard says otherwise.
-  \item \kb{Version the agent itself.} An architecture change
+  \item \kb{No score until you submit.} While you iterate, local CV is all
+    you see --- unlike a task that can be graded on the spot --- so an error in
+    problem-level judgment leaves CV looking healthy while the leaderboard says
+    otherwise.
+  \item \kb{Never mix agent versions in one table.} An architecture change
     invalidates every competition that ran before it: rebuild the run root,
-    re-hash it, and start the benchmark over rather than mixing versions in
-    one table.
+    re-hash it, and start the benchmark over.
   \item \kb{Isolate mechanically then audit transcripts.} Sandboxes stop
     leaks you anticipated; reading what the agent actually did catches the ones you didn't --- and it
     catches the auditor too: ours exempted every command starting with
@@ -289,16 +288,10 @@ SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 \begin{secblock}
 \blocktitle{5\sep AI's blind spots}
 \begin{itemize}
-  \item \kb{Engineering judgment is the gap.} The code is fast
-    and accurate, but nothing in the loop can tell at design time whether an
-    architecture will hold. The flaws surface only once it runs --- and by then
-    a weak structure has started accumulating debt that grows with every
-    competition added to it.
-  \item \kb{Pipelines log success for missing work.} Our
-    dossier emitted post-processing operators under names the evaluator had
-    never implemented: the instruction went out, nothing ran, no warning was
-    raised, and the ledger recorded it as handled. The numbers still looked
-    right --- because the evaluator happened to hard-code something similar.
+  \item \kb{No engineering judgment at design time.} The code is fast and
+    accurate, but nothing in the loop can tell whether an architecture will
+    hold until it runs --- and by then a weak structure has started
+    accumulating debt that grows with every competition added to it.
   \item \kb{The question gets lost in the detail.} Heavy AI use pulls a
     write-up toward the technical detail it can report exhaustively, and away
     from the one thing the reader came for.

@@ -256,7 +256,7 @@ private lock --- verified by having a shell acquirer refused while Python holds 
 
 \subsection{Instruction isolation}
 
-The rule is that a prompt may carry environment facts and metric thresholds only: no modelling
+The rule is that a prompt may carry environment facts and metric thresholds only: no modeling
 recipes, no other side's scores, no workaround discovered by another side. This one is enforced
 by protocol and an incident log rather than by code, which is a real weakness and is disclosed as
 one --- there is no mechanical check that a prompt is free of leaked strategy.
@@ -367,7 +367,7 @@ Letting the agent fetch whatever it judges useful destroys the property that mad
 worth having, and it does so in a way no test can detect. On Kaggle the most valuable
 ``external data'' for a competition is frequently a dataset another competitor assembled,
 occasionally containing the test labels; a temporal as-of join with a correct lag will happily
-join the answer, because nothing is dated wrong. The defence therefore cannot be a check. The
+join the answer, because nothing is dated wrong. The defense therefore cannot be a check. The
 dataset whitelist was replaced with a \textbf{domain} whitelist --- the host must be a listed
 general-purpose reference publisher, and data-sharing platforms are excluded outright --- plus
 an admission procedure whose five gates (structural, leakage, snapshot determinism, coverage,
@@ -386,7 +386,7 @@ false positive is a disqualification rather than a bad score. Its permit list co
 bare substring \texttt{allowed to use external data}, which matches inside the single commonest
 Kaggle prohibition, ``Participants are \textbf{not} allowed to use external data''. No forbid
 pattern covered that wording. The subsystem's hard stop returned \texttt{permitted} and cited
-the prohibiting clause as its evidence. Four related holes travelled with it: the forbid list
+the prohibiting clause as its evidence. Four related holes traveled with it: the forbid list
 missed Kaggle's canonical ``you may not use data other than the Competition Data'' family,
 bolded negation and table rows; the matcher took the first hit anywhere in the document, so one
 permission-shaped sentence in an FAQ outvoted a binding prohibition; a clause permitting
@@ -426,7 +426,7 @@ while verifying the fixes for the first six --- which is itself the finding.
 
 \begin{enumerate}[leftmargin=*]
   \item \textbf{The experience library handed a rerun its own recorded answers.} The agent is
-  instructed to consult \path{knowledge/experience.md} before EDA and before modelling, and
+  instructed to consult \path{knowledge/experience.md} before EDA and before modeling, and
   retrieval matched on metric and task tags only. By July the library held the benchmark runs'
   own conclusions, so re-running a competition would have returned the feature set and
   ensemble choice that produced its recorded score. Fixed by dropping bullets whose evidence
@@ -461,7 +461,7 @@ while verifying the fixes for the first six --- which is itself the finding.
 
   \item \textbf{\texttt{postprocess} spoke a different vocabulary than its evaluator.} The
   dossier asked for \texttt{round\_to\_int} / \texttt{clip\_min} / \texttt{global\_scale};
-  \texttt{maybe\_postprocess} recognised only \texttt{auto\_scale} / \texttt{scale}. Requests
+  \texttt{maybe\_postprocess} recognized only \texttt{auto\_scale} / \texttt{scale}. Requests
   were silently dropped. Found while verifying the fix for defect 3.
 
   \item \textbf{The ledger claimed a verification that never ran.} \texttt{split\_policy} and

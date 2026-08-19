@@ -12,7 +12,7 @@
 \usetheme{default}
 \usecolortheme{default}
 \setbeamertemplate{navigation symbols}{}
-% On a dark frame set the beamer colour inside the frame group; a \color{}
+% On a dark frame set the beamer color inside the frame group; a \color{}
 % wrapper around a list is overridden inside the list and renders dark on dark.
 
 \usepackage[T1]{fontenc}
@@ -43,7 +43,7 @@
 \newcommand{\kb}[1]{\textbf{#1}}
 
 % ---- Head-to-head bar, same geometry as the poster's countbar --------------
-% #1 label  #2 colour  #3 fraction  #4 value
+% #1 label  #2 color  #3 fraction  #4 value
 \newcommand{\countbar}[4]{%
   \noindent\makebox[22mm][l]{\small #1}%
   \begin{tikzpicture}[baseline=2.4mm]
@@ -62,7 +62,7 @@
    for Kaggle Competitions\par}
   \vspace{5mm}
   {\color{ice}\normalsize An end-to-end LLM agent benchmarked against two frozen
-   yardsticks on 20 Kaggle competitions\par}
+   reference agents on 20 Kaggle competitions\par}
   \vfill
   {\color{pale}\small Wei-Hao Huang, National Chengchi University \quad$\cdot$\quad
    PI: Dr.\ Tso-Jung Yen, Institute of Statistical Science, Academia Sinica\par}
@@ -110,16 +110,16 @@
   \vspace{1.5mm}
   {\scriptsize\color{mut}The LLM reasons and decides at every stage; the
    \kb{problem dossier} classifies the task and injects external data
-   \emph{upstream}, before any modelling. Lanes hold no Kaggle credentials;
+   \emph{upstream}, before any modeling. Lanes hold no Kaggle credentials;
    submissions are scored post-run.\par}
 
   \note{The pipeline reads top to bottom. An LLM reasons and decides at every
     stage, gradient boosting does the fitting, and a tree search over complete
-    candidate solutions is the optimisation loop. The one design decision that
+    candidate solutions is the optimization loop. The one design decision that
     mattered is where outside knowledge enters. My first version put it
     downstream, at the blend --- measured, it was worth ten to the minus five.
     So it moved upstream, into a dossier stage that classifies the task before
-    any modelling. The lanes hold no Kaggle credentials, so nothing inside a run
+    any modeling. The lanes hold no Kaggle credentials, so nothing inside a run
     can touch a leaderboard. (40s)}
 \end{frame}
 
@@ -131,7 +131,7 @@
    split --- \kb{38 decided, 22 too close to call}.\par}
   \vspace{2.5mm}
   {\small\kb{my-agent leads: 16 wins / 8 losses (66.7\% of its decided duels)}
-   against 42.3\% for each frozen yardstick.\par}
+   against 42.3\% for each frozen reference agent.\par}
   \vspace{3mm}
   {\small\kb{Head-to-head best private score}\par}
   \vspace{1.5mm}
@@ -148,7 +148,7 @@
     noise measured on Kaggle's own split of the test set: thirty-eight decide,
     twenty-two the data refuses to call. My agent leads --- sixteen wins to
     eight of its decided duels, sixty-six point seven percent, against
-    forty-two point three for each yardstick. It takes the best private score on
+    forty-two point three for each reference agent. It takes the best private score on
     ten of the twenty competitions, and on three harder competitions outside
     tabular data it takes the best of the three every time. (45s)}
 \end{frame}
@@ -160,12 +160,12 @@
    $\cdot$ \kb{Put knowledge injection upstream.} At the blend stage it
    measured near-nothing; moved into problem identification it flags exactly
    the competitions that need external data.\par\vspace{2mm}
-   $\cdot$ \kb{Local CV is your only feedback.} A competition
-   returns no score until submission, so an error in problem-level judgment
-   leaves CV looking healthy while the leaderboard says otherwise.\par\vspace{2mm}
-   $\cdot$ \kb{Version the agent itself.} An architecture change
-   invalidates every competition that ran before it --- start the benchmark
-   over rather than mixing versions in one table.\par\vspace{2mm}
+   $\cdot$ \kb{No score until you submit.} While you iterate, local CV is
+   all you see, so an error in problem-level judgment leaves CV looking healthy
+   while the leaderboard says otherwise.\par\vspace{2mm}
+   $\cdot$ \kb{Never mix agent versions in one table.} An architecture
+   change invalidates every competition that ran before it --- rebuild the run
+   root and start the benchmark over.\par\vspace{2mm}
    $\cdot$ \kb{Isolate mechanically then audit transcripts} --- and audit
    the auditor: ours exempted every command starting with \texttt{uv}, so the
    one command it existed to catch was never examined.\par}
@@ -173,8 +173,8 @@
   \note{Four things I would tell anyone doing this. Put knowledge injection
     upstream --- at the blend stage it bought nothing. While you iterate, local
     cross-validation is the only feedback you get, and it can look healthy
-    while the leaderboard says otherwise. Version the agent, not just the code:
-    an architecture change invalidates every run before it. And isolate
+    while the leaderboard says otherwise. Never mix agent versions in one
+    table: an architecture change invalidates every run before it. And isolate
     mechanically, then read the transcripts --- including your auditor's: mine
     was exempting the commands every lane actually issues, so the one command
     it existed to catch was never examined. (43s)}
@@ -184,12 +184,9 @@
 \begin{frame}{5 $\cdot$ AI's blind spots}
   \vspace{1mm}
   {\small
-   $\cdot$ \kb{Engineering judgment is the gap.} Nothing in the
-   loop can tell at design time whether an architecture will hold; the flaws
-   surface once it runs, and the debt grows with every competition added.\par\vspace{2mm}
-   $\cdot$ \kb{Pipelines log success for missing work.} Our
-   dossier emitted operators the evaluator had never implemented --- no warning,
-   and the ledger recorded it as handled.\par\vspace{2mm}
+   $\cdot$ \kb{No engineering judgment at design time.} Nothing in the loop
+   can tell whether an architecture will hold until it runs, and the debt grows
+   with every competition added.\par\vspace{2mm}
    $\cdot$ \kb{AI writing habits survive review} --- redundant suffixes,
    invented terminology, detail in place of the question the reader came
    for.\par}
@@ -197,12 +194,10 @@
   {\color{mut}\scriptsize github.com/930731haohao-afk/kaggle-agent\par}
   \vspace{1mm}
 
-  \note{Where working this way still falls short. Engineering judgment is the
-    gap, not technique: nothing in the loop can tell at design time whether an
-    architecture will hold, and by the time the flaws surface the debt is
-    already there. A pipeline will happily log success for work nothing
-    performed --- ours emitted instructions the evaluator had never
-    implemented, and the ledger recorded them as handled. And AI writing habits survive
+  \note{Where working this way still falls short. There is no engineering
+    judgment at design time: nothing in the loop can tell whether an
+    architecture will hold until it runs, and by the time the flaws surface the
+    debt is already there. And AI writing habits survive
     review --- redundant suffixes, invented terminology, and detail in place of
     the question you actually came for. Thank you. (37s)}
 \end{frame}

@@ -74,7 +74,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
     lineSpacingMultiple: 1.1, valign: "middle",
   });
   s.addText(
-    "An end-to-end LLM agent benchmarked against two frozen yardsticks " +
+    "An end-to-end LLM agent benchmarked against two frozen reference agents " +
     "on 20 Kaggle competitions", {
       x: 0.90, y: 3.65, w: 11.0, h: 0.50,
       fontFace: F, fontSize: 18, color: ICE, margin: 0, valign: "middle",
@@ -164,7 +164,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
   s.addText([
     { text: "The LLM reasons and decides at every stage", options: { bold: true } },
     { text: "; gradient boosting does the fitting; a tree search over complete " +
-            "candidate solutions is the optimisation loop." },
+            "candidate solutions is the optimization loop." },
   ], {
     x: 8.05, y: 1.60, w: 4.55, h: 1.60,
     fontFace: F, fontSize: 16, color: INK, margin: 0,
@@ -173,7 +173,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
     { text: "The problem dossier", options: { bold: true } },
     { text: " classifies the task and injects external data " },
     { text: "upstream", options: { italic: true } },
-    { text: ", before any modelling." },
+    { text: ", before any modeling." },
   ], {
     x: 8.05, y: 3.35, w: 4.55, h: 1.20,
     fontFace: F, fontSize: 16, color: INK, margin: 0,
@@ -188,11 +188,11 @@ function countbar(slide, y, label, color, frac, value, bold) {
   s.addNotes(
     "The pipeline reads top to bottom. An LLM reasons and decides at every " +
     "stage, gradient boosting does the fitting, and a tree search over " +
-    "complete candidate solutions is the optimisation loop. The one design " +
+    "complete candidate solutions is the optimization loop. The one design " +
     "decision that mattered is where outside knowledge enters. My first " +
     "version put it downstream, at the blend — measured, it was worth ten to " +
     "the minus five. So it moved upstream, into a dossier stage that " +
-    "classifies the task before any modelling. The lanes hold no Kaggle " +
+    "classifies the task before any modeling. The lanes hold no Kaggle " +
     "credentials, so nothing inside a run can touch a leaderboard. (40s)"
   );
 }
@@ -213,7 +213,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
   s.addText([
     { text: "my-agent leads: 16 wins / 8 losses (66.7% of its decided duels)",
       options: { bold: true } },
-    { text: " against 42.3% for each frozen yardstick." },
+    { text: " against 42.3% for each frozen reference agent." },
   ], {
     x: 0.72, y: 2.05, w: 11.9, h: 0.55,
     fontFace: F, fontSize: 17, color: INK, margin: 0,
@@ -241,7 +241,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
     "score noise measured on Kaggle's own split of the test set: thirty-eight " +
     "decide, twenty-two the data refuses to call. My agent leads — sixteen " +
     "wins to eight of its decided duels, sixty-six point seven percent, " +
-    "against forty-two point three for each yardstick. It takes the best " +
+    "against forty-two point three for each reference agent. It takes the best " +
     "private score on ten of the twenty competitions, and on three harder " +
     "competitions outside tabular data it takes the best of the three every " +
     "time. (45s)"
@@ -262,17 +262,16 @@ function countbar(slide, y, label, color, frac, value, bold) {
   ]), { ...B, y: 1.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Local CV is your only feedback.", options: { bold: true } },
-    { text: " A competition returns no score until submission, so an error in " +
+    { text: "No score until you submit.", options: { bold: true } },
+    { text: " While you iterate, local CV is all you see, so an error in " +
             "problem-level judgment leaves CV looking healthy while the " +
             "leaderboard says otherwise." },
   ]), { ...B, y: 2.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Version the agent itself.", options: { bold: true } },
+    { text: "Never mix agent versions in one table.", options: { bold: true } },
     { text: " An architecture change invalidates every competition that ran " +
-            "before it — start the benchmark over rather than mixing versions " +
-            "in one table." },
+            "before it — rebuild the run root and start the benchmark over." },
   ]), { ...B, y: 3.20, h: 0.85 });
 
   s.addText(item([
@@ -285,8 +284,8 @@ function countbar(slide, y, label, color, frac, value, bold) {
     "Four things I would tell anyone doing this. Put knowledge injection " +
     "upstream — at the blend stage it bought nothing. While you iterate, local " +
     "cross-validation is the only feedback you get, and it can look healthy " +
-    "while the leaderboard says otherwise. Version the agent, not just the " +
-    "code: an architecture change invalidates every run before it. And isolate " +
+    "while the leaderboard says otherwise. Never mix agent versions in one " +
+    "table: an architecture change invalidates every run before it. And isolate " +
     "mechanically, then read the transcripts — including your auditor's: mine " +
     "was exempting the commands every lane actually issues, so the one command " +
     "it existed to catch was never examined. (43s)"
@@ -301,17 +300,10 @@ function countbar(slide, y, label, color, frac, value, bold) {
   const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
 
   s.addText(item([
-    { text: "Engineering judgment is the gap.", options: { bold: true } },
-    { text: " Nothing in the loop can tell at design time whether an " +
-            "architecture will hold; the flaws surface once it runs, and the " +
-            "debt grows with every competition added." },
+    { text: "No engineering judgment at design time.", options: { bold: true } },
+    { text: " Nothing in the loop can tell whether an architecture will hold " +
+            "until it runs, and the debt grows with every competition added." },
   ]), { ...B, y: 1.20, h: 0.85 });
-
-  s.addText(item([
-    { text: "Pipelines log success for missing work.", options: { bold: true } },
-    { text: " Our dossier emitted operators the evaluator had never " +
-            "implemented — no warning, and the ledger recorded it as handled." },
-  ]), { ...B, y: 2.20, h: 0.85 });
 
   s.addText(item([
     { text: "AI writing habits survive review", options: { bold: true } },
@@ -325,12 +317,10 @@ function countbar(slide, y, label, color, frac, value, bold) {
   });
 
   s.addNotes(
-    "Where working this way still falls short. Engineering judgment is the " +
-    "gap, not technique: nothing in the loop can tell at design time whether " +
-    "an architecture will hold, and by the time the flaws surface the debt is " +
-    "already there. A pipeline will happily log success for work nothing " +
-    "performed — ours emitted instructions the evaluator had never " +
-    "implemented, and the ledger recorded them as handled. And AI writing habits " +
+    "Where working this way still falls short. There is no engineering " +
+    "judgment at design time: nothing in the loop can tell whether an " +
+    "architecture will hold until it runs, and by the time the flaws surface " +
+    "the debt is already there. And AI writing habits " +
     "survive review — redundant suffixes, invented terminology, and detail in " +
     "place of the question you actually came for. Thank you. (37s)"
   );
