@@ -231,7 +231,17 @@ fi
 #   .bashrc/.profile  PATH. The token export at .bashrc:122 reads ~/.kaggle/kaggle.json,
 #                   which no longer exists inside, so it yields an empty string.
 #   .gitconfig      harmless, and tooling complains without it
-#   .claude/.credentials.json   the agent authenticates with this and nothing else
+#   .claude/.credentials.json   the agent authenticates with this and nothing else.
+#                   WRITABLE, deliberately. It was --ro-bind, which reads as the safer
+#                   choice and is not: the OAuth access token expires on the order of hours
+#                   while a lane may run for six, and a session that cannot write a
+#                   refreshed token back simply dies mid-lane with "401 OAuth access token
+#                   has been revoked". That cost this benchmark two multi-hour outages
+#                   (08-15 02:05 and 08-17 18:27), each killing a lane that was running
+#                   correctly. The read-only bind bought nothing against a lane that means
+#                   harm -- it could already READ the token, so exfiltration was never
+#                   blocked -- and lanes run strictly one at a time, so there is no
+#                   concurrent-writer hazard. What it did block was the legitimate refresh.
 #
 # UV_NO_SYNC=1 because torch is NOT in uv.lock (pyproject.toml records why), and a plain
 # `uv sync` REMOVES out-of-lock packages -- reproduced: torch present, `uv sync`, torch gone.
@@ -260,7 +270,7 @@ exec bwrap \
   --bind "$HOME/.local/state/claude" "$HOME/.local/state/claude" \
   --bind "$HOME/.cache" "$HOME/.cache" \
   "${home_files[@]}" \
-  --ro-bind "$HOME/.claude/.credentials.json" "$HOME/.claude/.credentials.json" \
+  --bind "$HOME/.claude/.credentials.json" "$HOME/.claude/.credentials.json" \
   --bind "$RUN_ROOT" "$RUN_ROOT" \
   "${comp_isolation[@]}" \
   "${library_ro[@]}" \

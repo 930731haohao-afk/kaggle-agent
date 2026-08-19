@@ -202,6 +202,28 @@ for c in $COMPS; do
     log "ABORTING at $c: the run root's environment no longer satisfies the preflight — "\
 "something removed a package the remaining lanes need. Earlier lanes keep their results."
     lane_release 2>/dev/null; exit 5; }
+
+  # PER LANE, for the same reason: a token that outlived lane 3 need not outlive lane 12.
+  #
+  # Two of this run's three outages were a lane dying on "401 OAuth access token has been
+  # revoked" after 39 and 75 minutes of correct work (08-15 02:05, 08-17 18:27). The sandbox
+  # now binds .credentials.json writable so a session can refresh in place, which is the real
+  # fix; this is the guard for when refresh does not happen. Refusing here costs a second and
+  # says why. Refusing to check costs however far into the lane the token happens to die.
+  #
+  # rc 3 (unreadable/malformed credentials) is NOT treated as fatal: the lane may still hold
+  # a working session, and a guard that cannot read a file is not evidence that the file is
+  # bad. It is logged and the lane proceeds -- the failure it would have prevented is still
+  # visible in the lane's own log.
+  oauth_msg=$(python3 "$REPO/benchmark_infra/preflight_oauth_token.py" \
+                --budget-secs "$PER_COMP_SECS" 2>&1); oauth_rc=$?
+  if [ "$oauth_rc" = "2" ]; then
+    log "ABORTING at $c: $oauth_msg Earlier lanes keep their results; re-run this launcher "\
+"once the credentials are refreshed and it will skip every competition already submitted."
+    lane_release 2>/dev/null; exit 7
+  elif [ "$oauth_rc" != "0" ]; then
+    log "WARNING before $c: $oauth_msg — proceeding, the token check is advisory"
+  fi
   # ...including the transcript of that attempt, which records its scores turn by turn.
   #
   # mkdir -p first, and CHECK the move. quarantine_partial_attempt creates $ATTEMPTS only
