@@ -1,0 +1,602 @@
+**
+(poster.tex
+LaTeX2e <2021-11-15> patch level 1
+L3 programming layer <2022-02-24> (article.cls
+Document Class: article 2021/10/04 v1.4n Standard LaTeX document class
+(size10.clo
+File: size10.clo 2021/10/04 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count181
+\c@section=\count182
+\c@subsection=\count183
+\c@subsubsection=\count184
+\c@paragraph=\count185
+\c@subparagraph=\count186
+\c@figure=\count187
+\c@table=\count188
+\abovecaptionskip=\skip47
+\belowcaptionskip=\skip48
+\bibindent=\dimen138
+) (geometry.sty
+Package: geometry 2020/01/02 v5.9 Page Geometry
+ (keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks16
+) (ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+ (iftex.sty
+Package: iftex 2022/02/03 v1.0f TeX engine tests
+))
+\Gm@cnth=\count189
+\Gm@cntv=\count190
+\c@Gm@tempcnt=\count191
+\Gm@bindingoffset=\dimen139
+\Gm@wd@mp=\dimen140
+\Gm@odd@mp=\dimen141
+\Gm@even@mp=\dimen142
+\Gm@layoutwidth=\dimen143
+\Gm@layoutheight=\dimen144
+\Gm@layouthoffset=\dimen145
+\Gm@layoutvoffset=\dimen146
+\Gm@dimlist=\toks17
+) (fontenc.sty
+Package: fontenc 2021/04/29 v2.0v Standard LaTeX package
+LaTeX Font Info:    Trying to load font information for T1+lmr on input line 11
+2.
+(t1lmr.fd
+File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)) (helvet.sty
+Package: helvet 2020/03/25 PSNFSS-v9.3 (WaS) 
+) (graphicx.sty
+Package: graphicx 2021/09/16 v1.2d Enhanced LaTeX Graphics (DPC,SPQR)
+ (graphics.sty
+Package: graphics 2021/03/04 v1.4d Standard LaTeX Graphics (DPC,SPQR)
+ (trig.sty
+Package: trig 2021/08/11 v1.11 sin cos tan (DPC)
+) (graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: xetex.def on input line 107.
+
+(xetex.def
+File: xetex.def 2021/03/18 v5.0k Graphics/color driver for xetex
+))
+\Gin@req@height=\dimen147
+\Gin@req@width=\dimen148
+) (xcolor.sty
+Package: xcolor 2021/10/31 v2.13 LaTeX color extensions (UK)
+ (color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: xetex.def on input line 227.
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1352.
+Package xcolor Info: Model `RGB' extended on input line 1368.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1370.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1371.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1372.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1373.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1374.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1375.
+) (colortbl.sty
+Package: colortbl 2020/01/04 v1.0e Color table columns (DPC)
+ (array.sty
+Package: array 2021/10/04 v2.5f Tabular extension package (FMi)
+\col@sep=\dimen149
+\ar@mcellbox=\box50
+\extrarowheight=\dimen150
+\NC@list=\toks18
+\extratabsurround=\skip49
+\backup@length=\skip50
+\ar@cellbox=\box51
+)
+\everycr=\toks19
+\minrowclearance=\skip51
+) (booktabs.sty
+Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
+\heavyrulewidth=\dimen151
+\lightrulewidth=\dimen152
+\cmidrulewidth=\dimen153
+\belowrulesep=\dimen154
+\belowbottomsep=\dimen155
+\aboverulesep=\dimen156
+\abovetopsep=\dimen157
+\cmidrulesep=\dimen158
+\cmidrulekern=\dimen159
+\defaultaddspace=\dimen160
+\@cmidla=\count192
+\@cmidlb=\count193
+\@aboverulesep=\dimen161
+\@belowrulesep=\dimen162
+\@thisruleclass=\count194
+\@lastruleclass=\count195
+\@thisrulewidth=\dimen163
+) (tikz.sty (pgf.sty (pgfrcs.sty (pgfutil-common.tex
+\pgfutil@everybye=\toks20
+\pgfutil@tempdima=\dimen164
+\pgfutil@tempdimb=\dimen165
+ (pgfutil-common-lists.tex)) (pgfutil-latex.def
+\pgfutil@abb=\box52
+) (pgfrcs.code.tex (pgf.revision.tex)
+Package: pgfrcs 2021/05/15 v3.1.9a (3.1.9a)
+))
+Package: pgf 2021/05/15 v3.1.9a (3.1.9a)
+ (pgfcore.sty
+(pgfsys.sty (pgfsys.code.tex
+Package: pgfsys 2021/05/15 v3.1.9a (3.1.9a)
+ (pgfkeys.code.tex
+\pgfkeys@pathtoks=\toks21
+\pgfkeys@temptoks=\toks22
+ (pgfkeysfiltered.code.tex
+\pgfkeys@tmptoks=\toks23
+))
+\pgf@x=\dimen166
+\pgf@y=\dimen167
+\pgf@xa=\dimen168
+\pgf@ya=\dimen169
+\pgf@xb=\dimen170
+\pgf@yb=\dimen171
+\pgf@xc=\dimen172
+\pgf@yc=\dimen173
+\pgf@xd=\dimen174
+\pgf@yd=\dimen175
+\w@pgf@writea=\write3
+\r@pgf@reada=\read2
+\c@pgf@counta=\count196
+\c@pgf@countb=\count197
+\c@pgf@countc=\count198
+\c@pgf@countd=\count199
+\t@pgf@toka=\toks24
+\t@pgf@tokb=\toks25
+\t@pgf@tokc=\toks26
+\pgf@sys@id@count=\count266
+
+(pgf.cfg
+File: pgf.cfg 2021/05/15 v3.1.9a (3.1.9a)
+)
+Driver file for pgf: pgfsys-xetex.def
+ (pgfsys-xetex.def
+File: pgfsys-xetex.def 2021/05/15 v3.1.9a (3.1.9a)
+ (pgfsys-dvipdfmx.def
+File: pgfsys-dvipdfmx.def 2021/05/15 v3.1.9a (3.1.9a)
+ (pgfsys-common-pdf.def
+File: pgfsys-common-pdf.def 2021/05/15 v3.1.9a (3.1.9a)
+)
+\pgfsys@objnum=\count267
+)))
+(pgfsyssoftpath.code.tex
+File: pgfsyssoftpath.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgfsyssoftpath@smallbuffer@items=\count268
+\pgfsyssoftpath@bigbuffer@items=\count269
+) (pgfsysprotocol.code.tex
+File: pgfsysprotocol.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+)) (pgfcore.code.tex
+Package: pgfcore 2021/05/15 v3.1.9a (3.1.9a)
+
+(pgfmath.code.tex (pgfmathcalc.code.tex (pgfmathutil.code.tex)
+(pgfmathparser.code.tex
+\pgfmath@dimen=\dimen176
+\pgfmath@count=\count270
+\pgfmath@box=\box53
+\pgfmath@toks=\toks27
+\pgfmath@stack@operand=\toks28
+\pgfmath@stack@operation=\toks29
+) (pgfmathfunctions.code.tex
+(pgfmathfunctions.basic.code.tex) (pgfmathfunctions.trigonometric.code.tex)
+(pgfmathfunctions.random.code.tex) (pgfmathfunctions.comparison.code.tex)
+(pgfmathfunctions.base.code.tex) (pgfmathfunctions.round.code.tex)
+(pgfmathfunctions.misc.code.tex) (pgfmathfunctions.integerarithmetics.code.tex)
+)) (pgfmathfloat.code.tex
+\c@pgfmathroundto@lastzeros=\count271
+)) (pgfint.code.tex) (pgfcorepoints.code.tex
+File: pgfcorepoints.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgf@picminx=\dimen177
+\pgf@picmaxx=\dimen178
+\pgf@picminy=\dimen179
+\pgf@picmaxy=\dimen180
+\pgf@pathminx=\dimen181
+\pgf@pathmaxx=\dimen182
+\pgf@pathminy=\dimen183
+\pgf@pathmaxy=\dimen184
+\pgf@xx=\dimen185
+\pgf@xy=\dimen186
+\pgf@yx=\dimen187
+\pgf@yy=\dimen188
+\pgf@zx=\dimen189
+\pgf@zy=\dimen190
+)
+(pgfcorepathconstruct.code.tex
+File: pgfcorepathconstruct.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgf@path@lastx=\dimen191
+\pgf@path@lasty=\dimen192
+) (pgfcorepathusage.code.tex
+File: pgfcorepathusage.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgf@shorten@end@additional=\dimen193
+\pgf@shorten@start@additional=\dimen194
+)
+(pgfcorescopes.code.tex
+File: pgfcorescopes.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgfpic=\box54
+\pgf@hbox=\box55
+\pgf@layerbox@main=\box56
+\pgf@picture@serial@count=\count272
+) (pgfcoregraphicstate.code.tex
+File: pgfcoregraphicstate.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgflinewidth=\dimen195
+)
+(pgfcoretransformations.code.tex
+File: pgfcoretransformations.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgf@pt@x=\dimen196
+\pgf@pt@y=\dimen197
+\pgf@pt@temp=\dimen198
+) (pgfcorequick.code.tex
+File: pgfcorequick.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+)
+(pgfcoreobjects.code.tex
+File: pgfcoreobjects.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+) (pgfcorepathprocessing.code.tex
+File: pgfcorepathprocessing.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+)
+(pgfcorearrows.code.tex
+File: pgfcorearrows.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgfarrowsep=\dimen199
+) (pgfcoreshade.code.tex
+File: pgfcoreshade.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgf@max=\dimen256
+\pgf@sys@shading@range@num=\count273
+\pgf@shadingcount=\count274
+) (pgfcoreimage.code.tex
+File: pgfcoreimage.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+
+(pgfcoreexternal.code.tex
+File: pgfcoreexternal.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgfexternal@startupbox=\box57
+)) (pgfcorelayers.code.tex
+File: pgfcorelayers.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+)
+(pgfcoretransparency.code.tex
+File: pgfcoretransparency.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+) (pgfcorepatterns.code.tex
+File: pgfcorepatterns.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+) (pgfcorerdf.code.tex
+File: pgfcorerdf.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+))) (pgfmoduleshapes.code.tex
+File: pgfmoduleshapes.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgfnodeparttextbox=\box58
+) (pgfmoduleplot.code.tex
+File: pgfmoduleplot.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+)
+(pgfcomp-version-0-65.sty
+Package: pgfcomp-version-0-65 2021/05/15 v3.1.9a (3.1.9a)
+\pgf@nodesepstart=\dimen257
+\pgf@nodesepend=\dimen258
+) (pgfcomp-version-1-18.sty
+Package: pgfcomp-version-1-18 2021/05/15 v3.1.9a (3.1.9a)
+)) (pgffor.sty (pgfkeys.sty (pgfkeys.code.tex)) (pgfmath.sty (pgfmath.code.tex)
+) (pgffor.code.tex
+Package: pgffor 2021/05/15 v3.1.9a (3.1.9a)
+
+(pgfmath.code.tex)
+\pgffor@iter=\dimen259
+\pgffor@skip=\dimen260
+\pgffor@stack=\toks30
+\pgffor@toks=\toks31
+)) (tikz.code.tex
+Package: tikz 2021/05/15 v3.1.9a (3.1.9a)
+ (pgflibraryplothandlers.code.tex
+File: pgflibraryplothandlers.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgf@plot@mark@count=\count275
+\pgfplotmarksize=\dimen261
+)
+\tikz@lastx=\dimen262
+\tikz@lasty=\dimen263
+\tikz@lastxsaved=\dimen264
+\tikz@lastysaved=\dimen265
+\tikz@lastmovetox=\dimen266
+\tikz@lastmovetoy=\dimen267
+\tikzleveldistance=\dimen268
+\tikzsiblingdistance=\dimen269
+\tikz@figbox=\box59
+\tikz@figbox@bg=\box60
+\tikz@tempbox=\box61
+\tikz@tempbox@bg=\box62
+\tikztreelevel=\count276
+\tikznumberofchildren=\count277
+\tikznumberofcurrentchild=\count278
+\tikz@fig@count=\count279
+
+(pgfmodulematrix.code.tex
+File: pgfmodulematrix.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+\pgfmatrixcurrentrow=\count280
+\pgfmatrixcurrentcolumn=\count281
+\pgf@matrix@numberofcolumns=\count282
+)
+\tikz@expandcount=\count283
+ (tikzlibrarytopaths.code.tex
+File: tikzlibrarytopaths.code.tex 2021/05/15 v3.1.9a (3.1.9a)
+))) (tcolorbox.sty
+Package: tcolorbox 2022/01/07 version 5.0.2 text color boxes
+
+(verbatim.sty
+Package: verbatim 2020-07-07 v1.5u LaTeX2e package for verbatim enhancements
+\every@verbatim=\toks32
+\verbatim@line=\toks33
+\verbatim@in@stream=\read3
+) (environ.sty
+Package: environ 2014/05/04 v0.3 A new way to define environments
+ (trimspaces.sty
+Package: trimspaces 2009/09/17 v1.1 Trim spaces around a token list
+)
+\@envbody=\toks34
+) (etoolbox.sty
+Package: etoolbox 2020/10/05 v2.5k e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count284
+)
+\tcb@titlebox=\box63
+\tcb@upperbox=\box64
+\tcb@lowerbox=\box65
+\tcb@phantombox=\box66
+\c@tcbbreakpart=\count285
+\c@tcblayer=\count286
+\c@tcolorbox@number=\count287
+\tcb@temp=\box67
+\tcb@temp=\box68
+\tcb@temp=\box69
+\tcb@temp=\box70
+ (tcbskins.code.tex
+Library (tcolorbox): 'tcbskins.code.tex' version '5.0.2'
+\tcb@waterbox=\box71
+(tcbskinsjigsaw.code.tex
+Library (tcolorbox): 'tcbskinsjigsaw.code.tex' version '5.0.2'
+))) (enumitem.sty
+Package: enumitem 2019/06/20 v3.9 Customized lists
+\labelindent=\skip52
+\enit@outerparindent=\dimen270
+\enit@toks=\toks35
+\enit@inbox=\box72
+\enit@count@id=\count288
+\enitdp@description=\count289
+) (textcomp.sty
+Package: textcomp 2020/02/02 v2.0n Standard LaTeX package
+)
+\pagepad=\skip53
+\colgap=\skip54
+\bartracklen=\skip55
+LaTeX Font Info:    Trying to load font information for T1+phv on input line 10
+0.
+ (t1phv.fd
+File: t1phv.fd 2020/03/25 scalable font definitions for T1/phv.
+) (l3backend-xetex.def
+File: l3backend-xetex.def 2022-02-07 L3 backend support: XeTeX
+\c__kernel_sys_dvipdfmx_version_int=\count290
+\l__color_backend_stack_int=\count291
+\g__color_backend_stack_int=\count292
+\g__graphics_track_int=\count293
+\l__pdf_internal_box=\box73
+\g__pdf_backend_object_int=\count294
+\g__pdf_backend_annotation_int=\count295
+\g__pdf_backend_link_int=\count296
+) (poster.aux)
+\openout1 = `poster.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 100.
+LaTeX Font Info:    Trying to load font information for TS1+cmr on input line 1
+00.
+(ts1cmr.fd
+File: ts1cmr.fd 2019/12/16 v2.5j Standard LaTeX font definitions
+)
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: xetex
+*geometry* verbose mode - [ preamble ] result:
+* driver: xetex
+* paper: custom
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(0.0pt, 2392.87677pt, 0.0pt)
+* v-part:(T,H,B)=(0.0pt, 3383.03267pt, 0.0pt)
+* \paperwidth=2392.87677pt
+* \paperheight=3383.03267pt
+* \textwidth=2392.87677pt
+* \textheight=3383.03267pt
+* \oddsidemargin=-72.26999pt
+* \evensidemargin=-72.26999pt
+* \topmargin=-109.26999pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=0.0pt
+* \footskip=30.0pt
+* \marginparwidth=65.0pt
+* \marginparsep=11.0pt
+* \columnsep=10.0pt
+* \skip\footins=9.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+LaTeX Font Info:    Trying to load font information for TS1+phv on input line 1
+16.
+(ts1phv.fd
+File: ts1phv.fd 2020/03/25 scalable font definitions for TS1/phv.
+)
+File: fig1_arch.pdf Graphic file (type pdf)
+<use fig1_arch.pdf>
+LaTeX Font Info:    Font shape `T1/phv/m/it' in size <22.5> not available
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 172.
+LaTeX Font Info:    Calculating math sizes for size <22.5> on input line 172.
+
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <22.5> not available
+(Font)              size <20.74> substituted on input line 172.
+
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <15.74992> not available
+(Font)              size <14.4> substituted on input line 172.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <22.5> not available
+(Font)              size <20.74> substituted on input line 172.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <15.74992> not available
+(Font)              size <14.4> substituted on input line 172.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <22.5> not available
+(Font)              size <20.74> substituted on input line 172.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <15.74992> not available
+(Font)              size <14.4> substituted on input line 172.
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <22.5> on input line 172.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <15.74992> on input line 172.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <11.25> on input line 172.
+File: fig2_tree_poster.pdf Graphic file (type pdf)
+<use fig2_tree_poster.pdf>
+LaTeX Font Info:    Calculating math sizes for size <21.5> on input line 214.
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <21.5> not available
+(Font)              size <20.74> substituted on input line 214.
+
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <15.04993> not available
+(Font)              size <14.4> substituted on input line 214.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <21.5> not available
+(Font)              size <20.74> substituted on input line 214.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <15.04993> not available
+(Font)              size <14.4> substituted on input line 214.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <21.5> not available
+(Font)              size <20.74> substituted on input line 214.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <15.04993> not available
+(Font)              size <14.4> substituted on input line 214.
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <21.5> on input line 214.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <15.04993> on input line 214.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.75> on input line 214.
+LaTeX Font Info:    Calculating math sizes for size <24> on input line 257.
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <24> not available
+(Font)              size <24.88> substituted on input line 257.
+
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <16.79993> not available
+(Font)              size <17.28> substituted on input line 257.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <24> not available
+(Font)              size <24.88> substituted on input line 257.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <16.79993> not available
+(Font)              size <17.28> substituted on input line 257.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <24> not available
+(Font)              size <24.88> substituted on input line 257.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <16.79993> not available
+(Font)              size <17.28> substituted on input line 257.
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <24> on input line 257.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <16.79993> on input line 257.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 257.
+LaTeX Font Info:    Calculating math sizes for size <26.5> on input line 275.
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <26.5> not available
+(Font)              size <24.88> substituted on input line 275.
+
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <18.54991> not available
+(Font)              size <17.28> substituted on input line 275.
+
+
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <13.25> not available
+(Font)              size <14.4> substituted on input line 275.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <26.5> not available
+(Font)              size <24.88> substituted on input line 275.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <18.54991> not available
+(Font)              size <17.28> substituted on input line 275.
+
+
+LaTeX Font Warning: Font shape `OML/cmm/m/it' in size <13.25> not available
+(Font)              size <14.4> substituted on input line 275.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <26.5> not available
+(Font)              size <24.88> substituted on input line 275.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <18.54991> not available
+(Font)              size <17.28> substituted on input line 275.
+
+
+LaTeX Font Warning: Font shape `OMS/cmsy/m/n' in size <13.25> not available
+(Font)              size <14.4> substituted on input line 275.
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <26.5> on input line 275.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <18.54991> on input line 275.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <13.25> on input line 275.
+LaTeX Font Info:    Font shape `T1/phv/m/it' in size <26.5> not available
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 279.
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 3
+17.
+(t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+LaTeX Font Info:    Font shape `T1/phv/b/it' in size <26.5> not available
+(Font)              Font shape `T1/phv/b/sl' tried instead on input line 322.
+ [1
+
+] (poster.aux)
+
+LaTeX Font Warning: Size substitutions with differences
+(Font)              up to 1.76pt have occurred.
+
+ )
+Output written on poster.xdv (1 page, 33348 bytes).

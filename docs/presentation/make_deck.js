@@ -251,7 +251,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
 // ============================================================== 4 LESSONS ---
 {
   const s = pres.addSlide();
-  head(s, "4 · Lessons from building it");
+  head(s, "4 · Lessons from building this AI agent");
 
   const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
 
