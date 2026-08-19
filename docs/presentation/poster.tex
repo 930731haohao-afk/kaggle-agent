@@ -1,6 +1,6 @@
 % ============================================================================
 % A0 PORTRAIT POSTER (841mm x 1189mm) — pdfLaTeX / Overleaf-compatible
-% "An End-to-End AI Agent for Kaggle Competitions"
+% "AI Agents for Data Visualization and Kaggle Competitions"
 %
 % Style follows the IFSC prePoster/sciposter template the advisor referenced:
 % white page, plain two-column body, ONE navy band for the header and one
@@ -24,8 +24,6 @@
 \usepackage[skins]{tcolorbox}          % used only for the flat header band
 \usepackage{enumitem}
 \usepackage{textcomp}
-\usepackage{sansmath}
-\usepackage{microtype}
 
 % ---- Palette (sciposter-style: navy + one orange accent) -------------------
 \definecolor{navy}{RGB}{0,60,100}      % template BoxCol
@@ -42,10 +40,9 @@
 \newcommand{\metasize}{\fontsize{26}{36}\selectfont}
 \newcommand{\cardtitlesize}{\fontsize{40}{47}\selectfont}
 \newcommand{\subheadsize}{\fontsize{30.5}{37}\selectfont}
-\newcommand{\claimsize}{\fontsize{30.5}{39}\selectfont}
-\newcommand{\bodysize}{\fontsize{26.5}{34.5}\selectfont}
+\newcommand{\bodysize}{\fontsize{26.5}{37.5}\selectfont}
 \newcommand{\notesize}{\fontsize{22.5}{30}\selectfont}
-\newcommand{\tablesize}{\fontsize{24}{32}\selectfont}
+\newcommand{\tablesize}{\fontsize{24}{33}\selectfont}
 \newcommand{\footersize}{\fontsize{21}{28}\selectfont}
 
 \renewcommand{\normalsize}{\bodysize}
@@ -56,9 +53,6 @@
 \setlength{\topskip}{0pt}
 \setlength{\maxdepth}{\paperheight}
 \pagestyle{empty}
-\emergencystretch=2em
-\hyphenpenalty=4000
-\tolerance=2500
 
 \newlength{\pagepad}\setlength{\pagepad}{21.25mm}
 \newlength{\colgap}\setlength{\colgap}{14mm}
@@ -68,25 +62,20 @@
 \newcommand{\kb}[1]{\textbf{#1}}
 % Separator dot
 \newcommand{\sep}{\ \textperiodcentered\ }
-% Paragraph break inside a block (parskip is 0)
-\newcommand{\pgap}{\par\vspace{4mm}}
 
 % Section block: bordered card, plain-bold title with a hairline rule inside
 \newtcolorbox{secblock}{%
   enhanced, sharp corners=all, arc=3mm, rounded corners=all,
   colback=white, colframe=ruleline, boxrule=0.7mm,
-  left=10mm, right=10mm, top=6mm, bottom=6.5mm, boxsep=0pt,
-  before skip=0pt, after skip=7mm}
+  left=10mm, right=10mm, top=7.5mm, bottom=8mm, boxsep=0pt,
+  before skip=0pt, after skip=8mm}
 \newcommand{\blocktitle}[1]{%
   {\cardtitlesize\bfseries #1\par}%
-  \vspace{2.5mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{4.5mm}}
+  \vspace{2.5mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{5mm}}
 
-% Sub-heading: navy bold
+% Sub-heading: navy bold with a short orange underline accent
 \newcommand{\cardsub}[1]{%
-  \vspace{4.5mm}{\subheadsize\bfseries #1\par}\vspace{3mm}}
-
-% The block's claim: its opening sentence, set one step up from body text
-\newcommand{\claimpar}[1]{{\claimsize #1\par}\vspace{4.2mm}}
+  \vspace{4mm}{\subheadsize\bfseries #1\par}\vspace{3mm}}
 
 % Figure caption / note paragraph
 \newcommand{\figcap}[1]{\vspace{2mm}{\notesize\color{notegray}#1\par}}
@@ -98,18 +87,17 @@
 
 % ---- Horizontal bar row: best-private count across the scored benchmark ----
 % #1 = label, #2 = bar color, #3 = fraction of track (0..1), #4 = value text
-\newlength{\bartracklen}\setlength{\bartracklen}{200mm}
+\newlength{\bartracklen}\setlength{\bartracklen}{190mm}
 \newcommand{\countbar}[4]{%
-  \makebox[54mm][l]{\notesize #1}%
-  \begin{tikzpicture}[baseline={(0,3.4mm)}]
-    \fill[bartrack] (0,0) rectangle (\bartracklen,11mm);
-    \fill[#2] (0,0) rectangle (#3\bartracklen,11mm);
+  \makebox[52mm][l]{\notesize #1}%
+  \begin{tikzpicture}[baseline={(0,3.2mm)}]
+    \fill[bartrack] (0,0) rectangle (\bartracklen,10mm);
+    \fill[#2] (0,0) rectangle (#3\bartracklen,10mm);
   \end{tikzpicture}%
-  \hspace{3mm}{\notesize\color{bodyink}#4}\par\vspace{4.2mm}}
+  \hspace{3mm}{\notesize\color{bodyink}#4}\par\vspace{2.4mm}}
 
 % ============================================================================
 \begin{document}%
-\sansmath
 \bodysize\color{bodyink}%
 
 % ---------------------------------------------------------------- TOP BAND --
@@ -120,8 +108,9 @@
   {\titlesize\bfseries\color{white}%
     An End-to-End AI Agent for Kaggle Competitions\par}
   \vspace{5.3mm}
-  {\subsize\itshape\color{white}%
-    Where should external knowledge enter an agent's pipeline?\par}
+  {\subsize\color{white}%
+    An end-to-end LLM agent benchmarked against two frozen yardsticks
+    on 20 Kaggle competitions\par}
   \vspace{4.3mm}
   {\metasize\color{white}%
     {\bfseries Author:} Wei-Hao Huang\sep
@@ -134,7 +123,7 @@
     Summer Internship\par}
 \end{tcolorbox}
 
-\vspace{7mm}
+\vspace{8mm}
 
 % ------------------------------------------------------------- BODY COLUMNS --
 \noindent\hspace*{\pagepad}%
@@ -143,228 +132,195 @@
 \begin{minipage}[t]{379.3mm}
 \vspace{0pt}
 
-% ---- 1 · The question a competition can answer -----------------------------
+% ---- 1 · Motivation --------------------------------------------------------
 \begin{secblock}
-\blocktitle{1\sep The question a competition can answer}
-\claimpar{A competition scores, from outside, the three things a human
-  investigator normally supplies --- \kb{judgment} about the problem, an
-  \kb{error model} for the improvement claimed, and the \kb{honesty} of the
-  claim itself --- so an agent's design decision here can be measured rather
-  than argued.}
-The scale is unforgiving: the tightest top-two private gap in the table in block 3
-is \kb{0.00003}, and rerunning an agent unchanged moves its score by a
-comparable amount --- which is what makes both the judgment and its measurement
-hard.
-\pgap
-Every experiment is logged, so every number here comes from a logged run. One question dominated the build:
-\vspace{4.5mm}
-
-{\subheadsize\bfseries\color{accent}%
-  Where should external knowledge enter the pipeline?\par}
-\end{secblock}
-
-% ---- 2 · The design decision -----------------------------------------------
-\begin{secblock}
-\blocktitle{2\sep The design decision: knowledge enters upstream}
-\claimpar{The architecture has \kb{one} design decision --- where external
-  knowledge enters --- and both placements were measured: downstream
-  injection, among the models being blended, moved scores by about
-  $10^{-5}$ in our own implementation, so knowledge now enters \kb{before any
-  modelling}, at problem identification.}
-\centerline{\includegraphics[width=0.915\linewidth]{fig1_arch.pdf}}
-\figcap{The LLM reasons and decides at every stage. \kb{Purple} marks the
-  injection layer: the problem dossier, the external-data module it feeds, and
-  the typed operators it emits into the search. The leaderboard sits outside
-  the agent.}
-\vspace{5mm}
-\centerline{\includegraphics[width=0.97\linewidth]{fig3_treeex.pdf}}
-\figcap{One search tree. Every node is a complete, executable solution scored
-  by cross-validation; a lineage is abandoned once its children stop improving;
-  a \kb{blend node over cached out-of-fold predictions} competes with single
-  models and here becomes the global best that is submitted. 37--224 evaluated
-  nodes per lane.}
-\vspace{5mm}
+\blocktitle{1\sep Motivation}
+\cardsub{Why these tasks are hard}
 \begin{itemize}
-  \item In a blind sweep of the benchmark the layer flagged \kb{exactly the
-    competitions that need external data} and stayed silent on every other one.
-  \item \kb{Every} controlled external-data arm beat its matched baseline on
-    the real leaderboard, each one paired-significant.
-  \item \kb{No local signal we tested selects the \emph{form} of the
-    injection.} The one surviving selector was killed by its first
-    pre-registered prediction, so the layer races both forms inside the search.
+  \item \kb{Kaggle competitions} demand the full expert loop --- validation
+    design, feature engineering, model selection, ensembling --- where the
+    difference between top entries sits at the \kb{4th--5th decimal} of the
+    metric.
+  \item With gaps that small, \kb{local cross-validation is an unreliable
+    compass}: a pipeline's own validation score routinely disagrees with the
+    real leaderboard, so no local number can be trusted to pick a winner.
+  \item \kb{Data visualization} (EDA, diagnostics, reporting) is essential
+    but repetitive: every dataset needs distribution, drift, and correlation
+    views before modeling can be trusted.
 \end{itemize}
+\cardsub{Why an AI agent}
+\begin{itemize}
+  \item Tireless, systematic search: 37--224 candidate configurations per
+    competition, every experiment logged and reproducible.
+  \item Runs the same disciplined protocol on 20 competitions serially ---
+    a human cannot hold this consistency.
+  \item Records a per-dataset EDA pass and writes a per-competition report
+    automatically, so every claim is grounded in an artifact.
+\end{itemize}
+
+% ---- 2 · Workflow ----------------------------------------------------------
 \end{secblock}
+\begin{secblock}
+\blocktitle{2\sep Workflow}
+\centerline{\includegraphics[width=0.90\linewidth]{fig1_arch.pdf}}
+\figcap{The pipeline, read top to bottom: the LLM reasons at every stage;
+  the \kb{problem dossier} classifies the task and injects external data
+  \emph{upstream}, before any modeling; submissions are scored post-run on
+  the real leaderboard. Purple = injection layer $\cdot$ green = evidence
+  loop $\cdot$ gray = Auto-ML tools; dashed = feedback or post-run.}
+\vspace{4mm}
+\centerline{\includegraphics[width=245mm]{fig2_tree_poster.pdf}}
+\figcap{Tree-search loop: ensembles are first-class nodes; exploit until a
+  lineage plateaus, then one forced exploration burst; the loop ends at the
+  best-node submission.}
+\end{secblock}
+
+
 
 \end{minipage}%
 \hspace{\colgap}%
 %
-% ============================== RIGHT COLUMN (404.65mm) ====================
+% ============================== RIGHT COLUMN (409.65mm) ====================
 \begin{minipage}[t]{404.65mm}
 \vspace{0pt}
 
-% ---- 3 · Local validation cannot arbitrate ---------------------------------
+% ---- 3 · Results — Kaggle benchmark ---------------------------------------
 \begin{secblock}
-\blocktitle{3\sep Local validation cannot arbitrate}
-\claimpar{A claim about placement cannot be checked with the agent's own
-  numbers: between agents no validation score settles anything --- one lane's
-  pooled out-of-fold SMAPE of \kb{6.706} sat against a real leaderboard score
-  of \kb{49.40878}. Every verdict is a real submission, judged by an error
-  model taken from Kaggle's own two-way split of the test set.}
-One submission gets a public and a private score; the shift between the halves
-is shared across agents and cancels in the between-agent gap, so a verdict
-needs the ordering to \kb{replicate on both halves} and the gap to \kb{exceed
-its own movement}. my-agent's benchmark lanes held no Kaggle credentials, so none could
-consult a leaderboard or submit; a separate operator step scored the frozen
-files. my-agent alone carries a cross-competition \kb{experience
-library}; no ablation of it was run, so the standing cannot be attributed to it.
-\pgap
-On that rule, 20 competitions $\times$ 3 pairings $=$ \kb{60 duels, all
-adjudicated: 38 decided, 22 undecidable} --- not ties, but readings the test
-refuses to make. \kb{my-agent takes 16--8 of its 24 decided duels
-(66.7\%)}, against 11--15 of 26 (42.3\%) for each frozen yardstick; the
-denominators differ because a duel is decided per pair.
+\blocktitle{3\sep Results}
+\cardsub{Benchmark standing}
+All 20 competitions ran in sandboxes with a per-lane
+transcript audit, and all 20 are scored on the real leaderboard --- as were
+the two yardsticks. Each of the 60 head-to-head duels was judged
+against the score noise measured on Kaggle's own public/private split: 38
+decided, 22 too close to call. \kb{my-agent leads the standing --- 16 wins /
+8 losses (66.7\% of its decided duels)} against 42.3\% for each yardstick, and
+beats its own development-lane score on 13 of 20.\par
+\cardsub{Best private score --- head-to-head count}
+\countbar{\textbf{my-agent}}{navy}{0.50}{10 / 20}
+\countbar{NVIDIA}{barother}{0.35}{7 / 20}
+\countbar{AIDE}{barother}{0.15}{3 / 20}
+\vspace{1mm}
 
-\cardsub{Best private score --- raw, direction-aware reading, no ties}
-\countbar{\textbf{my-agent}}{navy}{0.50}{10 of 20}
-\countbar{NVIDIA}{barother}{0.35}{7 of 20}
-\countbar{AIDE}{barother}{0.15}{3 of 20}
-
-\cardsub{Private-leaderboard scores, all 20 benchmark competitions}
-{\fontsize{22}{26}\selectfont
-\renewcommand{\arraystretch}{1.10}%
-\setlength{\tabcolsep}{2.4mm}%
+\cardsub{Private-leaderboard scores}
+{\fontsize{21.5}{27}\selectfont
+\renewcommand{\arraystretch}{1.05}%
+\setlength{\tabcolsep}{1.6mm}%
 \setlength{\heavyrulewidth}{0.9mm}\setlength{\lightrulewidth}{0.45mm}%
-\begin{minipage}[t]{0.495\linewidth}
+\begin{minipage}[t]{0.5\linewidth}
 \begin{tabular}{@{}llrrr@{}}
 \toprule
-\textbf{Comp.} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
+\textbf{Comp.} & \textbf{Metric} & \textbf{mine} & \textbf{NV} & \textbf{AIDE}\\
 \midrule
 s3e1 & RMSE $\downarrow$ & \textbf{0.55275} & 0.55550 & 0.55552\\
 s3e3 & AUC $\uparrow$ & 0.87157 & \textbf{0.89537} & 0.86863\\
 s3e5 & QWK $\uparrow$ & 0.57223 & 0.56974 & \textbf{0.58138}\\
 s3e7 & AUC $\uparrow$ & 0.90441 & \textbf{0.90458} & 0.90109\\
-s3e9 & RMSE $\downarrow$ & 12.33192 & \textbf{12.22913} & 12.30667\\
+s3e9 & RMSE $\downarrow$ & 12.3319 & \textbf{12.2291} & 12.3067\\
 s3e11 & RMSLE $\downarrow$ & \textbf{0.29368} & 0.29624 & 0.29445\\
-s3e14 & MAE $\downarrow$ & 333.18611 & \textbf{330.71616} & 332.31556\\
+s3e14 & MAE $\downarrow$ & 333.186 & \textbf{330.716} & 332.316\\
 s3e16 & MAE $\downarrow$ & \textbf{1.33822} & 1.34001 & 1.34224\\
-s3e19 & SMAPE $\downarrow$ & 49.40878 & \textbf{48.26558} & 48.34131\\
+s3e19 & SMAPE $\downarrow$ & 49.4088 & \textbf{48.2656} & 48.3413\\
 s4e11 & Acc. $\uparrow$ & \textbf{0.94107} & 0.94076 & 0.94056\\
 \bottomrule
 \end{tabular}
 \end{minipage}\hfill
-\begin{minipage}[t]{0.495\linewidth}
+\begin{minipage}[t]{0.48\linewidth}
 \begin{tabular}{@{}llrrr@{}}
 \toprule
-\textbf{Comp.} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
+\textbf{Comp.} & \textbf{Metric} & \textbf{mine} & \textbf{NV} & \textbf{AIDE}\\
 \midrule
 s5e1 & MAPE $\downarrow$ & \textbf{0.08401} & 0.14594 & 0.17917\\
 s5e10 & RMSE $\downarrow$ & \textbf{0.05576} & 0.05588 & 0.05579\\
 s6e1 & Error $\downarrow$ & \textbf{8.71516} & 8.73239 & 8.72191\\
-s6e2 & AUC $\uparrow$ & 0.95505 & 0.95508 & \textbf{0.95516}\\
 afsis & MCRMSE $\downarrow$ & \textbf{0.48917} & 0.69855 & 0.49861\\
 cat-in-dat & AUC $\uparrow$ & \textbf{0.80243} & 0.77084 & 0.80217\\
 conway & MAE $\downarrow$ & \textbf{0.10414} & 0.11189 & 0.11065\\
+s6e2 & AUC $\uparrow$ & 0.95505 & 0.95508 & \textbf{0.95516}\\
 tps-aug & AUC $\uparrow$ & 0.58930 & 0.58730 & \textbf{0.59106}\\
-tps-jan & SMAPE $\downarrow$ & 6.29895 & \textbf{4.63651} & 10.66638\\
-tps-sep & SMAPE $\downarrow$ & 28.49605 & \textbf{5.48351} & 9.72095\\
+tps-jan & SMAPE $\downarrow$ & 6.29895 & \textbf{4.63651} & 10.6664\\
+tps-sep & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \bottomrule
 \end{tabular}
 \end{minipage}\par}
 \vspace{3mm}
-\notepar{Private-leaderboard score of each frozen submission, printed as
-  recorded; \textbf{bold} = best of the three. The frozen, credential-free
-  re-run beats its own development-lane private score on \textbf{13 of 20}.}
+\notepar{Private-leaderboard score of each submission; \textbf{bold} = best
+  of the three.}
+\cardsub{Beyond tabular --- three mid-complexity competitions}
+{\tablesize
+\renewcommand{\arraystretch}{1.3}%
+\setlength{\tabcolsep}{2.6mm}%
+\setlength{\heavyrulewidth}{1.1mm}\setlength{\lightrulewidth}{0.55mm}%
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+\textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
+\midrule
+us-patent (NLP) & Pearson $r$ $\uparrow$ & \kb{0.86658} & 0.86160 & 0.65821\\
+ventilator (time series) & MAE $\downarrow$ & \kb{0.16525} & 0.40093 & 0.34591\\
+SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
+\bottomrule
+\end{tabular}\par}
+
 \end{secblock}
 
-% ---- 4 · Where it loses is where the design predicts -----------------------
+% ---- 4 · Advantages & Difficulties ----------------------------------------
 \begin{secblock}
-\blocktitle{4\sep Where it loses is where the design predicts}
-\claimpar{The standing says who won; where it loses says why: my-agent's two
-  worst losses fall on the only two competitions here with a \kb{mature,
-  high-quality public solution} --- NVIDIA's kernel reproduction dominates there, search wins
-  the rest --- and that mechanism, not the standing, is the result.}
-On tps-sep-2022 it scores \kb{28.49605} SMAPE against 5.48351 for NVIDIA and
-9.72095 for AIDE; its own public and private scores there (28.45070 /
-28.49605) put the sampling noise two decimal places below the gap it loses by.
-On tps-jan-2022: 6.29895 against 4.63651.
-\pgap
-The standing is ours to qualify too. Dropping s3e19 alone moves it from
-66.7\% to \kb{72.7\%}, and one duel sits \kb{exactly} on its measured variance
-floor: the rule requires the gap to \emph{exceed} the floor, compared in
-\kb{exact decimal}, so it stays undecidable rather than a seventeenth win.
-\vspace{4mm}
-
-{\tablesize\setlength{\tabcolsep}{0pt}%
+\blocktitle{4\sep Advantages \& Difficulties}
+{\setlength{\tabcolsep}{0pt}%
 \renewcommand{\arraystretch}{1.0}%
 \setlength{\heavyrulewidth}{0.9mm}\setlength{\lightrulewidth}{0.45mm}%
-\begin{tabular}{@{}>{\strut\raggedright\arraybackslash}p{0.315\linewidth}@{\hspace{7mm}}>{\strut\raggedright\arraybackslash}p{0.655\linewidth}@{}}
+\begin{tabular}{@{}>{\strut}p{0.315\linewidth}@{\hspace{7mm}}>{\strut}p{0.655\linewidth}@{}}
 \toprule
 \textbf{Expected} & \textbf{Experienced}\\
-\midrule\noalign{\vskip 4.6mm}
-{\itshape\color{notegray}One run and one score decide a winner.} &
-  \kb{22 of the 60 duels are undecidable}: 19 where the ordering or the gap
-  does not survive the move between the two halves of the test set, 3 on a
-  between-run variance floor.\\[4.6mm]
-\arrayrulecolor{ruleline}\hline\noalign{\vskip 4.6mm}
-{\itshape\color{notegray}The agent follows the rules by default.} &
-  The audit discarded a contaminated lane whose tainted local score looked
-  \emph{better} than its clean replacement's (\kb{6.706} clean against
-  \kb{5.740} tainted); later, one lane's write-back polluted the next lane's
-  priors --- killed one minute in, library reverted, relaunched clean.\\[4.6mm]
-\hline\noalign{\vskip 4.6mm}
-{\itshape\color{notegray}The auditor is the thing that catches you.} &
-  Re-reading the transcripts caught \kb{our own auditor} exempting the
-  commands every lane actually issues, so the one command it existed to catch
-  was never examined. Corrected, a re-run over all 20 transcripts returns
-  \kb{zero} network findings.\\[4.6mm]
-\arrayrulecolor{black}\bottomrule
+\midrule\noalign{\vskip 3.5mm}
+{\itshape\color{bodyink}The agent would quickly beat most humans.} &
+  Development runs landed above average, with wins concentrated where no
+  mature public solutions exist; the benchmark re-run now
+  \kb{leads the standing} on all 20 scored lanes.\\[3.5mm]
+\arrayrulecolor{ruleline}\hline\noalign{\vskip 3.5mm}
+{\itshape\color{bodyink}One run and one score decide a winner.} &
+  Score noise and run-to-run variance leave \kb{many duels undecidable};
+  an explicit error model became mandatory.\\[3.5mm]
+\hline\noalign{\vskip 3.5mm}
+{\itshape\color{bodyink}A shared experience library only ever helps.} &
+  Lanes are told to write validated findings back into it. One wrote
+  \kb{two minutes before the next lane started}, and that lane's priors were
+  served its neighbour's entries --- killed at one minute and re-run clean.
+  The library is now read-only inside a lane.\\[3.5mm]
+\hline\noalign{\vskip 3.5mm}
+{\itshape\color{bodyink}Fairness is mostly a mindset.} &
+  It is \kb{infrastructure}: isolated data roots, sandboxed lanes, per-lane
+  transcript audits, and a hashed run root rebuilt for every architecture
+  change --- seven partly-finished runs are archived rather than mixed into
+  one table.\\
+\arrayrulecolor{black}
 \end{tabular}\par}
+
 \end{secblock}
 
-% ---- 5 · What transfers ----------------------------------------------------
+% ---- 5 · Discussion — advice ----------------------------------------------
 \begin{secblock}
-\blocktitle{5\sep What transfers}
-\claimpar{Judgment, measurement and honesty were the three things under test;
-  the placement result, the paired test and the audit answered them in that
-  order. What transfers is not the ranking but the discipline that produced
-  it: \kb{placement of knowledge is an engineering choice with a measurable
-  answer}, and a ranking published without an error model is the author's own
-  noise.}
+\blocktitle{5\sep Discussion}
 \begin{itemize}
-  \item \kb{State the error model with every claim.} A third of our own duels
-    cannot be called, and the winner moves with the composition of the
-    evaluation set.
-  \item \kb{Freeze the yardsticks.} Improving a yardstick mid-study makes
-    earlier and later data incomparable, so neither was touched, even where we
-    found weaknesses.
-  \item \kb{Isolate mechanically, then read the transcripts --- including your
-    auditor's.} Sandboxes stop the leaks you anticipated; reading what it
-    actually did catches the ones you didn't.
-  \item \kb{Placement, not amount.} The dossier decides \emph{whether} to
-    inject; nothing local decides \emph{how}, so both forms race inside the
-    search.
+  \item \kb{Put knowledge injection upstream.} At the blend stage it measured
+    near-nothing and was abandoned; moved into problem identification it flags
+    exactly the competitions that need external data, and \kb{turns the
+    canonical failure case around}.
+  \item \kb{Local CV is the only feedback while you iterate.} A competition
+    returns no score until submission, unlike a task that can be graded on the
+    spot, so an error in problem-level judgment leaves CV looking healthy while
+    the leaderboard says otherwise.
+  \item \kb{Version the agent, not just the code.} An architecture change
+    invalidates every competition that ran before it: rebuild the run root,
+    re-hash it, and start the benchmark over rather than mixing versions in
+    one table.
+  \item \kb{Isolate mechanically, then audit the transcript.} Sandboxes stop
+    leaks you anticipated; reading what the agent actually did catches the ones you didn't --- and it
+    catches the auditor too: ours exempted every command starting with
+    \texttt{uv}, so the one command it existed to catch was never examined.
 \end{itemize}
-\vspace{4.5mm}
-{\subheadsize\bfseries\color{navy}github.com/930731haohao-afk/kaggle-agent\par}
 \end{secblock}
 
 \end{minipage}
 
-% ------------------------------------------------------------------ FOOTER --
-% Footer band, pinned to the page edge (never participates in page breaking)
-\begin{tikzpicture}[remember picture, overlay]
-  \node[anchor=south, inner sep=0pt] at (current page.south) {%
-    \begin{tcolorbox}[enhanced, width=\paperwidth, sharp corners,
-        colback=navy, boxrule=0pt, frame hidden,
-        left=\pagepad, right=\pagepad, top=4.5mm, bottom=4.5mm, boxsep=0pt,
-        before skip=0pt, after skip=0pt]
-      {\footersize\color{white}%
-        The two yardsticks, frozen and unimproved throughout\sep
-        \textbf{AIDE} = LLM tree search from zero, no cross-competition
-        memory\sep
-        \textbf{NVIDIA Kaggle Agent} = faithful reproduction of the
-        highest-voted public kernel.\par}
-    \end{tcolorbox}};
-\end{tikzpicture}
 
 \end{document}

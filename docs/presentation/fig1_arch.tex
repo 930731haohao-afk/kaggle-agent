@@ -43,8 +43,9 @@
   node[midway, xshift=-4mm, rotate=90, anchor=south, black]
   {\textbf{Claude Code (LLM)} --- reasons and decides at every stage};
 % ----- tree-search loop (Evaluation -> Modeling), arc in the corridor -----
-\draw[arr] ([yshift=2.5mm]s5.east) to[out=30, in=-30] ([yshift=-3.5mm]s4.east);
-\node[lab, anchor=west] at (3.45,-7.65) {tree search (37--224 nodes)};
+\draw[arr] ([yshift=2.5mm]s5.east) to[out=30, in=-30]
+  node[lab, anchor=west, xshift=0.8mm] {tree search (37--224 nodes)}
+  ([yshift=-3.5mm]s4.east);
 % ----- right rail -----
 \node[supp]    (lib)   at (7.3,-0.2)  {\textbf{Experience library}\\[-1pt]
   {\scriptsize evidence-backed priors}};
@@ -55,9 +56,9 @@
   {\scriptsize params $\cdot$ features $\cdot$ split $\cdot$ scores}};
 % ----- rail / pipeline connections -----
 \draw[garr] (lib.west) -- node[lab, above]{priors} (s1.east);
-\draw[garr] (lib.south) -- node[lab, anchor=east, xshift=-0.5mm]{task priors} (ext.north);
-\draw[parr] ([yshift=1.5mm]s05.east) -- node[lab, above]{data-level ops}
-  ([yshift=1.5mm]ext.west |- s05.east);
+\draw[garr] (lib.south) -- node[lab, anchor=west, xshift=0.5mm]{task priors} (ext.north);
+\draw[parr] ([yshift=1.5mm]s05.east) -| node[lab, above, pos=0.28]{data-level ops}
+  ([xshift=-14mm]ext.north);
 % ----- model-level operators: dossier seeds the search directly -----
 \draw[parr] ([yshift=-2.5mm]s05.east) -- ++(4mm,0) |- ([yshift=3mm]s4.east);
 \node[lab, rotate=90, anchor=south, flowpurpleline!60!black] at (2.95,-4.35)

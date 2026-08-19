@@ -1,8 +1,8 @@
 % ============================================================================
-% An End-to-End AI Agent for Kaggle Competitions --- 3.5-minute conference talk.
-% Six frames. Speaker notes are in \note{...}; each note ends with its budgeted
-% seconds. Compile with pdfLaTeX (or tectonic). Figures are drawn in TikZ so
-% that every label is legible from a seat.
+% An End-to-End AI Agent for Kaggle Competitions --- 3.5-minute talk.
+% Six frames: the title plus one frame per poster block, with the poster's
+% wording and the poster's numbers. Speaker notes are in \note{}; each ends
+% with its budgeted seconds and the total is under 210.
 %
 % To rehearse with the notes visible, compile a second copy with
 %   \setbeameroption{show notes on second screen}   or   {show only notes}
@@ -12,10 +12,8 @@
 \usetheme{default}
 \usecolortheme{default}
 \setbeamertemplate{navigation symbols}{}
-% NOTE: this deck uses no itemize anywhere. On a dark frame, set the beamer
-% colour (\setbeamercolor{normal text}{fg=...}) inside the frame's group; an
-% \color{} wrapper around a list is overridden inside the list and renders
-% dark ink on a dark background.
+% On a dark frame set the beamer colour inside the frame group; a \color{}
+% wrapper around a list is overridden inside the list and renders dark on dark.
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -24,295 +22,197 @@
 \usepackage{graphicx}
 \usepackage{tikz}
 \usepackage{xcolor}
-\usetikzlibrary{arrows.meta,decorations.pathreplacing,calc}
+\usepackage{booktabs}
 
-% ---- Palette (matches the report figures and the poster) -------------------
-\definecolor{navy}{RGB}{15,42,74}
-\definecolor{ink}{RGB}{28,30,33}
-\definecolor{mut}{RGB}{90,100,114}
+% ---- Palette (matches the poster) ------------------------------------------
+\definecolor{navy}{RGB}{0,60,100}
+\definecolor{ink}{RGB}{17,17,17}
+\definecolor{mut}{RGB}{90,95,102}
 \definecolor{ice}{RGB}{202,220,252}
-\definecolor{barblue}{RGB}{43,108,176}
+\definecolor{barblue}{RGB}{0,60,100}
+\definecolor{barother}{RGB}{176,186,196}
+\definecolor{bartrack}{RGB}{238,240,243}
 \definecolor{pale}{RGB}{168,189,212}
-\definecolor{lt}{RGB}{244,247,251}
-\definecolor{gold}{RGB}{138,109,26}
-\definecolor{plum}{RGB}{124,79,150}   % role colour of the injection path
 
 \setbeamercolor{normal text}{fg=ink}
 \setbeamercolor{frametitle}{fg=navy}
 \setbeamerfont{frametitle}{series=\bfseries, size=\large}
 \setbeamertemplate{frametitle}{%
-  \vspace{3.2mm}\hspace{1mm}\insertframetitle\par\vspace{-2mm}}
+  \vspace{3.2mm}\hspace{1mm}\insertframetitle\par\vspace{-1mm}}
 
-% ---- Win-rate bar: #1 label  #2 colour  #3 length fraction  #4 inside  #5 out
-\newcommand{\ratebar}[5]{%
-  \noindent\makebox[19mm][l]{\small #1}%
-  \begin{tikzpicture}[baseline=2.6mm]
-    \fill[lt] (0,0) rectangle (62mm,7mm);
-    \fill[#2] (0,0) rectangle (#3*62mm,7mm);
-    \node[anchor=west, text=white, font=\small\bfseries]
-      at (1.8mm,3.5mm) {#4};
-  \end{tikzpicture}%
-  \hspace{3mm}\makebox[16mm][l]{\large\bfseries\color{navy}#5}%
-  \par\vspace{2.6mm}}
+\newcommand{\kb}[1]{\textbf{#1}}
 
-% ---- Score bar for the loss slide: #1 label #2 colour #3 fraction #4 value --
-\newcommand{\scorebar}[4]{%
-  \noindent\makebox[19mm][l]{\small #1}%
-  \begin{tikzpicture}[baseline=2.6mm]
-    \fill[lt] (0,0) rectangle (54mm,7mm);
-    \fill[#2] (0,0) rectangle (#3*54mm,7mm);
+% ---- Head-to-head bar, same geometry as the poster's countbar --------------
+% #1 label  #2 colour  #3 fraction  #4 value
+\newcommand{\countbar}[4]{%
+  \noindent\makebox[22mm][l]{\small #1}%
+  \begin{tikzpicture}[baseline=2.4mm]
+    \fill[bartrack] (0,0) rectangle (60mm,6.5mm);
+    \fill[#2] (0,0) rectangle (#3*60mm,6.5mm);
   \end{tikzpicture}%
-  \hspace{3mm}\makebox[22mm][l]{\small\bfseries\color{navy}#4}%
-  \par\vspace{2.4mm}}
+  \hspace{3mm}{\small #4}\par\vspace{2.2mm}}
 
 \begin{document}
 
-% ============================================================ 1. THE QUESTION
+% ================================================================== TITLE ---
 {\setbeamercolor{background canvas}{bg=navy}
-\setbeamercolor{normal text}{fg=white}
-\usebeamercolor[fg]{normal text}
 \begin{frame}[plain]
-  \vspace{9mm}
-  {\color{white}\Huge\bfseries An End-to-End AI Agent\\[2.5mm]
+  \vspace{6mm}
+  {\color{white}\LARGE\bfseries An End-to-End AI Agent\\[1mm]
    for Kaggle Competitions\par}
-  \vspace{9mm}
-  {\color{ice}\Large\itshape Where should external knowledge enter an
-   agent's pipeline?\par}
+  \vspace{5mm}
+  {\color{ice}\normalsize An end-to-end LLM agent benchmarked against two frozen
+   yardsticks on 20 Kaggle competitions\par}
   \vfill
-  {\color{pale}\small Wei-Hao Huang \quad$\cdot$\quad Institute of Statistical
-   Science, Academia Sinica\par}
+  {\color{pale}\small Wei-Hao Huang, National Chengchi University \quad$\cdot$\quad
+   PI: Dr.\ Tso-Jung Yen, Institute of Statistical Science, Academia Sinica\par}
   \vspace{4mm}
-  \note{A Kaggle competition is a scorable task: one submission, one hidden
-    score. The judgment calls come before the modelling, which makes it a sharp
-    test of machine judgment. One design question dominated the build --- where
-    should external knowledge enter the pipeline? (17s)}
+
+  \note{This is an end-to-end agent for Kaggle competitions: it takes a raw
+    dataset and returns a submission, with no person in the loop. I benchmarked
+    it against two frozen reference agents on twenty competitions, scored on the
+    real leaderboards. (18s)}
 \end{frame}}
 
-% ====================================================== 2. THE ONE DECISION --
-\begin{frame}{The design decision: knowledge enters upstream}
-  \vfill
-  \centering
-  \begin{tikzpicture}[x=1.22mm, y=1.22mm, font=\footnotesize,
-      chip/.style={draw=pale, fill=lt, rounded corners=1.2mm,
-                   minimum width=14.5mm, minimum height=8.5mm,
-                   align=center, text=ink, inner sep=0.6mm},
-      inj/.style={draw=plum, line width=0.7pt, fill=plum!12,
-                  rounded corners=1.2mm, minimum width=14.5mm,
-                  minimum height=8.5mm, align=center, text=ink, inner sep=0.6mm},
-      flow/.style={-{Stealth[length=1.8mm]}, draw=mut, line width=0.5pt}]
+% ============================================================= 1 MOTIVATION --
+\begin{frame}{1 $\cdot$ Motivation}
+  \vspace{1mm}
+  {\small\kb{Why these tasks are hard}\par}
+  \vspace{1.5mm}
+  {\small
+   $\cdot$ A competition demands the whole expert loop --- validation design,
+   features, model selection, ensembling --- and the top entries separate at the
+   \kb{fourth or fifth decimal}.\par\vspace{1.2mm}
+   $\cdot$ At that scale \kb{local cross-validation is an unreliable compass}:
+   a pipeline's own score routinely disagrees with the leaderboard.\par}
+  \vspace{3mm}
+  {\small\kb{Why an AI agent}\par}
+  \vspace{1.5mm}
+  {\small
+   $\cdot$ Tireless, systematic search: \kb{37--224} candidate configurations
+   per competition, every experiment logged.\par\vspace{1.2mm}
+   $\cdot$ The same disciplined protocol on 20 competitions in a row --- a
+   consistency a person cannot hold.\par}
 
-    \node[inj]  (c1) at ( 8,0) {Dossier};
-    \node[chip] (c2) at (25,0) {EDA};
-    \node[chip] (c3) at (42,0) {Features};
-    \node[chip] (c4) at (59,0) {Models};
-    \node[chip] (c5) at (76,0) {Evaluation};
-    \node[chip] (c6) at (93,0) {Submission};
-    \foreach \a/\b in {c1/c2, c2/c3, c3/c4, c4/c5, c5/c6}
-      {\draw[flow] (\a) -- (\b);}
-
-    % --- upstream injection (the decision) --------------------------------
-    \draw[-{Stealth[length=2.2mm]}, plum, line width=1.1pt] (8,14) -- (8,5);
-    \node[anchor=west, text=plum, align=left] at (12.5,13)
-      {\textbf{Upstream:} outside data enters here};
-
-    % --- the judgment bracket ----------------------------------------------
-    \draw[decorate, decoration={brace, amplitude=1.4mm, mirror},
-          gold, line width=0.6pt] (0.5,-6) -- (32.5,-6);
-    \node[anchor=north west, text=gold, align=left] at (0.5,-8.6)
-      {decisions taken \emph{before} any model is fit};
-
-    % --- downstream injection (the abandoned option) ------------------------
-    \draw[-{Stealth[length=2.2mm]}, mut, line width=0.7pt, dashed]
-      (59,-14) -- (59,-5.2);
-    \node[anchor=west, text=mut, align=left] at (62,-14.5)
-      {at the blend: measured ${\sim}10^{-5}$,\\ abandoned};
-  \end{tikzpicture}
-
-  \vfill
-  {\raggedright\small
-   Flags \textbf{exactly} the competitions that need outside data.\quad
-   \textbf{Every} controlled arm beat its baseline.\par
-   \vspace{1.2mm}
-   {\color{mut}No local signal I tested picks the form.}\par}
-  \vspace{2mm}
-
-  \note{The conventional answer is downstream: extra ideas among the candidates
-    you blend. I built that, measured it: worth about ten to the minus five. So
-    this architecture injects upstream. Before any modelling, a dossier reads
-    the problem statement --- does this task need outside data --- and emits
-    whitelisted, leakage-guarded joins. The rest is conventional: the language
-    model decides at every stage, gradient boosting fits, tree search is the
-    loop. In a blind sweep it flagged exactly the competitions that need it and
-    stayed silent on the rest, and every
-    controlled arms beat their baselines on the real leaderboard. Nothing local I tested
-    tells me which form to use. (37s)}
+  \note{Competitions demand the whole expert loop, and the top of the
+    leaderboard separates at the fourth or fifth decimal, so tuning skill
+    distinguishes nobody --- and at that scale a pipeline's own cross-validation
+    routinely disagrees with the leaderboard. What an agent brings is tireless,
+    logged search: between thirty-seven and two hundred and twenty-four
+    candidate configurations per competition, and the same protocol run twenty
+    times without drifting. (32s)}
 \end{frame}
 
-% ================================================= 3. BUILD THE INSTRUMENT --
-\begin{frame}{Local validation cannot arbitrate --- so build the instrument}
+% ============================================================== 2 WORKFLOW ---
+\begin{frame}{2 $\cdot$ Workflow}
   \vspace{0.5mm}
-  {\small One lane: out-of-fold SMAPE \textbf{6.706} $\rightarrow$ real
-   leaderboard \textbf{\color{barblue}49.40878}\par}
-  \vfill
-  \begin{columns}[t]
-    \begin{column}{0.46\textwidth}
-      \centering
-      \begin{tikzpicture}[x=1.08mm, y=1.08mm, font=\small]
-        \draw[pale, line width=0.4pt] (10,1) -- (10,30);
-        \draw[pale, line width=0.4pt] (40,1) -- (40,30);
-        \node[text=mut, below] at (10,0.5) {public half};
-        \node[text=mut, below] at (40,0.5) {private half};
+  \centerline{\includegraphics[height=0.66\textheight]{fig1_arch.pdf}}
+  \vspace{1.5mm}
+  {\scriptsize\color{mut}The LLM reasons and decides at every stage; the
+   \kb{problem dossier} classifies the task and injects external data
+   \emph{upstream}, before any modelling. Lanes hold no Kaggle credentials;
+   submissions are scored post-run.\par}
 
-        \draw[barblue, line width=0.7pt] (10,25) -- (40,17);
-        \draw[mut,     line width=0.7pt] (10,19) -- (40,11.6);
-        \fill[barblue] (10,25) circle (1.1mm);
-        \fill[barblue] (40,17) circle (1.1mm);
-        \fill[mut]     (10,19) circle (1.1mm);
-        \fill[mut]     (40,11.6) circle (1.1mm);
-
-        \draw[decorate, decoration={brace, amplitude=1.2mm},
-              navy, line width=0.5pt] (7.6,25) -- (7.6,19);
-        \node[text=navy, left] at (6.6,22) {gap};
-        \draw[decorate, decoration={brace, amplitude=1.2mm, mirror},
-              navy, line width=0.5pt] (42.4,17) -- (42.4,11.6);
-        \node[text=navy, right] at (43.4,14.3) {gap};
-
-        \node[text=gold, align=center] at (25,33)
-          {both agents drift the same way};
-      \end{tikzpicture}\\[1.5mm]
-      {\small The shift cancels. The gap does not.\par}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \centering
-      \begin{tikzpicture}[x=1.05mm, y=1.05mm]
-        \foreach \i in {0,...,59} {
-          \pgfmathtruncatemacro{\rr}{div(\i,10)}
-          \pgfmathtruncatemacro{\cc}{mod(\i,10)}
-          \ifnum\i<38
-            \fill[barblue, rounded corners=0.3mm]
-              (\cc*4.7,-\rr*4.7) rectangle ++(4,-4);
-          \else
-            \draw[pale, line width=0.5pt, rounded corners=0.3mm]
-              (\cc*4.7,-\rr*4.7) rectangle ++(4,-4);
-          \fi}
-      \end{tikzpicture}\\[2mm]
-      {\small 60 duels: {\color{barblue}\textbf{38 decided}},
-       22 undecidable --- not ties.\par}
-    \end{column}
-  \end{columns}
-  \vfill
-  {\small\color{mut}Verdict: the ordering replicates on both halves,
-   \emph{and} the gap exceeds its own movement.\par}
-  \vspace{2mm}
-
-  \note{Those are my own numbers, and between agents local validation cannot
-    arbitrate: one lane scored six point seven out of fold, forty-nine on the
-    leaderboard. So every verdict is a real submission. Kaggle scores each
-    submission on two halves of the test set. My first threshold used one
-    agent's drift between halves and called most duels undecidable ---
-    but that drift is shared: it moves all three agents together. Take the gap
-    between two agents on both halves and the common drift cancels. A verdict
-    needs both halves to agree, and the gap to beat its own movement. Sixty
-    duels: thirty-eight decided; twenty-two are not ties, but readings the test
-    refuses to make. (45s)}
+  \note{The pipeline reads top to bottom. An LLM reasons and decides at every
+    stage, gradient boosting does the fitting, and a tree search over complete
+    candidate solutions is the optimisation loop. The one design decision that
+    mattered is where outside knowledge enters. My first version put it
+    downstream, at the blend --- measured, it was worth ten to the minus five.
+    So it moved upstream, into a dossier stage that classifies the task before
+    any modelling. The lanes hold no Kaggle credentials, so nothing inside a run
+    can touch a leaderboard. (40s)}
 \end{frame}
 
-% ============================================================= 4. THE READING
-\begin{frame}{What the frozen three-way run measured}
+% =============================================================== 3 RESULTS ---
+\begin{frame}{3 $\cdot$ Results}
   \vspace{0.5mm}
-  {\small\color{mut}20 competitions \quad$\cdot$\quad one architecture, frozen
-   before the run \quad$\cdot$\quad no my-agent lane could reach a leaderboard\par}
-  \vfill
-  \ratebar{my-agent}{barblue}{0.667}{16--8}{66.7\%}
-  \ratebar{NVIDIA}{mut}{0.423}{11--15}{42.3\%}
-  \ratebar{AIDE}{mut}{0.423}{11--15}{42.3\%}
-  \vfill
-  {\small Wins--losses over each agent's own decided duels: 24 for my-agent,
-   26 for each yardstick (38 decided duels $=$ 76 agent-side outcomes).\par
-   \vspace{1.2mm}
-   Best private score: \textbf{10 of 20} (NVIDIA 7, AIDE 3).\par}
-  \vspace{2mm}
+  {\small All 20 lanes scored on the real leaderboard; each of the 60 duels
+   judged against the score noise measured on Kaggle's own public/private
+   split --- \kb{38 decided, 22 too close to call}.\par}
+  \vspace{2.5mm}
+  {\small\kb{my-agent leads: 16 wins / 8 losses (66.7\% of its decided duels)}
+   against 42.3\% for each frozen yardstick.\par}
+  \vspace{3mm}
+  {\small\kb{Best private score --- head-to-head count (20 competitions)}\par}
+  \vspace{1.5mm}
+  \countbar{\kb{my-agent}}{barblue}{0.50}{10 / 20}
+  \countbar{NVIDIA}{barother}{0.35}{7 / 20}
+  \countbar{AIDE}{barother}{0.15}{3 / 20}
+  \vspace{1mm}
+  {\footnotesize\color{mut}Beyond tabular: on three mid-complexity competitions
+   (NLP, physiological time series, medical imaging) my-agent takes the
+   three-way best on all three.\par}
 
-  \note{Here is the reading. Twenty competitions, three agents, one architecture
-    frozen before the run, and no my-agent lane could reach a leaderboard. The two
-    yardsticks are frozen too: AIDE searches from zero, the NVIDIA agent
-    reproduces the highest-voted public kernel. I fixed nothing in either.
-    Mine wins sixteen of its twenty-four decided duels, sixty-six point seven
-    percent, against forty-two point three for each. That number measures the
-    whole architecture; the injection decision is measured separately, by the
-    controlled arms. (38s)}
+  \note{Here is the reading. All twenty lanes are scored on the real
+    leaderboard, and every one of the sixty duels is judged against the score
+    noise measured on Kaggle's own split of the test set: thirty-eight decide,
+    twenty-two the data refuses to call. My agent leads --- sixteen wins to
+    eight of its decided duels, sixty-six point seven percent, against
+    forty-two point three for each yardstick. It takes the best private score on
+    ten of the twenty competitions, and on three harder competitions outside
+    tabular data it takes the best of the three every time. (45s)}
 \end{frame}
 
-% ====================================================== 5. WHERE IT LOSES ---
-\begin{frame}{Where it loses is where the design predicts}
-  \vfill
-  {\small\color{mut}Worst loss --- SMAPE, lower is better. Bars show how far
-   behind the best score each agent is.\par}
-  \vspace{2mm}
-  \scorebar{NVIDIA}{barblue}{0.0}{5.48351}
-  \scorebar{AIDE}{mut}{0.184}{9.72095}
-  \scorebar{my-agent}{gold}{1.0}{28.49605}
-  \vspace{0.5mm}
-  {\small My two worst losses are the only competitions here with a mature
-   public solution.\par
-   \vspace{1mm}
-   {\color{mut}Reproduction dominates there; search wins the rest.}\par}
-  \vfill
-  \centering
-  \begin{tikzpicture}[x=1mm, y=1mm]
-    \node[text=mut, font=\large] (a) at (0,0) {72.7\%};
-    \node[text=navy, font=\Huge\bfseries] (b) at (46,0) {66.7\%};
-    \node[text=mut, font=\large] (c) at (92,0) {68.0\%};
-    \draw[-{Stealth[length=1.6mm]}, mut, line width=0.4pt] (30,0) -- (14,0);
-    \draw[-{Stealth[length=1.6mm]}, mut, line width=0.4pt] (62,0) -- (78,0);
-    \node[text=mut, font=\small, align=center] at (0,-6)
-      {drop one\\competition};
-    \node[text=navy, font=\small] at (46,-6) {exact decimal};
-    \node[text=mut, font=\small, align=center] at (92,-6)
-      {one duel on its\\variance floor};
-  \end{tikzpicture}
+% =========================================== 4 ADVANTAGES & DIFFICULTIES -----
+\begin{frame}{4 $\cdot$ Advantages \& Difficulties}
+  \vspace{1mm}
+  {\small
+  \renewcommand{\arraystretch}{1.25}
+  \begin{tabular}{@{}p{0.30\textwidth}p{0.63\textwidth}@{}}
+  \toprule
+  \textbf{Expected} & \textbf{Experienced}\\
+  \midrule
+  {\itshape\color{mut}The agent would quickly beat most humans.} &
+    It leads the standing on all 20 scored lanes, but its wins
+    concentrate where no mature public solution exists.\\
+  {\itshape\color{mut}One run and one score decide a winner.} &
+    Score noise leaves \kb{22 of 60 duels undecidable}; an explicit error model
+    became mandatory.\\
+  {\itshape\color{mut}A shared experience library only ever helps.} &
+    One lane wrote its findings back two minutes before the next lane started;
+    that lane read its neighbour's entries and was re-run clean.\\
+  \bottomrule
+  \end{tabular}\par}
 
-  \note{Where it loses is the interesting half. My two worst losses are the
-    only two competitions with a mature public solution, and there the
-    reproduction agent beats me decisively --- twenty-eight against five and
-    nine. That is the mechanism the design predicts: reproduction wins where a
-    strong public solution exists, search wins where none does. The standing is
-    also fragile: drop one competition and it reads seventy-two point seven, and one
-    duel sits exactly on its noise floor. A ranking belongs
-    to the method and the evaluation set together --- mine included. (37s)}
+  \note{Three things I expected, and what actually happened. I expected the
+    agent to beat most humans quickly: it does lead the standing, but its wins
+    concentrate where no mature public solution exists --- where one does, the
+    reproduction agent beats it. I expected one run and one score to decide a
+    winner: score noise leaves twenty-two of sixty duels uncallable, which is
+    why the error model exists. And I expected a shared experience library to
+    only ever help: one lane wrote its findings back two minutes before the
+    next lane started, that lane read its neighbour's entries, and it had to be
+    re-run clean. (43s)}
 \end{frame}
 
-% ============================================================== 6. TAKE AWAY
-\begin{frame}{Take away}
+% ============================================================ 5 DISCUSSION ---
+\begin{frame}{5 $\cdot$ Discussion}
+  \vspace{1mm}
+  {\small
+   $\cdot$ \kb{Put knowledge injection upstream.} At the blend stage it
+   measured near-nothing and was abandoned; moved into problem identification
+   it flags exactly the competitions that need external data.\par\vspace{2mm}
+   $\cdot$ \kb{Local CV is the only feedback while you iterate.} A competition
+   returns no score until submission, so an error in problem-level judgment
+   leaves CV looking healthy while the leaderboard says otherwise.\par\vspace{2mm}
+   $\cdot$ \kb{Version the agent, not just the code.} An architecture change
+   invalidates every competition that ran before it --- start the benchmark
+   over rather than mixing versions in one table.\par\vspace{2mm}
+   $\cdot$ \kb{Isolate mechanically, then audit the transcript} --- and audit
+   the auditor: ours exempted every command starting with \texttt{uv}, so the
+   one command it existed to catch was never examined.\par}
   \vfill
-  \begin{tikzpicture}[x=1mm, y=1mm]
-    \fill[gold] (0,0) rectangle (3,4);
-  \end{tikzpicture}\hspace{2mm}%
-  {\large State the error model, or the ranking is your own noise.\par}
-  \vspace{7mm}
-  \begin{tikzpicture}[x=1mm, y=1mm]
-    \fill[gold] (0,0) rectangle (3,4);
-  \end{tikzpicture}\hspace{2mm}%
-  {\large Freeze the yardsticks. Then read the transcripts, not just the
-   scores.\par}
-  \vfill
-  \noindent\begin{tikzpicture}
-    \node[fill=navy, inner sep=3.8mm, align=left,
-          text width=\dimexpr\linewidth-9mm]
-      {\color{white}\large\linespread{1.18}\selectfont%
-       Where knowledge enters is an architectural choice --- and the controlled
-       arms measure which placement wins.\par};
-  \end{tikzpicture}
-  \vspace{2mm}
   {\color{mut}\scriptsize github.com/930731haohao-afk/kaggle-agent\par}
   \vspace{1mm}
 
-  \note{Where knowledge enters is an architectural choice with a measurable
-    answer. State an error model, or a ranking is your own noise. And freeze
-    your yardsticks, then read the transcripts --- mine caught a
-    blind spot in my own auditor, which was skipping the exact command it
-    existed to catch. Corrected, a re-run over all twenty transcripts finds no
-    network access. Thank you. (25s)}
+  \note{Four things I would tell anyone doing this. Put knowledge injection
+    upstream --- at the blend stage it bought nothing. While you iterate,
+    local cross-validation is the only feedback you get, and it can look
+    healthy while the leaderboard says otherwise. Version the agent, not just
+    the code: an architecture change invalidates every run before it. And
+    isolate mechanically, then read the transcripts --- including your
+    auditor's: mine was exempting the commands every lane actually issues, so
+    the one command it existed to catch was never examined. Thank you. (30s)}
 \end{frame}
 
 \end{document}
