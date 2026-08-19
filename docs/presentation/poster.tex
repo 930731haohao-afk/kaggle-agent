@@ -135,7 +135,7 @@
 % ---- 1 · Motivation --------------------------------------------------------
 \begin{secblock}
 \blocktitle{1\sep Motivation}
-\cardsub{Why these tasks are hard}
+\cardsub{Challenges of the tasks we solve}
 \begin{itemize}
   \item \kb{Kaggle competitions} demand the full expert loop --- validation
     design, feature engineering, model selection, ensembling --- where the
@@ -202,14 +202,13 @@ beats its own development-lane score on 13 of 20.\par
 \vspace{1mm}
 
 \cardsub{Private-leaderboard scores}
-{\fontsize{21.5}{27}\selectfont
-\renewcommand{\arraystretch}{1.05}%
-\setlength{\tabcolsep}{1.6mm}%
-\setlength{\heavyrulewidth}{0.9mm}\setlength{\lightrulewidth}{0.45mm}%
-\begin{minipage}[t]{0.5\linewidth}
-\begin{tabular}{@{}llrrr@{}}
+{\fontsize{27}{35}\selectfont
+\renewcommand{\arraystretch}{1.06}%
+\setlength{\tabcolsep}{6.5mm}%
+\setlength{\heavyrulewidth}{1mm}\setlength{\lightrulewidth}{0.5mm}%
+\centerline{\begin{tabular}{@{}llrrr@{}}
 \toprule
-\textbf{Comp.} & \textbf{Metric} & \textbf{mine} & \textbf{NV} & \textbf{AIDE}\\
+\textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
 \midrule
 s3e1 & RMSE $\downarrow$ & \textbf{0.55275} & 0.55550 & 0.55552\\
 s3e3 & AUC $\uparrow$ & 0.87157 & \textbf{0.89537} & 0.86863\\
@@ -221,27 +220,18 @@ s3e14 & MAE $\downarrow$ & 333.186 & \textbf{330.716} & 332.316\\
 s3e16 & MAE $\downarrow$ & \textbf{1.33822} & 1.34001 & 1.34224\\
 s3e19 & SMAPE $\downarrow$ & 49.4088 & \textbf{48.2656} & 48.3413\\
 s4e11 & Acc. $\uparrow$ & \textbf{0.94107} & 0.94076 & 0.94056\\
-\bottomrule
-\end{tabular}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\linewidth}
-\begin{tabular}{@{}llrrr@{}}
-\toprule
-\textbf{Comp.} & \textbf{Metric} & \textbf{mine} & \textbf{NV} & \textbf{AIDE}\\
-\midrule
 s5e1 & MAPE $\downarrow$ & \textbf{0.08401} & 0.14594 & 0.17917\\
 s5e10 & RMSE $\downarrow$ & \textbf{0.05576} & 0.05588 & 0.05579\\
 s6e1 & Error $\downarrow$ & \textbf{8.71516} & 8.73239 & 8.72191\\
-afsis & MCRMSE $\downarrow$ & \textbf{0.48917} & 0.69855 & 0.49861\\
-cat-in-dat & AUC $\uparrow$ & \textbf{0.80243} & 0.77084 & 0.80217\\
-conway & MAE $\downarrow$ & \textbf{0.10414} & 0.11189 & 0.11065\\
 s6e2 & AUC $\uparrow$ & 0.95505 & 0.95508 & \textbf{0.95516}\\
-tps-aug & AUC $\uparrow$ & 0.58930 & 0.58730 & \textbf{0.59106}\\
-tps-jan & SMAPE $\downarrow$ & 6.29895 & \textbf{4.63651} & 10.6664\\
-tps-sep & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
+afsis & MCRMSE $\downarrow$ & \textbf{0.48917} & 0.69855 & 0.49861\\
+cat-in-the-dat & AUC $\uparrow$ & \textbf{0.80243} & 0.77084 & 0.80217\\
+conway & MAE $\downarrow$ & \textbf{0.10414} & 0.11189 & 0.11065\\
+tps-aug-2022 & AUC $\uparrow$ & 0.58930 & 0.58730 & \textbf{0.59106}\\
+tps-jan-2022 & SMAPE $\downarrow$ & 6.29895 & \textbf{4.63651} & 10.6664\\
+tps-sep-2022 & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \bottomrule
-\end{tabular}
-\end{minipage}\par}
+\end{tabular}}\par}
 \vspace{3mm}
 \notepar{Private-leaderboard score of each submission; \textbf{bold} = best
   of the three.}
