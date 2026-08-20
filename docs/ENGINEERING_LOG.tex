@@ -27,7 +27,7 @@
 \newcommand{\dn}{\ensuremath{\downarrow}}
 \newcommand{\up}{\ensuremath{\uparrow}}
 % Agent abbreviations used in verdict columns
-\newcommand{\M}{M}   % my-agent
+\newcommand{\M}{M}   % Sinica
 \newcommand{\N}{N}   % NVIDIA
 \newcommand{\A}{A}   % AIDE
 
@@ -148,7 +148,7 @@ were voided is asymmetric on purpose: \textbf{a failure caused by the harness is
 failure caused by the method stands.} Voiding a method failure would quietly optimize the
 yardstick; keeping a harness failure would score the environment instead of the agent.
 
-\paragraph{my-agent/SIIM: killed by our own watchdog.} The lane first scored 0.92944 but was
+\paragraph{Sinica/SIIM: killed by our own watchdog.} The lane first scored 0.92944 but was
 killed at 150 of 480 minutes by the stall watchdog, whose 30-minute quiet threshold cannot
 distinguish a vision lane between fine-tunes from a dead one --- a harness defect of exactly
 the same family as Failure 3 below (health judged by the wrong signal). The threshold was
@@ -156,16 +156,16 @@ loosened to 90 minutes of quiet plus three consecutive confirmations, so a kill 
 105+ minutes of confirmed silence, and the lane was re-run to completion: 394 minutes,
 0.93529. The first attempt is archived.
 
-\paragraph{Version identity across my-agent's cells (recorded, not disclosed in the main
+\paragraph{Version identity across Sinica's cells (recorded, not disclosed in the main
 report).} The three mid-complexity lanes did not all run the identical skill version: us-patent
 and ventilator predate Stage 0.5; SIIM ran after and executed the dossier, which declined
 external data, so the modeling code path is identical as far as tracing shows --- a traced
 argument caught by file timestamps, not a rerun-and-confirm. The two firing-class lanes are a
 further deliberate variant (full v5, pinned knowledge library). None of this touches any
-per-competition three-way comparison; it bounds only the claim that my-agent's own methodology
+per-competition three-way comparison; it bounds only the claim that Sinica's own methodology
 was constant across the whole report.
 
-\paragraph{my-agent/s5e1 (firing class): environment kill, relaunched.} The lane's first
+\paragraph{Sinica/s5e1 (firing class): environment kill, relaunched.} The lane's first
 attempt exited after 6 minutes with no submission (rc=1) when the session hit a usage-limit
 reset --- an environment failure under the voiding rule. It was relaunched unmodified after
 the reset and completed in 41 minutes. Recorded here because the rule requires every
@@ -200,7 +200,7 @@ During the study we found five classes of failure that raise no errors; all were
 \toprule
 \# & \textbf{Failure} & \textbf{Impact} & \textbf{Detection} & \textbf{Fix} \\
 \midrule
-1 & Harness copied my-agent's entire working directory to AIDE, exposing processed features and tuned hyperparameters & 4 AIDE results voided & Inspecting which files the champion code actually opened & Manifest-validated isolated roots; 4 competitions re-run \\
+1 & Harness copied Sinica's entire working directory to AIDE, exposing processed features and tuned hyperparameters & 4 AIDE results voided & Inspecting which files the champion code actually opened & Manifest-validated isolated roots; 4 competitions re-run \\
 2 & Runs under resource contention (one lane at load 17, another with the machine to itself) & Unequal conditions & Comparing lane execution windows & \path{lane_lock.sh} mutex \\
 3 & Watchdog judged health by ``machine busy overall''; a dead lane went unnoticed all night & One night of capacity lost & Per-driver check (no completion marker, no process) & Watchdog extended with per-driver checks \\
 4 & Aggregation took ``best score across all experiments,'' counting leakage experiments tagged as diagnostic & 3 competitions' numbers wrong & Scanning logs for exclusion tags & Fixed and disclosed \\
@@ -228,7 +228,7 @@ archives, which is the case a naive filename check gets wrong. Officialness is j
 manifest rather than by convention, because the failure it exists to prevent looked exactly like
 a normal working directory.
 
-\paragraph{Failure 1.} The harness copied my-agent's entire working directory to AIDE, exposing
+\paragraph{Failure 1.} The harness copied Sinica's entire working directory to AIDE, exposing
 processed features and tuned hyperparameters. Four AIDE results were voided and re-run.
 Detection was not automatic: it came from inspecting which files the champion code actually
 opened. Nothing in the logs distinguished a lane reading its own features from one reading

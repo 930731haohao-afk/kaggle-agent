@@ -109,8 +109,8 @@
     An End-to-End AI Agent for Kaggle Competitions\par}
   \vspace{5.3mm}
   {\subsize\color{white}%
-    An end-to-end LLM agent benchmarked against two frozen reference agents
-    on 20 Kaggle competitions\par}
+    \textbf{Sinica}: an end-to-end LLM agent benchmarked against two frozen
+    reference agents on 20 Kaggle competitions\par}
   \vspace{4.3mm}
   {\metasize\color{white}%
     {\bfseries Author:} Wei-Hao Huang\sep
@@ -135,7 +135,7 @@
 % ---- 1 · Motivation --------------------------------------------------------
 \begin{secblock}
 \blocktitle{1\sep Motivation}
-\cardsub{Challenges of the tasks we solve}
+\cardsub{Challenges of Kaggle competitions}
 \begin{itemize}
   \item \kb{Kaggle competitions} demand the full expert loop --- validation
     design, feature engineering, model selection, ensembling --- where the
@@ -163,7 +163,7 @@
 \begin{secblock}
 \blocktitle{2\sep Workflow}
 \centerline{\includegraphics[width=0.90\linewidth]{fig1_arch.pdf}}
-\figcap{The pipeline, read top to bottom: the LLM reasons at every stage;
+\figcap{The pipeline: the LLM reasons at every stage;
   the \kb{problem dossier} classifies the task and injects external data
   \emph{upstream}, before any modeling; submissions are scored post-run on
   the real leaderboard. Purple = injection layer $\cdot$ green = evidence
@@ -187,16 +187,15 @@
 % ---- 3 · Results — Kaggle benchmark ---------------------------------------
 \begin{secblock}
 \blocktitle{3\sep Results}
-\cardsub{Benchmark standing}
+\cardsub{Benchmark}
 All 20 competitions ran in sandboxes with a per-lane
 transcript audit, and all 20 are scored on the real leaderboard --- as were
 the two reference agents. Each of the 60 head-to-head duels was judged
 against the score noise measured on Kaggle's own public/private split: 38
-decided, 22 too close to call. \kb{my-agent leads the standing --- 16 wins /
-8 losses (66.7\% of its decided duels)} against 42.3\% for each reference agent, and
-beats its own development-lane score on 13 of 20.\par
-\cardsub{Head-to-head best private score}
-\countbar{\textbf{my-agent}}{navy}{0.50}{10 / 20}
+decided, 22 too close to call. \kb{Sinica leads the standing --- 16 wins /
+8 losses (66.7\% of its decided duels)} against 42.3\% for each reference agent.\par
+\cardsub{Best private score}
+\countbar{\textbf{Sinica}}{navy}{0.50}{10 / 20}
 \countbar{NVIDIA}{barother}{0.35}{7 / 20}
 \countbar{AIDE}{barother}{0.15}{3 / 20}
 \vspace{1mm}
@@ -208,7 +207,7 @@ beats its own development-lane score on 13 of 20.\par
 \setlength{\heavyrulewidth}{1mm}\setlength{\lightrulewidth}{0.5mm}%
 \begin{tabular}{@{}llrrr@{}}
 \toprule
-\textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
+\textbf{Competition} & \textbf{Metric} & \textbf{Sinica} & \textbf{NVIDIA} & \textbf{AIDE}\\
 \midrule
 s3e1 & RMSE $\downarrow$ & \textbf{0.55275} & 0.55550 & 0.55552\\
 s3e3 & AUC $\uparrow$ & 0.87157 & \textbf{0.89537} & 0.86863\\
@@ -233,8 +232,7 @@ tps-sep-2022 & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \bottomrule
 \end{tabular}\par}
 \vspace{3mm}
-\notepar{Private-leaderboard score of each submission; \textbf{bold} = best
-  of the three.}
+\notepar{\textbf{Bold} = best of the three.}
 \cardsub{Three mid-complexity competitions}
 {\tablesize
 \renewcommand{\arraystretch}{1.3}%
@@ -242,7 +240,7 @@ tps-sep-2022 & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
 \setlength{\heavyrulewidth}{1.1mm}\setlength{\lightrulewidth}{0.55mm}%
 \begin{tabular}{@{}llrrr@{}}
 \toprule
-\textbf{Competition} & \textbf{Metric} & \textbf{my-agent} & \textbf{NVIDIA} & \textbf{AIDE}\\
+\textbf{Competition} & \textbf{Metric} & \textbf{Sinica} & \textbf{NVIDIA} & \textbf{AIDE}\\
 \midrule
 us-patent (NLP) & Pearson $r$ $\uparrow$ & \kb{0.86658} & 0.86160 & 0.65821\\
 ventilator (time series) & MAE $\downarrow$ & \kb{0.16525} & 0.40093 & 0.34591\\

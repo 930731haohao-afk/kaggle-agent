@@ -61,14 +61,14 @@
   {\color{white}\LARGE\bfseries An End-to-End AI Agent\\[1mm]
    for Kaggle Competitions\par}
   \vspace{5mm}
-  {\color{ice}\normalsize An end-to-end LLM agent benchmarked against two frozen
-   reference agents on 20 Kaggle competitions\par}
+  {\color{ice}\normalsize \textbf{Sinica}: an end-to-end LLM agent benchmarked
+   against two frozen reference agents on 20 Kaggle competitions\par}
   \vfill
   {\color{pale}\small Wei-Hao Huang, National Chengchi University \quad$\cdot$\quad
    PI: Dr.\ Tso-Jung Yen, Institute of Statistical Science, Academia Sinica\par}
   \vspace{4mm}
 
-  \note{This is an end-to-end agent for Kaggle competitions: it takes a raw
+  \note{Sinica is an end-to-end agent for Kaggle competitions: it takes a raw
     dataset and returns a submission, with no person in the loop. I benchmarked
     it against two frozen reference agents on twenty competitions, scored on the
     real leaderboards. (18s)}
@@ -77,7 +77,7 @@
 % ============================================================= 1 MOTIVATION --
 \begin{frame}{1 $\cdot$ Motivation}
   \vspace{1mm}
-  {\small\kb{Why these tasks are hard}\par}
+  {\small\kb{Challenges of Kaggle competitions}\par}
   \vspace{1.5mm}
   {\small
    $\cdot$ A competition demands the whole expert loop --- validation design,
@@ -130,23 +130,23 @@
    judged against the score noise measured on Kaggle's own public/private
    split --- \kb{38 decided, 22 too close to call}.\par}
   \vspace{2.5mm}
-  {\small\kb{my-agent leads: 16 wins / 8 losses (66.7\% of its decided duels)}
+  {\small\kb{Sinica leads: 16 wins / 8 losses (66.7\% of its decided duels)}
    against 42.3\% for each frozen reference agent.\par}
   \vspace{3mm}
-  {\small\kb{Head-to-head best private score}\par}
+  {\small\kb{Best private score}\par}
   \vspace{1.5mm}
-  \countbar{\kb{my-agent}}{barblue}{0.50}{10 / 20}
+  \countbar{\kb{Sinica}}{barblue}{0.50}{10 / 20}
   \countbar{NVIDIA}{barother}{0.35}{7 / 20}
   \countbar{AIDE}{barother}{0.15}{3 / 20}
   \vspace{1mm}
   {\footnotesize\color{mut}Beyond tabular: on three mid-complexity competitions
-   (NLP, physiological time series, medical imaging) my-agent takes the
+   (NLP, physiological time series, medical imaging) Sinica takes the
    three-way best on all three.\par}
 
   \note{Here is the reading. All twenty lanes are scored on the real
     leaderboard, and every one of the sixty duels is judged against the score
     noise measured on Kaggle's own split of the test set: thirty-eight decide,
-    twenty-two the data refuses to call. My agent leads --- sixteen wins to
+    twenty-two the data refuses to call. Sinica leads --- sixteen wins to
     eight of its decided duels, sixty-six point seven percent, against
     forty-two point three for each reference agent. It takes the best private score on
     ten of the twenty competitions, and on three harder competitions outside

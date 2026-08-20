@@ -71,8 +71,8 @@ SMAPE 4.56, while training on 2017--2020 and validating on 2021 yields 20.41 ---
 gap. The competition's test set is one full future year; shuffling rows lets the model
 interpolate within sequences it has memorized. AIDE noticed nothing.
 
-The contrast with my-agent is the sharpest method-level distinction the benchmark surfaced:
-my-agent also tried shuffled KFold in the same competition (SMAPE 4.2814) but explicitly tagged
+The contrast with Sinica is the sharpest method-level distinction the benchmark surfaced:
+Sinica also tried shuffled KFold in the same competition (SMAPE 4.2814) but explicitly tagged
 it in \texttt{experiments.json} as ``DIAGNOSTIC: not used for submission,'' its purpose being
 to isolate whether a score regression came from the split or from the features.
 

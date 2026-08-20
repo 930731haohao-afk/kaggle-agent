@@ -73,12 +73,14 @@ function countbar(slide, y, label, color, frac, value, bold) {
     fontFace: F, fontSize: 40, bold: true, color: WHITE, margin: 0,
     lineSpacingMultiple: 1.1, valign: "middle",
   });
-  s.addText(
-    "An end-to-end LLM agent benchmarked against two frozen reference agents " +
-    "on 20 Kaggle competitions", {
-      x: 0.90, y: 3.65, w: 11.0, h: 0.50,
-      fontFace: F, fontSize: 18, color: ICE, margin: 0, valign: "middle",
-    });
+  s.addText([
+    { text: "Sinica", options: { bold: true } },
+    { text: ": an end-to-end LLM agent benchmarked against two frozen reference " +
+            "agents on 20 Kaggle competitions" },
+  ], {
+    x: 0.90, y: 3.65, w: 11.0, h: 0.50,
+    fontFace: F, fontSize: 18, color: ICE, margin: 0, valign: "middle",
+  });
   s.addText(
     "Wei-Hao Huang, National Chengchi University   ·   " +
     "PI: Dr. Tso-Jung Yen, Institute of Statistical Science, Academia Sinica", {
@@ -87,7 +89,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
     });
 
   s.addNotes(
-    "This is an end-to-end agent for Kaggle competitions: it takes a raw " +
+    "Sinica is an end-to-end agent for Kaggle competitions: it takes a raw " +
     "dataset and returns a submission, with no person in the loop. I " +
     "benchmarked it against two frozen reference agents on twenty " +
     "competitions, scored on the real leaderboards. (18s)"
@@ -99,7 +101,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
   const s = pres.addSlide();
   head(s, "1 · Motivation");
 
-  s.addText("Why these tasks are hard", {
+  s.addText("Challenges of Kaggle competitions", {
     x: 0.72, y: 1.15, w: 11.9, h: 0.40,
     fontFace: F, fontSize: 19, bold: true, color: INK, margin: 0, valign: "middle",
   });
@@ -157,7 +159,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
   const s = pres.addSlide();
   head(s, "2 · Workflow");
 
-  // The architecture figure, rasterised from the same TikZ source the poster
+  // The architecture figure, rasterized from the same TikZ source the poster
   // and the report use (fig1_arch.pdf -> fig1_arch_hi-1.png at 300 dpi).
   s.addImage({ path: "fig1_arch_hi-1.png", x: 0.72, y: 1.05, w: 6.95, h: 6.19 });
 
@@ -211,7 +213,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
     });
 
   s.addText([
-    { text: "my-agent leads: 16 wins / 8 losses (66.7% of its decided duels)",
+    { text: "Sinica leads: 16 wins / 8 losses (66.7% of its decided duels)",
       options: { bold: true } },
     { text: " against 42.3% for each frozen reference agent." },
   ], {
@@ -223,13 +225,13 @@ function countbar(slide, y, label, color, frac, value, bold) {
     x: 0.72, y: 2.85, w: 11.9, h: 0.40,
     fontFace: F, fontSize: 17, bold: true, color: INK, margin: 0, valign: "middle",
   });
-  countbar(s, 3.40, "my-agent", NAVY,  0.50, "10 / 20", true);
+  countbar(s, 3.40, "Sinica", NAVY,  0.50, "10 / 20", true);
   countbar(s, 4.00, "NVIDIA",   OTHER, 0.35, "7 / 20");
   countbar(s, 4.60, "AIDE",     OTHER, 0.15, "3 / 20");
 
   s.addText(
     "Beyond tabular: on three mid-complexity competitions (NLP, physiological " +
-    "time series, medical imaging) my-agent takes the three-way best on all " +
+    "time series, medical imaging) Sinica takes the three-way best on all " +
     "three.", {
       x: 0.72, y: 5.45, w: 11.9, h: 0.70,
       fontFace: F, fontSize: 15, color: MUT, margin: 0,
@@ -239,7 +241,7 @@ function countbar(slide, y, label, color, frac, value, bold) {
     "Here is the reading. All twenty lanes are scored on the real " +
     "leaderboard, and every one of the sixty duels is judged against the " +
     "score noise measured on Kaggle's own split of the test set: thirty-eight " +
-    "decide, twenty-two the data refuses to call. My agent leads — sixteen " +
+    "decide, twenty-two the data refuses to call. Sinica leads — sixteen " +
     "wins to eight of its decided duels, sixty-six point seven percent, " +
     "against forty-two point three for each reference agent. It takes the best " +
     "private score on ten of the twenty competitions, and on three harder " +
