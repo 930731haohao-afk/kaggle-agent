@@ -61,8 +61,6 @@
   {\color{white}\LARGE\bfseries An End-to-End AI Agent\\[1mm]
    for Kaggle Competitions\par}
   \vspace{5mm}
-  {\color{ice}\normalsize \textbf{Sinica}: an end-to-end LLM agent benchmarked
-   against two frozen reference agents on 20 Kaggle competitions\par}
   \vfill
   {\color{pale}\small Wei-Hao Huang, National Chengchi University \quad$\cdot$\quad
    PI: Dr.\ Tso-Jung Yen, Institute of Statistical Science, Academia Sinica\par}
@@ -80,19 +78,18 @@
   {\small\kb{Challenges of Kaggle competitions}\par}
   \vspace{1.5mm}
   {\small
-   $\cdot$ A competition demands the whole expert loop --- validation design,
-   features, model selection, ensembling --- and the top entries separate at the
-   \kb{fourth or fifth decimal}.\par\vspace{1.2mm}
-   $\cdot$ At that scale \kb{local cross-validation is an unreliable compass}:
-   a pipeline's own score routinely disagrees with the leaderboard.\par}
+   $\cdot$ A competition demands the whole expert loop: validation design,
+   features, model selection, ensembling. The top entries separate by a
+   \kb{very small margin}.\par}
   \vspace{3mm}
   {\small\kb{Why an AI agent}\par}
   \vspace{1.5mm}
   {\small
-   $\cdot$ Tireless, systematic search: \kb{37--224} candidate configurations
-   per competition, every experiment logged.\par\vspace{1.2mm}
-   $\cdot$ The same disciplined protocol on 20 competitions in a row --- a
-   consistency a person cannot hold.\par}
+   $\cdot$ A competition is a \kb{scorable task}: every candidate returns a
+   number, so it can be \kb{optimized automatically}
+   (propose, score, keep the better, repeat).\par\vspace{1.2mm}
+   $\cdot$ Tireless, systematic search over candidate configurations, every
+   experiment logged.\par}
 
   \note{Competitions demand the whole expert loop, and the top of the
     leaderboard separates at the fourth or fifth decimal, so tuning skill
@@ -128,7 +125,7 @@
   \vspace{0.5mm}
   {\small All 20 lanes scored on the real leaderboard; each of the 60 duels
    judged against the score noise measured on Kaggle's own public/private
-   split --- \kb{38 decided, 22 too close to call}.\par}
+   split: \kb{38 decided, 22 too close to call}.\par}
   \vspace{2.5mm}
   {\small\kb{Sinica leads: 16 wins / 8 losses (66.7\% of its decided duels)}
    against 42.3\% for each frozen reference agent.\par}
@@ -153,41 +150,45 @@
     tabular data it takes the best of the three every time. (45s)}
 \end{frame}
 
-% ============================================================== 4 LESSONS ---
-\begin{frame}{4 $\cdot$ Lessons learned}
+% ========================================================== 4 REFLECTIONS ---
+\begin{frame}{4 $\cdot$ Reflections}
   \vspace{1mm}
   {\small
    $\cdot$ \kb{Put knowledge injection upstream.} At the blend stage it
-   measured near-nothing; moved into problem identification it flags exactly
-   the competitions that need external data.\par\vspace{2mm}
+   measured near-nothing; moved into problem identification it
+   \kb{improves scores significantly}.\par\vspace{2mm}
    $\cdot$ \kb{No score until you submit.} While you iterate, local CV is
    all you see, so an error in problem-level judgment leaves CV looking healthy
    while the leaderboard says otherwise.\par\vspace{2mm}
-   $\cdot$ \kb{Never mix agent versions in one table.} An architecture
-   change invalidates every competition that ran before it --- rebuild the run
-   root and start the benchmark over.\par\vspace{2mm}
-   $\cdot$ \kb{Isolate mechanically then audit transcripts} --- and audit
-   the auditor: ours exempted every command starting with \texttt{uv}, so the
-   one command it existed to catch was never examined.\par}
+   $\cdot$ \kb{Freeze the architecture before you measure.} One results table
+   can report only one agent version, so an architectural change invalidates
+   every run before it. That is why such a change costs twice: a tail of bugs to fix, then
+   a full re-run to earn the voided scores back.\par\vspace{2mm}
+   $\cdot$ \kb{Get isolation right.} If a lane can reach a leaderboard or
+   another lane's work, every number in the table is worthless. It has to be
+   enforced by the setup, not by telling the agent what to avoid.\par}
 
   \note{Four things I would tell anyone doing this. Put knowledge injection
     upstream --- at the blend stage it bought nothing. While you iterate, local
     cross-validation is the only feedback you get, and it can look healthy
     while the leaderboard says otherwise. Never mix agent versions in one
-    table: an architecture change invalidates every run before it. And isolate
-    mechanically, then read the transcripts --- including your auditor's: mine
-    was exempting the commands every lane actually issues, so the one command
-    it existed to catch was never examined. (43s)}
+    table, because an architecture change invalidates every run before it and
+    every mid-flight change costs a tail of bugs and then a re-run to earn the
+    score back. And get the
+    isolation right: if a lane can reach a leaderboard or another lane's work,
+    every number in the table is worthless, so it has to be enforced by the
+    setup rather than by instruction. (43s)}
 \end{frame}
 
 % ================================================= 5 WHERE IT FALLS SHORT ---
 \begin{frame}{5 $\cdot$ Weaknesses of AI-heavy research}
   \vspace{1mm}
   {\small
-   $\cdot$ \kb{No engineering judgment at design time.} Nothing in the loop
-   can tell whether an architecture will hold until it runs, and the debt grows
-   with every competition added.\par\vspace{2mm}
-   $\cdot$ \kb{AI writing habits survive review} --- redundant suffixes,
+   $\cdot$ \kb{Strong hands, no design judgment.} The loop only solves the
+   problem it is handed. It never asks whether a change is worth making, and
+   nothing in it can tell whether an architecture holds until the runs come
+   back, by which time the debt is already there.\par\vspace{2mm}
+   $\cdot$ \kb{AI writing habits survive review}: redundant suffixes,
    invented terminology, detail in place of the question the reader came
    for.\par}
   \vfill

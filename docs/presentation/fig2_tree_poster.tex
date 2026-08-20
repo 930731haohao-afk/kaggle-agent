@@ -32,9 +32,9 @@
 \node[sbox, below=of eval] (add) {\textbf{add node, update global best}\\a solo breakthrough reopens\\plateaued blend lineages};
 \foreach \a/\b in {phase/select, select/propose, propose/dedup, dedup/eval, eval/add}{\draw[arr] (\a) -- (\b);}
 % ----- exit at the BOTTOM: the column terminates at the deliverable -----
-\node[sbox, below=of add, fill=flowgreen, draw=flowgreenline] (out)
+\node[sbox, below=9mm of add, fill=flowgreen, draw=flowgreenline] (out)
   {\textbf{on stop: best node $\to$ submission}};
-\draw[arr] (add) -- node[lab, right]{phase = stop} (out);
+\draw[arr] (add) -- node[lab, right=1.8mm]{phase = stop} (out);
 % ----- loop back, right side (re-enters at the select row) -----
 \draw[arr] (add.east) -- ++(9mm,0) |- node[lab, pos=0.25, right, align=left]{next\\iteration} (select.east);
 % ----- side inputs, left column -----

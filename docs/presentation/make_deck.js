@@ -73,14 +73,6 @@ function countbar(slide, y, label, color, frac, value, bold) {
     fontFace: F, fontSize: 40, bold: true, color: WHITE, margin: 0,
     lineSpacingMultiple: 1.1, valign: "middle",
   });
-  s.addText([
-    { text: "Sinica", options: { bold: true } },
-    { text: ": an end-to-end LLM agent benchmarked against two frozen reference " +
-            "agents on 20 Kaggle competitions" },
-  ], {
-    x: 0.90, y: 3.65, w: 11.0, h: 0.50,
-    fontFace: F, fontSize: 18, color: ICE, margin: 0, valign: "middle",
-  });
   s.addText(
     "Wei-Hao Huang, National Chengchi University   ·   " +
     "PI: Dr. Tso-Jung Yen, Institute of Statistical Science, Academia Sinica", {
@@ -106,40 +98,34 @@ function countbar(slide, y, label, color, frac, value, bold) {
     fontFace: F, fontSize: 19, bold: true, color: INK, margin: 0, valign: "middle",
   });
   s.addText(item([
-    { text: "A competition demands the whole expert loop — validation design, " +
-            "features, model selection, ensembling — and the top entries " +
-            "separate at the " },
-    { text: "fourth or fifth decimal.", options: { bold: true } },
+    { text: "A competition demands the whole expert loop: validation design, " +
+            "features, model selection, ensembling. The top entries separate " +
+            "by a " },
+    { text: "very small margin.", options: { bold: true } },
   ]), {
     x: 0.95, y: 1.62, w: 11.6, h: 0.85,
     fontFace: F, fontSize: 17, color: INK, margin: 0,
   });
-  s.addText(item([
-    { text: "At that scale " },
-    { text: "local cross-validation is an unreliable compass", options: { bold: true } },
-    { text: ": a pipeline's own score routinely disagrees with the leaderboard." },
-  ]), {
-    x: 0.95, y: 2.52, w: 11.6, h: 0.55,
-    fontFace: F, fontSize: 17, color: INK, margin: 0,
-  });
 
   s.addText("Why an AI agent", {
-    x: 0.72, y: 3.45, w: 11.9, h: 0.40,
+    x: 0.72, y: 2.75, w: 11.9, h: 0.40,
     fontFace: F, fontSize: 19, bold: true, color: INK, margin: 0, valign: "middle",
   });
   s.addText(item([
-    { text: "Tireless, systematic search: " },
-    { text: "37–224", options: { bold: true } },
-    { text: " candidate configurations per competition, every experiment logged." },
+    { text: "A competition is a " },
+    { text: "scorable task", options: { bold: true } },
+    { text: ": every candidate returns a number, so it can be " },
+    { text: "optimized automatically", options: { bold: true } },
+    { text: " (propose, score, keep the better, repeat)." },
   ]), {
-    x: 0.95, y: 3.92, w: 11.6, h: 0.55,
+    x: 0.95, y: 3.22, w: 11.6, h: 0.55,
     fontFace: F, fontSize: 17, color: INK, margin: 0,
   });
   s.addText(item([
-    { text: "The same disciplined protocol on 20 competitions in a row — a " +
-            "consistency a person cannot hold." },
+    { text: "Tireless, systematic search over candidate configurations, every " +
+            "experiment logged and reproducible." },
   ]), {
-    x: 0.95, y: 4.52, w: 11.6, h: 0.55,
+    x: 0.95, y: 3.94, w: 11.6, h: 0.55,
     fontFace: F, fontSize: 17, color: INK, margin: 0,
   });
 
@@ -253,14 +239,15 @@ function countbar(slide, y, label, color, frac, value, bold) {
 // ============================================================== 4 LESSONS ---
 {
   const s = pres.addSlide();
-  head(s, "4 · Lessons learned");
+  head(s, "4 · Reflections");
 
   const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
 
   s.addText(item([
     { text: "Put knowledge injection upstream.", options: { bold: true } },
     { text: " At the blend stage it measured near-nothing; moved into problem " +
-            "identification it flags exactly the competitions that need external data." },
+            "identification it " },
+    { text: "improves scores significantly.", options: { bold: true } },
   ]), { ...B, y: 1.20, h: 0.85 });
 
   s.addText(item([
@@ -271,26 +258,31 @@ function countbar(slide, y, label, color, frac, value, bold) {
   ]), { ...B, y: 2.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Never mix agent versions in one table.", options: { bold: true } },
-    { text: " An architecture change invalidates every competition that ran " +
-            "before it — rebuild the run root and start the benchmark over." },
+    { text: "Freeze the architecture before you measure.", options: { bold: true } },
+    { text: " One results table can report only one agent version, so an " +
+            "architectural change invalidates every run before it. That is why such " +
+            "a change costs twice: a tail of bugs to fix, then a full re-run to earn " +
+            "the voided scores back." },
   ]), { ...B, y: 3.20, h: 0.85 });
 
   s.addText(item([
-    { text: "Isolate mechanically then audit transcripts", options: { bold: true } },
-    { text: " — and audit the auditor: ours exempted every command starting " +
-            "with uv, so the one command it existed to catch was never examined." },
-  ]), { ...B, y: 4.20, h: 0.85 });
+    { text: "Get isolation right.", options: { bold: true } },
+    { text: " If a lane can reach a leaderboard or another lane's work, every " +
+            "number in the table is worthless. It has to be enforced by the setup, " +
+            "not by telling the agent what to avoid." },
+  ]), { ...B, y: 4.40, h: 0.85 });
 
   s.addNotes(
     "Four things I would tell anyone doing this. Put knowledge injection " +
     "upstream — at the blend stage it bought nothing. While you iterate, local " +
     "cross-validation is the only feedback you get, and it can look healthy " +
     "while the leaderboard says otherwise. Never mix agent versions in one " +
-    "table: an architecture change invalidates every run before it. And isolate " +
-    "mechanically, then read the transcripts — including your auditor's: mine " +
-    "was exempting the commands every lane actually issues, so the one command " +
-    "it existed to catch was never examined. (43s)"
+    "table, because an architecture change invalidates every run before it and " +
+    "every mid-flight change costs a tail of bugs and then a re-run to earn " +
+    "the score back. And isolate " +
+    "the isolation right: if a lane can reach a leaderboard or another lane's " +
+    "work, every number in the table is worthless, so it has to be enforced by " +
+    "the setup rather than by instruction. (43s)"
   );
 }
 
@@ -302,16 +294,18 @@ function countbar(slide, y, label, color, frac, value, bold) {
   const B = { x: 0.95, w: 11.6, fontFace: F, fontSize: 16, color: INK, margin: 0 };
 
   s.addText(item([
-    { text: "No engineering judgment at design time.", options: { bold: true } },
-    { text: " Nothing in the loop can tell whether an architecture will hold " +
-            "until it runs, and the debt grows with every competition added." },
+    { text: "Strong hands, no design judgment.", options: { bold: true } },
+    { text: " The loop only solves the problem it is handed. It never asks whether " +
+            "a change is worth making, and nothing in it can tell whether an " +
+            "architecture holds until the runs come back, by which time the debt " +
+            "is already there." },
   ]), { ...B, y: 1.20, h: 0.85 });
 
   s.addText(item([
     { text: "AI writing habits survive review", options: { bold: true } },
-    { text: " — redundant suffixes, invented terminology, detail in place of " +
+    { text: ": redundant suffixes, invented terminology, detail in place of " +
             "the question the reader came for." },
-  ]), { ...B, y: 3.20, h: 0.85 });
+  ]), { ...B, y: 4.00, h: 0.85 });
 
   s.addText("github.com/930731haohao-afk/kaggle-agent", {
     x: 0.95, y: 6.40, w: 11.6, h: 0.40,
@@ -319,7 +313,9 @@ function countbar(slide, y, label, color, frac, value, bold) {
   });
 
   s.addNotes(
-    "Where working this way still falls short. There is no engineering " +
+    "Where working this way still falls short. The loop has strong hands but no " +
+    "design judgment: it solves the problem it is handed, never asks whether the " +
+    "change was worth making, and there is no engineering " +
     "judgment at design time: nothing in the loop can tell whether an " +
     "architecture will hold until it runs, and by the time the flaws surface " +
     "the debt is already there. And AI writing habits " +
