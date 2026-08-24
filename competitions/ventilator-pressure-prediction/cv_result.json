@@ -1,0 +1,27 @@
+{
+  "cv_raw": 0.1936112940311432,
+  "cv_snap": 0.19221872091293335,
+  "fold_scores": [
+    0.19431665539741516,
+    0.19598613679409027,
+    0.19258320331573486,
+    0.18934156000614166,
+    0.1958276629447937
+  ],
+  "n_folds_trained": 5,
+  "snap_applied": true,
+  "elapsed_s": 469.78187584877014,
+  "args": {
+    "folds": 5,
+    "max_folds": 5,
+    "epochs": 260,
+    "batch": 1024,
+    "hidden": 256,
+    "layers": 4,
+    "lr": 0.002,
+    "subset": 0,
+    "tag": "lstm_run2",
+    "chunk_seconds": 520.0,
+    "workdir": "/home/tjyen/ai_agents/kaggle/competitions/ventilator-pressure-prediction/scripts/work"
+  }
+}

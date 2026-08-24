@@ -1,0 +1,74 @@
+[
+  {
+    "backbone": "resnet18",
+    "lr": 0.0001,
+    "auc": 0.8331267537743807,
+    "sec": 44.5
+  },
+  {
+    "backbone": "resnet18",
+    "lr": 0.0003,
+    "auc": 0.8467041952865431,
+    "sec": 44.5
+  },
+  {
+    "backbone": "resnet18",
+    "lr": 0.001,
+    "auc": 0.845239201914304,
+    "sec": 44.7
+  },
+  {
+    "backbone": "convnext_atto",
+    "lr": 0.0001,
+    "auc": 0.8423143796587994,
+    "sec": 60.3
+  },
+  {
+    "backbone": "convnext_atto",
+    "lr": 0.0003,
+    "auc": 0.8390495618791853,
+    "sec": 56.9
+  },
+  {
+    "backbone": "convnext_atto",
+    "lr": 0.001,
+    "auc": 0.7679930795847751,
+    "sec": 58.1
+  },
+  {
+    "backbone": "efficientnet_b0",
+    "lr": 0.0001,
+    "auc": 0.8028594053951694,
+    "sec": 101.8
+  },
+  {
+    "backbone": "efficientnet_b0",
+    "lr": 0.0003,
+    "auc": 0.8360842844600527,
+    "sec": 94.9
+  },
+  {
+    "backbone": "efficientnet_b0",
+    "lr": 0.001,
+    "auc": 0.8709893439377507,
+    "sec": 94.4
+  },
+  {
+    "backbone": "vit_tiny_patch16_224",
+    "lr": 0.0001,
+    "auc": 0.8670092444352631,
+    "sec": 46.7
+  },
+  {
+    "backbone": "vit_tiny_patch16_224",
+    "lr": 0.0003,
+    "auc": 0.8667183115564048,
+    "sec": 47.0
+  },
+  {
+    "backbone": "vit_tiny_patch16_224",
+    "lr": 0.001,
+    "auc": 0.8001403019504554,
+    "sec": 46.9
+  }
+]

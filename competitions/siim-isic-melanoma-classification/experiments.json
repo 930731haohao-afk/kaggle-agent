@@ -1,0 +1,1135 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-29T19:32:21",
+    "model": "LogisticRegression (lr_base3)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.671476,
+    "features": [
+      "sex_n",
+      "age",
+      "site"
+    ],
+    "n_features": 3,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image \u2014 regime-matched to mle-bench split",
+      "per_fold": [
+        0.6940582554356246,
+        0.6866144229490418,
+        0.6903792443757866,
+        0.6071729396639624,
+        0.6817573710200624
+      ],
+      "patient_grouped_auc": 0.6712084683116937
+    },
+    "notes": "tag=lr_base3; run2 metadata baseline, no class weighting (AUC is a ranking metric)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-29T19:32:25",
+    "model": "LogisticRegression (lr_allfeat)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.854671,
+    "features": [
+      "sex_n",
+      "age",
+      "site",
+      "site_na",
+      "area",
+      "aspect",
+      "long_side",
+      "res_id",
+      "m_r",
+      "m_g",
+      "m_b",
+      "s_r",
+      "s_g",
+      "s_b",
+      "core_m_r",
+      "core_m_g",
+      "core_m_b",
+      "core_s_r",
+      "core_s_g",
+      "core_s_b",
+      "ring_m_r",
+      "ring_m_g",
+      "ring_m_b",
+      "contrast_r",
+      "contrast_g",
+      "contrast_b",
+      "gray_m",
+      "gray_s",
+      "grad_m",
+      "gray_p5",
+      "gray_p95",
+      "gray_contrast",
+      "vignette",
+      "pat_n",
+      "pat_age_min",
+      "pat_site_nunique",
+      "ud_core_m_r",
+      "pm_core_m_r",
+      "ud_core_m_g",
+      "pm_core_m_g",
+      "ud_core_m_b",
+      "pm_core_m_b",
+      "ud_gray_m",
+      "pm_gray_m",
+      "ud_gray_contrast",
+      "pm_gray_contrast",
+      "ud_contrast_r",
+      "pm_contrast_r",
+      "ud_contrast_b",
+      "pm_contrast_b",
+      "ud_gray_s",
+      "pm_gray_s",
+      "ud_grad_m",
+      "pm_grad_m"
+    ],
+    "n_features": 54,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image \u2014 regime-matched to mle-bench split",
+      "per_fold": [
+        0.8360360825629638,
+        0.8554346083937785,
+        0.8742723561848446,
+        0.8358005872302986,
+        0.8745704112343918
+      ],
+      "patient_grouped_auc": 0.8541838081625885
+    },
+    "notes": "tag=lr_allfeat; run2 metadata baseline, no class weighting (AUC is a ranking metric)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-29T19:32:29",
+    "model": "LGB metadata+imagestats",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.885743,
+    "features": [
+      "sex_n",
+      "age",
+      "site",
+      "site_na",
+      "area",
+      "aspect",
+      "long_side",
+      "res_id",
+      "m_r",
+      "m_g",
+      "m_b",
+      "s_r",
+      "s_g",
+      "s_b",
+      "core_m_r",
+      "core_m_g",
+      "core_m_b",
+      "core_s_r",
+      "core_s_g",
+      "core_s_b",
+      "ring_m_r",
+      "ring_m_g",
+      "ring_m_b",
+      "contrast_r",
+      "contrast_g",
+      "contrast_b",
+      "gray_m",
+      "gray_s",
+      "grad_m",
+      "gray_p5",
+      "gray_p95",
+      "gray_contrast",
+      "vignette",
+      "pat_n",
+      "pat_age_min",
+      "pat_site_nunique",
+      "ud_core_m_r",
+      "pm_core_m_r",
+      "ud_core_m_g",
+      "pm_core_m_g",
+      "ud_core_m_b",
+      "pm_core_m_b",
+      "ud_gray_m",
+      "pm_gray_m",
+      "ud_gray_contrast",
+      "pm_gray_contrast",
+      "ud_contrast_r",
+      "pm_contrast_r",
+      "ud_contrast_b",
+      "pm_contrast_b",
+      "ud_gray_s",
+      "pm_gray_s",
+      "ud_grad_m",
+      "pm_grad_m"
+    ],
+    "n_features": 54,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.8751622510285941,
+        0.8818633819963784,
+        0.8912532694950569,
+        0.8737710620274792,
+        0.9075531863605998
+      ],
+      "patient_grouped_auc": 0.8855636662055566
+    },
+    "notes": "tag=lgb_meta; no class weighting; features = metadata + resolution + prep-time colour/texture stats + patient-relative (ugly duckling)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-29T19:32:35",
+    "model": "XGB metadata+imagestats",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.886679,
+    "features": [
+      "sex_n",
+      "age",
+      "site",
+      "site_na",
+      "area",
+      "aspect",
+      "long_side",
+      "res_id",
+      "m_r",
+      "m_g",
+      "m_b",
+      "s_r",
+      "s_g",
+      "s_b",
+      "core_m_r",
+      "core_m_g",
+      "core_m_b",
+      "core_s_r",
+      "core_s_g",
+      "core_s_b",
+      "ring_m_r",
+      "ring_m_g",
+      "ring_m_b",
+      "contrast_r",
+      "contrast_g",
+      "contrast_b",
+      "gray_m",
+      "gray_s",
+      "grad_m",
+      "gray_p5",
+      "gray_p95",
+      "gray_contrast",
+      "vignette",
+      "pat_n",
+      "pat_age_min",
+      "pat_site_nunique",
+      "ud_core_m_r",
+      "pm_core_m_r",
+      "ud_core_m_g",
+      "pm_core_m_g",
+      "ud_core_m_b",
+      "pm_core_m_b",
+      "ud_gray_m",
+      "pm_gray_m",
+      "ud_gray_contrast",
+      "pm_gray_contrast",
+      "ud_contrast_r",
+      "pm_contrast_r",
+      "ud_contrast_b",
+      "pm_contrast_b",
+      "ud_gray_s",
+      "pm_gray_s",
+      "ud_grad_m",
+      "pm_grad_m"
+    ],
+    "n_features": 54,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.8786964829830088,
+        0.8823288694282179,
+        0.89765414795339,
+        0.8696942105640071,
+        0.9059897931775449
+      ],
+      "patient_grouped_auc": 0.8863252897254622
+    },
+    "notes": "tag=xgb_meta; no class weighting; features = metadata + resolution + prep-time colour/texture stats + patient-relative (ugly duckling)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-29T19:32:49",
+    "model": "CAT metadata+imagestats",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.891707,
+    "features": [
+      "sex_n",
+      "age",
+      "site",
+      "site_na",
+      "area",
+      "aspect",
+      "long_side",
+      "res_id",
+      "m_r",
+      "m_g",
+      "m_b",
+      "s_r",
+      "s_g",
+      "s_b",
+      "core_m_r",
+      "core_m_g",
+      "core_m_b",
+      "core_s_r",
+      "core_s_g",
+      "core_s_b",
+      "ring_m_r",
+      "ring_m_g",
+      "ring_m_b",
+      "contrast_r",
+      "contrast_g",
+      "contrast_b",
+      "gray_m",
+      "gray_s",
+      "grad_m",
+      "gray_p5",
+      "gray_p95",
+      "gray_contrast",
+      "vignette",
+      "pat_n",
+      "pat_age_min",
+      "pat_site_nunique",
+      "ud_core_m_r",
+      "pm_core_m_r",
+      "ud_core_m_g",
+      "pm_core_m_g",
+      "ud_core_m_b",
+      "pm_core_m_b",
+      "ud_gray_m",
+      "pm_gray_m",
+      "ud_gray_contrast",
+      "pm_gray_contrast",
+      "ud_contrast_r",
+      "pm_contrast_r",
+      "ud_contrast_b",
+      "pm_contrast_b",
+      "ud_gray_s",
+      "pm_gray_s",
+      "ud_grad_m",
+      "pm_grad_m"
+    ],
+    "n_features": 54,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.8847217201191275,
+        0.891440828533527,
+        0.9013609965864254,
+        0.871699387193469,
+        0.9113222036267967
+      ],
+      "patient_grouped_auc": 0.8915684338409733
+    },
+    "notes": "tag=cat_meta; no class weighting; features = metadata + resolution + prep-time colour/texture stats + patient-relative (ugly duckling)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 6,
+    "timestamp": "2026-07-29T19:32:59",
+    "model": "LGB feature-block ablation",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.872444,
+    "notes": "no_res=0.87158; no_pat=0.87244; no_imgstats=0.82114; full=0.88574"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 7,
+    "timestamp": "2026-07-29T20:26:29",
+    "model": "backbone x LR discovery sweep (fold 0, 2 epochs, 256px)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.885311,
+    "cv": {
+      "scheme": "fold 0 of StratifiedKFold(5) by image, single fold"
+    },
+    "notes": "resnet18@0.0001=0.7936; resnet18@0.0003=0.8672; resnet18@0.001=0.8551; resnet50@0.0001=0.7608; resnet50@0.0003=0.8393; resnet50@0.001=0.8694; efficientnet_b0@0.0001=0.7686; efficientnet_b0@0.0003=0.8231; efficientnet_b0@0.001=0.8782; efficientnet_b3@0.0001=0.7868; efficientnet_b3@0.0003=0.8489; efficientnet_b3@0.001=0.8716; convnext_tiny@0.0001=0.8643; convnext_tiny@0.0003=0.8468; convnext_tiny@0.001=0.7775; vit_small_patch16_224@0.0001=0.8853; vit_small_patch16_224@0.0003=0.8686; vit_small_patch16_224@0.001=0.8173 | per-backbone LR sweep is mandatory (vision_experience.md)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 8,
+    "timestamp": "2026-07-29T21:16:12",
+    "model": "vit_small_patch16_224",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.92309,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image \u2014 regime-matched to mle-bench split",
+      "per_fold": [
+        0.9138752603763192,
+        0.9282723084425439,
+        0.9250445878986907,
+        0.9189915462026115,
+        0.9314018195968237
+      ],
+      "patient_grouped_auc": 0.9229497687866764
+    },
+    "notes": "tag=vit_small_256; 256px, lr=0.0001, 10ep, bs=96, aug=medium, seed=42, 4x flip TTA, bf16, no class weighting; wall 2942s"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 9,
+    "timestamp": "2026-07-29T22:04:42",
+    "model": "efficientnet_b0",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.884467,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image \u2014 regime-matched to mle-bench split",
+      "per_fold": [
+        0.8728941796209265,
+        0.9016627961301455,
+        0.8957095017408889,
+        0.8941092821263056,
+        0.9099550954909537
+      ],
+      "patient_grouped_auc": 0.8844012359342722
+    },
+    "notes": "tag=effb0_256; 256px, lr=0.001, 10ep, bs=96, aug=medium, seed=42, 4x flip TTA, bf16, no class weighting; wall 2883s"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 10,
+    "timestamp": "2026-07-29T22:45:45",
+    "model": "convex rank blend (vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.929783,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.920248239770008,
+        0.9324634004112657,
+        0.934177007990015,
+        0.9225065730917574,
+        0.9395218220762137
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.6666666666666666
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.1111111111111111
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.1111111111111111
+      },
+      {
+        "tag": "effb0_256",
+        "solo_auc": 0.8844669275661845,
+        "weight": 0.1111111111111111
+      },
+      {
+        "tag": "lr_allfeat",
+        "solo_auc": 0.8546713139179342,
+        "weight": 0.0
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9295365558867295,
+      "equal_weight": 0.9148867186288459,
+      "leave_fold_out": 0.929783408667852,
+      "patient_grouped": 0.9294903208344822
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 11,
+    "timestamp": "2026-07-29T22:46:13",
+    "model": "convex rank blend (vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.929482,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9204203894024687,
+        0.9324634004112657,
+        0.9338274661455935,
+        0.9214144679632111,
+        0.939284213861168
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.6551724137931034
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.1206896551724138
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.1206896551724138
+      },
+      {
+        "tag": "effb0_256",
+        "solo_auc": 0.8844669275661845,
+        "weight": 0.10344827586206896
+      },
+      {
+        "tag": "lr_allfeat",
+        "solo_auc": 0.8546713139179342,
+        "weight": 0.0
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9295758215859741,
+      "equal_weight": 0.9148867186288459,
+      "leave_fold_out": 0.9294819875567415,
+      "patient_grouped": 0.9295430906827283
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 12,
+    "timestamp": "2026-07-29T23:34:30",
+    "model": "vit_small_patch16_224",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.92596,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image \u2014 regime-matched to mle-bench split",
+      "per_fold": [
+        0.9172571399060062,
+        0.9168422901299613,
+        0.9291640664163606,
+        0.9275561739320217,
+        0.941033561299476
+      ],
+      "patient_grouped_auc": 0.9258896709808437
+    },
+    "notes": "tag=vit_small_384; 384px, lr=0.0001, 8ep, bs=64, aug=medium, seed=42, 4x flip TTA, bf16, no class weighting; wall 5345s"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 13,
+    "timestamp": "2026-07-29T23:34:48",
+    "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.931956,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9238530530737317,
+        0.9276925805054546,
+        0.9369648173345474,
+        0.9269457545159101,
+        0.9443256403369216
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "vit_small_384",
+        "solo_auc": 0.9259598169828154,
+        "weight": 0.4166666666666667
+      },
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.3333333333333333
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.08333333333333333
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.1111111111111111
+      },
+      {
+        "tag": "effb0_256",
+        "solo_auc": 0.8844669275661845,
+        "weight": 0.05555555555555555
+      },
+      {
+        "tag": "lr_allfeat",
+        "solo_auc": 0.8546713139179342,
+        "weight": 0.0
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9327392265293989,
+      "equal_weight": 0.9210305168084922,
+      "leave_fold_out": 0.931956369153313,
+      "patient_grouped": 0.9326837940503317
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 14,
+    "timestamp": "2026-07-29T23:46:04",
+    "model": "LGB level-2 stack (member ranks + metadata context)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.926787,
+    "features": [
+      "m_vit_small_384",
+      "m_vit_small_256",
+      "m_effb0_256",
+      "m_cat_meta",
+      "m_xgb_meta",
+      "m_lgb_meta",
+      "age",
+      "sex_n",
+      "site",
+      "res_id",
+      "area",
+      "pat_n",
+      "gray_m",
+      "vignette"
+    ],
+    "n_features": 14,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image, nested (members are OOF)",
+      "per_fold": [
+        0.9181221918091205,
+        0.9221595888705877,
+        0.9317182795038893,
+        0.9202140901170028,
+        0.9448043003643325
+      ],
+      "patient_grouped_auc": 0.9267616813562405
+    },
+    "notes": "tag=stack; members=['vit_small_384', 'vit_small_256', 'effb0_256', 'cat_meta', 'xgb_meta', 'lgb_meta']; shallow+regularised (leaves 7, mcs 80) because level-2 data is small in effective positives (513)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 15,
+    "timestamp": "2026-07-30T00:45:52",
+    "model": "resnet50",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.891663,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image \u2014 regime-matched to mle-bench split",
+      "per_fold": [
+        0.8894196835889754,
+        0.8781940451710368,
+        0.9091259407790862,
+        0.894087116058123,
+        0.8958707824541828
+      ],
+      "patient_grouped_auc": 0.8917870862430682
+    },
+    "notes": "tag=resnet50_256; 256px, lr=0.001, 10ep, bs=96, aug=medium, seed=42, 4x flip TTA, bf16, no class weighting; wall 4219s"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 16,
+    "timestamp": "2026-07-30T00:56:23",
+    "model": "convex rank blend (stack + vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.932033,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9237712819983129,
+        0.9276746771426916,
+        0.9370551866894465,
+        0.9272918861959958,
+        0.9443721289007349
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "stack",
+        "solo_auc": 0.926787443438736,
+        "weight": 0.02040816326530612
+      },
+      {
+        "tag": "vit_small_384",
+        "solo_auc": 0.9259598169828154,
+        "weight": 0.42857142857142855
+      },
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.32653061224489793
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.08163265306122448
+      },
+      {
+        "tag": "resnet50_256",
+        "solo_auc": 0.8916632998126817,
+        "weight": 0.0
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.10204081632653061
+      },
+      {
+        "tag": "effb0_256",
+        "solo_auc": 0.8844669275661845,
+        "weight": 0.04081632653061224
+      },
+      {
+        "tag": "lr_allfeat",
+        "solo_auc": 0.8546713139179342,
+        "weight": 0.0
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9327098885134855,
+      "equal_weight": 0.9229524820680364,
+      "leave_fold_out": 0.9320330321854364,
+      "patient_grouped": 0.9326247970724548
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 17,
+    "timestamp": "2026-07-30T00:56:40",
+    "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.932039,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9242068205684381,
+        0.9270634051854959,
+        0.9372086440845585,
+        0.9275186621243277,
+        0.9441982272360998
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "vit_small_384",
+        "solo_auc": 0.9259598169828154,
+        "weight": 0.4666666666666667
+      },
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.3333333333333333
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.1
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.1
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9325353666871998,
+      "equal_weight": 0.9218815589037181,
+      "leave_fold_out": 0.9320391518397841,
+      "patient_grouped": 0.9324107365705874
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 18,
+    "timestamp": "2026-07-30T00:56:46",
+    "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.932039,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9242068205684382,
+        0.9270634051854959,
+        0.9372086440845585,
+        0.9275186621243279,
+        0.9441982272361
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "vit_small_384",
+        "solo_auc": 0.9259598169828154,
+        "weight": 0.4666666666666667
+      },
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.3333333333333333
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.1
+      },
+      {
+        "tag": "resnet50_256",
+        "solo_auc": 0.8916632998126817,
+        "weight": 0.0
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.1
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9325352982204183,
+      "equal_weight": 0.9221610745395796,
+      "leave_fold_out": 0.9320391518397841,
+      "patient_grouped": 0.9324107365705874
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 19,
+    "timestamp": "2026-07-30T00:56:50",
+    "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.931836,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9239606465940196,
+        0.9275459434390144,
+        0.937351870986663,
+        0.9267053379302349,
+        0.9436179810877635
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "vit_small_384",
+        "solo_auc": 0.9259598169828154,
+        "weight": 0.4727272727272727
+      },
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.34545454545454546
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.18181818181818182
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9322016938270966,
+      "equal_weight": 0.930610628523001,
+      "leave_fold_out": 0.931836356007539,
+      "patient_grouped": 0.9320933750935966
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 20,
+    "timestamp": "2026-07-30T01:08:48",
+    "model": "convex rank blend (stack + vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.932033,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9237712819983129,
+        0.9276746771426916,
+        0.9370551866894465,
+        0.9272918861959958,
+        0.9443721289007349
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "stack",
+        "solo_auc": 0.926787443438736,
+        "weight": 0.02040816326530612
+      },
+      {
+        "tag": "vit_small_384",
+        "solo_auc": 0.9259598169828154,
+        "weight": 0.42857142857142855
+      },
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.32653061224489793
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.08163265306122448
+      },
+      {
+        "tag": "resnet50_256",
+        "solo_auc": 0.8916632998126817,
+        "weight": 0.0
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.10204081632653061
+      },
+      {
+        "tag": "effb0_256",
+        "solo_auc": 0.8844669275661845,
+        "weight": 0.04081632653061224
+      },
+      {
+        "tag": "lr_allfeat",
+        "solo_auc": 0.8546713139179342,
+        "weight": 0.0
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9327098885134855,
+      "equal_weight": 0.9229524820680364,
+      "leave_fold_out": 0.9320330321854364,
+      "patient_grouped": 0.9326247970724548
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 21,
+    "timestamp": "2026-07-30T01:08:49",
+    "model": "FINAL SUBMISSION (tag=blend)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.932033,
+    "submission": "submission.csv",
+    "notes": "honest leave-fold-out CV of the submitted predictor; 4142 rows, id order verified against sample_submission.csv; min-max scaled (rank-preserving, AUC unaffected)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 22,
+    "timestamp": "2026-07-30T01:55:24",
+    "model": "vit_small_patch16_224",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.920239,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image \u2014 regime-matched to mle-bench split",
+      "per_fold": [
+        0.9137211864552669,
+        0.9257862986417316,
+        0.9280864544862417,
+        0.9143520176237293,
+        0.9264060207855535
+      ],
+      "patient_grouped_auc": 0.9200698667805774
+    },
+    "notes": "tag=vit_small_320; 320px, lr=0.0001, 9ep, bs=80, aug=medium, seed=2024, 4x flip TTA, bf16, no class weighting; wall 4133s"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 23,
+    "timestamp": "2026-07-30T01:55:37",
+    "model": "LGB level-2 stack (member ranks + metadata context)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.925665,
+    "features": [
+      "m_vit_small_384",
+      "m_vit_small_320",
+      "m_vit_small_256",
+      "m_resnet50_256",
+      "m_effb0_256",
+      "m_cat_meta",
+      "m_xgb_meta",
+      "m_lgb_meta",
+      "age",
+      "sex_n",
+      "site",
+      "res_id",
+      "area",
+      "pat_n",
+      "gray_m",
+      "vignette"
+    ],
+    "n_features": 16,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image, nested (members are OOF)",
+      "per_fold": [
+        0.9186145397579577,
+        0.9235790697753725,
+        0.9302996511401884,
+        0.9171943895976346,
+        0.9424264964152151
+      ],
+      "patient_grouped_auc": 0.9255341473501459
+    },
+    "notes": "tag=stack; members=['vit_small_384', 'vit_small_320', 'vit_small_256', 'resnet50_256', 'effb0_256', 'cat_meta', 'xgb_meta', 'lgb_meta']; shallow+regularised (leaves 7, mcs 80) because level-2 data is small in effective positives (513)"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 24,
+    "timestamp": "2026-07-30T01:55:46",
+    "model": "convex rank blend (vit_small_384 + vit_small_256 + vit_small_320 + cat_meta + lgb_meta + effb0_256)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.932141,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9244418048167466,
+        0.9290251022196759,
+        0.9374968029709352,
+        0.9260983286784591,
+        0.9436420862689999
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "vit_small_384",
+        "solo_auc": 0.9259598169828154,
+        "weight": 0.3877551020408163
+      },
+      {
+        "tag": "stack",
+        "solo_auc": 0.9256645539871868,
+        "weight": 0.0
+      },
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.2857142857142857
+      },
+      {
+        "tag": "vit_small_320",
+        "solo_auc": 0.9202394858473342,
+        "weight": 0.10204081632653061
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.08163265306122448
+      },
+      {
+        "tag": "resnet50_256",
+        "solo_auc": 0.8916632998126817,
+        "weight": 0.0
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.10204081632653061
+      },
+      {
+        "tag": "effb0_256",
+        "solo_auc": 0.8844669275661845,
+        "weight": 0.04081632653061224
+      },
+      {
+        "tag": "lr_allfeat",
+        "solo_auc": 0.8546713139179342,
+        "weight": 0.0
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9329135771887307,
+      "equal_weight": 0.9251695391562551,
+      "leave_fold_out": 0.9321408249909633,
+      "patient_grouped": 0.9327751434561048
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 25,
+    "timestamp": "2026-07-30T01:55:53",
+    "model": "FINAL SUBMISSION (tag=blend)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.932141,
+    "submission": "submission.csv",
+    "notes": "honest leave-fold-out CV of the submitted predictor; 4142 rows, id order verified against sample_submission.csv; min-max scaled (rank-preserving, AUC unaffected)"
+  }
+]

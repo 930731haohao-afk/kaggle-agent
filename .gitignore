@@ -48,3 +48,7 @@ competitions/**/*.npz
 competitions/*/submissions/*.csv
 competitions/*/scripts/cache*/
 external_data/cache/
+
+# heavy lane outputs (regenerable; not part of the record chain)
+competitions/*/cache/
+competitions/*/scripts/work/

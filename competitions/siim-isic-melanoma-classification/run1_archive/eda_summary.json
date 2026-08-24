@@ -1,0 +1,10 @@
+{
+  "n_train": 28984,
+  "n_test": 4142,
+  "pos_rate": 0.017699420369859234,
+  "n_pos": 513,
+  "patients_train": 2056,
+  "patients_test": 1457,
+  "patient_overlap": 1457,
+  "diagnosis_in_test": false
+}

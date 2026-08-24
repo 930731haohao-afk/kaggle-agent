@@ -1,0 +1,92 @@
+warning: `VIRTUAL_ENV=/home/tjyen/pytorch/.venv` does not match the project environment path `/home/tjyen/ai_agents/kaggle/.venv` and will be ignored; use `--active` to target the active environment instead
+[transformers] The tokenizer you are loading from 'microsoft/deberta-v3-large' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+Loading weights:   0%|          | 0/390 [00:00<?, ?it/s]Loading weights: 100%|██████████| 390/390 [00:00<00:00, 4370.50it/s]
+[transformers] [1mDebertaV2Model LOAD REPORT[0m from: microsoft/deberta-v3-large
+Key                                     | Status     |  | 
+----------------------------------------+------------+--+-
+mask_predictions.classifier.weight      | UNEXPECTED |  | 
+mask_predictions.dense.weight           | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED |  | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED |  | 
+mask_predictions.classifier.bias        | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED |  | 
+lm_predictions.lm_head.bias             | UNEXPECTED |  | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED |  | 
+mask_predictions.dense.bias             | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+fold 0 epoch 0: loss=0.56295 gnorm=1.730 val_r=0.8032 pred_std=0.2246 pred_mean=0.3721 skipped=0 (169s)
+fold 0 epoch 1: loss=0.51408 gnorm=1.256 val_r=0.8188 pred_std=0.2216 pred_mean=0.3401 skipped=0 (339s)
+fold 0 epoch 2: loss=0.49250 gnorm=0.849 val_r=0.8126 pred_std=0.2413 pred_mean=0.3536 skipped=0 (508s)
+fold 0 best r=0.8188 time=8.5min
+Loading weights:   0%|          | 0/390 [00:00<?, ?it/s]Loading weights:   1%|          | 3/390 [00:00<00:30, 12.54it/s]Loading weights: 100%|██████████| 390/390 [00:00<00:00, 1599.15it/s]
+[transformers] [1mDebertaV2Model LOAD REPORT[0m from: microsoft/deberta-v3-large
+Key                                     | Status     |  | 
+----------------------------------------+------------+--+-
+mask_predictions.classifier.weight      | UNEXPECTED |  | 
+mask_predictions.dense.weight           | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED |  | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED |  | 
+mask_predictions.classifier.bias        | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED |  | 
+lm_predictions.lm_head.bias             | UNEXPECTED |  | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED |  | 
+mask_predictions.dense.bias             | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+fold 1 epoch 0: loss=0.56778 gnorm=1.910 val_r=0.8155 pred_std=0.2214 pred_mean=0.3643 skipped=0 (168s)
+fold 1 epoch 1: loss=0.51804 gnorm=1.336 val_r=0.8235 pred_std=0.2293 pred_mean=0.3591 skipped=0 (338s)
+fold 1 epoch 2: loss=0.49694 gnorm=0.849 val_r=0.8210 pred_std=0.2344 pred_mean=0.3482 skipped=0 (509s)
+fold 1 best r=0.8235 time=8.5min
+Loading weights:   0%|          | 0/390 [00:00<?, ?it/s]Loading weights:   1%|          | 3/390 [00:00<00:30, 12.67it/s]Loading weights: 100%|██████████| 390/390 [00:00<00:00, 1613.59it/s]
+[transformers] [1mDebertaV2Model LOAD REPORT[0m from: microsoft/deberta-v3-large
+Key                                     | Status     |  | 
+----------------------------------------+------------+--+-
+mask_predictions.classifier.weight      | UNEXPECTED |  | 
+mask_predictions.dense.weight           | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED |  | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED |  | 
+mask_predictions.classifier.bias        | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED |  | 
+lm_predictions.lm_head.bias             | UNEXPECTED |  | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED |  | 
+mask_predictions.dense.bias             | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+fold 2 epoch 0: loss=0.56554 gnorm=1.753 val_r=0.8143 pred_std=0.2279 pred_mean=0.3716 skipped=0 (168s)
+fold 2 epoch 1: loss=0.51574 gnorm=1.197 val_r=0.8228 pred_std=0.2270 pred_mean=0.3408 skipped=0 (338s)
+fold 2 epoch 2: loss=0.49502 gnorm=0.787 val_r=0.8169 pred_std=0.2350 pred_mean=0.3402 skipped=0 (508s)
+fold 2 best r=0.8228 time=8.5min
+Loading weights:   0%|          | 0/390 [00:00<?, ?it/s]Loading weights:   1%|          | 3/390 [00:00<00:31, 12.33it/s]Loading weights: 100%|██████████| 390/390 [00:00<00:00, 1571.78it/s]
+[transformers] [1mDebertaV2Model LOAD REPORT[0m from: microsoft/deberta-v3-large
+Key                                     | Status     |  | 
+----------------------------------------+------------+--+-
+mask_predictions.classifier.weight      | UNEXPECTED |  | 
+mask_predictions.dense.weight           | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.bias   | UNEXPECTED |  | 
+mask_predictions.LayerNorm.weight       | UNEXPECTED |  | 
+mask_predictions.classifier.bias        | UNEXPECTED |  | 
+lm_predictions.lm_head.LayerNorm.weight | UNEXPECTED |  | 
+lm_predictions.lm_head.bias             | UNEXPECTED |  | 
+mask_predictions.LayerNorm.bias         | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.bias       | UNEXPECTED |  | 
+mask_predictions.dense.bias             | UNEXPECTED |  | 
+lm_predictions.lm_head.dense.weight     | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+fold 3 epoch 0: loss=0.56483 gnorm=1.920 val_r=0.8143 pred_std=0.2260 pred_mean=0.3672 skipped=0 (168s)
+fold 3 epoch 1: loss=0.51557 gnorm=1.315 val_r=0.8188 pred_std=0.2351 pred_mean=0.3540 skipped=0 (338s)
+fold 3 epoch 2: loss=0.49347 gnorm=0.849 val_r=0.8146 pred_std=0.2380 pred_mean=0.3510 skipped=0 (508s)
+fold 3 best r=0.8188 time=8.5min
+OOF Pearson r = 0.81967  folds=[0.81877, 0.82346, 0.82279, 0.81883]
+submission written

@@ -1,0 +1,129 @@
+[
+  {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-28T19:43:20",
+    "model": "lightgbm-lexical-tfidf-baseline",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.611275,
+    "features": [
+      "cos_char",
+      "cos_word",
+      "jaccard",
+      "n_common",
+      "len_a",
+      "len_t",
+      "nw_a",
+      "nw_t",
+      "len_ratio",
+      "a_in_t",
+      "t_in_a",
+      "same_first_word",
+      "context_code",
+      "section"
+    ],
+    "n_features": 14,
+    "cv": {
+      "scheme": "StratifiedKFold5_on_score",
+      "seed": 42
+    },
+    "submission": "submissions/baseline_lgbm.csv",
+    "notes": "Char/word TF-IDF cosine + lexical overlap + context codes. Safety baseline."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 2,
+    "timestamp": "2026-07-28T20:01:01",
+    "model": "deberta_base_s42-meanpool-bce",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.805999,
+    "features": [
+      "anchor [SEP] target [SEP] section-title context-code"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "GroupKFold4_by_anchor",
+      "seed": 42,
+      "fold_scores": [
+        0.81137,
+        0.8079,
+        0.79855,
+        0.80904
+      ]
+    },
+    "submission": "submissions/deberta_base_s42.csv",
+    "notes": "microsoft/deberta-v3-base mean-pool head, BCEWithLogits, lr=2e-05, head_lr=0.0001, batch=32, epochs=3, amp=bf16, opt=fused, max_len=96."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 3,
+    "timestamp": "2026-07-28T20:35:17",
+    "model": "deberta_large_s42-meanpool-bce",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.819674,
+    "features": [
+      "anchor [SEP] target [SEP] section-title context-code"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "GroupKFold4_by_anchor",
+      "seed": 42,
+      "fold_scores": [
+        0.81877,
+        0.82346,
+        0.82279,
+        0.81883
+      ]
+    },
+    "submission": "submissions/deberta_large_s42.csv",
+    "notes": "microsoft/deberta-v3-large mean-pool head, BCEWithLogits, lr=1e-05, head_lr=0.0001, batch=32, epochs=3, amp=bf16, opt=fused, max_len=96."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 4,
+    "timestamp": "2026-07-28T21:09:27",
+    "model": "deberta_large_s1337-meanpool-bce",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.821296,
+    "features": [
+      "anchor [SEP] target [SEP] section-title context-code"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "GroupKFold4_by_anchor",
+      "seed": 1337,
+      "fold_scores": [
+        0.81865,
+        0.82318,
+        0.82273,
+        0.82216
+      ]
+    },
+    "submission": "submissions/deberta_large_s1337.csv",
+    "notes": "microsoft/deberta-v3-large mean-pool head, BCEWithLogits, lr=1e-05, head_lr=0.0001, batch=32, epochs=3, amp=bf16, opt=fused, max_len=96."
+  },
+  {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T21:09:33",
+    "model": "ensemble-run2-nnls_all",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.831841,
+    "features": [
+      "OOF blend of large_s42, large_s1337, base_s42, lgbm"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "GroupKFold4_by_anchor",
+      "seed": 42,
+      "note": "honest = leave-fold-out NNLS refit; full-OOF score also reported"
+    },
+    "submission": "submissions/ensemble_run2_nnls_all.csv",
+    "notes": "Candidates: [('solo_large_s42', 0.81967), ('solo_large_s1337', 0.8213), ('solo_base_s42', 0.806), ('solo_lgbm', 0.61127), ('mean_larges', 0.82598), ('mean_all_deberta', 0.83015), ('nnls_larges', 0.82597), ('nnls_deberta', 0.83003), ('nnls_all', 0.83184)]. Chosen nnls_all: honest 0.83184, full-OOF 0.83206."
+  }
+]

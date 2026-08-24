@@ -127,6 +127,56 @@ Run from project root (`/home/tjyen/ai_agents/kaggle`), in order:
    full set, regenerate `docs/ml_specs/README.md`'s results table and confirm `RUBRIC.md`
    still passes 8/8.
 
+## DL / special-lane path (ANY non-GBDT / complex-modality lane)
+
+Some lanes do not run the GBDT tree-search pipeline — deep-learning fallbacks of **any
+modality**: vision, NLP, audio, video, multimodal, sequence/time-series models, and any
+future complex competition. Their records differ, so `collect.py` does not apply.
+
+**Decision rule — which extractor?**
+- Workspace contains GBDT tree-search records (`experiments_tree*.json`) → it is a GBDT
+  pipeline lane → use `collect.py` (steps above).
+- Otherwise (DL fallback / complex lane, whatever the modality) → use
+  `benchmark_infra/collect_dl_facts.py`. The tool enforces this itself: pointed at a GBDT
+  lane it exits with a clear "use collect.py" message instead of overwriting that
+  pipeline's facts.json (override: `--force`, ideally with `--out`).
+
+1. **Collect facts with the generic DL/complex extractor**:
+   ```bash
+   VIRTUAL_ENV= uv run python benchmark_infra/collect_dl_facts.py competitions/<name> \
+       [--grade-record PATH] [--out PATH] [--force]
+   ```
+   Nothing is hardcoded to specific competitions or filenames — records are **discovered
+   by glob** in the workspace: `config.yaml|yml`, `experiments*.json` (schema-v2 entries
+   verbatim; primary = `experiments.json`), `STATUS.md` (parsed sections),
+   `headless*.log` (verbatim), `cv_result*.json`, `res_*.json`, `*_results.json`,
+   `discovery*.json`, `dossier.json`, `eda_summary*.json`, `scripts/*_cv.json`,
+   `scripts/*decision*.json`, `scripts/*_results.json`, plus deterministic greps of
+   `scripts/*.py` (SEED constant, loss / optimizer / LR-scheduler identifiers actually
+   referenced) and row counts of `submission*.csv` / `submissions/*.csv`. Offline grade
+   records are looked up generically: `benchmark_results/run2/<comp>__*.json` first, then
+   any `<comp>__*.json` under `benchmark_results/`; none found → grading is recorded as
+   `"not recorded"` (or pass `--grade-record PATH` explicitly). **Metric name/direction
+   come only from records** (config → dossier; config → experiment entries → grade
+   record `is_lower_better`) — never from a lookup table of known competitions. Absent
+   records land in `missing` → the report writes "not recorded". Nothing is ever guessed.
+2. **DL fields are NATIVE, not translated** — Hard Rule 3's DL→GBDT convention does not
+   apply. Fill backbone, learning-rate schedule, batch size, epochs, augmentation, and
+   transfer learning directly from the records (e.g. OneCycleLR / cosine+warmup,
+   pretrained DeBERTa-v3 / ImageNet timm backbones, dihedral augmentation). Only mark a
+   DL field N/A when the records genuinely show it was absent (e.g. no augmentation used).
+3. **Grading is offline (MLE-bench-style), not a live leaderboard** — the grade record
+   (score + medal thresholds/flags) is the only external anchor. Say so explicitly in the
+   header blockquote, the Splitting-strategy LB status, and the Benchmarking section, and
+   benchmark against **all** graded agents found in the record set (e.g. NVIDIA, AIDE),
+   noting their approaches are not recorded in the grade files.
+
+The rest of the pipeline (5-section structure, rubric, `verify_report.py` against the DL
+facts.json, `md2pdf.sh`) is unchanged. Reports live at `docs/ml_specs/<comp>.md` (+ `md/`,
+`pdf/` copies) like every other lane. Existing examples: `ventilator-pressure-prediction`
+(time-series BiLSTM), `us-patent-phrase-to-phrase-matching` (NLP transformers),
+`siim-isic-melanoma-classification` (vision) — examples, not an exhaustive list.
+
 ## Notes
 
 - The **vs-NVIDIA reproduce-agent** benchmark (Evaluation §) draws on the benchmark record

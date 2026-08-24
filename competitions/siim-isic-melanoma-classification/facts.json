@@ -1,0 +1,1973 @@
+{
+  "competition": {
+    "name": "siim-isic-melanoma-classification",
+    "url": "https://www.kaggle.com/competitions/siim-isic-melanoma-classification",
+    "description": "Identify melanoma in lesion images. Predict the probability (`target`) that each skin lesion image in the test set is malignant, using the image plus patient-level metadata (age, sex, anatomical site).",
+    "problem_type": "binary classification (probability output)",
+    "evaluation_metric": "area under the ROC curve (AUC)",
+    "optimization_direction": "maximize",
+    "target_column": "target",
+    "id_column": "image_name",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": true,
+      "internet_access_allowed": false
+    },
+    "notes": "MLE-bench medium-complexity split (prepared data from mle-bench, graded offline against private split). Large image dataset (DICOM + JPEG); heavy class imbalance (~1.8% positive). GPU strongly recommended."
+  },
+  "lane_type": "special/complex (non-GBDT records; collected by collect_dl_facts.py)",
+  "metric": {
+    "name": "area under the ROC curve (AUC)",
+    "name_source": "config:evaluation_metric",
+    "direction": "maximize",
+    "direction_source": "config:optimization_direction"
+  },
+  "grading": {
+    "note": "offline grade record(s) — graded against a held-out split, not a live leaderboard; see competition config notes for grading context",
+    "source_dirs": [
+      "benchmark_results/run2"
+    ],
+    "agents": {
+      "aide": {
+        "competition_id": "siim-isic-melanoma-classification",
+        "score": 0.88579,
+        "gold_threshold": 0.9455,
+        "silver_threshold": 0.9401,
+        "bronze_threshold": 0.937,
+        "median_threshold": 0.9128,
+        "any_medal": false,
+        "gold_medal": false,
+        "silver_medal": false,
+        "bronze_medal": false,
+        "above_median": false,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": false,
+        "created_at": "2026-07-29T15:59:28.923363",
+        "submission_path": "aideml-runs/siim-isic-melanoma-classification/workspaces/0-capybara-of-sufficient-flowers/working/submission.csv"
+      },
+      "my-agent": {
+        "competition_id": "siim-isic-melanoma-classification",
+        "score": 0.93529,
+        "gold_threshold": 0.9455,
+        "silver_threshold": 0.9401,
+        "bronze_threshold": 0.937,
+        "median_threshold": 0.9128,
+        "any_medal": false,
+        "gold_medal": false,
+        "silver_medal": false,
+        "bronze_medal": false,
+        "above_median": true,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": false,
+        "created_at": "2026-07-30T08:43:50.414947",
+        "submission_path": "kaggle/competitions/siim-isic-melanoma-classification/submission.csv"
+      },
+      "nvidia": {
+        "competition_id": "siim-isic-melanoma-classification",
+        "score": 0.89822,
+        "gold_threshold": 0.9455,
+        "silver_threshold": 0.9401,
+        "bronze_threshold": 0.937,
+        "median_threshold": 0.9128,
+        "any_medal": false,
+        "gold_medal": false,
+        "silver_medal": false,
+        "bronze_medal": false,
+        "above_median": false,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": false,
+        "created_at": "2026-07-29T15:59:27.645123",
+        "submission_path": "nvidia-kaggle-runs/siim-isic-melanoma-classification/submission.csv"
+      }
+    }
+  },
+  "status": {
+    "present": true,
+    "sections": {
+      "siim-isic-melanoma-classification — run2 (kaggle-agent)": "**Final CV (ROC-AUC): 0.93214** — honest leave-fold-out score of a 6-member convex rank blend\n(vit_small @384/256/320 px + efficientnet_b0 + CatBoost/LightGBM on metadata & image statistics).\nOptimistic full-OOF counterpart 0.93291; patient-grouped cross-check 0.93278; best solo 0.92596\n(vit_small @384 px). Deliverable: `submission.csv`, 4,142 rows, id order verified against\n`sample_submission.csv`. Run wall time ~6.5 h, all training in the foreground.\n\n---",
+      "1. What was run": "Fresh run2. Everything from the earlier run was moved to `run1_archive/` before starting and was\nnot consulted for any modelling decision; the image caches were rebuilt from `data/jpeg` by this\nrun's own `scripts/prep_images.py`.\n\n| Stage | Output |\n|---|---|\n| 0.5 Problem dossier | `dossier.json` |\n| 1 EDA | `scripts/eda.py`, `eda_summary.json`, `cache/{train,test}_sizes.csv` |\n| 2 Features | `scripts/prep_images.py` (pixels + image statistics), `scripts/common.py` (`build_features`) |\n| 3 Modelling | `scripts/train_meta.py`, `scripts/discover.py`, `scripts/vision.py`, `scripts/finetune.py` |\n| 4 Evaluation / blend | `scripts/blend.py`, `scripts/stack.py`, `blend_results.json` |\n| 5 Submission | `scripts/submit.py`, `submission.csv` |\n\nAll 20 experiments are in `experiments.json` via `experiment_log.log_experiment_v2()`.",
+      "2. The decision that mattered: the split is NOT patient-disjoint": "The real SIIM-ISIC competition has patient-disjoint train/test, which makes\n`StratifiedGroupKFold(patient_id)` the reflexive choice. **That reflex is wrong here.** EDA found\nthat mle-bench re-split the original 33,126-image train set **randomly by image** into\n28,984 / 4,142:\n\n- all **1,457** test patients also appear in train (overlap 1457/1457, 599 patients train-only);\n- per-patient test share mean 0.124, median 0.111, vs an overall test share of 0.125.\n\nSo the graded test set is iid-by-image. A patient-grouped CV would have been measuring a strictly\nharder problem than the one being scored. Primary CV is therefore `StratifiedKFold(5, seed=42)`\non images; every model additionally reports a patient-grouped `StratifiedGroupKFold` score as an\nhonesty check and as a leakage detector.\n\n**The two agreed everywhere** — the largest gap across all 10 members was 0.0004 AUC\n(blend 0.93214 image-level vs 0.93278 patient-grouped). That is a useful negative result: no\nmember is exploiting patient identity, so the choice cost nothing here. The one-line overlap\ncheck remains worth doing every time.",
+      "3. Results": "### Metadata + image-statistic models (no CNN)\nColour/texture statistics are computed for free during JPEG decoding (central-disc \"lesion\" vs\nouter-ring \"skin\" colour, contrast, gradient energy, vignetting), plus resolution and\npatient-relative \"ugly duckling\" z-scores.\n\n| model | CV AUC | patient-grouped |\n|---|---|---|\n| LogisticRegression, sex+age+site only | 0.67148 | 0.67121 |\n| LogisticRegression, all 54 features | 0.85467 | 0.85418 |\n| LightGBM | 0.88574 | 0.88556 |\n| XGBoost | 0.88668 | 0.88633 |\n| **CatBoost** | **0.89171** | 0.89157 |\n\nFeature-block ablation (LightGBM, identical folds, vs 0.88574 full):\n\n| removed block | CV AUC | Δ |\n|---|---|---|\n| image colour/texture statistics | 0.82114 | **−0.06460** |\n| image resolution | 0.87158 | −0.01417 |\n| patient-relative (ugly duckling) | 0.87244 | −0.01330 |\n\nThe cheap image statistics are by far the largest tabular lever, and `ud_*` patient-relative\nz-scores occupy 8 of the top-20 LightGBM importances — the clinical \"ugly duckling\" sign\n(a lesion is suspicious *relative to that patient's other moles*) shows up directly in the model.\n\n### Vision — discovery sweep (fold 0, 2 epochs, 256 px, 18 configs, 52 min)\nPer-backbone LR mini-sweep, as `knowledge/vision_experience.md` requires:\n\n| backbone | 1e-4 | 3e-4 | 1e-3 | best |\n|---|---|---|---|---|\n| vit_small_patch16_224 | **0.8853** | 0.8686 | 0.8173 | 1e-4 |\n| efficientnet_b0 | 0.7686 | 0.8231 | **0.8782** | 1e-3 |\n| efficientnet_b3 | 0.7868 | 0.8489 | **0.8716** | 1e-3 |\n| resnet50 | 0.7608 | 0.8393 | **0.8694** | 1e-3 |\n| resnet18 | 0.7936 | **0.8672** | 0.8551 | 3e-4 |\n| convnext_tiny | **0.8643** | 0.8468 | 0.7775 | 1e-4 |\n\nCNNs peak at 1e-3, ViT/ConvNeXt at 1e-4 — the pattern now holds on a 5th domain.\n\n### Vision — full 5-fold fine-tunes (bf16, dihedral aug, 4× flip TTA, no class weighting)\n\n| tag | backbone | px | ep | CV AUC | patient-grouped | wall |\n|---|---|---|---|---|---|---|\n| vit_small_384 | vit_small_patch16_224 | 384 | 8 | **0.92596** | 0.92589 | 89 min |\n| vit_small_256 | vit_small_patch16_224 | 256 | 10 | 0.92309 | 0.92295 | 49 min |\n| vit_small_320 | vit_small_patch16_224 (seed 2024) | 320 | 9 | 0.92024 | 0.92007 | 69 min |\n| resnet50_256 | resnet50 | 256 | 10 | 0.89166 | 0.89179 | 70 min |\n| effb0_256 | efficientnet_b0 | 256 | 10 | 0.88447 | 0.88440 | 48 min |\n\n### Blend (Stage 4)\nRank-transform each member, then Caruana greedy selection with replacement. Reported score is the\n**leave-fold-out** estimate: weights are refitted on 4 folds and scored on the held-out fold.\n\n| | AUC |\n|---|---|\n| best solo (vit_small_384) | 0.92596 |\n| equal weight, 10 members | 0.92517 |\n| **optimised, full OOF (optimistic)** | 0.93291 |\n| **leave-fold-out (honest — reported CV)** | **0.93214** |\n| patient-grouped cross-check | 0.93278 |\n\nWeights: vit_small_384 0.388, vit_small_256 0.286, vit_small_320 0.102, lgb_meta 0.102,\ncat_meta 0.082, effb0_256 0.041. `resnet50_256`, `xgb_meta`, `lr_allfeat` and the level-2 stack\nwere given zero weight.",
+      "4. What did not work": "- **A level-2 LightGBM stack lost to the convex blend.** Stacking member ranks together with\n  context features (age, site, resolution, patient size) scored 0.92566 solo and earned ~0.02\n  weight before being dropped entirely once vit_small_320 joined. Same direction as the s3e14\n  Ridge-stacking counterexample in `knowledge/experience.md`.\n- **Extra CNN families bought nothing.** Member-set comparison on the honest score:\n  {vit384, vit256, 3× metadata} = 0.93204; + resnet50 = 0.93204; all 10 members = 0.93203. Both\n  CNNs were zero-weighted or near-zero despite resnet50's respectable 0.89166 solo. Architecture\n  diversity is not automatically useful; **input-resolution** diversity within the ViT family was,\n  taking 0.78 of the total weight across three scales.\n- **The discovery-scale gap widened rather than shrank.** vit_small led efficientnet_b0 by 0.007\n  at 2 epochs and by 0.039 at 10 epochs — a direct counterexample to the digit-recognizer prior\n  \"don't over-prune on discovery scores\". Both have been written back to the vision library.",
+      "5. Tree search: deliberately not used — reason": "The skill designates tree search as the preferred Stage 4 loop *\"where the budget justifies it\"*,\nand `references/07_tree_search.md` names the exact fallback that applies here: *\"tiny data /\nextremely expensive evaluation, where a ~60-node budget is unaffordable.\"*\n\nA solo node in this competition is a 5-fold CNN fine-tune costing **48–89 min**. The prescribed\n60-node budget is therefore **50–90 GPU-hours** against a ~8 h budget — two orders of magnitude\nover. Spending the budget instead on one LR sweep plus five full fine-tunes was the right trade:\nthe single largest gain in the run (+0.037 AUC, metadata 0.892 → vit_small 0.926) came from\ntraining a strong backbone at all, which no amount of node-space search over cheap models reaches.\n\nTree search restricted to the *blend layer* (nodes = member subsets and weights, seconds each) was\nconsidered and rejected as redundant: with 10 members the greedy-with-replacement search already\ncovers that space, and the member-set comparison in §4 shows the blend is saturated — three\nstructurally different member sets land within 0.00001 of each other.",
+      "6. Reproducibility": "Seeds fixed (`SEED=42`; vit_small_320 deliberately uses 2024 for decorrelation), folds persisted\nto `cache/r2_folds.csv` and shared by every model so all scores are digit-for-digit comparable.\n`torch.manual_seed` / `cuda.manual_seed_all` / `np.random.seed` are set per fold; cuDNN benchmark\nis on (autotuning is not bit-deterministic across runs — a deliberate speed trade, and the\nconsequence is that CNN OOFs reproduce to ~1e-3 AUC, not bitwise).\n\nOrder: `prep_images.py 256` → `prep_images.py 384` → `prep_images.py 320` → `eda.py` →\n`train_meta.py` → `discover.py` → `finetune.py <backbone> <lr> <px> <ep> <bs> <tag>` ×5 →\n`stack.py` → `blend.py` → `submit.py blend`.",
+      "7. Not submitted to Kaggle": "This is an offline mle-bench lane graded against the held-out private split; no Kaggle upload was\nmade and none was authorised. `submission.csv` is the deliverable."
+    }
+  },
+  "texts": {
+    "headless_run2.log": "Run complete, ~6.5 h, everything foreground.\n\n## Result\n\n**Final CV ROC-AUC 0.93214** (honest leave-fold-out of the convex rank blend). Best solo 0.92596 — `vit_small_patch16_224` @384px. `submission.csv`: 4,142 rows, id order verified against `sample_submission.csv`.\n\n## Decision that mattered\n\nEDA refuted the dossier's split hypothesis. The real SIIM competition is patient-disjoint; **mle-bench re-split the original 33,126 images randomly by image**, so all 1,457 test patients also appear in train (per-patient test share 0.124 vs overall 0.125). `StratifiedGroupKFold(patient_id)` would have measured a harder problem than the graded one. Primary CV = image-level `StratifiedKFold`; patient-grouped reported alongside as a leakage detector — the two agreed within 0.0004 AUC for all 10 members, so no member exploits patient identity.\n\n## Pipeline\n\n| stage | result |\n|---|---|\n| metadata + image stats | CatBoost 0.89171; ablation: image stats −0.065, resolution −0.014, ugly-duckling −0.013 |\n| discovery (18 configs, 52 min) | CNNs peak 1e-3, ViT/ConvNeXt 1e-4 — 5th domain confirming this |\n| 5 full fine-tunes | vit_small 384 **0.92596** / 256 0.92309 / 320 0.92024; resnet50 0.89166; effb0 0.88447 |\n| blend | equal 0.92517, optimised 0.93291, **leave-fold-out 0.93214** |\n\n## Negative results\n\n- **Resolution diversity beat architecture diversity.** Three vit_small scales took 0.78 of blend weight; resnet50 and effb0 got ~0. Three structurally different member sets land within 0.00001.\n- **Discovery-scale gap widened** (0.007 at 2ep → 0.039 at 10ep), contradicting the digit-recognizer prior \"don't over-prune on discovery scores\".\n- **LGB level-2 stack lost to the convex blend** (0.92566 vs 0.93214) — same direction as the s3e14 Ridge-stacking counterexample.\n\n## Tree search skipped — stated in STATUS.md §5\n\nA solo node here is a 5-fold CNN fine-tune costing 48–89 min, so the prescribed 60-node budget is 50–90 GPU-hours against ~8 h. This is exactly the reference's own documented fallback (\"extremely expensive evaluation\"). Blend-layer-only tree search was rejected as redundant given the saturation evidence.\n\n25 experiments logged via `log_experiment_v2()`; insights written back to `knowledge/experience.md` and `knowledge/vision_experience.md`; `dossier.json` carries the `eda_verdict`. Run1 outputs archived to `run1_archive/` and not used for any modelling decision.\n\nOne honest gap: dihedral augmentation was adopted but never ablated against no-aug, so its contribution is unmeasured.\n"
+  },
+  "experiments": [
+    {
+      "schema_version": 2,
+      "experiment_id": 1,
+      "timestamp": "2026-07-29T19:32:21",
+      "model": "LogisticRegression (lr_base3)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.671476,
+      "features": [
+        "sex_n",
+        "age",
+        "site"
+      ],
+      "n_features": 3,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image — regime-matched to mle-bench split",
+        "per_fold": [
+          0.6940582554356246,
+          0.6866144229490418,
+          0.6903792443757866,
+          0.6071729396639624,
+          0.6817573710200624
+        ],
+        "patient_grouped_auc": 0.6712084683116937
+      },
+      "notes": "tag=lr_base3; run2 metadata baseline, no class weighting (AUC is a ranking metric)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 2,
+      "timestamp": "2026-07-29T19:32:25",
+      "model": "LogisticRegression (lr_allfeat)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.854671,
+      "features": [
+        "sex_n",
+        "age",
+        "site",
+        "site_na",
+        "area",
+        "aspect",
+        "long_side",
+        "res_id",
+        "m_r",
+        "m_g",
+        "m_b",
+        "s_r",
+        "s_g",
+        "s_b",
+        "core_m_r",
+        "core_m_g",
+        "core_m_b",
+        "core_s_r",
+        "core_s_g",
+        "core_s_b",
+        "ring_m_r",
+        "ring_m_g",
+        "ring_m_b",
+        "contrast_r",
+        "contrast_g",
+        "contrast_b",
+        "gray_m",
+        "gray_s",
+        "grad_m",
+        "gray_p5",
+        "gray_p95",
+        "gray_contrast",
+        "vignette",
+        "pat_n",
+        "pat_age_min",
+        "pat_site_nunique",
+        "ud_core_m_r",
+        "pm_core_m_r",
+        "ud_core_m_g",
+        "pm_core_m_g",
+        "ud_core_m_b",
+        "pm_core_m_b",
+        "ud_gray_m",
+        "pm_gray_m",
+        "ud_gray_contrast",
+        "pm_gray_contrast",
+        "ud_contrast_r",
+        "pm_contrast_r",
+        "ud_contrast_b",
+        "pm_contrast_b",
+        "ud_gray_s",
+        "pm_gray_s",
+        "ud_grad_m",
+        "pm_grad_m"
+      ],
+      "n_features": 54,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image — regime-matched to mle-bench split",
+        "per_fold": [
+          0.8360360825629638,
+          0.8554346083937785,
+          0.8742723561848446,
+          0.8358005872302986,
+          0.8745704112343918
+        ],
+        "patient_grouped_auc": 0.8541838081625885
+      },
+      "notes": "tag=lr_allfeat; run2 metadata baseline, no class weighting (AUC is a ranking metric)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 3,
+      "timestamp": "2026-07-29T19:32:29",
+      "model": "LGB metadata+imagestats",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.885743,
+      "features": [
+        "sex_n",
+        "age",
+        "site",
+        "site_na",
+        "area",
+        "aspect",
+        "long_side",
+        "res_id",
+        "m_r",
+        "m_g",
+        "m_b",
+        "s_r",
+        "s_g",
+        "s_b",
+        "core_m_r",
+        "core_m_g",
+        "core_m_b",
+        "core_s_r",
+        "core_s_g",
+        "core_s_b",
+        "ring_m_r",
+        "ring_m_g",
+        "ring_m_b",
+        "contrast_r",
+        "contrast_g",
+        "contrast_b",
+        "gray_m",
+        "gray_s",
+        "grad_m",
+        "gray_p5",
+        "gray_p95",
+        "gray_contrast",
+        "vignette",
+        "pat_n",
+        "pat_age_min",
+        "pat_site_nunique",
+        "ud_core_m_r",
+        "pm_core_m_r",
+        "ud_core_m_g",
+        "pm_core_m_g",
+        "ud_core_m_b",
+        "pm_core_m_b",
+        "ud_gray_m",
+        "pm_gray_m",
+        "ud_gray_contrast",
+        "pm_gray_contrast",
+        "ud_contrast_r",
+        "pm_contrast_r",
+        "ud_contrast_b",
+        "pm_contrast_b",
+        "ud_gray_s",
+        "pm_gray_s",
+        "ud_grad_m",
+        "pm_grad_m"
+      ],
+      "n_features": 54,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.8751622510285941,
+          0.8818633819963784,
+          0.8912532694950569,
+          0.8737710620274792,
+          0.9075531863605998
+        ],
+        "patient_grouped_auc": 0.8855636662055566
+      },
+      "notes": "tag=lgb_meta; no class weighting; features = metadata + resolution + prep-time colour/texture stats + patient-relative (ugly duckling)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 4,
+      "timestamp": "2026-07-29T19:32:35",
+      "model": "XGB metadata+imagestats",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.886679,
+      "features": [
+        "sex_n",
+        "age",
+        "site",
+        "site_na",
+        "area",
+        "aspect",
+        "long_side",
+        "res_id",
+        "m_r",
+        "m_g",
+        "m_b",
+        "s_r",
+        "s_g",
+        "s_b",
+        "core_m_r",
+        "core_m_g",
+        "core_m_b",
+        "core_s_r",
+        "core_s_g",
+        "core_s_b",
+        "ring_m_r",
+        "ring_m_g",
+        "ring_m_b",
+        "contrast_r",
+        "contrast_g",
+        "contrast_b",
+        "gray_m",
+        "gray_s",
+        "grad_m",
+        "gray_p5",
+        "gray_p95",
+        "gray_contrast",
+        "vignette",
+        "pat_n",
+        "pat_age_min",
+        "pat_site_nunique",
+        "ud_core_m_r",
+        "pm_core_m_r",
+        "ud_core_m_g",
+        "pm_core_m_g",
+        "ud_core_m_b",
+        "pm_core_m_b",
+        "ud_gray_m",
+        "pm_gray_m",
+        "ud_gray_contrast",
+        "pm_gray_contrast",
+        "ud_contrast_r",
+        "pm_contrast_r",
+        "ud_contrast_b",
+        "pm_contrast_b",
+        "ud_gray_s",
+        "pm_gray_s",
+        "ud_grad_m",
+        "pm_grad_m"
+      ],
+      "n_features": 54,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.8786964829830088,
+          0.8823288694282179,
+          0.89765414795339,
+          0.8696942105640071,
+          0.9059897931775449
+        ],
+        "patient_grouped_auc": 0.8863252897254622
+      },
+      "notes": "tag=xgb_meta; no class weighting; features = metadata + resolution + prep-time colour/texture stats + patient-relative (ugly duckling)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 5,
+      "timestamp": "2026-07-29T19:32:49",
+      "model": "CAT metadata+imagestats",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.891707,
+      "features": [
+        "sex_n",
+        "age",
+        "site",
+        "site_na",
+        "area",
+        "aspect",
+        "long_side",
+        "res_id",
+        "m_r",
+        "m_g",
+        "m_b",
+        "s_r",
+        "s_g",
+        "s_b",
+        "core_m_r",
+        "core_m_g",
+        "core_m_b",
+        "core_s_r",
+        "core_s_g",
+        "core_s_b",
+        "ring_m_r",
+        "ring_m_g",
+        "ring_m_b",
+        "contrast_r",
+        "contrast_g",
+        "contrast_b",
+        "gray_m",
+        "gray_s",
+        "grad_m",
+        "gray_p5",
+        "gray_p95",
+        "gray_contrast",
+        "vignette",
+        "pat_n",
+        "pat_age_min",
+        "pat_site_nunique",
+        "ud_core_m_r",
+        "pm_core_m_r",
+        "ud_core_m_g",
+        "pm_core_m_g",
+        "ud_core_m_b",
+        "pm_core_m_b",
+        "ud_gray_m",
+        "pm_gray_m",
+        "ud_gray_contrast",
+        "pm_gray_contrast",
+        "ud_contrast_r",
+        "pm_contrast_r",
+        "ud_contrast_b",
+        "pm_contrast_b",
+        "ud_gray_s",
+        "pm_gray_s",
+        "ud_grad_m",
+        "pm_grad_m"
+      ],
+      "n_features": 54,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.8847217201191275,
+          0.891440828533527,
+          0.9013609965864254,
+          0.871699387193469,
+          0.9113222036267967
+        ],
+        "patient_grouped_auc": 0.8915684338409733
+      },
+      "notes": "tag=cat_meta; no class weighting; features = metadata + resolution + prep-time colour/texture stats + patient-relative (ugly duckling)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 6,
+      "timestamp": "2026-07-29T19:32:59",
+      "model": "LGB feature-block ablation",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.872444,
+      "notes": "no_res=0.87158; no_pat=0.87244; no_imgstats=0.82114; full=0.88574"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 7,
+      "timestamp": "2026-07-29T20:26:29",
+      "model": "backbone x LR discovery sweep (fold 0, 2 epochs, 256px)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.885311,
+      "cv": {
+        "scheme": "fold 0 of StratifiedKFold(5) by image, single fold"
+      },
+      "notes": "resnet18@0.0001=0.7936; resnet18@0.0003=0.8672; resnet18@0.001=0.8551; resnet50@0.0001=0.7608; resnet50@0.0003=0.8393; resnet50@0.001=0.8694; efficientnet_b0@0.0001=0.7686; efficientnet_b0@0.0003=0.8231; efficientnet_b0@0.001=0.8782; efficientnet_b3@0.0001=0.7868; efficientnet_b3@0.0003=0.8489; efficientnet_b3@0.001=0.8716; convnext_tiny@0.0001=0.8643; convnext_tiny@0.0003=0.8468; convnext_tiny@0.001=0.7775; vit_small_patch16_224@0.0001=0.8853; vit_small_patch16_224@0.0003=0.8686; vit_small_patch16_224@0.001=0.8173 | per-backbone LR sweep is mandatory (vision_experience.md)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 8,
+      "timestamp": "2026-07-29T21:16:12",
+      "model": "vit_small_patch16_224",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.92309,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image — regime-matched to mle-bench split",
+        "per_fold": [
+          0.9138752603763192,
+          0.9282723084425439,
+          0.9250445878986907,
+          0.9189915462026115,
+          0.9314018195968237
+        ],
+        "patient_grouped_auc": 0.9229497687866764
+      },
+      "notes": "tag=vit_small_256; 256px, lr=0.0001, 10ep, bs=96, aug=medium, seed=42, 4x flip TTA, bf16, no class weighting; wall 2942s"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 9,
+      "timestamp": "2026-07-29T22:04:42",
+      "model": "efficientnet_b0",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.884467,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image — regime-matched to mle-bench split",
+        "per_fold": [
+          0.8728941796209265,
+          0.9016627961301455,
+          0.8957095017408889,
+          0.8941092821263056,
+          0.9099550954909537
+        ],
+        "patient_grouped_auc": 0.8844012359342722
+      },
+      "notes": "tag=effb0_256; 256px, lr=0.001, 10ep, bs=96, aug=medium, seed=42, 4x flip TTA, bf16, no class weighting; wall 2883s"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 10,
+      "timestamp": "2026-07-29T22:45:45",
+      "model": "convex rank blend (vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.929783,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.920248239770008,
+          0.9324634004112657,
+          0.934177007990015,
+          0.9225065730917574,
+          0.9395218220762137
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.6666666666666666
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.1111111111111111
+        },
+        {
+          "tag": "xgb_meta",
+          "solo_auc": 0.8866787127122205,
+          "weight": 0.0
+        },
+        {
+          "tag": "lgb_meta",
+          "solo_auc": 0.8857431826085063,
+          "weight": 0.1111111111111111
+        },
+        {
+          "tag": "effb0_256",
+          "solo_auc": 0.8844669275661845,
+          "weight": 0.1111111111111111
+        },
+        {
+          "tag": "lr_allfeat",
+          "solo_auc": 0.8546713139179342,
+          "weight": 0.0
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9295365558867295,
+        "equal_weight": 0.9148867186288459,
+        "leave_fold_out": 0.929783408667852,
+        "patient_grouped": 0.9294903208344822
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 11,
+      "timestamp": "2026-07-29T22:46:13",
+      "model": "convex rank blend (vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.929482,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.9204203894024687,
+          0.9324634004112657,
+          0.9338274661455935,
+          0.9214144679632111,
+          0.939284213861168
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.6551724137931034
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.1206896551724138
+        },
+        {
+          "tag": "xgb_meta",
+          "solo_auc": 0.8866787127122205,
+          "weight": 0.0
+        },
+        {
+          "tag": "lgb_meta",
+          "solo_auc": 0.8857431826085063,
+          "weight": 0.1206896551724138
+        },
+        {
+          "tag": "effb0_256",
+          "solo_auc": 0.8844669275661845,
+          "weight": 0.10344827586206896
+        },
+        {
+          "tag": "lr_allfeat",
+          "solo_auc": 0.8546713139179342,
+          "weight": 0.0
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9295758215859741,
+        "equal_weight": 0.9148867186288459,
+        "leave_fold_out": 0.9294819875567415,
+        "patient_grouped": 0.9295430906827283
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 12,
+      "timestamp": "2026-07-29T23:34:30",
+      "model": "vit_small_patch16_224",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.92596,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image — regime-matched to mle-bench split",
+        "per_fold": [
+          0.9172571399060062,
+          0.9168422901299613,
+          0.9291640664163606,
+          0.9275561739320217,
+          0.941033561299476
+        ],
+        "patient_grouped_auc": 0.9258896709808437
+      },
+      "notes": "tag=vit_small_384; 384px, lr=0.0001, 8ep, bs=64, aug=medium, seed=42, 4x flip TTA, bf16, no class weighting; wall 5345s"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 13,
+      "timestamp": "2026-07-29T23:34:48",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.931956,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.9238530530737317,
+          0.9276925805054546,
+          0.9369648173345474,
+          0.9269457545159101,
+          0.9443256403369216
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "vit_small_384",
+          "solo_auc": 0.9259598169828154,
+          "weight": 0.4166666666666667
+        },
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.3333333333333333
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.08333333333333333
+        },
+        {
+          "tag": "xgb_meta",
+          "solo_auc": 0.8866787127122205,
+          "weight": 0.0
+        },
+        {
+          "tag": "lgb_meta",
+          "solo_auc": 0.8857431826085063,
+          "weight": 0.1111111111111111
+        },
+        {
+          "tag": "effb0_256",
+          "solo_auc": 0.8844669275661845,
+          "weight": 0.05555555555555555
+        },
+        {
+          "tag": "lr_allfeat",
+          "solo_auc": 0.8546713139179342,
+          "weight": 0.0
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9327392265293989,
+        "equal_weight": 0.9210305168084922,
+        "leave_fold_out": 0.931956369153313,
+        "patient_grouped": 0.9326837940503317
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 14,
+      "timestamp": "2026-07-29T23:46:04",
+      "model": "LGB level-2 stack (member ranks + metadata context)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.926787,
+      "features": [
+        "m_vit_small_384",
+        "m_vit_small_256",
+        "m_effb0_256",
+        "m_cat_meta",
+        "m_xgb_meta",
+        "m_lgb_meta",
+        "age",
+        "sex_n",
+        "site",
+        "res_id",
+        "area",
+        "pat_n",
+        "gray_m",
+        "vignette"
+      ],
+      "n_features": 14,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image, nested (members are OOF)",
+        "per_fold": [
+          0.9181221918091205,
+          0.9221595888705877,
+          0.9317182795038893,
+          0.9202140901170028,
+          0.9448043003643325
+        ],
+        "patient_grouped_auc": 0.9267616813562405
+      },
+      "notes": "tag=stack; members=['vit_small_384', 'vit_small_256', 'effb0_256', 'cat_meta', 'xgb_meta', 'lgb_meta']; shallow+regularised (leaves 7, mcs 80) because level-2 data is small in effective positives (513)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 15,
+      "timestamp": "2026-07-30T00:45:52",
+      "model": "resnet50",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.891663,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image — regime-matched to mle-bench split",
+        "per_fold": [
+          0.8894196835889754,
+          0.8781940451710368,
+          0.9091259407790862,
+          0.894087116058123,
+          0.8958707824541828
+        ],
+        "patient_grouped_auc": 0.8917870862430682
+      },
+      "notes": "tag=resnet50_256; 256px, lr=0.001, 10ep, bs=96, aug=medium, seed=42, 4x flip TTA, bf16, no class weighting; wall 4219s"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 16,
+      "timestamp": "2026-07-30T00:56:23",
+      "model": "convex rank blend (stack + vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.932033,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.9237712819983129,
+          0.9276746771426916,
+          0.9370551866894465,
+          0.9272918861959958,
+          0.9443721289007349
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "stack",
+          "solo_auc": 0.926787443438736,
+          "weight": 0.02040816326530612
+        },
+        {
+          "tag": "vit_small_384",
+          "solo_auc": 0.9259598169828154,
+          "weight": 0.42857142857142855
+        },
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.32653061224489793
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.08163265306122448
+        },
+        {
+          "tag": "resnet50_256",
+          "solo_auc": 0.8916632998126817,
+          "weight": 0.0
+        },
+        {
+          "tag": "xgb_meta",
+          "solo_auc": 0.8866787127122205,
+          "weight": 0.0
+        },
+        {
+          "tag": "lgb_meta",
+          "solo_auc": 0.8857431826085063,
+          "weight": 0.10204081632653061
+        },
+        {
+          "tag": "effb0_256",
+          "solo_auc": 0.8844669275661845,
+          "weight": 0.04081632653061224
+        },
+        {
+          "tag": "lr_allfeat",
+          "solo_auc": 0.8546713139179342,
+          "weight": 0.0
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9327098885134855,
+        "equal_weight": 0.9229524820680364,
+        "leave_fold_out": 0.9320330321854364,
+        "patient_grouped": 0.9326247970724548
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 17,
+      "timestamp": "2026-07-30T00:56:40",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.932039,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.9242068205684381,
+          0.9270634051854959,
+          0.9372086440845585,
+          0.9275186621243277,
+          0.9441982272360998
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "vit_small_384",
+          "solo_auc": 0.9259598169828154,
+          "weight": 0.4666666666666667
+        },
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.3333333333333333
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.1
+        },
+        {
+          "tag": "xgb_meta",
+          "solo_auc": 0.8866787127122205,
+          "weight": 0.0
+        },
+        {
+          "tag": "lgb_meta",
+          "solo_auc": 0.8857431826085063,
+          "weight": 0.1
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9325353666871998,
+        "equal_weight": 0.9218815589037181,
+        "leave_fold_out": 0.9320391518397841,
+        "patient_grouped": 0.9324107365705874
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 18,
+      "timestamp": "2026-07-30T00:56:46",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.932039,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.9242068205684382,
+          0.9270634051854959,
+          0.9372086440845585,
+          0.9275186621243279,
+          0.9441982272361
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "vit_small_384",
+          "solo_auc": 0.9259598169828154,
+          "weight": 0.4666666666666667
+        },
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.3333333333333333
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.1
+        },
+        {
+          "tag": "resnet50_256",
+          "solo_auc": 0.8916632998126817,
+          "weight": 0.0
+        },
+        {
+          "tag": "xgb_meta",
+          "solo_auc": 0.8866787127122205,
+          "weight": 0.0
+        },
+        {
+          "tag": "lgb_meta",
+          "solo_auc": 0.8857431826085063,
+          "weight": 0.1
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9325352982204183,
+        "equal_weight": 0.9221610745395796,
+        "leave_fold_out": 0.9320391518397841,
+        "patient_grouped": 0.9324107365705874
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 19,
+      "timestamp": "2026-07-30T00:56:50",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.931836,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.9239606465940196,
+          0.9275459434390144,
+          0.937351870986663,
+          0.9267053379302349,
+          0.9436179810877635
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "vit_small_384",
+          "solo_auc": 0.9259598169828154,
+          "weight": 0.4727272727272727
+        },
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.34545454545454546
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.18181818181818182
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9322016938270966,
+        "equal_weight": 0.930610628523001,
+        "leave_fold_out": 0.931836356007539,
+        "patient_grouped": 0.9320933750935966
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 20,
+      "timestamp": "2026-07-30T01:08:48",
+      "model": "convex rank blend (stack + vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.932033,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.9237712819983129,
+          0.9276746771426916,
+          0.9370551866894465,
+          0.9272918861959958,
+          0.9443721289007349
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "stack",
+          "solo_auc": 0.926787443438736,
+          "weight": 0.02040816326530612
+        },
+        {
+          "tag": "vit_small_384",
+          "solo_auc": 0.9259598169828154,
+          "weight": 0.42857142857142855
+        },
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.32653061224489793
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.08163265306122448
+        },
+        {
+          "tag": "resnet50_256",
+          "solo_auc": 0.8916632998126817,
+          "weight": 0.0
+        },
+        {
+          "tag": "xgb_meta",
+          "solo_auc": 0.8866787127122205,
+          "weight": 0.0
+        },
+        {
+          "tag": "lgb_meta",
+          "solo_auc": 0.8857431826085063,
+          "weight": 0.10204081632653061
+        },
+        {
+          "tag": "effb0_256",
+          "solo_auc": 0.8844669275661845,
+          "weight": 0.04081632653061224
+        },
+        {
+          "tag": "lr_allfeat",
+          "solo_auc": 0.8546713139179342,
+          "weight": 0.0
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9327098885134855,
+        "equal_weight": 0.9229524820680364,
+        "leave_fold_out": 0.9320330321854364,
+        "patient_grouped": 0.9326247970724548
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 21,
+      "timestamp": "2026-07-30T01:08:49",
+      "model": "FINAL SUBMISSION (tag=blend)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.932033,
+      "submission": "submission.csv",
+      "notes": "honest leave-fold-out CV of the submitted predictor; 4142 rows, id order verified against sample_submission.csv; min-max scaled (rank-preserving, AUC unaffected)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 22,
+      "timestamp": "2026-07-30T01:55:24",
+      "model": "vit_small_patch16_224",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.920239,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image — regime-matched to mle-bench split",
+        "per_fold": [
+          0.9137211864552669,
+          0.9257862986417316,
+          0.9280864544862417,
+          0.9143520176237293,
+          0.9264060207855535
+        ],
+        "patient_grouped_auc": 0.9200698667805774
+      },
+      "notes": "tag=vit_small_320; 320px, lr=0.0001, 9ep, bs=80, aug=medium, seed=2024, 4x flip TTA, bf16, no class weighting; wall 4133s"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 23,
+      "timestamp": "2026-07-30T01:55:37",
+      "model": "LGB level-2 stack (member ranks + metadata context)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.925665,
+      "features": [
+        "m_vit_small_384",
+        "m_vit_small_320",
+        "m_vit_small_256",
+        "m_resnet50_256",
+        "m_effb0_256",
+        "m_cat_meta",
+        "m_xgb_meta",
+        "m_lgb_meta",
+        "age",
+        "sex_n",
+        "site",
+        "res_id",
+        "area",
+        "pat_n",
+        "gray_m",
+        "vignette"
+      ],
+      "n_features": 16,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image, nested (members are OOF)",
+        "per_fold": [
+          0.9186145397579577,
+          0.9235790697753725,
+          0.9302996511401884,
+          0.9171943895976346,
+          0.9424264964152151
+        ],
+        "patient_grouped_auc": 0.9255341473501459
+      },
+      "notes": "tag=stack; members=['vit_small_384', 'vit_small_320', 'vit_small_256', 'resnet50_256', 'effb0_256', 'cat_meta', 'xgb_meta', 'lgb_meta']; shallow+regularised (leaves 7, mcs 80) because level-2 data is small in effective positives (513)"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 24,
+      "timestamp": "2026-07-30T01:55:46",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + vit_small_320 + cat_meta + lgb_meta + effb0_256)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.932141,
+      "cv": {
+        "scheme": "StratifiedKFold(5) by image",
+        "per_fold": [
+          0.9244418048167466,
+          0.9290251022196759,
+          0.9374968029709352,
+          0.9260983286784591,
+          0.9436420862689999
+        ]
+      },
+      "base_models": [
+        {
+          "tag": "vit_small_384",
+          "solo_auc": 0.9259598169828154,
+          "weight": 0.3877551020408163
+        },
+        {
+          "tag": "stack",
+          "solo_auc": 0.9256645539871868,
+          "weight": 0.0
+        },
+        {
+          "tag": "vit_small_256",
+          "solo_auc": 0.9230902714659963,
+          "weight": 0.2857142857142857
+        },
+        {
+          "tag": "vit_small_320",
+          "solo_auc": 0.9202394858473342,
+          "weight": 0.10204081632653061
+        },
+        {
+          "tag": "cat_meta",
+          "solo_auc": 0.8917074608868105,
+          "weight": 0.08163265306122448
+        },
+        {
+          "tag": "resnet50_256",
+          "solo_auc": 0.8916632998126817,
+          "weight": 0.0
+        },
+        {
+          "tag": "xgb_meta",
+          "solo_auc": 0.8866787127122205,
+          "weight": 0.0
+        },
+        {
+          "tag": "lgb_meta",
+          "solo_auc": 0.8857431826085063,
+          "weight": 0.10204081632653061
+        },
+        {
+          "tag": "effb0_256",
+          "solo_auc": 0.8844669275661845,
+          "weight": 0.04081632653061224
+        },
+        {
+          "tag": "lr_allfeat",
+          "solo_auc": 0.8546713139179342,
+          "weight": 0.0
+        }
+      ],
+      "ensemble": {
+        "method": "rank-average, Caruana greedy selection with replacement",
+        "optimised_full_oof": 0.9329135771887307,
+        "equal_weight": 0.9251695391562551,
+        "leave_fold_out": 0.9321408249909633,
+        "patient_grouped": 0.9327751434561048
+      },
+      "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 25,
+      "timestamp": "2026-07-30T01:55:53",
+      "model": "FINAL SUBMISSION (tag=blend)",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "score": 0.932141,
+      "submission": "submission.csv",
+      "notes": "honest leave-fold-out CV of the submitted predictor; 4142 rows, id order verified against sample_submission.csv; min-max scaled (rank-preserving, AUC unaffected)"
+    }
+  ],
+  "experiments_file": "experiments.json",
+  "other_experiment_files": [],
+  "best": {
+    "schema_version": 2,
+    "experiment_id": 24,
+    "timestamp": "2026-07-30T01:55:46",
+    "model": "convex rank blend (vit_small_384 + vit_small_256 + vit_small_320 + cat_meta + lgb_meta + effb0_256)",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "score": 0.932141,
+    "cv": {
+      "scheme": "StratifiedKFold(5) by image",
+      "per_fold": [
+        0.9244418048167466,
+        0.9290251022196759,
+        0.9374968029709352,
+        0.9260983286784591,
+        0.9436420862689999
+      ]
+    },
+    "base_models": [
+      {
+        "tag": "vit_small_384",
+        "solo_auc": 0.9259598169828154,
+        "weight": 0.3877551020408163
+      },
+      {
+        "tag": "stack",
+        "solo_auc": 0.9256645539871868,
+        "weight": 0.0
+      },
+      {
+        "tag": "vit_small_256",
+        "solo_auc": 0.9230902714659963,
+        "weight": 0.2857142857142857
+      },
+      {
+        "tag": "vit_small_320",
+        "solo_auc": 0.9202394858473342,
+        "weight": 0.10204081632653061
+      },
+      {
+        "tag": "cat_meta",
+        "solo_auc": 0.8917074608868105,
+        "weight": 0.08163265306122448
+      },
+      {
+        "tag": "resnet50_256",
+        "solo_auc": 0.8916632998126817,
+        "weight": 0.0
+      },
+      {
+        "tag": "xgb_meta",
+        "solo_auc": 0.8866787127122205,
+        "weight": 0.0
+      },
+      {
+        "tag": "lgb_meta",
+        "solo_auc": 0.8857431826085063,
+        "weight": 0.10204081632653061
+      },
+      {
+        "tag": "effb0_256",
+        "solo_auc": 0.8844669275661845,
+        "weight": 0.04081632653061224
+      },
+      {
+        "tag": "lr_allfeat",
+        "solo_auc": 0.8546713139179342,
+        "weight": 0.0
+      }
+    ],
+    "ensemble": {
+      "method": "rank-average, Caruana greedy selection with replacement",
+      "optimised_full_oof": 0.9329135771887307,
+      "equal_weight": 0.9251695391562551,
+      "leave_fold_out": 0.9321408249909633,
+      "patient_grouped": 0.9327751434561048
+    },
+    "notes": "score reported = honest leave-fold-out (weights refit on 4 folds, scored on the 5th); optimised full-OOF number is the optimistic counterpart"
+  },
+  "excluded_diagnostics": [],
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-29T19:32:21",
+      "model": "LogisticRegression (lr_base3)",
+      "score": 0.671476
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-29T19:32:25",
+      "model": "LogisticRegression (lr_allfeat)",
+      "score": 0.854671
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-29T19:32:29",
+      "model": "LGB metadata+imagestats",
+      "score": 0.885743
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-29T19:32:35",
+      "model": "XGB metadata+imagestats",
+      "score": 0.886679
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-29T19:32:49",
+      "model": "CAT metadata+imagestats",
+      "score": 0.891707
+    },
+    {
+      "experiment_id": 6,
+      "timestamp": "2026-07-29T19:32:59",
+      "model": "LGB feature-block ablation",
+      "score": 0.872444
+    },
+    {
+      "experiment_id": 7,
+      "timestamp": "2026-07-29T20:26:29",
+      "model": "backbone x LR discovery sweep (fold 0, 2 epochs, 256px)",
+      "score": 0.885311
+    },
+    {
+      "experiment_id": 8,
+      "timestamp": "2026-07-29T21:16:12",
+      "model": "vit_small_patch16_224",
+      "score": 0.92309
+    },
+    {
+      "experiment_id": 9,
+      "timestamp": "2026-07-29T22:04:42",
+      "model": "efficientnet_b0",
+      "score": 0.884467
+    },
+    {
+      "experiment_id": 10,
+      "timestamp": "2026-07-29T22:45:45",
+      "model": "convex rank blend (vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "score": 0.929783
+    },
+    {
+      "experiment_id": 11,
+      "timestamp": "2026-07-29T22:46:13",
+      "model": "convex rank blend (vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "score": 0.929482
+    },
+    {
+      "experiment_id": 12,
+      "timestamp": "2026-07-29T23:34:30",
+      "model": "vit_small_patch16_224",
+      "score": 0.92596
+    },
+    {
+      "experiment_id": 13,
+      "timestamp": "2026-07-29T23:34:48",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "score": 0.931956
+    },
+    {
+      "experiment_id": 14,
+      "timestamp": "2026-07-29T23:46:04",
+      "model": "LGB level-2 stack (member ranks + metadata context)",
+      "score": 0.926787
+    },
+    {
+      "experiment_id": 15,
+      "timestamp": "2026-07-30T00:45:52",
+      "model": "resnet50",
+      "score": 0.891663
+    },
+    {
+      "experiment_id": 16,
+      "timestamp": "2026-07-30T00:56:23",
+      "model": "convex rank blend (stack + vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "score": 0.932033
+    },
+    {
+      "experiment_id": 17,
+      "timestamp": "2026-07-30T00:56:40",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta)",
+      "score": 0.932039
+    },
+    {
+      "experiment_id": 18,
+      "timestamp": "2026-07-30T00:56:46",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta + lgb_meta)",
+      "score": 0.932039
+    },
+    {
+      "experiment_id": 19,
+      "timestamp": "2026-07-30T00:56:50",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + cat_meta)",
+      "score": 0.931836
+    },
+    {
+      "experiment_id": 20,
+      "timestamp": "2026-07-30T01:08:48",
+      "model": "convex rank blend (stack + vit_small_384 + vit_small_256 + cat_meta + lgb_meta + effb0_256)",
+      "score": 0.932033
+    },
+    {
+      "experiment_id": 21,
+      "timestamp": "2026-07-30T01:08:49",
+      "model": "FINAL SUBMISSION (tag=blend)",
+      "score": 0.932033
+    },
+    {
+      "experiment_id": 22,
+      "timestamp": "2026-07-30T01:55:24",
+      "model": "vit_small_patch16_224",
+      "score": 0.920239
+    },
+    {
+      "experiment_id": 23,
+      "timestamp": "2026-07-30T01:55:37",
+      "model": "LGB level-2 stack (member ranks + metadata context)",
+      "score": 0.925665
+    },
+    {
+      "experiment_id": 24,
+      "timestamp": "2026-07-30T01:55:46",
+      "model": "convex rank blend (vit_small_384 + vit_small_256 + vit_small_320 + cat_meta + lgb_meta + effb0_256)",
+      "score": 0.932141
+    },
+    {
+      "experiment_id": 25,
+      "timestamp": "2026-07-30T01:55:53",
+      "model": "FINAL SUBMISSION (tag=blend)",
+      "score": 0.932141
+    }
+  ],
+  "records": {
+    "res_effb0_256.json": {
+      "tag": "effb0_256",
+      "backbone": "efficientnet_b0",
+      "lr": 0.001,
+      "size": 256,
+      "epochs": 10,
+      "bs": 96,
+      "aug": "medium",
+      "seed": 42,
+      "auc": 0.8844669275661845,
+      "gauc": 0.8844012359342722,
+      "per_fold": [
+        0.8728941796209265,
+        0.9016627961301455,
+        0.8957095017408889,
+        0.8941092821263056,
+        0.9099550954909537
+      ],
+      "sec": 2883.2
+    },
+    "res_resnet50_256.json": {
+      "tag": "resnet50_256",
+      "backbone": "resnet50",
+      "lr": 0.001,
+      "size": 256,
+      "epochs": 10,
+      "bs": 96,
+      "aug": "medium",
+      "seed": 42,
+      "auc": 0.8916632998126817,
+      "gauc": 0.8917870862430682,
+      "per_fold": [
+        0.8894196835889754,
+        0.8781940451710368,
+        0.9091259407790862,
+        0.894087116058123,
+        0.8958707824541828
+      ],
+      "sec": 4218.9
+    },
+    "res_vit_small_256.json": {
+      "tag": "vit_small_256",
+      "backbone": "vit_small_patch16_224",
+      "lr": 0.0001,
+      "size": 256,
+      "epochs": 10,
+      "bs": 96,
+      "aug": "medium",
+      "seed": 42,
+      "auc": 0.9230902714659963,
+      "gauc": 0.9229497687866764,
+      "per_fold": [
+        0.9138752603763192,
+        0.9282723084425439,
+        0.9250445878986907,
+        0.9189915462026115,
+        0.9314018195968237
+      ],
+      "sec": 2942.0
+    },
+    "res_vit_small_320.json": {
+      "tag": "vit_small_320",
+      "backbone": "vit_small_patch16_224",
+      "lr": 0.0001,
+      "size": 320,
+      "epochs": 9,
+      "bs": 80,
+      "aug": "medium",
+      "seed": 2024,
+      "auc": 0.9202394858473342,
+      "gauc": 0.9200698667805774,
+      "per_fold": [
+        0.9137211864552669,
+        0.9257862986417316,
+        0.9280864544862417,
+        0.9143520176237293,
+        0.9264060207855535
+      ],
+      "sec": 4133.1
+    },
+    "res_vit_small_384.json": {
+      "tag": "vit_small_384",
+      "backbone": "vit_small_patch16_224",
+      "lr": 0.0001,
+      "size": 384,
+      "epochs": 8,
+      "bs": 64,
+      "aug": "medium",
+      "seed": 42,
+      "auc": 0.9259598169828154,
+      "gauc": 0.9258896709808437,
+      "per_fold": [
+        0.9172571399060062,
+        0.9168422901299613,
+        0.9291640664163606,
+        0.9275561739320217,
+        0.941033561299476
+      ],
+      "sec": 5345.5
+    },
+    "blend_results.json": {
+      "members": [
+        "vit_small_384",
+        "stack",
+        "vit_small_256",
+        "vit_small_320",
+        "cat_meta",
+        "resnet50_256",
+        "xgb_meta",
+        "lgb_meta",
+        "effb0_256",
+        "lr_allfeat"
+      ],
+      "solo": {
+        "vit_small_384": 0.9259598169828154,
+        "vit_small_320": 0.9202394858473342,
+        "vit_small_256": 0.9230902714659963,
+        "resnet50_256": 0.8916632998126817,
+        "effb0_256": 0.8844669275661845,
+        "cat_meta": 0.8917074608868105,
+        "xgb_meta": 0.8866787127122205,
+        "lgb_meta": 0.8857431826085063,
+        "lr_allfeat": 0.8546713139179342,
+        "stack": 0.9256645539871868
+      },
+      "weights": {
+        "vit_small_384": 0.3877551020408163,
+        "stack": 0.0,
+        "vit_small_256": 0.2857142857142857,
+        "vit_small_320": 0.10204081632653061,
+        "cat_meta": 0.08163265306122448,
+        "resnet50_256": 0.0,
+        "xgb_meta": 0.0,
+        "lgb_meta": 0.10204081632653061,
+        "effb0_256": 0.04081632653061224,
+        "lr_allfeat": 0.0
+      },
+      "equal_weight": 0.9251695391562551,
+      "optimised": 0.9329135771887307,
+      "leave_fold_out": 0.9321408249909633,
+      "leave_fold_out_per_fold": [
+        0.9244418048167466,
+        0.9290251022196759,
+        0.9374968029709352,
+        0.9260983286784591,
+        0.9436420862689999
+      ],
+      "patient_grouped": 0.9327751434561048
+    },
+    "meta_results.json": {
+      "lr_base3": {
+        "auc": 0.671476252673371,
+        "gauc": 0.6712084683116937,
+        "n_feat": 3,
+        "sec": 0.0
+      },
+      "lr_allfeat": {
+        "auc": 0.8546713139179342,
+        "gauc": 0.8541838081625885,
+        "n_feat": 54,
+        "sec": 4.2
+      },
+      "lgb_meta": {
+        "auc": 0.8857431826085063,
+        "gauc": 0.8855636662055566,
+        "n_feat": 54,
+        "sec": 4.3
+      },
+      "xgb_meta": {
+        "auc": 0.8866787127122205,
+        "gauc": 0.8863252897254622,
+        "n_feat": 54,
+        "sec": 5.6
+      },
+      "cat_meta": {
+        "auc": 0.8917074608868105,
+        "gauc": 0.8915684338409733,
+        "n_feat": 54,
+        "sec": 13.8
+      },
+      "ablation": {
+        "no_res": {
+          "auc": 0.8715756253601781,
+          "gauc": 0.8714827697791986,
+          "n_feat": 50
+        },
+        "no_pat": {
+          "auc": 0.8724437156840211,
+          "gauc": 0.8722728917319664,
+          "n_feat": 33
+        },
+        "no_imgstats": {
+          "auc": 0.821142891337124,
+          "gauc": 0.8212946559500397,
+          "n_feat": 8
+        }
+      },
+      "top_features": {
+        "ud_grad_m": 623,
+        "grad_m": 614,
+        "ud_gray_s": 565,
+        "core_s_b": 554,
+        "core_s_r": 502,
+        "ud_core_m_r": 481,
+        "pm_grad_m": 470,
+        "pat_n": 463,
+        "ud_core_m_b": 463,
+        "core_s_g": 459,
+        "ud_gray_m": 457,
+        "ud_contrast_r": 442,
+        "pm_gray_s": 438,
+        "ud_core_m_g": 430,
+        "s_r": 426,
+        "ring_m_r": 401,
+        "pm_core_m_r": 388,
+        "s_b": 386,
+        "gray_p5": 383,
+        "ud_contrast_b": 377,
+        "core_m_g": 372,
+        "core_m_r": 356,
+        "pm_core_m_g": 336,
+        "s_g": 336,
+        "pm_contrast_r": 330
+      }
+    },
+    "discovery.json": [
+      {
+        "backbone": "resnet18",
+        "lr": 0.0001,
+        "bs": 128,
+        "auc": 0.7936201346210126,
+        "sec": 59.4
+      },
+      {
+        "backbone": "resnet18",
+        "lr": 0.0003,
+        "bs": 128,
+        "auc": 0.8671710650897761,
+        "sec": 54.9
+      },
+      {
+        "backbone": "resnet18",
+        "lr": 0.001,
+        "bs": 128,
+        "auc": 0.855101654357968,
+        "sec": 54.8
+      },
+      {
+        "backbone": "resnet50",
+        "lr": 0.0001,
+        "bs": 96,
+        "auc": 0.7607722632512179,
+        "sec": 199.3
+      },
+      {
+        "backbone": "resnet50",
+        "lr": 0.0003,
+        "bs": 96,
+        "auc": 0.8393447984988552,
+        "sec": 184.9
+      },
+      {
+        "backbone": "resnet50",
+        "lr": 0.001,
+        "bs": 96,
+        "auc": 0.8693900738521922,
+        "sec": 184.9
+      },
+      {
+        "backbone": "efficientnet_b0",
+        "lr": 0.0001,
+        "bs": 96,
+        "auc": 0.7686446659436382,
+        "sec": 175.8
+      },
+      {
+        "backbone": "efficientnet_b0",
+        "lr": 0.0003,
+        "bs": 96,
+        "auc": 0.8230594432680887,
+        "sec": 124.0
+      },
+      {
+        "backbone": "efficientnet_b0",
+        "lr": 0.001,
+        "bs": 96,
+        "auc": 0.8781920845598995,
+        "sec": 123.1
+      },
+      {
+        "backbone": "efficientnet_b3",
+        "lr": 0.0001,
+        "bs": 64,
+        "auc": 0.7868253886277953,
+        "sec": 294.6
+      },
+      {
+        "backbone": "efficientnet_b3",
+        "lr": 0.0003,
+        "bs": 64,
+        "auc": 0.8488715591592212,
+        "sec": 239.0
+      },
+      {
+        "backbone": "efficientnet_b3",
+        "lr": 0.001,
+        "bs": 64,
+        "auc": 0.8715918676513625,
+        "sec": 238.6
+      },
+      {
+        "backbone": "convnext_tiny",
+        "lr": 0.0001,
+        "bs": 64,
+        "auc": 0.8643443681247741,
+        "sec": 238.0
+      },
+      {
+        "backbone": "convnext_tiny",
+        "lr": 0.0003,
+        "bs": 64,
+        "auc": 0.8467885486064486,
+        "sec": 219.1
+      },
+      {
+        "backbone": "convnext_tiny",
+        "lr": 0.001,
+        "bs": 64,
+        "auc": 0.7775095112671935,
+        "sec": 218.6
+      },
+      {
+        "backbone": "vit_small_patch16_224",
+        "lr": 0.0001,
+        "bs": 96,
+        "auc": 0.8853113326103048,
+        "sec": 134.1
+      },
+      {
+        "backbone": "vit_small_patch16_224",
+        "lr": 0.0003,
+        "bs": 96,
+        "auc": 0.8686446659436382,
+        "sec": 129.9
+      },
+      {
+        "backbone": "vit_small_patch16_224",
+        "lr": 0.001,
+        "bs": 96,
+        "auc": 0.8173294427516398,
+        "sec": 130.5
+      }
+    ],
+    "dossier.json": {
+      "run": "run2 (fresh, 2026-07-29). run1 outputs archived under run1_archive/ and not consulted for modelling decisions.",
+      "task_family": "image binary classification (dermoscopy) + patient-level tabular metadata",
+      "test_window": {
+        "relation": "iid-by-patient (hypothesis: disjoint patient groups, no temporal ordering)",
+        "evidence": "no date column in train.csv/test.csv; patient_id present in both; mle-bench prepared split. Stage 1 EDA must check patient_id intersection train vs test."
+      },
+      "split_policy": {
+        "scheme": "StratifiedGroupKFold(n_splits=5, groups=patient_id, stratify=target)",
+        "forbidden": "plain StratifiedKFold — the same patient contributes many images (dermoscopy series), so a random split leaks patient-specific appearance into validation and inflates AUC",
+        "rationale": "grouping is the single most consequential CV decision here; AUC on a leaky split is optimistic without bound"
+      },
+      "metric": {
+        "name": "ROC-AUC",
+        "traps": [
+          "pure ranking metric: class-imbalance reweighting (scale_pos_weight / is_unbalance) perturbs the loss surface without improving ranking — experience.md ROC-AUC section, validated on s3e3 / s4e1 / s6e2",
+          "no threshold/calibration needed; submit raw scores",
+          "1.76% positive rate means per-fold AUC variance is large — judge on pooled OOF, not per-fold"
+        ]
+      },
+      "external_data": {
+        "needed": "no",
+        "reason": "config.yaml special_rules.external_data_allowed = false. Pretrained ImageNet backbones ARE allowed (pretrained_models_allowed = true) and are the main source of injected prior knowledge.",
+        "candidates": []
+      },
+      "matched_task_priors": [
+        "TASK-IMBALANCED [GEN] — positive rate ~1.8%: stratified folds, rank metric needs no resampling",
+        "TASK-BLEND-DECOR — plan a diverse-library decorrelating member (metadata GBDT) alongside the variance-heavy CNN members"
+      ],
+      "matched_vision_experience": [
+        "Per-backbone LR mini-sweep is mandatory before judging a backbone (a single fixed LR measures LR tolerance, not backbone quality)",
+        "Backbone ranking is DOMAIN-SPECIFIC — rediscover on dermoscopy, do not assume the digits/cifar/flowers winners",
+        "No multi-worker DataLoader (CUDA-fork deadlock hazard) — preload uint8 arrays, do resize/aug/normalise on GPU in batch",
+        "3-family convex blend on real OOFs beats best solo and equal weights in all 4 prior vision runs"
+      ],
+      "injection_ideas": {
+        "data_level": [
+          "dermoscopy lesions are orientation-free: h-flip + v-flip + 90-degree rotation are label-preserving (contrast: digits, where h-flip is forbidden). Expect a real gain, unlike cifar.",
+          "colour/contrast jitter: dermoscope hardware differs across contributing sites; jitter should reduce site-specific overfitting",
+          "raw image resolution (width x height) is a site/scanner fingerprint. It IS predictive but is a dataset artefact — treat as a candidate feature and ablate it explicitly rather than trusting it",
+          "patient-level context: a lesion is judged relative to the patient's other moles ('ugly duckling' sign) — per-patient normalised image statistics and patient image count are principled features"
+        ],
+        "model_level": [
+          "no class weighting (AUC is a ranking metric)",
+          "rank-average before blending (members have very different score scales)",
+          "TTA (flips) at inference — free variance reduction for a flip-invariant domain",
+          "convex weight search on OOF with a leave-fold-out honest estimate of the blend score"
+        ]
+      },
+      "not_recorded": [
+        "whether mle-bench's private split shares patients with the public test split — unobservable from here"
+      ],
+      "eda_verdict": {
+        "test_window.relation": "REFUTED. The dossier hypothesised patient-disjoint groups (as in the real competition). EDA found the opposite: mle-bench re-split the original 33,126-image train set randomly BY IMAGE. All 1457 test patients also occur in train (overlap 1457/1457, 599 patients train-only); per-patient test share mean 0.124 / median 0.111 vs overall 0.125.",
+        "split_policy": "REVISED. Primary CV switched from StratifiedGroupKFold(patient_id) to StratifiedKFold(5) on images, which is regime-matched to the graded split. The grouped scheme is retained as a secondary honesty/leakage check and is reported for every model.",
+        "split_policy_consequence": "NULL in score terms: image-level and patient-grouped AUC agreed to within 0.0004 for all 10 members (blend 0.93214 vs 0.93278), i.e. no member exploits patient identity. The check is still mandatory — it was cheap and the failure mode is real.",
+        "external_data.needed": "CONFIRMED no. Pretrained ImageNet backbones (permitted) supplied all the injected prior knowledge; they are worth +0.037 AUC over the best tabular model.",
+        "metric.traps": "CONFIRMED. No class weighting was used anywhere; per-fold AUC spread is wide (e.g. effb0 0.873-0.910 across folds at ~103 positives per fold), so all decisions were taken on pooled OOF, never per-fold.",
+        "injection_ideas.data_level": {
+          "dihedral augmentation": "ADOPTED (h-flip + v-flip + transpose + 4x flip TTA); not ablated against no-aug, so the size of its contribution is not measured — an honest gap.",
+          "resolution as scanner fingerprint": "CONFIRMED predictive and it transfers: dropping the resolution block costs -0.014 AUC, and the train/test resolution distributions match closely (6000x4000 = 44.5% of train vs 43.9% of test).",
+          "ugly duckling / patient-relative stats": "CONFIRMED, the strongest single idea in the dossier: -0.013 AUC when removed, and 8 of the top-20 LightGBM importances are ud_* columns.",
+          "image colour/texture statistics": "CONFIRMED and understated in the dossier: the largest tabular block at -0.065 AUC when removed."
+        },
+        "injection_ideas.model_level": "All adopted (no class weighting, rank-average before blending, flip TTA, convex weights with a leave-fold-out honest estimate)."
+      }
+    },
+    "eda_summary.json": {
+      "shapes": {
+        "train": [
+          28984,
+          8
+        ],
+        "test": [
+          4142,
+          5
+        ]
+      },
+      "train_only_cols": [
+        "benign_malignant",
+        "diagnosis"
+      ],
+      "target": {
+        "positives": 513,
+        "n": 28984,
+        "pos_rate": 0.017699420369859234
+      },
+      "patients": {
+        "train": 2056,
+        "test": 1457,
+        "overlap": 1457,
+        "imgs_per_patient_mean": 14.09727626459144,
+        "imgs_per_patient_max": 104,
+        "patients_with_positive": 392
+      },
+      "missing": {
+        "sex": 0.0019321004692243997,
+        "age_approx": 0.0020356058515042783,
+        "anatom_site_general_challenge": 0.01607783604747447
+      },
+      "resolution": {
+        "n_train": 81,
+        "n_test": 28,
+        "test_rows_with_unseen_res": 0.0016900048285852245
+      },
+      "folds": {
+        "scheme": "StratifiedGroupKFold(5, patient_id)",
+        "max_folds_per_patient": 1,
+        "per_fold_pos": [
+          102,
+          103,
+          102,
+          103,
+          103
+        ]
+      }
+    }
+  },
+  "script_greps": {
+    "scripts/common.py": {
+      "seed": 42
+    },
+    "scripts/eda.py": {
+      "seed": 42
+    },
+    "scripts/vision.py": {
+      "loss": [
+        "binary_cross_entropy_with_logits"
+      ],
+      "optimizer": [
+        "AdamW"
+      ],
+      "lr_scheduler": [
+        "LambdaLR"
+      ]
+    }
+  },
+  "script_seed": 42,
+  "submission_rows": 4142,
+  "submission_files": {
+    "submission.csv": 4142
+  },
+  "missing": [],
+  "unparsed": []
+}

@@ -1,0 +1,279 @@
+{
+  "competition": {
+    "name": "ventilator-pressure-prediction",
+    "url": "https://www.kaggle.com/competitions/ventilator-pressure-prediction",
+    "description": "Simulate a ventilator connected to a sedated patient's lung. Predict the airway pressure in the respiratory circuit during each breath given time series of control inputs (R, C, u_in, u_out). Only the inspiratory phase (u_out == 0) is scored.",
+    "problem_type": "regression",
+    "evaluation_metric": "mean absolute error (MAE), computed only on inspiratory-phase rows (u_out == 0)",
+    "optimization_direction": "minimize",
+    "target_column": "pressure",
+    "id_column": "id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": false,
+      "internet_access_allowed": false
+    },
+    "notes": "MLE-bench medium-complexity split (prepared data from mle-bench, graded offline against private split). Time-series grouped by breath_id, 80 timesteps per breath."
+  },
+  "lane_type": "special/complex (non-GBDT records; collected by collect_dl_facts.py)",
+  "metric": {
+    "name": "mean absolute error (MAE), computed only on inspiratory-phase rows (u_out == 0)",
+    "name_source": "config:evaluation_metric",
+    "direction": "minimize",
+    "direction_source": "config:optimization_direction"
+  },
+  "grading": {
+    "note": "offline grade record(s) — graded against a held-out split, not a live leaderboard; see competition config notes for grading context",
+    "source_dirs": [
+      "benchmark_results/run2"
+    ],
+    "agents": {
+      "aide": {
+        "competition_id": "ventilator-pressure-prediction",
+        "score": 0.34591,
+        "gold_threshold": 0.1119,
+        "silver_threshold": 0.1338,
+        "bronze_threshold": 0.1364,
+        "median_threshold": 0.1638,
+        "any_medal": false,
+        "gold_medal": false,
+        "silver_medal": false,
+        "bronze_medal": false,
+        "above_median": false,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": true,
+        "created_at": "2026-07-29T15:59:26.473131",
+        "submission_path": "aideml-runs/ventilator-pressure-prediction/workspaces/0-funny-ultramarine-wapiti/working/submission.csv"
+      },
+      "my-agent": {
+        "competition_id": "ventilator-pressure-prediction",
+        "score": 0.16525,
+        "gold_threshold": 0.1119,
+        "silver_threshold": 0.1338,
+        "bronze_threshold": 0.1364,
+        "median_threshold": 0.1638,
+        "any_medal": false,
+        "gold_medal": false,
+        "silver_medal": false,
+        "bronze_medal": false,
+        "above_median": false,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": true,
+        "created_at": "2026-07-29T16:44:01.680973",
+        "submission_path": "kaggle/competitions/ventilator-pressure-prediction/submission.csv"
+      },
+      "nvidia": {
+        "competition_id": "ventilator-pressure-prediction",
+        "score": 0.40093,
+        "gold_threshold": 0.1119,
+        "silver_threshold": 0.1338,
+        "bronze_threshold": 0.1364,
+        "median_threshold": 0.1638,
+        "any_medal": false,
+        "gold_medal": false,
+        "silver_medal": false,
+        "bronze_medal": false,
+        "above_median": false,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": true,
+        "created_at": "2026-07-30T08:43:49.767193",
+        "submission_path": "nvidia-kaggle-runs/ventilator-pressure-prediction/submission.csv"
+      }
+    }
+  },
+  "status": {
+    "present": true,
+    "sections": {
+      "ventilator-pressure-prediction — STATUS (run2, 2026-07-29)": "**Final CV (honest 5-fold OOF, masked MAE on u_out==0): 0.19222 snapped (raw 0.19361).**\n**Model: BiLSTM-4x256 seq2seq, 53 per-timestep features, bf16 AMP, 260-epoch OneCycle, 5-fold KFold on breaths; submission = median across 5 fold models + snap-to-pressure-grid.**\n**vs run1 (0.24004 OOF single fold, mlebench grade 0.2315): −0.048 CV; medal threshold 0.1638 likely still out of reach.**",
+      "Pipeline": "- Features: run1's validated 41 + 12 new (R×C cross one-hot 9, u_in cummax, cummean, reverse-cumsum). All per-timestep, (n_breaths, 80, 53), z-normalized.\n- Model: Linear→LayerNorm→SiLU input proj, 4-layer bidirectional LSTM h=256, 2-layer head. Masked L1 loss (u_out==0 only). AdamW lr 2e-3, OneCycle 260 epochs, batch 1024, grad clip 5.\n- Speed: bf16 autocast + GPU-resident tensors + cudnn.benchmark on GB10 → ~7 s/epoch vs run1's 46.8 s (≈6×). Made full 5-fold × 260 ep feasible (~2.6 h) inside the 4 h budget where run1 managed 1 fold × 100 ep.\n- Foreground constraint: training chunked via checkpoint/resume (`scripts/train.py --chunk-seconds 520`, exit 3 = resume) — 18 sequential ~9-min foreground runs.\n- Fold val MAEs: 0.19432 / 0.19599 / 0.19258 / 0.18934 / 0.19583.\n- Postprocess: median across 5 fold test preds (MAE-optimal aggregator; scored-region fold spread std 0.115, mean-vs-median absdiff 0.037), then snap to the 950-value training pressure grid (validated on OOF: 0.19361→0.19222).",
+      "Tree search decision": "**Not used — deliberately.** One evaluation node here is a full LSTM training run (~30 min/fold, ~2.6 h for an honest 5-fold CV). A ~60-node search is impossible in a 4 h budget; even a shallow search would trade the one affordable full-CV model for several unconverged ones. Skill fallback applied: single linear iteration pass (run1 baseline → run2 improved recipe). Tree search stays appropriate for cheap-eval tabular comps, not per-node-hours deep-learning comps.",
+      "Artifacts": "- `submission.csv` — 603,600 rows, id order matches sample_submission.csv, median+snap.\n- `scripts/train.py` — full pipeline (features→train→ensemble→submission), checkpoint/resume.\n- `scripts/work/` — fold test preds, feature cache, checkpoint.\n- `oof_lstm_run2.npy`, `cv_result.json`, `experiments.json` (v2 schema).\n- Run1 archived under `.run1-archive/`.",
+      "If more budget": "Second seed per fold + median over 10 members (~+2.6 h); LSTM+GRU hybrid or deeper (5×384) model — public solutions suggest ~0.15 territory needs those plus ~300 epochs."
+    }
+  },
+  "texts": {
+    "headless_run2.log": "Done. Benchmark run complete.\n\n**Result: 5-fold OOF masked MAE 0.19222** (snapped; raw 0.19361) — run1 got 0.24004 on one fold, grade 0.2315. Medal threshold 0.1638 likely still out of reach, but −0.048 CV improvement.\n\n**What run2 did:**\n- Same BiLSTM-4x256 seq2seq recipe as run1, +12 features (R×C cross one-hot, cummax/cummean, reverse-cumsum) = 53 per-timestep features, masked L1 on scored region only.\n- Key lever was throughput, not architecture: bf16 autocast + whole dataset resident on GPU + cudnn.benchmark cut epoch time 46.8s to 6.9s (~6.8×). That turned run1's \"1 fold × 100 epochs\" budget into \"5 folds × 260 epochs\" in ~2.6h.\n- Foreground-only constraint handled by checkpoint/resume chunking: 18 sequential ~9-min runs, per-epoch seeded shuffle replay, fully deterministic across restarts.\n- Fold val MAEs 0.18934–0.19599. Submission = median across 5 fold models (MAE-optimal aggregator) + snap to the 950-value pressure grid (snap validated on OOF: −0.0014).\n- Diagnostic worth noting: fold models disagree wildly (std 2.57) only in the unscored expiratory region; scored-region spread is 0.115.\n\n**Tree search: skipped, documented in STATUS.md** — one eval node = ~30 min of LSTM training; a 60-node search cannot fit a 4h budget, so linear iteration (run1 baseline → run2 recipe) was the right fallback.\n\n**Deliverables:** `submission.csv` (603,600 rows, id order verified, values in train range), `STATUS.md` 3-line summary, `experiments.json` v2 entry, new 「逐時步序列」section + snap/median notes in `knowledge/experience.md`, memory updated.\n"
+  },
+  "experiments": [
+    {
+      "schema_version": 2,
+      "experiment_id": 1,
+      "timestamp": "2026-07-29T03:47:49",
+      "model": "BiLSTM-4x256 (seq2seq, masked L1, bf16)",
+      "metric": "masked_MAE(u_out==0)",
+      "direction": "minimize",
+      "score": 0.192219,
+      "cv": {
+        "strategy": "5-fold KFold on breaths",
+        "folds_trained": 5,
+        "fold_scores": [
+          0.19431665539741516,
+          0.19598613679409027,
+          0.19258320331573486,
+          0.18934156000614166,
+          0.1958276629447937
+        ],
+        "cv_raw": 0.1936112940311432,
+        "cv_snapped": 0.19221872091293335,
+        "params": {
+          "folds": "5",
+          "max_folds": "5",
+          "epochs": "260",
+          "batch": "1024",
+          "hidden": "256",
+          "layers": "4",
+          "lr": "0.002",
+          "subset": "0",
+          "tag": "lstm_run2",
+          "chunk_seconds": "520.0",
+          "workdir": "/home/tjyen/ai_agents/kaggle/competitions/ventilator-pressure-prediction/scripts/work"
+        }
+      },
+      "postprocess": [
+        "median-across-5-fold-test-preds",
+        "snap-to-pressure-grid (950 values)"
+      ],
+      "submission": "submission.csv",
+      "notes": "run2: 53 features (run1's 41 + RxC cross one-hot + cummax/cummean/rev-cumsum), bf16 autocast, GPU-resident data, 260-epoch OneCycle, 5-fold mean ensemble; raw OOF 0.19361 / snapped 0.19222 Final submission uses MEDIAN across 5 fold models (MAE-optimal aggregator; scored-region mean-vs-median absdiff 0.037), then snap.",
+      "leaderboard": {
+        "median_threshold": 0.1638,
+        "note": "mlebench offline grading pending"
+      }
+    }
+  ],
+  "experiments_file": "experiments.json",
+  "other_experiment_files": [],
+  "best": {
+    "schema_version": 2,
+    "experiment_id": 1,
+    "timestamp": "2026-07-29T03:47:49",
+    "model": "BiLSTM-4x256 (seq2seq, masked L1, bf16)",
+    "metric": "masked_MAE(u_out==0)",
+    "direction": "minimize",
+    "score": 0.192219,
+    "cv": {
+      "strategy": "5-fold KFold on breaths",
+      "folds_trained": 5,
+      "fold_scores": [
+        0.19431665539741516,
+        0.19598613679409027,
+        0.19258320331573486,
+        0.18934156000614166,
+        0.1958276629447937
+      ],
+      "cv_raw": 0.1936112940311432,
+      "cv_snapped": 0.19221872091293335,
+      "params": {
+        "folds": "5",
+        "max_folds": "5",
+        "epochs": "260",
+        "batch": "1024",
+        "hidden": "256",
+        "layers": "4",
+        "lr": "0.002",
+        "subset": "0",
+        "tag": "lstm_run2",
+        "chunk_seconds": "520.0",
+        "workdir": "/home/tjyen/ai_agents/kaggle/competitions/ventilator-pressure-prediction/scripts/work"
+      }
+    },
+    "postprocess": [
+      "median-across-5-fold-test-preds",
+      "snap-to-pressure-grid (950 values)"
+    ],
+    "submission": "submission.csv",
+    "notes": "run2: 53 features (run1's 41 + RxC cross one-hot + cummax/cummean/rev-cumsum), bf16 autocast, GPU-resident data, 260-epoch OneCycle, 5-fold mean ensemble; raw OOF 0.19361 / snapped 0.19222 Final submission uses MEDIAN across 5 fold models (MAE-optimal aggregator; scored-region mean-vs-median absdiff 0.037), then snap.",
+    "leaderboard": {
+      "median_threshold": 0.1638,
+      "note": "mlebench offline grading pending"
+    }
+  },
+  "excluded_diagnostics": [],
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-29T03:47:49",
+      "model": "BiLSTM-4x256 (seq2seq, masked L1, bf16)",
+      "score": 0.192219
+    }
+  ],
+  "records": {
+    "cv_result.json": {
+      "cv_raw": 0.1936112940311432,
+      "cv_snap": 0.19221872091293335,
+      "fold_scores": [
+        0.19431665539741516,
+        0.19598613679409027,
+        0.19258320331573486,
+        0.18934156000614166,
+        0.1958276629447937
+      ],
+      "n_folds_trained": 5,
+      "snap_applied": true,
+      "elapsed_s": 469.78187584877014,
+      "args": {
+        "folds": 5,
+        "max_folds": 5,
+        "epochs": 260,
+        "batch": 1024,
+        "hidden": 256,
+        "layers": 4,
+        "lr": 0.002,
+        "subset": 0,
+        "tag": "lstm_run2",
+        "chunk_seconds": 520.0,
+        "workdir": "/home/tjyen/ai_agents/kaggle/competitions/ventilator-pressure-prediction/scripts/work"
+      }
+    },
+    "cv_result_smoke.json": {
+      "cv_raw": 3.7476677894592285,
+      "cv_snap": 3.7477355003356934,
+      "fold_scores": [
+        3.7476682662963867
+      ],
+      "n_folds_trained": 1,
+      "snap_applied": false,
+      "elapsed_s": 4.954155445098877,
+      "args": {
+        "folds": 5,
+        "max_folds": 1,
+        "epochs": 12,
+        "batch": 1024,
+        "hidden": 256,
+        "layers": 4,
+        "lr": 0.002,
+        "subset": 2000,
+        "tag": "smoke",
+        "chunk_seconds": 300.0,
+        "workdir": "/home/tjyen/ai_agents/kaggle/competitions/ventilator-pressure-prediction/scripts/work"
+      }
+    }
+  },
+  "script_greps": {
+    "scripts/train.py": {
+      "seed": 42,
+      "optimizer": [
+        "AdamW"
+      ],
+      "lr_scheduler": [
+        "OneCycleLR"
+      ]
+    }
+  },
+  "script_seed": 42,
+  "submission_rows": 603600,
+  "submission_files": {
+    "submission.csv": 603600,
+    "submission_smoke.csv": 603600
+  },
+  "missing": [
+    "eda_summary (no eda_summary*.json — data volume/profiling not recorded)"
+  ],
+  "unparsed": []
+}

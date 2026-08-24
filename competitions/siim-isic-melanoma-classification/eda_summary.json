@@ -1,0 +1,50 @@
+{
+  "shapes": {
+    "train": [
+      28984,
+      8
+    ],
+    "test": [
+      4142,
+      5
+    ]
+  },
+  "train_only_cols": [
+    "benign_malignant",
+    "diagnosis"
+  ],
+  "target": {
+    "positives": 513,
+    "n": 28984,
+    "pos_rate": 0.017699420369859234
+  },
+  "patients": {
+    "train": 2056,
+    "test": 1457,
+    "overlap": 1457,
+    "imgs_per_patient_mean": 14.09727626459144,
+    "imgs_per_patient_max": 104,
+    "patients_with_positive": 392
+  },
+  "missing": {
+    "sex": 0.0019321004692243997,
+    "age_approx": 0.0020356058515042783,
+    "anatom_site_general_challenge": 0.01607783604747447
+  },
+  "resolution": {
+    "n_train": 81,
+    "n_test": 28,
+    "test_rows_with_unseen_res": 0.0016900048285852245
+  },
+  "folds": {
+    "scheme": "StratifiedGroupKFold(5, patient_id)",
+    "max_folds_per_patient": 1,
+    "per_fold_pos": [
+      102,
+      103,
+      102,
+      103,
+      103
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "cv_raw": 3.7476677894592285,
+  "cv_snap": 3.7477355003356934,
+  "fold_scores": [
+    3.7476682662963867
+  ],
+  "n_folds_trained": 1,
+  "snap_applied": false,
+  "elapsed_s": 4.954155445098877,
+  "args": {
+    "folds": 5,
+    "max_folds": 1,
+    "epochs": 12,
+    "batch": 1024,
+    "hidden": 256,
+    "layers": 4,
+    "lr": 0.002,
+    "subset": 2000,
+    "tag": "smoke",
+    "chunk_seconds": 300.0,
+    "workdir": "/home/tjyen/ai_agents/kaggle/competitions/ventilator-pressure-prediction/scripts/work"
+  }
+}

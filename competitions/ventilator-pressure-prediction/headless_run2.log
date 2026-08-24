@@ -1,0 +1,14 @@
+Done. Benchmark run complete.
+
+**Result: 5-fold OOF masked MAE 0.19222** (snapped; raw 0.19361) — run1 got 0.24004 on one fold, grade 0.2315. Medal threshold 0.1638 likely still out of reach, but −0.048 CV improvement.
+
+**What run2 did:**
+- Same BiLSTM-4x256 seq2seq recipe as run1, +12 features (R×C cross one-hot, cummax/cummean, reverse-cumsum) = 53 per-timestep features, masked L1 on scored region only.
+- Key lever was throughput, not architecture: bf16 autocast + whole dataset resident on GPU + cudnn.benchmark cut epoch time 46.8s to 6.9s (~6.8×). That turned run1's "1 fold × 100 epochs" budget into "5 folds × 260 epochs" in ~2.6h.
+- Foreground-only constraint handled by checkpoint/resume chunking: 18 sequential ~9-min runs, per-epoch seeded shuffle replay, fully deterministic across restarts.
+- Fold val MAEs 0.18934–0.19599. Submission = median across 5 fold models (MAE-optimal aggregator) + snap to the 950-value pressure grid (snap validated on OOF: −0.0014).
+- Diagnostic worth noting: fold models disagree wildly (std 2.57) only in the unscored expiratory region; scored-region spread is 0.115.
+
+**Tree search: skipped, documented in STATUS.md** — one eval node = ~30 min of LSTM training; a 60-node search cannot fit a 4h budget, so linear iteration (run1 baseline → run2 recipe) was the right fallback.
+
+**Deliverables:** `submission.csv` (603,600 rows, id order verified, values in train range), `STATUS.md` 3-line summary, `experiments.json` v2 entry, new 「逐時步序列」section + snap/median notes in `knowledge/experience.md`, memory updated.

@@ -1,0 +1,60 @@
+{
+  "task_family": "image binary classification (dermoscopy) + patient-level tabular metadata",
+  "test_window": {
+    "relation": "iid image-level split WITH group overlap",
+    "evidence": "no date column; mle-bench prepared split. All 1457 test patient_ids also occur in train.csv (overlap=1457/1457). image_name overlap = 0. Metadata marginals train vs test match to <1.5% on sex/age/anatom_site. So the split is random at the IMAGE level, and patients straddle train/test by construction."
+  },
+  "split_policy": {
+    "scheme": "StratifiedKFold(n_splits=5, shuffle=True, random_state=42) on target at image level",
+    "rationale": "The CV must mirror the graded split. Because test patients are present in train, an image-level stratified split reproduces the test condition exactly; a patient-grouped split would be systematically pessimistic and would mis-rank any patient-context feature.",
+    "forbidden": "using `diagnosis` or `benign_malignant` as features (train-only columns; diagnosis=='melanoma' is exactly target==1)",
+    "diagnostic": "StratifiedGroupKFold on patient_id kept as an optional honesty probe for the image model only"
+  },
+  "metric": {
+    "name": "ROC-AUC",
+    "traps": [
+      "ranking metric: class-imbalance weighting (pos_weight / scale_pos_weight) perturbs the loss without improving ranking - see experience.md ROC-AUC section, validated 3x on tabular",
+      "no calibration needed; only monotone ranking matters, so rank-averaging is a valid blend space",
+      "513 positives only -> per-fold AUC variance is large; compare models on full pooled OOF, not fold means"
+    ]
+  },
+  "external_data": {
+    "needed": "no",
+    "reason": "config.yaml special_rules.external_data_allowed = false, and internet_access_allowed = false. Whitelisted macro/calendar sources are irrelevant to dermoscopy images anyway.",
+    "candidates": []
+  },
+  "injection_ideas": {
+    "data_level": [
+      "fold-safe patient-level target encoding: for each image, malignant count/rate over the SAME patient's OTHER images in the training fold. EDA: 392/2056 patients hold all 513 positives; within-positive-patient rate 9.2% vs 1.77% global (5.2x lift). This is exactly the 'ugly duckling' patient context the host asks for, and it is legitimate here because test patients appear in train.",
+      "patient-level image-count feature (train mean 14.1 img/patient, max 104) - lesion burden proxy",
+      "patient-relative image statistics ('ugly duckling'): per-image colour/size stats minus that patient's mean, computable without labels so no leakage",
+      "anatom_site and age are genuine risk factors: head/neck 4.19% vs lower-extremity 1.45%; age 70+ 7.35% vs 30-40 0.70%",
+      "resize the wildly heterogeneous JPEGs (640x480 .. 6000x4000) to a fixed square cache once; store uint8 and keep it GPU-resident (vision_experience: DataLoader+CUDA fork deadlock hazard)"
+    ],
+    "model_level": [
+      "pretrained ImageNet backbone fine-tune (pretrained_models_allowed = true); per-backbone LR mini-sweep is mandatory before ranking backbones (vision_experience, 4 domains)",
+      "plain BCE without pos_weight (ROC-AUC prior)",
+      "cross-family convex blend over real OOFs - beat best solo in all 4 prior vision runs",
+      "metadata GBDT as an extra, strongly decorrelated blend member (TASK-BLEND-DECOR archetype)"
+    ]
+  },
+  "matched_task_priors": [
+    "TASK-IMBALANCED [GEN] - positive rate 1.77% (<=2%): stratified folds, rank metric needs no resampling/calibration",
+    "TASK-CAT-ONLY (partial) - the tabular side is 3 low-cardinality categoricals + patient_id; encoding of the group key is the whole tabular game",
+    "TASK-BLEND-DECOR - add a bias-dominated, different-library member (metadata GBDT) as decorrelator before re-optimising weights"
+  ],
+  "not_recorded": [
+    "whether mle-bench's private grading split is drawn the same way as the public split we see (assumed yes)",
+    "no [TASK-*] prior exists yet for dermoscopy / medical imaging - this run should create one"
+  ],
+  "eda_verdict": {
+    "test_window": "CONFIRMED image-level iid with full patient overlap (1457/1457)",
+    "external_data": "CONFIRMED not needed / not allowed",
+    "new_findings": [
+      "diagnosis + benign_malignant are train-only leakage columns and must be dropped",
+      "sample_submission image_name order == test.csv order exactly",
+      "missing metadata is tiny: sex 56, age 59, anatom_site 466 in train (proportional in test) - impute with 'unknown' category / median",
+      "male target rate 2.15% vs female 1.37%"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+Run complete, ~6.5 h, everything foreground.
+
+## Result
+
+**Final CV ROC-AUC 0.93214** (honest leave-fold-out of the convex rank blend). Best solo 0.92596 — `vit_small_patch16_224` @384px. `submission.csv`: 4,142 rows, id order verified against `sample_submission.csv`.
+
+## Decision that mattered
+
+EDA refuted the dossier's split hypothesis. The real SIIM competition is patient-disjoint; **mle-bench re-split the original 33,126 images randomly by image**, so all 1,457 test patients also appear in train (per-patient test share 0.124 vs overall 0.125). `StratifiedGroupKFold(patient_id)` would have measured a harder problem than the graded one. Primary CV = image-level `StratifiedKFold`; patient-grouped reported alongside as a leakage detector — the two agreed within 0.0004 AUC for all 10 members, so no member exploits patient identity.
+
+## Pipeline
+
+| stage | result |
+|---|---|
+| metadata + image stats | CatBoost 0.89171; ablation: image stats −0.065, resolution −0.014, ugly-duckling −0.013 |
+| discovery (18 configs, 52 min) | CNNs peak 1e-3, ViT/ConvNeXt 1e-4 — 5th domain confirming this |
+| 5 full fine-tunes | vit_small 384 **0.92596** / 256 0.92309 / 320 0.92024; resnet50 0.89166; effb0 0.88447 |
+| blend | equal 0.92517, optimised 0.93291, **leave-fold-out 0.93214** |
+
+## Negative results
+
+- **Resolution diversity beat architecture diversity.** Three vit_small scales took 0.78 of blend weight; resnet50 and effb0 got ~0. Three structurally different member sets land within 0.00001.
+- **Discovery-scale gap widened** (0.007 at 2ep → 0.039 at 10ep), contradicting the digit-recognizer prior "don't over-prune on discovery scores".
+- **LGB level-2 stack lost to the convex blend** (0.92566 vs 0.93214) — same direction as the s3e14 Ridge-stacking counterexample.
+
+## Tree search skipped — stated in STATUS.md §5
+
+A solo node here is a 5-fold CNN fine-tune costing 48–89 min, so the prescribed 60-node budget is 50–90 GPU-hours against ~8 h. This is exactly the reference's own documented fallback ("extremely expensive evaluation"). Blend-layer-only tree search was rejected as redundant given the saturation evidence.
+
+25 experiments logged via `log_experiment_v2()`; insights written back to `knowledge/experience.md` and `knowledge/vision_experience.md`; `dossier.json` carries the `eda_verdict`. Run1 outputs archived to `run1_archive/` and not used for any modelling decision.
+
+One honest gap: dihedral augmentation was adopted but never ablated against no-aug, so its contribution is unmeasured.

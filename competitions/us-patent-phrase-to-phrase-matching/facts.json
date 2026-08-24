@@ -1,0 +1,467 @@
+{
+  "competition": {
+    "name": "us-patent-phrase-to-phrase-matching",
+    "url": "https://www.kaggle.com/competitions/us-patent-phrase-to-phrase-matching",
+    "description": "Score semantic similarity between pairs of patent phrases (anchor, target) within a CPC context code. Train on phrase pairs with human-rated similarity in [0, 1]; predict `score` for each test pair.",
+    "problem_type": "regression",
+    "evaluation_metric": "Pearson correlation coefficient between predicted and actual scores",
+    "optimization_direction": "maximize",
+    "target_column": "score",
+    "id_column": "id",
+    "train_file": "train.csv",
+    "test_file": "test.csv",
+    "sample_submission_file": "sample_submission.csv",
+    "special_rules": {
+      "external_data_allowed": false,
+      "pretrained_models_allowed": true,
+      "internet_access_allowed": false
+    },
+    "notes": "MLE-bench medium-complexity split (prepared data from mle-bench, graded offline against private split). NLP pair-similarity task; transformers help but TF-IDF/char-ngram + GBDT is a viable CPU baseline."
+  },
+  "lane_type": "special/complex (non-GBDT records; collected by collect_dl_facts.py)",
+  "metric": {
+    "name": "Pearson correlation coefficient between predicted and actual scores",
+    "name_source": "config:evaluation_metric",
+    "direction": "maximize",
+    "direction_source": "config:optimization_direction"
+  },
+  "grading": {
+    "note": "offline grade record(s) — graded against a held-out split, not a live leaderboard; see competition config notes for grading context",
+    "source_dirs": [
+      "benchmark_results/run2"
+    ],
+    "agents": {
+      "aide": {
+        "competition_id": "us-patent-phrase-to-phrase-matching",
+        "score": 0.65821,
+        "gold_threshold": 0.87,
+        "silver_threshold": 0.863,
+        "bronze_threshold": 0.8616,
+        "median_threshold": 0.851,
+        "any_medal": false,
+        "gold_medal": false,
+        "silver_medal": false,
+        "bronze_medal": false,
+        "above_median": false,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": false,
+        "created_at": "2026-07-29T15:59:31.346302",
+        "submission_path": "aideml-runs/us-patent-phrase-to-phrase-matching/workspaces/0-sly-cherubic-goldfish/working/submission.csv"
+      },
+      "my-agent": {
+        "competition_id": "us-patent-phrase-to-phrase-matching",
+        "score": 0.86658,
+        "gold_threshold": 0.87,
+        "silver_threshold": 0.863,
+        "bronze_threshold": 0.8616,
+        "median_threshold": 0.851,
+        "any_medal": true,
+        "gold_medal": false,
+        "silver_medal": true,
+        "bronze_medal": false,
+        "above_median": true,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": false,
+        "created_at": "2026-07-29T15:59:32.442653",
+        "submission_path": "kaggle/competitions/us-patent-phrase-to-phrase-matching/submissions/ensemble_run2_nnls_all.csv"
+      },
+      "nvidia": {
+        "competition_id": "us-patent-phrase-to-phrase-matching",
+        "score": 0.8616,
+        "gold_threshold": 0.87,
+        "silver_threshold": 0.863,
+        "bronze_threshold": 0.8616,
+        "median_threshold": 0.851,
+        "any_medal": true,
+        "gold_medal": false,
+        "silver_medal": false,
+        "bronze_medal": true,
+        "above_median": true,
+        "submission_exists": true,
+        "valid_submission": true,
+        "is_lower_better": false,
+        "created_at": "2026-07-29T15:59:30.189197",
+        "submission_path": "nvidia-kaggle-runs/us-patent-phrase-to-phrase-matching/submission.csv"
+      }
+    }
+  },
+  "status": {
+    "present": true,
+    "sections": {
+      "STATUS — us-patent-phrase-to-phrase-matching (run 2, 2026-07-28)": "**Final CV (honest leave-fold-out Pearson r): 0.83184** — NNLS blend of deberta-v3-large ×2 seeds + deberta-v3-base + LGBM lexical (weights 0.26/0.37/0.25/0.12), GroupKFold(4) by anchor.\nSubmission: `submission.csv` (= `submissions/ensemble_run2_nnls_all.csv`, 3648 rows, clipped to [0,1]).\nImprovement over run 1 (archived, OOF 0.8158 / mlebench 0.8575): +0.016 OOF, driven by deberta-v3-large (solo 0.8197/0.8213 vs base 0.8060).\n\n---",
+      "Pipeline (run 2)": "| Model | CV scheme | OOF Pearson r |\n|---|---|---|\n| LGBM char/word TF-IDF + lexical | StratifiedKFold(5) on score | 0.6113 |\n| deberta-v3-base s42 (3 ep, lr 2e-5, max_len 96, bf16) | GroupKFold(4) by anchor | 0.8060 |\n| deberta-v3-large s42 (3 ep, lr 1e-5, 10% warmup, bf16) | GroupKFold(4) by anchor | 0.8197 |\n| deberta-v3-large s1337 (same recipe) | GroupKFold(4) by anchor | 0.8213 |\n| **NNLS blend (all 4)** | leave-fold-out refit | **0.83184** (full-OOF 0.83206) |\n\n- Input text: `anchor [SEP] target [SEP] <CPC section title> <context code>`; mean-pool head + BCEWithLogits; fp32 master weights + bf16 autocast (fused AdamW).\n- deberta-v3-large recipe from memory (`deberta-v3-large-collapse`): lr 1e-5 + 10% cosine warmup — zero fold collapses across 8 large folds (probe smoke-tested first, val_r 0.64 @ 40 steps).\n- Seeds fixed (42 / 1337); GroupKFold split is seed-independent so all OOFs share identical folds.\n- All training foreground-waited (background handle + blocking TaskOutput; session never idle while a job ran).",
+      "Tree search decision": "**Skipped — not worth the budget here.** Stage-4 tree search assumes cheap node evaluations (~seconds–minutes for GBDT refits). In this competition every meaningful node is a transformer fine-tune (~35 min for 4-fold large), so a ~60-node search is ~35 GPU-hours vs the ~4 h budget. The high-leverage moves (large backbone with a stable recipe, seed bagging, NNLS pool blend) were taken directly instead; blend-level candidate search (9 candidates, honest leave-fold-out scoring) served as the light-weight Stage-4 loop.",
+      "Honesty notes": "- Blend chosen by leave-fold-out score (weights refit per held-out fold), not full-OOF; the two differ by only 0.0002 — weight fitting is not overfitting the OOF.\n- LGBM's OOF comes from a non-grouped split (optimistic solo), but it still earns 0.12 NNLS weight on the grouped-deberta folds; same pattern as run 1 where it helped mlebench score.\n- Test anchors are 100% seen in train (pairs unseen) — GroupKFold-by-anchor CV is conservative relative to the test distribution; true score likely ≥ CV.",
+      "Artifacts": "- `scripts/train_deberta_v2.py` (now takes `--model`), logs `scripts/train_*.log`\n- OOF/test preds: `scripts/{deberta_base_s42,deberta_large_s42,deberta_large_s1337,lgbm}_{oof,test}.npy`\n- Blend decision: `scripts/ensemble_run2_decision.json`; experiments: `experiments.json` (5 entries)\n- Run 1 archived at `.run1-archive/`"
+    }
+  },
+  "texts": {
+    "headless_run2.log": "Done. Final CV **0.83184** (honest leave-fold-out Pearson r), `submission.csv` written (3648 rows, format verified against sample_submission).\n\n**Pipeline (run 2, ~2.5h):**\n- LGBM TF-IDF/lexical baseline: OOF 0.6113\n- deberta-v3-base seed42, GroupKFold(4) by anchor: OOF 0.8060\n- deberta-v3-large seeds 42/1337 (lr 1e-5 + 10% warmup + bf16 over fp32 masters, per collapse memory — smoke-probed first, 8/8 folds clean): OOF 0.8197 / 0.8213\n- Final: NNLS blend of all 4 (weights 0.26/0.37/0.25/0.12), full-OOF 0.83206, honest leave-fold-out 0.83184 — chosen by honest score; gap only 0.0002, so weight fitting not overfitting OOF\n\nBeats run 1 (OOF 0.8158, mlebench 0.8575) by +0.016 OOF; lever was the large backbone with the stable recipe plus transformer seed bagging.\n\n**Tree search: skipped, reason in STATUS.md** — each node here is a ~35-min transformer fine-tune, so a ~60-node search vastly exceeds the 4h budget; light blend-level candidate search (9 candidates, honest scoring) served as Stage 4.\n\nBookkeeping done: 5 experiments in `experiments.json` (all via `log_experiment_v2`), STATUS.md with 3-line summary + honesty notes, new \"Pearson r / NLP pair-similarity\" section in `knowledge/experience.md`, collapse-fix memory re-validated. Training jobs all waited on in-session (background handle + blocking TaskOutput; none left running).\n"
+  },
+  "experiments": [
+    {
+      "schema_version": 2,
+      "experiment_id": 1,
+      "timestamp": "2026-07-28T19:43:20",
+      "model": "lightgbm-lexical-tfidf-baseline",
+      "metric": "pearson_r",
+      "direction": "maximize",
+      "score": 0.611275,
+      "features": [
+        "cos_char",
+        "cos_word",
+        "jaccard",
+        "n_common",
+        "len_a",
+        "len_t",
+        "nw_a",
+        "nw_t",
+        "len_ratio",
+        "a_in_t",
+        "t_in_a",
+        "same_first_word",
+        "context_code",
+        "section"
+      ],
+      "n_features": 14,
+      "cv": {
+        "scheme": "StratifiedKFold5_on_score",
+        "seed": 42
+      },
+      "submission": "submissions/baseline_lgbm.csv",
+      "notes": "Char/word TF-IDF cosine + lexical overlap + context codes. Safety baseline."
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 2,
+      "timestamp": "2026-07-28T20:01:01",
+      "model": "deberta_base_s42-meanpool-bce",
+      "metric": "pearson_r",
+      "direction": "maximize",
+      "score": 0.805999,
+      "features": [
+        "anchor [SEP] target [SEP] section-title context-code"
+      ],
+      "n_features": 1,
+      "cv": {
+        "scheme": "GroupKFold4_by_anchor",
+        "seed": 42,
+        "fold_scores": [
+          0.81137,
+          0.8079,
+          0.79855,
+          0.80904
+        ]
+      },
+      "submission": "submissions/deberta_base_s42.csv",
+      "notes": "microsoft/deberta-v3-base mean-pool head, BCEWithLogits, lr=2e-05, head_lr=0.0001, batch=32, epochs=3, amp=bf16, opt=fused, max_len=96."
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 3,
+      "timestamp": "2026-07-28T20:35:17",
+      "model": "deberta_large_s42-meanpool-bce",
+      "metric": "pearson_r",
+      "direction": "maximize",
+      "score": 0.819674,
+      "features": [
+        "anchor [SEP] target [SEP] section-title context-code"
+      ],
+      "n_features": 1,
+      "cv": {
+        "scheme": "GroupKFold4_by_anchor",
+        "seed": 42,
+        "fold_scores": [
+          0.81877,
+          0.82346,
+          0.82279,
+          0.81883
+        ]
+      },
+      "submission": "submissions/deberta_large_s42.csv",
+      "notes": "microsoft/deberta-v3-large mean-pool head, BCEWithLogits, lr=1e-05, head_lr=0.0001, batch=32, epochs=3, amp=bf16, opt=fused, max_len=96."
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 4,
+      "timestamp": "2026-07-28T21:09:27",
+      "model": "deberta_large_s1337-meanpool-bce",
+      "metric": "pearson_r",
+      "direction": "maximize",
+      "score": 0.821296,
+      "features": [
+        "anchor [SEP] target [SEP] section-title context-code"
+      ],
+      "n_features": 1,
+      "cv": {
+        "scheme": "GroupKFold4_by_anchor",
+        "seed": 1337,
+        "fold_scores": [
+          0.81865,
+          0.82318,
+          0.82273,
+          0.82216
+        ]
+      },
+      "submission": "submissions/deberta_large_s1337.csv",
+      "notes": "microsoft/deberta-v3-large mean-pool head, BCEWithLogits, lr=1e-05, head_lr=0.0001, batch=32, epochs=3, amp=bf16, opt=fused, max_len=96."
+    },
+    {
+      "schema_version": 2,
+      "experiment_id": 5,
+      "timestamp": "2026-07-28T21:09:33",
+      "model": "ensemble-run2-nnls_all",
+      "metric": "pearson_r",
+      "direction": "maximize",
+      "score": 0.831841,
+      "features": [
+        "OOF blend of large_s42, large_s1337, base_s42, lgbm"
+      ],
+      "n_features": 1,
+      "cv": {
+        "scheme": "GroupKFold4_by_anchor",
+        "seed": 42,
+        "note": "honest = leave-fold-out NNLS refit; full-OOF score also reported"
+      },
+      "submission": "submissions/ensemble_run2_nnls_all.csv",
+      "notes": "Candidates: [('solo_large_s42', 0.81967), ('solo_large_s1337', 0.8213), ('solo_base_s42', 0.806), ('solo_lgbm', 0.61127), ('mean_larges', 0.82598), ('mean_all_deberta', 0.83015), ('nnls_larges', 0.82597), ('nnls_deberta', 0.83003), ('nnls_all', 0.83184)]. Chosen nnls_all: honest 0.83184, full-OOF 0.83206."
+    }
+  ],
+  "experiments_file": "experiments.json",
+  "other_experiment_files": [],
+  "best": {
+    "schema_version": 2,
+    "experiment_id": 5,
+    "timestamp": "2026-07-28T21:09:33",
+    "model": "ensemble-run2-nnls_all",
+    "metric": "pearson_r",
+    "direction": "maximize",
+    "score": 0.831841,
+    "features": [
+      "OOF blend of large_s42, large_s1337, base_s42, lgbm"
+    ],
+    "n_features": 1,
+    "cv": {
+      "scheme": "GroupKFold4_by_anchor",
+      "seed": 42,
+      "note": "honest = leave-fold-out NNLS refit; full-OOF score also reported"
+    },
+    "submission": "submissions/ensemble_run2_nnls_all.csv",
+    "notes": "Candidates: [('solo_large_s42', 0.81967), ('solo_large_s1337', 0.8213), ('solo_base_s42', 0.806), ('solo_lgbm', 0.61127), ('mean_larges', 0.82598), ('mean_all_deberta', 0.83015), ('nnls_larges', 0.82597), ('nnls_deberta', 0.83003), ('nnls_all', 0.83184)]. Chosen nnls_all: honest 0.83184, full-OOF 0.83206."
+  },
+  "excluded_diagnostics": [],
+  "trajectory": [
+    {
+      "experiment_id": 1,
+      "timestamp": "2026-07-28T19:43:20",
+      "model": "lightgbm-lexical-tfidf-baseline",
+      "score": 0.611275
+    },
+    {
+      "experiment_id": 2,
+      "timestamp": "2026-07-28T20:01:01",
+      "model": "deberta_base_s42-meanpool-bce",
+      "score": 0.805999
+    },
+    {
+      "experiment_id": 3,
+      "timestamp": "2026-07-28T20:35:17",
+      "model": "deberta_large_s42-meanpool-bce",
+      "score": 0.819674
+    },
+    {
+      "experiment_id": 4,
+      "timestamp": "2026-07-28T21:09:27",
+      "model": "deberta_large_s1337-meanpool-bce",
+      "score": 0.821296
+    },
+    {
+      "experiment_id": 5,
+      "timestamp": "2026-07-28T21:09:33",
+      "model": "ensemble-run2-nnls_all",
+      "score": 0.831841
+    }
+  ],
+  "records": {
+    "scripts/deberta_base_s42_cv.json": {
+      "model": "deberta_base_s42",
+      "oof_pearson": 0.8059994941693477,
+      "fold_scores": [
+        0.8113733912815299,
+        0.8078971590254603,
+        0.7985474494854224,
+        0.8090366231091956
+      ],
+      "n_folds": 4,
+      "args": {
+        "folds": 4,
+        "n_splits": 4,
+        "epochs": 3,
+        "batch": 32,
+        "lr": 2e-05,
+        "head_lr": 0.0001,
+        "wd": 0.01,
+        "max_len": 96,
+        "amp": "bf16",
+        "opt_impl": "fused",
+        "subset": 0,
+        "max_steps": 0,
+        "tag": "deberta_base_s42",
+        "model": "microsoft/deberta-v3-base",
+        "seed": 42
+      }
+    },
+    "scripts/deberta_large_s1337_cv.json": {
+      "model": "deberta_large_s1337",
+      "oof_pearson": 0.8212959114553429,
+      "fold_scores": [
+        0.8186501207399628,
+        0.8231823973551922,
+        0.8227316096442328,
+        0.8221630235254327
+      ],
+      "n_folds": 4,
+      "args": {
+        "folds": 4,
+        "n_splits": 4,
+        "epochs": 3,
+        "batch": 32,
+        "lr": 1e-05,
+        "head_lr": 0.0001,
+        "wd": 0.01,
+        "max_len": 96,
+        "amp": "bf16",
+        "opt_impl": "fused",
+        "subset": 0,
+        "max_steps": 0,
+        "tag": "deberta_large_s1337",
+        "model": "microsoft/deberta-v3-large",
+        "seed": 1337
+      }
+    },
+    "scripts/deberta_large_s42_cv.json": {
+      "model": "deberta_large_s42",
+      "oof_pearson": 0.8196736063465577,
+      "fold_scores": [
+        0.8187696069273382,
+        0.8234585231952656,
+        0.8227932702375881,
+        0.8188288258611172
+      ],
+      "n_folds": 4,
+      "args": {
+        "folds": 4,
+        "n_splits": 4,
+        "epochs": 3,
+        "batch": 32,
+        "lr": 1e-05,
+        "head_lr": 0.0001,
+        "wd": 0.01,
+        "max_len": 96,
+        "amp": "bf16",
+        "opt_impl": "fused",
+        "subset": 0,
+        "max_steps": 0,
+        "tag": "deberta_large_s42",
+        "model": "microsoft/deberta-v3-large",
+        "seed": 42
+      }
+    },
+    "scripts/ensemble_run2_decision.json": {
+      "solo_large_s42": {
+        "oof": 0.8196736063465577,
+        "honest": 0.8196736063465577,
+        "kind": "solo"
+      },
+      "solo_large_s1337": {
+        "oof": 0.8212959114553429,
+        "honest": 0.8212959114553429,
+        "kind": "solo"
+      },
+      "solo_base_s42": {
+        "oof": 0.8059994941693477,
+        "honest": 0.8059994941693477,
+        "kind": "solo"
+      },
+      "solo_lgbm": {
+        "oof": 0.6112746978506771,
+        "honest": 0.6112746978506771,
+        "kind": "solo"
+      },
+      "mean_larges": {
+        "oof": 0.8259778844827923,
+        "kind": "fixed",
+        "honest": 0.8259778844827923
+      },
+      "mean_all_deberta": {
+        "oof": 0.8301479594737289,
+        "kind": "fixed",
+        "honest": 0.8301479594737289
+      },
+      "nnls_larges": {
+        "oof": 0.82598558076652,
+        "honest": 0.8259691195698324,
+        "kind": "nnls",
+        "weights": {
+          "large_s42": 0.4324,
+          "large_s1337": 0.5676
+        }
+      },
+      "nnls_deberta": {
+        "oof": 0.830222938747575,
+        "honest": 0.8300304861432202,
+        "kind": "nnls",
+        "weights": {
+          "large_s42": 0.2827,
+          "large_s1337": 0.4114,
+          "base_s42": 0.3059
+        }
+      },
+      "nnls_all": {
+        "oof": 0.832062037181524,
+        "honest": 0.8318405121191031,
+        "kind": "nnls",
+        "weights": {
+          "large_s42": 0.2618,
+          "large_s1337": 0.3659,
+          "base_s42": 0.2531,
+          "lgbm": 0.1192
+        }
+      },
+      "chosen": "nnls_all"
+    }
+  },
+  "script_greps": {
+    "scripts/baseline_lgbm.py": {
+      "seed": 42
+    },
+    "scripts/train_deberta_v2.py": {
+      "seed": 42,
+      "loss": [
+        "BCEWithLogitsLoss"
+      ],
+      "optimizer": [
+        "AdamW"
+      ],
+      "lr_scheduler": [
+        "get_cosine_schedule_with_warmup"
+      ]
+    }
+  },
+  "script_seed": 42,
+  "submission_rows": 3648,
+  "submission_files": {
+    "submission.csv": 3648,
+    "submissions/baseline_lgbm.csv": 3648,
+    "submissions/deberta_base_s42.csv": 3648,
+    "submissions/deberta_large_s1337.csv": 3648,
+    "submissions/deberta_large_s42.csv": 3648,
+    "submissions/ensemble_run2_nnls_all.csv": 3648
+  },
+  "missing": [
+    "eda_summary (no eda_summary*.json — data volume/profiling not recorded)"
+  ],
+  "unparsed": []
+}

@@ -1,0 +1,28 @@
+{
+  "model": "deberta_base_s42",
+  "oof_pearson": 0.8059994941693477,
+  "fold_scores": [
+    0.8113733912815299,
+    0.8078971590254603,
+    0.7985474494854224,
+    0.8090366231091956
+  ],
+  "n_folds": 4,
+  "args": {
+    "folds": 4,
+    "n_splits": 4,
+    "epochs": 3,
+    "batch": 32,
+    "lr": 2e-05,
+    "head_lr": 0.0001,
+    "wd": 0.01,
+    "max_len": 96,
+    "amp": "bf16",
+    "opt_impl": "fused",
+    "subset": 0,
+    "max_steps": 0,
+    "tag": "deberta_base_s42",
+    "model": "microsoft/deberta-v3-base",
+    "seed": 42
+  }
+}

@@ -1,0 +1,13 @@
+Done. Final CV **0.83184** (honest leave-fold-out Pearson r), `submission.csv` written (3648 rows, format verified against sample_submission).
+
+**Pipeline (run 2, ~2.5h):**
+- LGBM TF-IDF/lexical baseline: OOF 0.6113
+- deberta-v3-base seed42, GroupKFold(4) by anchor: OOF 0.8060
+- deberta-v3-large seeds 42/1337 (lr 1e-5 + 10% warmup + bf16 over fp32 masters, per collapse memory — smoke-probed first, 8/8 folds clean): OOF 0.8197 / 0.8213
+- Final: NNLS blend of all 4 (weights 0.26/0.37/0.25/0.12), full-OOF 0.83206, honest leave-fold-out 0.83184 — chosen by honest score; gap only 0.0002, so weight fitting not overfitting OOF
+
+Beats run 1 (OOF 0.8158, mlebench 0.8575) by +0.016 OOF; lever was the large backbone with the stable recipe plus transformer seed bagging.
+
+**Tree search: skipped, reason in STATUS.md** — each node here is a ~35-min transformer fine-tune, so a ~60-node search vastly exceeds the 4h budget; light blend-level candidate search (9 candidates, honest scoring) served as Stage 4.
+
+Bookkeeping done: 5 experiments in `experiments.json` (all via `log_experiment_v2`), STATUS.md with 3-line summary + honesty notes, new "Pearson r / NLP pair-similarity" section in `knowledge/experience.md`, collapse-fix memory re-validated. Training jobs all waited on in-session (background handle + blocking TaskOutput; none left running).
