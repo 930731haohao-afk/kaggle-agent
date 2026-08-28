@@ -1,7 +1,7 @@
 ---
 name: kaggle-mlspec-report
 description: |
-  Generate a structured, reproducible ML Specification Report (5-section 顏佐榕 framework:
+  Generate a structured, reproducible ML Specification Report (5-section Tso-Jung Yen framework:
   Data / Models & Architecture / Training / Inference / Evaluation & Benchmarking) plus an
   academic-serif PDF for a completed Kaggle competition run. Numbers are extracted
   deterministically into facts.json by collect.py; the agent writes only the what/why
@@ -21,7 +21,7 @@ description: |
 # Kaggle ML-Spec Report
 
 Turns a finished competition folder into a **5-section ML Specification Report** — the
-顏佐榕 ML-spec framework aligned to the summer-plan's Goal 1 ((甲) what/why + (乙) the five
+Tso-Jung Yen ML-spec framework aligned to the summer-plan's Goal 1 ((A) what/why + (B) the five
 process components) — that a data scientist can read to rebuild the pipeline **without
 reading the code**. Output lives in `docs/ml_specs/` (canonical report set), not inside the
 competition folder.
@@ -36,7 +36,7 @@ competition folder.
    block (e.g. `1.34356 − 1.33812 = 0.00544`) — verify_report.py exempts code blocks.
 2. **STATUS.md is narrative context only** — read it to understand *why* decisions were
    made; numbers still come from facts.json.
-3. **DL→GBDT translation convention**: the 顏佐榕 framework has DL-shaped fields (Loss,
+3. **DL→GBDT translation convention**: the Tso-Jung Yen framework has DL-shaped fields (Loss,
    Optimization Algorithm, Learning Rate, **Learning Rate Scheduler**, **Batch Size**,
    **Transfer Learning**, **Data Augmentation**). For a GBDT pipeline, fill the real ones
    (loss objective, gradient boosting, boosting shrinkage) and mark the DL-only ones
@@ -77,8 +77,8 @@ agent (<architecture>)`, then a grounding blockquote listing the source files.
    (approach + score + winner note), with honest caveats (de-leaking, unified CV schemes,
    CV-only).
 
-(Sections 2–6 are the 五大元件 (乙): Data spec / Model spec / Training spec / Inference
-procedure / Evaluation metric. Section 1 is 目的 (甲) what/why.)
+(Sections 2–6 are the five core components (B): Data spec / Model spec / Training spec / Inference
+procedure / Evaluation metric. Section 1 is the purpose (A) what/why.)
 
 ## Pipeline
 

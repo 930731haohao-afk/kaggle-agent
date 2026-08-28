@@ -1,12 +1,12 @@
 ---
 # ── YAML frontmatter ──────────────────────────────────────────────────────
-# 註解: name 是技能的識別碼,必須與資料夾名稱一致,用 kebab-case。
+# Note: name is the skill's identifier; it must match the folder name, in kebab-case.
 # Note: `name` is the skill identifier; keep it identical to the folder name.
 name: kaggle-safe-submit
 
-# 註解: description 是「觸發機制」——Claude 靠它決定何時呼叫這個 skill。
-#        教程建議寫得「主動一點 (pushy)」,因為 Claude 常常「該觸發卻不觸發」。
-#        所以這裡同時寫清楚 (1) 這個 skill 做什麼 + (2) 什麼情境該用它。
+# Note: the description is the "trigger mechanism" — Claude relies on it to decide when to invoke this skill.
+#        The tutorial suggests writing it a bit "pushy", because Claude often fails to trigger when it should.
+#        So this spells out both (1) what this skill does + (2) in which situations to use it.
 # Note: `description` IS the trigger. It must say WHAT the skill does AND
 #        WHEN to use it. Kept deliberately assertive to fight under-triggering.
 description: >-
@@ -21,16 +21,16 @@ description: >-
 ---
 <!--
 ═══════════════════════════════════════════════════════════════════════════
- SKILL.md — 一個 Skill 的核心檔案 / The core file of a Skill
+ SKILL.md — The core file of a Skill
 ───────────────────────────────────────────────────────────────────────────
- 教程對照 (Tutorial mapping):
-   技能 (Skills) 放在 .claude/skills/ 中,由「指令 + 腳本 + 資源」組成的資料夾。
+ Tutorial mapping:
+   Skills live in .claude/skills/, as folders bundling "instructions + scripts + resources".
    A Skill lives in .claude/skills/ and bundles instructions + scripts + resources.
 
-   漸進式揭露 (Progressive disclosure) 有三層:
-     1. metadata(下方 frontmatter 的 name + description)—— 對話一開始就載入
-     2. SKILL.md 本文(body)—— 技能被「呼叫」時才載入
-     3. scripts/ 與 references/ —— 需要時才讀取 (on demand)
+   Progressive disclosure has three levels:
+     1. metadata (the name + description in the frontmatter below) — loaded at conversation start
+     2. the SKILL.md body — loaded only when the skill is "invoked"
+     3. scripts/ and references/ — read only when needed (on demand)
    Three loading levels: metadata always loaded; body loaded on invoke;
    bundled resources read only when needed.
 ═══════════════════════════════════════════════════════════════════════════
@@ -38,47 +38,47 @@ description: >-
 
 
 <!--
- 註解: 從這裡開始是 SKILL.md 的「本文 (body)」。
-       它只有在此技能被呼叫時才進入脈絡,所以要用祈使句、精簡、聚焦流程。
+ Note: The SKILL.md "body" starts here.
+       It enters context only when this skill is invoked, so use imperative, lean, process-focused wording.
  Note: Everything below is the body. It loads only when the skill triggers,
        so write it as an imperative, procedural playbook — lean and focused.
 -->
 
 # Kaggle Safe Submit
 
-在把任何 submission 上傳到 Kaggle 之前,先驗證、再提交。目標是**永不浪費每日提交額度**在格式錯誤的檔案上。
+Before uploading any submission to Kaggle, validate first, then submit. The goal is to **never waste a daily submission slot** on a malformed file.
 Validate before you upload. The goal is to never waste a daily submission slot on a malformed file.
 
 <!--
- 註解: 「先決條件」區塊。教程說 procedural 指令(前置檢查、環境需求)最適合放 skill。
+ Note: The "Preconditions" block. The tutorial says procedural instructions (pre-checks, environment requirements) fit best in a skill.
  Note: Preconditions block — procedural setup belongs in the skill, not CLAUDE.md.
 -->
-## Preconditions / 先決條件
+## Preconditions
 
-1. **競賽工作區存在 / Competition workspace exists** — `competitions/<name>/` 底下要有 `config.yaml`(內含 `evaluation_metric`、`id_column`、`sample_submission_file`、`special_rules.daily_submission_limit`)。
-2. **憑證 / Credentials** — Kaggle 新式 token(`KGAT_` 開頭)**只吃環境變數 `KAGGLE_API_TOKEN`**;舊的 `~/.kaggle/kaggle.json` 路徑對 `KGAT_` token 無效(見專案 CLAUDE.md「Credential Setup」)。本專案的 token 放在 `~/.kaggle/kaggle_api_token.txt`,由 `utils/kaggle_auth.sh` 讀出來:
+1. **Competition workspace exists** — `competitions/<name>/` must contain `config.yaml` (with `evaluation_metric`, `id_column`, `sample_submission_file`, `special_rules.daily_submission_limit`).
+2. **Credentials** — new-style Kaggle tokens (`KGAT_` prefix) **only work through the env var `KAGGLE_API_TOKEN`**; the old `~/.kaggle/kaggle.json` path does not work for `KGAT_` tokens (see "Credential Setup" in the project CLAUDE.md). This project's token lives in `~/.kaggle/kaggle_api_token.txt` and is read by `utils/kaggle_auth.sh`:
    ```bash
    source utils/kaggle_auth.sh && uv run kaggle <command>
    ```
-   該腳本在 token 檔缺失/為空時會**回傳非 0 並印出原因**,所以 `&&` 會直接擋下後面的 kaggle 指令;成功時會印出用了哪個檔案,所以之後若拿到 401,就知道是哪一份憑證過期、該去 https://www.kaggle.com/settings 換新的貼回去。等價的一行寫法:`export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')`。
-   環境變數**不會跨 Bash 呼叫保存**,所以每個 kaggle 指令都要在同一行重新 `source`。
+   The script **exits non-0 and prints the reason** when the token file is missing/empty, so `&&` blocks the kaggle command that follows; on success it prints which file it used, so if you later get a 401 you know which credential expired and needs a fresh one pasted in from https://www.kaggle.com/settings. Equivalent one-liner: `export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')`.
+   The env var **does not persist across Bash calls**, so re-`source` it on the same line for every kaggle command.
    The `KGAT_` tokens only work through the `KAGGLE_API_TOKEN` env var — the old
    `kaggle.json` path does not work with them. The var does not persist across Bash
    calls, so chain the `source` on every kaggle command. (2026-08-03 audit)
-3. **提交檔存在 / Submission file exists** — 使用者指定的 `.csv`,或 `competitions/<name>/submissions/` 中最新的一個。
+3. **Submission file exists** — the `.csv` the user specified, or the most recent one under `competitions/<name>/submissions/`.
 
 <!--
- 註解: 主流程。用「編號步驟」讓 Claude 一步步照做,並在關鍵步驟停下讓人確認(human-in-the-loop)。
+ Note: The main workflow. Numbered steps let Claude follow along one by one, stopping at the critical step for human confirmation (human-in-the-loop).
  Note: The main workflow. Numbered steps = a deterministic sequence Claude can
        follow; stop for confirmation at the irreversible step (the upload).
 -->
-## Workflow / 主流程
+## Workflow
 
-### 1. 讀取競賽設定 / Read the competition config
-讀 `competitions/<name>/config.yaml`,取得:`id_column`、`evaluation_metric`、`optimization_direction`、`sample_submission_file`、`special_rules.daily_submission_limit`。若使用者沒指明競賽名稱,從路徑或最近的 experiments.json 推斷,並向使用者確認。
+### 1. Read the competition config
+Read `competitions/<name>/config.yaml` to get: `id_column`, `evaluation_metric`, `optimization_direction`, `sample_submission_file`, `special_rules.daily_submission_limit`. If the user did not name the competition, infer it from the path or the most recent experiments.json, and confirm with the user.
 
-### 2. 驗證格式 / Validate the format  ⭐ 核心
-執行綁定的驗證腳本(這是**確定性、可重複**的工作,所以固化成 script 而非每次重寫):
+### 2. Validate the format  ⭐ core
+Run the bundled validation script (this is **deterministic, repetitive** work, so it is frozen into a script instead of rewritten every time):
 Run the bundled validator (this is deterministic + repetitive work → a script, per the tutorial):
 
 ```bash
@@ -90,67 +90,67 @@ uv run python .claude/skills/kaggle-safe-submit/scripts/validate_submission.py \
   --train competitions/<name>/data/train.csv --target <target_column>
 ```
 
-`--metric`(config.yaml 的 `evaluation_metric`)與 `--train/--target` 是**選填但強烈建議**:沒有它們,範圍檢查與「機率/硬標籤搞反」檢查會印 SKIP 而不是猜測。
+`--metric` (the `evaluation_metric` from config.yaml) and `--train/--target` are **optional but strongly recommended**: without them, the range check and the probability/hard-label mix-up check print SKIP instead of guessing.
 `--metric` and `--train/--target` are optional but strongly recommended — without a
 reference the range and label-kind checks report SKIP instead of guessing.
 
-腳本分兩層判定,用退出碼區分(2026-08-03 audit 前這個腳本並不存在,這一步等於沒被執行過):
+The script gives a two-tier verdict, distinguished by exit code (before the 2026-08-03 audit this script did not exist, so this step had effectively never been run):
 The script reports two tiers, distinguished by exit code:
 
-| Exit | Tier | 動作 / Action |
+| Exit | Tier | Action |
 |---|---|---|
-| 0 | PASS | 可以繼續 / proceed |
-| 1 | STRUCTURAL — 列數/欄位/ID 對齊/重複 ID/NaN/±inf | **停止**,修檔案,不得放行 / STOP, never waivable |
-| 2 | SUSPICIOUS — 常數預測、全 0、超出範圍、機率↔硬標籤搞反 | **停止並回報使用者**;只有使用者明確確認後,才能加 `--allow-suspicious "<理由>"` 重跑 |
+| 0 | PASS | proceed |
+| 1 | STRUCTURAL — row count/columns/ID alignment/duplicate IDs/NaN/±inf | **STOP**, fix the file, never waivable |
+| 2 | SUSPICIOUS — constant predictions, all 0s, out of range, probability↔hard-label mix-up | **STOP and report to the user**; only after the user explicitly confirms may you rerun with `--allow-suspicious "<reason>"` |
 
-SUSPICIOUS 是「CSV 合法但幾乎確定是 bug」。常數預測在少數競賽是合法的,所以留了放行閘門——但**不准自己放行**:一定要先把問題講給使用者聽並取得同意。
+SUSPICIOUS means "the CSV is legal but almost certainly a bug". Constant predictions are legitimate in a few competitions, so the waiver gate exists — but **never self-waive**: always explain the problem to the user and get agreement first.
 The SUSPICIOUS tier is legal-but-almost-certainly-wrong. A constant column is a valid
 submission on rare competitions, hence the waiver exists — but never self-waive: report
 to the user and get explicit agreement first.
 
-深入的檢查清單與各競賽型別的規則,見 → `references/submission_checklist.md`(需要時才讀)。
+For the in-depth checklist and per-competition-type rules, see → `references/submission_checklist.md` (read only when needed).
 For the deep checklist and per-problem-type rules, read → `references/submission_checklist.md` (load on demand).
 
-### 3. 檢查剩餘額度 / Check remaining quota
-在提交前,先看今天還剩幾次(對照 config 的 `daily_submission_limit`):
+### 3. Check remaining quota
+Before submitting, check how many attempts remain today (against `daily_submission_limit` in the config):
 ```bash
 source utils/kaggle_auth.sh && uv run kaggle competitions submissions -c <name> | head
 ```
-數今天(UTC 日期)已用的次數。若已達上限,**告訴使用者並停止**,別讓提交失敗白白浪費。
+Count the attempts already used today (UTC date). If the limit is reached, **tell the user and stop** — don't waste one on a submission that will just fail.
 
-### 4. 記錄實驗 / Log the experiment
-在提交前把這次提交寫進 `competitions/<name>/experiments.json`(用 `utils/experiment_log.py` 的慣例):提交檔路徑、模型/描述、本地 CV 分數、時間戳、備註。這樣公開 LB 分數回來後可以對回是哪個實驗。
+### 4. Log the experiment
+Before submitting, record this submission in `competitions/<name>/experiments.json` (following the `utils/experiment_log.py` conventions): submission file path, model/description, local CV score, timestamp, notes. This lets the public LB score be traced back to the right experiment once it comes in.
 
-### 5. 提交 / Submit  ⚠️ 不可逆,先確認
-這一步會消耗一次每日額度,屬於**外向、難以撤回**的動作——先向使用者複述「競賽、檔案、訊息」並取得同意再執行:
+### 5. Submit  ⚠️ irreversible, confirm first
+This step consumes one daily slot and is an **outward-facing, hard-to-undo** action — restate the "competition, file, message" to the user and get agreement before running:
 This consumes a daily slot and is outward-facing/hard-to-undo — confirm competition + file + message with the user first:
 ```bash
 source utils/kaggle_auth.sh && uv run kaggle competitions submit \
   -c <name> -f <submission.csv> -m "<concise message: model + CV score>"
 ```
 
-### 6. 確認並回填 / Confirm and back-fill
+### 6. Confirm and back-fill
 ```bash
 source utils/kaggle_auth.sh && uv run kaggle competitions submissions -c <name> | head
 ```
-把回傳的 public LB 分數填回 experiments.json 對應的那筆,並向使用者回報 CV vs LB(注意別過擬合公開 LB)。
+Fill the returned public LB score back into the matching experiments.json entry, and report CV vs LB to the user (beware of overfitting the public LB).
 
 <!--
- 註解: 「安全準則」區塊。集中列出不可違反的界線,呼應教程「hooks/rules 管確定性,skill 管流程」。
+ Note: The "Guardrails" block. Lists the inviolable boundaries in one place, echoing the tutorial's "hooks/rules for determinism, skills for process".
  Note: Guardrails — the hard boundaries. Keep them explicit and few.
 -->
-## Guardrails / 安全準則
-- **絕不硬編碼 token** / Never hardcode the token — 只用 `KAGGLE_API_TOKEN` 環境變數;別把它寫進任何檔案或訊息。
-- **驗證未過就不提交** / No submit before validation passes。
-- **SUSPICIOUS 不可自我放行** / Never self-waive the SUSPICIOUS tier — `--allow-suspicious` 只能在向使用者說明並取得同意後使用(2026-08-03 audit)。
-- **提交前一定停下確認** / Always confirm before the irreversible upload。
-- **尊重競賽規則** / Respect `special_rules`(external data / internet / 每日上限)。
-- **別為了追公開 LB 過擬合** / Track public vs private LB; don't overfit to public.
+## Guardrails
+- **Never hardcode the token** — use only the `KAGGLE_API_TOKEN` env var; never write it into any file or message.
+- **No submit before validation passes**.
+- **Never self-waive the SUSPICIOUS tier** — `--allow-suspicious` may be used only after explaining to the user and getting agreement (2026-08-03 audit).
+- **Always confirm before the irreversible upload**.
+- **Respect competition rules** — respect `special_rules` (external data / internet / daily limit).
+- **Don't overfit chasing the public LB** — track public vs private LB; don't overfit to public.
 
 <!--
- 註解: 綁定資源清單。讓 Claude 知道「還有什麼可以按需讀取」,是漸進式揭露的指路牌。
+ Note: The bundled-resource list. Lets Claude know "what else can be read on demand" — the signpost for progressive disclosure.
  Note: Bundled resources — signposts for the on-demand third layer.
 -->
-## Bundled resources / 綁定資源
-- `scripts/validate_submission.py` — 確定性的格式驗證器 / deterministic format validator。
-- `references/submission_checklist.md` — 完整檢查清單 + 各問題型別的提交規則 / full checklist + per-problem-type rules。
+## Bundled resources
+- `scripts/validate_submission.py` — deterministic format validator.
+- `references/submission_checklist.md` — full checklist + per-problem-type submission rules.

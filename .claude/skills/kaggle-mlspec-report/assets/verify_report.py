@@ -10,24 +10,27 @@ import pathlib
 import re
 import sys
 
-# 負號僅在前面不是英數字/點時才算(2026-07-03、sub-2026 的 dash 是分隔符,不是負號)
+# A minus sign counts only when not preceded by an alphanumeric char or dot
+# (the dash in 2026-07-03 / sub-2026 is a separator, not a minus sign)
 _NUM = re.compile(r"(?<![\w.])-(?:\d+\.\d+|\d{3,})|\d+\.\d+|\d{3,}")
-# 千分位逗號:夾在數字與「剛好 3 位數字 + 邊界」之間 → 移除(74,051 → 74051)
+# Thousands-separator comma: between a digit and "exactly 3 digits + boundary" → remove (74,051 → 74051)
 _GROUP_COMMA = re.compile(r"(?<=\d),(?=\d{3}\b)")
-# Markdown 節次編號(章節結構,非資料數字):標題行開頭的 `### 2.1`、`#### 2.2a.` 等 —
-# 章節樹編號本身不是 facts.json 的資料,不受 Hard Rule 1 拘束(cf. 既有的年份豁免)。
+# Markdown section numbers (section structure, not data numbers): `### 2.1`, `#### 2.2a.` etc.
+# at the start of heading lines — section-tree numbers are not facts.json data and are not
+# bound by Hard Rule 1 (cf. the existing year exemption).
 _HEADING_NUM = re.compile(r"^(#{1,6}[ \t]+)\d+(?:\.\d+)*[a-z]?\.?(?=[ \t])", re.M)
-# 內文節次交叉引用(章節結構,非資料數字):「見第 2.1 節」「第 3、2.2a 節」「見節 4、2.5」
-# 「見 2.2a 節」「見 2.2a 小節」等 — 同上豁免理由;僅豁免緊鄰「第」/「節」/「見」/「小節」
-# 的編號本身,不吃掉周圍任何其他數字。
+# In-body section cross-references (section structure, not data numbers): 「見第 2.1 節」
+# 「第 3、2.2a 節」「見節 4、2.5」「見 2.2a 節」「見 2.2a 小節」 etc. — same exemption
+# rationale as above; only the section-number tokens directly adjacent to 「第」/「節」/「見」/
+# 「小節」 are exempted, without consuming any other surrounding numbers.
 _TOKEN = r"\d+(?:\.\d+)*[a-z]?"
 _TOKENLIST = rf"{_TOKEN}(?:\s*[、/,]\s*(?:and\s+)?{_TOKEN})*"
 _SECTION_REF = re.compile(
     rf"第\s*{_TOKENLIST}(?=\s*節)"      # 「第 2.1、2.2a 節」
-    rf"|(?<=節)\s*{_TOKENLIST}"          # 「見節 4、2.5」(節在前,無「第」)
-    rf"|見\s*{_TOKENLIST}(?=\s*節)"      # 「見 2.2a 節」(無「第」)
+    rf"|(?<=節)\s*{_TOKENLIST}"          # 「見節 4、2.5」 (節 comes first, no 「第」)
+    rf"|見\s*{_TOKENLIST}(?=\s*節)"      # 「見 2.2a 節」 (no 「第」)
     rf"|{_TOKEN}(?=\s*小節)"             # 「見(本節末的)? 2.2a 小節」
-    # English section cross-references (章節結構,非資料數字) — bilingual exemption
+    # English section cross-references (section structure, not data numbers) — bilingual exemption
     # so translated reports keep passing: "§2.1", "Section 2.10", "Sections 3.1 and 3.2",
     # "sub-section 2.2a". Only the section number tokens are removed, not surrounding data.
     rf"|§\s*{_TOKENLIST}"                                       # 「§2.1」「§2.1, 2.2」
@@ -37,7 +40,7 @@ _SECTION_REF = re.compile(
 
 
 def _normalize(text: str) -> str:
-    """移除千分位逗號,使 74,051 與 facts 中的 74051 對得上。"""
+    """Remove thousands-separator commas so 74,051 matches 74051 in facts."""
     return _GROUP_COMMA.sub("", text)
 
 
@@ -60,29 +63,32 @@ def _collect_values(obj, out: set):
 def find_suspects(report_text: str, facts: dict) -> list:
     known = set()
     _collect_values(facts, known)
-    # 算式區塊(fenced code block)內已「列出算式」的推導數視為已證明,允許同一數字
-    # 也出現在表格/內文(例:第 5 節「相對改善」欄的百分比,其算式就列在同節的計算式
-    # 區塊)。這不放寬對「憑空數字」的把關——code block 內容本就整段豁免,此處只是讓
-    # 已在 code block 證明過的數字可被表格引用。
+    # A derived number whose formula is spelled out inside a fenced code block counts as
+    # proven, so the same number may also appear in tables/body text (e.g. the percentages
+    # in the Section 5 "relative improvement" column, whose formulas are listed in that
+    # section's calculation block). This does not loosen the gate on made-up numbers —
+    # code-block content is already exempted wholesale; this merely lets a number proven
+    # in a code block be cited by a table.
     code = "\n".join(re.findall(r"```.*?```", report_text, flags=re.S))
     for tok in _NUM.findall(_normalize(code)):
         known.add(float(tok))
     variants = set()
     for v in known:
         variants.add(v)
-        for nd in range(1, 7):          # 容許四捨五入到 1–6 位小數的變體
+        for nd in range(1, 7):          # allow variants rounded to 1–6 decimal places
             variants.add(round(v, nd))
-    text = re.sub(r"```.*?```", "", report_text, flags=re.S)   # code block 豁免
-    text = _HEADING_NUM.sub(lambda m: m.group(1), text)         # 節次編號豁免(標題)
-    text = _SECTION_REF.sub("", text)                           # 節次編號豁免(內文交叉引用)
-    text = _normalize(text)                                     # 千分位正規化
+    text = re.sub(r"```.*?```", "", report_text, flags=re.S)   # code-block exemption
+    text = _HEADING_NUM.sub(lambda m: m.group(1), text)         # section-number exemption (headings)
+    text = _SECTION_REF.sub("", text)                           # section-number exemption (in-body cross-refs)
+    text = _normalize(text)                                     # thousands-separator normalization
     suspects = []
     for tok in _NUM.findall(text):
-        # 階段記號豁免(2026-07-07):子階段採 1.1/3.2 純數字型,與小數同形。
-        # 僅豁免「單位數.單位數」;本專案真實分數皆 ≥3 位小數,誤放風險極低。
+        # Stage-marker exemption (2026-07-07): sub-stages use the bare 1.1/3.2 numeric form,
+        # identical in shape to a decimal. Only "single digit.single digit" is exempted;
+        # every real score in this project has ≥3 decimal places, so the false-pass risk is minimal.
         if re.fullmatch(r"\d\.\d", tok):
             continue
-        if re.fullmatch(r"(19|20)\d{2}", tok):                  # 年份豁免
+        if re.fullmatch(r"(19|20)\d{2}", tok):                  # year exemption
             continue
         if float(tok) in variants:
             continue

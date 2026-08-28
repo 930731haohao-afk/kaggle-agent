@@ -11,7 +11,7 @@ the discovery-first agent compounds: this run's discoveries become the next run'
 - Entries are `[INT]` by definition (self-discovered, in-project). If external ideas get injected
   later (opt-in stage), they are marked `[EXT]` and live separately — never blur the two.
 - Negative results are first-class: "tried X, hurt/no effect" with the numbers prevents re-trying
-  dead ends next run (the tabular 反面教訓 section proved its worth).
+  dead ends next run (the tabular "Negative lessons" section proved its worth).
 - Organize by matchable section headers (metric / data type / technique keywords), so the same
   keyword-matching prior mechanism (`suggest_priors`) can consume this file later without changes.
 

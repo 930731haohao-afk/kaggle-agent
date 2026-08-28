@@ -1,4 +1,4 @@
-# ML-Spec Report Structure — field checklist (顏佐榕 5-section framework)
+# ML-Spec Report Structure — field checklist (Tso-Jung Yen 5-section framework)
 
 Distilled from the 15 committed reports in `docs/ml_specs/`. Fill every field; use
 `not recorded` for unavailable, `N/A (reason)` for DL-only fields under a GBDT pipeline.
@@ -14,13 +14,13 @@ Every number must trace to `facts.json` / the grounded sources (Hard Rule 1).
 > `experiments_tree_v3.json`(and `config.yaml` / benchmark record where used).*
 ```
 
-## 1. Overview  (= 目的 (甲) what + why)
+## 1. Overview  (= Purpose (A) what + why)
 
 - One paragraph: the task (with the metric + direction), the from-scratch approach, the
   **champion CV score**, and a one-line vs-NVIDIA outcome (winner / tie / behind + margin).
 - **"Why it matters."** — a real, non-canned sentence on the problem's real-world stakes.
 
-## 2. Data  (= 資料規格)
+## 2. Data  (= Data spec)
 
 - **Purpose of Data** — what each row is and what is predicted (task type).
 - **Data Format** — tabular CSV; numeric / categorical mix.
@@ -38,7 +38,7 @@ Every number must trace to `facts.json` / the grounded sources (Hard Rule 1).
   / GroupKFold / LOYO / TimeSeriesSplit) + seed, **why** it fits the data, fold-safety of any
   target encoding, and the LB status (CV-only vs a real LB anchor).
 
-## 3. Models & Architecture  (= 模型規格)
+## 3. Models & Architecture  (= Model spec)
 
 - **Purpose of Architecture** — the objective (minimize/maximize the metric).
 - **Architecture Type** — GBDT ensemble (LGB/XGB/CAT) + blend; name the champion shape
@@ -52,7 +52,7 @@ Every number must trace to `facts.json` / the grounded sources (Hard Rule 1).
 - For **structural / non-GBDT champions** (e.g. s3e20 empirical-Bayes): say so; mark the
   DL/GBDT mapping N/A and describe the structural knobs instead.
 
-## 4. Training procedures  (= 訓練規格)
+## 4. Training procedures  (= Training spec)
 
 - **Staged trajectory table** — each stage/tier → configuration → OOF score (the
   "breakthrough" trail ending at the champion).
@@ -72,7 +72,7 @@ Every number must trace to `facts.json` / the grounded sources (Hard Rule 1).
 - **Reproducibility Standards** — fixed seeds (fold seed = 42), LightGBM determinism flags,
   and the replay / `06_rebuild_tree_best.py` OOF bit-reproduction gate result.
 
-## 5. Inference procedures  (= 推論程序)
+## 5. Inference procedures  (= Inference procedure)
 
 - **Decision Threshold** — the load-bearing post-process for threshold metrics (Accuracy →
   OOF-tuned cutoff; QWK → OptimizedRounder cutpoints; rounded-MAE → round+clip); or `N/A`
@@ -81,7 +81,7 @@ Every number must trace to `facts.json` / the grounded sources (Hard Rule 1).
 - **Inference Duration** / **Inference Memory** — usually `not recorded` / negligible; note
   if the champion was OOF-only (no test predictions / no submission file).
 
-## 6. Evaluation & Benchmarking  (= 評估指標)
+## 6. Evaluation & Benchmarking  (= Evaluation metric)
 
 - **Task for Performance Evaluation** — restate the prediction target.
 - **Performance Metrics** — the metric + the stage progression (baseline → … → champion),

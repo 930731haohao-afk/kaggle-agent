@@ -25,11 +25,11 @@ def detect_format(e: dict) -> str:
     if e.get("schema_version") == 2:
         return "v2"
     if "base_models" in e and "blend_oof_mae" in e:
-        return "skill_train"       # s3e16 scripts/train.py 手刻型
+        return "skill_train"       # s3e16 scripts/train.py hand-rolled format
     if "per_model" in e and "blend_score" in e:
-        return "generic_batch"     # competitions/run_competition.py 型
+        return "generic_batch"     # competitions/run_competition.py format
     if "cv_mean" in e and "cv_scores" in e:
-        return "log_v1"            # experiment_log.py v1 型
+        return "log_v1"            # experiment_log.py v1 format
     return "unknown"
 
 
@@ -103,7 +103,7 @@ def normalize(e: dict, idx: int, default_metric, default_direction):
         if "n_features" in e:
             n["n_features"] = e["n_features"]
         if e.get("features"):
-            n["feature_file"] = e["features"]   # v1 的 features 是檔名字串
+            n["feature_file"] = e["features"]   # in v1, features is a filename string
         if e.get("notes"):
             n["notes"] = e["notes"]
 
@@ -168,7 +168,7 @@ def build_facts(comp_dir: str) -> dict:
             sys.exit(f"ERROR: {what} not found in {comp_dir} — "
                      f"run the kaggle-agent pipeline first (Stage 0+).")
     config = yaml.safe_load(open(cfg_path))
-    raw = json.load(open(exp_path))  # 壞 JSON → 直接讓例外炸出,不靜默跳過
+    raw = json.load(open(exp_path))  # bad JSON → let the exception blow up, never skip silently
 
     experiments, unparsed = [], []
     for i, entry in enumerate(raw):
