@@ -2,7 +2,8 @@
 % Trimmed to <= 10 pages and aligned with the A0 poster (2026-08-24 revision):
 % 23-competition framing, best-private-score standing (13 wins / 10 losses),
 % paired significance testing and duel-matrix machinery removed.
-% Compile with pdfLaTeX (Overleaf default). No external assets required.
+% Compile with pdfLaTeX (Overleaf default). Requires fig1_arch.pdf and
+% fig2_tree_poster.pdf next to this file.
 \documentclass[11pt,a4paper]{article}
 
 \usepackage[margin=2.5cm]{geometry}
@@ -20,13 +21,7 @@
 \usepackage[hyphens]{url}
 \usepackage[colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue!50!black]{hyperref}
 \usepackage{xcolor}
-\usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,calc,decorations.pathreplacing,shapes.geometric,fit}
-% Figure role palette (draw.io convention used in the harness v1--v4 flowcharts)
-\definecolor{flowblue}{HTML}{DAE8FC}\definecolor{flowblueline}{HTML}{6C8EBF}
-\definecolor{flowgreen}{HTML}{D5E8D4}\definecolor{flowgreenline}{HTML}{82B366}
-\definecolor{flowpurple}{HTML}{E1D5E7}\definecolor{flowpurpleline}{HTML}{9673A6}
-\definecolor{flowgrey}{HTML}{F5F5F5}\definecolor{flowgreyline}{HTML}{999999}
+\usepackage{graphicx}
 
 \emergencystretch=1.5em
 \renewcommand{\topfraction}{0.85}
@@ -47,15 +42,15 @@
 \maketitle
 
 \begin{center}\textbf{\large Abstract}\end{center}
-\noindent We present the \textbf{Sinica Kaggle Agent}, an end-to-end agent that runs a machine-learning competition from raw data to submitted prediction with no human in the loop. A large language model (LLM) reasons and decides at every stage while AutoML libraries are invoked through the shell, and a tree search over complete candidate solutions serves as the optimization loop. The agent was run in isolated sandboxes for all 23 competitions of the study (transcript-audited on the 20 ordinary ones) and benchmarked against two frozen, methodologically distinct reference agents, \textbf{AIDE} (LLM tree search) and the \textbf{NVIDIA Kaggle Agent} (public-kernel reproduction). The 23 competitions comprise 20 ordinary ones, whose verdicts come from real submissions scored on the live leaderboard because an agent's own cross-validation cannot arbitrate between agents, and 3 special ones spanning language, physiological time series, and medical imaging, graded offline with MLE-bench. \textbf{Among the 23 competitions, Sinica obtains the best performance, with 13 wins and 10 losses}, taking the best private score on 10 of the 20 ordinary competitions and the three-way best on all 3 special ones.
+\noindent We present the \textbf{Sinica Kaggle Agent}, an end-to-end agent that runs a machine-learning competition from raw data to submitted prediction with no human in the loop. A large language model (LLM) reasons and decides at every stage while AutoML libraries are invoked through the shell, and a tree search over complete candidate solutions serves as the optimization loop. The agent was run in isolated sandboxes for all 23 competitions of the study (transcript-audited on the 20 ordinary ones) and benchmarked against two frozen, methodologically distinct reference agents, \textbf{AIDE} (LLM tree search) and the \textbf{NVIDIA Kaggle Agent} (public-kernel reproduction). The 23 competitions comprise 20 ordinary ones, whose verdicts come from real submissions scored on the live leaderboard, and 3 special ones spanning language, physiological time series, and medical imaging, graded offline with MLE-bench. \textbf{Among the 23 competitions, Sinica obtains the best performance, with 13 wins and 10 losses}, taking the best private score on 10 of the 20 ordinary competitions and the three-way best on all 3 special ones.
 
 \vspace{0.5em}
 
 \section{Introduction}
 
-A Kaggle competition scores every submission on a hidden test set and ranks thousands of teams by that number. Solving one has meant expert labor and trial and error. But the score gives a machine a target, and the work becomes a loop that a machine can optimize. LLM-driven coding agents have recently begun to automate this loop. AIDE performs LLM-guided tree search over candidate solutions~\cite{aide2025}; the system of Ayg\"un et al.\ couples an LLM rewriter with tree search and externally injected research ideas, outperforming strong baselines across 16 Kaggle Playground competitions~\cite{aygun2026}; and industrial agents skip search altogether by reproducing the strongest public solution to a given competition~\cite{nvidia2026}.
+A Kaggle competition scores every submission on a hidden test set and ranks thousands of teams by that number. Solving one has traditionally required expert labor and repeated trial and error, but because every attempt is scored, the process can be posed as an optimization loop and handed to a machine. LLM-driven coding agents have recently begun to automate this loop. AIDE performs LLM-guided tree search over candidate solutions~\cite{aide2025}; the system of Ayg\"un et al.\ couples an LLM rewriter with tree search and externally injected research ideas, outperforming strong baselines across 16 Kaggle Playground competitions~\cite{aygun2026}; and industrial agents skip search altogether by reproducing the strongest public solution to a given competition~\cite{nvidia2026}.
 
-This report is about one such agent, \textbf{the Sinica Kaggle Agent}, a hybrid design in which an LLM reasons at every stage of the competition pipeline, AutoML libraries are invoked through the shell, a cross-competition experience library supplies evidence-backed priors, and a tree search over candidate solutions serves as the optimization loop (Figures~\ref{fig:arch} and~\ref{fig:tree}). It also auto-documents. Each run yields a per-competition specification spanning data, models, training, inference, and evaluation.
+This report is about one such agent, \textbf{the Sinica Kaggle Agent}, a hybrid design in which an LLM reasons at every stage of the competition pipeline, AutoML libraries are invoked through the shell, a cross-competition experience library supplies evidence-backed priors, and a tree search over candidate solutions serves as the optimization loop (Figures~\ref{fig:arch} and~\ref{fig:tree}). The agent also documents its own runs: each one writes a per-competition specification spanning data, models, training, inference, and evaluation.
 
 To evaluate the Sinica agent, we benchmark it against two frozen reference agents, \textbf{AIDE} (LLM tree search with no cross-competition memory) and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel. Sinica's lanes ran in isolated sandboxes across all 23 competitions; on the 20 ordinary ones each lane's transcript was audited (Section~\ref{sec:fairness}) and the final submission was scored on the real leaderboard via late submission, while the 3 special competitions are graded offline with MLE-bench~\cite{mlebench}. Sinica takes the best score on 13 of the 23 competitions, the strongest standing of the three agents (Section~\ref{sec:results}).
 
@@ -64,14 +59,14 @@ To evaluate the Sinica agent, we benchmark it against two frozen reference agent
 \subsection{The Agent}
 \label{sec:v5}
 
-The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}) around a division of labor. Execution follows the pipeline of Figure~\ref{fig:arch}. The LLM (Claude Code) handles problem understanding, validation-strategy design, feature engineering, result interpretation, and the choice of next step, while LightGBM / XGBoost / CatBoost / Optuna, invoked via the shell, handle model selection, hyperparameter optimization, and stacking/ensembling.
+The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}) around a division of labor. Execution follows the six stages of Figure~\ref{fig:arch} (data ingestion, EDA, feature engineering, modeling, evaluation, submission), with the tree search looping between modeling and evaluation. The LLM (Claude Code) handles problem understanding, validation-strategy design, feature engineering, result interpretation, and the choice of next step, while LightGBM / XGBoost / CatBoost / Optuna, invoked via the shell, handle model selection, hyperparameter optimization, and stacking/ensembling.
 
 \medskip
-\noindent The injection layer, the purple elements of Figures~\ref{fig:arch} and~\ref{fig:tree}, supplies external knowledge at the head of the pipeline. An earlier downstream variant injected external ideas at the blend stage and measured a gain of only ${\sim}10^{-5}$ on the blend's competition metric; the architecture moves the injection point upstream to problem identification through two components:
+\noindent The injection layer, the purple elements of Figures~\ref{fig:arch} and~\ref{fig:tree}, supplies external knowledge at the head of the pipeline through two components:
 
 \begin{itemize}[leftmargin=*]
-  \item \textbf{Stage 0.5, the problem dossier}: before EDA, the agent answers ``what kind of problem is this?'' by naming task family, train--test window relation, split policy, and external-data need in \path{dossier.json}, grounded in a structured library of evidence-backed task-level priors (\path{knowledge/knowledge_base.json}), rendered per competition by \path{knowledge/task_priors_for.py}. Reading competition-specific discussions or kernels is forbidden; this keeps the method distinct from reproduction-based agents. The dossier is a prior, not a conclusion; EDA must verify its hypotheses and record a verdict.
-  \item \textbf{External-data module}: whitelisted public sources are joined through leakage-guarded as-of merges with a declared lag. The module was adversarially audited, and the surfaced flaws, including silent-future-leak classes, were fixed under regression tests. The dossier and the module share one closed vocabulary of typed operators, so an unrealizable proposal leaves a trace in a coverage ledger rather than a silent success. On the three \emph{firing-class} competitions where the layer proposes external data and a public/private leaderboard exists to adjudicate (s3e19, tps-sep-2022, s5e1), all six external-data arms beat their matched no-external baselines on the private leaderboard, and the s3e19 ablation moves the private score from $48.243$ to $50.455$ (full arm scores in the Appendix).
+  \item \textbf{Stage 0.5, the problem dossier}: before EDA, the agent answers ``what kind of problem is this?'' by naming task family, train--test window relation, split policy, and external-data need in \path{dossier.json}, grounded in a structured library of evidence-backed task-level priors (\path{knowledge/knowledge_base.json}), rendered per competition by \path{knowledge/task_priors_for.py}. Reading competition-specific discussions or kernels is forbidden; this keeps the method distinct from reproduction-based agents such as the NVIDIA Kaggle Agent. The dossier remains a prior until EDA verifies its hypotheses and records a verdict.
+  \item \textbf{External-data module}: external data come only from a whitelist of public sources, and a join rule guarantees that no row sees information from after its own time period. Every dossier proposal is tracked to an outcome, realized or logged as unrealized, so a failed injection cannot pass for a successful one. The layer's measured effect is reported in the Appendix.
 \end{itemize}
 
 \noindent Two record-keeping mechanisms support the pipeline (Figure~\ref{fig:arch}):
@@ -84,7 +79,7 @@ The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}) around 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.82\linewidth]{fig1_arch.pdf}
-\caption{Architecture of the Sinica Kaggle Agent, with color marking roles. \textbf{Blue, the LLM-driven pipeline}: Claude Code reasons and decides at every stage. \textbf{Purple, the injection layer}: the dossier's typed operators enter as external-data arms or search lineages. \textbf{Green, the evidence loop}: the experience library and the experiment records. \textbf{Gray, AutoML tools} invoked via the shell. Dashed arrows mark feedback, advisory, or post-run steps.}
+\caption{Architecture of the Sinica Kaggle Agent, with color marking roles. \textbf{Blue, the LLM-driven pipeline}: Claude Code reasons and decides at every stage. \textbf{Purple, the injection layer}: the dossier's proposals enter as external-data arms or search lineages. \textbf{Green, the evidence loop}: the experience library and the experiment records. \textbf{Gray, AutoML tools} invoked via the shell. Dashed arrows mark feedback, advisory, or post-run steps.}
 \label{fig:arch}
 \end{figure}
 
@@ -107,16 +102,16 @@ The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}) around 
 
 \subsection{The Two Reference Agents}
 
-\textbf{AIDE} (first-generation open-source release) performs LLM-driven tree search. At each step, it writes a complete solution, executes it, reads the error or score, and mutates accordingly. It carries no cross-competition memory.
+\paragraph{AIDE (AI-Driven Exploration).} AIDE performs LLM-driven tree search: at each step, it writes a complete solution, executes it, reads the error or score, and mutates accordingly. It carries no cross-competition memory.
 
-\noindent\textbf{NVIDIA Kaggle Agent} (skill) researches the competition context, selects the highest-\emph{voted} solution-type kernel, ports it faithfully, and retrains on local data, reproducing the strongest public kernel.
+\paragraph{NVIDIA Kaggle Agent.} The agent researches the competition context, selects the highest-\emph{voted} solution-type kernel, ports it faithfully, and retrains on local data, reproducing the strongest public kernel.
 
-Both reference methods are frozen, with no improvements, even where we found weaknesses (the NVIDIA skill ships a score-based selection tool we deliberately left disabled). They stay frozen because improving a reference agent mid-study would make earlier and later data incomparable and would quietly turn the benchmark into an optimization of the reference methods.
+Both reference methods are frozen because improving a reference agent mid-study would make earlier and later data incomparable and would quietly turn the benchmark into an optimization of the reference methods.
 
 \section{Benchmark Design}
 \label{sec:fairness}
 
-\paragraph{Evaluation set.} The study uses 23 competitions in two groups, mirroring the two scoring routes available. The 20 \emph{ordinary} competitions are tabular Kaggle competitions with live late submission, comprising 7 classification tasks (binary and ordinal) and 13 prediction/regression tasks including time series and multi-target, with training sets from $1{,}157$ to $630{,}000$ rows (Table~\ref{tab:comps}). The 3 \emph{special} competitions sit outside the tabular family. They are us-patent (NLP text pairing), ventilator-pressure-prediction (physiological time series), and SIIM-ISIC melanoma (dermoscopic imaging), prepared and graded offline by MLE-bench~\cite{mlebench}, which replays finished Kaggle competitions with their original data and metrics.
+\paragraph{Evaluation set.} The study uses 23 competitions in two groups. The 20 \emph{ordinary} competitions are tabular Kaggle competitions with live late submission, comprising 7 classification tasks (binary and ordinal) and 13 prediction/regression tasks including time series and multi-target, with training sets from $1{,}157$ to $630{,}000$ rows (Table~\ref{tab:comps}). The 3 \emph{special} competitions sit outside the tabular family. They are us-patent (NLP text pairing), ventilator-pressure-prediction (physiological time series), and SIIM-ISIC melanoma (dermoscopic imaging), prepared and graded offline by MLE-bench~\cite{mlebench}, which replays finished Kaggle competitions with their original data and metrics.
 
 \begin{table}[H]
 \centering\small
@@ -207,7 +202,7 @@ Table~\ref{tab:bench} gives the complete benchmark, the public and private leade
 \subsection{The 3 Special Competitions}
 \label{sec:special}
 
-The three agents also ran the three special competitions. Because one node is a full deep-learning fine-tune rather than a gradient-boosting refit that takes seconds, a tree search over dozens of nodes would overrun the lane's compute budget. Therefore, on each of the three competitions, Sinica only ran the linear-iteration mode of Section~\ref{sec:v5}. It iterated to one validated model, then built and submitted a blend of the models it had trained. MLE-bench then grades each submission offline on its held-out private split. Sinica takes the three-way best on all 3 special competitions (Table~\ref{tab:special}). Winning across three unrelated task families suggests the advantage comes from pipeline discipline as well as from tree search and external-idea injection.
+The three agents also ran the three special competitions. Because one node is a full deep-learning fine-tune rather than a gradient-boosting refit that takes seconds, a tree search over dozens of nodes would overrun the lane's compute budget. Therefore, on each of the three competitions, Sinica only ran the linear-iteration mode of Section~\ref{sec:v5}. It iterated to one validated model, then built and submitted a blend of the models it had trained. MLE-bench then grades each submission offline on its held-out private split. Sinica takes the three-way best on all 3 special competitions (Table~\ref{tab:special}). These lanes ran without tree search or external-idea injection, so winning across three unrelated task families points to pipeline discipline (validation designed before modeling, a structured EDA pass, every experiment logged with its evidence) as an advantage of its own.
 
 \begin{table}[H]
 \centering\small
@@ -229,7 +224,7 @@ SIIM-ISIC & AUC \up & \textbf{0.93529}$\dagger$ & 0.89822 & 0.88579 \\
 
 Counting the best score on each of the 23 competitions, \textbf{Sinica performs best, winning 13 and losing 10}. The other 10 wins, 7 by NVIDIA and 3 by AIDE, all come on ordinary competitions (Table~\ref{tab:bench}).
 
-Both of Sinica's heaviest losses occur where a mature public solution exists. On tps-sep-2022, the public baseline is so strong that both reference agents beat Sinica by a wide margin (SMAPE 5.48 and 9.72 against 28.50); on tps-jan-2022, NVIDIA reproduced the well-known GDP-ratio solution and won 4.64 to 6.30. Reproduction wins where there is a strong solution to reproduce; the search-based agents take most of the rest.
+Both of Sinica's heaviest losses occur where a mature public solution exists. On tps-sep-2022, the public baseline is so strong that both reference agents beat Sinica by a wide margin (SMAPE 5.48 and 9.72 against 28.50); on tps-jan-2022, NVIDIA reproduced the well-known GDP-ratio solution and won 4.64 to 6.30.
 
 \section{Discussion}
 
@@ -250,34 +245,25 @@ Knowledge source & Cross-competition experience library (accumulating) & None (f
 Search strategy & Six-stage pipeline + tree search (60-node default budget) & Tree-shaped trial and error, 20 steps & No search; faithful reproduction \\
 Basis for next step & Experience-library priors + OOF diagnostics & Previous step's error or score & Highest-voted kernel \\
 Validation rigor & Split chosen by task type; diagnostics tagged and excluded & No concept of split legality & Inherits the kernel's split \\
-External data & Injection layer (typed operators, whitelisted sources) & Never considered & Inherited from the kernel \\
+External data & Injection layer (whitelisted public sources) & Never considered & Inherited from the kernel \\
 Run documentation & Writes its own five-section specification report per competition & None & None \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The reference agents' wins track their knowledge source. Sinica's edge is validation rigor and accumulated knowledge (on one competition it quarantined the same shuffled split that AIDE submitted; see the companion case studies), while its measured bottleneck was judgment at problem identification, the gap the injection layer was built to close.
+The reference agents' wins track their knowledge source. Sinica's edge is validation rigor and accumulated knowledge (on s3e19 it tried the same shuffled KFold split that AIDE submitted from, but tagged it as a diagnostic and excluded it from submission), while its measured bottleneck was judgment at problem identification, the gap the injection layer was built to close.
 
-\subsection{Disadvantages of the Agent-Based Approach}
-
-Running one agent through 23 competitions and reading every transcript also documents where the approach falls short.
-
-\begin{itemize}[leftmargin=*]
-  \item \textbf{The agent is strong at coding, weak at judging.} The agent efficiently works through whatever problem it is given; it does not ask whether a change is worth making. This often leads to a poor design choice that yields bugs, and the cost surfaces only after results return, when the choice is expensive to unwind (the downstream injection variant of Section~\ref{sec:v5} is our own instance).
-  \item \textbf{The agent can only target the local validation score.} Inside a lane, the leaderboard is unreachable by construction, so iteration optimizes cross-validation (CV) alone. As a result, the local validation score can look outstanding while the real leaderboard score is mediocre. The extreme case is s3e19's pooled OOF SMAPE of 6.71 against its realized 49.41, and it is why no local CV number is quoted as evidence anywhere in this report.
-  \item \textbf{The agent often buries the main question in detail.} AI-written reports put too much focus on technical details and drift away from what the reader wants to know; every specification report attached to this study needed human editing for exactly this failure.
-  \item \textbf{The agent has bad writing habits.} Redundant headings and reinvented terms come back draft after draft, and verifying and modifying them by hand is exhausting; unlike a score, prose quality has no automatic gate.
-\end{itemize}
-
-\subsection{Practical Advice for Building AI Agents for Data Science}
+\subsection{Lessons from the Study}
 \label{sec:advice}
 
-We offer three pieces of advice, each paid for by a measurement in this study.
+Running one agent through 23 competitions and reading every transcript also documents where the approach falls short. Each lesson below traces to a concrete incident or measurement from this study.
 
 \begin{itemize}[leftmargin=*]
-  \item \textbf{Build an isolated environment before running the agent.} This prevents any access to the leaderboard or another run's files. Isolation must be structural (credentials stripped, roots separated, library mounted read-only), not behavioral. The one cross-lane contamination in this study came from a writable shared file, not from an agent breaking a rule it was given (Section~\ref{sec:fairness}).
-  \item \textbf{Justify the design before building the pipeline.} This reduces redesign cost and debugging time and avoids a full rerun of earlier competitions. An architecture change invalidates every lane run before it, and this benchmark archived seven partly finished runs for exactly that reason.
-  \item \textbf{Inject external knowledge before data modeling.} This often improves the score; if the external data are injected at the final step instead, the score shows almost no improvement (${\sim}10^{-5}$ in our downstream variant, against six-for-six controlled wins for the upstream layer, Section~\ref{sec:v5}).
+  \item \textbf{The agent is strong at coding but weak at judging.} The agent works through whatever problem it is given without asking whether the change is worth making, and the cost of a poor design choice surfaces only after results return (our first injection design, which injected knowledge downstream at the blend stage, is our own instance).
+  \item \textbf{Local validation cannot stand in for the leaderboard.} Inside a lane the leaderboard is unreachable, so iteration optimizes cross-validation (CV) alone, and the two can diverge sharply: s3e19's pooled OOF SMAPE of 6.71 sat against a realized 49.41. No local CV number is quoted as evidence anywhere in this report.
+  \item \textbf{Isolation must be structural, not behavioral.} We stripped credentials, separated the lane roots, and, after the incident that taught us this lesson, mounted the experience library read-only. The one cross-lane contamination in the study came from a shared file that was still writable, not from an agent breaking a rule it was given (incident log in the Appendix, Table~\ref{tab:fairness}).
+  \item \textbf{Settle the architecture before implementation.} In our agent, external data originally entered at the final blending stage. In practice, weight search had already optimized that stage to its limit, so adding external data there changed almost nothing (the measured gain was negligible). We later moved the injection to the head of the pipeline, where it informs what kind of problem the agent faces and which external resources to bring in, and the scores improved (all six paired comparisons won; arm scores in the Appendix). But the move forced a redesign of the whole architecture, and every competition already run had to be rerun.
+  \item \textbf{The agent's prose needs human editing.} Its reports over-weight technical detail and reinvent terms draft after draft; every specification report attached to this study needed human editing.
 \end{itemize}
 
 \subsection{Limitations}
@@ -285,24 +271,27 @@ We offer three pieces of advice, each paid for by a measurement in this study.
 
 \begin{itemize}[leftmargin=*]
   \item \textbf{The sample is small and the standing is sensitive to its composition.} Reproduction-based and search-based methods win on disjoint kinds of competitions, so adding or removing a few competitions of one kind moves the win count. Reproduced kernels were also tuned by their authors against the realized public leaderboard, so the comparison is least symmetric exactly where the reproduction method is strongest.
-  \item \textbf{The special-competition lanes ran the documented fallback, not the full method} (Section~\ref{sec:special}), and offline grading yields one score per submission, with no public/private pair to corroborate it.
+  \item \textbf{The special-competition lanes ran linear iteration only, not the full tree-search method} (Section~\ref{sec:special}), and offline grading yields one score per submission, with no public/private pair to corroborate it.
 \end{itemize}
 
 \subsection{Open Problems}
 \label{sec:future}
 
-The sharpest open question is operator-form selection. None of the three local signals we tested selects the form the injection should take, and one selector was killed by its own pre-registered test on s5e1. A fourth candidate, horizon length, emerged only after the fact; we have committed it as a pre-registration, to be tested on the next firing-class competition before its leaderboard is consulted. Second, few competitions need external data at all, so the controlled evidence rests on three firing-class competitions, only two of which (tps-sep-2022 and s5e1) played no part in building the task-prior library the dossier consults; extending that set is worth more than re-running competitions where the layer stays silent. Third, the experience library's residual weak link is retrieval quality. Enforcement is closed (an experiment record without a library-query trace is invalid, checked mechanically), but no mechanism yet scores retrieved priors for applicability, and a direct ablation of the library remains to be run.
+Two problems remain open.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Choosing the form of an injection.} When the layer proposes external data, it must also choose how to use them, as a joined feature or as a target rescaling. No signal we tested makes that choice reliably.
+  \item \textbf{The controlled evidence is thin.} Few competitions need external data at all, so the evidence rests on three competitions, and only two of them (tps-sep-2022 and s5e1) played no part in building the task-prior library the dossier consults. Finding more competitions that need external data is worth more than re-running ones where the layer stays silent.\end{itemize}
 
 \section{Conclusion}
 
-All 23 competitions ran in isolated sandboxes, the 20 ordinary ones transcript-audited and scored on the real leaderboard, the 3 special ones graded offline by MLE-bench. Among the 23 competitions, Sinica performs best, with 13 wins and 10 losses, taking the best private score on 10 of 20 and the three-way best on all 3 special competitions. Its losses concentrate where a mature public solution exists and reproduction beats search. Two negative results accompany the study. No local signal selects the injection's form, and the audit discarded a contaminated lane whose tainted score looked better than its clean replacement's. This study aimed to build a benchmark that can kill its own hypotheses.
-
+All 23 competitions ran in isolated sandboxes; the 20 ordinary ones were transcript-audited and scored on the real leaderboard, and the 3 special ones were graded offline by MLE-bench. Sinica performs best among the 23, with 13 wins and 10 losses: it took the best private score on 10 of the 20 ordinary competitions and the three-way best on all 3 special ones. Its losses concentrate where a mature public solution exists and reproduction beats search.
 \clearpage
 \appendix
 
 \section*{Appendix: Experimental Procedure and Availability}
 
-\paragraph{Fairness protocol.} Because the three agents share one machine, four isolation conditions are explicitly enforced. Two are enforced by tooling, one by directory structure, and one, instruction isolation, by a written protocol with an incident log (Table~\ref{tab:fairness}).
+\paragraph{Fairness protocol.} Because the three agents share one machine, four isolation conditions are explicitly enforced. Two are enforced by tooling, one by directory structure, and one, instruction isolation, by a written protocol with an incident log (Table~\ref{tab:fairness}). The incident log records one cross-lane contamination: a lane read entries another lane had written back into the shared experience library, which the harness had left writable; the lane was killed and rerun clean after the library was reverted, and the library is now mounted read-only.
 
 \begin{table}[htbp]
 \centering\small
@@ -321,31 +310,29 @@ Resource & Only one lane executes at any moment & \path{benchmark_infra/lane_loc
 \end{table}
 
 
-\paragraph{Per-competition specification reports.} A specification report accompanies this paper for each of the 23 Sinica runs (the 20 ordinary competitions, plus the 3 special competitions via a deep-learning-aware collector whose DL fields (backbone, learning-rate schedule, batch size, augmentation, transfer learning) are filled natively). Each was written by the agent at the end of the run it describes; neither reference agent documents its own runs, so no counterpart set exists (our collector re-documented AIDE's runs after the fact, archived in the repository). All are written to the five sections of Tso-Jung Yen's ML specification framework (Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking), archived in \path{docs/ml_specs/} in Markdown and PDF. Every number in them is extracted deterministically by \path{.claude/skills/kaggle-mlspec-report/assets/collect.py} (tabular lanes), \path{benchmark_infra/collect_dl_facts.py} (deep-learning lanes), and \path{benchmark_infra/collect_aide_facts.py} from structured records, never generated by an LLM; unavailable fields are marked ``not recorded.'' The reports are CV-only by construction; their conclusions must not be mixed with leaderboard verdicts.
+\paragraph{Per-competition specification reports.} A specification report accompanies this paper for each of the 23 Sinica runs, written by the agent at the end of the run it describes; neither reference agent documents its own runs (our collector re-documented AIDE's runs after the fact). All follow a five-section ML specification framework (Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking) and are archived in \path{docs/ml_specs/}. Every number in them is extracted from structured run records by collector scripts, never generated by an LLM, and unavailable fields are marked ``not recorded.'' The reports are CV-only; their conclusions must not be mixed with leaderboard verdicts.
 
-\paragraph{External-data arm scores.} Table~\ref{tab:arms} restores the matched-configuration arm scores behind the six-for-six claim of Section~\ref{sec:v5}. On s5e1, which joined the firing class later and ran searched arms only, the private MAPE scores are $0.15751$ (baseline), $0.15626$ (\texttt{join\_feature}), and $0.12417$ (\texttt{ratio\_target}). All six external-data arms beat their matched baselines under these lower-is-better metrics.
-
+\paragraph{External-data arm scores.} The layer proposes external data only when a competition needs it; most do not. On the three competitions where it did (s3e19, tps-sep-2022, s5e1), we ran the pipeline with and without each proposed operator (\texttt{join\_feature} and \texttt{ratio\_target}) and submitted every run for a real leaderboard score, six paired comparisons in all. All six external-data arms beat their no-external baselines on the private leaderboard (Table~\ref{tab:arms}).
 \begin{table}[H]
 \centering\small
-\caption{Matched-configuration arms: identical pipeline, no search, no blending, so the operator is the only difference. SMAPE, lower is better. Every external arm beats its own baseline on both leaderboards.}
+\caption{Per-arm private leaderboard scores on the three competitions where the layer proposed external data.}
 \label{tab:arms}
 \setlength{\tabcolsep}{5pt}
-\begin{tabular}{@{}lrrrrrr@{}}
+\begin{tabular}{@{}lrrr@{}}
 \toprule
- & \multicolumn{3}{c}{\textbf{s3e19}} & \multicolumn{3}{c}{\textbf{tps-sep-2022} (held out)} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}
-\textbf{Arm} & \textbf{CV} & \textbf{public} & \textbf{private} & \textbf{CV} & \textbf{public} & \textbf{private} \\
+\textbf{Arm} & \textbf{s3e19} & \textbf{tps-sep-2022} & \textbf{s5e1} \\
 \midrule
-no external data & 10.148 & 52.492 & 54.506 & \textbf{11.348} & 23.828 & 25.476 \\
-\texttt{join\_feature} & 9.379 & \textbf{47.036} & \textbf{48.497} & 11.624 & \textbf{21.973} & \textbf{23.390} \\
-\texttt{ratio\_target} & \textbf{7.793} & 50.853 & 52.073 & 11.807 & 21.209 & 24.091 \\
+no external data & 54.506 & 25.476 & 0.15751 \\
+\texttt{join\_feature} & \textbf{48.497} & \textbf{23.390} & 0.15626 \\
+\texttt{ratio\_target} & 52.073 & 24.091 & \textbf{0.12417} \\
 \bottomrule
 \end{tabular}
+\tabnote{SMAPE for s3e19 and tps-sep-2022, MAPE for s5e1; lower is better. \textbf{Bold} = best per competition. The s3e19 and tps-sep-2022 arms are matched configurations (identical pipeline, no search, no blending); the s5e1 arms ran under the full searched pipeline.}
 \end{table}
 
 \paragraph{Execution environment.} All lanes ran on ARM64 Linux (Ubuntu 24.04) with an NVIDIA GB10 GPU, under a uv-managed Python 3.13 environment frozen in \texttt{uv.lock}, with fixed seeds and LightGBM set to \texttt{deterministic=true}, \texttt{force\_row\_wise=true}, and a fixed \texttt{num\_threads}; without these settings, the same configuration does not reproduce across processes.
 
-\paragraph{Companion documents and availability.} Two companion documents carry the depth this report condenses. They are \emph{Building the Injection Layer: An Engineering Log} (per-regime coverage tables, audit scripts, and the provenance of the two special-competition scores that had to be re-run) and \emph{Per-Competition Case Studies} (the CV--leaderboard reversal mechanics, AIDE's split switch, the s5e1 pre-registration setting, and the s3e19 residual decomposition). All code and benchmark artifacts are archived in \href{https://github.com/930731haohao-afk/kaggle-agent}{\path{github.com/930731haohao-afk/kaggle-agent}} (private; access granted on request); every number in this report traces to those structured records.
+\paragraph{Availability.} All code and benchmark artifacts are archived in \href{https://github.com/930731haohao-afk/kaggle-agent}{\path{github.com/930731haohao-afk/kaggle-agent}} (private; access granted on request); every number in this report traces to those structured records.
 
 {\small
 \begin{thebibliography}{9}
