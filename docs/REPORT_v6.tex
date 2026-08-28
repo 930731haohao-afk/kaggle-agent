@@ -32,10 +32,6 @@
 \renewcommand{\arraystretch}{1.15}
 \newcommand{\dn}{\ensuremath{\downarrow}}
 \newcommand{\up}{\ensuremath{\uparrow}}
-% Agent abbreviations used in verdict columns
-\newcommand{\M}{M}   % Sinica
-\newcommand{\N}{N}   % NVIDIA
-\newcommand{\A}{A}   % AIDE
 
 \title{\textbf{An End-to-End AI Agent for Kaggle Competitions}\\
 \large Benchmarked against two frozen reference agents on 20 Kaggle competitions}
@@ -46,7 +42,7 @@
 \maketitle
 
 \begin{center}\textbf{\large Abstract}\end{center}
-\noindent We present \textbf{the Sinica Kaggle Agent}, an end-to-end agent that runs a machine-learning competition from raw data to submitted prediction with no person in the loop: an LLM reasons and decides at every stage (problem identification, exploratory analysis, feature engineering, modeling, evaluation, submission) while gradient-boosting libraries are invoked through the shell and a tree search over complete candidate solutions serves as the optimization loop. We benchmark it against two frozen, methodologically distinct reference agents, \textbf{AIDE} (LLM tree search) and the \textbf{NVIDIA Kaggle Agent} (public-kernel reproduction), on 20 Kaggle competitions, plus three mid-complexity competitions spanning language, physiological time series, and medical imaging. Because an agent's own cross-validation cannot arbitrate between agents, every verdict is a real submission scored on the competition's live leaderboard, and every comparison is adjudicated by an error model read off Kaggle's own two-way split of each test set. \textbf{Sinica leads the standing, winning 16 of its 24 decided duels ($66.7\%$) against $42.3\%$ for each reference agent}, taking the best private score on 10 of the 20 competitions and beating its own development-lane score on 13 of 20; on the three mid-complexity competitions, it takes the three-way best on all three. The same error model refuses to call 22 of the 60 duels at all, and the agent's two worst results fall on the two competitions with a mature public solution, where faithful reproduction beats autonomous search. One architectural finding follows from the same measurements: knowledge injected downstream, among the models being blended, was worth about ${\sim}10^{-5}$, so this architecture injects it upstream at problem identification instead. No local signal we tested can select the \emph{form} that injection should take.
+\noindent We present \textbf{the Sinica Kaggle Agent}, an end-to-end agent that runs a machine-learning competition from raw data to submitted prediction with no person in the loop: an LLM reasons and decides at every stage (problem identification, exploratory analysis, feature engineering, modeling, evaluation, submission) while gradient-boosting libraries are invoked through the shell, and a tree search over complete candidate solutions serves as the optimization loop. We benchmark it against two frozen, methodologically distinct reference agents, \textbf{AIDE} (LLM tree search) and the \textbf{NVIDIA Kaggle Agent} (public-kernel reproduction), on 20 Kaggle competitions, plus three mid-complexity competitions spanning language, physiological time series, and medical imaging. Because an agent's own cross-validation cannot arbitrate between agents, every verdict on the 20 is a real submission scored on the competition's live leaderboard, and every comparison there is adjudicated by an error model read off Kaggle's own two-way split of each test set; the three mid-complexity competitions are graded offline. \textbf{Sinica leads the standing, winning 16 of its 24 decided duels ($66.7\%$) against $42.3\%$ for each reference agent}, taking the best private score on 10 of the 20 competitions and beating its own development-lane score on 13 of 20; on the three mid-complexity competitions, it takes the three-way best on all three. The same error model refuses to call 22 of the 60 duels at all, and the agent's two worst results fall on the two competitions with a mature public solution, where faithful reproduction beats autonomous search. One architectural finding follows from the same measurements: knowledge injected downstream, among the models being blended, was worth ${\sim}10^{-5}$ in the competition metric, so this architecture injects it upstream at problem identification instead. No local signal we tested can select the \emph{form} that injection should take.
 
 \vspace{0.5em}
 
@@ -56,11 +52,11 @@ Machine-learning competitions are \emph{scorable tasks}: a submission receives a
 
 This report is about one such agent, \textbf{the Sinica Kaggle Agent}, built over the course of this internship: a hybrid design in which an LLM reasons at every stage of the competition pipeline, Auto-ML libraries are invoked through the shell for what they do best, a cross-competition experience library supplies evidence-backed priors, and a tree search over candidate configurations serves as the optimization loop (Figures~\ref{fig:arch} and~\ref{fig:tree}). It also documents itself: 22 five-section ML specification reports for Sinica and 17 re-documenting the AIDE runs are attached (Appendix~\ref{app:specs}).
 
-What the agent is worth is an empirical question, and this report answers it by measurement rather than by argument: 20 Kaggle competitions, two frozen reference agents, every verdict a real submission scored on the live leaderboard. Sinica leads that standing, winning 16 of its 24 decided duels ($66.7\%$) against $42.3\%$ for each reference agent, and takes the best private score on 10 of the 20. The same measurement refuses to call 22 of the 60 duels at all, and it locates the agent's two worst results precisely: both fall on competitions with a mature public solution, where faithful reproduction beats autonomous search.
+What the agent is worth is an empirical question, and this report answers it by measurement rather than by argument: 20 Kaggle competitions, two frozen reference agents, and every verdict a real submission scored on the live leaderboard. Sinica leads that standing, winning 16 of its 24 decided duels ($66.7\%$) against $42.3\%$ for each reference agent, and takes the best private score on 10 of the 20. The same measurement refuses to call 22 of the 60 duels at all, and it locates the agent's two worst results precisely: both fall on competitions with a mature public solution, where faithful reproduction beats autonomous search.
 
-One design decision inside the agent earned its own experiments, because our first version got it wrong. Knowledge injected downstream, among the models being blended, measured about ${\sim}10^{-5}$; the architecture therefore injects it upstream, at problem identification, through a stage that classifies task family, train--test window relation, split policy and external-data need before any model is fitted, emitting typed operators into a whitelisted, leakage-guarded external-data module.
+One design decision inside the agent earned its own experiments, because our first version got it wrong. Knowledge injected downstream, among the models being blended, measured ${\sim}10^{-5}$ in the competition metric; the architecture therefore injects it upstream, at problem identification, through a stage that classifies task family, train--test window relation, split policy, and external-data need before any model is fitted, emitting typed operators into a whitelisted, leakage-guarded external-data module.
 
-All results are stated against two frozen, methodologically distinct reference agents: \textbf{AIDE}, LLM tree search with no cross-competition memory, and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel. All three run on 20 Kaggle competitions plus three mid-complexity competitions; because local estimates cannot be trusted to arbitrate between agents, every verdict among the 20 is scored on the real leaderboard via late submission, while the three mid-complexity competitions are graded offline and adjudicated under the error model of Section~\ref{sec:apparatus}. Sinica's benchmark lanes run under the frozen architecture in sandboxes (Section~\ref{sec:fairness}); all 20 are complete, audit-adjudicated and scored by a separate credentialed operator step, so the benchmark tables carry real Sinica leaderboard scores and paired verdicts throughout (Sections~\ref{sec:exp1} and~\ref{sec:winrates}).
+All results are stated against two frozen, methodologically distinct reference agents: \textbf{AIDE}, LLM tree search with no cross-competition memory, and the \textbf{NVIDIA Kaggle Agent}, which reproduces the highest-voted public kernel. All three run on 20 Kaggle competitions plus three mid-complexity competitions; because local estimates cannot be trusted to arbitrate between agents, every verdict among the 20 is scored on the real leaderboard via late submission, while the three mid-complexity competitions are graded offline against a held-out test split and therefore sit outside the error model of Section~\ref{sec:apparatus} (Section~\ref{sec:exp7run2}). Sinica's benchmark lanes run under the frozen architecture in sandboxes (Section~\ref{sec:fairness}); all 20 are complete, audit-adjudicated and scored by a separate credentialed operator step, so the benchmark tables carry real Sinica leaderboard scores and paired verdicts throughout (Sections~\ref{sec:exp1} and~\ref{sec:winrates}).
 
 \section{Methods}
 
@@ -70,7 +66,7 @@ The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}) around 
 
 \begin{itemize}[leftmargin=*]
   \item \textbf{Linear iteration protocol}: propose a hypothesis, run the experiment, record the result (used for the first pass and for small competitions).
-  \item \textbf{Tree search (preferred)}: once the linear protocol has produced a single baseline model and at least one blend, the agent switches to tree search. Internal evaluation shows that tree search won 9 of 10 competitions with 1 tie and 0 losses.
+  \item \textbf{Tree search (preferred)}: once the linear protocol has produced a single baseline model and at least one blend, the agent switches to tree search. Internal evaluation on ten development competitions, by cross-validation against the linear-protocol final and unsubmitted in nine of the ten, shows tree search winning 9 of them with 1 tie and 0 losses.
 \end{itemize}
 
 Three cross-cutting mechanisms support the pipeline (Figure~\ref{fig:arch}):
@@ -126,7 +122,7 @@ Three cross-cutting mechanisms support the pipeline (Figure~\ref{fig:arch}):
 \node[supp]    (lib)   at (7.3,-0.2)  {\textbf{Experience library}\\[-1pt]
   {\scriptsize evidence-backed priors}};
 \node[injbox]  (ext)   at (7.3,-2.9)  {\textbf{External-data layer}\\[-1pt]
-  {\scriptsize whitelist $\cdot$ as-of guard $\cdot$ coverage ledger}};
+  {\scriptsize whitelist $\cdot$ as-of join $\cdot$ coverage ledger}};
 \node[toolbox] (tools) at (7.3,-6.5)  {LightGBM / XGBoost /\\CatBoost / Optuna\\(invoked via shell)};
 \node[supp]    (rec)   at (7.3,-9.8)  {\textbf{Experiment records}\\[-1pt]
   {\scriptsize params $\cdot$ features $\cdot$ split $\cdot$ scores}};
@@ -141,16 +137,16 @@ Three cross-cutting mechanisms support the pipeline (Figure~\ref{fig:arch}):
   {model-level ops};
 \draw[parr] (ext.south) -- node[lab, anchor=west, xshift=0.8mm]{race} (tools.north);
 \draw[arr, {Stealth[length=2.4mm]}-{Stealth[length=2.4mm]}] (s4.east) -- (tools.west);
-\draw[garr] (s5.east) -- node[lab, above, pos=0.8]{log} (rec.north |- s5.east) -- (rec.north);
+\draw[garr] (s5.east) -- node[lab, above, pos=0.8, flowgreenline!70!black]{log} (rec.north |- s5.east) -- (rec.north);
 % ----- dashed write-back, up the far right -----
 \draw[darr, flowgreenline] (rec.east) -- ++(6mm,0) |- (lib.east);
-\node[lab, rotate=90, anchor=north] at (10.0,-4.8) {validated insights written back};
+\node[lab, rotate=90, anchor=north, flowgreenline!70!black] at (10.0,-4.8) {validated insights written back};
 \end{tikzpicture}
 \caption{Architecture of the Sinica Kaggle Agent, with color marking role. \textbf{Blue, the LLM-driven pipeline}: Claude Code reasons and decides at every stage, and EDA records a verdict on the dossier's hypotheses (the dossier is a prior, not a conclusion). \textbf{Purple, the injection layer} (Section~\ref{sec:v5}): the Stage-0.5 dossier emits typed operators, data-level ones into the external-data layer's arms, which race a no-external baseline with the winner taking the full budget, model-level ones directly into search lineages. \textbf{Green, the evidence loop}: the experience library and the experiment records, with validated insights written back. \textbf{Gray, Auto-ML tools} invoked via the shell. Dashed arrows mark feedback, advisory or post-run steps. The leaderboard is external to the agent: lanes hold no credentials, and submissions are scored only after the run.}
 \label{fig:arch}
 \end{figure}
 
-\paragraph{Tree-search protocol.} Every run in this report uses the tree-search harness of Figure~\ref{fig:tree} (\path{tree_search/harness_v3.py}); the earlier downstream variant of that harness, whose measured near-null effect is what motivated the upstream layer (Section~\ref{sec:v5}), was used by none of the benchmark submissions here.
+\paragraph{Tree-search protocol.} Every one of the 20 benchmark runs in this report uses the tree-search harness of Figure~\ref{fig:tree} (\path{tree_search/harness_v3.py}); the three mid-complexity lanes of Section~\ref{sec:exp7run2} sit outside the benchmark and take the skill's linear fallback instead, because a node there is a full deep-learning fine-tune. The earlier downstream variant of that harness, whose measured near-null effect is what motivated the upstream layer (Section~\ref{sec:v5}), was used by none of the benchmark submissions here.
 
 \begin{figure}[htbp]
 \centering
@@ -193,11 +189,11 @@ Three cross-cutting mechanisms support the pipeline (Figure~\ref{fig:arch}):
   {\textcolor{flowpurpleline!60!black}{\textbf{data-level operators}}\\each gets its own arm; the arms race a no-external baseline and the winner takes the full budget};
 \draw[parr] (injdata) -- (eval);
 \end{tikzpicture}
-\caption{The tree-search loop used in all Sinica runs of this report (37--224 nodes per
+\caption{The tree-search loop used in every tabular benchmark lane of this report (37--224 nodes per
 competition; per-competition counts in Table~\ref{tab:nodes}); Figure~\ref{fig:treeex} shows what
 it builds. Each node is a complete, executable solution scored by local cross-validation.
 Purple: the injection layer's operator entry points (Section~\ref{sec:v5}); green: priors from
-the experience library; dashed arrows: advisory input and backtracking.}
+the experience library; dashed arrow: advisory input.}
 \label{fig:tree}
 \end{figure}
 
@@ -263,19 +259,23 @@ competition (Table~\ref{tab:nodes}).}
 \subsection{The Injection Layer}
 \label{sec:v5}
 
-The purple elements of Figures~\ref{fig:arch} and~\ref{fig:tree} form a single layer, and its placement carries the design argument. An earlier downstream variant injected external ideas at the blend stage and measured ${\sim}10^{-5}$; the architecture moves the injection point upstream to problem identification, where the question of what kind of problem this is gets decided.
+The purple elements of Figures~\ref{fig:arch} and~\ref{fig:tree} form a single layer, and its placement carries the design argument. An earlier downstream variant injected external ideas at the blend stage and measured ${\sim}10^{-5}$ in the competition metric; the architecture moves the injection point upstream to problem identification, where the question of what kind of problem this is gets decided.
 
-\paragraph{Stage 0.5: problem dossier.} Before EDA, the agent answers ``what kind of problem is this?'': task family, train--test window relation, split policy, and external-data need, written to a structured \path{dossier.json}. Judgments are grounded in \path{knowledge/task_priors.md}, a library of task-level priors, each carrying an evidence field from our own benchmark. Reading competition-specific discussions or kernels is forbidden. The dossier must derive from the problem statement plus task-\emph{type} knowledge only, keeping the method distinct from reproduction-based agents. The dossier is a prior, not a conclusion: EDA must verify its hypotheses and record a verdict.
+\paragraph{Stage 0.5: problem dossier.} Before EDA, the agent answers ``what kind of problem is this?'': task family, train--test window relation, split policy, and external-data need, written to a structured \path{dossier.json}. Judgments are grounded in a structured library of task-level priors (\path{knowledge/knowledge_base.json}), rendered per competition by \path{knowledge/task_priors_for.py}, each entry carrying an evidence field from our own benchmark. The July injection-layer experiments of Sections~\ref{sec:exp5v5} and~\ref{sec:exp6v5} read that library's prose predecessor, now archived under \path{knowledge/archive_pre_structured/}; the 20 benchmark lanes ran after it was retired and read the structured library through the renderer. Reading competition-specific discussions or kernels is forbidden. The dossier must derive from the problem statement plus task-\emph{type} knowledge only, keeping the method distinct from reproduction-based agents. The dossier is a prior, not a conclusion: EDA must verify its hypotheses and record a verdict.
 
-\paragraph{External-data module.} A whitelist of public sources, joined through leakage-guarded as-of merges: an external value may reach a prediction row only if dated at or before the row's period minus a declared lag. The module was adversarially verified, and the findings it reproduced, including silent-future-leak classes, were fixed under regression tests.
+\paragraph{External-data module.} A whitelist of public sources, joined through leakage-guarded as-of merges: an external value may reach a prediction row only if dated at or before the row's period minus a declared lag. The module was adversarially verified, and the 21 findings it reproduced, including three silent-future-leak classes, were fixed under regression tests.
 
 \paragraph{A typed contract between the two layers.} The first version of this stack failed
 instructively: the dossier proposed World Bank GDP for s3e19 \emph{as a country-level scale
 covariate}, but the execution layer could express exactly one transformation (appending a
-column to the feature list), and since a gradient-boosted tree cannot extrapolate a feature
-beyond its training range, the semantics evaporated between the layers with nothing raising an
-error. Both layers now read one closed vocabulary of typed operators
-(\path{knowledge/injection_operators.md}), and the dispatcher writes a coverage ledger, so a
+column to the feature list), so the scale-covariate semantics degraded into a plain feature with
+nothing raising an error. (The a-priori argument that a gradient-boosted tree cannot extrapolate
+such a feature past its training range predicts that this form should lose; the leaderboard has twice
+said otherwise, which is the unresolved form-selection problem of
+Section~\ref{sec:exp6v5}.) Both layers now read one closed vocabulary of typed operators
+(the operator records in \path{knowledge/knowledge_base.json}, which the benchmark lanes read
+through the renderer; the July arm experiments read its prose predecessor, archived alongside the
+priors), and the dispatcher writes a coverage ledger, so a
 capability the execution layer cannot realize leaves a trace instead of resembling success
 (Appendix~\ref{app:coverage}).
 
@@ -323,7 +323,8 @@ defective, fix the environment, never hint to the affected side.
 
 \paragraph{Benchmark execution discipline.} For Sinica's 20 benchmark lanes, the protocol is
 tightened further. A benchmark manifest (\path{docs/rerun_manifest.json}) fixes exactly one
-workspace, one canonical evaluator, and one search driver per competition; each lane executes in
+workspace and one canonical evaluator per competition, with each lane's search driver generated
+per run from a single competition-agnostic template; each lane executes in
 an isolated root, holds \emph{no credentials} (the Kaggle token is stripped from the
 environment, so a lane can neither consult the leaderboard nor submit), and sees only its own
 workspace. A \emph{per-lane transcript audit} then reads every tool call the lane made, and the
@@ -351,7 +352,7 @@ without an error model is reporting its own noise back to itself.
 
 \paragraph{A failed first attempt, worth recording.} We first used a single agent's own public--private gap as the threshold, and 8 of 10 competitions came out as ties: that gap is mostly \emph{shared} across the three agents (on s5e10 a common shift of $0.00025$ against mutual scatter of only $0.00002$), so the paired construction subtracts it out.
 
-\paragraph{The correct construction.} Measure how much the \emph{gap between two agents} moves across the two subsets. The common drift cancels in the subtraction. Writing $d_{\mathrm{pub}}$ and $d_{\mathrm{priv}}$ for the between-agent score difference on the public and private subsets, a verdict requires both:
+\paragraph{The correct construction.} Measure how much the \emph{gap between two agents} moves across the two subsets. The common drift cancels out in the subtraction. Writing $d_{\mathrm{pub}}$ and $d_{\mathrm{priv}}$ for the between-agent score difference on the public and private subsets, a verdict requires both:
 \begin{align}
 \operatorname{sign}(d_{\mathrm{priv}}) &= \operatorname{sign}(d_{\mathrm{pub}})
   && \text{(the ordering replicates on disjoint samples)} \label{eq:sign} \\
@@ -381,24 +382,24 @@ s6e2  & 0.00000 & 0.00020 & 0.00000--0.00008 \\
 \end{center}
 
 Two readings. The variance is substantially a property of the \emph{task}, not the agent
-(both agents agree that s3e16 is the noisy competition by an order of magnitude), so error bars are
+(both agents rank s3e16 as the noisy competition, for Sinica by more than an order of magnitude), so error bars are
 per-competition rather than one global number, and gaps at or below a measured spread (s5e10's
-$0.00003$ exactly equals AIDE's wobble there) are undecidable: the floor the benchmark verdicts
-of Section~\ref{sec:winrates} apply. NVIDIA's variance term remains unmeasured
+$0.00003$ exactly equals AIDE's wobble there) are undecidable. That spread is the floor applied by the
+benchmark verdicts of Section~\ref{sec:winrates}. NVIDIA's variance term remains unmeasured
 (Section~\ref{sec:future}).
 
 \section{The Three-Way Benchmark}
 
 \subsection{Design}
 
-\paragraph{Evaluation set.} 20 tabular competitions (Table~\ref{tab:comps}), each providing both a public and a private test-subset score: the inclusion criterion the paired test requires (Section~\ref{sec:exp2}). Four further competitions the three agents ran are excluded: no private score can be obtained for them (late submission closed, rolling leaderboards).
+\paragraph{Evaluation set.} 20 tabular competitions (Table~\ref{tab:comps}), each providing both a public and a private test-subset score: the inclusion criterion the paired test requires (Section~\ref{sec:exp2}). Four further competitions that the three agents ran are excluded. Three have no obtainable private score (late submission closed, rolling leaderboards). The fourth, s6e7, was frozen out of the evaluation set before its private scores were revealed; they are recorded but not counted.
 
 \paragraph{Execution conditions.} The three agents ran serially under the mutex of Section~\ref{sec:fairness}. AIDE: 20 steps, its own default budget (conway stopped at 16 due to the 4-hour cap). NVIDIA: reproduced public kernels per its method. Sinica: the full six-stage pipeline including tree search (37--224 nodes per competition; Appendix~\ref{app:treesize}), each lane under the execution discipline of Section~\ref{sec:fairness}.
 
 \subsection{Raw Scores}
 \label{sec:exp1}
 
-\paragraph{Goal and procedure.} Each side independently produces a submission, scored on Kaggle via late submission for public and private scores and a percentile rank (PR); the AIDE and NVIDIA columns of Table~\ref{tab:bench} are those frozen leaderboard scores. Sinica's lanes hold no credentials, so nothing inside a lane ever touches the leaderboard: each lane freezes a \path{submission.csv}, and a separate credentialed operator step scored all 20, filling the LB column of Table~\ref{tab:bench}; the percentile ranks are the one quantity not reported, because they require a leaderboard-snapshot pull we did not run. No local CV is quoted in this report's tables because it is never a leaderboard proxy (s3e19's pooled OOF SMAPE of 6.71 sat against a realized lane score of 49.41).
+\paragraph{Goal and procedure.} Each side independently produces a submission, scored on Kaggle via late submission for public and private scores and a percentile rank (PR); the AIDE and NVIDIA columns of Table~\ref{tab:bench} are those frozen leaderboard scores. Sinica's lanes hold no credentials, so nothing inside a lane ever touches the leaderboard: each lane freezes a \path{submission.csv}, and a separate credentialed operator step scored all 20, filling the LB column of Table~\ref{tab:bench}. One exception lies in the instrument rather than the result: the scoring tool's structural validator false-blocked conway's file on sample-file naming, so the operator submitted that identical file (same SHA-256) through the Kaggle CLI. The percentile ranks are the one quantity not reported, because they require a leaderboard-snapshot pull we did not run. No local CV is quoted in this report's tables because it is never a leaderboard proxy (s3e19's pooled OOF SMAPE of 6.71 sat against a realized lane score of 49.41).
 
 \begin{table}[htbp]
 \centering\small
@@ -437,13 +438,15 @@ of Section~\ref{sec:winrates} apply. NVIDIA's variance term remains unmeasured
 \setlength{\tabcolsep}{3pt}
 \caption{The complete 20-competition benchmark. All cells are
 public/private leaderboard scores; \textbf{bold} marks the best \emph{private} score of the
-three (raw, direction-aware; the paired-test verdicts, which this raw reading does not
-replace, are in Table~\ref{tab:winrates}). Sinica's column comes from the credentialed
-operator scoring step; its percentile ranks await a
-leaderboard-snapshot pull. NVIDIA and AIDE cells are frozen leaderboard scores with percentile rank (PR) in
+three (raw, direction-aware; the paired-test standing, which this raw reading does not
+replace, is aggregated in Table~\ref{tab:winrates}). Sinica's column comes from the credentialed
+operator scoring step; its percentile ranks are not reported, because they require a
+leaderboard-snapshot pull we did not run. NVIDIA and AIDE cells are frozen leaderboard scores with percentile rank (PR) in
 parentheses. Lane status: all 20 lanes complete, audited and scored (${\sim}26$ hours of accepted
-lane attempts); tps-jan-2022 is the clean re-run after its first attempt was discarded by
-the audit (footnote $h$).}
+lane attempts). Four rows come from a second lane attempt: s3e11 and s6e2 because the credential
+fault killed the first one mid-run with no submission, s3e19 because its first attempt was
+discarded by the transcript audit, and tps-jan-2022 because the operator killed its first one
+minute in on cross-lane contamination (Section~\ref{sec:rerun}).}
 \label{tab:bench}
 \begin{tabular}{@{}rllrrr@{}}
 \toprule
@@ -454,51 +457,40 @@ the audit (footnote $h$).}
 3 & s3e5 & QWK \up & 0.57041/0.57223 & 0.57515/0.56974 (75.7) & 0.59362/\textbf{0.58138} (79.8) \\
 4 & s3e7 & ROC-AUC \up & 0.91127/0.90441 & 0.91230/\textbf{0.90458} (78.1) & 0.90934/0.90109 (67.1) \\
 5 & s3e9 & RMSE \dn & 11.84750/12.33192 & 11.83399/\textbf{12.22913} (59.1) & 11.86657/12.30667 (44.5) \\
-6 & s3e11$^{a}$ & RMSLE \dn & 0.29309/\textbf{0.29368} & 0.29559/0.29624 (66.6) & 0.29389/0.29445 (73.3) \\
+6 & s3e11 & RMSLE \dn & 0.29309/\textbf{0.29368} & 0.29559/0.29624 (66.6) & 0.29389/0.29445 (73.3) \\
 7 & s3e14 & MAE \dn & 343.43434/333.18611 & 338.36524/\textbf{330.71616} (89.2) & 342.44918/332.31556 (71.2) \\
 8 & s3e16 & MAE \dn & 1.33738/\textbf{1.33822} & 1.33566/1.34001 (96.4) & 1.33920/1.34224 (91.4) \\
-9 & s3e19$^{b}$ & SMAPE \dn & 49.11872/49.40878 & 47.52145/\textbf{48.26558} (41.4) & 48.39715/48.34131 (40.1) \\
+9 & s3e19 & SMAPE \dn & 49.11872/49.40878 & 47.52145/\textbf{48.26558} (41.4) & 48.39715/48.34131 (40.1) \\
 10 & s4e11 & Accuracy \up & 0.94195/\textbf{0.94107} & 0.94136/0.94076 (52.8) & 0.94184/0.94056 (62.1) \\
-11 & s5e10$^{c}$ & RMSE \dn & 0.05554/\textbf{0.05576} & 0.05562/0.05588 (59.4) & 0.05555/0.05579 (78.9) \\
-12 & s6e1$^{d}$ & Error \dn & 8.68844/\textbf{8.71516} & 8.70480/8.73239 (69.5) & 8.69449/8.72191 (74.8) \\
-13 & s6e2$^{e}$ & ROC-AUC \up & 0.95354/0.95505 & 0.95348/0.95508 (63.0) & 0.95364/\textbf{0.95516} (76.5) \\
+11 & s5e10 & RMSE \dn & 0.05554/\textbf{0.05576} & 0.05562/0.05588 (59.4) & 0.05555/0.05579 (78.9) \\
+12 & s6e1 & RMSE \dn & 8.68844/\textbf{8.71516} & 8.70480/8.73239 (69.5) & 8.69449/8.72191 (74.8) \\
+13 & s6e2 & ROC-AUC \up & 0.95354/0.95505 & 0.95348/0.95508 (63.0) & 0.95364/\textbf{0.95516} (76.5) \\
 14 & afsis & MCRMSE \dn & 0.41902/\textbf{0.48917} & 0.61276/0.69855 (18.8) & 0.45636/0.49861 (45.6) \\
 15 & cat-in-the-dat & ROC-AUC \up & 0.80800/\textbf{0.80243} & 0.77641/0.77084 (32.6) & 0.80790/0.80217 (70.3) \\
-16 & conway$^{f}$ & MAE \dn & 0.10313/\textbf{0.10414} & 0.11094/0.11189 (96.5) & 0.10960/0.11065 (97.9) \\
-17 & tps-aug-2022$^{g}$ & ROC-AUC \up & 0.58534/0.58930 & 0.57920/0.58730 (43.0) & 0.58479/\textbf{0.59106} (60.5) \\
-18 & tps-jan-2022$^{h}$ & SMAPE \dn & 4.58859/6.29895 & 4.43958/\textbf{4.63651} (76.4) & 10.11598/10.66638 (28.9) \\
+16 & conway & MAE \dn & 0.10313/\textbf{0.10414} & 0.11094/0.11189 (96.5) & 0.10960/0.11065 (97.9) \\
+17 & tps-aug-2022 & ROC-AUC \up & 0.58534/0.58930 & 0.57920/0.58730 (43.0) & 0.58479/\textbf{0.59106} (60.5) \\
+18 & tps-jan-2022 & SMAPE \dn & 4.58859/6.29895 & 4.43958/\textbf{4.63651} (76.4) & 10.11598/10.66638 (28.9) \\
 19 & s5e1 & MAPE \dn & 0.09076/\textbf{0.08401} & 0.05726/0.14594 (69.3) & 0.12573/0.17917 (48.1) \\
 20 & tps-sep-2022 & SMAPE \dn & 28.45070/28.49605 & 4.77458/\textbf{5.48351} (80.3) & 5.78998/9.72095 (48.3) \\
 \midrule
-\multicolumn{3}{@{}l}{Median PR (range)} & pending snapshot & 68.0 (18.8--96.5) & 68.7 (26.4--97.9) \\
+\multicolumn{3}{@{}l}{Median PR (range)} & not reported & 68.05 (18.8--96.5) & 68.7 (26.4--97.9) \\
 \bottomrule
 \end{tabular}
-
-\smallskip
-\raggedright\footnotesize
-$^{a}$~First attempt exited without a submission; completed on a second attempt.\quad
-$^{b}$~Clean re-run; first attempt discarded by the transcript audit (Section~\ref{sec:rerun}).\quad
-$^{c}$~Audit incident resolved, score accepted (Section~\ref{sec:rerun}).\quad
-$^{d}$~Completed and audit-accepted.\quad
-$^{e}$~Second attempt; the first exited without a submission.\quad
-$^{f}$~The scoring tool's structural validator false-blocked conway's file (sample-file naming); the operator submitted the identical file (same SHA-256) manually via the Kaggle CLI.\quad
-$^{g}$~Submission validated before the lane's post-submission library violations; accepted on that ordering (Section~\ref{sec:rerun}).\quad
-$^{h}$~Clean re-run after the first attempt was discarded for cross-lane contamination; its own post-submission library violations are accepted on the same ordering argument as $^{g}$ (Section~\ref{sec:rerun}).
 \end{table}
 
-PR is the share of that competition's final private standings the submission would beat. It is an \emph{absolute} capability reference, separate from the relative ordering among the three.
+PR is the share of that competition's final private standings that the submission would beat. It is an \emph{absolute} capability reference, separate from the relative ordering among the three.
 
 \subsection{Execution and Audit}
 \label{sec:rerun}
 
-The queue ran under operator approval and finished with all 20 lanes complete and audit-adjudicated, halting three times on the way: twice on the same environment fault and once on its two-consecutive-audit-failures rule. That fault was ours rather than the method's: the sandbox bound the session's credential file read-only, so a lane whose access token expired mid-run could not write the refreshed token back and died; the post-benchmark fix binds it writable and refuses to start a lane whose token cannot outlive it. The audit gate was exercised in both directions, most sharply on \textbf{s3e19}, whose first attempt opened the raw knowledge library four times and was discarded. (It also tripped the network detector, but a re-scan with the corrected detector below finds no network command. The hit was a Python variable named \texttt{nc} in a diagnostic heredoc, and the four raw opens carry the discard on their own.) The clean re-run scores \emph{worse} on local CV (pooled OOF SMAPE 6.706 against the tainted attempt's 5.740), consistent with the contamination advantage being real and the audit pricing it correctly; a benchmark that discards a better-looking number and keeps the honest one has evidence its audit does something. The remaining incidents turned on transcript ordering: on s5e10, tps-aug-2022 and tps-sep-2022 the flagged raw-library opens all fell strictly \emph{after} the submission had been written and validated, so those scores stand (s5e10's hand-edit of the shared library after finalization was reverted before any later lane ran). Exactly one instance crossed lanes: tps-jan-2022 started two minutes after aug-2022's write-back and its Stage 0.5 read served the polluted entries, so the operator killed that lane at one minute, reverted the library, and relaunched it clean. The re-run raised the same class of blocker once more, again only after its own submission was validated, and was accepted on the same ordering argument.
+The queue ran under operator approval and finished with all 20 lanes complete and audit-adjudicated, halting three times on the way: twice on the same environment fault and once on its two-consecutive-audit-failures rule. That fault was ours rather than the method's: the sandbox bound the session's credential file read-only, so a lane whose access token expired mid-run could not write the refreshed token back and died; the post-benchmark fix binds it writable and refuses to start a lane whose token cannot outlive it. The audit gate was exercised in both directions, most sharply on \textbf{s3e19}, whose first attempt opened the raw knowledge library four times and was discarded. (It also tripped the network detector, and the corrected detector below still fires on it: the flagged token is a Python variable named \texttt{nc} assigned inside a diagnostic heredoc, not a socket, so the clearance comes from a human re-read rather than from the tool. The four raw opens carry the discard on their own.) The clean re-run scores \emph{worse} on local CV (pooled OOF SMAPE 6.706 against the tainted attempt's 5.740), consistent with the contamination advantage being real and the audit pricing it correctly; a benchmark that discards a better-looking number and keeps the honest one has evidence its audit does something. The remaining incidents turned on transcript ordering: on s5e10, tps-aug-2022 and tps-sep-2022 the flagged raw-library opens all fell strictly \emph{after} the submission had been written and validated, so those scores stand (s5e10's hand-edit of the shared library after finalization was reverted before any later lane ran). Exactly one instance crossed lanes: tps-jan-2022 started two minutes after aug-2022's write-back and its Stage 0.5 read served the polluted entries, so the operator killed that lane at one minute, reverted the library, and relaunched it clean. The re-run raised the same class of blocker once more, again only after its own submission was validated, and was accepted on the same ordering argument.
 
-The recurrence is the finding, not the individual incidents. Four of the 20 lanes (s5e10, tps-aug-2022, tps-sep-2022, tps-jan-2022) wrote their own \texttt{library\_writeback.py}, because the skill instructs every lane to write validated insights back through library tools that this run root does not ship, and the root bound the shared library writable. This is a design fault of the harness rather than of any lane, and only one instance of it crossed lanes. The fix mounts \texttt{knowledge/} read-only over the writable run root, so prevention no longer depends on after-the-fact detection. Re-reading the transcripts also exposed two defects in the auditor itself: its network detector matched the substring \texttt{kaggle} inside the path of the skill's own submission helper (two lane audits blocked on that string alone, each costing a manual scan and a recorded waiver) and, more seriously, its exemption list dropped every command beginning with \texttt{uv} (which is every command a lane issues), so \texttt{uv run kaggle competitions leaderboard}, the exact command the detector exists to catch, was never examined. Both are fixed; re-running the corrected auditor over all 20 transcripts returns zero network findings and leaves the genuine library blockers unchanged. A detector blind at its own target is the kind of defect only a post-hoc re-read finds.
+The recurrence is the finding, not the individual incidents. Four of the 20 lanes (s5e10, tps-aug-2022, tps-sep-2022, tps-jan-2022) wrote their own \texttt{library\_writeback.py}, because the skill instructs every lane to write validated insights back through library tools that this run root does not ship, and the root bound the shared library writable. This is a design fault of the harness rather than of any lane, and only one instance of it crossed lanes. The fix mounts \texttt{knowledge/} read-only over the writable run root, so prevention no longer depends on after-the-fact detection. Re-reading the transcripts also exposed two defects in the auditor itself: its network detector matched the substring \texttt{kaggle} inside the path of the skill's own submission helper (two lane audits blocked on that string alone, each costing a manual scan and a recorded waiver) and, more seriously, its exemption list dropped every command beginning with \texttt{uv} (which is every command a lane issues), so \texttt{uv run kaggle competitions leaderboard}, the exact command the detector exists to catch, was never examined. Both are fixed; re-running the corrected auditor over all 20 accepted lane transcripts returns zero network findings and leaves the genuine library blockers unchanged. A detector blind at its own target is the kind of defect only a post-hoc re-read finds.
 
 \subsection{The Standing}
 \label{sec:winrates}
 
-The benchmark's headline reading is the full duel matrix: 20 competitions $\times$ 3 pairings $=$ 60 duels, each adjudicated by the rule of Section~\ref{sec:exp2} plus the per-competition variance floors. With all 20 lanes scored, every one of the 60 duels is adjudicated: 38 produce a verdict and 22 are undecidable. That is the class the error model exists to catch, including a live replication of the development-lane s5e1 case (the public half of that test split favors NVIDIA, the private half favors Sinica, so the sign test cannot resolve it) and three duels killed by the variance floors: two of them wins Sinica would otherwise have claimed (s3e16, and s5e10, where the private gap of $0.00003$ exactly equals AIDE's measured spread, the case Section~\ref{sec:exp2} flagged in advance; the rule requires the gap to \emph{exceed} the floor, and we compare in exact decimal, so this duel stays undecidable rather than becoming a 17th Sinica win) and one a would-be AIDE win (s6e2, gap $0.00011$ under AIDE's $0.00020$ floor). Table~\ref{tab:winrates} gives the standing. Sinica leads outright: it wins 16 of its 24 decided duels ($66.7\%$; each reference agent wins 11 of its 26, $42.3\%$; the denominators differ because a duel is decided or not independently for each pair), takes the best private score on 10 of the 20 competitions (NVIDIA 7, AIDE 3), and its rerun submission beats its own development-lane private score on 13 of 20. Its sharpest losses fall where the mechanism of Section~\ref{sec:reversal} predicts they should: on tps-sep-2022, the one benchmark competition with a mature, high-quality public baseline, both reference agents beat it decisively (5.48 and 9.72 SMAPE against 28.50), and on tps-jan-2022 NVIDIA's reproduction of the known GDP-ratio solution beats it 4.64 to 6.30. Reproduction dominates exactly where a strong public solution already exists; search wins the rest.
+The benchmark's headline reading is the full duel matrix: 20 competitions $\times$ 3 pairings $=$ 60 duels, each adjudicated by the rule of Section~\ref{sec:exp2} plus the per-competition variance floors. With all 20 lanes scored, every one of the 60 duels is adjudicated: 38 produce a verdict, and 22 are undecidable. That is the class the error model exists to catch, including a live replication of the development-lane s5e1 case (the public half of that test split favors NVIDIA, the private half favors Sinica, so the sign test cannot resolve it) and three duels killed by the variance floors: two of them wins Sinica would otherwise have claimed (s3e16, and s5e10, where the private gap of $0.00003$ exactly equals AIDE's measured spread, the case Section~\ref{sec:exp2} flagged in advance; the rule requires the gap to \emph{exceed} the floor, and we compare in exact decimal, so this duel stays undecidable rather than becoming a 17th Sinica win) and one a would-be AIDE win (s6e2, gap $0.00011$ under AIDE's $0.00020$ floor). Table~\ref{tab:winrates} gives the standing. Sinica leads outright: it wins 16 of its 24 decided duels ($66.7\%$; each reference agent wins 11 of its 26, $42.3\%$; the denominators differ because a duel is decided or not independently for each pair), takes the best private score on 10 of the 20 competitions (NVIDIA 7, AIDE 3), and its rerun submission beats its own development-lane private score on 13 of 20. Its sharpest losses fall where the mechanism of Section~\ref{sec:reversal} predicts they should: on tps-sep-2022, the benchmark's clearest case of a mature, high-quality public baseline, both reference agents beat it decisively (5.48 and 9.72 SMAPE against 28.50), and on tps-jan-2022 NVIDIA's reproduction of the known GDP-ratio solution beats it 4.64 to 6.30. Reproduction dominates exactly where a strong public solution already exists; search wins the rest.
 
 \begin{table}[htbp]
 \centering\small
@@ -524,18 +516,20 @@ AIDE     & 11 & 15 & 42.3\% \\
 \subsection{Does the Dossier Fire on the Right Tasks?}
 \label{sec:exp5v5}
 
-\paragraph{Design and result.} Run on the 18 baseline competitions from the problem statement, data schema, and task priors alone (minutes per competition, no training), the dossier layer should fire only where external data is genuinely needed. It fires on exactly the two country-panel time-series competitions, s3e19 and jan-2022, whose accepted solutions are known to require external covariates, and reports ``no / unlikely'' on the other 16, which span iid-tabular, categorical, spectral, and structured-output tasks. One caveat keeps this honest: the task priors were distilled from those two competitions' own failure analysis, so the silence is the informative half.
+\paragraph{Design and result.} Run on the original 18 baseline competitions (before tps-sep-2022 and s5e1 joined; Section~\ref{sec:limitations}) from the problem statement, data schema, and task priors alone (minutes per competition, no training), the dossier layer should fire only where external data is genuinely needed. It fires on exactly the two country-panel time-series competitions, s3e19 and jan-2022, whose accepted solutions are known to require external covariates, and reports ``no / unlikely'' on the other 16, which span iid-tabular, categorical, spectral, and structured-output tasks. The two competitions added later also fire, but they were \emph{selected} as firing-class, so the sweep claim rests on the original 18. One caveat keeps this honest: the task priors were distilled from those two competitions' own failure analysis, so the silence is the informative half.
 
 \subsection{What the Layer Delivers}
 \label{sec:exp6v5}
 
-\paragraph{Design.} Across the three competitions where the dossier fires (s3e19, the held-out tps-sep-2022, and the pre-registered s5e1), matched arms differ only in the operator's added columns (verified digit-identical otherwise); every arm is submitted for real public and private scores and judged by the paired test of Section~\ref{sec:exp2}, and the s5e1 test was pre-registered. Full arm tables are in the companion case-studies document.
+\paragraph{Design.} The firing class has four members; three are usable as test beds (s3e19, the held-out tps-sep-2022, and the pre-registered s5e1), while jan-2022 is not, because its outcomes are already inside the prior library. On s3e19 and tps-sep-2022 the arms are matched single configurations differing only in the operator's added columns (verified digit-identical otherwise); on s5e1 three equal-budget arms of $46$ evaluated nodes each, searched separately from the benchmark s5e1 lane whose 224 nodes Table~\ref{tab:nodes} reports, differ only in that operator. Every arm is submitted for real public and private scores and judged by the paired test of Section~\ref{sec:exp2}, and the s5e1 test was pre-registered. Per-arm private scores (baseline / \texttt{join\_feature} / \texttt{ratio\_target}): s3e19 $54.506$ / $48.497$ / $52.073$ and tps-sep-2022 $25.476$ / $23.390$ / $24.091$ (SMAPE); s5e1 $0.15751$ / $0.15626$ / $0.12417$ (MAPE).
 
 \paragraph{Effect.} Across the three competitions, \textbf{all six external-data arms beat
 their no-external baselines, every one paired-significant}. On s3e19 itself the
 ablation against a searched champion from the identical pipeline with the layer disabled passes
-the paired test, private $48.243$ against $50.455$. Both are controlled arms, not the benchmark
-s3e19 lane, which scored $49.40878$ (Table~\ref{tab:bench}).
+the paired test, private $48.243$ against $50.455$. Both are controlled arms scored on the real
+leaderboard, not benchmark lanes; $50.455$ is also the frozen pre-injection development lane's own
+s3e19 submission, which the re-run benchmark lane's $49.40878$ (Table~\ref{tab:bench}) supersedes
+as this report's s3e19 number.
 
 \paragraph{The operating rule the experiments imposed.} One negative result ships with the
 layer: no local signal we tested selects which \emph{form} the injection should take.
@@ -557,7 +551,7 @@ needs a consumer trace, not a vocabulary count.}
 \section{Beyond Tabular Competitions}
 \label{sec:exp7run2}
 
-\paragraph{Design.} The three agents run, each under its frozen method and the same isolation protocol, on three competitions outside the tabular Playground family: us-patent (NLP text pairing), ventilator-pressure-prediction (physiological time series), and SIIM-ISIC melanoma (dermoscopic imaging). None of the Sinica lanes ran the injection layer or tree search (Section~\ref{sec:limitations}). A node here is a full deep-learning fine-tune, not a seconds-long GBDT refit, so all three took the skill's documented fallback: one linear pass to a validated single model plus a blend.
+\paragraph{Design.} The three agents run, each under its frozen method and the same isolation protocol, on three competitions outside the tabular Playground family: us-patent (NLP text pairing), ventilator-pressure-prediction (physiological time series), and SIIM-ISIC melanoma (dermoscopic imaging). Two of the three Sinica lanes (us-patent, ventilator) predate the Stage-0.5 dossier; the SIIM lane ran it and it declined external data, so the injection layer fired on none of the three (Section~\ref{sec:limitations}). A node here is a full deep-learning fine-tune, not a seconds-long GBDT refit, so none of the three ran tree search: all took the skill's documented fallback, one linear pass to a validated single model plus a blend.
 
 \paragraph{Scoring.} The mid-complexity competitions use MLE-bench~\cite{mlebench} prepared splits and are graded offline against the held-out private split; medal thresholds and the above-median flag come from the frozen leaderboard snapshot.
 
@@ -636,7 +630,7 @@ The most important methodological lesson of the development runs: swap the compe
   \item \textbf{Budgets are per-method conventions, not compute-matched}: AIDE's default 20 steps, Sinica's 37--224 evaluated nodes plus a linear pass, NVIDIA's minutes of reproduction, each method ``as shipped.''
   \item \textbf{The sample is small, sensitive to its composition, and partly added post hoc.} Removing one competition moves a win rate by several points: dropping s3e19 alone takes Sinica from $66.7\%$ to $72.7\%$; dropping s3e3 takes NVIDIA from $42.3\%$ to $37.5\%$ (Section~\ref{sec:reversal}). The two firing-class competitions joined after their leaderboards had been consulted for the injection experiments: disclosed, not hidden.
   \item \textbf{The experience-library asymmetry is disclosed, not eliminated}: Sinica carries cross-competition memory; the other two cold-start.
-  \item \textbf{The mid-complexity lanes ran without the injection layer and without tree search} (Section~\ref{sec:exp7run2}), and offline grading yields one score per submission, outside the paired test's reach.
+  \item \textbf{The mid-complexity lanes ran without tree search and with no firing of the injection layer}: a node there is a full deep-learning fine-tune, so all three took the linear fallback, and on the injection side us-patent and ventilator predate the Stage-0.5 dossier while SIIM ran it and the dossier declined external data (Section~\ref{sec:exp7run2}); offline grading yields one score per submission, outside the paired test's reach.
 \end{itemize}
 
 \subsection{Open Problems}
@@ -669,9 +663,9 @@ The benchmark verdict is complete: all 20 transcript-audited lanes were scored o
 
 \subsection{Per-Competition Specification Reports}
 
-A specification report accompanies this paper for every agent on every competition, written to the five sections of Tso-Jung Yen's ML specification framework: Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking -- and archived at \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{docs/ml_specs/}} for Sinica and \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results/ml_specs_aide}{\path{benchmark_results/ml_specs_aide/}} for AIDE, in Markdown and PDF.
+Specification reports accompany this paper for Sinica (22 in all: one for each of the 20 benchmark competitions, documenting that competition's development-lane run with an addendum for the benchmark re-run, plus two development-only competitions) and for 17 AIDE runs (13 of the 20 benchmark competitions, plus four development-only ones), written to the five sections of Tso-Jung Yen's ML specification framework (Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking), and archived at \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/docs/ml_specs}{\path{docs/ml_specs/}} for Sinica and \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results/ml_specs_aide}{\path{benchmark_results/ml_specs_aide/}} for AIDE, in Markdown and PDF. NVIDIA, which reproduces a public kernel rather than building a pipeline, is not re-documented, and the three mid-complexity competitions have no specification report.
 
-Every number in these reports is extracted deterministically by \texttt{collect.py} / \path{collect_aide_facts.py} from that competition's structured records (\texttt{facts.json}, \path{eda_summary.json}, \path{experiments_tree_v3.json}, \path{journal.json}), never generated by an LLM; unavailable fields are marked ``not recorded'' rather than left blank or estimated. The framework's deep-learning-specific fields (learning-rate schedule, batch size, transfer learning, data augmentation) are marked not applicable throughout, in these reports, whose pipelines are all gradient-boosted-tree based. The reports are CV-only by construction; their conclusions must not be mixed with leaderboard verdicts.
+Every number in these reports is extracted deterministically by \texttt{collect.py} / \path{collect_aide_facts.py} from that competition's structured records (\texttt{facts.json}, \path{eda_summary.json}, \path{experiments_tree_v3.json}, \path{journal.json}), never generated by an LLM; unavailable fields are marked ``not recorded'' rather than left blank or estimated. The framework's deep-learning-specific fields (learning-rate schedule, batch size, transfer learning, data augmentation) are marked not applicable throughout these reports, whose pipelines are non-neural (gradient-boosted trees, linear and kernel models, and one empirical-Bayes panel model), with one exception: conway's champion is a from-scratch residual CNN, so its learning rate, schedule, batch size and augmentation carry real values. Every in-run decision recorded in these reports was made on cross-validation alone, with no leaderboard feedback during the run; where a report quotes CV only, its conclusions must not be read as leaderboard verdicts, which are in Section~\ref{sec:winrates}.
 
 \subsection{Split Strategy by Task Type}
 
@@ -702,7 +696,8 @@ All lanes ran on ARM64 Linux (Ubuntu 24.04) with an NVIDIA GB10 GPU, under a uv-
 Two companion documents accompany this report. \emph{Building the Injection Layer: An
 Engineering Log} carries the per-regime coverage tables behind the consumer-trace finding of
 Section~\ref{sec:exp6v5}, together with the audit scripts that reproduce them and the
-minute-by-minute reconstruction of the voided ventilator attempt. \emph{Per-Competition Case
+minute-by-minute reconstruction of NVIDIA's voided ventilator attempt, a session accident whose
+run was discarded and whose method finding was kept. \emph{Per-Competition Case
 Studies} carry the single-competition forensic depth behind the condensed claims of
 Section~\ref{sec:exp6v5}: the CV--leaderboard reversal mechanics, AIDE's step-by-step split
 switch, the s5e1 setting behind the pre-registered prediction, and the s3e19 residual
@@ -716,7 +711,8 @@ decomposition in full.
 \caption{Evaluated tree-search nodes per competition (Sinica), from each completed
 benchmark lane's search records (\texttt{experiments\_tree\_v3.json} / lane \texttt{STATUS.md}).
 The default budget is 60 evaluated nodes; a lane could extend it through the logged resume path.
-s5e1's 224 is the sum of its separately raced per-arm trees; the largest single tree is
+Two cells are sums rather than one search: s5e1's 224 over its separately raced per-arm trees,
+and s3e9's 107 over two rounds from the same root ($47 + 60$). The largest single tree is
 tps-aug-2022's 126; conway stopped at 37 on the wall-clock backstop.}
 \label{tab:nodes}
 \begin{tabular}{@{}lr@{\hspace{2em}}lr@{\hspace{2em}}lr@{}}
@@ -737,7 +733,7 @@ s3e14 & 70 & & & tps-jan-2022 & 81 \\
 
 \section{Data and Code Availability}
 
-All Sinica code and all benchmark artifacts are archived in the project repository \href{https://github.com/930731haohao-afk/kaggle-agent}{\path{github.com/930731haohao-afk/kaggle-agent}} (private; access granted on request): the agent skill definition and its per-stage references, the tree-search harness, the experience library and the injection layer, which lives in \path{external_data/} and \path{tree_search/}. Infrastructure scripts that sit at \texttt{ai\_agents/} level in the working tree are mirrored under \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_infra}{\path{benchmark_infra/}}, and the cross-agent artifacts (the three-way score master table, the benchmark-run manifest, the coverage status table, and the AIDE specification reports) under \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results}{\path{benchmark_results/}}, with Sinica's specification reports and per-competition experiment logs alongside them in \path{docs/ml_specs/} and \path{competitions/}. The repository also carries the drivers that rebuild the isolated data roots and re-run all three agents on a single competition. Every number in this report can be traced to those structured records.
+All Sinica code and all benchmark artifacts are archived in the project repository \href{https://github.com/930731haohao-afk/kaggle-agent}{\path{github.com/930731haohao-afk/kaggle-agent}} (private; access granted on request): the agent skill definition and its per-stage references, the tree-search harness in \path{tree_search/}, the experience library, and the injection layer, which spans \path{external_data/} and the arm-racing drivers in \path{tree_search/}. Infrastructure scripts that sit at \texttt{ai\_agents/} level in the working tree are mirrored under \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_infra}{\path{benchmark_infra/}}, and the cross-agent artifacts (the three-way score master table, the coverage status table, and the AIDE specification reports) under \href{https://github.com/930731haohao-afk/kaggle-agent/tree/main/benchmark_results}{\path{benchmark_results/}}; the benchmark-run manifest sits at \path{docs/rerun_manifest.json}, and Sinica's specification reports and per-competition experiment logs at \path{docs/ml_specs/} and \path{competitions/}. The repository also carries the drivers that rebuild the isolated data roots and re-run all three agents on a single competition. Every number in this report can be traced to those structured records.
 
 
 \begin{thebibliography}{9}
