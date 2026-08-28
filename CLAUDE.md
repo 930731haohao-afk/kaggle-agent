@@ -4,7 +4,7 @@
 
 This project builds a **hybrid AI agent for Kaggle competitions** implemented as a **Claude Code Skill**. Claude Code itself acts as the agent, guided by the skill's structured instructions and domain knowledge. The hybrid approach combines:
 - **LLM reasoning** (Claude Code) for creative decision-making, EDA interpretation, feature engineering, and strategy
-- **Auto-ML tools** (AutoGluon, FLAML, etc.) invoked via Bash for systematic model search, hyperparameter tuning, and ensembling
+- **Gradient-boosting libraries** (LightGBM, XGBoost, CatBoost) plus **Optuna** for hyperparameter search, invoked via Bash for systematic model search, tuning, and ensembling
 
 The user triggers the skill, points it at a competition, and Claude Code autonomously works through the data science pipeline — from understanding the problem to generating a submission — while the user provides oversight and intervention at each stage.
 
@@ -19,46 +19,65 @@ The Kaggle skill provides Claude Code with a structured workflow and domain know
 - **WebFetch** — Pull competition descriptions or dataset documentation
 
 ### Core Workflow (Skill-Guided)
+The authoritative stage list is `.claude/skills/kaggle-agent/SKILL.md`; this is its summary.
+
 ```
-1. Ingest competition  →  Read rules, metric, data description
-2. EDA                 →  Generate & run analysis scripts, interpret output
-3. Feature engineering →  Reason about features, write transformation code
-4. Modeling            →  Invoke Auto-ML tools, review results
-5. Evaluation          →  Compare experiments, decide next steps
-6. Iterate             →  Refine features/models based on scores
-7. Submit              →  Format and save submission file
+0.  Experience library  →  MANDATORY retrieval query before any experiment; an experiment
+                           record without a library-query trace is invalid
+0.  Competition setup   →  Read rules, metric, data description
+0.5 Problem dossier     →  Upstream knowledge injection, rendered per competition by
+                           knowledge/task_priors_for.py (references/00_problem_dossier.md)
+1.  EDA                 →  Generate & run analysis scripts, interpret output
+2.  Feature engineering →  Reason about features, write transformation code
+3.  Modeling            →  Train LightGBM / XGBoost / CatBoost, tune with Optuna, log experiments
+4.  Evaluation & iter.  →  Linear iteration first; then TREE SEARCH over complete candidate
+                           solutions (tree_search/harness_v3.py, references/07_tree_search.md)
+5.  Submit              →  Format and save submission file
 ```
 
 ### Hybrid Approach
 - **Claude Code handles**: Problem understanding, validation strategy, creative feature engineering, interpreting results, deciding next steps, writing all code on-the-fly
-- **Auto-ML tools handle**: Model selection, hyperparameter optimization, stacking/ensembling (invoked by Claude Code via Bash)
+- **The modeling libraries handle**: Model fitting (LightGBM / XGBoost / CatBoost), hyperparameter optimization (Optuna), stacking/ensembling (invoked by Claude Code via Bash)
 - **Human handles**: Approving strategies, providing domain knowledge, overriding decisions, setting compute budgets
 
 ## Directory Structure
 ```
-kaggle\
+kaggle/
 ├── CLAUDE.md                  # This file — project instructions
+├── README.md                  # Entry point: results, repo map, reproduction commands
+├── REPRODUCE.md               # Full reproduction instructions
 ├── pyproject.toml             # Python dependencies managed by uv
-├── .claude\
-│   └── skills\
-│       └── kaggle-agent\      # The Kaggle agent skill
+├── .claude/
+│   └── skills/                # kaggle-agent, kaggle-mlspec-report, kaggle-safe-submit,
+│       └── kaggle-agent/      #   kaggle-vision-agent, kaggle-agent-self-improvement (deprecated)
 │           ├── SKILL.md       # Skill definition and instructions
-│           └── instructions\  # Detailed workflow instructions per stage
-├── templates\                 # Reusable Python script templates
+│           ├── references/    # Detailed per-stage instructions (00_problem_dossier … 07_tree_search)
+│           └── assets/        # templates/ and utils/ shipped with the skill
+├── knowledge/                 # Experience library: experience.md [INT], knowledge_base.json
+│                              #   + task_priors_for.py (structured, rendered per competition),
+│                              #   archive_pre_structured/ (superseded prose files)
+├── tree_search/               # Tree-search harnesses (harness_v2/v3/v4) + per-competition drivers
+├── vision/                    # Vision infrastructure experiments (de-risk probes, determinism gate)
+├── benchmark_infra/           # Three-way benchmark run/audit/scoring scripts (snapshot copies)
+├── benchmark_results/         # Three-way score tables + the AIDE ML-spec report set
+├── docs/                      # REPORT_v7 (main report), ml_specs/ (23 reports), scripts/ (builders)
+├── tests/                     # The maintained pytest suite (`uv run pytest -q`)
+├── templates/                 # Reusable Python script templates
 │   ├── eda_template.py        # Common EDA patterns
 │   ├── feature_template.py    # Feature engineering scaffolding
 │   ├── train_template.py      # Model training scaffolding
 │   └── submit_template.py     # Submission formatting
-├── utils\                     # Shared Python utility scripts
+├── utils/                     # Shared Python utility scripts
 │   ├── data_loader.py         # Load and validate competition data
 │   ├── evaluation.py          # Local scoring and CV utilities
 │   └── experiment_log.py      # Log experiments to JSON/CSV
-└── competitions\              # Per-competition workspaces
-    └── <competition_name>\
+├── competitions_vision/       # Per-competition workspaces for image competitions
+└── competitions/              # Per-competition workspaces
+    └── <competition_name>/
         ├── config.yaml        # Competition-specific settings (metric, target, etc.)
-        ├── data\              # Raw and processed data (gitignored)
-        ├── scripts\           # Generated Python scripts for this competition
-        ├── submissions\       # Generated submission files
+        ├── data/              # Raw and processed data (gitignored)
+        ├── scripts/           # Generated Python scripts for this competition
+        ├── submissions/       # Generated submission files
         └── experiments.json   # Experiment history (params, scores, notes)
 ```
 
@@ -74,9 +93,11 @@ The skill (`SKILL.md`) should instruct Claude Code to:
 6. **Stay within bounds** — respect competition rules (external data, internet, etc.)
 
 ### Skill Invocation
-The user should be able to trigger the skill with a slash command like:
-- `/kaggle` — Start or resume work on a competition
-- With options to target a specific stage (e.g., "run EDA", "try a new model", "generate submission")
+There is no `/kaggle` slash command (this repo has no `.claude/commands/`). Claude Code activates
+the skill from its `description`/trigger phrases in `.claude/skills/kaggle-agent/SKILL.md` — say
+"kaggle", "competition", "submission", "leaderboard", etc., and point it at a workspace under
+`competitions/`. A stage can be targeted the same way (e.g., "run EDA", "try a new model",
+"generate submission"). For image competitions the trigger words route to `kaggle-vision-agent`.
 
 ## Guidelines
 
@@ -101,10 +122,12 @@ The user should be able to trigger the skill with a slash command like:
 - **Validation matters most** — A good local CV scheme is more important than a good model
 - **Track public vs. private leaderboard** — Don't overfit to public LB
 - **Keep submission count in mind** — Don't waste daily submissions on trivial changes
-- **Start with tabular competitions** — Most common, well-understood; tackle vision/NLP later
+- **Tabular is the default lane** — `kaggle-agent` covers it. Vision and NLP/DL lanes exist too:
+  use `kaggle-vision-agent` for image competitions (`competitions_vision/`), and the DL/special-lane
+  path in `kaggle-mlspec-report/SKILL.md` for reporting them
 
 ### Data Handling
-- **Never commit large data files** — Add `data\` folders to `.gitignore`
+- **Never commit large data files** — Add `data/` folders to `.gitignore`
 - **Document data sources** — Note where data came from and any preprocessing applied
 - **Validate data early** — Check for nulls, duplicates, leakage before modeling
 
@@ -112,7 +135,6 @@ The user should be able to trigger the skill with a slash command like:
 
 ### Prerequisites
 - Install the Kaggle CLI: `uv add kaggle`
-- Kaggle username: `tjyen1975`
 
 ### Credential Setup
 The new-style Kaggle API tokens (`KGAT_` prefix) require the `KAGGLE_API_TOKEN` environment variable.
@@ -125,7 +147,7 @@ The new-style Kaggle API tokens (`KGAT_` prefix) require the `KAGGLE_API_TOKEN` 
    ```
 4. For persistent access, add the export line to your shell profile (`~/.bashrc` or `~/.zshrc`)
 
-**Note**: The older `kaggle.json` approach (`~\.kaggle\kaggle.json`) does **not** work with `KGAT_` tokens. Always use the environment variable method.
+**Note**: The older `kaggle.json` approach (`~/.kaggle/kaggle.json`) does **not** work with `KGAT_` tokens. Always use the environment variable method.
 
 ### Security Rules
 - **NEVER** store API tokens in project files, scripts, CLAUDE.md, or conversation history
@@ -137,7 +159,7 @@ The new-style Kaggle API tokens (`KGAT_` prefix) require the `KAGGLE_API_TOKEN` 
 All commands require `KAGGLE_API_TOKEN` to be set in the environment.
 ```bash
 # Download competition data
-uv run kaggle competitions download -c <competition-name> -p competitions\<name>\data
+uv run kaggle competitions download -c <competition-name> -p competitions/<name>/data
 
 # List competition files
 uv run kaggle competitions files -c <competition-name>
@@ -161,11 +183,15 @@ uv run kaggle datasets download -d <owner>/<dataset-name> -p <path>
 |------|----------|-----------|
 | 2026-02-10 | Hybrid LLM + Auto-ML approach | Combines creative reasoning with systematic optimization |
 | 2026-02-10 | Claude Code Skill (not standalone app) | Leverages existing Claude Code tools and reasoning loop; simpler to build; human-in-the-loop by default |
-| 2026-02-10 | Python as primary language | Best ecosystem for ML/Kaggle (scikit-learn, pandas, AutoGluon, etc.) |
+| 2026-02-10 | Python as primary language | Best ecosystem for ML/Kaggle (scikit-learn, pandas, LightGBM/XGBoost/CatBoost) |
 | 2026-02-10 | uv for package management | Fast, modern Python package manager; handles venv, dependencies, and lock files in one tool |
+| 2026-07-16 | `kaggle-report` skill replaced by `kaggle-mlspec-report` (5-section framework) | Shared engine (collect.py / verify_report.py / md2pdf.sh / eda_summary.py / report_style.css) carried over unchanged; see `.claude/skills/kaggle-mlspec-report/SKILL.md` |
+| 2026-08-07 | Prose knowledge library archived; structured `knowledge/knowledge_base.json` + per-competition rendering via `knowledge/task_priors_for.py` | Per-competition redaction of prose leaked through channels no scrubber sees; see `knowledge/archive_pre_structured/README.md` |
 
 ## Important Notes
-- This is an experimental project — prioritize working code over perfect engineering
+- Research code, but gated: `uv run pytest -q` must pass, and a new script passes the ruff gate
+  (`.claude/skills/kaggle-agent/SKILL.md`) before its first logged run. After a run is logged the
+  script is frozen as the as-run record and is never re-linted or edited
 - The agent should be transparent about its reasoning — explain why it makes each decision
 - Human-in-the-loop is a feature, not a limitation — allow easy intervention at every stage
 - The skill can evolve — start simple and add workflow stages as we learn what works

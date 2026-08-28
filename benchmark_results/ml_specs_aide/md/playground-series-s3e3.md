@@ -13,7 +13,7 @@ RandomForest, LogisticRegression, XGBoost, CatBoost) evaluated under repeated 5�
 calibrated, converted to percentile ranks, and combined by 20,000-sample Dirichlet search plus coordinate-ascent
 refinement.
 
-This is the weakest episode of the batch on the leaderboard: **public 0.88484, private 0.86863, rank 491/666 — the
+This is the weakest episode of the batch (s3e1, s3e3, s3e5, s3e7, s3e9) on the leaderboard: **public 0.88484, private 0.86863, rank 491/666 — the
 26.4th percentile**, behind both other lanes (my agent 0.87303, NVIDIA 0.89537), and the score table records
 `local_winner = nvidia` and `lb_winner = nvidia`. The diagnosis is visible inside the run itself and is developed
 below: on 1,677 training rows AIDE built a weight-fitting machine with far more degrees of freedom than the data
@@ -201,7 +201,7 @@ convergence is governed by early stopping, patience 20/30/40 per member, not a s
 (*N/A — all five learners are full-dataset fitters*).
 
 **Training Duration** for the whole search was **458.4 s of executed wall-clock across 20 nodes** (mean 22.9 s, max
-164.5 s) — by far the cheapest of the batch's non-trivial runs, and no node hit the 1800 s harness timeout. The three
+164.5 s), and no node hit the 1800 s harness timeout. The three
 torch drafts each cost about a millisecond, so effectively the entire budget bought 17 real experiments.
 **Training Memory Consumption Limits** are **not recorded**.
 

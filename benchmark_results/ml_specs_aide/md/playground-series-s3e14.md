@@ -39,7 +39,9 @@ MAE, minimized (`config.yaml`: `evaluation_metric: mae`, `optimization_direction
 `target_column: yield`). **Data Format** is **tabular CSV**, entirely numeric. **Data Volume**, measured from
 the run's `input/` directory, is **15,289 training rows × 18 columns / 10,194 test rows × 17 columns**, leaving
 **16 raw predictive features** once `id` and `yield` are removed. This is by far the smallest training set of
-the four competitions in this batch, which matters: it is the reason fold variance dominates everything else.
+the four competitions in this batch (s3e11, s3e14, s3e16, s3e19), which matters: it is the reason fold variance
+dominates everything else. Other reports in this folder document smaller sets still — s3e3 has 1,677 training rows
+and s3e5 has 2,056.
 
 **Data Quality** is clean — **zero missing values** in either split — with one small wrinkle: **7 duplicate
 rows** exist in train once `id` is excluded. AIDE never checked for them and never mentions them; at 7 rows out

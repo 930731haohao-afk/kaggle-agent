@@ -5,6 +5,14 @@
 > (run `2-brown-falcon-of-pleasure`), its `journal.json` tree, and `config.yaml` for task metadata.
 > Dataset shapes were measured directly from the run's own `input/` copy of the competition files.*
 
+> **Superseded run.** This report documents AIDE run `2-brown-falcon-of-pleasure`, which the benchmark later
+> **voided** for input contamination (see the provenance note under Data) and replaced with a clean re-run,
+> `0-meaty-zebra-of-improvement` (local holdout SMAPE 4.3718, 19 scored / 1 buggy, 2,053.8 s of execution; submitted
+> 2026-07-29 for public 48.39715 / private 48.34131). Every figure below describes the voided run — including its
+> 11.1944 holdout and its 78.8 s compute total — and is kept only as a record of it. The benchmark's current s3e19
+> figures are the clean re-run's; `benchmark_results/rerun_three_way.csv` still records `winner_priv = nvidia` for
+> this competition.
+
 ## Overview
 
 The task is to forecast daily `num_sold` for 27,375 test rows covering the whole of 2022, given five years of
@@ -18,13 +26,14 @@ country-day total, then split it into product-store rows by historical shares. *
 18.8816 − 11.1944 = 7.6872
 ```
 
-That is by far the largest relative improvement AIDE achieved anywhere in this batch, and the modelling
+That is by far the largest relative improvement AIDE achieved anywhere in this batch (s3e11, s3e14, s3e16,
+s3e19), and the modelling
 reasoning behind it is the most sophisticated of the four runs — it correctly identified that gradient-boosted
 trees cannot extrapolate beyond the training range and solved it with a **monotone constraint on `year`**
 rather than by bolting on a linear trend, and it correctly identified and corrected the **retransformation bias**
 that `expm1` introduces when a model is trained in log space.
 
-And it still finished at the **37.7th percentile, rank 732/1174** — AIDE's worst placement of the batch —
+And it still finished at the **37.7th percentile, rank 732/1174** — the worst of AIDE's four runs in this batch —
 with a private LB of **49.61325**, because the local number it optimized was worth almost nothing:
 
 ```
@@ -180,7 +189,7 @@ them column-plumbing errors from merging the processed and raw files.
 | **18** | **16** | **global smearing bias correction (champion)** | **11.1944** |
 | 19 | 18 | per-country smearing factors | 11.4475 |
 
-This is the cleanest search of the batch in the sense that **every large gain is attributable to a specific,
+This is the cleanest search of the four runs in this batch in the sense that **every large gain is attributable to a specific,
 named, defensible idea**, and each was proposed by AIDE reading the prior nodes' scores.
 
 The decomposition itself is worth 0.67:

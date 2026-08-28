@@ -2,7 +2,7 @@
 
 ### Concrete Compressive Strength Prediction · our from-scratch agent (GBDT pool + tree-search v3)
 
-> *Figures grounded in the competition's `facts.json`, `eda_summary.json`, `STATUS.md`, and `experiments_tree_v3.json`, with external benchmark facts from `/tmp/ext_facts.json`.*
+> *Figures grounded in the competition's `facts.json`, `eda_summary.json`, `STATUS.md`, and `experiments_tree_v3.json`, with the cross-agent benchmark figures from the study's frozen three-way score table `benchmark_results/three_way_scores.csv`.*
 
 ## Overview
 
@@ -155,8 +155,8 @@ building one from scratch.
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-14, 28 min.
 - re-run local CV: **RMSE 12.082282** honest leave-fold-out (12.075202 fitted-OOF), 3-member CatBoost-family NNLS blend.
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 11.84750 / Private 12.33192**; `winner_priv` = **nvidia** (NVIDIA 12.22913, AIDE 12.30667).

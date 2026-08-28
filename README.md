@@ -1,101 +1,83 @@
-# Kaggle AI Agent — Hybrid Autonomous Competition Agent
+# Sinica Kaggle Agent
 
-A hybrid AI agent built from "Claude Code (LLM reasoning) + AutoML tools (LightGBM/XGBoost/CatBoost)"
-that autonomously runs the full pipeline of a Kaggle tabular competition (understanding the problem → EDA → CV design → features → modeling →
-ensembling → submission), and quantifies the contribution of each autonomous capability through **controlled ablation**. The method aligns with the ERA system of Aygün et al. (2026,
-Nature).
+An end-to-end AI agent that runs a Kaggle competition from raw data to submitted prediction with **no human in the loop**, benchmarked against two frozen reference agents across 23 competitions.
 
-## Where to Start Reading
+> **Result: best score on 13 of 23 competitions (13 wins, 10 losses)** — the best private score on 10 of the 20 ordinary competitions, and the three-way best on all 3 special ones. The reference agents split the remaining 10 (NVIDIA 7, AIDE 3).
 
-| What you want | Read this |
-|------|--------|
-| Understand the whole project's results in 5 minutes | [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) (results brief) |
-| The 15 competition reports + cross-competition results table | [docs/ml_specs/](docs/ml_specs/) (ML-spec reports, 顏佐榕 5-section framework) |
-| Shared method, five stages, and per-stage operations | [docs/pipeline_stages_detail.md](docs/pipeline_stages_detail.md) |
-| Research-style synthesis (method + results + honest limitations) | [docs/TECH_REPORT.md](docs/TECH_REPORT.md) (draft technical report) |
-| Full analysis of a single competition | `docs/ml_specs/md/playground-series-<comp>.md` |
-| How the agent operates a competition | [.claude/skills/kaggle-agent/SKILL.md](.claude/skills/kaggle-agent/SKILL.md) |
+Built during a summer internship at the Institute of Statistical Science, Academia Sinica (July–August 2026). PI: Dr. Tso-Jung Yen.
 
-In-depth research documents: statistical significance [docs/statistical_rigor.md](docs/statistical_rigor.md); external-injection
-attribution findings [docs/phase_j_j3_findings.md](docs/phase_j_j3_findings.md); method comparison with the ERA system of Aygün et al.
-[docs/aygun_comparison.md](docs/aygun_comparison.md).
+---
 
-Every report has a corresponding PDF (with table of contents and page numbers).
+## How it works
 
-## Core Method: Five-Stage Ablation
+An LLM (Claude Code) reasons and decides at every stage — problem identification, EDA, validation design, feature engineering, model choice, next step — while LightGBM / XGBoost / CatBoost / Optuna are invoked through the shell for fitting, and a tree search over complete candidate solutions is the optimization loop.
 
-By solving the same competition multiple times, granting one additional capability each time, and then comparing scores, we can isolate the contribution of each capability stage by stage:
+Three elements distinguish it from the reference agents:
 
-1. **Stage 1** no-skill baseline → 2. **+ kaggle-agent skill** (structured six-stage) →
-3. **+ linear self-iteration** (experience-library priors, Optuna, seed bagging) →
-4. **+ tree search** (candidate trees replace the single linear path; ERA's first pillar) →
-5. **+ external idea injection** (literature idea bank; ERA's second pillar, injection mechanism built and empirically tested — but external injection shows no measurable systematic gain on the test competitions (honest null, see docs/phase_j_j3_findings.md))
+**Stage 0.5, a problem dossier.** Before EDA the agent commits in writing to what kind of problem this is — task family, train/test window relation, split policy, external-data need — written to `dossier.json` and grounded in a structured library of task-level priors built from our own past runs. Reading competition-specific discussions or public kernels is forbidden, which keeps the method distinct from reproduction-based agents. The dossier is a prior, not a conclusion: EDA must verify its hypotheses and record a verdict.
 
-## Main Results
+**A cross-competition experience library.** Every insight carries an evidence field (competition, experiment, score before → score after). Entries without a measured delta are rejected, and an experiment record without a library-query trace is invalid — checked mechanically, not by convention.
 
-- The Stage 1→4 ladder across **15 competitions** (10 same-season S3 main benchmark + 5 cross-season S4–S6, five metrics)
-  **holds in every case**, with no competition regressing overall at any stage.
-- On s3e16, the only competition with a real Kaggle leaderboard reference, the tree-search version improves in the same direction on both boards — external evidence of credibility.
-- The recipe still holds across seasons (with shrinking gains); the best cross-competition solutions all pass the OOF bit-by-bit reproduction gate (some at the bit level).
+**Self-documentation.** Every completed run emits a five-section ML specification report whose numbers are extracted deterministically from structured records; the LLM writes only the narrative and cannot introduce a figure. Fields the records don't contain are marked "not recorded".
 
-## Repo Structure
+## The benchmark
 
-```
-competitions/playground-series-<comp>/   Per-competition workspace: data/ (gitignore), scripts/,
-                                        experiments.json (raw records), facts.json,
-                                        STATUS.md, config.yaml
-tree_search/                            Self-built tree search: harness_v2/v3/v4 + per-competition driver
-                                        run_<comp>_v3.py + eval_<comp>.py
-knowledge/                              experience.md (internal experience library [INT]),
-                                        idea_bank.md (external idea bank [EXT])
-.claude/skills/                         kaggle-agent, kaggle-agent-self-improvement,
-                                        kaggle-mlspec-report, kaggle-safe-submit, kaggle-vision-agent
-docs/ml_specs/                          The 15 ML-spec competition reports (md + pdf) + results table + RUBRIC
-docs/                                   Results brief, technical report, experiment log, pipeline-stage detail,
-                                        benchmark_facts.json + build_benchmark_table.py
-CLAUDE.md                               Project instructions (incl. uv package management, Kaggle CLI setup)
-```
+Two frozen reference agents: **AIDE** (LLM tree search over code, no cross-competition memory) and the **NVIDIA Kaggle Agent** (reproduces the highest-voted public kernel). Neither was modified, even where we found weaknesses.
 
-## How to Reproduce
+23 competitions in two groups. The **20 ordinary** ones are tabular Kaggle competitions scored on the real private leaderboard via late submission — an agent's own cross-validation cannot arbitrate between agents, so no local CV number is quoted as evidence anywhere in the results tables. The **3 special** ones (NLP text pairing, physiological time series, medical imaging) are graded offline by MLE-bench.
 
-**One-command environment build + self-check** (a lightweight alternative to Docker, freezing `uv.lock`):
+Fairness was enforced structurally rather than by convention: each agent read only its own data root, lanes held no Kaggle credentials so a run could not reach the leaderboard, one lane executed at a time under a mutex, and a per-lane transcript audit read every tool call before a score was accepted. Two lanes were discarded by that audit and re-run clean.
 
-```bash
-bash setup.sh          # build the core environment + self-check the core ML stack
-bash setup.sh --torch  # additionally install torch (only needed for vision/NLP competitions)
-```
+## Repository map
 
-For full reproduction steps, data/credentials, known limitations, and "why not Docker," see **[REPRODUCE.md](REPRODUCE.md)**.
+| Path | What's in it |
+|---|---|
+| [`.claude/skills/kaggle-agent/`](.claude/skills/kaggle-agent/) | The agent itself: pipeline stages, rules it must follow, gates it cannot bypass |
+| [`tree_search/`](tree_search/) | The optimization loop — `harness_v3.py` is the harness every benchmark run used |
+| [`knowledge/`](knowledge/) | Experience library and the structured task-prior library the dossier consults |
+| [`external_data/`](external_data/) | The injection layer: whitelisted sources, leakage-guarded as-of joins |
+| [`benchmark_infra/`](benchmark_infra/) | Benchmark harness — isolated roots, lane mutex, transcript audit, scoring, fact collectors |
+| [`competitions/<name>/`](competitions/) | One workspace per competition: scripts, `experiments*.json`, `dossier.json`, the scored submission |
+| [`docs/ml_specs/`](docs/ml_specs/) | The 23 per-competition specification reports (Markdown + PDF) |
+| [`benchmark_results/`](benchmark_results/) | Cross-agent score tables, coverage status, and 13 reports re-documenting the AIDE runs |
+| [`docs/`](docs/) | The written report and its companions, the poster and talk, and research notes |
+| [`tests/`](tests/) | The maintained test suite (380 tests) |
 
-The following are the common reproduction instructions (all Python is run via **uv**, see CLAUDE.md):
+## Reading the results
+
+- **[`docs/REPORT_v7.tex`](docs/REPORT_v7.tex)** — the main report: method, three-way benchmark, injection-layer experiments, limitations.
+- **[`docs/ENGINEERING_LOG.tex`](docs/ENGINEERING_LOG.tex)** and **[`docs/CASE_STUDIES.tex`](docs/CASE_STUDIES.tex)** — companions carrying the depth the report condenses.
+- **[`benchmark_results/rerun_three_way.csv`](benchmark_results/rerun_three_way.csv)** — the authoritative per-competition score table every headline number traces to.
+- **[`docs/presentation/`](docs/presentation/)** — the A0 poster and the four-minute talk.
+
+Earlier research documents, kept because they carry detail the report condenses and because later documents cite them — all predate the three-way benchmark, so where a competition count or headline differs, `REPORT_v7` is current:
+[`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) (results brief),
+[`docs/TECH_REPORT.md`](docs/TECH_REPORT.md) (the 15-competition ablation study),
+[`docs/pipeline_stages_detail.md`](docs/pipeline_stages_detail.md) (per-stage operations),
+[`docs/statistical_rigor.md`](docs/statistical_rigor.md) (the paired significance apparatus used during development),
+[`docs/phase_j_j3_findings.md`](docs/phase_j_j3_findings.md) (external-injection attribution),
+[`docs/aygun_comparison.md`](docs/aygun_comparison.md) (method comparison with the ERA system),
+[`docs/EXPERIMENT_LOG.md`](docs/EXPERIMENT_LOG.md) (the running experiment diary).
+
+## Running it
 
 ```bash
-# rebuild the cross-competition benchmark facts table (extracted from each competition's experiments.json, with consistency asserts)
-uv run python3 docs/scripts/build_benchmark_table.py
-
-# verify that all numbers in a report are traceable to facts.json (gate, exit 0 = pass)
-uv run python3 .claude/skills/kaggle-mlspec-report/assets/verify_report.py \
-    docs/ml_specs/md/playground-series-s6e1.md competitions/playground-series-s6e1/facts.json
-
-# generate a PDF with table of contents / page numbers from Markdown
-bash .claude/skills/kaggle-mlspec-report/assets/md2pdf.sh \
-    docs/ml_specs/md/playground-series-s6e1.md docs/ml_specs/pdf/playground-series-s6e1.pdf
-
-# reproduce a single competition's best solution (including the digit-for-digit OOF reproduction gate; produces a submission only on pass), using s5e10 as an example
-uv run python3 competitions/playground-series-s5e10/scripts/06_rebuild_tree_best.py
+bash setup.sh          # uv sync from the frozen uv.lock, then a self-check of the ML stack
+uv run pytest -q       # the test suite
 ```
 
-Each competition's end-to-end reproduction is its `scripts/` (`04_train_blend.py` → `05_iterate.py` → `06_rebuild_tree_best.py`) plus the tree-search driver in `tree_search/`; see **[REPRODUCE.md](REPRODUCE.md)** for the consolidated steps.
+Full instructions, including how to re-derive the benchmark tables and how to check that every number in a specification report traces to its records, are in **[REPRODUCE.md](REPRODUCE.md)**.
 
-## How to Use the Agent
+To run the agent on a competition, invoke the `kaggle-agent` skill from Claude Code inside this repository; the skill file documents the stages and the gates.
 
-In Claude Code, trigger the kaggle-agent skill (trigger words and workflow are in
-[.claude/skills/kaggle-agent/SKILL.md](.claude/skills/kaggle-agent/SKILL.md)) and point it at a
-competition workspace; a human can intervene and override decisions at every stage. For report generation, see the kaggle-mlspec-report skill.
+## Honest notes
 
-The **packaging, installation steps, and dependencies** of the skills are in [.claude/skills/README.md](.claude/skills/README.md).
+The three special competitions ran a documented fallback rather than the full method — one node there is a deep-learning fine-tune rather than a gradient-boosting refit, so a tree search over dozens of nodes would not fit the compute budget. Offline grading also yields one score per submission, with no public/private pair to corroborate it.
 
-## Data and Credentials
+The sample is small and the standing is sensitive to its composition: reproduction-based and search-based methods win on disjoint kinds of competitions, so adding or removing a few competitions of one kind moves the win count. Reproduced kernels were also tuned by their authors against the realized public leaderboard, which makes the comparison least symmetric exactly where reproduction is strongest.
 
-- Competition data goes in each competition's `data/`, which is gitignored and not version-controlled.
-- The Kaggle API token is always injected via the environment variable `KAGGLE_API_TOKEN`, and is **never written to a file** (see the security rules in CLAUDE.md).
+Two negative results are part of the record: no local signal we tested selects the form an external-data injection should take, and the transcript audit discarded a contaminated lane whose tainted score looked *better* than its clean replacement's.
+
+---
+
+*Private repository; access granted on request. Every number in the report traces to the structured records in this repository.*

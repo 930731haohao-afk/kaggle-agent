@@ -22,11 +22,17 @@ and the plan's §5.1, not the skill's format-specific rubric.
 | P7 | Honesty | CV-only / LB-closed stated where true; unavailable items marked "not recorded"; source conflicts surfaced |
 | P8 | Performance benchmarking | Cross-agent comparison (vs NVIDIA reproduce-agent) present, supporting Goal 3 |
 
-## Result — all 22 pass 8/8
+## Result — all 25 validated reports pass 8/8
 
 (15 original reports validated 2026-07-22; the 7 benchmark-baseline additions — afsis, cat-in-the-dat,
 conway, tps-aug-2022, tps-jan-2022, s5e1, tps-sep-2022 — drafted and number-audited 2026-08-17, every
-figure traced to the competition's workspace artifacts or the frozen three-way score table.)
+figure traced to the competition's workspace artifacts or the frozen three-way score table; the 3
+special deep-learning-fallback lanes — ventilator, us-patent, siim-isic — added below, every figure
+traced to that competition's `facts.json` and the offline MLE-bench records in `benchmark_results/run2/`.)
+
+Two of the rows below, **s3e20** and **s4e1**, sit outside the frozen baseline and their reports have
+been moved to `../archive_non_benchmark/`; the `md/` folder itself holds **23** reports — the 20
+baseline competitions plus the 3 special lanes.
 
 | Comp | P1 | P2 | P3 | P4 | P5 | P6 | P7 | P8 |
 |------|----|----|----|----|----|----|----|----|
@@ -52,6 +58,13 @@ figure traced to the competition's workspace artifacts or the frozen three-way s
 | tps-jan-2022 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | s5e1 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | tps-sep-2022 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| ventilator-pressure-prediction | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| us-patent-phrase-to-phrase-matching | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| siim-isic-melanoma-classification | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+For the three special lanes, P8 is satisfied by an offline MLE-bench three-way grade table (our agent vs
+NVIDIA vs AIDE) rather than a leaderboard comparison, and P7 additionally carries the "no live
+public/private leaderboard exists for this lane" statement.
 
 **Not covered by these reports** (broader plan items, out of report scope): the plan's §5.2 code-consistency check
 (LLM compares report vs code), §5.3 reproducibility test (a third party rebuilds from report only),

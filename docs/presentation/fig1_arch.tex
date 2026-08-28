@@ -6,7 +6,7 @@
 \definecolor{flowgrey}{HTML}{F5F5F5}\definecolor{flowgreyline}{HTML}{999999}
 \begin{document}
 \begin{tikzpicture}[
-  font=\footnotesize,
+  font=\normalsize,
   stage/.style={draw=flowblueline, rounded corners=2pt, align=center, inner sep=3pt,
                 fill=flowblue, minimum height=8.5mm, minimum width=50mm},
   inj/.style={stage, fill=flowpurple, draw=flowpurpleline},
@@ -18,25 +18,27 @@
   parr/.style={arr, flowpurpleline},
   garr/.style={arr, flowgreenline},
   darr/.style={arr, dashed},
-  lab/.style={font=\scriptsize, inner sep=1.5pt}
+  lab/.style={font=\small, inner sep=1.5pt},
+  glab/.style={lab, text=flowgreenline!70!black},
+  plab/.style={lab, text=flowpurpleline!70!black}
 ]
 % ----- main pipeline (top -> bottom) -----
-\node[stage]              (s1)  at (0,0)     {Data ingestion};
+\node[stage]              (s1)  at (0,0)     {\textbf{Data ingestion}};
 \node[inj, text width=48mm] (s05) at (0,-1.7)
   {\textbf{0.5 Problem dossier}\\[-1pt]
-   {\scriptsize task family $\cdot$ window $\cdot$ split policy\\[-2pt]external-data need}};
-\node[stage]              (s2)  at (0,-3.5)  {EDA\\[-2pt]{\scriptsize verify dossier hypotheses}};
-\node[stage]              (s3)  at (0,-5.0)  {Feature eng.};
-\node[stage]              (s4)  at (0,-6.5)  {Modeling};
-\node[stage]              (s5)  at (0,-8.5)  {Evaluation};
-\node[stage]              (s6)  at (0,-10.1) {Submission};
+   {\small task family $\cdot$ split policy\\[-2pt]$\cdot$ external data}};
+\node[stage]              (s2)  at (0,-3.5)  {\textbf{EDA}\\[-2pt]{\small verify dossier hypotheses}};
+\node[stage]              (s3)  at (0,-5.0)  {\textbf{Feature eng.}};
+\node[stage]              (s4)  at (0,-6.5)  {\textbf{Modeling}};
+\node[stage]              (s5)  at (0,-8.5)  {\textbf{Evaluation}};
+\node[stage]              (s6)  at (0,-10.1) {\textbf{Submission}};
 \foreach \a/\b in {s1/s05, s05/s2, s2/s3, s3/s4, s4/s5, s5/s6}{\draw[arr] (\a) -- (\b);}
 % ----- EDA verdict back to the dossier -----
 \draw[darr] ([xshift=15mm]s2.north) -- node[lab, right]{verdict} ([xshift=15mm]s05.south);
 % ----- pipeline endpoint: the real leaderboard -----
 \node[stage, densely dashed, fill=white, draw=black!60] (lb) at (0,-11.7)
-  {Real Kaggle leaderboard\\[-2pt]{\scriptsize public + private scoring}};
-\draw[darr] (s6) -- node[lab, right]{scored post-run} (lb);
+  {\textbf{Real Kaggle leaderboard}};
+\draw[darr] (s6) -- node[lab, right=1.8mm]{scored post-run} (lb);
 % ----- LLM annotation: vertical brace spanning all stages -----
 \draw[decorate, decoration={brace, amplitude=2mm}, flowblueline]
   ([xshift=-4mm]s6.south west) -- ([xshift=-4mm]s1.north west)
@@ -47,27 +49,28 @@
   node[lab, anchor=west, xshift=0.8mm] {tree search (37--224 nodes)}
   ([yshift=-3.5mm]s4.east);
 % ----- right rail -----
-\node[supp]    (lib)   at (7.3,-0.2)  {\textbf{Experience library}\\[-1pt]
-  {\scriptsize evidence-backed priors}};
+\node[supp]    (lib)   at (7.3,0)  {\textbf{Experience library}\\[-1pt]
+  {\small evidence-backed priors}};
 \node[injbox]  (ext)   at (7.3,-2.9)  {\textbf{External-data layer}\\[-1pt]
-  {\scriptsize whitelist $\cdot$ as-of guard $\cdot$ coverage ledger}};
-\node[toolbox] (tools) at (7.3,-6.5)  {LightGBM / XGBoost /\\CatBoost / Optuna\\(invoked via shell)};
+  {\small whitelist $\cdot$\\[-2pt]point-in-time join}};
+\node[toolbox] (tools) at (7.3,-6.5)  {\textbf{Auto-ML}\\[-1pt]
+  {\small LightGBM / XGBoost /\\[-2pt]CatBoost $\cdot$ Optuna}};
 \node[supp]    (rec)   at (7.3,-9.8)  {\textbf{Experiment records}\\[-1pt]
-  {\scriptsize params $\cdot$ features $\cdot$ split $\cdot$ scores}};
+  {\small params $\cdot$ features $\cdot$ scores}};
 % ----- rail / pipeline connections -----
-\draw[garr] (lib.west) -- node[lab, above]{priors} (s1.east);
-\draw[garr] (lib.south) -- node[lab, anchor=west, xshift=0.5mm]{task priors} (ext.north);
-\draw[parr] ([yshift=1.5mm]s05.east) -| node[lab, above, pos=0.28]{data-level ops}
+\draw[garr] (lib.west) -- node[glab, above]{priors} (s1.east);
+\draw[garr] (lib.south) -- node[glab, anchor=west, xshift=0.5mm]{task priors} (ext.north);
+\draw[parr] ([yshift=1.5mm]s05.east) -| node[plab, above, pos=0.28]{data-level ops}
   ([xshift=-14mm]ext.north);
 % ----- model-level operators: dossier seeds the search directly -----
 \draw[parr] ([yshift=-2.5mm]s05.east) -- ++(4mm,0) |- ([yshift=3mm]s4.east);
-\node[lab, rotate=90, anchor=south, flowpurpleline!60!black] at (2.95,-4.35)
+\node[plab, rotate=90, anchor=north] at (2.95,-4.35)
   {model-level ops};
-\draw[parr] (ext.south) -- node[lab, anchor=west, xshift=0.8mm]{race} (tools.north);
+\draw[parr] (ext.south) -- node[plab, anchor=west, xshift=0.8mm]{race} (tools.north);
 \draw[arr, {Stealth[length=2.4mm]}-{Stealth[length=2.4mm]}] (s4.east) -- (tools.west);
-\draw[garr] (s5.east) -- node[lab, above, pos=0.8]{log} (rec.north |- s5.east) -- (rec.north);
+\draw[garr] (s5.east) -- node[glab, above, pos=0.8]{log} (rec.north |- s5.east) -- (rec.north);
 % ----- dashed write-back, up the far right -----
 \draw[darr, flowgreenline] (rec.east) -- ++(6mm,0) |- (lib.east);
-\node[lab, rotate=90, anchor=north] at (10.0,-4.8) {validated insights written back};
+\node[glab, rotate=90, anchor=north] at (10.0,-4.8) {insights written back};
 \end{tikzpicture}
 \end{document}

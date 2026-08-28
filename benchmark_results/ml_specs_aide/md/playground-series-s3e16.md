@@ -30,7 +30,8 @@ of the work:
 
 Step 8 — "round the predictions" — delivered 77% of the run's total improvement in a single 22-second node.
 
-This produced AIDE's best percentile of the batch, **rank 124/1431 at the 91.4th percentile** with a private
+This produced AIDE's best percentile of the four runs in this batch (s3e11, s3e14, s3e16, s3e19), **rank 124/1431 at
+the 91.4th percentile** with a private
 LB of **1.34224**, yet it still finishes last of the three agents: our own agent scores 1.33859 and NVIDIA
 1.34001, and `facts_aide.json` records `local_winner = mine` and `lb_winner = mine`. The gap is traceable to a
 specific self-inflicted wound described below — the champion's headline 1.3369 is an **in-sample-calibrated**
@@ -200,7 +201,7 @@ This is the run's central weakness, and it is a scoring-protocol failure rather 
 performed the correct experiment, recorded the correct answer in prose, and had no mechanism to let that answer
 override a lower number in its journal.
 
-Compute was the cheapest of the batch after s3e19. Total execution time was **1,860.2 s (31.0 minutes)** across
+Compute was modest. Total execution time was **1,860.2 s (31.0 minutes)** across
 20 steps, mean 93.0 s, max 393.9 s:
 
 ```
@@ -214,7 +215,7 @@ With zero failures, **none of that time was wasted on crashes**:
 ```
 
 The champion node itself took **325.0 s** (from `journal.json`). Nothing in this run came close to the harness
-timeout — the entire 20-step search cost less wall clock than a single timed-out step in the s3e11 or s3e14
+timeout — the entire 20-step search cost barely more wall clock than a single timed-out step in the s3e11 or s3e14
 runs.
 
 ### Specification fields
@@ -266,7 +267,7 @@ whole scripts, not their scoring phase.
 **Task for Performance Evaluation.** Predict integer `Age` for every test row and minimize MAE.
 
 **Performance Metrics.** The champion reports **CV MAE 1.3369** locally, and scores **1.3392 public /
-1.34224 private**, placing **rank 124/1431, 91.4th percentile** — AIDE's strongest placement across this
+1.34224 private**, placing **rank 124/1431, 91.4th percentile** — AIDE's strongest placement of the four runs in this
 batch. The scored trajectory was 1.3597 → 1.3585 → 1.3582 → 1.3406 → 1.3402 → 1.3386 → 1.3374 → **1.3369**, but
 that sequence is misleading after step 12, because from there onward the reported numbers are in-sample
 calibration fits. The private result confirms the honest nested-CV estimates (1.3396 at step 16, 1.3412 at step

@@ -5,12 +5,15 @@ description: 'Discovery-first agent pipeline for IMAGE/VISION Kaggle competition
 
 # Kaggle Vision Agent — discovery-first image-competition pipeline
 
-Design doc: `docs/vision-pipeline-discovery-first.drawio.png` (+ `vision-adapter-design-v2.drawio.png` for
-the tree-search-as-ensembler variant). This skill turns that design into an executable staged workflow.
+Design doc: `docs/vision/vision-pipeline-discovery-first.drawio.png` (+
+`docs/vision/vision-adapter-design-v2.drawio.png` for the tree-search-as-ensembler variant).
+This skill turns that design into an executable staged workflow.
 
 ## Identity: discover, don't copy
 
-This project's structural differentiator (validated in the NVIDIA benchmark, `docs/`) is the
+This project's structural differentiator (measured in the three-way benchmark — report
+`docs/REPORT_v7.tex`, score table `benchmark_results/rerun_three_way.csv`; do not open either
+during a run, both name competitions and their results) is the
 **original-solution engine**: the agent discovers what works **from this competition's data**, instead of
 reproducing the strongest public kernel. Therefore:
 
@@ -18,7 +21,9 @@ reproducing the strongest public kernel. Therefore:
   weights; using them does not compromise originality.
 - **[EXT] community recipes are deferred.** Do not seed the run with competition write-ups / public
   kernels. External-idea injection is a later, explicitly opt-in stage (same [INT]-first philosophy as
-  the tabular `knowledge/experience.md` / `idea_bank.md` split).
+  the tabular [INT] / [EXT] split; the [EXT] prose bank was archived on 2026-08-07 to
+  `knowledge/archive_pre_structured/idea_bank.md` and its live successor is the structured
+  `knowledge/knowledge_base.json`, rendered per competition by `knowledge/task_priors_for.py`).
 - **Every claim needs score evidence** — the house rule. Log every experiment.
 
 ## The cost ladder (why the pipeline is staged)
@@ -78,7 +83,7 @@ any tabular file, and vice versa:
 | competition workspaces | `competitions/<comp>/` | **`competitions_vision/<comp>/`** |
 | experiments.json / reports (REPORT.md, PDFs) | inside `competitions/<comp>/` | inside `competitions_vision/<comp>/` |
 | [INT] experience library | `knowledge/experience.md` | **`knowledge/vision_experience.md`** |
-| [EXT] idea bank (deferred) | `knowledge/idea_bank.md` | `knowledge/vision_idea_bank.md` (when the opt-in stage arrives) |
+| [EXT] idea bank (deferred) | `knowledge/knowledge_base.json` (live; prose bank archived at `knowledge/archive_pre_structured/idea_bank.md`) | `knowledge/vision_idea_bank.md` (when the opt-in stage arrives) |
 | MLflow mirror | `mlflow.db` | **`mlflow_vision.db`** |
 | cross-comp aggregate docs | `docs/` | `docs/vision/` |
 | infra experiments (derisk etc.) | `tree_search/` | `vision/` |
@@ -96,8 +101,12 @@ The torch determinism preamble is bundled at `assets/torch_determinism.py`; its 
 **measured** on this machine (GATE: PASS, `vision/derisk_determinism_gate.py`, 2026-07-17).
 
 Pre-run lint gate: same rule as the tabular agent — before a NEW script's first logged run,
-`uvx ruff@0.16.1 check <script> --select F821,F841,B023,B006,E722,PLW1510,RUF059 --isolated`
+`uv run --with ruff==0.16.1 ruff check <script> --select F821,F841,B023,B006,E722,PLW1510,RUF059 --isolated`
 and fix all findings; after the run is logged the script is frozen as-run, never re-linted.
+Not `uvx`: it installs into uv's own tool directory, which the benchmark sandbox mounts
+read-only, so the gate fails with `Read-only file system` on the first script of every
+competition. `--with` resolves into the per-run ephemeral environment under `~/.cache`, which
+is writable. See `.claude/skills/kaggle-agent/SKILL.md` — the two skills share this gate.
 
 ## Non-negotiables (inherited from the tabular agent)
 

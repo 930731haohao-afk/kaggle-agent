@@ -160,8 +160,8 @@ reproduce-vs-originate gap narrows on newer seasons, analyzed separately in the 
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-14, 27 min.
 - re-run local CV: **MAE 340.95936** leave-fold-out honest (340.82815 fitted-OOF), LGB+XGB blend snapped to the observed target grid (node #69).
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 343.43434 / Private 333.18611**; `winner_priv` = **nvidia** (NVIDIA 330.71616, AIDE 332.31556).

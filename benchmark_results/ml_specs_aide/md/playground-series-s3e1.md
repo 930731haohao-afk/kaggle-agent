@@ -3,6 +3,13 @@
 
 > *All scores are taken from the run's `facts_aide.json`. Tree structure, per-step plans and per-node execution times come from `logs/2-adorable-spicy-kudu/journal.json`; hyperparameters from `best_solution.py` and the run's `config.yaml`; metric/target metadata from the competition `config.yaml`. Dataset shapes are counted directly from the run's own `input/` directory.*
 
+> **Superseded run.** This report documents AIDE run `2-adorable-spicy-kudu`, which the benchmark later **voided** for
+> input contamination (see the input-purity caveat under Data) and replaced with a clean re-run,
+> `0-nifty-unstoppable-pig` (local OOF RMSE 0.55303, 20 scored / 0 buggy, 1,824.5 s of execution; submitted 2026-07-29
+> for public 0.55899 / private 0.55552). Every figure below describes the voided run and is kept only as a record of
+> it. The benchmark's current s3e1 figures are the clean re-run's, and `benchmark_results/rerun_three_way.csv` records
+> `winner_priv = mine` for this competition.
+
 ## Overview
 
 The task is to predict a census block's median house value (`MedHouseVal`) on the California-Housing Playground Series
@@ -13,17 +20,18 @@ of 0.54952**, found at **step 19, the very last step of the budget**. The champi
 LightGBM + XGBoost + CatBoost blend over 40 features, whose distinguishing ingredient is a multi-scale out-of-fold KNN
 spatial target encoding that AIDE invented in the last three steps.
 
-On the leaderboard this is AIDE's strongest episode of the batch relative to the other two lanes: **public 0.55863,
-private 0.55343, rank 218/690 (68.6th percentile)**, and the score table records `lb_winner = aide` — AIDE's private
-score beats both the my-agent lane (0.55987) and the NVIDIA reproduce lane (0.5555). The same table records
-`local_winner = nvidia`; the other lanes' local numbers are outside this report's source scope, so only the
-leaderboard comparison is reconstructed here.
+On the leaderboard the voided run scored **public 0.55863, private 0.55343, rank 218/690 (68.6th percentile)**, and
+the development-era score table recorded `lb_winner = aide` for it, ahead of the my-agent lane (0.55987) and the
+NVIDIA reproduce lane (0.5555). That verdict has not survived the re-runs: `benchmark_results/rerun_three_way.csv`
+carries AIDE at private 0.55552 against the from-scratch lane's 0.55275 and records `winner_priv = mine`. The same
+development-era table records `local_winner = nvidia`; the other lanes' local numbers are outside this report's
+source scope, so only the leaderboard comparison is reconstructed here.
 
 **Why it matters.** House-value modelling sits under mortgage underwriting, property taxation and regional planning, and
 California Housing is the canonical benchmark for tabular geo-regression. For the agent comparison it matters for a
-second reason: it is the one episode in this batch where AIDE's search converged onto a genuinely comp-specific idea
-(local spatial target statistics) rather than on generic ensembling — and, as the Data section records, also the one
-episode whose input directory was not clean.
+second reason: it is the one episode in this batch (s3e1, s3e3, s3e5, s3e7, s3e9) where AIDE's search converged onto
+a genuinely comp-specific idea (local spatial target statistics) rather than on generic ensembling — and, as the Data
+section records, one of the episodes whose input directory was not clean.
 
 ---
 
@@ -42,8 +50,10 @@ competition files. Alongside `train.csv` / `test.csv` / `sample_submission.csv` 
 almost every node reads `train_processed_v2.csv` instead of `train.csv`, and the champion additionally loads its
 LightGBM hyperparameters straight out of `round1_best_lgb_params.json`. So on this episode AIDE did **not** build its
 feature set from raw data — 26 of the champion's 40 features and its entire LightGBM configuration were inherited from
-the working directory, and AIDE's own contribution is the 14 geospatial features it added on top. The other four
-episodes in this batch had raw-only or near-raw inputs; s3e1's numbers should be read with this caveat attached.
+the working directory, and AIDE's own contribution is the 14 geospatial features it added on top. s3e5 and s3e19 in
+this folder carry the same defect — their `input/` directories also held staged `*_processed.csv` files — and
+`benchmark_results/THREE_WAY_REPORT.md` marks all three rows void; s3e1's numbers should be read with this caveat
+attached.
 
 **Data Quality** is **not recorded**. AIDE ran no profiling step and produced no EDA artifact for this competition —
 the entire tree consists of model-fitting scripts. The only data-quality handling that exists on record is what AIDE
@@ -75,7 +85,7 @@ against the full training coordinate set.
 The champion goes further and uses **repeated 5-fold KFold with 2 repeats (shuffle=True, seeds 42 and 2024)**, so each
 of the three algorithms is fitted 10 times and its OOF vector is the average of the two repeats. Fold assignment is
 identical across the three algorithms within a repeat, which is what makes the OOF blend-weight search legitimate.
-Unlike the other four episodes in this batch, the leaderboard **was** exercised: the champion's `submission.csv` was
+The leaderboard **was** exercised: the champion's `submission.csv` was
 submitted and scored, so this report carries both a local and a leaderboard number.
 
 ## Models & Architecture
@@ -234,7 +244,7 @@ placed **218/690, the 68.6th percentile**.
 
 | Lane | Approach | Private RMSE | Note |
 |------|----------|-------------:|------|
-| AIDE | 20-step tree search, repeated-CV GBDT blend + KNN spatial encoding | **0.55343** | `lb_winner` |
+| AIDE | 20-step tree search, repeated-CV GBDT blend + KNN spatial encoding | **0.55343** | `lb_winner` in the development-era table; superseded, see below |
 | NVIDIA | reproduce-agent, public-kernel replication | 0.5555 | behind by 0.00207 |
 | My agent | from-scratch GBDT pool + tree search | 0.55987 | behind by 0.00644 |
 
@@ -243,7 +253,7 @@ placed **218/690, the 68.6th percentile**.
 0.55987 − 0.55343 = 0.00644
 ```
 
-AIDE wins this episode on the leaderboard, and the mechanism is identifiable: steps 17–19 (KNN spatial target mean,
+AIDE won this episode on the leaderboard as the benchmark then stood, and the mechanism is identifiable: steps 17–19 (KNN spatial target mean,
 then multi-scale k, then local dispersion) moved the local metric 0.55604 → 0.54952, which is more than the entire
 preceding blending programme achieved. That is the tree search working as designed — a cheap, local, comp-specific
 idea found by mutation and confirmed by execution.
@@ -254,3 +264,7 @@ reported, not resolved. Second, and more material: as documented in the Data sec
 AIDE's input directory contained pre-engineered features and a tuned-LightGBM parameter file, both of which the
 champion consumes directly. AIDE's margin here therefore reflects an inherited feature baseline plus its own geo
 additions — not a clean from-raw-data win.
+
+Both of those private figures belong to the voided run. On the current benchmark record the clean AIDE re-run scores
+private 0.55552 while the from-scratch lane's final-architecture re-run scores 0.55275, and
+`benchmark_results/rerun_three_way.csv` awards s3e1 to that lane (`winner_priv = mine`).

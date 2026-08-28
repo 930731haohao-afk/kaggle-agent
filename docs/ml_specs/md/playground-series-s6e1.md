@@ -147,6 +147,8 @@ so the gains are real but small, and neither agent's GBM pipeline separates from
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
-- **Lane**: lane **running** (started 2026-08-17 15:26); re-run CV and LB: TBD.
+- **Lane**: started 2026-08-17 15:26; the lane finished and was scored.
+- re-run local CV (lane `STATUS.md`): **pooled OOF R² 0.787400** (leave-one-fold-out honest 0.787383), an NNLS blend over the 34 solo models the Stage-4 tree search produced (15 members at non-zero weight).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 8.68844 / Private 8.71516**; `winner_priv` = **mine** (AIDE 8.72191, NVIDIA 8.73239). That table notes this lane's leaderboard metric runs in the min direction while the local metric (R²) is max.

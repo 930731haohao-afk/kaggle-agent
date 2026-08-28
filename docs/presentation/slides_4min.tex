@@ -1,19 +1,18 @@
 % ============================================================================
-% An End-to-End AI Agent for Kaggle Competitions --- 3.5-minute talk.
-% Six frames: the title plus one frame per poster block, with the poster's
-% wording and the poster's numbers. Speaker notes are in \note{}; each ends
-% with its budgeted seconds and the total is under 210.
+% An End-to-End AI Agent for Kaggle Competitions --- 4-minute talk.
+% Seven frames: title, five body frames (one per poster block, with the
+% poster's wording and the poster's numbers), then a questions frame.
+% Speaker notes are in \note{}; each ends with its budgeted seconds. Title
+% plus the five body frames stay under 240s; questions adds about a minute.
 %
 % To rehearse with the notes visible, compile a second copy with
 %   \setbeameroption{show notes on second screen}   or   {show only notes}
 % ============================================================================
-\documentclass[aspectratio=169,10pt]{beamer}
+\documentclass[aspectratio=169,10pt,t]{beamer}
 
 \usetheme{default}
 \usecolortheme{default}
 \setbeamertemplate{navigation symbols}{}
-% On a dark frame set the beamer color inside the frame group; a \color{}
-% wrapper around a list is overridden inside the list and renders dark on dark.
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -24,23 +23,37 @@
 \usepackage{xcolor}
 \usepackage{booktabs}
 
-% ---- Palette (matches the poster) ------------------------------------------
+\urlstyle{same}
+\newcommand{\etal}{\textit{et al}.}
+
+% ---- Palette (matches the poster; headings are black ink) ------------------
 \definecolor{navy}{RGB}{0,60,100}
 \definecolor{ink}{RGB}{17,17,17}
 \definecolor{mut}{RGB}{90,95,102}
-\definecolor{ice}{RGB}{202,220,252}
+\definecolor{ruleline}{RGB}{200,205,210}
 \definecolor{barblue}{RGB}{0,60,100}
 \definecolor{barother}{RGB}{176,186,196}
 \definecolor{bartrack}{RGB}{238,240,243}
-\definecolor{pale}{RGB}{168,189,212}
 
+\setbeamercolor{background canvas}{bg=white}
 \setbeamercolor{normal text}{fg=ink}
-\setbeamercolor{frametitle}{fg=navy}
+\setbeamercolor{frametitle}{fg=ink}
 \setbeamerfont{frametitle}{series=\bfseries, size=\large}
 \setbeamertemplate{frametitle}{%
-  \vspace{3.2mm}\hspace{1mm}\insertframetitle\par\vspace{-1mm}}
+  \vspace{3.2mm}\insertframetitle\par\vspace{0.6mm}}
 
 \newcommand{\kb}[1]{\textbf{#1}}
+% Bold list marker used in place of an itemize
+\newcommand{\bul}{\textbf{\textbullet}\hspace{1.8mm}}
+% List item whose bold sub-heading sits on its own line, body indented below
+\newcommand{\ritem}[2]{%
+  \bul\kb{#1}\par\vspace{0.6mm}%
+  \begingroup\leftskip=4.8mm\relax #2\par\endgroup\vspace{2.2mm}}
+% Second-level item: en-dash marker, bold lead clause, body indented below
+\newcommand{\sitem}[2]{%
+  \begingroup\leftskip=4.5mm\relax
+  \makebox[5.5mm][l]{\textendash}\kb{#1}\par\vspace{0.4mm}%
+  \begingroup\leftskip=10mm\relax #2\par\endgroup\endgroup\vspace{2mm}}
 
 % ---- Head-to-head bar, same geometry as the poster's countbar --------------
 % #1 label  #2 color  #3 fraction  #4 value
@@ -52,63 +65,78 @@
   \end{tikzpicture}%
   \hspace{3mm}{\small #4}\par\vspace{2.2mm}}
 
+% Narrow variant for the two-column results frame
+\newcommand{\countbarn}[4]{%
+  \noindent\makebox[13mm][l]{\scriptsize #1}%
+  \begin{tikzpicture}[baseline=1.8mm]
+    \fill[bartrack] (0,0) rectangle (22mm,4.6mm);
+    \fill[#2] (0,0) rectangle (#3*22mm,4.6mm);
+  \end{tikzpicture}%
+  \hspace{2mm}{\scriptsize #4}\par\vspace{1.5mm}}
+
 \begin{document}
 
 % ================================================================== TITLE ---
-{\setbeamercolor{background canvas}{bg=navy}
 \begin{frame}[plain]
-  \vspace{6mm}
-  {\color{white}\LARGE\bfseries An End-to-End AI Agent\\[1mm]
-   for Kaggle Competitions\par}
-  \vspace{5mm}
+  \vspace{36mm}
+  {\color{ink}\Large\bfseries An End-to-End AI Agent for Kaggle Competitions\par}
   \vfill
-  {\color{pale}\small Wei-Hao Huang, National Chengchi University \quad$\cdot$\quad
-   PI: Dr.\ Tso-Jung Yen, Institute of Statistical Science, Academia Sinica\par}
+  {\color{ink}\small Wei-Hao Huang, National Chengchi University\par}
+  \vspace{1.5mm}
+  {\color{mut}\small PI: Dr.\ Tso-Jung Yen, Institute of Statistical Science,
+   Academia Sinica\par}
   \vspace{4mm}
 
   \note{Sinica is an end-to-end agent for Kaggle competitions: it takes a raw
     dataset and returns a submission, with no person in the loop. I benchmarked
-    it against two frozen reference agents on twenty competitions, scored on the
-    real leaderboards. (18s)}
-\end{frame}}
+    it against two frozen reference agents on twenty-three competitions. (18s)}
+\end{frame}
 
 % ============================================================= 1 MOTIVATION --
-\begin{frame}{1 $\cdot$ Motivation}
-  \vspace{1mm}
-  {\small\kb{Challenges of Kaggle competitions}\par}
-  \vspace{1.5mm}
+\begin{frame}{1 Motivation}
+  \vspace{0pt}
+  {\small\bul\kb{Challenges of Kaggle competitions}\par}
+  \vspace{2mm}
   {\small
-   $\cdot$ A competition demands the whole expert loop: validation design,
-   features, model selection, ensembling. The top entries separate by a
-   \kb{very small margin}.\par}
-  \vspace{3mm}
-  {\small\kb{Why an AI agent}\par}
-  \vspace{1.5mm}
+   \sitem{A competition requires the expert loop}{This includes validation
+     design, feature extraction, model selection, and ensemble building. The
+     top entries are separated by a very small margin.}
+   \sitem{Data preparation is repetitive}{The same cleaning, split design, and
+     drift checks are done on every dataset.}}
+  \vspace{2.5mm}
+  {\small\bul\kb{Why an AI agent}\par}
+  \vspace{2mm}
   {\small
-   $\cdot$ A competition is a \kb{scorable task}: every candidate returns a
-   number, so it can be \kb{optimized automatically}
-   (propose, score, keep the better, repeat).\par\vspace{1.2mm}
-   $\cdot$ Tireless, systematic search over candidate configurations, every
-   experiment logged.\par}
+   \sitem{A competition is a \emph{scorable} task}{Every competitor delivers
+     a number, so it can be optimized automatically.}
+   \sitem{A competition requires tireless, systematic search}{Every experiment
+     is recorded and should be reproducible.}
+   \sitem{Recent success of agents for Kaggle competitions}{Notable cases
+     include tree search over code~\cite{aide2025}, and tree search fed
+     injected research ideas~\cite{aygun2026}.}}
 
   \note{Competitions demand the whole expert loop, and the top of the
     leaderboard separates at the fourth or fifth decimal, so tuning skill
-    distinguishes nobody --- and at that scale a pipeline's own cross-validation
-    routinely disagrees with the leaderboard. What an agent brings is tireless,
-    logged search: between thirty-seven and two hundred and twenty-four
-    candidate configurations per competition, and the same protocol run twenty
-    times without drifting. (32s)}
+    distinguishes nobody. Before any of that, every dataset needs the same
+    repetitive preparation. What an agent brings is tireless, logged search:
+    between thirty-seven and two hundred and twenty-four candidate
+    configurations per competition, and the same protocol run twenty times
+    without drifting. (32s)}
 \end{frame}
 
 % ============================================================== 2 WORKFLOW ---
-\begin{frame}{2 $\cdot$ Workflow}
-  \vspace{0.5mm}
-  \centerline{\includegraphics[height=0.66\textheight]{fig1_arch.pdf}}
+\begin{frame}{2 Workflow}
+  \vspace{0pt}
+  {\small\kb{From raw data to a scored submission}\par}
+  \vspace{1.5mm}
+  \centerline{\includegraphics[height=0.66\textheight]{fig1_arch_slide.pdf}}
   \vspace{1.5mm}
   {\scriptsize\color{mut}The LLM reasons and decides at every stage; the
-   \kb{problem dossier} classifies the task and injects external data
-   \emph{upstream}, before any modeling. Lanes hold no Kaggle credentials;
-   submissions are scored post-run.\par}
+   problem dossier classifies the task and injects external data
+   \emph{upstream}, before any modeling. EDA then tests the dossier's
+   hypotheses, feature engineering and modeling follow, and evaluation returns
+   the score the tree search uses to pick the next candidate. Each run also
+   automatically writes a per-competition report.\par}
 
   \note{The pipeline reads top to bottom. An LLM reasons and decides at every
     stage, gradient boosting does the fitting, and a tree search over complete
@@ -117,90 +145,178 @@
     downstream, at the blend --- measured, it was worth ten to the minus five.
     So it moved upstream, into a dossier stage that classifies the task before
     any modeling. The lanes hold no Kaggle credentials, so nothing inside a run
-    can touch a leaderboard. (40s)}
+    can touch a leaderboard. If time allows: each run also writes a
+    five-section ML specification report from its logged records --- neither
+    reference agent does this. (40s, +8s with the spec-report sentence)}
 \end{frame}
 
 % =============================================================== 3 RESULTS ---
-\begin{frame}{3 $\cdot$ Results}
-  \vspace{0.5mm}
-  {\small All 20 lanes scored on the real leaderboard; each of the 60 duels
-   judged against the score noise measured on Kaggle's own public/private
-   split: \kb{38 decided, 22 too close to call}.\par}
-  \vspace{2.5mm}
-  {\small\kb{Sinica leads: 16 wins / 8 losses (66.7\% of its decided duels)}
-   against 42.3\% for each frozen reference agent.\par}
-  \vspace{3mm}
-  {\small\kb{Best private score}\par}
-  \vspace{1.5mm}
-  \countbar{\kb{Sinica}}{barblue}{0.50}{10 / 20}
-  \countbar{NVIDIA}{barother}{0.35}{7 / 20}
-  \countbar{AIDE}{barother}{0.15}{3 / 20}
-  \vspace{1mm}
-  {\footnotesize\color{mut}Beyond tabular: on three mid-complexity competitions
-   (NLP, physiological time series, medical imaging) Sinica takes the
-   three-way best on all three.\par}
+\begin{frame}{3 Results}
+  \vspace{0pt}
+  \begin{columns}[t,onlytextwidth]
+  % ---------------------------------------------- left: the score table -----
+  \begin{column}{0.54\textwidth}
+    {\footnotesize\kb{Table 1: ordinary competitions}\par}
+    \vspace{1.2mm}
+    {\fontsize{6.8}{7.85}\selectfont
+     \setlength{\tabcolsep}{1.1mm}%
+     \renewcommand{\arraystretch}{1.0}%
+     \begin{tabular}{@{}llrrr@{}}
+     \toprule
+     \textbf{Competition} & \textbf{Metric} & \textbf{Sinica} & \textbf{NVIDIA}
+       & \textbf{AIDE}\\
+     \midrule
+     s3e1 & RMSE $\downarrow$ & \textbf{0.55275} & 0.55550 & 0.55552\\
+     s3e3 & AUC $\uparrow$ & 0.87157 & \textbf{0.89537} & 0.86863\\
+     s3e5 & QWK $\uparrow$ & 0.57223 & 0.56974 & \textbf{0.58138}\\
+     s3e7 & AUC $\uparrow$ & 0.90441 & \textbf{0.90458} & 0.90109\\
+     s3e9 & RMSE $\downarrow$ & 12.3319 & \textbf{12.2291} & 12.3067\\
+     s3e11 & RMSLE $\downarrow$ & \textbf{0.29368} & 0.29624 & 0.29445\\
+     s3e14 & MAE $\downarrow$ & 333.186 & \textbf{330.716} & 332.316\\
+     s3e16 & MAE $\downarrow$ & \textbf{1.33822} & 1.34001 & 1.34224\\
+     s3e19 & SMAPE $\downarrow$ & 49.4088 & \textbf{48.2656} & 48.3413\\
+     s4e11 & Acc. $\uparrow$ & \textbf{0.94107} & 0.94076 & 0.94056\\
+     s5e1 & MAPE $\downarrow$ & \textbf{0.08401} & 0.14594 & 0.17917\\
+     s5e10 & RMSE $\downarrow$ & \textbf{0.05576} & 0.05588 & 0.05579\\
+     s6e1 & Error $\downarrow$ & \textbf{8.71516} & 8.73239 & 8.72191\\
+     s6e2 & AUC $\uparrow$ & 0.95505 & 0.95508 & \textbf{0.95516}\\
+     afsis & MCRMSE $\downarrow$ & \textbf{0.48917} & 0.69855 & 0.49861\\
+     cat-in-the-dat & AUC $\uparrow$ & \textbf{0.80243} & 0.77084 & 0.80217\\
+     conway & MAE $\downarrow$ & \textbf{0.10414} & 0.11189 & 0.11065\\
+     tps-aug-2022 & AUC $\uparrow$ & 0.58930 & 0.58730 & \textbf{0.59106}\\
+     tps-jan-2022 & SMAPE $\downarrow$ & 6.29895 & \textbf{4.63651} & 10.6664\\
+     tps-sep-2022 & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
+     \midrule
+     \textbf{Best private score} & & \textbf{10 / 20} & 7 / 20 & 3 / 20\\
+     \bottomrule
+     \end{tabular}\par}
+    \vspace{1mm}
+    {\scriptsize\color{mut}\textbf{Bold} = best of the three; reference
+     agents AIDE~\cite{aide2025}, NVIDIA~\cite{nvidia2026}.\par}
+  \end{column}
+  % ------------------------------------- right: Table 2, special comps ------
+  \begin{column}{0.44\textwidth}
+    {\footnotesize\kb{Table 2: special competitions}\par}
+    \vspace{1.2mm}
+    {\fontsize{6}{7.2}\selectfont
+     \setlength{\tabcolsep}{0.9mm}%
+     \renewcommand{\arraystretch}{1.25}%
+     \begin{tabular}{@{}llrrr@{}}
+     \toprule
+     \textbf{Competition} & \textbf{Metric} & \textbf{Sinica} & \textbf{NVIDIA}
+       & \textbf{AIDE}\\
+     \midrule
+     us-patent & Pearson $r$ $\uparrow$ & \textbf{0.86658} & 0.86160
+       & 0.65821\\
+     ventilator & MAE $\downarrow$ & \textbf{0.16525} & 0.40093
+       & 0.34591\\
+     SIIM-ISIC & AUC $\uparrow$ & \textbf{0.93529} & 0.89822
+       & 0.88579\\
+     \bottomrule
+     \end{tabular}\par}
+    \vspace{1.5mm}
+    {\scriptsize\color{mut}Graded by MLE-bench~\cite{mlebench}.\par}
+  \end{column}
+  \end{columns}
 
-  \note{Here is the reading. All twenty lanes are scored on the real
-    leaderboard, and every one of the sixty duels is judged against the score
-    noise measured on Kaggle's own split of the test set: thirty-eight decide,
-    twenty-two the data refuses to call. Sinica leads --- sixteen wins to
-    eight of its decided duels, sixty-six point seven percent, against
-    forty-two point three for each reference agent. It takes the best private score on
-    ten of the twenty competitions, and on three harder competitions outside
-    tabular data it takes the best of the three every time. (45s)}
+  \note{All 23 competitions are scored: the 20 ordinary ones on the real
+    private leaderboard, the 3 special ones offline with MLE-bench. Against
+    the two reference agents, Sinica takes the best score on 13 of the 23
+    and leads the pairwise duels judged against the split noise ---
+    sixteen wins to eight of its decided duels, sixty-six point seven
+    percent, against forty-two point three for each reference agent. (45s)}
 \end{frame}
 
-% ========================================================== 4 REFLECTIONS ---
-\begin{frame}{4 $\cdot$ Reflections}
-  \vspace{1mm}
+% ==================== 4 DISADVANTAGES OF THE AGENT-BASED APPROACH ---
+\begin{frame}{4 Disadvantages of the agent-based approach}
+  \vspace{0pt}
   {\small
-   $\cdot$ \kb{Put knowledge injection upstream.} At the blend stage it
-   measured near-nothing; moved into problem identification it
-   \kb{improves scores significantly}.\par\vspace{2mm}
-   $\cdot$ \kb{No score until you submit.} While you iterate, local CV is
-   all you see, so an error in problem-level judgment leaves CV looking healthy
-   while the leaderboard says otherwise.\par\vspace{2mm}
-   $\cdot$ \kb{Freeze the architecture before you measure.} One results table
-   can report only one agent version, so an architectural change invalidates
-   every run before it. That is why such a change costs twice: a tail of bugs to fix, then
-   a full re-run to earn the voided scores back.\par\vspace{2mm}
-   $\cdot$ \kb{Get isolation right.} If a lane can reach a leaderboard or
-   another lane's work, every number in the table is worthless. It has to be
-   enforced by the setup, not by telling the agent what to avoid.\par}
+   \ritem{The agent is strong at coding, weak at judging}{The agent
+     efficiently works through whatever problem it is given. However, it does
+     not ask whether a change is worth making. This often leads to a poor
+     design choice that yields bugs.}
+   \ritem{The agent can only target the local validation score}{As a result,
+     the local validation score can look outstanding while the real
+     leaderboard score is mediocre.}
+   \ritem{The agent often buries the main question in detail}{AI-written
+     reports put too much focus on technical details, drifting away from what
+     the reader wants to know.}
+   \ritem{The agent has bad writing habits}{Redundant headings and reinvented
+     terms often come back in every draft. Verifying and modifying them by
+     hand is exhausting.}}
 
-  \note{Four things I would tell anyone doing this. Put knowledge injection
-    upstream --- at the blend stage it bought nothing. While you iterate, local
-    cross-validation is the only feedback you get, and it can look healthy
-    while the leaderboard says otherwise. Never mix agent versions in one
-    table, because an architecture change invalidates every run before it and
-    every mid-flight change costs a tail of bugs and then a re-run to earn the
-    score back. And get the
-    isolation right: if a lane can reach a leaderboard or another lane's work,
-    every number in the table is worthless, so it has to be enforced by the
-    setup rather than by instruction. (43s)}
+  \note{Where the approach falls short. The agent codes efficiently, but it
+    has no design judgment: it never asks whether a change is worth making,
+    so a poor design choice slips in and yields bugs. Its iteration can only
+    target the local validation score, which can look outstanding while the
+    real leaderboard score is mediocre. Heavy AI use also pulls a write-up
+    toward technical detail and away from the question the reader came for.
+    And its writing habits --- redundant headings, reinvented terms --- come
+    back in every draft; verifying and fixing them by hand is exhausting.
+    (45s)}
 \end{frame}
 
-% ================================================= 5 WHERE IT FALLS SHORT ---
-\begin{frame}{5 $\cdot$ Weaknesses of AI-heavy research}
-  \vspace{1mm}
+% ================= 5 PRACTICAL ADVICE FOR BUILDING AI AGENTS ---
+\begin{frame}{5 Practical advice for building AI agents for data science}
+  \vspace{0pt}
   {\small
-   $\cdot$ \kb{Strong hands, no design judgment.} The loop only solves the
-   problem it is handed. It never asks whether a change is worth making, and
-   nothing in it can tell whether an architecture holds until the runs come
-   back, by which time the debt is already there.\par\vspace{2mm}
-   $\cdot$ \kb{AI writing habits survive review}: redundant suffixes,
-   invented terminology, detail in place of the question the reader came
-   for.\par}
+   \ritem{Build an isolated environment before running the agent}{This
+     prevents any access to the leaderboard or another run's files.}
+   \ritem{Justify the design before building the pipeline}{This mitigates
+     redesign cost, debugging time, and a full rerun of earlier
+     competitions.}
+   \ritem{Inject external knowledge before data modeling}{This often improves
+     the score. However, if those external data are injected at the final
+     step, the score shows almost no improvement.}}
+
+  \note{Three pieces of advice for anyone building one of these. Build an
+    isolated environment before running the agent, so a run simply cannot
+    reach the leaderboard or another run's files. Justify the design before
+    building the pipeline --- a redesign costs debugging plus a full rerun
+    of earlier competitions. And inject external knowledge before data
+    modeling --- at the final blending step it bought almost nothing; before
+    modeling it clearly helped. (38s)}
+\end{frame}
+
+% ============================================================= REFERENCES ---
+\begin{frame}{6 References}
+  \vspace{2mm}
+  {\small\color{ink}
+   \setbeamertemplate{bibliography item}[text]
+   \setbeamercolor{bibliography item}{fg=ink}
+   \setbeamercolor{bibliography entry author}{fg=ink}
+   \setbeamercolor{bibliography entry title}{fg=ink}
+   \setbeamercolor{bibliography entry location}{fg=ink}
+   \setbeamercolor{bibliography entry note}{fg=ink}
+   \begin{thebibliography}{9}
+   \setlength{\itemsep}{0.4mm}
+   \bibitem{aide2025} Z. Jiang \etal, AIDE: AI-driven exploration in the
+     space of code, \emph{arXiv:2502.13138}.
+   \bibitem{aygun2026} E. Ayg\"un \etal, An AI system to help scientists write
+     expert-level empirical software, \emph{Nature} \textbf{654}, 909 (2026).
+   \bibitem{nvidia2026} NVIDIA Corporation, computer code NVIDIA Kaggle Plugin,
+     Santa Clara, CA, 2026, \url{https://github.com/NVIDIA/nvidia-kaggle}.
+   \bibitem{mlebench} J. S. Chan \etal, MLE-bench: Evaluating machine learning
+     agents on machine learning engineering, in \emph{Proceedings of the 13th
+     International Conference on Learning Representations}, 2025,
+     \url{https://openreview.net/forum?id=6s5uXNWGIh}.
+   \end{thebibliography}}
+  
+
+  \note{Four systems this work sits next to: AIDE and the Nature paper for
+    the search-based agents, the NVIDIA plugin as the reproduction baseline,
+    and MLE-bench for how the three harder competitions are graded.}
+\end{frame}
+
+% ============================================================== QUESTIONS ---
+\begin{frame}[plain,c]
   \vfill
-  {\color{mut}\scriptsize github.com/930731haohao-afk/kaggle-agent\par}
-  \vspace{1mm}
+  \centerline{\color{ink}\LARGE\bfseries Questions}
+  \vfill
 
-  \note{Where working this way still falls short. There is no engineering
-    judgment at design time: nothing in the loop can tell whether an
-    architecture will hold until it runs, and by the time the flaws surface the
-    debt is already there. And AI writing habits survive
-    review --- redundant suffixes, invented terminology, and detail in place of
-    the question you actually came for. Thank you. (37s)}
+  \note{Open for questions. The three I expect: how a duel is decided against
+    the noise floor, how the tree search spends its budget, and how the lanes
+    are isolated and audited. (about 60s of questions)}
 \end{frame}
 
 \end{document}

@@ -18,9 +18,12 @@ handling, found at **step 14**.
 0.29666 − 0.29410 = 0.00256
 ```
 
-That champion is the strongest of the three agents on this competition. Its **private LB score is 0.29445**
-(73.3rd percentile, rank 256/954), ahead of both our own from-scratch agent (0.29597) and the NVIDIA
-reproduce-agent (0.29624); `facts_aide.json` records `local_winner = aide` and `lb_winner = aide`. The win came
+That champion was the strongest of the three agents on this competition as the benchmark stood when this report was
+written. Its **private LB score is 0.29445** (73.3rd percentile, rank 256/954), ahead of the NVIDIA
+reproduce-agent (0.29624) and of our own from-scratch agent's then-current 0.29597; `facts_aide.json` records
+`local_winner = aide` and `lb_winner = aide`. **The current benchmark record reverses that head-to-head**: after the
+from-scratch lane's final-architecture re-run, `benchmark_results/rerun_three_way.csv` gives that lane private
+0.29368 against AIDE's 0.29445 and records `winner_priv = mine`. The win described below came
 from a single architectural discovery — CatBoost's ordered target statistics on the low-cardinality columns —
 that AIDE reached only after a crash and two failed detours, and it was bought at a steep price in compute:
 four of the seven failures were 30-minute timeouts that consumed roughly three quarters of the run's wall clock.
@@ -254,11 +257,11 @@ figures below are the only cross-lane numbers used in this report.
 
 | Agent | Approach | Private LB RMSLE | Note |
 |-------|----------|-----------------:|------|
-| **AIDE** | 20-step tree search → seed-bagged categorical-native CatBoost | **0.29445** | winner |
-| Our agent | from-scratch GBDT pool + tree-search blend | 0.29597 | behind |
+| **AIDE** | 20-step tree search → seed-bagged categorical-native CatBoost | **0.29445** | best of the three at the time of writing |
+| Our agent | from-scratch GBDT pool + tree-search blend | 0.29597 | behind; superseded by its 0.29368 re-run |
 | NVIDIA | reproduce-agent distilling a public ensemble kernel | 0.29624 | behind |
 
-AIDE wins this competition on both the local metric and the leaderboard:
+Against the lanes as they then stood, AIDE wins this competition on both the local metric and the leaderboard:
 
 ```
 0.29597 − 0.29445 = 0.00152
@@ -270,9 +273,11 @@ decision. Both comparator lanes treat this dataset's low-cardinality columns as 
 their effort on ensembling and hyperparameter search; AIDE, by accident of a crashed blend node, ended up
 handing them to CatBoost as categoricals and let its CTR machinery build the interactions. On a dataset whose
 signal lives almost entirely in store-profile combinations, that representation choice beat both a tuned pool
-and a reproduced public kernel.
+and a reproduced public kernel as they then stood. It no longer beats the tuned pool: the from-scratch lane's
+re-run at 0.29368 is 0.00077 ahead of AIDE, and the current record awards this competition to that lane.
 
-Two caveats belong on the record. First, **AIDE's efficiency here was poor even though its accuracy was best** —
+Two caveats belong on the record. First, **AIDE's efficiency here was poor even though its accuracy was the best of
+the three at the time** —
 2.60 hours of compute, 35% of steps failing, 77% of wall clock burned on timeouts, and the last six steps
 producing nothing. Second, **the discovery was not planned**: reading the journal, CatBoost entered the search
 as a third blend member, crashed on a dtype mismatch, and only became the champion because the repair

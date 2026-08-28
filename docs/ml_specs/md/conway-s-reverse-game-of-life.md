@@ -93,8 +93,8 @@ One lever was tested and **rejected** (exp #3): forward-consistency refinement â
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) â€” 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-14, 214 min, audit clean.
 - re-run local CV: **MAE 0.106688** (held-out fold 0 of 5), weighted residual-CNN bag with per-delta thresholds.
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.10313 / Private 0.10414**; `winner_priv` = **mine** (AIDE 0.11065, NVIDIA 0.11189). The re-run's private score improves on the 0.10875 posted by the historical submission quoted above.

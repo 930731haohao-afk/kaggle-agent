@@ -18,7 +18,7 @@ That submission placed **1088 / 4319 — the 74.8th percentile**, with recorded 
 
 ## Data
 
-**Purpose of Data.** Predict a continuous exam score — a regression problem with a clean, dense feature set. **Data Format** is **tabular CSV**, all columns either numeric or low-cardinality categorical. **Data Volume**: the competition config records **630K train rows / 270K test rows**, with a target spanning **19.6 to 100** and a mean of **62.5**. This is the largest training set in the batch, and the run's timeout pattern is a direct consequence of it.
+**Purpose of Data.** Predict a continuous exam score — a regression problem with a clean, dense feature set. **Data Format** is **tabular CSV**, all columns either numeric or low-cardinality categorical. **Data Volume**: the competition config records **630K train rows / 270K test rows**, with a target spanning **19.6 to 100** and a mean of **62.5**. This is the joint largest training set in this batch — s6e2 records 630,000 training rows as well — and the run's timeout pattern is a direct consequence of it.
 
 **Data Quality** is essentially clean: the config records **no missing values**, and correspondingly `best_solution.py` contains no imputation logic at all — categoricals are simply cast to a shared `category` dtype with train/test category sets aligned, and numerics pass through untouched. The dominant signal is **`study_hours` at r ≈ 0.76**, strong enough that the competition is largely about squeezing the residual. The champion's own node analysis records how flat the model space is: base-learner CV R² of **LGB 0.78594, XGB 0.78619, CatBoost 0.78492** — three different boosters within about a thousandth of each other.
 

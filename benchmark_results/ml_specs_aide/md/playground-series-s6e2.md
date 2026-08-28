@@ -17,9 +17,11 @@ crashes**, and its champion — discovered at **step 19, the very last step of t
 blend of a randomized-search-tuned **CatBoost** and a fixed **LightGBM**, scoring **OOF ROC-AUC 0.95551**
 locally and **private LB 0.95516**, placing **1027 / 4371 (76.5th percentile)**.
 
-On the leaderboard this is a three-way dead heat at the top of the lane: AIDE's private score ties the
-from-scratch agent's `mine_priv` to five decimals and edges the NVIDIA reproduce-agent by 0.00008; the score
-table nevertheless records `local_winner: mine` and `lb_winner: mine`.
+On the leaderboard the development-era score table made this a three-way dead heat at the top of the lane: AIDE's
+private score tied the from-scratch agent's to five decimals and edged the NVIDIA reproduce-agent by 0.00008, and
+that table recorded `local_winner: mine` and `lb_winner: mine`. **The tie no longer exists.** On the current record
+the from-scratch lane's final-architecture re-run scores private 0.95505 against AIDE's 0.95516, and
+`benchmark_results/rerun_three_way.csv` records `winner_priv = aide` for this competition.
 
 **Why it matters.** Cardiovascular disease is a leading cause of death worldwide; risk-ranking from routine
 clinical features supports triage and preventive screening — as decision support, not diagnosis. The
@@ -267,13 +269,13 @@ over its own first solution, all of it from switching to CatBoost (step 4), addi
 (step 8), and finally tuning CatBoost (step 19).
 
 **Performance Benchmarking.** `facts_aide.json`'s score table carries the private-leaderboard figures for all
-three lanes, which makes this the one competition in this batch with a complete three-way comparison:
+three lanes:
 
 | Agent | Approach | Private LB AUC | Note |
 |-------|----------|---------------:|------|
-| AIDE | 20-step tree search → tuned CatBoost + LightGBM blend | 0.95516 | ties `mine_priv` at 5 dp |
-| From-scratch agent (`mine_priv`) | — | 0.95516 | `local_winner: mine`, `lb_winner: mine` |
-| NVIDIA (`nvidia_priv`) | — | 0.95508 | 0.00008 behind |
+| AIDE | 20-step tree search → tuned CatBoost + LightGBM blend | 0.95516 | ties the from-scratch figure at 5 dp |
+| From-scratch agent | GBDT pool + tree search | 0.95516 | `local_winner: mine`, `lb_winner: mine`; superseded by its 0.95505 re-run |
+| NVIDIA | reproduce-agent, public-kernel replication | 0.95508 | 0.00008 behind |
 
 ```
 0.95516 − 0.95516 = 0.00000   (AIDE vs mine, private LB)
@@ -282,7 +284,9 @@ three lanes, which makes this the one competition in this batch with a complete 
 
 At the reported five-decimal precision AIDE and the from-scratch agent are **numerically indistinguishable on
 the private leaderboard**, and both sit a hair above NVIDIA; the score table's own verdict fields
-(`local_winner: mine`, `lb_winner: mine`) break the tie in favour of the from-scratch lane. The honest reading
+(`local_winner: mine`, `lb_winner: mine`) break the tie in favour of the from-scratch lane. The current benchmark
+record breaks it the other way — that lane's final-architecture re-run scores private 0.95505, below AIDE's 0.95516,
+and `benchmark_results/rerun_three_way.csv` awards s6e2 to AIDE (`winner_priv = aide`). The honest reading
 is that on a saturated, feature-poor tabular problem, twenty steps of autonomous search reach essentially the
 same ceiling as a deliberately engineered ladder — the competition simply does not have another thousandth of
 AUC left in it for anyone. What separates the lanes is cost and confidence, not score: AIDE spent 3.31 hours of compute of

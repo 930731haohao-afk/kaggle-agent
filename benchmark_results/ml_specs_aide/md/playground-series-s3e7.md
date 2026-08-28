@@ -22,7 +22,7 @@ On the leaderboard: **public 0.90934, private 0.90109, rank 225/680 (67.1st perc
 The gap to the winner (0.00349) is larger than everything AIDE's twenty steps bought.
 
 **Why it matters.** Cancellation forecasting drives overbooking policy and revenue management, and this dataset is the
-batch's only large one (42,100 training rows), which changes the agent's economics: every experiment costs minutes
+largest of the five in this batch (42,100 training rows), which changes the agent's economics: every experiment costs minutes
 instead of seconds, and a search that mostly re-tests near-identical GBDT blends spends its budget without moving the
 metric. This is the episode where AIDE's fixed 20-step budget and its 1800 s per-node timeout collide most sharply.
 
@@ -34,8 +34,8 @@ metric. This is the episode where AIDE's fixed 20-step budget and its 1800 s per
 lead time, arrival date, market segment, room and meal type, price and prior-booking history — with `booking_status`
 as target, `id` as key, scored by ROC AUC. **Data Format** is **integer-coded tabular CSV**: all columns arrive
 numeric, with several of them semantically categorical. **Data Volume**, counted from the run's `input/` directory, is
-**42,100 training rows × 19 columns** and **28,068 test rows × 18 columns** — the largest dataset in this batch by an
-order of magnitude. The `input/` directory contained only `train.csv`, `test.csv` and `sample_submission.csv`, so this
+**42,100 training rows × 19 columns** and **28,068 test rows × 18 columns** — the largest dataset in this batch
+(s3e1, s3e3, s3e5, s3e7, s3e9), ahead of s3e1's 37,137 rows. The `input/` directory contained only `train.csv`, `test.csv` and `sample_submission.csv`, so this
 is a clean from-raw-data search.
 
 **Data Quality** was never profiled (**no EDA artifact exists**). One defect is visible in the champion's code:
@@ -140,7 +140,7 @@ step 18's 360.3 s.
 The tree opened with the configured **5 root drafts** (steps 0, 1, 5, 6, 7) and stayed **shallow — maximum depth 4**,
 with the champion also at depth 4 on the lineage 0 → 2 → 3 → 12 → 19. Step 3 was the hub, spawning **six children**
 (4, 8, 9, 10, 11, 12) of which exactly one improved on it. **Only 5 of the 16 scored steps set a new incumbent**
-(steps 0, 2, 3, 12, 19) — the lowest hit rate in the batch, and three of those five are the first three steps.
+(steps 0, 2, 3, 12, 19) — the lowest hit rate of the five runs in this batch, and three of those five are the first three steps.
 
 **The plateau is the finding.** Ten of the sixteen scored nodes land between 0.89802 and 0.89963 — every one of them a
 variation on the same three-model blend — and the run's entire improvement, 0.00193, is smaller than the 0.00349 that
@@ -183,7 +183,7 @@ governed by early stopping at patience 150/100/100, not a schedule*) and **no Ba
 histogram boosting*).
 
 **Training Duration** for the whole search was **3641.1 s of executed wall-clock across 20 nodes** (mean 182.1 s, max
-1800 s — the timeout), the most expensive run in the batch. The champion node alone took 313.3 s per the journal.
+1800 s — the timeout), the most expensive of the five runs in this batch. The champion node alone took 313.3 s per the journal.
 **Training Memory Consumption Limits** are **not recorded**; the harness caps wall-clock, not memory.
 
 **Transfer Learning** is *N/A (no pretrained weights; the competition forbids them)*; its analogue is **journal
@@ -203,7 +203,7 @@ gate** — 0.89963 is what one execution printed, and the champion was never re-
 **Post-processing is absent**: for each algorithm the test probability is the mean of its ten fold models
 (accumulated as `predict_proba / (n_splits × n_repeats)`), the three means are combined with the searched weights
 0.40 / 0.45 / 0.15, and the result is written directly. There is no calibration, no rank transform and no clipping.
-One fragility is worth recording: unlike the other episodes in this batch, this script does **not** reindex against
+One fragility is worth recording: unlike the other four episodes in this batch, this script does **not** reindex against
 `sample_submission.csv` — it only reorders columns with `submission[sample_sub.columns]` and relies on `test.csv`
 already being in submission order. That held here (the file scored normally), but it is an unchecked assumption.
 

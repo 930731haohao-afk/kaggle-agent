@@ -24,6 +24,10 @@
 \usepackage[skins]{tcolorbox}          % used only for the flat header band
 \usepackage{enumitem}
 \usepackage{textcomp}
+\usepackage[hyphens]{url}
+\urlstyle{same}
+\makeatletter\def\UrlBreaks{\do\/\do\-\do\.\do\?\do\=\do\_}\makeatother
+\Urlmuskip=0mu plus 1mu
 
 % ---- Palette (sciposter-style: navy + one orange accent) -------------------
 \definecolor{navy}{RGB}{0,60,100}      % template BoxCol
@@ -44,6 +48,7 @@
 \newcommand{\notesize}{\fontsize{22.5}{30}\selectfont}
 \newcommand{\tablesize}{\fontsize{24}{33}\selectfont}
 \newcommand{\footersize}{\fontsize{21}{28}\selectfont}
+\newcommand{\refsize}{\fontsize{26.5}{37.5}\selectfont}
 
 \renewcommand{\normalsize}{\bodysize}
 
@@ -54,8 +59,8 @@
 \setlength{\maxdepth}{\paperheight}
 \pagestyle{empty}
 
-\newlength{\pagepad}\setlength{\pagepad}{21.25mm}
-\newlength{\colgap}\setlength{\colgap}{14mm}
+\newlength{\pagepad}\setlength{\pagepad}{10mm}
+\newlength{\colgap}\setlength{\colgap}{12mm}
 
 % ---- Helper macros ---------------------------------------------------------
 % Bold emphasis in body text
@@ -67,8 +72,8 @@
 \newtcolorbox{secblock}{%
   enhanced, sharp corners=all, arc=3mm, rounded corners=all,
   colback=white, colframe=ruleline, boxrule=0.7mm,
-  left=10mm, right=10mm, top=9mm, bottom=15.5mm, boxsep=0pt,
-  before skip=0pt, after skip=29mm}
+  left=10mm, right=10mm, top=9mm, bottom=9mm, boxsep=0pt,
+  before skip=0pt, after skip=9mm}
 \newcommand{\blocktitle}[1]{%
   {\cardtitlesize\bfseries #1\par}%
   \vspace{-3.7mm}{\color{ruleline}\rule{\linewidth}{0.6mm}}\par\vspace{6mm}}
@@ -77,6 +82,16 @@
 \newcommand{\cardsub}[1]{%
   \vspace{4mm}{\subheadsize\bfseries #1\par}\vspace{5mm}}
 
+% Deck-matching list markers: bold bullet, en-dash second level
+\newcommand{\pbul}{\textbf{\textbullet}\hspace{4mm}}
+\newcommand{\psitem}[2]{%
+  \begingroup\leftskip=12mm\relax
+  \makebox[14mm][l]{\textendash}\kb{#1}\par\vspace{1.5mm}%
+  \begingroup\leftskip=26mm\relax #2\par\endgroup\endgroup\vspace{6mm}}
+\newcommand{\pritem}[2]{%
+  \pbul\kb{#1}\par\vspace{1mm}%
+  \begingroup\leftskip=13mm\relax #2\par\endgroup\vspace{2.5mm}}
+
 % Figure caption / note paragraph
 \newcommand{\figcap}[1]{\vspace{2mm}{\notesize\color{notegray}#1\par}}
 \newcommand{\notepar}[1]{{\notesize\color{notegray}#1\par}}
@@ -84,6 +99,24 @@
 % Bullet list defaults
 \setlist[itemize]{leftmargin=11mm, itemsep=2.6mm, parsep=0pt, topsep=1mm,
                   label=\textbullet}
+
+% ---- Reference list: APS (Physical Review) style ---------------------------
+% Numbered [n] in order of first appearance, article titles given for every
+% entry, volume in boldface, first page only, italic "et al.".
+\newcommand{\etal}{\textit{et al}.}
+\makeatletter
+\renewenvironment{thebibliography}[1]{%
+  \list{\@biblabel{\@arabic\c@enumiv}}%
+       {\settowidth\labelwidth{\@biblabel{#1}}%
+        \leftmargin\labelwidth \advance\leftmargin\labelsep
+        \setlength{\itemsep}{1.0mm}\setlength{\parsep}{0pt}%
+        \setlength{\topsep}{0pt}\setlength{\partopsep}{0pt}%
+        \usecounter{enumiv}%
+        \let\p@enumiv\@empty \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+  \sloppy\clubpenalty4000 \@clubpenalty \clubpenalty \widowpenalty4000%
+  \sfcode`\.\@m}
+  {\def\@noitemerr{\@latex@warning{Empty `thebibliography' environment}}\endlist}
+\makeatother
 
 % ---- Horizontal bar row: best-private count across the scored benchmark ----
 % #1 = label, #2 = bar color, #3 = fraction of track (0..1), #4 = value text
@@ -119,7 +152,7 @@
     Summer Internship\par}
 \end{tcolorbox}
 
-\vspace{30mm}
+\vspace{18.05mm}
 
 % ------------------------------------------------------------- BODY COLUMNS --
 \noindent\hspace*{\pagepad}%
@@ -131,41 +164,35 @@
 % ---- 1 · Motivation --------------------------------------------------------
 \begin{secblock}
 \blocktitle{1\sep Motivation}
-\cardsub{Challenges of Kaggle competitions}
-\begin{itemize}
-  \item The full expert loop: validation design, feature engineering, model
-    selection, ensembling. Top entries are separated by a \kb{very small
-    margin}.
-  \item \kb{Data preparation} is essential but repetitive: every dataset needs
-    the same cleaning, split design and drift checks before any model can be
-    trusted.
-\end{itemize}
-\cardsub{Why an AI agent}
-\begin{itemize}
-  \item A competition is a \kb{scorable task}: every candidate returns a
-    number, so it can be \kb{optimized automatically}
-    (propose, score, keep the better, repeat).
-  \item Tireless, systematic search over candidate configurations, every
-    experiment logged and reproducible.
-  \item Records a per-dataset EDA pass and writes a per-competition report
-    automatically, so every claim is grounded in an artifact.
-\end{itemize}
+\vspace{2mm}
+\pbul\kb{Challenges of Kaggle competitions}\par\vspace{5mm}
+\psitem{A competition requires the expert loop}{This includes validation design,
+  feature extraction, model selection, and ensemble building. The top entries are separated by a very small margin.}
+\psitem{Data preparation is repetitive}{The same cleaning, split
+  design, and drift checks are done on every dataset.}
+\vspace{2mm}
+\pbul\kb{Why an AI agent}\par\vspace{5mm}
+\psitem{A competition is a \emph{scorable} task}{Every competitor delivers a number, so it can be optimized automatically.}
+\psitem{A competition requires tireless, systematic search}{Every experiment is recorded and should be reproducible.}
+\psitem{Recent success of agents for Kaggle competitions}{Notable cases include tree search over code~\cite{aide2025}, and tree search fed injected research ideas~\cite{aygun2026}.}
 
 % ---- 2 · Workflow ----------------------------------------------------------
 \end{secblock}
 \begin{secblock}
 \blocktitle{2\sep Workflow}
 \centerline{\includegraphics[width=\linewidth]{fig1_arch.pdf}}
-\figcap{The pipeline: the LLM reasons at every stage;
-  the \kb{problem dossier} classifies the task and injects external data
-  \emph{upstream}, before any modeling; submissions are scored post-run on
-  the real leaderboard. Purple = injection layer $\cdot$ green = evidence
-  loop $\cdot$ gray = Auto-ML tools; dashed = feedback or post-run.}
+\figcap{The LLM reasons and decides at every stage; the \kb{problem dossier}
+  classifies the task and injects external data \emph{upstream}, before any
+  modeling. EDA then tests the dossier's hypotheses, feature engineering and
+  modeling follow, and evaluation returns the score the tree search uses to
+  pick the next candidate. Purple = injection layer $\cdot$ green = evidence
+  loop $\cdot$ gray = AutoML tools; dashed = feedback or post-run.}
 \vspace{4mm}
-\centerline{\includegraphics[width=263mm]{fig2_tree_poster.pdf}}
-\figcap{Tree-search loop: ensembles are first-class nodes; exploit until a
-  lineage plateaus, then one forced exploration burst; the loop ends at the
-  best-node submission.}
+\centerline{\includegraphics[width=320mm]{fig2_tree_poster.pdf}}
+\figcap{Tree-search loop: every node is a complete candidate solution,
+  ensembles included. The search improves the best lineage until it stops
+  paying off, then spends one round on 5--8 brand-new candidates before
+  submitting the best node.}
 \end{secblock}
 
 
@@ -173,32 +200,25 @@
 \end{minipage}%
 \hspace{\colgap}%
 %
-% ============================== RIGHT COLUMN (409.65mm) ====================
-\begin{minipage}[t]{404.65mm}
+% ============================== RIGHT COLUMN (404.65mm) ====================
+\begin{minipage}[t]{429.15mm}
 \vspace{0pt}
 
 % ---- 3 · Results — Kaggle benchmark ---------------------------------------
 \begin{secblock}
 \blocktitle{3\sep Results}
-\cardsub{Benchmark}
-All 20 competitions ran in sandboxes with a per-lane
-transcript audit, and all 20 are scored on the real leaderboard, as were
-the two reference agents. Each of the 60 head-to-head duels was judged
-against the score noise measured on Kaggle's own public/private split: 38
-decided, 22 too close to call. \kb{Sinica leads the standing: 16 wins /
-8 losses (66.7\% of its decided duels)} against 42.3\% for each reference agent.\par
-\cardsub{Best private score}
-\countbar{\textbf{Sinica}}{navy}{0.50}{10 / 20}
-\countbar{NVIDIA}{barother}{0.35}{7 / 20}
-\countbar{AIDE}{barother}{0.15}{3 / 20}
-\vspace{1mm}
-
-\cardsub{Private-leaderboard scores}
-\vspace{4mm}
-{\fontsize{27}{35}\selectfont
-\renewcommand{\arraystretch}{1.06}%
-\setlength{\tabcolsep}{4.2mm}%
-\setlength{\heavyrulewidth}{1mm}\setlength{\lightrulewidth}{0.5mm}%
+Our agent ``Sinica'' was run in audited sandboxes for all 23 competitions (20 ordinary competitions in Table 1 and 3 special competitions in Table 2). The results of the 20 ordinary competitions were scored on the real leaderboard, while the results of the 3 special competitions were scored offline with MLE-bench~\cite{mlebench}. We compared these results with the results delivered by two other agents, AIDE~\cite{aide2025} (tree search over code) and the NVIDIA Kaggle Agent~\cite{nvidia2026} (kernel reproduction). \kb{Among the 23 competitions, our agent ``Sinica'' obtains the best performance with 13 wins and 10 losses.}\par
+\vspace{3mm}
+\emph{Remark:} MLE-bench is an offline benchmark that replays finished Kaggle
+competitions with their original data and metrics.\par
+\vspace{2mm}
+\noindent\begin{minipage}[t]{212mm}
+\cardsub{Table 1: ordinary competitions}
+\vspace{3mm}
+{\fontsize{23}{29}\selectfont
+\renewcommand{\arraystretch}{1.0}%
+\setlength{\tabcolsep}{1.4mm}%
+\setlength{\heavyrulewidth}{0.9mm}\setlength{\lightrulewidth}{0.45mm}%
 \begin{tabular}{@{}llrrr@{}}
 \toprule
 \textbf{Competition} & \textbf{Metric} & \textbf{Sinica} & \textbf{NVIDIA} & \textbf{AIDE}\\
@@ -223,65 +243,74 @@ conway & MAE $\downarrow$ & \textbf{0.10414} & 0.11189 & 0.11065\\
 tps-aug-2022 & AUC $\uparrow$ & 0.58930 & 0.58730 & \textbf{0.59106}\\
 tps-jan-2022 & SMAPE $\downarrow$ & 6.29895 & \textbf{4.63651} & 10.6664\\
 tps-sep-2022 & SMAPE $\downarrow$ & 28.4961 & \textbf{5.48351} & 9.72095\\
+\midrule
+\textbf{Best private score} & & \textbf{10 / 20} & 7 / 20 & 3 / 20\\
 \bottomrule
 \end{tabular}\par}
 \vspace{3mm}
 \notepar{\textbf{Bold} = best of the three.}
-\cardsub{Three mid-complexity competitions}
-\vspace{4mm}
-{\tablesize
-\renewcommand{\arraystretch}{1.3}%
-\setlength{\tabcolsep}{2.6mm}%
-\setlength{\heavyrulewidth}{1.1mm}\setlength{\lightrulewidth}{0.55mm}%
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{189mm}
+\raggedright\hyphenpenalty=10000\exhyphenpenalty=100
+\cardsub{Table 2: special competitions}
+\vspace{3mm}
+{\fontsize{23}{29}\selectfont
+\renewcommand{\arraystretch}{1.0}%
+\setlength{\tabcolsep}{1.4mm}%
+\setlength{\heavyrulewidth}{0.9mm}\setlength{\lightrulewidth}{0.45mm}%
 \begin{tabular}{@{}llrrr@{}}
 \toprule
 \textbf{Competition} & \textbf{Metric} & \textbf{Sinica} & \textbf{NVIDIA} & \textbf{AIDE}\\
 \midrule
-us-patent (NLP) & Pearson $r$ $\uparrow$ & \kb{0.86658} & 0.86160 & 0.65821\\
-ventilator (time series) & MAE $\downarrow$ & \kb{0.16525} & 0.40093 & 0.34591\\
-SIIM-ISIC (imaging) & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
+us-patent & Pearson $r$ $\uparrow$ & \kb{0.86658} & 0.86160 & 0.65821\\
+ventilator & MAE $\downarrow$ & \kb{0.16525} & 0.40093 & 0.34591\\
+SIIM-ISIC & AUC $\uparrow$ & \kb{0.93529} & 0.89822 & 0.88579\\
 \bottomrule
 \end{tabular}\par}
+\vspace{3mm}
+\notepar{Graded by MLE-bench. \textbf{Bold} = best of the three.}
+\end{minipage}
 
 \end{secblock}
 
-% ---- 4 · Reflections ------------------------------------------------------
+% ---- 4 · Disadvantages of the agent-based approach ------------------------
 \begin{secblock}
-\blocktitle{4\sep Reflections}
-\begin{itemize}
-  \item \kb{Put knowledge injection upstream.} At the blend stage it measured
-    near-nothing and was abandoned; moved into problem identification it
-    \kb{improves scores significantly}.
-  \item \kb{No score until you submit.} A competition cannot be graded on
-    the spot. While you iterate, local CV is all you see, so an error in
-    problem-level judgment leaves CV looking healthy while the leaderboard says
-    otherwise.
-  \item \kb{Freeze the architecture before you measure.} One results table can
-    report only one agent version, so an architectural change invalidates every
-    run before it. That is why such a change costs twice: a tail of bugs to fix,
-    then a full re-run to earn the voided scores back.
-  \item \kb{Get isolation right.} If a lane can reach a leaderboard or another
-    lane's work, every number in the table is worthless. It has to be enforced
-    by the setup, not by telling the agent what to avoid.
-\end{itemize}
+	\blocktitle{4\sep Disadvantages of the agent-based approach}
+	\vspace{2mm}
+	\pritem{The agent is strong at coding, weak at judging}{The agent efficiently works through whatever problem it is given. However, it does not ask whether a change is worth making. This often leads to a poor design choice that yields bugs.}
+	\pritem{The agent can only target the local validation score}{As a result, the local validation score can look outstanding while the real leaderboard score is mediocre.}
+	\pritem{The agent often buries the main question in detail}{AI-written reports put too much focus on technical details, drifting away from what the reader wants to know.}
+	\pritem{The agent has bad writing habits}{Redundant headings and reinvented terms often come back in every draft. Verifying and modifying them by hand is exhausting.}
+	\end{secblock}
+
+% ---- 5 · Practical advice for building AI agents --------------------------
+\begin{secblock}
+\blocktitle{5\sep Practical advice for building AI agents for data science}
+\vspace{2mm}
+\pritem{Build an isolated environment before running the agent}{This prevents any access to the leaderboard or another run's files.}
+\pritem{Justify the design before building the pipeline}{This mitigates redesign cost, debugging time, and a full rerun of earlier competitions.}
+\pritem{Inject external knowledge before data modeling}{This often improves the score. However, if those external data are injected at the final step, the score shows almost no improvement.}
 \end{secblock}
 
-% ---- 5 · Where AI-heavy work falls short -----------------------------------
+
+
+% ---- 6 · References -------------------------------------------------------
 \begin{secblock}
-\blocktitle{5\sep Weaknesses of AI-heavy research}
-\begin{itemize}
-  \item \kb{Strong hands, no design judgment.} Implementation is fast and
-    accurate, but the loop only solves the problem it is handed. It never asks
-    whether a change is worth making, and nothing in it can tell whether an
-    architecture holds until the runs come back, by which time the debt is
-    already there.
-  \item \kb{The question gets lost in the detail.} Heavy AI use pulls a
-    write-up toward the technical detail it can report exhaustively, and away
-    from the one thing the reader came for.
-  \item \kb{AI writing habits survive review.} Redundant heading suffixes and
-    invented terminology come back in every draft; keeping them out is manual
-    work, not a setting.
-\end{itemize}
+\blocktitle{6\sep References}
+{\refsize
+\begin{thebibliography}{9}
+\bibitem{aide2025} Z. Jiang \etal, AIDE: AI-driven exploration in the space
+  of code, \emph{arXiv:2502.13138}.
+\bibitem{aygun2026} E. Ayg\"un \etal, An AI system to help scientists write
+  expert-level empirical software, \emph{Nature} \textbf{654}, 909 (2026).
+\bibitem{mlebench} J. S. Chan \etal, MLE-bench: Evaluating machine learning
+  agents on machine learning engineering, in \emph{Proceedings of the 13th
+  International Conference on Learning Representations}, 2025,
+  \url{https://openreview.net/forum?id=6s5uXNWGIh}.
+\bibitem{nvidia2026} NVIDIA Corporation, computer code NVIDIA Kaggle Plugin,
+  Santa Clara, CA, 2026, \url{https://github.com/NVIDIA/nvidia-kaggle}.
+\end{thebibliography}\par}
 \end{secblock}
 
 \end{minipage}

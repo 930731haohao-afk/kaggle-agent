@@ -2,17 +2,18 @@
 
 ### Employee Attrition Prediction · our from-scratch agent (GBDT pool + tree-search v3)
 
-> *Figures grounded in the competition's `facts.json`, `eda_summary.json`, `STATUS.md`, `experiments_tree_v3.json`, and the leak-free benchmark log in `ext_facts.json`.*
+> *Figures grounded in the competition's `facts.json`, `eda_summary.json`, `STATUS.md`, `experiments_tree_v3.json`, and the study's frozen three-way score table `benchmark_results/three_way_scores.csv`.*
 
 ## Overview
 
 The task is to rank 1,119 employees by attrition probability (metric: ROC-AUC). We solve it with a
 from-scratch pipeline — a pool of gradient-boosted trees (LightGBM / XGBoost / CatBoost) refined by four linear
 self-improvement rounds and a 22-node tree search that ends on a single heavily-regularized tuned-LGB champion.
-Our internal CV peaks at **OOF AUC 0.841442** (tree-search v3, node #11, 42 features). In the leak-free
-head-to-head benchmark our agent logs **AUC 0.8378**, while the NVIDIA reproduce-agent — copying a public
-ensembling kernel verbatim — reaches **0.8758**, so NVIDIA is ahead by ~0.038 AUC (~4.3%). This is a small,
-noisy 1,677-row dataset, so the honest headline is that the well-tuned public kernel retains a clear edge here.
+The tree-search v3 sweep reaches **OOF AUC 0.841442** (node #11, 42 features); the competition's best recorded
+internal CV is **0.845051**, an 80-node scale-run KITCHENBLEND logged as `facts.json` `best` (experiment_id 8).
+In the frozen three-way score table our agent's `mine_local` is **0.845051**, while the NVIDIA reproduce-agent —
+copying a public ensembling kernel verbatim — records **0.8758**, and `local_winner` is set to **nvidia**. This is a
+small, noisy 1,677-row dataset, so the honest headline is that the well-tuned public kernel retains a clear edge here.
 
 
 **Why it matters.** Predicting which employees will leave lets organizations act before costly turnover — recruitment, onboarding, and lost institutional knowledge — by targeting retention where it pays off.
@@ -137,19 +138,20 @@ negligible and **not capped** — tree inference on a ~1k-row test set is lightw
 
 **Task for Performance Evaluation.** Rank the test employees by attrition probability. **Performance Metrics.**
 ROC-AUC is the sole competition metric; our internal CV climbs **0.81624 → 0.819008 → 0.832925 → 0.837305 →
-0.837776 → 0.838140 → 0.841442** across the eight stages, with the tree-search v3 champion (node #11) topping out at
-**OOF AUC 0.841442**. In the leak-free benchmark harness our agent logs **AUC 0.8378**. The competition leaderboard
+0.837776 → 0.838140 → 0.841442** across the eight stages, with the tree-search v3 champion (node #11) at
+**OOF AUC 0.841442**; the separate 80-node scale run recorded in `facts.json` `best` reaches **0.845051**, and that is
+the figure the frozen three-way table carries as `mine_local`. The competition leaderboard
 was not used (unattended run), so every figure here is **CV / OOF, not public-LB**.
 
 **Performance Benchmarking.** The natural comparator is the **NVIDIA reproduce-agent**, which copies the strongest
 public kernel verbatim:
 
-| Agent | Approach | AUC | Note |
-|-------|----------|----:|------|
-| NVIDIA | reproduces `chunweishen/ps-s03e03-ensembling` (verbatim) | **0.8758** | winner |
-| Our agent | from-scratch GBDT pool + tree-search v3 | 0.8378 | −0.038 (~4.3%) |
+| Agent | Approach | Local CV AUC | Note |
+|-------|----------|-------------:|------|
+| NVIDIA | reproduces `chunweishen/ps-s03e03-ensembling` (verbatim) | **0.8758** | `local_winner` |
+| Our agent | from-scratch GBDT pool + tree-search v3 | 0.845051 | behind |
 
-NVIDIA leads by ~0.038 AUC (~4.3%). The relevant caveat concerns **weight-of-evidence (WOE) encoding**, which lives
+NVIDIA leads here. The relevant caveat concerns **weight-of-evidence (WOE) encoding**, which lives
 in the **NVIDIA kernel, not our pipeline** (ours used label/frequency encoding throughout). When that kernel is
 audited for target leakage, its WOE turns out to be **fold-safe** — de-leaking leaves the score **unchanged at
 0.8758**, so NVIDIA's win here is **genuine**, not a leakage artifact. On this small, noisy ~1.7k-row S3-era problem
@@ -160,8 +162,8 @@ reproduce-vs-originate gap narrows only on the larger, newer seasons analyzed se
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-14, 20 min.
 - re-run local CV: **ROC-AUC 0.841605** pooled 5-fold OOF, equal-weight blend of four seed-bagged members (no fitted weights, no optimism correction needed).
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.89449 / Private 0.87157**; `winner_priv` = **nvidia** (NVIDIA 0.89537, AIDE 0.86863).

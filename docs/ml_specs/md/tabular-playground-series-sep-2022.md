@@ -2,7 +2,7 @@
 
 ### Book Sales Forecast (2021 daily panel) · our from-scratch agent (structural-ridge + LGB-ratio blend, GDP level arm)
 
-> *Figures grounded in the competition's `STATUS.md`, `config.yaml`, `dossier.json`, `experiments.json`, `injection_ledger.json`, and `artifacts/tree_v3.json`, with leaderboard figures from the study's frozen three-way score table (see also `/home/tjyen/ai_agents/aideml-runs/FIRING_CLASS_THREE_WAY.md`).*
+> *Figures grounded in the competition's `STATUS.md`, `config.yaml`, `dossier.json`, `experiments.json`, `injection_ledger.json`, and `artifacts/tree_v3.json`, with leaderboard figures from the study's frozen three-way score table `benchmark_results/three_way_scores.csv`.*
 
 ## Overview
 
@@ -91,6 +91,8 @@ The **Loss Function** is L2 — closed-form ridge on the structural design, and 
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
-- **Lane**: lane **queued**; re-run CV and LB: TBD.
+- **Lane**: ran and was scored.
+- re-run local CV (lane `STATUS.md`): **SMAPE 4.5915** on the pre-registered primary fold (fold 2019 = train 2017–2018), measured as the honest leave-fold-out number (fitted-on-2019: 4.5880); a 5-member blend of four log-space Ridge models on `log(num_sold) − log(gdp_pc)` plus a LightGBM on the structural model's residual.
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 28.45070 / Private 28.49605**; `winner_priv` = **nvidia** (NVIDIA 5.48351, AIDE 9.72095). The failure described above reproduced under the frozen v5 architecture: the re-run's private 28.49605 sits alongside the original submission's 28.54859.

@@ -1,65 +1,101 @@
-# Kaggle Agent Skills — 封裝與安裝說明
+# Kaggle Agent Skills — packaging and installation
 
-本目錄是本專案的三個 Claude Code skill,可整組複製到別的 Claude Code 環境使用。
-三者分工如下,通常一起安裝。
+This directory holds this project's five Claude Code skills. Four are live and can be copied
+as a set into another Claude Code environment; the fifth is deprecated and kept only as a
+historical path. They divide the work as follows.
 
-## 三個 skill
+## The five skills
 
-| skill | 作用 | 觸發時機 |
-|-------|------|----------|
-| **kaggle-agent** | 競賽核心流程:EDA→CV 設計→特徵→建模(LGB/XGB/CAT)→評估→提交 六階段操作手冊 | 開始/接手一場 Kaggle 表格競賽 |
-| **kaggle-agent-self-improvement** | 在 kaggle-agent 之上加「線性自我迭代 + 跨競賽經驗庫」(經驗庫先驗、Optuna、seed bagging、反思回退) | 要對一場競賽做逐輪自我改進、跨賽累積經驗 |
-| **kaggle-mlspec-report** | 從實驗原始紀錄自動產生結構化報告:`collect.py` 抽數字→`verify_report.py` 數字追溯閘門→`md2pdf.sh` 出含目錄/頁碼 PDF | 一場競賽跑完、要產出可審查可重現的分析報告 |
+| skill | what it does | when it triggers | status |
+|-------|--------------|------------------|--------|
+| **kaggle-agent** | Core tabular competition pipeline: experience-library retrieval gate → Stage 0.5 problem dossier → EDA → CV design → features → modeling (LGB/XGB/CAT + Optuna) → evaluation with tree search → submission | starting or taking over a Kaggle tabular competition | live |
+| **kaggle-vision-agent** | Discovery-first pipeline for image competitions: frozen backbones as infrastructure → cheap embedding/probe discovery → fine-tune the survivors → convex ensemble over real OOFs → distil into the vision [INT] library | image competitions, backbone choice, fine-tuning, `competitions_vision/` | live |
+| **kaggle-safe-submit** | Validate a submission CSV against `sample_submission` and check the remaining daily quota BEFORE uploading, log the run, then submit via the Kaggle CLI | any submit / upload-predictions / "is this file valid?" request | live |
+| **kaggle-mlspec-report** | Turn a finished run's raw records into a structured report: `collect.py` extracts numbers → `verify_report.py` number-traceability check → `md2pdf.sh` emits a PDF with TOC and page numbers | a competition has finished and needs a reviewable, reproducible report | live |
+| **kaggle-agent-self-improvement** | Superseded predecessor of `kaggle-agent` | — | **DEPRECATED — do not invoke** |
 
-**關係**:`kaggle-agent-self-improvement` 是 `kaggle-agent` 的超集(references/assets 幾乎相同,
-多一份 `07_self_improvement.md`)。若只要基本流程用前者;要自我迭代+經驗庫用後者。`kaggle-mlspec-report`
-獨立、與前兩者搭配使用。
+**Relationships**: `kaggle-agent` is the tabular entry point and `kaggle-vision-agent` is its
+image counterpart; the two never share an experience library, because a tabular lesson is not
+evidence for an image model. `kaggle-safe-submit` and `kaggle-mlspec-report` are independent and
+pair with either.
 
-## 安裝
+`kaggle-agent-self-improvement` **must not be used.** Its own SKILL.md says so: it carries a
+stale Stage 3 that reads MEMORY.md and scans competition directories, which is exactly the
+cross-competition contamination path the benchmark's isolation protocol forbids, and it predates
+Stage 0.5, the typed injection contract and the binding experience-library retrieval gate. It is
+kept only because historical run logs cite its path. Use `kaggle-agent` instead.
 
-1. **複製 skill**:把要用的 skill 目錄整個複製到目標環境的 `.claude/skills/` 下,例如
+## Installation
+
+1. **Copy the skills**: copy each skill directory into the target environment's
+   `.claude/skills/`, for example
    ```bash
-   cp -r .claude/skills/kaggle-agent          <目標專案>/.claude/skills/
-   cp -r .claude/skills/kaggle-mlspec-report          <目標專案>/.claude/skills/
-   # 要自我迭代版就再複製 kaggle-agent-self-improvement
+   cp -r .claude/skills/kaggle-agent          <target-project>/.claude/skills/
+   cp -r .claude/skills/kaggle-vision-agent   <target-project>/.claude/skills/
+   cp -r .claude/skills/kaggle-safe-submit    <target-project>/.claude/skills/
+   cp -r .claude/skills/kaggle-mlspec-report  <target-project>/.claude/skills/
    ```
-   Claude Code 會自動偵測 `.claude/skills/<name>/SKILL.md` 並依其 `description`/觸發詞啟用。
+   Claude Code detects `.claude/skills/<name>/SKILL.md` automatically and activates it from
+   its `description` / trigger phrases.
 
-2. **Python 環境(以 uv 管理)**:skill 的腳本以 `uv run python3` 執行。目標專案需有
-   `pyproject.toml` 含下列相依,`uv sync` 即可:
+2. **Python environment (managed with uv)**: the skills' scripts run via `uv run python3`. The
+   target project needs a `pyproject.toml` with the following dependencies; `uv sync` then
+   installs them:
    ```
-   核心建模:lightgbm xgboost catboost scikit-learn optuna
-   資料處理:pandas numpy pyyaml tqdm
-   Kaggle:  kaggle(CLI;提交用)
+   modeling:       lightgbm xgboost catboost scikit-learn optuna
+   data handling:  pandas numpy pyyaml tqdm
+   Kaggle:         kaggle (CLI; needed only to submit)
    ```
-   完整清單見本專案 `pyproject.toml`。
+   The full list is this project's `pyproject.toml`. `kaggle-vision-agent` additionally needs
+   torch, which is installed separately (`bash setup.sh --torch`) and is not in `uv.lock`.
 
-3. **報告 PDF 相依(僅 kaggle-mlspec-report 需要)**:`md2pdf.sh` 首選 **weasyprint**(唯一支援目錄
-   頁碼 target-counter + 頁尾),備援 **chromium**;另需 python 的 **markdown** 套件。三者缺
-   weasyprint 時會自動降級用 chromium(無頁碼)。
+3. **PDF dependencies (kaggle-mlspec-report only)**: `md2pdf.sh` prefers **weasyprint** (the only
+   backend supporting TOC page numbers via target-counter plus a page footer) and falls back to
+   **chromium** (no page numbers); it also needs Python's **markdown** package.
 
-4. **Kaggle 憑證(僅提交需要)**:以環境變數注入,**絕不落檔**:
+4. **Kaggle credentials (needed only to submit)**: injected as an environment variable, **never
+   written to a file**:
    ```bash
    export KAGGLE_API_TOKEN=$(cat ~/.kaggle/kaggle_api_token.txt | tr -d '[:space:]')
    ```
-   詳見專案根 `CLAUDE.md` 的安全規則。
+   See the security rules in the project-root `CLAUDE.md`.
 
-## 目錄結構(每個 skill 內)
+## Directory layout (it differs per skill)
 
 ```
-<skill>/
-├── SKILL.md              # 定義:name、description、觸發詞、流程總覽
-├── references/           # 各階段詳細操作說明(01_setup … 07_*)
+kaggle-agent/                    kaggle-vision-agent/
+├── SKILL.md                     ├── SKILL.md
+├── references/                  ├── references/          # 01_setup … 06_reproducibility
+│   └── 00_problem_dossier.md    ├── assets/
+│       … 07_tree_search.md      │   ├── embed_cache.py
+└── assets/                      │   └── torch_determinism.py
+    ├── templates/               └── evals/evals.json
+    │   # eda / feature / train / submit script skeletons
+    └── utils/
+        # data_loader / evaluation / experiment_log / kaggle_auth
+
+kaggle-mlspec-report/            kaggle-safe-submit/
+├── SKILL.md                     ├── SKILL.md
+├── references/                  ├── references/submission_checklist.md
+│   ├── mlspec_structure.md      └── scripts/validate_submission.py
+│   └── rubric.md
 └── assets/
-    ├── templates/        # eda / feature / train / submit 腳本骨架
-    └── utils/            # data_loader / evaluation / experiment_log / kaggle_auth
+    ├── collect.py               # deterministic number extraction → facts.json
+    ├── verify_report.py         # number-traceability check
+    ├── eda_summary.py
+    ├── md2pdf.sh
+    └── report_style.css
 ```
-kaggle-mlspec-report 的 `assets/` 另含 `collect.py`、`verify_report.py`、`md2pdf.sh`、
-`report_style.css`、`report_template.md`、`eda_summary.py`。
 
-## 版本與相依環境
+`kaggle-agent-self-improvement/` mirrors `kaggle-agent/`'s layout with one extra reference file,
+`07_self_improvement.md`, and without `00_problem_dossier.md`.
 
-- skill 源檔已納入本 repo 版控;`__pycache__/`、`*.pyc` 由 `.gitignore` 排除。
-- 隨機性:建模腳本固定 seed;跨進程逐位重現需固定 LightGBM `deterministic=True,
-  force_row_wise=True, num_threads=<固定>`(見 `knowledge/experience.md`)。
-- 本機為 arm64 Linux;上列純 Python/有 arm64 wheel 的套件可 `uv sync` 裝起,無需 Docker。
+## Versioning and environment
+
+- The skill sources are version-controlled in this repo; `__pycache__/` and `*.pyc` are excluded
+  by `.gitignore`.
+- Randomness: modeling scripts fix seeds. Bit-for-bit reproduction across processes additionally
+  requires LightGBM `deterministic=True, force_row_wise=True, num_threads=<fixed>` (see
+  `knowledge/experience.md`).
+- The development machine is arm64 Linux. Every package listed above is pure Python or has an
+  arm64 wheel, so `uv sync` suffices and no Docker image is needed.

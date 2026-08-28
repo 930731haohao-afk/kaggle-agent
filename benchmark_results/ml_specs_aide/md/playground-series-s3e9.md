@@ -15,8 +15,9 @@ CatBoost.
 On the leaderboard: **public 11.86657, private 12.30667, rank 427/767 (44.5th percentile)**, third of three lanes
 (my agent 12.29871, NVIDIA 12.22913), with the score table recording `local_winner = nvidia` and `lb_winner = nvidia`.
 The episode's defining number is not the ranking but the validation gap: AIDE's local estimate was optimistic by
-0.25407 RMSE, by far the largest local-to-leaderboard discrepancy in this batch, and the one hypothesis that would
-have explained it was raised inside the run and abandoned in the same sentence.
+0.25407 RMSE, by far the largest local-to-leaderboard discrepancy of the five runs in this batch (s3e1, s3e3, s3e5,
+s3e7, s3e9), and the one hypothesis that would have explained it was raised inside the run and abandoned in the same
+sentence.
 
 **Why it matters.** Concrete strength prediction is a genuine engineering-qualification problem — mix design, curing
 schedules, structural sign-off — and the dataset carries a physical structure (curing age takes a handful of standard
@@ -216,7 +217,7 @@ submitted. **Post-processing is absent**: the test prediction is the mean over 3
 each fold model's output, written straight to CSV. There is no clipping to the observed strength range, no
 non-negativity floor and no calibration — notable because strength is a physically non-negative quantity, so nothing
 in the pipeline prevents a negative prediction. The only guard in the script is the id-order assertion against
-`sample_submission.csv`, which is stricter than the reindex used elsewhere in this batch and is the one piece of
+`sample_submission.csv`, which is stricter than the reindex used in the other four episodes in this batch and is the one piece of
 defensive engineering in the run.
 
 **Inference Duration** is **not recorded** separately — each fold model scores the test set immediately after fitting,
@@ -262,3 +263,7 @@ protocol told it 12.0526 when the truth was 12.30667, so every late-stage decisi
 0.25407 of bias. The run also had the compute to check: it used 1991.7 s of which 1800 s went to one dead node, so a
 duplicate audit and a grouped-CV re-run would have cost minutes. `facts_aide.json` records both `local_winner` and
 `lb_winner` as `nvidia`; on this episode the two agree.
+
+The my-agent figure in the table above is that lane's pre-re-run score. On the current benchmark record
+(`benchmark_results/rerun_three_way.csv`) its final-architecture re-run scores private 12.33192, so AIDE is second of
+the three rather than third; `winner_priv` is still `nvidia`.

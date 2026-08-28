@@ -90,6 +90,8 @@ The **Loss Function** is L2-regularized log-loss (sklearn `LogisticRegression`),
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
-- **Lane**: lane **queued**; re-run CV and LB: TBD.
+- **Lane**: ran and was scored.
+- re-run local CV (lane `STATUS.md`): **0.591820 pooled ROC-AUC** (per-product rank-normalized, leave-one-product-out over product_code A–E), a 16-member diverse blend; honest nested estimate **0.590949** mean held-out AUC over the 5 unseen-product folds.
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.58534 / Private 0.58930**; `winner_priv` = **aide** (AIDE 0.59106, NVIDIA 0.58730).

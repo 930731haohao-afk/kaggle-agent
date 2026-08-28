@@ -45,3 +45,8 @@ select = ["F821", "F841", "B023", "B006", "E722", "PLW1510", "RUF059"]
 # Note: torch, torchvision, torchaudio are installed via:
 # uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu130
 # They are NOT managed in uv.lock due to triton dependency resolution issues
+
+[tool.pytest.ini_options]
+# Only the maintained suite is collected; competition lanes carry their own
+# throwaway scripts named test_*.py that are not pytest tests.
+testpaths = ["tests"]

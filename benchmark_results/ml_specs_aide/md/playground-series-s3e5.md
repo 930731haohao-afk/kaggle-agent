@@ -3,19 +3,29 @@
 
 > *All scores are taken from the run's `facts_aide.json`. Tree structure, per-step plans and per-node execution times come from `logs/2-camel-of-noble-might/journal.json`; hyperparameters from `best_solution.py` and the run's `config.yaml`; metric/target metadata from the competition `config.yaml`. Dataset shapes and the target's integer range are counted directly from the run's own `input/` directory.*
 
+> **Superseded run.** This report documents AIDE run `2-camel-of-noble-might`, which the benchmark later **voided**
+> for input contamination (see the input-purity note under Data) and replaced with a clean re-run,
+> `0-eager-jovial-manul` (local OOF QWK 0.5747, 18 scored / 2 buggy, 1,152.1 s of execution; submitted 2026-07-29 for
+> public 0.59362 / private 0.58138). Every figure below describes the voided run and is kept only as a record of it,
+> including its zero-bug step count and its 209.5 s compute total. The benchmark's current s3e5 figures are the clean
+> re-run's, and
+> `benchmark_results/rerun_three_way.csv` records `winner_priv = aide` for this competition.
+
 ## Overview
 
 The task is to predict an integer wine `quality` score from eleven physicochemical measurements, scored by
 **quadratic weighted kappa (QWK, maximize)** — an ordinal metric that penalizes a prediction by the *square* of how
-many classes it misses by. AIDE searched it over **20 steps, all 20 of which executed and scored — the only
-zero-bug run in this batch** — carrying a LightGBM-with-rounding draft at **0.49632** to a champion **local OOF QWK of
+many classes it misses by. AIDE searched it over **20 steps, all 20 of which executed and scored**, carrying a
+LightGBM-with-rounding draft at **0.49632** to a champion **local OOF QWK of
 0.57654** at **step 19, the last step of the budget**. The champion is a single seed-bagged CatBoost regressor over an
 interaction-augmented feature set, whose predictions are converted to classes by a multi-start Nelder-Mead threshold
 optimizer.
 
-This is AIDE's best-placed episode of the batch: **public 0.62064, private 0.59073, rank 73/903 — the 92.0nd
-percentile**, and the score table records `local_winner = aide`. On the leaderboard it lands second of three:
-`lb_winner = mine` (0.59743), with AIDE at 0.59073 clearly ahead of the NVIDIA reproduce lane's 0.56974.
+The voided run scored **public 0.62064, private 0.59073, rank 73/903 — the 92.0nd percentile**, and the
+development-era score table recorded `local_winner = aide` with `lb_winner = mine` (0.59743), AIDE at 0.59073 ahead
+of the NVIDIA reproduce lane's 0.56974. That leaderboard verdict has since flipped the other way: on the current
+record the clean AIDE re-run's private 0.58138 beats the from-scratch lane's final-architecture re-run at 0.57223 and
+NVIDIA's 0.56974, and `benchmark_results/rerun_three_way.csv` records `winner_priv = aide`.
 
 **Why it matters.** Ordinal targets with a squared-distance metric are their own problem class — sensory-quality
 grading, severity scoring, credit grades — and the decisive engineering choice is almost never the model but the map
@@ -187,8 +197,8 @@ There is **no Learning Rate Scheduler** (*N/A — convergence is governed by ear
 schedule*) and **no Batch Size** (*N/A — full-dataset boosting*).
 
 **Training Duration** for the whole search was **209.5 s of executed wall-clock across 20 nodes** (mean 10.5 s, max
-27.0 s) — the cheapest run in the batch by a wide margin, with no node coming within two orders of magnitude of the
-1800 s harness timeout. **Training Memory Consumption Limits** are **not recorded**.
+27.0 s), with no node coming within two orders of magnitude of the 1800 s harness timeout. **Training Memory
+Consumption Limits** are **not recorded**.
 
 **Transfer Learning** is *N/A (no pretrained weights; the competition forbids them)*; its analogue is **journal
 memory**, and it is visibly the driver here — step 6's plan opens by reasoning that "the previous multi-model
@@ -230,13 +240,13 @@ champion. Local and leaderboard agree in direction and the local estimate is con
 The 0.02991 public-to-private spread is the widest in the batch relative to the metric's scale, which is expected for
 a kappa computed on 1,372 test rows — QWK is a high-variance statistic when the extreme grades are rare, which is the
 premise AIDE itself acted on when it switched to stratified folds at step 13.
-The submission placed **73/903, the 92.0nd percentile**, AIDE's best placement of the five episodes.
+The submission placed **73/903, the 92.0nd percentile**.
 
 **Performance Benchmarking.** All three lanes submitted to the same private leaderboard:
 
 | Lane | Approach | Private QWK | Note |
 |------|----------|------------:|------|
-| My agent | from-scratch GBDT pool + tree search | **0.59743** | `lb_winner` |
+| My agent | from-scratch GBDT pool + tree search | **0.59743** | `lb_winner` in the development-era table; superseded, see below |
 | AIDE | 20-step tree search, CatBoost + multi-start `OptimizedRounder` | 0.59073 | behind by 0.0067 |
 | NVIDIA | reproduce-agent, public-kernel replication | 0.56974 | behind AIDE by 0.02099 |
 
@@ -248,7 +258,9 @@ The submission placed **73/903, the 92.0nd percentile**, AIDE's best placement o
 AIDE loses the episode by 0.0067 — a margin roughly the size of a single one of its own late-stage steps — while
 beating the NVIDIA reproduce lane by more than three times that. `facts_aide.json` records `local_winner = aide` and
 `lb_winner = mine`; the other lanes' local numbers are outside this report's source scope, so the disagreement is
-reported, not resolved.
+reported, not resolved. Both private figures in the table belong to the voided run and the pre-re-run from-scratch
+lane. On the current benchmark record the clean AIDE re-run scores private 0.58138 against that lane's 0.57223, and
+`benchmark_results/rerun_three_way.csv` awards s3e5 to AIDE (`winner_priv = aide`).
 
 The instructive part is *where* AIDE's remaining gap sits. It found the decisive idea (learned cutpoints) at step 2
 out of 20 and then spent eighteen steps extracting 0.02 more from a single CatBoost, four of them on a flat plateau

@@ -10,33 +10,32 @@
 \definecolor{flowgrey}{HTML}{F5F5F5}\definecolor{flowgreyline}{HTML}{999999}
 \begin{document}
 \begin{tikzpicture}[
-  font=\footnotesize,
+  font=\small,
   sbox/.style={draw=flowblueline, rounded corners=2pt, align=center, inner sep=5pt,
-               fill=flowblue, text width=52mm},
+               fill=flowblue, text width=56mm},
   sidebox/.style={draw=flowgreyline, rounded corners=2pt, align=center, inner sep=3.5pt,
-                  fill=flowgrey, text width=24mm, font=\scriptsize},
+                  fill=flowgrey, text width=24mm, font=\footnotesize},
   injside/.style={sidebox, fill=flowpurple, draw=flowpurpleline},
   arr/.style={-{Stealth[length=2.6mm]}, thick, black!70},
   parr/.style={-{Stealth[length=2.6mm]}, thick, flowpurpleline},
   barr/.style={parr},
   darr/.style={arr, dashed},
-  lab/.style={font=\scriptsize, inner sep=1.5pt},
+  lab/.style={font=\footnotesize, inner sep=1.5pt},
   node distance=6mm
 ]
 % ----- main loop spine (top -> bottom) -----
-\node[sbox] (phase) {\textbf{budget phase machine}\\exploit until every lineage plateaus\\$\to$ explore-burst: 5--8 fresh drafts\\$\to$ stop (default budget 60 nodes, raised only through a\\logged resume; patience 20 after burst)};
-\node[sbox, below=of phase] (select) {\textbf{select parent lineage}\\backtrack when a lineage plateaus\\(3 children without improvement)};
-\node[sbox, below=of select] (propose) {\textbf{propose mutation}\\solo: seed / hyperparams /\\boundary push\\blend: members + weight search\\(first-class nodes over cached OOF)};
-\node[sbox, below=of propose] (dedup) {\textbf{duplicate gate}\\SHA-256 config hash;\\a repeat burns budget,\\never re-evaluates};
-\node[sbox, below=of dedup] (eval) {\textbf{evaluate in sandboxed child}\\CV score $\cdot$ SIGKILL on hang, node marked failed $\cdot$ blend cost guard};
-\node[sbox, below=of eval] (add) {\textbf{add node, update global best}\\a solo breakthrough reopens\\plateaued blend lineages};
-\foreach \a/\b in {phase/select, select/propose, propose/dedup, dedup/eval, eval/add}{\draw[arr] (\a) -- (\b);}
+\node[sbox] (phase) {\textbf{budget phase}\\exploit until lineages plateau\\$\to$ explore-burst: 5--8 fresh drafts\\$\to$ stop (budget 60 nodes)};
+\node[sbox, below=of phase] (select) {\textbf{select parent lineage}\\backtrack after 3 children\\without improvement};
+\node[sbox, below=of select] (propose) {\textbf{propose mutation}\\solo: seed / hyperparams /\\boundary push\\blend: members + weight search};
+\node[sbox, below=of propose] (eval) {\textbf{evaluate in sandboxed child}\\CV score; a hang is killed\\and the node marked failed};
+\node[sbox, below=of eval] (add) {\textbf{add node, update global best}\\a solo breakthrough reopens\\blend lineages};
+\foreach \a/\b in {phase/select, select/propose, propose/eval, eval/add}{\draw[arr] (\a) -- (\b);}
 % ----- exit at the BOTTOM: the column terminates at the deliverable -----
 \node[sbox, below=9mm of add, fill=flowgreen, draw=flowgreenline] (out)
-  {\textbf{on stop: best node $\to$ submission}};
+  {\textbf{best node $\to$ submission}};
 \draw[arr] (add) -- node[lab, right=1.8mm]{phase = stop} (out);
 % ----- loop back, right side (re-enters at the select row) -----
-\draw[arr] (add.east) -- ++(9mm,0) |- node[lab, pos=0.25, right, align=left]{next\\iteration} (select.east);
+\draw[arr] (add.east) -- ++(9mm,0) |- node[lab, pos=0.25, right=1.8mm, align=left]{next\\iteration} (select.east);
 % ----- side inputs, left column -----
 \node[injside, left=6mm of phase] (injcfg)
   {\textcolor{flowpurpleline!60!black}{\textbf{model-level operators}}\\seeded as\\starting nodes};
@@ -45,7 +44,7 @@
   {priors from\\experience library};
 \draw[darr, flowgreenline] (prior) -- (propose);
 \node[injside, left=6mm of eval] (injdata)
-  {\textcolor{flowpurpleline!60!black}{\textbf{data-level operators}}\\own arm each;\\arms race, winner\\takes full budget};
+  {\textcolor{flowpurpleline!60!black}{\textbf{data-level operators}}\\one arm each;\\winner takes\\the budget};
 \draw[barr] (injdata) -- (eval);
 \end{tikzpicture}
 \end{document}

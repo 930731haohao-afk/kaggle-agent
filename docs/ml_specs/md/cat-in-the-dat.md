@@ -91,8 +91,8 @@ The **Loss Function** is log-loss (logistic regression; LightGBM binary objectiv
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-14, 140 min, audit clean (1 minor).
 - re-run local CV: **ROC-AUC 0.803272** (nested leave-fold-out), 5-member blend from a 70-node v3 tree search; dossier dispatched 8/8 typed operators.
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.80800 / Private 0.80243**; `winner_priv` = **mine** (AIDE 0.80217, NVIDIA 0.77084).

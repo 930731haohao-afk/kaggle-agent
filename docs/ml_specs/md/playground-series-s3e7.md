@@ -1,16 +1,17 @@
 # ML Specification Report — playground-series-s3e7
 ### Hotel Reservation Cancellation Prediction · our from-scratch agent (GBDT pool + tree-search v3)
 
-> *Figures grounded in the competition's `facts.json`, `eda_summary.json`, `STATUS.md`, and `experiments_tree_v3.json`, with the head-to-head benchmark drawn from `ext_facts.json`.*
+> *Figures grounded in the competition's `facts.json`, `eda_summary.json`, `STATUS.md`, and `experiments_tree_v3.json`, with the head-to-head benchmark drawn from the study's frozen three-way score table `benchmark_results/three_way_scores.csv`.*
 
 ## Overview
 
 The task is to rank 28,068 hotel reservations by cancellation probability (metric: ROC-AUC). We solve it
 with a from-scratch pipeline — a pool of gradient-boosted trees (LightGBM / XGBoost / CatBoost) refined first by a
 linear self-improvement loop and then by a 60-node tree search (`harness_v3`) that ends on a 38-member kitchen-sink
-mega-blend. Our tree-search champion (node #48) scores **CV OOF AUC 0.900455**; the submission-ready linear-iteration
-final sits at **≈0.8999**, and that is the figure the NVIDIA reproduce-agent is measured against — NVIDIA copies a public
-EDA-and-submission kernel (verbatim) to reach 0.9014, a **marginal +0.17%** gap that `ext_facts.json` scores as a **tie**.
+mega-blend. Our tree-search champion (node #48) scores **CV OOF AUC 0.900455** and the submission-ready linear-iteration
+final sits at **≈0.8999**. In the frozen three-way score table our `mine_local` is **0.900455** against the NVIDIA
+reproduce-agent's **0.9014** — NVIDIA copies a public EDA-and-submission kernel verbatim — and `local_winner` is
+recorded as **nvidia**, on a gap that sits in the third decimal.
 
 
 **Why it matters.** Reservation cancellations drive revenue loss and overbooking risk in hospitality; predicting them enables dynamic pricing, overbooking control, and targeted retention.
@@ -139,30 +140,30 @@ linear-iteration final (exp 6, `sub_blend_0.89989_20260703_205132.csv`).
 
 **Task for Performance Evaluation.** Rank the test reservations by cancellation probability. **Performance Metrics.**
 ROC-AUC is the sole competition metric; our tree-search champion reaches **CV OOF AUC 0.900455**, climbing 0.89882 →
-0.899395 → 0.899893 (linear final) → 0.900242 (v2) → 0.900455 (v3) across the trajectory. Per `ext_facts.json`, the
-**submission-ready our_best used for benchmarking is ≈0.8999** (the linear-iteration final, exp 6). This run posted
+0.899395 → 0.899893 (linear final) → 0.900242 (v2) → 0.900455 (v3) across the trajectory. The
+**figure the frozen three-way table carries as `mine_local` is 0.900455** (the tree-search champion); the
+submission-ready artifact is the linear-iteration final at ≈0.8999 (exp 6). This run posted
 **no Kaggle leaderboard score** (local CV only; `leaderboard: null`), so there is no CV↔LB gap to report.
 
 **Performance Benchmarking.** The natural comparator is the **NVIDIA reproduce-agent**, which copies the strongest
 public kernel verbatim:
 
-| Agent | Approach | AUC | Note |
-|-------|----------|-----:|------|
-| NVIDIA | reproduces `sergiosaharovskiy/ps-s3e7-2023-eda-and-submission` (verbatim) | 0.9014 | marginal +0.17% |
-| Our agent | from-scratch GBDT pool + tree-search v3 | ≈0.8999 | tie |
+| Agent | Approach | Local CV AUC | Note |
+|-------|----------|-------------:|------|
+| NVIDIA | reproduces `sergiosaharovskiy/ps-s3e7-2023-eda-and-submission` (verbatim) | 0.9014 | `local_winner` |
+| Our agent | from-scratch GBDT pool + tree-search v3 | 0.900455 | behind |
 
-NVIDIA is numerically ahead by a **marginal +0.17%** (0.9014 vs ≈0.8999), but `ext_facts.json` scores the outcome a
-**tie** — the gap sits within noise for this AUC-flat, near-saturated hotel-cancellation problem, where the linear loop
+NVIDIA is ahead (0.9014 vs 0.900455) and the frozen three-way table records `local_winner` = **nvidia** — but the gap
+sits in the third decimal for this AUC-flat, near-saturated hotel-cancellation problem, where the linear loop
 squeezed only ~+0.0005 total and even the 60-node tree search added ~0.0006 more. As on the newer seasons, the
-reproduce-vs-originate contest here is effectively a dead heat: the well-optimized public kernel and our from-scratch
-pipeline land on the same fourth decimal.
+well-optimized public kernel and our from-scratch pipeline land within a whisker of each other.
 
 ---
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-14, 50 min.
 - re-run local CV: **ROC-AUC 0.901769** honest leave-fold-out (0.901845 fitted-OOF), 16-member weighted blend (node #34).
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.91127 / Private 0.90441**; `winner_priv` = **nvidia** (NVIDIA 0.90458, AIDE 0.90109).

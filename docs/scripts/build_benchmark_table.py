@@ -41,7 +41,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 COLLECT_PATH = os.path.join(
-    ROOT, ".claude", "skills", "kaggle-report", "assets", "collect.py")
+    ROOT, ".claude", "skills", "kaggle-mlspec-report", "assets", "collect.py")
 COMPETITIONS_DIR = os.path.join(ROOT, "competitions")
 OUT_PATH = os.path.join(ROOT, "docs", "benchmark_facts.json")
 

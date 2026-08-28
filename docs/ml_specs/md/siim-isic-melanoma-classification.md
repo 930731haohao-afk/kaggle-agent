@@ -28,7 +28,7 @@ Strongest recorded EDA/modelling signals:
 
 **Feature Set.** The vision members consume raw pixels; the metadata members consume **54 features**: sex/age/site, image resolution, prep-time colour/texture statistics (central-disc "lesion" vs outer-ring "skin" colour, contrast, gradient energy, vignetting), and patient-relative ugly-duckling z-scores.
 
-**Splitting strategy.** Primary CV is **image-level StratifiedKFold(5, seed=42)** — deliberately, because the graded split is iid-by-image; a patient-grouped `StratifiedGroupKFold` would measure a strictly harder problem than the one being scored. Every member additionally reports a **patient-grouped score as a leakage detector**: the two agreed everywhere, largest gap 0.0004 AUC across all 10 members — no member exploits patient identity. Folds are persisted to `cache/r2_folds.csv` and shared by every model, so all scores are digit-for-digit comparable. **LB status**: offline MLE-bench grade only — no live public/private leaderboard.
+**Splitting strategy.** Primary CV is **image-level StratifiedKFold(5, seed=42)** — deliberately, because the graded split is iid-by-image; a patient-grouped `StratifiedGroupKFold` would measure a strictly harder problem than the one being scored. Every member additionally reports a **patient-grouped score as a leakage detector**: the two agreed everywhere, largest gap 0.0005 AUC across all 10 members (`lr_allfeat`, 0.85467 image-level vs 0.85418 patient-grouped) — no member exploits patient identity. Folds are persisted to `cache/r2_folds.csv` and shared by every model, so all scores are digit-for-digit comparable. **LB status**: offline MLE-bench grade only — no live public/private leaderboard.
 
 ## Models & Architecture
 

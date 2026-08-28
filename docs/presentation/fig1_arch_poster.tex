@@ -53,7 +53,7 @@
 \node[supp]    (lib)   at (5.0,-0.3)
   {\textbf{Experience library}\\[-1pt] evidence-backed\\priors};
 \node[injbox, text width=30mm]  (ext)   at (5.0,-3.3)
-  {\textbf{External-data layer}\\[-1pt] whitelist $\cdot$ as-of\\guard $\cdot$ ledger};
+  {\textbf{External-data layer}\\[-1pt] whitelist $\cdot$ point-in-time\\join $\cdot$ ledger};
 \node[toolbox, text width=30mm] (tools) at (5.0,-7.0)
   {LightGBM / XGBoost\\CatBoost / Optuna\\(via shell)};
 \node[supp]    (rec)   at (5.0,-10.6)
@@ -68,10 +68,10 @@
   {model-level ops};
 \draw[parr] (ext.south) -- node[lab, anchor=west, xshift=0.8mm]{race} (tools.north);
 \draw[arr, {Stealth[length=2.6mm]}-{Stealth[length=2.6mm]}] (s4.east) -- (tools.west);
-\draw[garr] (s5.east) -- node[lab, below, pos=0.85]{log} (rec.north |- s5.east) -- (rec.north);
+\draw[garr] (s5.east) -- node[lab, below, pos=0.85, flowgreenline!70!black]{log} (rec.north |- s5.east) -- (rec.north);
 % ----- dashed write-back, far right -----
 \draw[darr, flowgreenline] (rec.east) -- ++(6mm,0) |- (lib.east);
-\node[lab, rotate=90, anchor=north] at (7.25,-5.5)
+\node[lab, rotate=90, anchor=north, flowgreenline!70!black] at (7.25,-5.5)
   {validated insights written back};
 \end{tikzpicture}
 \end{document}

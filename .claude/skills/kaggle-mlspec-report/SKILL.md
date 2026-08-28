@@ -82,7 +82,7 @@ procedure / Evaluation metric. Section 1 is 目的 (甲) what/why.)
 
 ## Pipeline
 
-Run from project root (`/home/tjyen/ai_agents/kaggle`), in order:
+Run from the repository root, in order:
 
 1. **Summarize EDA (deterministic, optional but recommended)**
    ```bash
@@ -112,6 +112,15 @@ Run from project root (`/home/tjyen/ai_agents/kaggle`), in order:
        docs/ml_specs/md/playground-series-<comp>.md competitions/<name>/facts.json
    ```
    Must exit 0. Fix the report if it flags numbers; never hand-edit facts.json.
+
+   Note the scope mismatch: Hard Rule 1 allows a number to come from any of that
+   competition's structured records, but `verify_report.py` only compares against the
+   `facts.json` you pass it. A number legitimately taken from `STATUS.md`,
+   `eda_summary.json`, `experiments_tree_v3.json` or the benchmark record will therefore
+   be flagged. Do not delete such a number and do not copy it into facts.json — trace it
+   to its record, and if it has no record, remove the claim or write "not recorded".
+   Also check the sign character: the checker only recognises an ASCII `-` as a minus, so
+   a typographic `−` turns `−0.048` into the unmatched token `0.048`.
 
 6. **PDF (deterministic)** — academic serif, auto TOC + page numbers:
    ```bash

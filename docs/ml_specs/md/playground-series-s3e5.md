@@ -10,8 +10,9 @@ We solve it with a from-scratch pipeline — a pool of gradient-boosted regresso
 whose continuous output is discretized by an OptimizedRounder, grown through a multi-tier ablation and a 22-node
 tree search. Our benchmarked champion scores **CV QWK 0.5677** (exp #8, 6-way blend), climbing to 0.57066 once the
 tree search adds a boundary-push member. This beats the **NVIDIA reproduce-agent**, which copies Grandmaster
-`rsakata/optimize-qwk-by-lgb` verbatim and reaches only 0.5478 — our agent ahead by ~3.6%, a rare case where the
-from-scratch agent tops a Grandmaster kernel.
+`rsakata/optimize-qwk-by-lgb` verbatim and reaches only 0.5478 — our agent ahead by ~3.6%. The third benchmark
+agent is ahead of both, however: the frozen three-way score table (`benchmark_results/three_way_scores.csv`) records
+`aide_local` **0.5747** against our `mine_local` 0.56769, with `local_winner` set to **aide**.
 
 
 **Why it matters.** Automating sensory quality scoring from physicochemical measurements gives winemakers objective, scalable quality control; the ordinal target also makes this a clean testbed for QWK-optimized modelling.
@@ -131,22 +132,23 @@ public kernel verbatim:
 
 | Agent | Approach | CV QWK | Note |
 |-------|----------|-------:|------|
-| Our agent | from-scratch GBDT pool + tree-search | **0.5677** | winner |
-| NVIDIA | reproduces `rsakata/optimize-qwk-by-lgb` (verbatim) | 0.5478 | −3.6% |
+| AIDE | open-source AIDE agent | **0.5747** | `local_winner` |
+| Our agent | from-scratch GBDT pool + tree-search | 0.5677 | behind AIDE, ahead of NVIDIA |
+| NVIDIA | reproduces `rsakata/optimize-qwk-by-lgb` (verbatim) | 0.5478 | −3.6% vs ours |
 
 Our agent **beats the NVIDIA reproduce-agent by +0.0199 (~3.6% relative)** — and does so against a kernel authored by
-a Kaggle **Grandmaster** (rsakata), which makes this one of the clearer wins for the originate-from-scratch approach
-over verbatim reproduction. The margin widens further (to 0.57066, ~+4.2%) once the tree search's boundary-push blend
-member is included. The honest caveats: this is a CV-only comparison (neither side has an LB number on this machine),
-and the champion's cutpoints are fit on full OOF — though the nested-cutpoint diagnostic bounds that overfit risk as
-small and shrinking.
+a Kaggle **Grandmaster** (rsakata). It does not win the three-way, though: the frozen score table sets
+`local_winner` = **aide** (0.5747). The margin over NVIDIA widens further (to 0.57066, ~+4.2%) once the tree search's
+boundary-push blend member is included. The honest caveats: this is a CV-only comparison (neither side has an LB
+number on this machine), and the champion's cutpoints are fit on full OOF — though the nested-cutpoint diagnostic
+bounds that overfit risk as small and shrinking.
 
 ---
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-14, 46 min.
 - re-run local CV: **QWK 0.57638** (honest leave-fold-out re-measurement 0.57198), six shallow-CatBoost blend with OptimizedRounder cutpoints (node #24).
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.57041 / Private 0.57223**; `winner_priv` = **aide** (AIDE 0.58138, NVIDIA 0.56974) — the re-run is an AIDE win too.

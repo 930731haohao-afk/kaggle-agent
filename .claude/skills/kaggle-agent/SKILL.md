@@ -1,6 +1,6 @@
 ---
 name: kaggle-agent
-description: 'Hybrid AI agent for Kaggle competitions combining Claude Code reasoning with Auto-ML tools (LightGBM, XGBoost, CatBoost, AutoGluon). Guides the full competition pipeline (ingestion, EDA, feature engineering, modeling, evaluation, submission). Use when the user wants to work on a Kaggle competition, perform EDA on competition data, engineer features for a Kaggle dataset, train and evaluate models, generate or improve a Kaggle submission, review experiment history, or optimize competition performance. Trigger phrases include "kaggle", "competition", "submission", "leaderboard", "kaggle agent", "train model", "feature engineering", "EDA", "cross-validation", "ensemble". Supports both tabular (tree models) and NLP (transformers) competitions. Do NOT use this skill for general ML or statistics concept questions, for pandas/NumPy/Python debugging, or for data analysis not tied to a specific Kaggle competition workspace — answer those directly without engaging the pipeline; only invoke it when the task targets an actual competition workspace under competitions/.'
+description: 'Hybrid AI agent for Kaggle competitions combining Claude Code reasoning with gradient-boosting libraries (LightGBM, XGBoost, CatBoost) and Optuna. Guides the full competition pipeline (ingestion, EDA, feature engineering, modeling, evaluation, submission). Use when the user wants to work on a Kaggle competition, perform EDA on competition data, engineer features for a Kaggle dataset, train and evaluate models, generate or improve a Kaggle submission, review experiment history, or optimize competition performance. Trigger phrases include "kaggle", "competition", "submission", "leaderboard", "kaggle agent", "train model", "feature engineering", "EDA", "cross-validation", "ensemble". Supports both tabular (tree models) and NLP (transformers) competitions. Do NOT use this skill for general ML or statistics concept questions, for pandas/NumPy/Python debugging, or for data analysis not tied to a specific Kaggle competition workspace — answer those directly without engaging the pipeline; only invoke it when the task targets an actual competition workspace under competitions/.'
 ---
 
 # Kaggle Agent
@@ -160,7 +160,7 @@ Key actions: Propose features, get approval, implement and validate features, ch
 
 See [references/04_modeling.md](references/04_modeling.md) for detailed instructions.
 
-Key actions: Establish baseline, run Auto-ML (AutoGluon/FLAML), log experiments, report CV scores.
+Key actions: Establish baseline, train LightGBM / XGBoost / CatBoost and tune with Optuna, log experiments, report CV scores.
 
 ### Stage 4: Evaluation & Iteration
 **Goal**: Analyze results and decide on next steps.
@@ -173,7 +173,8 @@ Key actions: Review experiments, analyze errors, propose improvements, track tra
 has produced a baseline solo model plus at least one blend, switch to tree search — see
 [references/07_tree_search.md](references/07_tree_search.md). Evidence: tree search beats
 the linear iteration best in 9 of 10 benchmarked competitions (1 exact tie, 0 losses;
-the archived prototype report (do not open during a run)). Harness: `tree_search/harness_v3.py`; template driver:
+recorded in an archived prototype report that this file deliberately does not name, because
+it lists competitions and their results). Harness: `tree_search/harness_v3.py`; template driver:
 `tree_search/run_template_v3.py` (competition-agnostic — never copy a per-competition run_*_v3.py, they embed recorded configs). Keep the linear protocol above as the fallback for the very
 first iteration pass (before a baseline + blend exist) and for small/cheap-eval
 competitions where a ~60-node search budget isn't worth it.
@@ -252,7 +253,9 @@ Key actions: Retrain on full data, generate predictions, format submission, vali
 
 ## Important Notes
 
-- **Environment**: Linux with NVIDIA GPU, Python 3.11, PyTorch 2.11.0 + CUDA 13.0
+- **Environment**: Linux with NVIDIA GPU, Python 3.13 (`pyproject.toml` requires `>=3.13,<3.14`;
+  the machine runs 3.13.12), PyTorch 2.14.0.dev20260810+cu130 (installed outside `uv.lock`, only
+  needed for vision/NLP lanes)
 - **Path format**: Use forward slashes for paths
 - **Python command**: Use `python3` (not `python`)
 - **Package manager**: Always use `uv` for Python package management

@@ -10,7 +10,10 @@ features (metric: Accuracy). We solve it with a from-scratch pipeline — a pool
 (LightGBM / XGBoost / CatBoost) refined by a four-tier ablation and a 60-node tree search that ends on an 8-member
 blend. Because Accuracy needs a hard 0/1 label, every tier also optimizes a probability **decision threshold**. Our
 champion scores **CV Accuracy 0.940235**; the NVIDIA reproduce-agent, distilling the essence of a public
-XGB/CatBoost/LGB voting kernel, reaches 0.9399 — a dead heat, with our agent nudging ~0.0003 ahead.
+XGB/CatBoost/LGB voting kernel, reaches 0.9399 — a dead heat, with our agent nudging ~0.0003 ahead of NVIDIA.
+The third benchmark agent edges past both: the frozen three-way score table
+(`benchmark_results/three_way_scores.csv`) records `aide_local` **0.94055** against our `mine_local` 0.940235, with
+`local_winner` set to **aide**.
 
 
 **Why it matters.** Early identification of depression risk from survey and lifestyle factors can route scarce mental-health resources to those most likely to benefit — as a screening aid, not a diagnosis.
@@ -141,20 +144,22 @@ strongest public kernel:
 
 | Agent | Approach | CV Accuracy | Note |
 |-------|----------|------------:|------|
-| Our agent | from-scratch GBDT pool + tree-search | **0.940235** | nudges ahead |
-| NVIDIA | reproduces (essence) `mayukh18/feature-eng-cv-voting-xgb-catb-lgb` | 0.9399 | tie |
+| AIDE | open-source AIDE agent | **0.94055** | `local_winner` |
+| Our agent | from-scratch GBDT pool + tree-search | 0.940235 | ahead of NVIDIA |
+| NVIDIA | reproduces (essence) `mayukh18/feature-eng-cv-voting-xgb-catb-lgb` | 0.9399 | — |
 
-The result is effectively a **tie** (our 0.9402 vs NVIDIA 0.9399, +~0.0003 to our agent). Unlike the earlier S3/S4-era
-churn problem (s4e1) where the well-optimized public kernel kept a small edge, here our from-scratch pipeline matches and
-marginally exceeds the reproduce-agent — consistent with the newer-season pattern where the reproduce-vs-originate gap
-collapses to a dead heat.
+Our agent and NVIDIA are effectively **tied** (our 0.9402 vs NVIDIA 0.9399, +~0.0003 to our agent), and AIDE sits
+fractionally ahead of both as the frozen table's `local_winner` (0.94055) — all three inside a ~0.0007 band. Unlike the
+earlier S3/S4-era churn problem (s4e1) where the well-optimized public kernel kept a small edge, here our from-scratch
+pipeline matches and marginally exceeds the reproduce-agent — consistent with the newer-season pattern where the
+reproduce-vs-originate gap collapses to a dead heat.
 
 ---
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-14, 81 min.
 - re-run local CV: **accuracy 0.940810** (5-fold StratifiedKFold, OOF-fitted threshold 0.480), 4-member weighted blend.
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.94195 / Private 0.94107**; `winner_priv` = **mine** (NVIDIA 0.94076, AIDE 0.94056).

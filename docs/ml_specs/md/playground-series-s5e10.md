@@ -88,8 +88,8 @@ The result is a **dead heat** (`winner` = tie): our champion's 0.05597 is margin
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-17, 72 min — audit flagged raw library opens; transcript timeline shows all of them strictly after the submission was written and validated, so the score stands; the lane's post-run hand write-back to the shared knowledge library was reverted before any later lane ran.
 - re-run local CV: **RMSE 0.055971** (honest 0.055973), 29-member NNLS blend selected by leave-fold-out honest score.
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.05554 / Private 0.05576**; `winner_priv` = **mine** (AIDE 0.05579, NVIDIA 0.05588).

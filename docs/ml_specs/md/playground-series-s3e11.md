@@ -9,8 +9,10 @@ The task is to predict the cost of a store media campaign for 240,224 test rows 
 minimized). We solve it with a from-scratch pipeline — a pool of gradient-boosted trees (CatBoost / LightGBM) refined by
 an Optuna fold-proxy tune, seed-bagging, and a 24-node tree search that ends on an 8-member blend. Our committed champion
 scores **CV OOF RMSLE 0.29565**; the NVIDIA reproduce-agent, distilling the essence of a public XGB/CatBoost ensemble
-kernel, reaches 0.2956 — a **dead-heat tie** (the two numbers are near-identical). The tree-search v3 run later pushed the
-OOF mark to 0.295284 at node #22.
+kernel, reaches 0.2956 — a **dead heat between those two** (the numbers are near-identical). The tree-search v3 run later
+pushed the OOF mark to 0.295284 at node #22. The third benchmark agent is ahead of both: the frozen three-way score
+table (`benchmark_results/three_way_scores.csv`) records `aide_local` **0.2941** against our `mine_local` 0.29528, with
+`local_winner` set to **aide**.
 
 
 **Why it matters.** Forecasting campaign cost helps retailers budget promotions and allocate marketing spend efficiently across stores and periods.
@@ -130,21 +132,23 @@ strongest public kernel:
 
 | Agent | Approach | RMSLE | Note |
 |-------|----------|------:|------|
-| NVIDIA | reproduces essence of `janmpia/feature-eng-xgb-cat-ensemble` | 0.2956 | tie |
-| Our agent | from-scratch GBDT pool + tree-search | 0.29565 | tie |
+| AIDE | open-source AIDE agent | **0.2941** | `local_winner` |
+| NVIDIA | reproduces essence of `janmpia/feature-eng-xgb-cat-ensemble` | 0.2956 | — |
+| Our agent | from-scratch GBDT pool + tree-search | 0.29565 (0.29528 at node #22) | — |
 
-The two numbers are **near-identical — a dead heat** (0.29565 vs 0.2956, a difference of ~5e-5 on a metric where fold
-RMSLE spans 0.2947–0.2976). This is a genuinely low-signal dataset where every raw feature carries |r| ≤ 0.11 with the
+Our number and NVIDIA's are **near-identical — a dead heat** (0.29565 vs 0.2956, a difference of ~5e-5 on a metric where
+fold RMSLE spans 0.2947–0.2976). AIDE, however, is ahead of both at 0.2941 and is the frozen table's `local_winner`.
+This is a genuinely low-signal dataset where every raw feature carries |r| ≤ 0.11 with the
 target, so both a well-engineered from-scratch pipeline and a reproduced public ensemble converge to essentially the same
-floor. On this problem the reproduce-vs-originate comparison ends in a tie, consistent with the broader sweep finding that
+floor. On this problem the reproduce-vs-originate comparison ends level, consistent with the broader sweep finding that
 the gap collapses on well-optimized modern Playground episodes.
 
 ---
 
 ## Final-Architecture Re-Run (v5 pipeline, Stage 0.5 in-lane) — 2026-08
 
-All 20 baseline competitions are being re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run are **TBD** until the separate credentialed operator scoring step; the figures below are the lane's own local CV only and revise nothing in the sections above.
+All 20 baseline competitions were re-run in an isolated root (`~/benchruns/myagent-rerun`) under one frozen architecture (`docs/rerun_manifest.json`): every lane runs the **full v5 pipeline including the Stage 0.5 problem dossier** (dossier.json written in-lane before modeling), holds no credentials, and is checked by a per-lane transcript audit. Leaderboard scores for the re-run were produced by the separate credentialed operator scoring step and are recorded in `benchmark_results/rerun_three_way.csv`; the figures below revise nothing in the sections above.
 
 - **Lane**: done 2026-08-17, 107 min — first attempt (08-14) exited without a submission and was relaunched.
 - re-run local CV: **RMSLE 0.292886** (5-fold on log1p(cost)), 10-member NNLS blend over tree-search solos + linear-stage honest pool.
-- Public / private leaderboard for this re-run: **TBD** (pending operator scoring).
+- Public / private leaderboard for this re-run (`benchmark_results/rerun_three_way.csv`): **Public 0.29309 / Private 0.29368**; `winner_priv` = **mine** (AIDE 0.29445, NVIDIA 0.29624).

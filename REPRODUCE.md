@@ -37,9 +37,9 @@ bash setup.sh --torch
 Expected self-check output (versions per uv.lock):
 
 ```
-python 3.13.x
-OK  numpy  2.4.2   OK  pandas 3.0.x   OK  sklearn 1.8.0
-OK  lightgbm 4.6.0  OK  xgboost 3.2.x  OK  catboost 1.2.10
+python 3.13.12
+OK  numpy  2.4.2   OK  pandas 3.0.1   OK  sklearn 1.8.0
+OK  lightgbm 4.6.0  OK  xgboost 3.2.0  OK  catboost 1.2.10
 OK  optuna 4.9.0    OK  yaml 6.0.3     OK  tqdm 4.67.3
 ```
 
@@ -56,7 +56,7 @@ uv run python3 docs/scripts/build_benchmark_table.py
 
 # (c) verify that all numbers in a report are traceable to facts.json (gate, exit 0 = pass)
 uv run python3 .claude/skills/kaggle-mlspec-report/assets/verify_report.py \
-    docs/ml_specs/md/playground-series-s6e1.md competitions/playground-series-s6e1/facts.json
+    docs/ml_specs/md/ventilator-pressure-prediction.md competitions/ventilator-pressure-prediction/facts.json
 
 # (d) reproduce a single competition's best solution (including the digit-for-digit OOF reproduction gate; produces a submission only on pass), using s5e10 as an example
 uv run python3 competitions/playground-series-s5e10/scripts/06_rebuild_tree_best.py
@@ -95,7 +95,7 @@ system libraries**. Practical impact:
   wheel for your platform and needs on-the-spot compilation that fails, it is most likely a missing compiler or system development library;
   install what the error indicates.
 - **torch is not in `uv.lock`**: it is installed separately (`setup.sh --torch`) due to a triton dependency-resolution issue,
-  and is only needed for image/NLP competitions. The core 15-competition tabular benchmark and tree search do not depend on it.
+  and is only needed for image/NLP competitions. The core tabular benchmark and tree search do not depend on it.
 - **PDF backend**: `weasyprint` (preferred, with table of contents and page numbers) or `chromium` (fallback, no page numbers);
   if neither is available, the report `.md` can still be produced, only without a PDF.
 
