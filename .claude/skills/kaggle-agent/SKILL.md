@@ -111,8 +111,8 @@ so a lane could read another lane's winning mechanism without touching its works
 facts: a prior whose evidence rests solely on the competition being solved is dropped
 whole, Action included, because the Action is the answer.
 
-**HARD RULE — never read the answers this competition already produced.** Every bullet ends in a
-`證據: <competition>, exp #N, scoreA -> scoreB` citation. **Skip every bullet whose 證據 names the
+**HARD RULE — never read the answers this competition already produced.** Every bullet ends in an
+`Evidence: <competition>, exp #N, scoreA -> scoreB` citation (legacy entries may use `證據:`; both count). **Skip every bullet whose Evidence names the
 competition you are currently solving**, even when the metric and tags match perfectly. By July 2026
 the library held the recorded benchmark runs' own final feature sets and ensemble choices, so a
 re-run that reads them unfiltered improves its score by recalling its own answer, and the

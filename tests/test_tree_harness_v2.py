@@ -250,5 +250,5 @@ def test_suggest_priors_respects_max_items(hv2):
 
 
 def test_suggest_priors_tags_match_data_type_sections(hv2):
-    priors = hv2.suggest_priors({"tags": ["duplicate_rows", "小樣本"], **FIXTURE_COMP})
+    priors = hv2.suggest_priors({"tags": ["duplicate_rows", "small samples"], **FIXTURE_COMP})
     assert len(priors) > 0

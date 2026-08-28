@@ -13,7 +13,7 @@ Ranking rule: entries whose evidence field carries a score delta outrank keyword
 time), and section headers scope the search by metric/data-type before free keywords.
 
 Usage:
-  VIRTUAL_ENV= uv run python3 knowledge/query_library.py --query "SMAPE 時序 外推" [--top 5]
+  VIRTUAL_ENV= uv run python3 knowledge/query_library.py --query "SMAPE time-series extrapolation" [--top 5]
   VIRTUAL_ENV= uv run python3 knowledge/query_library.py --audit competitions/<comp>/experiments.json
   VIRTUAL_ENV= uv run python3 knowledge/query_library.py --selftest
 Audit exits non-zero if any experiment lacks a `library_query` field (legacy files: the
@@ -30,7 +30,7 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 LIBRARY = _HERE / "experience.md"
-EVIDENCE_PAT = re.compile(r"證據\s*[::]")
+EVIDENCE_PAT = re.compile(r"(?:Evidence|證據)\s*[::]")  # library is English; legacy Chinese marker still accepted
 DELTA_PAT = re.compile(r"\d[\d.,]*\s*(?:→|->)\s*\d[\d.,]*")
 
 
@@ -84,7 +84,7 @@ def parse_library(path: Path = LIBRARY) -> list[dict]:
     """Flatten the library into entries: {section, text, has_evidence, has_delta}.
 
     Continuation lines attach to the bullet above them. The library is hard-wrapped and its
-    own write-back convention puts "  | 證據: ..." on its own line, so a parser that keeps
+    own write-back convention puts "  | Evidence: ..." on its own line, so a parser that keeps
     only "-"-prefixed lines detaches a bullet from its evidence -- and the self-exclusion in
     query() then cannot see which competition the bullet cites, serving it verbatim to that
     competition's re-run (2026-08-07 re-verification).
@@ -115,7 +115,7 @@ def query(terms: list[str], entries: list[dict], top: int = 5,
     library: suggest_priors refuses to run without a competition name, while query() took no
     competition argument at all, so a run could satisfy the binding retrieval gate and read its
     own recorded answers all the way through (2026-08-04 architecture gate). Exclusion is
-    scoped to the whole entry, not just its 證據 tail.
+    scoped to the whole entry, not just its Evidence tail.
     """
     if comp is None and not allow_self:
         raise ValueError(
@@ -201,18 +201,19 @@ def main(argv: list[str]) -> int:
             pass
         else:
             raise AssertionError("query() ran without a competition — the second door is open")
-        r = query(["SMAPE", "時序"], entries, comp="playground-series-s3e1")
+        r = query(["SMAPE", "time series"], entries, comp="playground-series-s3e1")
         assert r and r[0]["evidence_backed"], r[:1]
         # the retrieval-failure regression: querying for total-extrapolation must surface
         # the entry that identifies it as the method-agnostic bottleneck (the one we
         # failed to retrieve on s3e19)
-        r = query(["總量", "外推"], entries, comp="playground-series-s3e1")
-        assert any("總量" in x["text"] for x in r), "s3e19 regression query found nothing"
+        r = query(["total", "extrapolation"], entries, comp="playground-series-s3e1")
+        assert any("total" in x["text"].lower() and "extrapolat" in x["text"].lower()
+                   for x in r), "s3e19 regression query found nothing"
         empty = query(["zzz-no-such-term"], entries, allow_self=True)
         assert empty == []
         a = audit(_HERE.parent / "competitions/playground-series-s3e19/experiments.json")
         assert a["n_experiments"] > 0 and "self_citing_hits" in a and "verdict" in a
-        s19 = query(["SMAPE", "時序", "外推"], entries, comp="playground-series-s3e19")
+        s19 = query(["SMAPE", "time series", "extrapolation"], entries, comp="playground-series-s3e19")
         al19 = _comp_aliases("playground-series-s3e19")
         assert not any(_names_comp((x["section"] + " " + x["text"]).lower(), al19) for x in s19), s19
         print(f"query_library selftest: all sections passed "

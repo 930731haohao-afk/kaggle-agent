@@ -44,7 +44,7 @@ four recommendations call for:
   4. Experience-library mutation prior (§6.3): `suggest_priors(comp_meta)` does simple
      keyword-to-section-header matching against knowledge/experience.md (every `##`/`###`
      markdown section, no LLM call) and returns the evidence-tagged bullet lines
-     ("... | 證據: ...") from any section whose header contains one of comp_meta's
+     ("... | Evidence: ...") from any section whose header contains one of comp_meta's
      metric/tag keywords, verbatim — the runner surfaces these to the mutation proposer
      (the agent) at each expansion as the simplified ERA idea-injection hook.
 
@@ -603,10 +603,10 @@ def _split_sections(text: str):
                 cur["lines"].append(stripped[2:].strip())
             elif stripped and cur["lines"] and not stripped.startswith(("#", "```")):
                 # A continuation line belongs to the bullet above it. Dropping it used to
-                # separate a multi-line bullet from its own 證據 tag, so the self-evidence
+                # separate a multi-line bullet from its own Evidence tag, so the self-evidence
                 # filter had nothing to match and the bullet was returned unfiltered
                 # (2026-08-04 architecture gate). "|"-prefixed lines are NOT excluded: the
-                # library's own write-back convention puts "  | 證據: ..." on its own
+                # library's own write-back convention puts "  | Evidence: ..." on its own
                 # continuation line (see knowledge/vision_experience.md), and excluding the
                 # pipe detached exactly the evidence the filter needed to see
                 # (2026-08-07 re-verification).
@@ -617,7 +617,7 @@ def _split_sections(text: str):
 # ---------------------------------------------------------------------------
 # self-evidence filter (2026-07-30)
 #
-# Every library bullet carries its own `證據: <comp>, exp #N, scoreA -> scoreB` citation, and
+# Every library bullet carries its own `Evidence: <comp>, exp #N, scoreA -> scoreB` citation, and
 # by July the library held the recorded benchmark runs' OWN answers -- aug-2022's final feature
 # set and ensemble choice sit under a header its own metric matches. Re-running a competition
 # with the library unfiltered therefore hands the agent the answer that competition already
@@ -628,7 +628,7 @@ def _split_sections(text: str):
 # The citation makes the fix cheap. Drop any bullet whose evidence field names the competition
 # being solved, and report how many were dropped so the exclusion is visible rather than silent.
 # ---------------------------------------------------------------------------
-_EVIDENCE_RE = re.compile(r"證據[:：]\s*(.*)$")
+_EVIDENCE_RE = re.compile(r"(?:Evidence|證據)[:：]\s*(.*)$")  # library is English; legacy Chinese marker still accepted
 
 # competition slug -> the short forms the library actually cites it by (collected from the file)
 COMP_CITATION_ALIASES = {
@@ -678,7 +678,7 @@ def _mentions_own_competition(text: str, aliases: list) -> bool:
     Scoped to the whole bullet, not just the citation tail. The citation-only version had two
     holes: a bullet that named the competition in its BODY while citing a different one passed,
     and `_split_sections` only collects lines starting with '- ', so a multi-line bullet whose
-    證據 sits on an indented continuation line had no citation at all and was never filtered
+    Evidence tag sits on an indented continuation line had no citation at all and was never filtered
     (2026-08-04 architecture gate). Scanning the body is strictly safer: the cost of a false
     positive is one lost prior, the cost of a miss is an uninterpretable benchmark number.
     """
@@ -717,9 +717,10 @@ def suggest_priors(comp_meta: dict, experience_path: str = None, max_items: int 
     `{"metric": "mae", "tags": ["small_sample", "duplicate_rows"]}`. Every string value
     under the `metric`/`tags`/`data_type`/`keywords` keys is lowercased and matched as a
     substring against every `##`/`###` section header in the experience library (e.g.
-    metric="mae" matches header "MAE/整數目標", tag="qwk" matches "QWK/序數目標"). Every
-    bullet line under a matching header is returned verbatim, in file order, deduplicated
-    — each line already carries its own `... | 證據: comp, exp #N, scoreA -> scoreB`
+    metric="mae" matches header "MAE / integer targets", tag="qwk" matches "QWK / ordinal
+    targets"). Every bullet line under a matching header is returned verbatim, in file
+    order, deduplicated — each line already carries its own `... | Evidence: comp, exp #N,
+    scoreA -> scoreB`
     evidence citation from the source file, so the mutation proposer (the agent) sees the
     same evidence a human reading the doc would, with no summarization or paraphrasing
     happening inside the harness.
@@ -738,7 +739,10 @@ def suggest_priors(comp_meta: dict, experience_path: str = None, max_items: int 
         v = comp_meta.get(k)
         if v:
             keywords.extend([str(v)] if isinstance(v, str) else [str(x) for x in v])
-    keywords_l = [kw.lower() for kw in keywords if kw]
+    # underscore tags ("duplicate_rows") must match space-separated headers
+    # ("Duplicate rows / label noise") now that the library's headers are English prose
+    keywords_l = [k for kw in keywords if kw
+                  for k in {kw.lower(), kw.lower().replace("_", " ")}]
     if not keywords_l:
         return []
 
