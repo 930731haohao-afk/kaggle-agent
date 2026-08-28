@@ -52,7 +52,7 @@ from scratch and their OOF is compared bit-by-bit against the search cache befor
 15 Kaggle Playground competitions: 10 in Season 3 (S3, same-season weekend batch, main benchmark) + 5 across Seasons 4–6
 (S4–S6). Five official metrics: RMSE, ROC-AUC, accuracy, QWK, R². Cross-validation is always 5-fold (choosing
 stratified/binned/time-series/random by the data). Local scores are always OOF; submittable competitions are cross-checked with the leaderboard. Per-competition data specifications,
-the master experiment table are in each competition's ML-spec report (docs/ml_specs/md/playground-series-*.md); reproduction is each competition's scripts/ (04/05/06) + tree_search/ driver, and the cross-competition results table is in docs/ml_specs/README.md.
+the master experiment table are in each competition's ML-spec report (docs/ml_specs/md/playground-series-*.md); reproduction is each competition's scripts/ (04/05/06) + tree_search/ driver, and the cross-competition results table is benchmark_results/rerun_three_way.csv.
 
 ## 5. Results
 
@@ -124,6 +124,6 @@ though the consistent pattern so far points to diminishing returns.
 ---
 
 **Reproducibility and provenance**: each competition's ML-spec report (docs/ml_specs/md/playground-series-*.md), cross-competition results table
-(docs/ml_specs/README.md), results brief (docs/PROJECT_BRIEF), statistical rigor (docs/statistical_rigor
+(benchmark_results/rerun_three_way.csv), results brief (docs/PROJECT_BRIEF), statistical rigor (docs/statistical_rigor
 + docs/scripts/bootstrap_ci.py), J-3 findings (docs/phase_j_j3_findings), benchmark fact table
 (docs/benchmark_facts.json + docs/scripts/build_benchmark_table.py). Methodology and the five stages are in docs/pipeline_stages_detail.md.

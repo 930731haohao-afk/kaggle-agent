@@ -134,9 +134,9 @@ Run from the repository root, in order:
    fired). Exit 0 = PDF written, 2 = no engine (keep the .md, say PDF skipped), 3 = claimed
    success but no file.
 
-7. Show the user where the .md / .pdf landed and summarize the rubric result. If reporting a
-   full set, regenerate `docs/ml_specs/README.md`'s results table and confirm `RUBRIC.md`
-   still passes 8/8.
+7. Show the user where the .md / .pdf landed and summarize the rubric result (the rubric
+   itself is `references/rubric.md`; the report set ships one file per competition and
+   carries no index or rubric document of its own).
 
 ## DL / special-lane path (ANY non-GBDT / complex-modality lane)
 
