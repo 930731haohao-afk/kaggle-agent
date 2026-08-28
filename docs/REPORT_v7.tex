@@ -70,8 +70,8 @@ The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}) around 
 \noindent The injection layer, the purple elements of Figures~\ref{fig:arch} and~\ref{fig:tree}, supplies external knowledge at the head of the pipeline. An earlier downstream variant injected external ideas at the blend stage and measured a gain of only ${\sim}10^{-5}$ on the blend's competition metric; the architecture moves the injection point upstream to problem identification through two components:
 
 \begin{itemize}[leftmargin=*]
-  \item \textbf{Stage 0.5, the problem dossier}: before EDA, the agent answers ``what kind of problem is this?'' by naming task family, train--test window relation, split policy, and external-data need in \path{dossier.json}, grounded in \path{knowledge/task_priors.md}, a library of evidence-backed task-level priors. Reading competition-specific discussions or kernels is forbidden, keeping the method distinct from reproduction-based agents. The dossier is a prior, not a conclusion; EDA must verify its hypotheses and record a verdict.
-  \item \textbf{External-data module}: whitelisted public sources are joined through leakage-guarded as-of merges with a declared lag. The module was adversarially audited, and the surfaced flaws, including silent-future-leak classes, were fixed under regression tests. The dossier and the module share one closed vocabulary of typed operators, so an unrealizable proposal leaves a trace in a coverage ledger rather than a silent success. On the three \emph{firing-class} competitions where the layer proposes external data (s3e19, tps-sep-2022, s5e1), all six external-data arms beat their matched no-external baselines on the private leaderboard, and the s3e19 ablation moves the private score from $48.243$ to $50.455$ (full arm scores in the Appendix).
+  \item \textbf{Stage 0.5, the problem dossier}: before EDA, the agent answers ``what kind of problem is this?'' by naming task family, train--test window relation, split policy, and external-data need in \path{dossier.json}, grounded in a structured library of evidence-backed task-level priors (\path{knowledge/knowledge_base.json}), rendered per competition by \path{knowledge/task_priors_for.py}. Reading competition-specific discussions or kernels is forbidden, keeping the method distinct from reproduction-based agents. The dossier is a prior, not a conclusion; EDA must verify its hypotheses and record a verdict.
+  \item \textbf{External-data module}: whitelisted public sources are joined through leakage-guarded as-of merges with a declared lag. The module was adversarially audited, and the surfaced flaws, including silent-future-leak classes, were fixed under regression tests. The dossier and the module share one closed vocabulary of typed operators, so an unrealizable proposal leaves a trace in a coverage ledger rather than a silent success. On the three \emph{firing-class} competitions where the layer proposes external data and a public/private leaderboard exists to adjudicate (s3e19, tps-sep-2022, s5e1), all six external-data arms beat their matched no-external baselines on the private leaderboard, and the s3e19 ablation moves the private score from $48.243$ to $50.455$ (full arm scores in the Appendix).
 \end{itemize}
 
 \noindent Two record-keeping mechanisms support the pipeline (Figure~\ref{fig:arch}):
@@ -101,7 +101,7 @@ The method is implemented as a Claude Code Skill (\texttt{kaggle-agent}) around 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.78\linewidth]{fig2_tree_poster.pdf}
-\caption{The tree-search loop used in all Sinica runs (37--224 evaluated nodes per competition). Each node is a complete, executable solution scored by local cross-validation; blends over cached out-of-fold predictions are first-class nodes, and the best node becomes the submission. Purple: the injection layer's operator entry points; green: priors from the experience library; dashed arrows: advisory input and backtracking.}
+\caption{The tree-search loop used in all Sinica runs (default budget 60 evaluated nodes per competition; per-lane counts are in the experiment logs). Each node is a complete, executable solution scored by local cross-validation; blends over cached out-of-fold predictions are first-class nodes, and the best node becomes the submission. Purple: the injection layer's operator entry points; green: priors from the experience library; dashed arrows: advisory input and backtracking.}
 \label{fig:tree}
 \end{figure}
 
@@ -156,7 +156,7 @@ Both reference methods are frozen, with no improvements, even where we found wea
 \end{table}
 
 
-\paragraph{Execution conditions.} The three agents ran serially on one machine, each method as shipped. AIDE ran its default 20 steps, NVIDIA reproduced public kernels per its method, and Sinica ran the full six-stage pipeline including tree search (37--224 evaluated nodes per competition). Four isolation conditions (data, workspace, instruction, and resource) are explicitly enforced (enforcement details in the Appendix).
+\paragraph{Execution conditions.} The three agents ran serially on one machine, each method as shipped. AIDE ran its default 20 steps, NVIDIA reproduced public kernels per its method, and Sinica ran the full six-stage pipeline including tree search (default budget 60 evaluated nodes per competition, extendable through the logged resume path). Four isolation conditions (data, workspace, instruction, and resource) are explicitly enforced (enforcement details in the Appendix).
 
 \paragraph{Sandboxes, audit, and scoring.} Each of Sinica's 20 ordinary-competition lanes ran in an isolated root with the Kaggle token stripped, so the agent could neither consult the leaderboard nor submit. After a lane finished, an audit read every tool call in its transcript before the score was accepted. An accepted lane produces a final \path{submission.csv}, which we submit from outside the sandbox to the finished competition for the official public and private scores.
 
@@ -229,7 +229,7 @@ SIIM-ISIC & AUC \up & \textbf{0.93529}$\dagger$ & 0.89822 & 0.88579 \\
 
 Counting the best score on each of the 23 competitions, \textbf{Sinica performs best, winning 13 and losing 10}. The other 10 wins, 7 by NVIDIA and 3 by AIDE, all come on ordinary competitions (Table~\ref{tab:bench}).
 
-Both of Sinica's heaviest losses happen where a mature public solution exists. On tps-sep-2022, the public baseline is so strong that both reference agents beat Sinica by a wide margin: NVIDIA scores 5.48 SMAPE and AIDE 9.72, against Sinica's 28.50. On tps-jan-2022, NVIDIA reproduced the well-known GDP-ratio solution and beat Sinica 4.64 to 6.30 SMAPE (AIDE was far behind at 10.67). Reproduction wins where there is a strong solution to reproduce; the search-based agents take most of the rest.
+Both of Sinica's heaviest losses happen where a mature public solution exists. On tps-sep-2022, the public baseline is so strong that both reference agents beat Sinica by a wide margin (SMAPE 5.48 and 9.72 against 28.50); on tps-jan-2022, NVIDIA reproduced the well-known GDP-ratio solution and won 4.64 to 6.30. Reproduction wins where there is a strong solution to reproduce; the search-based agents take most of the rest.
 
 \section{Discussion}
 
@@ -247,7 +247,7 @@ The differences lie not in tuning skill but in where knowledge comes from and ho
 \textbf{Aspect} & \textbf{Sinica} & \textbf{AIDE} & \textbf{NVIDIA} \\
 \midrule
 Knowledge source & Cross-competition experience library (accumulating) & None (from zero each time) & Public kernels fetched fresh each time \\
-Search strategy & Six-stage pipeline + tree search (37--224 nodes) & Tree-shaped trial and error, 20 steps & No search; faithful reproduction \\
+Search strategy & Six-stage pipeline + tree search (60-node default budget) & Tree-shaped trial and error, 20 steps & No search; faithful reproduction \\
 Basis for next step & Experience-library priors + OOF diagnostics & Previous step's error or score & Highest-voted kernel \\
 Validation rigor & Split chosen by task type; diagnostics tagged and excluded & No concept of split legality & Inherits the kernel's split \\
 External data & Injection layer (typed operators, whitelisted sources) & Never considered & Inherited from the kernel \\
@@ -311,16 +311,16 @@ All 23 competitions ran in isolated sandboxes, the 20 ordinary ones transcript-a
 \toprule
 \textbf{Condition} & \textbf{Rule} & \textbf{Enforcement} \\
 \midrule
-Data & Each side reads only its own root, containing files validated against the official Kaggle manifest & \path{build_isolated_roots.py} \\
+Data & Each side reads only its own root, containing files validated against the official Kaggle manifest & \path{benchmark_infra/build_isolated_roots.py} \\
 Workspace & The three output directories are fully separated; each side is scored independently & Directory structure \\
 Instruction & Prompts may carry environment facts and metric thresholds only, never modeling recipes, another side's scores, or a workaround it discovered & Manual protocol + incident log \\
-Resource & Only one lane executes at any moment & \path{lane_lock.sh} mutex \\
+Resource & Only one lane executes at any moment & \path{benchmark_infra/lane_lock.sh} mutex \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 
-\paragraph{Per-competition specification reports.} Specification reports accompany this paper for all 23 Sinica runs (the 20 ordinary competitions, plus the 3 special competitions via a deep-learning-aware collector whose DL fields (backbone, learning-rate schedule, batch size, augmentation, transfer learning) are filled natively), along with 13 reports re-documenting the benchmark AIDE runs. All are written to the five sections of Tso-Jung Yen's ML specification framework (Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking), archived in \path{docs/ml_specs/} and \path{benchmark_results/ml_specs_aide/} in Markdown and PDF. Every number in them is extracted deterministically by \texttt{collect.py} / \path{collect_aide_facts.py} from structured records, never generated by an LLM; unavailable fields are marked ``not recorded.'' The reports are CV-only by construction; their conclusions must not be mixed with leaderboard verdicts.
+\paragraph{Per-competition specification reports.} A specification report accompanies this paper for each of the 23 Sinica runs (the 20 ordinary competitions, plus the 3 special competitions via a deep-learning-aware collector whose DL fields (backbone, learning-rate schedule, batch size, augmentation, transfer learning) are filled natively). Each was written by the agent at the end of the run it describes; neither reference agent documents its own runs, so no counterpart set exists (our collector re-documented AIDE's runs after the fact, archived in the repository). All are written to the five sections of Tso-Jung Yen's ML specification framework (Data / Models \& Architecture / Training / Inference / Evaluation \& Benchmarking), archived in \path{docs/ml_specs/} in Markdown and PDF. Every number in them is extracted deterministically by \path{.claude/skills/kaggle-mlspec-report/assets/collect.py} (tabular lanes), \path{benchmark_infra/collect_dl_facts.py} (deep-learning lanes) and \path{benchmark_infra/collect_aide_facts.py} from structured records, never generated by an LLM; unavailable fields are marked ``not recorded.'' The reports are CV-only by construction; their conclusions must not be mixed with leaderboard verdicts.
 
 \paragraph{Execution environment.} All lanes ran on ARM64 Linux (Ubuntu 24.04) with an NVIDIA GB10 GPU, under a uv-managed Python 3.13 environment frozen in \texttt{uv.lock}, with fixed seeds and LightGBM set to \texttt{deterministic=true}, \path{force_row_wise=true} and a fixed \path{num_threads}; without these settings, the same configuration does not reproduce across processes.
 
