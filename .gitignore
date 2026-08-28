@@ -56,3 +56,5 @@ competitions/*/models/*.pkl
 competitions/*/oof_*.npy
 docs/*.aux
 docs/*.out
+docs/presentation/*.log
+docs/presentation/p[pq]-*.png
