@@ -122,7 +122,9 @@ Run from the repository root, in order:
    Also check the sign character: the checker only recognises an ASCII `-` as a minus, so
    a typographic `−` turns `−0.048` into the unmatched token `0.048`.
 
-6. **PDF (deterministic)** — academic serif, auto TOC + page numbers:
+6. **PDF (deterministic)** — grayscale academic serif (`assets/spec_style.css`, the default:
+   Times-family serif, no accent colours), auto TOC + page numbers. Every per-competition
+   spec ships in this style; do not pass a different stylesheet:
    ```bash
    bash .claude/skills/kaggle-mlspec-report/assets/md2pdf.sh \
        docs/ml_specs/md/playground-series-<comp>.md \

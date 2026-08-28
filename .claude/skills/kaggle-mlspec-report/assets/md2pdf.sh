@@ -3,13 +3,16 @@
 # 自動加入:目錄(h2+h3,注入第一個 h2 之前)+ 每頁頁尾頁碼(CSS @page)。
 # 目錄各節頁碼與頁尾頁碼需要 weasyprint(target-counter / @bottom-center);
 # chromium 備援仍會產出 PDF 與目錄清單,但沒有頁碼。
-# Usage: bash md2pdf.sh <REPORT.md> [out.pdf]
+# Usage: bash md2pdf.sh <REPORT.md> [out.pdf] [style.css]
+#   style.css defaults to spec_style.css — the grayscale academic-serif variant that
+#   every per-competition ML spec ships in. Pass report_style.css for the accent-colour
+#   sans-serif variant (used by standalone write-ups, not by the spec set).
 # exit 0 = PDF 已寫出;2 = 兩引擎皆不可用(.md 為交付物);3 = 引擎回報成功但檔案不存在
 set -euo pipefail
 
 MD="$1"
 PDF="${2:-${MD%.md}.pdf}"
-CSS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/report_style.css"
+CSS="${3:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/spec_style.css}"
 HTML="${MD%.md}.tmp.html"   # 不用隱藏檔名:snap chromium 讀不到部分隱藏路徑
 WLOG="${MD%.md}.tmp.weasy.log"
 trap 'rm -f "$HTML" "$WLOG"' EXIT
