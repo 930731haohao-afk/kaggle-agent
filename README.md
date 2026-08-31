@@ -45,12 +45,12 @@ Fairness was enforced structurally rather than by convention: each agent read on
 
 ## Reading the results
 
-- **[`docs/REPORT_v7.tex`](docs/REPORT_v7.tex)** — the main report: method, three-way benchmark, injection-layer experiments, limitations.
+- **[`docs/REPORT.tex`](docs/REPORT.tex)** — the main report: method, three-way benchmark, injection-layer experiments, limitations.
 - **[`docs/ENGINEERING_LOG.tex`](docs/ENGINEERING_LOG.tex)** and **[`docs/CASE_STUDIES.tex`](docs/CASE_STUDIES.tex)** — companions carrying the depth the report condenses.
 - **[`benchmark_results/rerun_three_way.csv`](benchmark_results/rerun_three_way.csv)** — the authoritative per-competition score table every headline number traces to.
 - **[`docs/presentation/`](docs/presentation/)** — the A0 poster and the four-minute talk.
 
-Earlier research documents, kept because they carry detail the report condenses and because later documents cite them — all predate the three-way benchmark, so where a competition count or headline differs, `REPORT_v7` is current:
+Earlier research documents, kept because they carry detail the report condenses and because later documents cite them — all predate the three-way benchmark, so where a competition count or headline differs, `REPORT` is current:
 [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) (results brief),
 [`docs/TECH_REPORT.md`](docs/TECH_REPORT.md) (the 15-competition ablation study),
 [`docs/pipeline_stages_detail.md`](docs/pipeline_stages_detail.md) (per-stage operations),

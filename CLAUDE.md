@@ -60,7 +60,7 @@ kaggle/
 ├── vision/                    # Vision infrastructure experiments (de-risk probes, determinism gate)
 ├── benchmark_infra/           # Three-way benchmark run/audit/scoring scripts (snapshot copies)
 ├── benchmark_results/         # Three-way score tables + the AIDE ML-spec report set
-├── docs/                      # REPORT_v7 (main report), ml_specs/ (23 reports), scripts/ (builders)
+├── docs/                      # REPORT (main report), ml_specs/ (23 reports), scripts/ (builders)
 ├── tests/                     # The maintained pytest suite (`uv run pytest -q`)
 ├── templates/                 # Reusable Python script templates
 │   ├── eda_template.py        # Common EDA patterns

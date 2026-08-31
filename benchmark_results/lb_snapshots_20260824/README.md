@@ -2,7 +2,7 @@
 
 The 20 CSVs are Kaggle public-leaderboard snapshots (one per benchmark
 competition) downloaded 2026-08-24, the source of the percentile-rank (PR)
-column of REPORT_v7 Table 2.
+column of REPORT Table 2.
 
 `compute_pr.py` recomputes every PR cell and the median/range summary row from
 these snapshots plus the agents' public scores in `../rerun_three_way.csv`.
@@ -14,4 +14,4 @@ cells and the summary row exactly.
 Note on `rerun_three_way.csv`: its `aide_pr` / `nvidia_pr` columns are a
 frozen record computed before these snapshots existed, under an earlier
 definition and leaderboard state. They intentionally remain untouched;
-REPORT_v7 Table 2 uses the snapshot-based values from this directory.
+REPORT Table 2 uses the snapshot-based values from this directory.

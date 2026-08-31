@@ -12,7 +12,7 @@ This skill turns that design into an executable staged workflow.
 ## Identity: discover, don't copy
 
 This project's structural differentiator (measured in the three-way benchmark — report
-`docs/REPORT_v7.tex`, score table `benchmark_results/rerun_three_way.csv`; do not open either
+`docs/REPORT.tex`, score table `benchmark_results/rerun_three_way.csv`; do not open either
 during a run, both name competitions and their results) is the
 **original-solution engine**: the agent discovers what works **from this competition's data**, instead of
 reproducing the strongest public kernel. Therefore:

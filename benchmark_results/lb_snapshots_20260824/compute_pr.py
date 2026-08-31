@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Recompute the percentile-rank (PR) column of REPORT_v7 Table 2 from the
+"""Recompute the percentile-rank (PR) column of REPORT Table 2 from the
 2026-08-24 public-leaderboard snapshots in this directory.
 
 Definition: PR = percent of public-leaderboard teams whose public score is
@@ -9,7 +9,7 @@ Agent public scores and metric directions come from ../rerun_three_way.csv.
 
 Note: the aide_pr / nvidia_pr columns already inside rerun_three_way.csv are a
 frozen record computed earlier under a different definition and snapshot date;
-they are intentionally left untouched. REPORT_v7 Table 2 uses the values this
+they are intentionally left untouched. REPORT Table 2 uses the values this
 script prints. See README.md in this directory.
 """
 import csv
